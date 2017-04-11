@@ -50,7 +50,7 @@ public class SentenceIteratorConverter implements LabelAwareIterator {
                 }
             } else {
                 String label = ((LabelAwareSentenceIterator) backendIterator).currentLabel();
-                if (labels != null) {
+                if (label != null) {
                     document.addLabel(label);
                     generator.storeLabel(label);
                 }

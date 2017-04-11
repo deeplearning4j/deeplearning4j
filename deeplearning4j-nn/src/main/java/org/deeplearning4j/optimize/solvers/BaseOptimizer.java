@@ -37,7 +37,9 @@ import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
 import org.deeplearning4j.optimize.terminations.EpsTermination;
 import org.deeplearning4j.optimize.terminations.ZeroDirection;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -295,14 +297,25 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         if (model instanceof ComputationGraph) {
             ComputationGraph graph = (ComputationGraph) model;
             if (computationGraphUpdater == null) {
+                MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+                Nd4j.getMemoryManager().setCurrentWorkspace(null);
+
                 computationGraphUpdater = new ComputationGraphUpdater(graph);
+
+                Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
             }
             computationGraphUpdater.update(graph, gradient, getIterationCount(model), batchSize);
         } else {
+            if (updater == null) {
+                MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+                Nd4j.getMemoryManager().setCurrentWorkspace(null);
 
-            if (updater == null)
                 updater = UpdaterCreator.getUpdater(model);
+
+                Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+            }
             Layer layer = (Layer) model;
+
             updater.update(layer, gradient, getIterationCount(model), batchSize);
         }
     }

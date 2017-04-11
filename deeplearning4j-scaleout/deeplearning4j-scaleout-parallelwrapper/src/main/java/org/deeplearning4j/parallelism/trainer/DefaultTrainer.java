@@ -162,6 +162,20 @@ public class DefaultTrainer extends Thread implements Trainer {
                     this.replicatedModel = new MultiLayerNetwork(conf);
 
                     replicatedModel.init();
+
+                    // we replicate original model params & updater state, just in case it's pre-trained model
+                    synchronized (originalModel) {
+                        replicatedModel.setParams(originalModel.params());
+
+                        Updater updaterReplica = ((MultiLayerNetwork) replicatedModel).getUpdater();
+                        Updater updaterOrigina = ((MultiLayerNetwork) originalModel).getUpdater();
+
+                        updaterReplica.setStateViewArray((MultiLayerNetwork) replicatedModel, updaterOrigina.getStateViewArray().dup(), false);
+
+                        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                    }
+
                     Collection<IterationListener> oldListeners = ((MultiLayerNetwork) originalModel).getListeners();
                     oldListeners = (oldListeners == null ? new ArrayList<>() : new ArrayList<>(oldListeners));
                     Collection<IterationListener> replicatedListeners = new ArrayList<>();
@@ -178,9 +192,21 @@ public class DefaultTrainer extends Thread implements Trainer {
             else if (originalModel instanceof ComputationGraph) {
                 if (!onRootModel) {
                     this.replicatedModel = new ComputationGraph(ComputationGraphConfiguration.fromJson(((ComputationGraph) originalModel).getConfiguration().toJson()));
-
-
                     this.replicatedModel.init();
+
+                    // we replicate original model params & updater state, just in case it's pre-trained model
+                    synchronized (originalModel) {
+                        replicatedModel.setParams(originalModel.params());
+
+                        ComputationGraphUpdater updaterReplica = ((ComputationGraph) replicatedModel).getUpdater();
+                        ComputationGraphUpdater updaterOrigina = ((ComputationGraph) originalModel).getUpdater();
+
+                        updaterReplica.setStateViewArray(updaterOrigina.getStateViewArray().dup());
+
+                        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                    }
+
                     Collection<IterationListener> oldListeners = ((ComputationGraph) originalModel).getListeners();
                     oldListeners = (oldListeners == null ? new ArrayList<>() : new ArrayList<>(oldListeners));
                     Collection<IterationListener> replicatedListeners = new ArrayList<>();

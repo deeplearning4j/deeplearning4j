@@ -145,4 +145,9 @@ public interface GraphVertex extends Serializable {
      * Activations through these will be calculated as they would as test time regardless of training mode
      */
     void setLayerAsFrozen();
+
+    /**
+     * This method clears inpjut for this vertex
+     */
+    void clearVertex();
 }

@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -128,8 +129,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         if (epsilon.rank() == 2) {
             //TODO: handle fixed beta/gamma case...
-            INDArray dGamma = epsilon.mul(xHat).sum(0); //dL/dGamma = sum_examples dL/dOut .* xHat
             INDArray dBeta = epsilon.sum(0); //dL/dBeta = sum_examples dL/dOut
+            INDArray dGamma = epsilon.mul(xHat).sum(0); //dL/dGamma = sum_examples dL/dOut .* xHat
             INDArray dxhat;
             if (layerConf.isLockGammaBeta()) {
                 dxhat = epsilon.mul(layerConf.getGamma());
@@ -167,8 +168,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             nextEpsilon = dLdx;
 
         } else if (epsilon.rank() == 4) {
-            INDArray dGamma = epsilon.mul(xHat).sum(0, 2, 3);
             INDArray dBeta = epsilon.sum(0, 2, 3);
+            INDArray dGamma = epsilon.mul(xHat).sum(0, 2, 3);
             INDArray dxhat;
             if (layerConf.isLockGammaBeta()) {
                 dxhat = epsilon.mul(layerConf.getGamma());
@@ -278,7 +279,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             mean = getParam(BatchNormalizationParamInitializer.GLOBAL_MEAN);
             var = getParam(BatchNormalizationParamInitializer.GLOBAL_VAR);
         }
-        std = Transforms.sqrt(var, true);
+        std = Transforms.sqrt(var, true).leverageTo(ComputationGraph.workspaceExternal);
 
         INDArray gamma = null;
         INDArray beta = null;
@@ -308,8 +309,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         // BN(xk) = gamma*xˆ + β (applying gamma and beta for each activation)
         if (x.rank() == 2) {
-            xMu = x.subRowVector(mean);
-            xHat = xMu.divRowVector(std);
+            xMu = x.subRowVector(mean).leverageTo(ComputationGraph.workspaceExternal);
+            xHat = xMu.divRowVector(std).leverageTo(ComputationGraph.workspaceExternal);
 
             if (layerConf.isLockGammaBeta()) {
                 //Special case: gamma/beta have fixed values for all outputs
@@ -330,9 +331,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             if (!Shape.strideDescendingCAscendingF(x))
                 x = x.dup(); //TODO: temp Workaround for broadcast bug. To be removed when fixed
             xMu = Nd4j.getExecutioner().execAndReturn(
-                            new BroadcastSubOp(x, mean, Nd4j.createUninitialized(x.shape(), x.ordering()), 1));
+                            new BroadcastSubOp(x, mean, Nd4j.createUninitialized(x.shape(), x.ordering()), 1)).leverageTo(ComputationGraph.workspaceExternal);
             xHat = Nd4j.getExecutioner().execAndReturn(
-                            new BroadcastDivOp(xMu, std, Nd4j.createUninitialized(x.shape(), x.ordering()), 1));
+                            new BroadcastDivOp(xMu, std, Nd4j.createUninitialized(x.shape(), x.ordering()), 1)).leverageTo(ComputationGraph.workspaceExternal);
 
             if (layerConf.isLockGammaBeta()) {
                 //Special case: gamma/beta have fixed values for all outputs

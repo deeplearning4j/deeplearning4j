@@ -169,4 +169,10 @@ public abstract class BaseGraphVertex implements GraphVertex {
             throw new IllegalArgumentException("Cannot set non layer vertices as frozen");
         }
     }
+
+    @Override
+    public void clearVertex() {
+        clear();
+        epsilon = null;
+    }
 }

@@ -53,7 +53,6 @@ public class StochasticGradientDescent extends BaseOptimizer {
     @Override
     public boolean optimize() {
         for (int i = 0; i < conf.getNumIterations(); i++) {
-
             Pair<Gradient, Double> pair = gradientAndScore();
             Gradient gradient = pair.getFirst();
 

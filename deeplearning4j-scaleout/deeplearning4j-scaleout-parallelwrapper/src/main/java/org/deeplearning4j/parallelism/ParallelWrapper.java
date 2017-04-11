@@ -340,11 +340,11 @@ public class ParallelWrapper implements AutoCloseable {
                     log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
                             Nd4j.getAffinityManager().getNumberOfDevices());
 
-                MagicQueue queue = new MagicQueue.Builder().setCapacityPerFlow(8).setMode(MagicQueue.Mode.SEQUENTIAL)
+                MagicQueue queue = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL)
                         .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
-                iterator = new AsyncDataSetIterator(source, prefetchSize, queue);
+                iterator = new AsyncDataSetIterator(source, prefetchSize * workers, queue);
             } else
-                iterator = new AsyncDataSetIterator(source, prefetchSize);
+                iterator = new AsyncDataSetIterator(source, prefetchSize * workers);
         } else
             iterator = source;
 
@@ -621,8 +621,37 @@ public class ParallelWrapper implements AutoCloseable {
         }
     }
 
+    private static IterationListener cloneListener(IterationListener original){
+        if(original instanceof RoutingIterationListener){
+            return ((RoutingIterationListener) original).clone();
+        }
+        return original;
+    }
 
+    private void configureListeners(String workerUUID, Collection<IterationListener> oldListeners,
+                                    Collection<IterationListener> replicatedListeners){
+        for (IterationListener listener : oldListeners) {
+            IterationListener l = cloneListener(listener);
 
+            if (l instanceof RoutingIterationListener) {
+                RoutingIterationListener rl = (RoutingIterationListener)l;
+                //We're assuming session ID is set by the original RoutingIterationListener constructor, which means
+                // it will be synced across all cloned instances
+                rl.setSessionID(((RoutingIterationListener) listener).getSessionID());
+                rl.setWorkerID(workerUUID);
 
+                StatsStorageRouter currentRouter = ((RoutingIterationListener)listener).getStorageRouter();
+                if(currentRouter != null){
+                    //User has set router on the listener/model, instead of via the
+                    // setListeners(StatsStorageRouter, ...) method
+                    rl.setStorageRouter(currentRouter);
+                } else {
+                    rl.setStorageRouter(ParallelWrapper.this.storageRouter);
+                }
+
+            }
+            replicatedListeners.add(l);
+        }
+    }
 }
 

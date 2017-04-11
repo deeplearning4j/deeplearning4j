@@ -43,6 +43,7 @@ import org.deeplearning4j.text.sentenceiterator.AggregatingSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.FileSentenceIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
+import org.deeplearning4j.text.sentenceiterator.interoperability.SentenceIteratorConverter;
 import org.deeplearning4j.text.tokenization.tokenizer.preprocessor.CommonPreprocessor;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
@@ -962,5 +963,65 @@ public class ParagraphVectorsTest {
         log.info("W2 > Short hash: {}; Long hash: {}", w2.getLabel().hashCode(), w2.getStorageId());
 
         assertNotEquals(w1.getStorageId(), w2.getStorageId());
+    }
+
+
+    /**
+     * This is very long test, to track memory consumption over time
+     *
+     * @throws Exception
+     */
+    @Ignore
+    @Test
+    public void testsParallelFit1() throws Exception {
+        final File file = new ClassPathResource("/big/raw_sentences.txt").getFile();
+
+        for (int i = 0; i < 1000; i++) {
+            List<Thread> threads = new ArrayList<>();
+            for (int t = 0; t < 3; t++) {
+                threads.add(new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            TokenizerFactory t = new DefaultTokenizerFactory();
+
+                            LabelsSource source = new LabelsSource("DOC_");
+
+                            SentenceIteratorConverter sic = new SentenceIteratorConverter(new BasicLineIterator(file), source);
+
+                            ParagraphVectors vec = new ParagraphVectors.Builder()
+                                    .seed(42)
+                                    //.batchSize(10)
+                                    .minWordFrequency(1)
+                                    .iterations(1)
+                                    .epochs(5)
+                                    .layerSize(100)
+                                    .learningRate(0.05)
+                                    //.labelsSource(source)
+                                    .windowSize(5)
+                                    .trainWordVectors(true)
+                                    .allowParallelTokenization(false)
+                                    //.vocabCache(cache)
+                                    .tokenizerFactory(t)
+                                    .workers(1)
+                                    .iterate(sic)
+                                    .build();
+
+                            vec.fit();
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                }));
+            }
+
+            for (Thread t: threads) {
+                t.start();
+            }
+
+            for (Thread t: threads) {
+                t.join();
+            }
+        }
     }
 }

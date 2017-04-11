@@ -20,10 +20,7 @@
 
 package org.deeplearning4j.nn.conf;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -66,6 +63,10 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     protected BackpropType backpropType = BackpropType.Standard;
     protected int tbpttFwdLength = 20;
     protected int tbpttBackLength = 20;
+
+    @Getter
+    @Setter
+    protected WorkspaceMode workspaceMode;
 
     //Counter for the number of parameter updates so far
     // This is important for learning rate schedules, for example, and is stored here to ensure it is persisted
@@ -305,6 +306,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         @Deprecated
         protected int[] cnnInputSize;
 
+        protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
+
         /**
          * Specify the processors.
          * These are used at each layer for doing things like normalization and
@@ -329,6 +332,20 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          */
         public Builder backprop(boolean backprop) {
             this.backprop = backprop;
+            return this;
+        }
+
+        /**
+         * This method defines Workspace mode being used during training/inference:
+         * NONE: workspace won't be used
+         * SINGLE: one workspace will be used during whole iteration loop
+         * SEPARATE: separate workspaces will be used for feedforward and backprop iteration loops
+         *
+         * @param workspaceMode
+         * @return
+         */
+        public Builder workspaceMode(@NonNull WorkspaceMode workspaceMode) {
+            this.workspaceMode = workspaceMode;
             return this;
         }
 
@@ -493,6 +510,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.backpropType = backpropType;
             conf.tbpttFwdLength = tbpttFwdLength;
             conf.tbpttBackLength = tbpttBackLength;
+            conf.workspaceMode = workspaceMode;
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
             return conf;
 

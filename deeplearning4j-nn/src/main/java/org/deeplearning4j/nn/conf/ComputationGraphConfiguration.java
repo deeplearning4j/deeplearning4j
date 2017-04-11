@@ -59,6 +59,9 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     protected Map<String, GraphVertex> vertices = new LinkedHashMap<>();
     protected Map<String, List<String>> vertexInputs = new LinkedHashMap<>();
 
+    @Getter @Setter
+    protected WorkspaceMode workspaceMode;
+
     /**
      * List of inputs to the network, by name
      */
@@ -434,6 +437,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
         protected NeuralNetConfiguration.Builder globalConfiguration;
 
+        protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
 
         public GraphBuilder(NeuralNetConfiguration.Builder globalConfiguration) {
             this.globalConfiguration = globalConfiguration;
@@ -470,6 +474,12 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             inputPreProcessors.put(layer, processor);
             return this;
         }
+
+        public GraphBuilder workspaceMode(@NonNull WorkspaceMode workspaceMode) {
+            this.workspaceMode = workspaceMode;
+            return this;
+        }
+
 
         /**
          * Whether to do back prop (standard supervised learning) or not
@@ -689,6 +699,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             conf.vertices = this.vertices;
             conf.vertexInputs = this.vertexInputs;
+            conf.workspaceMode = globalConfiguration.workspaceMode;
 
             conf.defaultConfiguration = globalConfiguration.build();
             conf.getDefaultConfiguration().setPretrain(pretrain);

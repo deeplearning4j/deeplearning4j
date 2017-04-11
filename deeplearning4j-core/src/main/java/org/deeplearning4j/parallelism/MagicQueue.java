@@ -2,6 +2,10 @@ package org.deeplearning4j.parallelism;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -51,7 +55,7 @@ public class MagicQueue implements BlockingQueue<DataSet> {
                 LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>(capacity);
                 backingQueues.add(queue);
 
-                QueueHandler handler = new QueueHandler(queue, capacity);
+                QueueHandler handler = new QueueHandler(queue, capacity, i);
 
                 Nd4j.getAffinityManager().attachThreadToDevice(handler, i);
 
@@ -468,12 +472,17 @@ public class MagicQueue implements BlockingQueue<DataSet> {
     private static class QueueHandler extends Thread implements Runnable {
         private final BlockingQueue<DataSet> targetQueue;
         private final LinkedBlockingQueue<DataSet> bufferQueue;
+        private final int device;
+        private final int capacity;
 
-        public QueueHandler(BlockingQueue<DataSet> queue, int capacity) {
+        public QueueHandler(BlockingQueue<DataSet> queue, int capacity, int device) {
             this.targetQueue = queue;
             this.bufferQueue = new LinkedBlockingQueue<DataSet>(capacity);
+            this.capacity = capacity;
+            this.device = device;
 
             this.setDaemon(true);
+            this.setName("MQ_THREAD " + device);
         }
 
 
@@ -487,20 +496,42 @@ public class MagicQueue implements BlockingQueue<DataSet> {
 
         @Override
         public void run() {
+            Nd4j.create(1);
+            WorkspaceConfiguration configuration = null;
+            String id = "MQAD_THREAD";
+            log.info("MQAD_THREAD started on device [{}/{}]", device, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
             while (true) {
                 try {
                     DataSet ds = bufferQueue.poll(1, TimeUnit.SECONDS);
 
                     if (ds != null) {
-                        // now we initialize dataset on target device (if applicable)
-                        if (ds.getFeaturesMaskArray() != null)
-                            Nd4j.getAffinityManager().touch(ds.getFeaturesMaskArray());
-                        if (ds.getLabelsMaskArray() != null)
-                            Nd4j.getAffinityManager().touch(ds.getLabelsMaskArray());
+                        if (configuration == null) {
+                            long initSize = Math.max(ds.getMemoryFootprint() * capacity, 10 * 1024L * 1024L);
 
-                        Nd4j.getAffinityManager().touch(ds.getFeatures());
-                        Nd4j.getAffinityManager().touch(ds.getLabels());
+                            configuration = WorkspaceConfiguration.builder()
+                                    .initialSize(initSize)
+                                    .overallocationLimit(1.0)
+                                    .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                                    .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                                    .build();
+                        }
 
+                        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, id)) {
+                            // now we initialize dataset on target device (if applicable)
+                            if (ds.getFeaturesMaskArray() != null)
+                                ds.setFeaturesMaskArray(ds.getFeaturesMaskArray().migrate());
+                                //Nd4j.getAffinityManager().touch(ds.getFeaturesMaskArray());
+
+                                if (ds.getLabelsMaskArray() != null)
+                                ds.setLabelsMaskArray(ds.getLabelsMaskArray().migrate());
+                                //Nd4j.getAffinityManager().touch(ds.getLabelsMaskArray());
+
+                            ds.setFeatures(ds.getFeatures().migrate());
+                            ds.setLabels(ds.getLabels().migrate());
+                            //Nd4j.getAffinityManager().touch(ds.getFeatures());
+                            //Nd4j.getAffinityManager().touch(ds.getLabels());
+                        }
                         //log.info("Tagged object as device_{}", Nd4j.getAffinityManager().getDeviceForArray(ds.getFeatures()));
 
                         targetQueue.put(ds);
