@@ -40,13 +40,15 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
         if(i_v1.getValue() instanceof ArrayField) {
             ArrayField v1 = (ArrayField) i_v1.getValue();
             ArrayField v2 = (ArrayField) i_v2.getValue();
+            NDArrayInformation arrInfo = NDArrayInformation.builder()
+                    .id(opName +"(" + v1.getInput().getId() + "," + v2.getInput().getId() + ")")
+                    .shape(v1.getInput().getShape()).build();
             //result
-            NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size() ,
-                    NDArrayInformation.builder()
-                            .id(opName +"(" + v1.getInput().getId() + "," + v2.getInput().getId() + ")")
-                            .shape(v1.getInput().getShape()).build());
+            NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size(),arrInfo);
             //add the result vertex
             graph.addVertex(newVertex);
+            OpState opState;
+
             //ensure there's 2 vertices for when the 2 inputs are the same
             if(v1.equals(v2)) {
                 NDArrayVertex dupVertex = new NDArrayVertex(graph.getVertices().size(),
@@ -55,37 +57,47 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
                                 .id(v1.getInput().getId()).build());
 
                 graph.addVertex(dupVertex);
-                graph.addEdge(dupVertex.vertexID(),newVertex.vertexID(),
-                        OpState.builder()
-                                .opType(OpState.OpType.TRANSFORM)
-                                .opName(opName)
-                                .id(opName + "(" + dupVertex.getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
-                                .vertexIds(new String[]{String.valueOf(dupVertex.vertexID()),String.valueOf(newVertex.vertexID())})
-                                .n(ArrayUtil.prod(v1.getInput().getShape()))
-                                .build(),true);
+                opState =    OpState.builder()
+                        .opType(OpState.OpType.TRANSFORM)
+                        .opName(opName)
+                        .id(opName + "(" + dupVertex.getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
+                        .vertexIds(new String[]{String.valueOf(dupVertex.vertexID()),String.valueOf(newVertex.vertexID())})
+                        .n(ArrayUtil.prod(v1.getInput().getShape()))
+                        .build();
+                graph.addEdge(dupVertex.vertexID(),newVertex.vertexID(),opState,true);
             }
             else {
-                graph.addEdge(v2.getVertex().getIdx(),newVertex.vertexID(),
-                        OpState.builder()
-                                .opType(OpState.OpType.TRANSFORM)
-                                .opName(opName)
-                                .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
-                                .vertexIds(new String[]{String.valueOf(v2.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
-                                .n(ArrayUtil.prod(v1.getInput().getShape()))
-                                .build(),true);
+                opState =  OpState.builder()
+                        .opType(OpState.OpType.TRANSFORM)
+                        .opName(opName)
+                        .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
+                        .vertexIds(new String[]{String.valueOf(v2.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
+                        .n(ArrayUtil.prod(v1.getInput().getShape()))
+                        .build();
+                graph.addEdge(v2.getVertex().vertexID(),
+                        newVertex.vertexID(),
+                        opState
+                        ,true);
             }
 
+            opState =    OpState.builder()
+                    .opType(OpState.OpType.TRANSFORM)
+                    .opName(opName)
+                    .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
+                    .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
+                    .n(ArrayUtil.prod(v1.getInput().getShape()))
+                    .build();
             //add the first vertex no matter what as normal
-            graph.addEdge(v1.getVertex().getIdx(),newVertex.vertexID(),
-                    OpState.builder()
-                            .opType(OpState.OpType.TRANSFORM)
-                            .opName(opName)
-                            .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
-                            .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
-                            .n(ArrayUtil.prod(v1.getInput().getShape()))
-                            .build(),true);
+            graph.addEdge(v1.getVertex().vertexID(),
+                    newVertex.vertexID(),
+                    opState,true);
+            newVertex.setOpState(opState);
+            arrInfo.setOwner(opState);
+            this.opState = opState;
 
         }
+
+
     }
 
 

@@ -12,7 +12,7 @@ import org.nd4j.autodiff.graph.api.Vertex;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class NDArrayVertex extends Vertex<NDArrayInformation>  {
-
+    private OpState opState;
     public NDArrayVertex(int idx,int[] shape) {
         this(idx,
                 NDArrayInformation.builder().shape(shape)

@@ -87,6 +87,11 @@ public class ArrayField implements Field<ArrayField> {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public ArrayField[] args() {
+        return new ArrayField[0];
+    }
+
     public ArrayField pow(ArrayField a) {
         return addPairTransformOp(new Pow().name(),a);
     }
@@ -299,6 +304,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new Sum().name(),
                 dimensions,
+                ArrayUtil.removeIndex(input.getShape(),dimensions),
                 null,
                 OpState.OpType.ACCUMULATION);
     }
@@ -307,6 +313,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new Prod().name(),
                 dimensions,
+                ArrayUtil.removeIndex(input.getShape(),dimensions),
                 null,
                 OpState.OpType.ACCUMULATION);
     }
@@ -315,6 +322,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new Mean().name(),
                 dimensions,
+                ArrayUtil.removeIndex(input.getShape(),dimensions),
                 null,
                 OpState.OpType.ACCUMULATION);
     }
@@ -324,6 +332,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new StandardDeviation().name()
                 ,dimensions,
+                ArrayUtil.removeIndex(input.getShape(),dimensions),
                 new Object[]{biasCorrected},
                 OpState.OpType.ACCUMULATION);
     }
@@ -332,6 +341,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new Variance().name(),
                 dimensions,
+                ArrayUtil.removeIndex(input.getShape(),dimensions),
                 new Object[]{biasCorrected},
                 OpState.OpType.ACCUMULATION);
     }
@@ -348,6 +358,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new Max().name(),
                 dimensions,
+                ArrayUtil.removeIndex(input.getShape(),dimensions),
                 null,
                 OpState.OpType.ACCUMULATION);
     }
@@ -356,6 +367,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new Min().name(),
                 dimensions,
+                ArrayUtil.removeIndex(input.getShape(),dimensions),
                 null,
                 OpState.OpType.ACCUMULATION);
     }
@@ -364,6 +376,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new Norm1().name(),
                 dimensions,
+                ArrayUtil.removeIndex(input.getShape(),dimensions),
                 null,
                 OpState.OpType.ACCUMULATION);
     }
@@ -372,6 +385,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new Norm2().name(),
                 dimensions,
+                ArrayUtil.removeIndex(input.getShape(),dimensions),
                 null,
                 OpState.OpType.ACCUMULATION);
     }
@@ -380,6 +394,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new NormMax().name(),
                 dimensions,
+                ArrayUtil.removeIndex(input.getShape(),dimensions),
                 null,
                 OpState.OpType.ACCUMULATION);
     }

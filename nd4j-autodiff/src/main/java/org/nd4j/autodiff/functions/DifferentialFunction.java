@@ -3,6 +3,7 @@ package org.nd4j.autodiff.functions;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
@@ -10,11 +11,17 @@ import org.nd4j.autodiff.opstate.OpState;
 
 
 @AllArgsConstructor
+@Data
 public abstract class DifferentialFunction<X extends Field<X>>
         implements Field<DifferentialFunction<X>>,
         Differential<X, DifferentialFunction<X>> {
 
     protected Graph<NDArrayInformation,OpState> graph;
+    protected OpState opState;
+
+    public DifferentialFunction(Graph<NDArrayInformation, OpState> graph) {
+        this.graph = graph;
+    }
 
     /**
      * Get the value of this function
@@ -42,7 +49,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
      */
     public  X getValue(boolean freeze) {
         boolean graphAlreadyFrozen = graph.isFrozen();
-       //if graph is already frozen leave it frozen
+        //if graph is already frozen leave it frozen
         if(freeze && !graphAlreadyFrozen) {
             graph.freeze();
         }

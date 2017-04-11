@@ -13,4 +13,5 @@ import java.io.Serializable;
 public class NDArrayInformation implements Serializable {
     private int[] shape;
     private String id;
+    private OpState owner;
 }

@@ -1273,7 +1273,9 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
     }
 
 
-    private DifferentialFunction<X> doRepeat(DifferentialFunction<X> func,Variable<X> input,int...axes) {
+    private DifferentialFunction<X> doRepeat(DifferentialFunction<X> func,
+                                             Variable<X> input,
+                                             int...axes) {
         if(input.getValue() instanceof ArrayField) {
             ArrayField arrayField = (ArrayField) input.getValue();
             int[] inputShape = arrayField.getInput().getShape();

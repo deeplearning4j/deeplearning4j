@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.functions;
 
+import lombok.Data;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.graph.Graph;
@@ -10,11 +11,10 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.List;
 
-
+@Data
 public abstract class AbstractUnaryFunction<X extends Field<X>> extends DifferentialFunction<X> {
 
     protected DifferentialFunction<X> m_x;
-
 
     public AbstractUnaryFunction(Graph<NDArrayInformation,OpState> graph, DifferentialFunction<X> i_v) {
         super(graph);
@@ -49,20 +49,24 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
     protected void addEdges(Graph<NDArrayInformation,OpState> graph, DifferentialFunction<X> i_v1,String opName) {
         if(i_v1.getValue() instanceof ArrayField) {
             ArrayField v1 = (ArrayField) i_v1.getValue();
+            NDArrayInformation information =    NDArrayInformation.builder()
+                    .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
+                    .shape(v1.getInput().getShape()).build();
             //result
-            NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size() ,
-                    NDArrayInformation.builder()
-                            .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
-                            .shape(v1.getInput().getShape()).build());
+            NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size(),information);
             graph.addVertex(newVertex);
-            graph.addEdge(v1.getVertex().getIdx(),newVertex.vertexID(),
-                    OpState.builder()
-                            .opType(OpState.OpType.TRANSFORM)
-                            .opName(opName)
-                            .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
-                            .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
-                            .n(ArrayUtil.prod(v1.getInput().getShape()))
-                            .build(),true);
+            OpState owner =  OpState.builder()
+                    .opType(OpState.OpType.TRANSFORM)
+                    .opName(opName)
+                    .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
+                    .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
+                    .n(ArrayUtil.prod(v1.getInput().getShape()))
+                    .build();
+            graph.addEdge(v1.getVertex().vertexID(),newVertex.vertexID(),owner,true);
+            newVertex.setOpState(owner);
+            information.setOwner(owner);
+            owner.setResult(information);
+            this.opState = owner;
 
         }
     }

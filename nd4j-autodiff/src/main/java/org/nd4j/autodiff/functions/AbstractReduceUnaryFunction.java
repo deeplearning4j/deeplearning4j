@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.functions;
 
+import lombok.Data;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.graph.Graph;
@@ -12,11 +13,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-
+@Data
 public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends DifferentialFunction<X> {
 
     protected DifferentialFunction<X> m_x;
     protected int[] dimensions;
+    protected OpState opState;
 
     public AbstractReduceUnaryFunction(Graph<NDArrayInformation,OpState> graph, DifferentialFunction<X> i_v,int[] dimensions) {
         super(graph);
@@ -55,19 +57,24 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
         if(i_v1.getValue() instanceof ArrayField) {
             ArrayField v1 = (ArrayField) i_v1.getValue();
             //result
-            NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size() ,
-                    NDArrayInformation.builder()
-                            .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
-                            .shape(v1.getInput().getShape()).build());
+            NDArrayInformation information =  NDArrayInformation.builder()
+                    .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
+                    .shape(v1.getInput().getShape()).build();
+            NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size(),information);
             graph.addVertex(newVertex);
-            graph.addEdge(v1.getVertex().getIdx(),newVertex.vertexID(),
-                    OpState.builder()
-                            .opType(OpState.OpType.ACCUMULATION)
-                            .opName(opName).axes(dimensions)
-                            .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
-                            .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
-                            .n(ArrayUtil.prod(v1.getInput().getShape()))
-                            .build(),true);
+            OpState opState =   OpState.builder()
+                    .opType(OpState.OpType.ACCUMULATION)
+                    .opName(opName).axes(dimensions)
+                    .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
+                    .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
+                    .n(ArrayUtil.prod(ArrayUtil.removeIndex(v1.getInput().getShape(),dimensions)))
+                    .build();
+            newVertex.setOpState(opState);
+            graph.addEdge(v1.getVertex().vertexID(),newVertex.vertexID(),opState
+                    ,true);
+            this.opState = opState;
+            information.setOwner(opState);
+            opState.setResult(information);
 
         }
     }

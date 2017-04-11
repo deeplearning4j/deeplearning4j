@@ -24,6 +24,7 @@ public class OpState implements Serializable {
     private String id;
     private int[] axes;
     private Object[] extraArgs;
+    private NDArrayInformation result;
 
     public  enum OpType {
         SCALAR_TRANSFORM,

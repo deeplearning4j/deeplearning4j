@@ -16,16 +16,19 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 @AllArgsConstructor
 public class TensorGrad {
-    private Graph<NDArrayInformation,OpState> graph = new Graph<>();
+    private TensorGradGraph graph = new TensorGradGraph();
     private ArrayFactory arrayFactory = new ArrayFactory(graph);
     private DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory;
 
     private TensorGrad() {
-        graph = new Graph<>();
+        graph = new TensorGradGraph();
         arrayFactory = new ArrayFactory(graph);
         arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
     }
 
+    public TensorGradGraph graph() {
+        return graph;
+    }
 
     public static TensorGrad create() {
         return new TensorGrad();
@@ -348,7 +351,9 @@ public class TensorGrad {
     }
 
 
-    public TensorGradVariable standardDeviation(TensorGradVariable iX,boolean biasCorrected,int...dimensions) {
+    public TensorGradVariable standardDeviation(TensorGradVariable iX,
+                                                boolean biasCorrected,
+                                                int...dimensions) {
         return TensorGradVariable.builder()
                 .arr(null)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.std(
@@ -359,7 +364,9 @@ public class TensorGrad {
                 .build();
     }
 
-    public TensorGradVariable variance(TensorGradVariable iX,boolean biasCorrected,int...dimensions) {
+    public TensorGradVariable variance(TensorGradVariable iX,
+                                       boolean biasCorrected,
+                                       int...dimensions) {
         return TensorGradVariable.builder()
                 .arr(null)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.variance(iX.getArrayField(),
@@ -369,7 +376,8 @@ public class TensorGrad {
                 .build();
     }
 
-    public TensorGradVariable sum(TensorGradVariable iX,int...dimensions) {
+    public TensorGradVariable sum(TensorGradVariable iX,
+                                  int...dimensions) {
         return TensorGradVariable.builder()
                 .arr(null)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.sum(iX.getArrayField(),dimensions))
@@ -377,7 +385,8 @@ public class TensorGrad {
                 .build();
     }
 
-    public TensorGradVariable prod(TensorGradVariable iX,int...dimensions) {
+    public TensorGradVariable prod(TensorGradVariable iX,
+                                   int...dimensions) {
         return TensorGradVariable.builder()
                 .arr(null)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.prod(iX.getArrayField(),dimensions))
@@ -395,7 +404,8 @@ public class TensorGrad {
     }
 
 
-    public TensorGradVariable min(TensorGradVariable iX,int...dimensions) {
+    public TensorGradVariable min(TensorGradVariable iX,
+                                  int...dimensions) {
         return TensorGradVariable.builder()
                 .arr(null)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.min(iX.getArrayField(),dimensions))
@@ -404,7 +414,8 @@ public class TensorGrad {
     }
 
 
-    public TensorGradVariable reshape(TensorGradVariable iX,int...shape) {
+    public TensorGradVariable reshape(TensorGradVariable iX,
+                                      int...shape) {
         return TensorGradVariable.builder()
                 .arr(null)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.reshape(iX.getArrayField(),shape))

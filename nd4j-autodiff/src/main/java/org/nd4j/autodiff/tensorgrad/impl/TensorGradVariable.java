@@ -5,8 +5,10 @@ import lombok.Data;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.Variable;
+import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.TensorGrad;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * Created by agibsonccc on 4/9/17.
@@ -21,6 +23,16 @@ public class TensorGradVariable {
     private TensorGrad tensorGrad;
 
 
+    public int[] getShape() {
+        if(arrayField != null)
+            return arrayField.getValue().getInput().getShape();
+        else {
+            OpState opState =  differentialFunction.getOpState();
+            if(opState == null)
+                throw new IllegalStateException("Unable to determine shape!");
+            return opState.getResult().getShape();
+        }
+    }
 
 
     public TensorGradVariable add(TensorGradVariable tensorGradVariable) {
