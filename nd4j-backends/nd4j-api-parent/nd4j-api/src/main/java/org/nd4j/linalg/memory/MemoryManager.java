@@ -134,7 +134,22 @@ public interface MemoryManager {
      */
     void purgeCaches();
 
+    /**
+     * This method does memcpy  from source buffer to destination buffer
+     *
+     * PLEASE NOTE: This method is NOT safe.
+     *
+     * @param dstBuffer
+     * @param srcBuffer
+     */
     void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer);
 
+    /**
+     * This method temporary opens block out of any workspace scope.
+     *
+     * PLEASE NOTE: Do not forget to close this block.
+     *
+     * @return
+     */
     MemoryWorkspace scopeOutOfWorkspaces();
 }

@@ -12,6 +12,8 @@ import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 /**
+ * CPU-only MemoryWorkspace implementation
+ *
  * @author raver119@gmail.com
  */
 @Slf4j

@@ -24,7 +24,8 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 public class CudaMemoryManager extends BasicMemoryManager {
 
     /**
-     * This method returns
+     * This method returns Pointer to allocated memory chunk
+     *
      * PLEASE NOTE: Cache options depend on specific implementations
      *
      * @param bytes

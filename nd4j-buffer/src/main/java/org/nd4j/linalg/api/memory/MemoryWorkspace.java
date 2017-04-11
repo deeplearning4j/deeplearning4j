@@ -1,12 +1,13 @@
 package org.nd4j.linalg.api.memory;
 
-import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 
 /**
+ * This interface describes reusable memory chunks abstraction
+ *
  * @author raver119@gmail.com
  */
 public interface MemoryWorkspace extends AutoCloseable {
@@ -26,6 +27,11 @@ public interface MemoryWorkspace extends AutoCloseable {
      */
     String getId();
 
+    /**
+     * This method returns threadId where this workspace was created
+     *
+     * @return
+     */
     Long getThreadId();
 
     /**
@@ -108,6 +114,11 @@ public interface MemoryWorkspace extends AutoCloseable {
      */
     long getMaxCycleAllocations();
 
+    /**
+     * This method is for compatibility with "try-with-resources" java blocks.
+     * Internally it should be equal to notifyScopeLeft() method
+     *
+     */
     @Override
     void close();
 
@@ -117,6 +128,10 @@ public interface MemoryWorkspace extends AutoCloseable {
      */
     MemoryWorkspace getParentWorkspace();
 
-
+    /**
+     * This method temporary disables this workspace
+     *
+     * @return
+     */
     MemoryWorkspace tagOutOfScopeUse();
 }

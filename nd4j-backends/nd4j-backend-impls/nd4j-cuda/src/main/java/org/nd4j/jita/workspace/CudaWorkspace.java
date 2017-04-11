@@ -23,6 +23,8 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * CUDA-aware MemoryWorkspace implementation
+ *
  * @author raver119@gmail.com
  */
 @Slf4j

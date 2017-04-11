@@ -29,6 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * Basic implementation for MemoryWorkspace interface, further extended in corresponding backends
+ *
  * @author raver119@gmail.com
  */
 @Slf4j

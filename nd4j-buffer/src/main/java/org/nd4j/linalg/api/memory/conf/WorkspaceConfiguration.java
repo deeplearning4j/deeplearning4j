@@ -9,6 +9,9 @@ import org.nd4j.linalg.api.memory.enums.*;
 import java.io.Serializable;
 
 /**
+ * This class is configuration bean for MemoryWorkspace.
+ * It allows you to specify workspace parameters, and will define workspace behaviour.
+ *
  * @author raver119@gmail.com
  */
 @Builder
