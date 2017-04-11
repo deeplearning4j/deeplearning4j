@@ -40,11 +40,11 @@ public class MathUtils {
     /**
      * The natural logarithm of 2.
      */
-    public static double log2 = Math.log(2);
+    public static final double log2 = Math.log(2);
     /**
      * The small deviation allowed in double comparisons.
      */
-    public static double SMALL = 1e-6;
+    public static final double SMALL = 1e-6;
 
 
     public static double pow(double base, double exponent) {

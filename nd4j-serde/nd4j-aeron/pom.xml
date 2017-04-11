@@ -70,10 +70,5 @@
       <artifactId>aeron-all</artifactId>
       <version>${aeron.version}</version>
     </dependency>
-    <dependency>
-      <groupId>uk.co.real-logic</groupId>
-      <artifactId>sbe-all</artifactId>
-      <version>${sbe.version}</version>
-    </dependency>
   </dependencies>
 </project>

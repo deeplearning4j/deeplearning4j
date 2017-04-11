@@ -5,8 +5,9 @@ ND4J: Scientific Computing on the JVM
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.nd4j/nd4j/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.nd4j/nd4j)
 [![Javadoc](https://javadoc-emblem.rhcloud.com/doc/org.nd4j/nd4j/badge.svg)](http://nd4j.org/doc)
 
-ND4J is an Apache2 Licensed open-sourced scientific computing library for the JVM. It is meant to be used in production environments
-rather than as a research tool, which means routines are designed to run fast with minimum RAM requirements.
+ND4J is an Apache 2.0-licensed scientific computing library for the JVM. By contributing code to this repository, you agree to make your contribution available under an Apache 2.0 license.
+
+It is meant to be used in production environments rather than as a research tool, which means routines are designed to run fast with minimum RAM requirements.
 
 Please search for the latest version on search.maven.org.
 

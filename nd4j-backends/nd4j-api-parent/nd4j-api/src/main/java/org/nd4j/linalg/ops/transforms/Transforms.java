@@ -54,10 +54,22 @@ public class Transforms {
                         .doubleValue();
     }
 
+    /**
+     *
+     * @param d1
+     * @param d2
+     * @return
+     */
     public static double manhattanDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
         return d1.distance1(d2);
     }
 
+    /**
+     *
+     * @param d1
+     * @param d2
+     * @return
+     */
     public static double euclideanDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
         return d1.distance2(d2);
     }

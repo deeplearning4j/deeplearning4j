@@ -1,10 +1,11 @@
 package org.nd4j.nativeblas;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Loader;
+import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.blas.Blas;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 
 /**
  * CBlas bindings
@@ -12,9 +13,9 @@ import org.slf4j.LoggerFactory;
  * Original credit:
  * https://github.com/uncomplicate/neanderthal-atlas
  */
+@Slf4j
 public abstract class Nd4jBlas implements Blas {
 
-    private static Logger logger = LoggerFactory.getLogger(Nd4jBlas.class);
 
     public Nd4jBlas() {
         int numThreads;
@@ -33,7 +34,7 @@ public abstract class Nd4jBlas implements Blas {
                     numThreads = getCores(Runtime.getRuntime().availableProcessors());
                 setMaxThreads(numThreads);
             }
-            logger.info("Number of threads used for BLAS: {}", getMaxThreads());
+            log.info("Number of threads used for BLAS: {}", getMaxThreads());
         }
     }
 
@@ -87,6 +88,8 @@ public abstract class Nd4jBlas implements Blas {
         }
         return Vendor.values()[vendor];
     }
+
+
 
     private boolean isOdd(int value) {
         return (value % 2 != 0);

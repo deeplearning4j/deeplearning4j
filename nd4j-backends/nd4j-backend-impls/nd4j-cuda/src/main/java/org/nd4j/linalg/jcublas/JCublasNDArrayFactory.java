@@ -21,6 +21,9 @@ package org.nd4j.linalg.jcublas;
 
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.*;
+import org.bytedeco.javacpp.indexer.DoubleRawIndexer;
+import org.bytedeco.javacpp.indexer.FloatRawIndexer;
+import org.bytedeco.javacpp.indexer.IntRawIndexer;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
@@ -32,6 +35,7 @@ import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
@@ -52,6 +56,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.*;
 
 /**
@@ -1111,6 +1116,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         nativeOps.convertTypes(null, typeSrc.ordinal(), source, length, typeDst.ordinal(), target);
     }
 
+
+
     @Override
     public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst,
                     DataBuffer target) {
@@ -1157,5 +1164,54 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         convertDataEx(typeSrc, source, typeDst, buffer);
 
         return buffer;
+    }
+
+
+
+    /**
+     * Create from an in memory numpy pointer
+     *
+     * @param pointer the pointer to the
+     *                numpy array
+     * @return an ndarray created from the in memory
+     * numpy pointer
+     */
+    @Override
+    public INDArray createFromNpyPointer(Pointer pointer) {
+        Pointer dataPointer = nativeOps.dataPointForNumpy(pointer);
+        int dataBufferElementSize = nativeOps.elementSizeForNpyArray(pointer);
+        DataBuffer data = null;
+        Pointer shapeBufferPointer = nativeOps.shapeBufferForNumpy(pointer);
+        int length = nativeOps.lengthForShapeBufferPointer(shapeBufferPointer);
+        IntPointer intPointer = new IntPointer(shapeBufferPointer);
+        DataBuffer shapeBuffer = Nd4j.createBuffer(shapeBufferPointer, DataBuffer.Type.INT,length,new IntRawIndexer(intPointer));
+        if(dataBufferElementSize == (Float.SIZE / 8)) {
+            data = Nd4j.createBuffer(dataPointer,
+                    DataBuffer.Type.FLOAT,
+                    Shape.length(shapeBuffer),
+                    new FloatRawIndexer(new FloatPointer(dataPointer)));
+        }
+        else if(dataBufferElementSize == (Double.SIZE / 8)) {
+            data = Nd4j.createBuffer(dataPointer,
+                    DataBuffer.Type.DOUBLE,
+                    Shape.length(shapeBuffer),
+                    new DoubleRawIndexer(new DoublePointer(dataPointer)));
+        }
+
+        INDArray ret = Nd4j.create(data,Shape.shape(shapeBuffer),
+                Shape.strideArr(shapeBuffer),Shape.offset(shapeBuffer),Shape.order(shapeBuffer));
+        return ret;
+    }
+
+    /**
+     * Create from a given numpy file.
+     *
+     * @param file the file to create the ndarray from
+     * @return the created ndarray
+     */
+    @Override
+    public INDArray createFromNpyFile(File file) {
+        Pointer pointer = nativeOps.numpyFromFile(new BytePointer(file.getAbsolutePath().getBytes()));
+        return createFromNpyPointer(pointer);
     }
 }

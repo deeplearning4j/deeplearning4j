@@ -145,6 +145,7 @@
                     <includePaths>
                         <includePath>${env.LIBND4J_HOME}/blas</includePath>
                         <includePath>${env.LIBND4J_HOME}/include</includePath>
+                        <includePath>${env.LIBND4J_HOME}/include/cnpy</includePath>
                     </includePaths>
                     <linkPath>${env.LIBND4J_HOME}/blasbuild/cpu/blas</linkPath>
                 </configuration>
@@ -213,6 +214,48 @@
     </build>
 
     <profiles>
+        <profile>
+            <id>macosx-gcc6</id>
+            <activation>
+                <file>
+                    <exists>/usr/local/bin/g++-6</exists>
+                </file>
+            </activation>
+            <properties>
+                <javacpp.platform.compiler>/usr/local/bin/g++-6</javacpp.platform.compiler>
+            </properties>
+        </profile>
+        <profile>
+            <id>macosx-gcc5</id>
+            <activation>
+                <file>
+                    <exists>/usr/local/bin/g++-5</exists>
+                </file>
+            </activation>
+            <properties>
+                <javacpp.platform.compiler>/usr/local/bin/g++-5</javacpp.platform.compiler>
+            </properties>
+        </profile>
+        <profile>
+            <id>macosx</id>
+            <activation>
+                <os><family>mac os x</family></os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.bytedeco</groupId>
+                        <artifactId>javacpp</artifactId>
+                        <configuration>
+                            <compilerOptions>
+                                <compilerOption>-static-libgcc</compilerOption>
+                                <compilerOption>-static-libstdc++</compilerOption>
+                            </compilerOptions>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>mingw</id>
             <activation>
