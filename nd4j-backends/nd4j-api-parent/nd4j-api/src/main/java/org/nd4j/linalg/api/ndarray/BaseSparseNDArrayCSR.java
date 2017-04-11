@@ -112,6 +112,7 @@ public class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     public DataBuffer getMinorPointer(){
         return columns;
     }
+
     public double[] getDoubleValues(){
         return values.getDoublesAt(0, (int) nnz);
     }
@@ -120,11 +121,11 @@ public class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         return columns.getDoublesAt(0, (int) nnz);
     }
 
-    public int[] getPointersB(){
+    public int[] getPointerBArray(){
         return pointerB.asInt();
     }
 
-    public int[] getPointersE(){
+    public int[] getPointerEArray(){
         return pointerE.asInt();
     }
 
@@ -134,6 +135,14 @@ public class BaseSparseNDArrayCSR extends BaseSparseNDArray{
 
     private void add(DataBuffer buffer, int value){
         // TODO add value and the end of the array
+    }
+
+    public DataBuffer getPointerB() {
+        return pointerB;
+    }
+
+    public DataBuffer getPointerE() {
+        return pointerE;
     }
 
     private DataBuffer addAtPosition(DataBuffer buf, long dataSize, int pos, double value){

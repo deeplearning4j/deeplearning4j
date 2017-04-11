@@ -59,8 +59,8 @@ public class SparseNDArrayTest {
 
             assertArrayEquals(expectedValues, sparseCSRArray.getDoubleValues(), 0);
             assertArrayEquals(expectedColumns, sparseCSRArray.getColumns(), 0);
-            assertArrayEquals(expectedPointerB, sparseCSRArray.getPointersB());
-            assertArrayEquals(expectedPointerE, sparseCSRArray.getPointersE());
+            assertArrayEquals(expectedPointerB, sparseCSRArray.getPointerBArray());
+            assertArrayEquals(expectedPointerE, sparseCSRArray.getPointerEArray());
             assertArrayEquals(expectedShape, shape);
         }
     }
@@ -105,8 +105,8 @@ public class SparseNDArrayTest {
 
             assertArrayEquals(expectedValues, sparseCSRArray.getDoubleValues(), 0);
             assertArrayEquals(expectedColumns, sparseCSRArray.getColumns(), 0);
-            assertArrayEquals(expectedPointerB, sparseCSRArray.getPointersB());
-            assertArrayEquals(expectedPointerE, sparseCSRArray.getPointersE());
+            assertArrayEquals(expectedPointerB, sparseCSRArray.getPointerBArray());
+            assertArrayEquals(expectedPointerE, sparseCSRArray.getPointerEArray());
             assertArrayEquals(expectedShape, shape);
         }
     }

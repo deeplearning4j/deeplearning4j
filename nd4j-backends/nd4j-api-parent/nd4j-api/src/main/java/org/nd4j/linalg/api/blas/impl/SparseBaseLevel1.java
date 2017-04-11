@@ -1,16 +1,12 @@
 package org.nd4j.linalg.api.blas.impl;
 
-import org.bytedeco.javacpp.FloatPointer;
 import org.nd4j.linalg.api.blas.Level1;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.DoubleBuffer;
-import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.BaseSparseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
-import org.nd4j.linalg.factory.BaseSparseBlasWrapper;
 
 /**
  * @author Audrey Loeffel
@@ -47,8 +43,6 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
          }
         throw new UnsupportedOperationException();
     }
-
-
 
 
     @Override
@@ -162,12 +156,8 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
         throw new UnsupportedOperationException();
     }
 
+
     /**
-     * Find the index of the element with minimum absolute value
-     *
-     * @param arr a vector
-     * @return the index of the element with maximum absolute value
-     * */    /**
      * Find the index of the element with maximum absolute value
      *
      * @param arr a vector
@@ -195,41 +185,10 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
         throw new UnsupportedOperationException();
     }
 
-
-    /**
-     * Swap a vector with another vector
-     *
-     * @param x a vector
-     * @param y a vector
-     * */
-    /*
     @Override
     public void swap(INDArray x, INDArray y) {
-        // not sure if the routines are useable with sparse ndarray
-        // -> TODO test if it works with sparse array
-        // also swap minorPointers ?
-        if(x.isSparse() && y.isSparse()){
-            BaseSparseNDArray xSparse = (BaseSparseNDArray) x;
-            BaseSparseNDArray ySparse = (BaseSparseNDArray) y;
-            switch(x.data().dataType()){
-                case DOUBLE:
-                    DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, x, y);
-                    dswap(x.length(), x, 1, y, 1);
-                    // swap pointers?
-                case FLOAT:
-                    DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, x, y);
-                    sswap(x.length(), x, 1, y, 1);
-                case HALF:
-                    DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, x, y);
-                    hswap(x.length(), x, 1, y, 1);
-                default:
-            }
-            throw new UnsupportedOperationException();
-
-        } else {
-            throw new UnsupportedOperationException();
-        }
-    }*/
+        throw new UnsupportedOperationException();
+    }
 
     @Override
     public void swap(IComplexNDArray x, IComplexNDArray y) {
@@ -238,67 +197,144 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
 
     @Override
     public void copy(INDArray x, INDArray y) {
-
+        // FIXME - for Raver119 :)
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void copy(int n, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void copy(IComplexNDArray x, IComplexNDArray y) {
-
+        throw new UnsupportedOperationException();
     }
 
+    /**
+     * Adds a scalar multiple of compressed sparse vector to a full-storage vector.
+     *
+     * @param n The number of element
+     * @param alpha
+     * @param x a sparse vector
+     * @param y a dense vector
+     *
+     * */
     @Override
     public void axpy(int n, double alpha, INDArray x, INDArray y) {
-
+        BaseSparseNDArray sparseX = (BaseSparseNDArray) x;
+        DataBuffer pointers = sparseX.getMinorPointer();
+        switch(x.data().dataType()){
+            case DOUBLE:
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, x);
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, y);
+                daxpyi(n, alpha, x, pointers, y);
+                break;
+            case FLOAT:
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, x);
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.FLOAT, y);
+                saxpyi(n, alpha, x, pointers, y);
+                break;
+            case HALF:
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, x);
+                DefaultOpExecutioner.validateDataType(DataBuffer.Type.HALF, y);
+                haxpyi(n, alpha, x, pointers, y);
+                break;
+            default:
+        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void axpy(int n, double alpha, DataBuffer x, int offsetX, int incrX, DataBuffer y, int offsetY, int incrY) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void axpy(int n, IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void rotg(INDArray a, INDArray b, INDArray c, INDArray s) {
-
+        throw new UnsupportedOperationException();
     }
-
+    /**
+     * Applies Givens rotation to sparse vectors one of which is in compressed form.
+     *
+     * @param N The number of elements in vectors X and Y
+     * @param X a sparse vector
+     * @param Y a full-storage vector
+     * @param c a scalar
+     * @param s a scalar
+     *
+     * */
     @Override
     public void rot(int N, INDArray X, INDArray Y, double c, double s) {
 
+
+        if(X instanceof  BaseSparseNDArray){
+            BaseSparseNDArray sparseX = (BaseSparseNDArray) X;
+
+            switch(X.data().dataType()) {
+                case DOUBLE:
+                    droti(N, X, sparseX.getMinorPointer(), Y, c, s);
+                    break;
+                case INT:
+                    sroti(N, X, sparseX.getMinorPointer(), Y, c, s);
+                    break;
+                case FLOAT:
+                    hroti(N, X, sparseX.getMinorPointer(), Y, c, s);
+                    break;
+                default: throw new UnsupportedOperationException();
+            }
+        } else {
+            throw new UnsupportedOperationException();
+        }
     }
 
     @Override
     public void rot(int N, IComplexNDArray X, IComplexNDArray Y, IComplexNumber c, IComplexNumber s) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void rotmg(INDArray d1, INDArray d2, INDArray b1, double b2, INDArray P) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void rotmg(IComplexNDArray d1, IComplexNDArray d2, IComplexNDArray b1, IComplexNumber b2, IComplexNDArray P) {
-
+        throw new UnsupportedOperationException();
     }
 
+    /**
+     * Computes the product of a vector by a scalar.
+     *
+     * @param N The number of elements of the vector X
+     * @param alpha a scalar
+     * @param X a vector
+     * */
     @Override
     public void scal(int N, double alpha, INDArray X) {
+        switch(X.data().dataType()) {
+            case DOUBLE:
+                dscal(N, alpha, X, 1);
+                break;
+            case FLOAT:
+                sscal(N, alpha, X, 1);
+                break;
+            case INT:
+                hscal(N, alpha, X, 1);
+                break;
+            default: throw new UnsupportedOperationException();
+        }
 
     }
 
     @Override
     public void scal(int N, IComplexNumber alpha, IComplexNDArray X) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -343,49 +379,22 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
 
     protected abstract int ihamin(int N, INDArray X, int incx);
 
-    //protected abstract void dswap(int N, INDArray X, int incrx, INDArray Y, int incry);
+    protected abstract void daxpyi(int N, double alpha, INDArray X, DataBuffer pointers, INDArray Y);
 
-    //protected abstract void sswap(int N, INDArray X, int incrx, INDArray Y, int incry);
+    protected abstract void saxpyi(int N, double alpha, INDArray X, DataBuffer pointers, INDArray Y);
 
-    //protected abstract void hswap(int N, INDArray X, int incrx, INDArray Y, int incry);
+    protected abstract void haxpyi(int N, double alpha, INDArray X, DataBuffer pointers, INDArray Y);
 
-    protected abstract int scopy(int N, INDArray X, int incrx, INDArray Y, int incry);
+    protected abstract void droti(int N, INDArray X, DataBuffer indexes, INDArray Y, double c, double s);
 
-    protected abstract int dcopy(int N, INDArray X, int incrx, INDArray Y, int incry);
+    protected abstract void sroti(int N, INDArray X, DataBuffer indexes, INDArray Y, double c, double s);
 
-    protected abstract int hcopy(int N, INDArray X, int incrx, INDArray Y, int incry);
+    protected abstract void hroti(int N, INDArray X, DataBuffer indexes, INDArray Y, double c, double s);
 
-    /*
-     * Functions having prefixes Z and C only
-     */
-    /*
+    protected abstract void dscal(int N, double a, INDArray X, int incx);
 
+    protected abstract void sscal(int N, double a, INDArray X, int incx);
 
-    /*
-     * Functions having prefixes S D SC DZ
-     */
+    protected abstract void hscal(int N, double a, INDArray X, int incx);
 
-    /*
-     * Functions having standard 4 prefixes (S D C Z)
-     */
-
-    /*
-     * ===========================================================================
-     * Prototypes for level 1 BLAS routines
-     * ===========================================================================
-     */
-
-    /*
-     * Routines with standard 4 prefixes (s, d, c, z)
-     */
-
-
-    /*
-     * Routines with S and D prefix only
-     */
-
-    /*
-     * Routines with S D C Z CS and ZD prefixes
-     */
-
-    }
+}

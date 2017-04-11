@@ -55,4 +55,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     public long lengthLong(){
         return nnz;
     }
+
+    public abstract SparseFormat getFormat();
 }
