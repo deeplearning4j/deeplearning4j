@@ -499,7 +499,7 @@ public class MagicQueue implements BlockingQueue<DataSet> {
             Nd4j.create(1);
             WorkspaceConfiguration configuration = null;
             String id = "MQAD_THREAD";
-            log.info("MQ_THREAD started on device [{}/{}]", device, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+            log.info("MQAD_THREAD started on device [{}/{}]", device, Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
             while (true) {
                 try {
@@ -511,7 +511,7 @@ public class MagicQueue implements BlockingQueue<DataSet> {
 
                             configuration = WorkspaceConfiguration.builder()
                                     .initialSize(initSize)
-                                    .overallocationLimit(2.0)
+                                    .overallocationLimit(1.0)
                                     .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
                                     .policyAllocation(AllocationPolicy.OVERALLOCATE)
                                     .build();
@@ -520,12 +520,17 @@ public class MagicQueue implements BlockingQueue<DataSet> {
                         try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, id)) {
                             // now we initialize dataset on target device (if applicable)
                             if (ds.getFeaturesMaskArray() != null)
-                                Nd4j.getAffinityManager().touch(ds.getFeaturesMaskArray());
-                            if (ds.getLabelsMaskArray() != null)
-                                Nd4j.getAffinityManager().touch(ds.getLabelsMaskArray());
+                                ds.setFeaturesMaskArray(ds.getFeaturesMaskArray().migrate());
+                                //Nd4j.getAffinityManager().touch(ds.getFeaturesMaskArray());
 
-                            Nd4j.getAffinityManager().touch(ds.getFeatures());
-                            Nd4j.getAffinityManager().touch(ds.getLabels());
+                                if (ds.getLabelsMaskArray() != null)
+                                ds.setLabelsMaskArray(ds.getLabelsMaskArray().migrate());
+                                //Nd4j.getAffinityManager().touch(ds.getLabelsMaskArray());
+
+                            ds.setFeatures(ds.getFeatures().migrate());
+                            ds.setLabels(ds.getLabels().migrate());
+                            //Nd4j.getAffinityManager().touch(ds.getFeatures());
+                            //Nd4j.getAffinityManager().touch(ds.getLabels());
                         }
                         //log.info("Tagged object as device_{}", Nd4j.getAffinityManager().getDeviceForArray(ds.getFeatures()));
 
