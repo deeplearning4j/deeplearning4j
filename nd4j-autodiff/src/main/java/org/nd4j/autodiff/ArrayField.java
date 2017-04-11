@@ -475,6 +475,17 @@ public class ArrayField implements Field<ArrayField> {
     }
 
 
+    public ArrayField eq(ArrayField i_y) {
+        return addPairTransformOp(new EqualsWithEps().name(),i_y);
+    }
+
+    public ArrayField neq(ArrayField i_y) {
+        return addPairTransformOp(new Not().name(),i_y);
+    }
+    public ArrayField or(ArrayField i_y) {
+        return addPairTransformOp(new Or().name(),i_y);
+    }
+
     private ArrayField addTransformOp(String name) {
         return addTransformOp(name,null,null);
     }
@@ -546,7 +557,6 @@ public class ArrayField implements Field<ArrayField> {
                 "input=" + input +
                 '}';
     }
-
 
 
 }

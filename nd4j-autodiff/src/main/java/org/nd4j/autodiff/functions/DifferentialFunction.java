@@ -138,4 +138,5 @@ public abstract class DifferentialFunction<X extends Field<X>>
         return new PolynomialTerm<>(graph,1L, this, i_n);
     }
 
+
 }

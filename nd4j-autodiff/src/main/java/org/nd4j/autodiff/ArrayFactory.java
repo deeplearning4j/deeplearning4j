@@ -24,6 +24,21 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
+    public ArrayField eq(ArrayField i_x, ArrayField i_y) {
+        return i_x.eq(i_y);
+    }
+
+    @Override
+    public ArrayField neq(ArrayField i_x, ArrayField i_y) {
+        return i_x.neq(i_y);
+    }
+
+    @Override
+    public ArrayField or(ArrayField i_x, ArrayField i_y) {
+        return i_x.or(i_y);
+    }
+
+    @Override
     public ArrayField add(ArrayField i_x, Number value) {
         return i_x.plus(value.doubleValue());
     }

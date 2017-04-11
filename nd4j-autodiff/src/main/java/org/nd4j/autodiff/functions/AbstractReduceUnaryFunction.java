@@ -72,6 +72,10 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
         }
     }
 
+    @Override
+    public DifferentialFunction<X>[] args() {
+        return new DifferentialFunction[] {m_x};
+    }
 
     public DifferentialFunction<X> arg() {
         return m_x;

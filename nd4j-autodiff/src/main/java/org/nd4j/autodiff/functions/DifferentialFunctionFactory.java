@@ -197,7 +197,9 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v1) {
-                return null;
+                int inputs = getInputLength(i_v1);
+                DifferentialFunction<X> g =  doRepeat(this,i_v1,dimensions);
+                return g.mul(arg().minus(mean(arg(),dimensions))).div(one().mul(inputs));
             }
         };
     }
@@ -219,7 +221,9 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v1) {
-                return null;
+                int inputs = getInputLength(i_v1);
+                DifferentialFunction<X> g =  doRepeat(this,i_v1,dimensions);
+                return one().mul(2).mul(g).mul(arg().minus(mean(arg(),dimensions))).div(one().mul(inputs));
             }
         };
     }
@@ -241,7 +245,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v1) {
-                return null;
+                return doGradChoose(this,i_v1,dimensions);
             }
         };
     }
@@ -263,7 +267,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v1) {
-                return null;
+                return doGradChoose(this,i_v1,dimensions);
             }
         };
     }
@@ -739,6 +743,129 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
         };
     }
 
+
+
+    @Override
+    public DifferentialFunction<X> or(DifferentialFunction<X> iX, DifferentialFunction<X> i_y) {
+        return new AbstractBinaryFunction<X>(mFactory.graph(),iX, i_y) {
+
+            @Override
+            public X doGetValue() {
+                return mFactory.or(larg().getValue(), rarg().getValue());
+            }
+
+            @Override
+            public double getReal() {
+                return Math.pow(larg().getReal(), rarg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                Constant<X> ym1 = DifferentialFunctionFactory.this
+                        .val(rarg().getValue().minus(mFactory.one()));
+                return rarg().mul(DifferentialFunctionFactory.this.pow(larg(), ym1))
+                        .mul(larg().diff(i_v));
+            }
+
+            @Override
+            public String toString() {
+                return "or(" + larg().toString() + ", " + rarg().toString() + ")";
+            }
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return "or(" + larg().doGetFormula(variables) + ","
+                        + rarg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new Or().name();
+            }
+        };
+    }
+
+
+    @Override
+    public DifferentialFunction<X> eq(DifferentialFunction<X> iX, DifferentialFunction<X> i_y) {
+        return new AbstractBinaryFunction<X>(mFactory.graph(),iX, i_y) {
+
+            @Override
+            public X doGetValue() {
+                return mFactory.eq(larg().getValue(), rarg().getValue());
+            }
+
+            @Override
+            public double getReal() {
+                return Math.pow(larg().getReal(), rarg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                Constant<X> ym1 = DifferentialFunctionFactory.this
+                        .val(rarg().getValue().minus(mFactory.one()));
+                return rarg().mul(DifferentialFunctionFactory.this.pow(larg(), ym1))
+                        .mul(larg().diff(i_v));
+            }
+
+            @Override
+            public String toString() {
+                return "eq(" + larg().toString() + ", " + rarg().toString() + ")";
+            }
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return "eq(" + larg().doGetFormula(variables) + ","
+                        + rarg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new Not().name();
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> neq(DifferentialFunction<X> iX, DifferentialFunction<X> i_y) {
+        return new AbstractBinaryFunction<X>(mFactory.graph(),iX, i_y) {
+
+            @Override
+            public X doGetValue() {
+                return mFactory.neq(larg().getValue(), rarg().getValue());
+            }
+
+            @Override
+            public double getReal() {
+                return Math.pow(larg().getReal(), rarg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                Constant<X> ym1 = DifferentialFunctionFactory.this
+                        .val(rarg().getValue().minus(mFactory.one()));
+                return rarg().mul(DifferentialFunctionFactory.this.pow(larg(), ym1))
+                        .mul(larg().diff(i_v));
+            }
+
+            @Override
+            public String toString() {
+                return "neq(" + larg().toString() + ", " + rarg().toString() + ")";
+            }
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return "neq(" + larg().doGetFormula(variables) + ","
+                        + rarg().doGetFormula(variables) + ")";
+            }
+
+            @Override
+            public String functionName() {
+                return new Not().name();
+            }
+        };
+    }
+
     @Override
     public DifferentialFunction<X> pow(DifferentialFunction<X> iX, Constant<X> i_y) {
         return new AbstractBinaryFunction<X>(mFactory.graph(),iX, i_y) {
@@ -1094,6 +1221,20 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
         throw new IllegalStateException("Only able to compute on array field");
     }
 
+    private DifferentialFunction<X> doGradChoose(DifferentialFunction<X> func,Variable<X> input,int...axes) {
+        if(input.getValue() instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) input.getValue();
+            DifferentialFunction<X> repeatedGrad = doRepeat(func,input,axes);
+            DifferentialFunction<X> resultRepeated = doRepeat(func.args()[0],input,axes);
+            DifferentialFunction<X> argMaxLocations = eq(input,resultRepeated);
+            return argMaxLocations.mul(repeatedGrad).div(sum(argMaxLocations,axes));
+        }
+
+        throw new UnsupportedOperationException("Must be an ArrayField argument");
+
+    }
+
+
     private DifferentialFunction<X> doRepeat(DifferentialFunction<X> func,Variable<X> input,int...axes) {
         if(input.getValue() instanceof ArrayField) {
             ArrayField arrayField = (ArrayField) input.getValue();
@@ -1139,6 +1280,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             }
         };
     }
+
     @Override
     public DifferentialFunction<X> softsign(DifferentialFunction<X> iX) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {

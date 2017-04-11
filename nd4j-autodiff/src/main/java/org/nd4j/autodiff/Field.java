@@ -12,6 +12,8 @@ public interface Field<X> extends CommutativeRing<X> {
 
     double getReal();
 
+    X[] args();
+
     default double getImaginary() {
         throw new UnsupportedOperationException();
     }

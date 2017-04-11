@@ -89,6 +89,10 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
     }
 
 
+    @Override
+    public DifferentialFunction<X>[] args() {
+        return new DifferentialFunction[] {larg(),rarg()};
+    }
 
     public DifferentialFunction<X> larg() {
         return m_x1;

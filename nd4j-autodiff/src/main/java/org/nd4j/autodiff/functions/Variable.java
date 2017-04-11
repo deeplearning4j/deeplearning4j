@@ -82,6 +82,11 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     }
 
     @Override
+    public DifferentialFunction<X>[] args() {
+        return new DifferentialFunction[] {this};
+    }
+
+    @Override
     public Constant<X> diff(Variable<X> i_v) {
         Constant<X> ret =  (this == i_v) ? new One<>(graph, m_factory) : new Zero<>(graph, m_factory);
         if(m_x instanceof ArrayField) {

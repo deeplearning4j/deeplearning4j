@@ -11,7 +11,14 @@ public interface AbstractFactory<X extends Field<X>>
 
  Graph<NDArrayInformation,OpState> graph();
 
-   /* Add scalar ops here */
+
+
+ X eq(X i_x, X i_y);
+
+ X neq(X i_x, X i_y);
+
+ X or(X i_x, X i_y);
+
 
  X add(X i_x,Number value);
  X sub(X i_x,Number value);

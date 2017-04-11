@@ -76,6 +76,12 @@ public interface FunctionFactory<X extends Field<X>> {
 
     DifferentialFunction<X> log(DifferentialFunction<X> iX);
 
+    DifferentialFunction<X> or(DifferentialFunction<X> iX, DifferentialFunction<X> i_y);
+
+    DifferentialFunction<X> eq(DifferentialFunction<X> iX, DifferentialFunction<X> i_y);
+
+    DifferentialFunction<X> neq(DifferentialFunction<X> iX, DifferentialFunction<X> i_y);
+
     DifferentialFunction<X> pow(DifferentialFunction<X> iX, Constant<X> i_y);
 
     DifferentialFunction<X> sqrt(DifferentialFunction<X> iX);
