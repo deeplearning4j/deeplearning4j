@@ -1,1 +1,0 @@
-valgrind --track-origins=yes --error-limit=no java -Djava.compiler=NONE $@

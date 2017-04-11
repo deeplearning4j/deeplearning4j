@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -64,6 +65,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
     private static Logger logger = LoggerFactory.getLogger(CudaGridExecutioner.class);
 
+    private AtomicBoolean experimental = new AtomicBoolean(false);
+
     public CudaGridExecutioner() {
         //        extraz.set(new PointerPointer(10));
         deviceQueues.set(new ArrayDeque<OpDescriptor>());
@@ -73,6 +76,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         for (int x = 0; x < numDevices; x++) {
             aggregates.add(new ConcurrentLinkedQueue<AggregateDescriptor>());
         }
+
+        experimental.set(nativeOps.isExperimentalEnabled());
     }
 
     /**
@@ -384,7 +389,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             return MetaType.NOT_APPLICABLE;
         } else {
             // Experimental native compilation required for full MIMD support
-            if (nativeOps.isExperimentalEnabled()) {
+            if (experimental.get()) {
                 logger.info("Experimental hook");
                 if (last.getOp() instanceof ScalarOp || last.getOp() instanceof TransformOp) {
                     /*
@@ -872,7 +877,8 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         // we need to check,
         OpDescriptor op = lastOp.get();
         if (op != null) {
-            if (!nativeOps.isExperimentalEnabled()) {
+            if (!experimental.get()) {
+            //if (!nativeOps.isExperimentalEnabled()) {
                 // it might be only pairwise transform here for now
                 //          logger.info("Flushing existing lastOp");
                 lastOp.remove();

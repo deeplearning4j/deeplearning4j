@@ -47,7 +47,7 @@ public class ConstantBuffersCache extends BasicConstantHandler {
         ArrayDescriptor descriptor = new ArrayDescriptor(array);
 
         if (!buffersCache.containsKey(descriptor)) {
-            DataBuffer buffer = Nd4j.createBuffer(array);
+            DataBuffer buffer = Nd4j.createBufferDetached(array);
 
             if (counter.get() < MAX_ENTRIES) {
                 counter.incrementAndGet();
@@ -64,7 +64,7 @@ public class ConstantBuffersCache extends BasicConstantHandler {
         ArrayDescriptor descriptor = new ArrayDescriptor(array);
 
         if (!buffersCache.containsKey(descriptor)) {
-            DataBuffer buffer = Nd4j.createBuffer(array);
+            DataBuffer buffer = Nd4j.createBufferDetached(array);
 
             if (counter.get() < MAX_ENTRIES) {
                 counter.incrementAndGet();

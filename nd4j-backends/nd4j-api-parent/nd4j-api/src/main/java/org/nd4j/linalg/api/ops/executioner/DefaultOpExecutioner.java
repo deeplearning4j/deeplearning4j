@@ -67,6 +67,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
             Nd4j.getCompressor().decompressi(op.z());
     }
 
+    @Override
+    public String getLastOp() {
+        return "UNKNOWN";
+    }
+
     /**
      * This method checks if any Op operand has data type of INT, and throws exception if any.
      *

@@ -319,4 +319,9 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
      */
     List<Serializable> getExampleMetaData();
 
+    /**
+     * This method returns memory used by this DataSet
+     * @return
+     */
+    long getMemoryFootprint();
 }

@@ -40,7 +40,7 @@ public class CudaDirectProvider implements MemoryProvider {
      * @return
      */
     @Override
-    public synchronized PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
+    public PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
 
         //log.info("shape onCreate: {}, target: {}", shape, location);
 
@@ -115,7 +115,7 @@ public class CudaDirectProvider implements MemoryProvider {
      * @param point
      */
     @Override
-    public synchronized void free(AllocationPoint point) {
+    public void free(AllocationPoint point) {
         switch (point.getAllocationStatus()) {
             case HOST: {
                 // cudaFreeHost call here

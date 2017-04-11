@@ -25,6 +25,7 @@ import lombok.NonNull;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
+import org.apache.commons.lang3.ArrayUtils;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
@@ -46,6 +47,7 @@ import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
 import org.nd4j.linalg.api.instrumentation.InMemoryInstrumentation;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
+import org.nd4j.linalg.api.memory.MemoryWorkspaceManager;
 import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.ShapeInfoProvider;
@@ -76,6 +78,7 @@ import org.nd4j.linalg.fft.DefaultFFTInstance;
 import org.nd4j.linalg.fft.FFTInstance;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.memory.MemoryManager;
+import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -120,6 +123,7 @@ public class Nd4j {
     //disable toString() on compressed arrays for debugging. Should be off by default.
     public final static String COMPRESSION_DEBUG = "compressiondebug";
     public final static String MEMORY_MANAGER = "memorymanager";
+    public final static String WORKSPACE_MANAGER = "workspacemanager";
     public final static String RANDOM_PROVIDER = "random";
     //execution mode for element wise operations
     public static OpExecutioner.ExecutionMode executionMode = OpExecutioner.ExecutionMode.JAVA;
@@ -145,7 +149,9 @@ public class Nd4j {
     public static boolean preventUnpack = System.getenv("ND4J_PREVENT_UNPACK") != null;
     public static Nd4jBackend backend;
     public static RandomFactory randomFactory;
+    private static MemoryWorkspaceManager workspaceManager;
 
+    protected static Class<? extends MemoryWorkspaceManager> workspaceManagerClazz;
     protected static Class<? extends BlasWrapper> blasWrapperClazz;
     protected static Class<? extends NDArrayFactory> ndArrayFactoryClazz;
     protected static Class<? extends FFTInstance> fftInstanceClazz;
@@ -1340,13 +1346,13 @@ public class Nd4j {
     public static DataBuffer createBuffer(long length, boolean initialize) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize);
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
         else if (dataType() == DataBuffer.Type.INT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(length, initialize);
         else if (dataType() == DataBuffer.Type.HALF)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, initialize);
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
         else
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize);
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(length, initialize, Nd4j.getMemoryManager().getCurrentWorkspace());
 
         logCreationIfNecessary(ret);
         return ret;
@@ -1361,11 +1367,35 @@ public class Nd4j {
     public static DataBuffer createBuffer(float[] data) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(data) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(data, Nd4j.getMemoryManager().getCurrentWorkspace());
+        else if (dataType() == DataBuffer.Type.HALF)
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(data): DATA_BUFFER_FACTORY_INSTANCE.createHalf(data, Nd4j.getMemoryManager().getCurrentWorkspace());
+        else
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data)) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data), Nd4j.getMemoryManager().getCurrentWorkspace()) ;
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static DataBuffer createBufferDetached(float[] data) {
+        DataBuffer ret;
+        if (dataType() == DataBuffer.Type.FLOAT)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(data);
         else if (dataType() == DataBuffer.Type.HALF)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(data);
         else
             ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(ArrayUtil.toDoubles(data));
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    public static DataBuffer createBufferDetached(double[] data) {
+        DataBuffer ret;
+        if (dataType() == DataBuffer.Type.DOUBLE)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(data);
+        else if (dataType() == DataBuffer.Type.HALF)
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data));
+        else
+            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data));
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1383,7 +1413,7 @@ public class Nd4j {
         else if (dataType() == DataBuffer.Type.HALF)
             ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data));
         else
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data));
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data)) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -4881,6 +4911,28 @@ public class Nd4j {
     }
 
     /**
+     * Cretes uninitialized INDArray detached from any (if any) workspace
+     *
+     * @param shape
+     * @param ordering
+     * @return
+     */
+    public static INDArray createUninitializedDetached(int[] shape, char ordering) {
+        //ensure shapes that wind up being scalar end up with the write shape
+        if (shape.length == 1 && shape[0] == 0) {
+            shape = new int[] {1, 1};
+        } else if (shape.length == 1) {
+            shape = new int[] {1, shape[0]};
+        }
+
+        checkShapeValues(shape);
+
+        INDArray ret = INSTANCE.createUninitialized(shape, ordering);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
      * Creates an *uninitialized* ndarray with the specified shape and default ordering.<br>
      * <b>NOTE</b>: The underlying memory (DataBuffer) will not be initialized. Don't use this unless you know what you are doing.
      *
@@ -4891,6 +4943,18 @@ public class Nd4j {
         checkShapeValues(shape);
         //ensure shapes that wind up being scalar end up with the write shape
         return createUninitialized(shape, Nd4j.order());
+    }
+
+    /**
+     * Cretes uninitialized INDArray detached from any (if any) workspace
+     *
+     * @param shape
+     * @return
+     */
+    public static INDArray createUninitializedDetached(int[] shape) {
+        checkShapeValues(shape);
+        //ensure shapes that wind up being scalar end up with the write shape
+        return createUninitializedDetached(shape, Nd4j.order());
     }
 
     /**
@@ -4908,6 +4972,23 @@ public class Nd4j {
         int[] shape = new int[] {1, length};
 
         INDArray ret = INSTANCE.createUninitialized(shape, order());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Cretes uninitialized INDArray detached from any (if any) workspace
+     *
+     * @param length
+     * @return
+     */
+    public static INDArray createUninitializedDetached(int length) {
+        if (length < 1)
+            throw new IllegalStateException("INDArray length should be positive value");
+
+        int[] shape = new int[] {1, length};
+
+        INDArray ret = INSTANCE.createUninitializedDetached(shape, order());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -5823,6 +5904,10 @@ public class Nd4j {
                 showAttractiveMessage(getMessageForNativeHalfPrecision());
             }
 
+            if (Nd4j.dataType() != dtype){
+                DataTypeUtil.setDTypeForContext(dtype);
+            }
+
             compressDebug = Boolean.parseBoolean(props.getProperty(COMPRESSION_DEBUG, "false"));
             copyOnOps = Boolean.parseBoolean(props.getProperty(COPY_OPS, "true"));
             shouldInstrument = Boolean.parseBoolean(props.getProperty(INSTRUMENTATION, "false"));
@@ -5857,6 +5942,9 @@ public class Nd4j {
             randomClazz = (Class<? extends org.nd4j.linalg.api.rng.Random>) Class.forName(rand);
             randomFactory = new RandomFactory(randomClazz);
 
+            workspaceManagerClazz = (Class<? extends MemoryWorkspaceManager>) Class
+                    .forName(System.getProperty(WORKSPACE_MANAGER, props.get(WORKSPACE_MANAGER).toString()));
+
 
             instrumentationClazz = (Class<? extends Instrumentation>) Class
                     .forName(props.getProperty(INSTRUMENTATION, InMemoryInstrumentation.class.getName()));
@@ -5873,6 +5961,7 @@ public class Nd4j {
             memoryManager = memoryManagerClazz.newInstance();
             constantHandler = constantProviderClazz.newInstance();
             shapeInfoProvider = shapeInfoProviderClazz.newInstance();
+            workspaceManager = workspaceManagerClazz.newInstance();
 
             opExecutionerClazz = (Class<? extends OpExecutioner>) Class
                     .forName(props.getProperty(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
@@ -6061,6 +6150,62 @@ public class Nd4j {
      */
     public static boolean isFallbackModeEnabled() {
         return fallbackMode.get();
+    }
+
+    public static MemoryWorkspaceManager getWorkspaceManager() {
+        return workspaceManager;
+    }
+
+    /**
+     * This method stacks vertically examples with the same shape, increasing result dimensionality. I.e. if you provide bunch of 3D tensors, output will be 4D tensor. Alignment is always applied to axis 0.
+     *
+     * @return
+     */
+    public static INDArray pile(INDArray... arrays) {
+        // if we have vectors as input, it's just vstack use case
+        if (arrays[0].isRowVector()) {
+            return Nd4j.vstack(arrays);
+        }
+
+
+        int[] shape = arrays[0].shape();
+        int[] newShape = ArrayUtils.add(shape, 0, 1);
+
+        List<INDArray> reshaped = new ArrayList<>();
+        for(INDArray array: arrays) {
+            reshaped.add(array.reshape(array.ordering(), newShape));
+        }
+
+        return Nd4j.vstack(reshaped);
+    }
+
+    /**
+     * This method stacks vertically examples with the same shape, increasing result dimensionality. I.e. if you provide bunch of 3D tensors, output will be 4D tensor. Alignment is always applied to axis 0.
+     *
+     * @return
+     */
+    public static INDArray pile(@NonNull Collection<INDArray> arrays) {
+        return pile(arrays.toArray(new INDArray[0]));
+    }
+
+    /**
+     * This method does the opposite to pile/vstack/hstack - it returns independent TAD copies along given dimensions
+     *
+     * @param tensor
+     * @param dimensions
+     * @return
+     */
+    public static INDArray[] tear(INDArray tensor, int... dimensions) {
+        if (dimensions.length >= tensor.rank())
+            throw new ND4JIllegalStateException("Target dimensions number should be less tensor rank");
+
+        for (int e = 0; e < dimensions.length; e++)
+            if (dimensions[e] < 1)
+                throw new ND4JIllegalStateException("Target dimensions can't have negative values");
+
+
+
+        return factory().tear(tensor, dimensions);
     }
 
 

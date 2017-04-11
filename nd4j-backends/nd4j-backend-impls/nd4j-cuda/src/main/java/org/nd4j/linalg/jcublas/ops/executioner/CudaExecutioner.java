@@ -78,6 +78,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     protected ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
     protected volatile transient Properties properties;
 
+    protected ThreadLocal<String> lastOp = new ThreadLocal<>();
+
     public CudaExecutioner() {
 
     }
@@ -86,6 +88,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         return nativeOps;
     }
 
+    @Override
+    public String getLastOp() {
+        return lastOp.get();
+    }
 
     @Override
     public INDArray exec(BroadcastOp op, int... dimension) {
@@ -107,6 +113,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            lastOp.set(op.name());
 
         Pointer hostYShapeInfo =
                         op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.y().shapeInfoDataBuffer());
@@ -201,13 +209,22 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            lastOp.set(op.name());
+
         Pointer hostYShapeInfo =
                         op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.y().shapeInfoDataBuffer());
         Pointer hostZShapeInfo =
                         op.z() == null ? null : AddressRetriever.retrieveHostPointer(op.z().shapeInfoDataBuffer());
 
         Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
-
+/*
+        if (op.opNum() == 3) {
+            log.info("Max shape: {}", Arrays.toString(op.x().shapeInfoDataBuffer().asInt()));
+            log.info("Max TAD: {}", Arrays.toString(tadBuffers.getFirst().asInt()));
+            context.syncOldStream();
+        }
+*/
         Pointer hostTadShapeInfo = AddressRetriever.retrieveHostPointer(tadBuffers.getFirst());
         Pointer devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
 
@@ -566,6 +583,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (dimension.length == op.x().rank())
             dimension = new int[] {Integer.MAX_VALUE};
 
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            lastOp.set(op.name());
+
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
         Pointer hostYShapeInfo =
@@ -694,6 +714,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            lastOp.set(op.name());
+
         Pointer x = AtomicAllocator.getInstance().getPointer(op.x(), context);
         Pointer xShapeInfo = AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context);
 
@@ -768,6 +791,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
+
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            lastOp.set(op.name());
 
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
@@ -883,6 +909,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                 + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
+
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            lastOp.set(op.name());
 
         Pointer hostYShapeInfo =
                         op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.y().shapeInfoDataBuffer());
@@ -1107,6 +1136,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            lastOp.set(op.name());
 
         Pointer hostYShapeInfo =
                         op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.y().shapeInfoDataBuffer());
@@ -1185,6 +1216,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
+
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            lastOp.set(op.name());
 
         if (op.getDimension() != null) {
             intercept(op, op.getDimension());
@@ -1284,6 +1318,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             extraz.set(new PointerPointer(32));
 
         CudaContext context = allocator.getFlowController().prepareAction(op.z(), op.x(), op.y());
+
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            lastOp.set(op.name());
 
         // special temp array for IsMax along dimension
         INDArray ret = null;
@@ -1779,6 +1816,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
+
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            lastOp.set(op.name());
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 

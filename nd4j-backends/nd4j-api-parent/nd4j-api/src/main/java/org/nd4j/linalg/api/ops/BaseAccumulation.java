@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ops;
 
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -167,7 +168,13 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     @Override
     public void init(INDArray x, INDArray y, INDArray z, long n) {
         super.init(x, y, z, n);
-        this.extraArgs = new Object[] {zeroDouble()};
+        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            this.extraArgs = new Object[]{zeroDouble()};
+        } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            this.extraArgs = new Object[]{zeroFloat()};
+        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            this.extraArgs = new Object[]{zeroHalf()};
+        }
     }
 
     @Override

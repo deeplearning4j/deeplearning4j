@@ -152,6 +152,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
 
             // we don't cache too big objects
             if (reqMemory > MAX_SINGLE_ALLOCATION || zeroCachedAmount.get() >= MAX_CACHED_MEMORY) {
+                //log.info("HOST memory purging: {} bytes; MS: {}; MT: {}", reqMemory, MAX_SINGLE_ALLOCATION, MAX_CACHED_MEMORY);
                 super.free(point);
                 return;
             }

@@ -20,15 +20,19 @@
 package org.nd4j.linalg.jcublas;
 
 
+import org.nd4j.jita.allocator.enums.CudaConstants;
+import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.BaseNDArrayProxy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.List;
 
@@ -494,5 +498,97 @@ public class JCublasNDArray extends BaseNDArray {
         context.syncOldStream();
 
         return ret;
+    }
+
+    @Override
+    public INDArray leverageTo(String id) {
+        if (!isAttached())
+            return this;
+
+        if (!Nd4j.getWorkspaceManager().checkIfWorkspaceExists(id))
+            return this;
+
+        MemoryWorkspace current = Nd4j.getMemoryManager().getCurrentWorkspace();
+
+        MemoryWorkspace target = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(id);
+
+        if (current == target)
+            return this;
+
+        Nd4j.getMemoryManager().setCurrentWorkspace(target);
+        INDArray copy = null;
+        if (!this.isView()) {
+            if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
+            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
+
+            AllocationPoint pointDst = AtomicAllocator.getInstance().getAllocationPoint(buffer);
+            AllocationPoint pointSrc = AtomicAllocator.getInstance().getAllocationPoint(this.data);
+
+            CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(pointDst, pointSrc);
+
+            NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getDevicePointer(), this.lengthLong() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream());
+            context.syncOldStream();
+
+            copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
+
+            // tag buffer as valid on device side
+            pointDst.tickHostRead();
+            pointDst.tickDeviceWrite();
+
+            AtomicAllocator.getInstance().getFlowController().registerAction(context, pointDst, pointSrc);
+        } else {
+            copy = this.dup(this.ordering());
+        }
+
+        Nd4j.getMemoryManager().setCurrentWorkspace(current);
+
+        return copy;
+    }
+
+
+    /**
+     * This method pulls this INDArray into current Workspace.
+     *
+     * PLEASE NOTE: If there's no current Workspace - INDArray returned as is
+     *
+     * @return
+     */
+    @Override
+    public INDArray migrate() {
+        MemoryWorkspace current = Nd4j.getMemoryManager().getCurrentWorkspace();
+
+        if (current == null)
+            return this;
+
+        INDArray copy = null;
+
+        if (!this.isView()) {
+            if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
+            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
+
+            AllocationPoint pointDst = AtomicAllocator.getInstance().getAllocationPoint(buffer);
+            AllocationPoint pointSrc = AtomicAllocator.getInstance().getAllocationPoint(this.data);
+
+            CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(pointDst, pointSrc);
+
+            NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getDevicePointer(), this.lengthLong() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream());
+            context.syncOldStream();
+
+            copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
+
+            // tag buffer as valid on device side
+            pointDst.tickHostRead();
+            pointDst.tickDeviceWrite();
+
+            AtomicAllocator.getInstance().getFlowController().registerAction(context, pointDst, pointSrc);
+        } else {
+            copy = this.dup(this.ordering());
+        }
+
+        return copy;
     }
 }

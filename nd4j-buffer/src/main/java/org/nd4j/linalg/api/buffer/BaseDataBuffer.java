@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +63,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
     protected transient Pointer pointer;
     protected transient Indexer indexer;
     protected AtomicBoolean dirty = new AtomicBoolean(false);
+
+    protected transient boolean attached = false;
+    protected transient MemoryWorkspace parentWorkspace;
 
     // Allocator-related stuff. Moved down here to avoid type casting.
     protected transient DataBuffer originalBuffer;
@@ -182,6 +186,39 @@ public abstract class BaseDataBuffer implements DataBuffer {
         underlyingLength = data.length;
     }
 
+    public BaseDataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
+        allocationMode = AllocUtil.getAllocationModeFromContext();
+        length = data.length;
+        underlyingLength = data.length;
+        attached = true;
+        parentWorkspace = workspace;
+
+        initTypeAndSize();
+
+        //log.info("Allocating FloatPointer from array of {} elements", data.length);
+
+        pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asFloatPointer().put(data);
+        indexer = FloatIndexer.create((FloatPointer) pointer);
+        //wrappedBuffer = pointer.asByteBuffer();
+    }
+
+    public BaseDataBuffer(double[] data, boolean copy, MemoryWorkspace workspace) {
+        allocationMode = AllocUtil.getAllocationModeFromContext();
+        length = data.length;
+        underlyingLength = data.length;
+        attached = true;
+        parentWorkspace = workspace;
+
+        initTypeAndSize();
+
+        //log.info("Allocating FloatPointer from array of {} elements", data.length);
+
+        pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asDoublePointer().put(data);
+        indexer = DoubleIndexer.create((DoublePointer) pointer);
+        //wrappedBuffer = pointer.asByteBuffer();
+    }
+
+
     /**
      *
      * @param data
@@ -265,6 +302,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     public BaseDataBuffer(float[] data) {
         this(data, true);
+    }
+
+    public BaseDataBuffer(float[] data, MemoryWorkspace workspace) {
+        this(data, true, workspace);
     }
 
     /**
@@ -450,6 +491,46 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else if (dataType() == Type.INT) {
             pointer = new IntPointer(length());
             indexer = IntIndexer.create((IntPointer) pointer);
+            if (initialize)
+                fillPointerWithZero();
+        }
+    }
+
+    protected BaseDataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
+        if (length < 1)
+            throw new IllegalArgumentException("Length must be >= 1");
+        initTypeAndSize();
+        this.length = length;
+        this.underlyingLength = length;
+        allocationMode = AllocUtil.getAllocationModeFromContext();
+
+
+
+        if (length < 0)
+            throw new IllegalArgumentException("Unable to create a buffer of length <= 0");
+
+        if (dataType() == Type.DOUBLE) {
+            attached = true;
+            parentWorkspace = workspace;
+
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asDoublePointer(); //new DoublePointer(length());
+            indexer = DoubleIndexer.create((DoublePointer) pointer);
+            if (initialize)
+                fillPointerWithZero();
+        } else if (dataType() == Type.FLOAT) {
+            attached = true;
+            parentWorkspace = workspace;
+
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asFloatPointer(); //new FloatPointer(length());
+            indexer = FloatIndexer.create((FloatPointer) pointer);
+
+//            if (initialize)
+//                fillPointerWithZero();
+
+        } else if (dataType() == Type.INT) {
+            pointer = new IntPointer(length());
+            indexer = IntIndexer.create((IntPointer) pointer);
+
             if (initialize)
                 fillPointerWithZero();
         }
@@ -1441,5 +1522,31 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     public void setConstant(boolean reallyConstant) {
         this.constant = reallyConstant;
+    }
+
+    /**
+     * This method returns True, if this DataBuffer is attached to some workspace. False otherwise
+     *
+     * @return
+     */
+    @Override
+    public boolean isAttached() {
+        return attached;
+    }
+
+
+    /**
+     * This method checks, if given attached INDArray is still in scope of its parent Workspace
+     * <p>
+     * PLEASE NOTE: if this INDArray isn't attached to any Workspace, this method will return true
+     *
+     * @return
+     */
+    @Override
+    public boolean isInScope() {
+        if (!isAttached())
+            return true;
+
+        return parentWorkspace.isScopeActive();
     }
 }
