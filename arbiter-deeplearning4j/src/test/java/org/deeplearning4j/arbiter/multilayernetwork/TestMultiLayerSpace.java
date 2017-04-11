@@ -21,28 +21,54 @@ import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.layers.*;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorProvider;
+import org.deeplearning4j.arbiter.optimize.api.saving.ResultSaver;
+import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
+import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
+import org.deeplearning4j.arbiter.optimize.api.termination.MaxTimeCondition;
+import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
+import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
+import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
+import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
+import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
+import org.deeplearning4j.arbiter.saver.local.multilayer.LocalMultiLayerNetworkSaver;
+import org.deeplearning4j.arbiter.scoring.multilayer.TestSetAccuracyScoreFunction;
+import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
 import org.deeplearning4j.arbiter.util.CollectionUtils;
+import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
+import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.variational.BernoulliReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 
+import java.io.File;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -307,6 +333,89 @@ public class TestMultiLayerSpace {
         assertArrayEquals(new int[]{123,456}, vae.getDecoderLayerSizes());
 
         assertTrue( vae.getOutputDistribution() instanceof BernoulliReconstructionDistribution);
+    }
+
+    @Test
+    public void testInputTypeBasic(){
+
+        ParameterSpace<Integer> layerSizeHyperparam = new IntegerParameterSpace(20,60);
+
+        MultiLayerSpace hyperparameterSpace = new MultiLayerSpace.Builder()
+                .regularization(true)
+                .l2(0.0001)
+                .weightInit(WeightInit.XAVIER)
+                .updater(Updater.NESTEROVS).momentum(0.9)
+                .addLayer(new ConvolutionLayerSpace.Builder()
+                        .kernelSize(5, 5)
+                        .nIn(1)
+                        .stride(1, 1)
+                        .nOut(layerSizeHyperparam)
+                        .activation("identity")
+                        .build())
+                .addLayer(new SubsamplingLayerSpace.Builder()
+                        .poolingType(SubsamplingLayer.PoolingType.MAX)
+                        .kernelSize(2,2)
+                        .stride(2,2)
+                        .build())
+                .addLayer(new ConvolutionLayerSpace.Builder()
+                        .kernelSize(5, 5)
+                        //Note that nIn need not be specified in later layers
+                        .stride(1, 1)
+                        .nOut(50)
+                        .activation("identity")
+                        .build())
+                .addLayer(new SubsamplingLayerSpace.Builder()
+                        .poolingType(SubsamplingLayer.PoolingType.MAX)
+                        .kernelSize(2,2)
+                        .stride(2,2)
+                        .build())
+                .addLayer(new DenseLayerSpace.Builder().activation("relu")
+                        .nOut(500).build())
+                .addLayer(new OutputLayerSpace.Builder()
+                        .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .nOut(10)
+                        .activation("softmax")
+                        .build())
+                .setInputType(InputType.convolutionalFlat(28, 28, 1))
+                .backprop(true).pretrain(false).build();
+
+
+        DataSetIterator mnistTrain = new ExistingDataSetIterator(
+                Collections.singletonList(new DataSet( Nd4j.create(1, 1, 28, 28), Nd4j.create(10) )));
+
+        DataSetIterator mnistTest = new ExistingDataSetIterator(
+                Collections.singletonList(new DataSet( Nd4j.create(1, 1, 28, 28), Nd4j.create(10) )));
+
+        DataProvider<Object> dataProvider = new DataSetIteratorProvider(mnistTrain, mnistTest);
+
+        String baseSaveDirectory = "arbiterExample2/";
+        File f = new File(baseSaveDirectory);
+        if(f.exists()) f.delete();
+        f.mkdir();
+        ResultSaver<DL4JConfiguration,MultiLayerNetwork,Object> modelSaver =
+                new LocalMultiLayerNetworkSaver<>(baseSaveDirectory);
+
+        ScoreFunction<MultiLayerNetwork,Object> scoreFunction = new TestSetAccuracyScoreFunction();
+
+        int maxCandidates = 4;
+        TerminationCondition[] terminationConditions;
+        terminationConditions = new TerminationCondition[]{new MaxCandidatesCondition(maxCandidates)};
+
+        //Given these configuration options, let's put them all together:
+        OptimizationConfiguration<DL4JConfiguration, MultiLayerNetwork, Object, Object> configuration
+                = new OptimizationConfiguration.Builder<DL4JConfiguration, MultiLayerNetwork, Object, Object>()
+                .candidateGenerator(new RandomSearchGenerator<>(hyperparameterSpace,null))
+                .dataProvider(dataProvider)
+                .modelSaver(modelSaver)
+                .scoreFunction(scoreFunction)
+                .terminationConditions(terminationConditions)
+                .build();
+
+        IOptimizationRunner<DL4JConfiguration,MultiLayerNetwork,Object> runner
+                = new LocalOptimizationRunner<>(configuration, new MultiLayerNetworkTaskCreator<>());
+        runner.execute();
+
+        assertEquals(maxCandidates, runner.getResults().size());
     }
 
 }

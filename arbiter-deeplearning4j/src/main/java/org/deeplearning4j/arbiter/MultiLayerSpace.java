@@ -199,10 +199,16 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
             return this;
         }
 
+        /**
+         * @param inputPreProcessors Input preprocessors to set for the model
+         */
         public Builder setInputPreProcessors(Map<Integer, InputPreProcessor> inputPreProcessors){
             return setInputPreProcessors(new FixedValue<>(inputPreProcessors));
         }
 
+        /**
+         * @param inputPreProcessors Input preprocessors to set for the model
+         */
         public Builder setInputPreProcessors(ParameterSpace<Map<Integer, InputPreProcessor>> inputPreProcessors){
             this.inputPreProcessors = inputPreProcessors;
             return this;
