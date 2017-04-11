@@ -70,37 +70,8 @@ public class ScoreUtil {
      * @param testData
      * @return
      */
-    public static Evaluation getEvaluation(MultiLayerNetwork model,DataSetIterator testData) {
-        Evaluation eval = new Evaluation();
-        while (testData.hasNext()) {
-            DataSet ds = testData.next();
-            INDArray features = ds.getFeatures();
-            INDArray labels = ds.getLabels();
-
-            if (ds.hasMaskArrays()) {
-                INDArray fMask = ds.getFeaturesMaskArray();
-                INDArray lMask = ds.getLabelsMaskArray();
-
-                INDArray out = model.output(ds.getFeatures(), false, fMask, lMask);
-
-                //Assume this is time series data. Not much point having a mask array for non TS data
-                if (lMask != null) {
-                    eval.evalTimeSeries(labels, out, lMask);
-                } else {
-                    eval.evalTimeSeries(labels, out);
-                }
-
-            } else {
-                INDArray out = model.output(features);
-                if (out.rank() == 3) {
-                    eval.evalTimeSeries(labels, out);
-                } else {
-                    eval.eval(labels, out);
-                }
-            }
-        }
-
-        return eval;
+    public static Evaluation getEvaluation(MultiLayerNetwork model, DataSetIterator testData) {
+        return model.evaluate(testData);
     }
 
     /**
@@ -116,34 +87,7 @@ public class ScoreUtil {
             throw new IllegalStateException("GraphSetSetAccuracyScoreFunction cannot be " +
                     "applied to ComputationGraphs with more than one output. NumOutputs = " + model.getNumOutputArrays());
 
-        Evaluation evaluation = new Evaluation();
-
-        while (testData.hasNext()) {
-            MultiDataSet next = testData.next();
-            if (next.hasMaskArrays()) {
-                INDArray[] fMask = next.getFeaturesMaskArrays();
-                INDArray[] lMask = next.getLabelsMaskArrays();
-
-                model.setLayerMaskArrays(fMask, lMask);
-
-                INDArray out = model.output(next.getFeatures())[0];
-
-                //Assume this is time series data. Not much point having a mask array for non TS data
-                if (lMask != null) {
-                    evaluation.evalTimeSeries(next.getLabels(0), out, lMask[0]);
-                } else {
-                    evaluation.evalTimeSeries(next.getLabels(0), out);
-                }
-
-                model.clearLayerMaskArrays();
-            } else {
-                INDArray out = model.output(false, next.getFeatures())[0];
-                if (next.getLabels(0).rank() == 3) evaluation.evalTimeSeries(next.getLabels(0), out);
-                else evaluation.eval(next.getLabels(0), out);
-            }
-        }
-
-        return evaluation;
+        return model.evaluate(testData);
     }
 
 
@@ -160,37 +104,7 @@ public class ScoreUtil {
             throw new IllegalStateException("GraphSetSetAccuracyScoreFunctionDataSet cannot be " +
                     "applied to ComputationGraphs with more than one output. NumOutputs = " + model.getNumOutputArrays());
 
-        Evaluation evaluation = new Evaluation();
-
-        while (testData.hasNext()) {
-            DataSet next = testData.next();
-            if (next.hasMaskArrays()) {
-                INDArray fMask = next.getFeaturesMaskArray();
-                INDArray lMask = next.getLabelsMaskArray();
-
-                INDArray[] fMasks = (fMask == null ? null : new INDArray[]{fMask});
-                INDArray[] lMasks = (lMask == null ? null : new INDArray[]{lMask});
-
-                model.setLayerMaskArrays(fMasks, lMasks);
-
-                INDArray out = model.output(next.getFeatures())[0];
-
-                //Assume this is time series data. Not much point having a mask array for non TS data
-                if (lMask != null) {
-                    evaluation.evalTimeSeries(next.getLabels(), out, lMask);
-                } else {
-                    evaluation.evalTimeSeries(next.getLabels(), out);
-                }
-
-                model.clearLayerMaskArrays();
-            } else {
-                INDArray out = model.output(false, next.getFeatures())[0];
-                if (next.getLabels().rank() == 3) evaluation.evalTimeSeries(next.getLabels(), out);
-                else evaluation.eval(next.getLabels(), out);
-            }
-        }
-
-        return evaluation;
+        return model.evaluate(testData);
     }
 
 
@@ -293,23 +207,7 @@ public class ScoreUtil {
         for (int i = 0; i < evaluations.length; i++) {
             int nColumns = evaluations[i].numColumns();
             totalColumns += nColumns;
-            switch (regressionValue) {
-                case MSE:
-                    for (int j = 0; j < nColumns; j++) sum += evaluations[i].meanSquaredError(j);
-                    break;
-                case MAE:
-                    for (int j = 0; j < nColumns; j++) sum += evaluations[i].meanAbsoluteError(j);
-                    break;
-                case RMSE:
-                    for (int j = 0; j < nColumns; j++) sum += evaluations[i].rootMeanSquaredError(j);
-                    break;
-                case RSE:
-                    for (int j = 0; j < nColumns; j++) sum += evaluations[i].relativeSquaredError(j);
-                    break;
-                case CorrCoeff:
-                    for (int j = 0; j < nColumns; j++) sum += evaluations[i].correlationR2(j);
-                    break;
-            }
+            sum += getScoreFromRegressionEval(evaluations[i], regressionValue);
         }
         if (regressionValue == RegressionValue.CorrCoeff) sum /= totalColumns;
 
@@ -326,60 +224,8 @@ public class ScoreUtil {
      * @return
      */
     public static double score(ComputationGraph model,DataSetIterator testSet,RegressionValue regressionValue) {
-        RegressionEvaluation evaluation = new RegressionEvaluation();
-        while (testSet.hasNext()) {
-            DataSet next = testSet.next();
-            INDArray labels = next.getLabels();
-
-            if (next.hasMaskArrays()) {
-                INDArray fMask = next.getFeaturesMaskArray();
-                INDArray lMask = next.getLabelsMaskArray();
-
-                INDArray[] fMasks = (fMask == null ? null : new INDArray[]{fMask});
-                INDArray[] lMasks = (lMask == null ? null : new INDArray[]{lMask});
-
-                model.setLayerMaskArrays(fMasks, lMasks);
-
-                INDArray[] outputs = model.output(false, next.getFeatures());
-                if (lMasks != null && lMasks[0] != null) {
-                    evaluation.evalTimeSeries(labels, outputs[0], lMasks[0]);
-                } else {
-                    evaluation.evalTimeSeries(labels, outputs[0]);
-                }
-
-                model.clearLayerMaskArrays();
-            } else {
-                INDArray[] outputs = model.output(false, next.getFeatures());
-                if (labels.rank() == 3) {
-                    evaluation.evalTimeSeries(labels, outputs[0]);
-                } else {
-                    evaluation.eval(labels, outputs[0]);
-                }
-            }
-        }
-
-        double sum = 0.0;
-        int nColumns = evaluation.numColumns();
-        switch (regressionValue) {
-            case MSE:
-                for (int j = 0; j < nColumns; j++) sum += evaluation.meanSquaredError(j);
-                break;
-            case MAE:
-                for (int j = 0; j < nColumns; j++) sum += evaluation.meanAbsoluteError(j);
-                break;
-            case RMSE:
-                for (int j = 0; j < nColumns; j++) sum += evaluation.rootMeanSquaredError(j);
-                break;
-            case RSE:
-                for (int j = 0; j < nColumns; j++) sum += evaluation.relativeSquaredError(j);
-                break;
-            case CorrCoeff:
-                for (int j = 0; j < nColumns; j++) sum += evaluation.correlationR2(j);
-                sum /= nColumns;
-                break;
-        }
-
-        return sum;
+        RegressionEvaluation evaluation = model.evaluateRegression(testSet);
+        return getScoreFromRegressionEval(evaluation, regressionValue);
     }
 
 
@@ -415,38 +261,13 @@ public class ScoreUtil {
      * @param regressionValue the regression function to use
      * @return the score from the given test set
      */
-    public static double score(MultiLayerNetwork model, DataSetIterator testSet,RegressionValue regressionValue) {
-        RegressionEvaluation eval = null;
-        while (testSet.hasNext()) {
-            DataSet next = testSet.next();
+    public static double score(MultiLayerNetwork model, DataSetIterator testSet, RegressionValue regressionValue) {
+        RegressionEvaluation eval = model.evaluateRegression(testSet);
+        return getScoreFromRegressionEval(eval, regressionValue);
+    }
 
-            if (eval == null) {
-                eval = new RegressionEvaluation(next.getLabels().size(1));
-            }
 
-            INDArray out;
-            if (next.hasMaskArrays()) {
-                out = model.output(next.getFeatures(), false, next.getFeaturesMaskArray(), next.getLabelsMaskArray());
-
-            } else {
-                out = model.output(next.getFeatures(), false);
-            }
-
-            if (out.rank() == 3) {
-                if (next.getLabelsMaskArray() != null) {
-                    eval.evalTimeSeries(next.getLabels(), out, next.getLabelsMaskArray());
-                } else {
-                    eval.evalTimeSeries(next.getLabels(), out);
-                }
-            } else {
-                eval.eval(next.getLabels(), out);
-            }
-        }
-
-        if (eval == null) {
-            throw new IllegalStateException("test iterator is empty");
-        }
-
+    private static double getScoreFromRegressionEval(RegressionEvaluation eval, RegressionValue regressionValue){
         double sum = 0.0;
         int nColumns = eval.numColumns();
         switch (regressionValue) {
@@ -470,6 +291,5 @@ public class ScoreUtil {
 
         return sum;
     }
-
 
 }

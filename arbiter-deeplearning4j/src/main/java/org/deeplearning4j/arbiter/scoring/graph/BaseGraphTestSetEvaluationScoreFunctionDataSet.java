@@ -43,37 +43,9 @@ public abstract class BaseGraphTestSetEvaluationScoreFunctionDataSet implements 
             throw new IllegalStateException("GraphSetSetAccuracyScoreFunctionDataSet cannot be " +
                     "applied to ComputationGraphs with more than one output. NumOutputs = " + model.getNumOutputArrays());
 
+
         DataSetIterator testData = ScoreUtil.getIterator(dataProvider.testData(dataParameters));
-
-        Evaluation evaluation = new Evaluation();
-
-        while (testData.hasNext()) {
-            DataSet next = testData.next();
-            if (next.hasMaskArrays()) {
-                INDArray fMask = next.getFeaturesMaskArray();
-                INDArray lMask = next.getLabelsMaskArray();
-
-                INDArray[] fMasks = (fMask == null ? null : new INDArray[]{fMask});
-                INDArray[] lMasks = (lMask == null ? null : new INDArray[]{lMask});
-
-                model.setLayerMaskArrays(fMasks, lMasks);
-
-                INDArray out = model.output(next.getFeatures())[0];
-
-                //Assume this is time series data. Not much point having a mask array for non TS data
-                if (lMask != null) {
-                    evaluation.evalTimeSeries(next.getLabels(), out, lMask);
-                } else {
-                    evaluation.evalTimeSeries(next.getLabels(), out);
-                }
-
-                model.clearLayerMaskArrays();
-            } else {
-                INDArray out = model.output(false, next.getFeatures())[0];
-                if (next.getLabels().rank() == 3) evaluation.evalTimeSeries(next.getLabels(), out);
-                else evaluation.eval(next.getLabels(), out);
-            }
-        }
+        Evaluation evaluation = model.evaluate(testData);
 
         return evaluation;
     }
