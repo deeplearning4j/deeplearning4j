@@ -1386,6 +1386,70 @@ extern "C" __global__ void averagingKernelDouble(double **dx, double *dz, int n,
     averagingKernelGeneric<double>(dx, dz, n, length, propagate);
 }
 
+template<typename T>
+__device__ void tearKernelGeneric(T *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets) {
+
+    __shared__ Nd4jIndex tadLength;
+    __shared__ int tadEWS;
+    __shared__ int zEWS;
+    __shared__ int tadRank;
+    __shared__ Nd4jIndex numTads;
+    __shared__ int zRank;
+    __shared__ int *tadShape;
+    __shared__ int *tadStride;
+    __shared__ int *zShape;
+    __shared__ int *zStride;
+
+    if (threadIdx.x == 0) {
+        tadLength = shape::length(tadShapeInfo);
+        tadEWS = shape::elementWiseStride(tadShapeInfo);
+        zEWS = shape::elementWiseStride(zShapeInfo);
+        tadRank = shape::rank(tadShapeInfo);
+        numTads = shape::length(xShapeInfo) / tadLength;
+        zRank = shape::rank(zShapeInfo);
+        tadShape = shape::shapeOf(tadShapeInfo);
+        tadStride = shape::stride(tadShapeInfo);
+        zShape = shape::shapeOf(zShapeInfo);
+        zStride = shape::stride(zShapeInfo);
+    }
+    __syncthreads();
+
+    for (Nd4jIndex r = blockIdx.x; r < numTads; r += gridDim.x) {
+        T *z = (T *) targets[r];
+        T *s = x + tadOffsets[r];
+
+        if (zEWS > 0 && tadEWS > 0) {
+        for (Nd4jIndex i = threadIdx.x; i < tadLength; i += blockDim.x) {
+            z[i * zEWS] = s[i * tadEWS];
+        }
+        } else {
+            int xCoord[MAX_RANK];
+            int zCoord[MAX_RANK];
+
+            for (Nd4jIndex j = 0; j < tadLength; j++) {
+                shape::ind2sub(tadRank,tadShape, j, xCoord);
+                shape::ind2sub(zRank, zShape, j, zCoord);
+
+                Nd4jIndex xOffset = shape::getOffset(0, tadShape, tadStride, xCoord, tadRank);
+                Nd4jIndex zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
+
+                z[zOffset] = s[xOffset];
+            }
+        }
+    }
+}
+
+extern "C" __global__ void tearKernelDouble(double *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets) {
+    tearKernelGeneric<double>(x, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
+}
+
+extern "C" __global__ void tearKernelFloat(float *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets) {
+    tearKernelGeneric<float>(x, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
+}
+
+extern "C" __global__ void tearKernelHalf(float16 *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets) {
+    tearKernelGeneric<float16>(x, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
+}
 
 
 template<typename T>

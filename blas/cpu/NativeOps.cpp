@@ -2261,6 +2261,64 @@ void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, double *x, int *xShap
     pullRowsGeneric<double>(x, xShapeInfo, z, zShapeInfo, n, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets);
 }
 
+template<typename T>
+void tearGeneric(T *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets) {
+
+    const Nd4jIndex tadLength = shape::length(tadShapeInfo);
+    int tadEWS = shape::elementWiseStride(tadShapeInfo);
+    int zEWS = shape::elementWiseStride(zShapeInfo);
+    int tadRank = shape::rank(tadShapeInfo);
+    int zRank = shape::rank(zShapeInfo);
+    int *tadShape = shape::shapeOf(tadShapeInfo);
+    int *tadStride = shape::stride(tadShapeInfo);
+    int *zShape = shape::shapeOf(zShapeInfo);
+    int *zStride = shape::stride(zShapeInfo);
+    Nd4jIndex numTads = shape::length(xShapeInfo) / tadLength;
+
+#pragma omp parallel for schedule(guided) default(shared)
+    for (Nd4jIndex i = 0; i < numTads; i++) {
+        T *z = (T *) targets[i];
+        T *s = x + tadOffsets[i];
+
+        if (zEWS == 1 && tadEWS == 1) {
+#pragma omp simd
+            for (Nd4jIndex j = 0; j < tadLength; j++) {
+                z[j] = s[j];
+            }
+        } else if (zEWS > 0 && tadEWS > 0) {
+#pragma omp simd
+            for (Nd4jIndex j = 0; j < tadLength; j++) {
+                z[j * zEWS] = s[j * tadEWS];
+            }
+        } else {
+            int xCoord[MAX_RANK];
+            int zCoord[MAX_RANK];
+
+            for (Nd4jIndex j = 0; j < tadLength; j++) {
+                shape::ind2sub(tadRank,tadShape, j, xCoord);
+                shape::ind2sub(zRank, zShape, j, zCoord);
+
+                Nd4jIndex xOffset = shape::getOffset(0, tadShape, tadStride, xCoord, tadRank);
+                Nd4jIndex zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
+
+                z[zOffset] = s[xOffset];
+            }
+        }
+    }
+}
+
+void NativeOps::tearDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets) {
+    tearGeneric<double>(x, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
+}
+
+void NativeOps::tearFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets) {
+    tearGeneric<float>(x, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
+}
+
+void NativeOps::tearHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets) {
+    tearGeneric<float16>(x, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
+}
+
 
 template<typename T>
 void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) {
