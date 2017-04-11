@@ -26,12 +26,29 @@ public class WorkspaceConfiguration implements Serializable {
     protected LearningPolicy policyLearning;
     protected ResetPolicy policyReset;
 
+    /**
+     * This variable specifies amount of memory allocated for this workspace during initialization
+     */
     protected long initialSize;
+
+    /**
+     * This variable specifies minimal workspace size
+     */
     protected long minSize;
+
+    /**
+     * This variable specifies maximal workspace size
+     */
     protected long maxSize;
 
+    /**
+     * For workspaces with learnable size, this variable defines how many cycles will be spent during learning phase
+     */
     protected int cyclesBeforeInitialization;
 
+    /**
+     * If OVERALLOCATION policy is set, memory will be overallocated in addition to initialSize of learned size
+     */
     protected double overallocationLimit;
 
     public static class WorkspaceConfigurationBuilder {
