@@ -23,6 +23,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -279,7 +280,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
         if (!buffersCache.get(deviceId).containsKey(descriptor)) {
             // we create new databuffer
-            //    logger.info("Creating new constant buffer...");
+            //logger.info("Creating new constant buffer...");
             DataBuffer buffer = Nd4j.createBuffer(array);
             buffer.setConstant(true);
 
@@ -312,8 +313,8 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
 
         if (!buffersCache.get(deviceId).containsKey(descriptor)) {
             // we create new databuffer
-            //     logger.info("Creating new constant buffer...");
-            DataBuffer buffer = Nd4j.createBuffer(array);
+                 //logger.info("Creating new constant buffer...");
+            DataBuffer buffer = Nd4j.createBufferDetached(array);
             buffer.setConstant(true);
 
             // now we move data to constant memory, and keep happy
@@ -336,7 +337,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
      */
     @Override
     public DataBuffer getConstantBuffer(double[] array) {
-        //        logger.info("getConstantBuffer(double[]) called: {}", Arrays.toString(array));
+                //logger.info("getConstantBuffer(double[]) called: {}", Arrays.toString(array));
         ArrayDescriptor descriptor = new ArrayDescriptor(array);
 
         Integer deviceId = AtomicAllocator.getInstance().getDeviceId();
@@ -346,7 +347,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         if (!buffersCache.get(deviceId).containsKey(descriptor)) {
             // we create new databuffer
             //logger.info("Creating new constant buffer...");
-            DataBuffer buffer = Nd4j.createBuffer(array);
+            DataBuffer buffer = Nd4j.createBufferDetached(array);
             buffer.setConstant(true);
 
             // now we move data to constant memory, and keep happy

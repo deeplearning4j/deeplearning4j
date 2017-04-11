@@ -636,6 +636,30 @@ public class SporadicTests {
         log.error("X: {}", x);
     }
 
+    @Test
+    public void testTreo1() {
+        INDArray points = Nd4j.rand(100000, 300);
+        INDArray q = Nd4j.rand(10000, 300);
+
+        System.out.println("----------------");
+        ArrayList<Float> floats1 = new ArrayList<>();
+        List<Long> results = new ArrayList<>();
+        for (int i = 0; i < 10000; i++) {
+            long time1 = System.currentTimeMillis();
+            INDArray gemm = points.mmul(q.getRow(i).transpose());
+            float[] floats = gemm.data().asFloat();
+            long time2 = System.currentTimeMillis();
+            /*for (int k = 0; k < floats.length; k++) {
+                floats1.add(floats[k]);
+            }
+
+            floats1.clear();*/
+            results.add(time2 - time1);
+        }
+
+        log.error("p50: {}", results.get(results.size() / 2));
+    }
+
     public DataSet getBatch(INDArray input, INDArray label, int batchSize) {
         List<INDArray> inp = new ArrayList<>();
         List<INDArray> lab = new ArrayList<>();

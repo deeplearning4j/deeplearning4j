@@ -2381,4 +2381,62 @@ public interface INDArray extends Serializable {
      * @return
      */
     INDArray fmodi(Number denominator);
+
+    /**
+     * This method returns index of highest value along specified dimension(s)
+     *
+     * @param dimension
+     * @return
+     */
+    INDArray argMax(int... dimension);
+
+    /**
+     * This method returns True, if this INDArray instance is attached to some Workspace. False otherwise.
+     * @return
+     */
+    boolean isAttached();
+
+    /**
+     * This method checks, if given attached INDArray is still in scope of its parent Workspace
+     *
+     * PLEASE NOTE: if this INDArray isn't attached to any Workspace, this method will return true
+     * @return
+     */
+    boolean isInScope();
+
+    /**
+     * This metod detaches INDArray from Workspace, returning copy. Basically it's dup() into new memory chunk.
+     *
+     * PLEASE NOTE: If this INDArray instance is NOT attached - it will be returned unmodified.
+     *
+     * @return
+     */
+    INDArray detach();
+
+    /**
+     * This method detaches INDArray from current Workspace, and attaches it to Workspace above, if any.
+     *
+     * PLEASE NOTE: If this INDArray instance is NOT attached - it will be returned unmodified.
+     * PLEASE NOTE: If current Workspace is the top-tier one, effect will be equal to detach() call - detached copy will be returned
+     *
+     * @return
+     */
+    INDArray leverage();
+
+    /**
+     * This method detaches INDArray from current Workspace, and attaches it to Workspace with a given Id
+     *
+     * @param id
+     * @return
+     */
+    INDArray leverageTo(String id);
+
+    /**
+     * This method pulls this INDArray into current Workspace.
+     *
+     * PLEASE NOTE: If there's no current Workspace - INDArray returned as is
+     *
+     * @return
+     */
+    INDArray migrate();
 }

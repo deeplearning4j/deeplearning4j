@@ -32,6 +32,7 @@ import org.nd4j.jita.memory.impl.CudaDirectProvider;
 import org.nd4j.jita.memory.impl.CudaFullCachingProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
@@ -41,9 +42,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -97,7 +96,8 @@ public class CudaZeroHandler implements MemoryHandler {
     // FIXME: CopyOnWriteArrayList is BAD here. Really BAD. B A D.
     // Table thread safety is guaranteed by reentrant read/write locks :(
     //private Table<Long, Integer, ConcurrentHashMap<Long, Long>> deviceAllocations = HashBasedTable.create();
-    private final Map<Integer, ConcurrentHashMap<Long, Long>> deviceAllocations = new ConcurrentHashMap<>();
+    //private final Map<Integer, ConcurrentHashMap<Long, Long>> deviceAllocations = new ConcurrentHashMap<>();
+    private final List<ConcurrentHashMap<Long, Long>> deviceAllocations = new ArrayList<>();
 
     /*
         map for Thread, Object allocations in zero memory.
@@ -146,6 +146,11 @@ public class CudaZeroHandler implements MemoryHandler {
                 break;
             default:
                 throw new RuntimeException("Unknown AllocationModel: [" + configuration.getAllocationModel() + "]");
+        }
+
+        int numDevices = NativeOpsHolder.getInstance().getDeviceNativeOps().getAvailableDevices();
+        for (int i = 0; i < numDevices; i++) {
+            deviceAllocations.add(new ConcurrentHashMap<Long, Long>());
         }
     }
 
@@ -846,11 +851,10 @@ public class CudaZeroHandler implements MemoryHandler {
         if (dstPoint.getAllocationStatus() != AllocationStatus.DEVICE)
             return;
 
-
         int deviceId = getDeviceId();
 
 
-        if (dstPoint.getDeviceId() >= 0 && dstPoint.getDeviceId() == deviceId) {
+        if (dstPoint.getDeviceId() >= 0 && dstPoint.getDeviceId() == deviceId ) {
             return;
         }
 
@@ -860,6 +864,48 @@ public class CudaZeroHandler implements MemoryHandler {
 
         if (!dstPoint.isActualOnHostSide())
             throw new RuntimeException("Buffer synchronization failed");
+
+        if (buffer.isAttached() || dstPoint.isAttached()) {
+            // if this buffer is Attached, we just relocate to new workspace
+
+            MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+
+            if (workspace == null) {
+                // if we're out of workspace, we should mark our buffer as detached, so gc will pick it up eventually
+                alloc(AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), false);
+
+                CudaContext context = getCudaContext();
+                nativeOps.memcpyAsync(dstPoint.getDevicePointer(), dstPoint.getHostPointer(),
+                        buffer.length() * buffer.getElementSize(), 1, context.getSpecialStream());
+                context.syncSpecialStream();
+
+                // updating host pointer now
+                alloc(AllocationStatus.HOST, dstPoint, dstPoint.getShape(), false);
+
+                // marking it as detached
+                dstPoint.setAttached(false);
+
+                // marking it as proper on device
+                dstPoint.tickHostRead();
+                dstPoint.tickDeviceWrite();
+            } else {
+                // this call will automagically take care of workspaces, so it'll be either
+                //log.info("Relocating to deviceId [{}], workspace [{}]...", deviceId, workspace.getId());
+                BaseCudaDataBuffer nBuffer = (BaseCudaDataBuffer) Nd4j.createBuffer(buffer.length());
+
+                Nd4j.getMemoryManager().memcpy(nBuffer, buffer);
+
+                dstPoint.getPointers().setDevicePointer(nBuffer.getAllocationPoint().getDevicePointer());
+                dstPoint.getPointers().setHostPointer(nBuffer.getAllocationPoint().getHostPointer());
+                dstPoint.setDeviceId(deviceId);
+
+                dstPoint.tickDeviceRead();
+                dstPoint.tickHostRead();
+            }
+
+
+            return;
+        }
 
         if (buffer.isConstant()) {
             // we can't relocate or modify buffers
@@ -978,8 +1024,6 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public long getAllocatedDeviceObjects(Integer deviceId) {
-        if (!deviceAllocations.containsKey(deviceId))
-            return 0L;
         return deviceAllocations.get(deviceId).size();
     }
 
@@ -1018,8 +1062,6 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public Set<Long> getDeviceTrackingPoints(Integer deviceId) {
-        if (!deviceAllocations.containsKey(deviceId))
-            return new HashSet<>();
         return deviceAllocations.get(deviceId).keySet();
     }
 
@@ -1101,10 +1143,6 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     public Integer getDeviceId() {
         int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-
-        if (!deviceAllocations.containsKey(deviceId)) {
-            deviceAllocations.put(deviceId, new ConcurrentHashMap<Long, Long>());
-        }
 
         return deviceId;
     }

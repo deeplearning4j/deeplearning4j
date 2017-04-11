@@ -12,7 +12,6 @@ import static org.junit.Assert.assertArrayEquals;
 /**
  * Created by Alex on 30/04/2016.
  */
-
 public class TestNDArrayCreationUtil extends BaseNd4jTest {
 
 

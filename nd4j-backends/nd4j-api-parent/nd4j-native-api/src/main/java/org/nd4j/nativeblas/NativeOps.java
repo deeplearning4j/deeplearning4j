@@ -1432,4 +1432,9 @@ public abstract class NativeOps extends Pointer {
     public abstract Pointer pointerForAddress(long address);
 
 
+    public abstract void tearDouble(PointerPointer extras, DoublePointer tensor, IntPointer xShapeInfo, PointerPointer targets, IntPointer zShapeInfo, IntPointer tadShapeInfo, IntPointer tadOffsets);
+
+    public abstract void tearFloat(PointerPointer extras, FloatPointer tensor, IntPointer xShapeInfo, PointerPointer targets, IntPointer zShapeInfo, IntPointer tadShapeInfo, IntPointer tadOffsets);
+
+    public abstract void tearHalf(PointerPointer extras, @Cast("float16*") ShortPointer tensor, IntPointer xShapeInfo, PointerPointer targets, IntPointer zShapeInfo, IntPointer tadShapeInfo, IntPointer tadOffsets);
 }

@@ -134,7 +134,7 @@ public class SynchronousFlowController implements FlowController {
             pointData.acquireLock();
 
 
-            if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
+            if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0 && (!CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed() || !NativeOpsHolder.getInstance().getDeviceNativeOps().isP2PAvailable())) {
                 DataBuffer buffer = result.data().originalDataBuffer() == null ? result.data()
                                 : result.data().originalDataBuffer();
                 allocator.getMemoryHandler().relocateObject(buffer);
@@ -159,7 +159,7 @@ public class SynchronousFlowController implements FlowController {
 
             pointData.acquireLock();
 
-            if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0) {
+            if (pointData.getDeviceId() != cId && pointData.getDeviceId() >= 0 && (!CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed() || !NativeOpsHolder.getInstance().getDeviceNativeOps().isP2PAvailable())) {
                 DataBuffer buffer = operand.data().originalDataBuffer() == null ? operand.data()
                                 : operand.data().originalDataBuffer();
                 allocator.getMemoryHandler().relocateObject(buffer);

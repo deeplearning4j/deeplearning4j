@@ -10,7 +10,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Compressor implementation based on 8-bit floats, aka FP8 or Quarter
- * PLEASE NOTE: NOT IMPLEMENTED YET
+ *
  * @author raver119@gmail.com
  */
 public class Float8 extends AbstractCompressor {

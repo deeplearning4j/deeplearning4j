@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DoubleBuffer;
 import org.nd4j.linalg.api.buffer.FloatBuffer;
 import org.nd4j.linalg.api.buffer.IntBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.nio.ByteBuffer;
@@ -197,6 +198,8 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
         return new DoubleBuffer(ArrayUtil.toDoubles(data), copy, offset);
     }
 
+
+
     @Override
     public DataBuffer createFloat(int offset, float[] data, boolean copy) {
         return new FloatBuffer(data, copy, offset);
@@ -240,6 +243,11 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createFloat(long length, boolean initialize) {
         return new FloatBuffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createFloat(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new FloatBuffer(length, initialize, workspace);
     }
 
     @Override
@@ -303,6 +311,11 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createFloat(float[] data, MemoryWorkspace workspace) {
+        return createFloat(data, true, workspace);
+    }
+
+    @Override
     public DataBuffer createInt(float[] data) {
         return createInt(data, true);
     }
@@ -328,6 +341,21 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createDouble(double[] data, MemoryWorkspace workspace) {
+        return createDouble(data, true, workspace);
+    }
+
+    @Override
+    public DataBuffer createDouble(double[] data, boolean copy, MemoryWorkspace workspace) {
+        return new DoubleBuffer(data, copy, workspace);
+    }
+
+    @Override
+    public DataBuffer createDouble(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new DoubleBuffer(length, initialize, workspace);
+    }
+
+    @Override
     public DataBuffer createFloat(double[] data, boolean copy) {
         return new FloatBuffer(ArrayUtil.toFloats(data), copy);
     }
@@ -345,6 +373,11 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createFloat(float[] data, boolean copy) {
         return new FloatBuffer(data, copy);
+    }
+
+    @Override
+    public DataBuffer createFloat(float[] data, boolean copy, MemoryWorkspace workspace) {
+        return new FloatBuffer(data, copy, workspace);
     }
 
     @Override
@@ -631,6 +664,21 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createHalf(byte[] data, int length) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    @Override
+    public DataBuffer createHalf(long length, boolean initialize, MemoryWorkspace workspace) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    @Override
+    public DataBuffer createHalf(float[] data, MemoryWorkspace workspace) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    @Override
+    public DataBuffer createHalf(float[] data, boolean copy, MemoryWorkspace workspace) {
         throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 }

@@ -2,6 +2,8 @@ package org.nd4j.linalg.memory;
 
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -9,6 +11,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author raver119@gmail.com
  */
 public interface MemoryManager {
+
+    MemoryWorkspace getCurrentWorkspace();
+
+    void setCurrentWorkspace(MemoryWorkspace workspace);
 
     /**
      * PLEASE NOTE: This method is under development yet. Do not use it.
@@ -95,12 +101,23 @@ public interface MemoryManager {
     int getAutoGcWindow();
 
     /**
-     * This method returns
+     * This method returns pointer to allocated memory
+     *
      * PLEASE NOTE: Cache options depend on specific implementations
      *
      * @param bytes
      */
     Pointer allocate(long bytes, MemoryKind kind, boolean initialize);
+
+
+    /**
+     * This method releases previously allocated memory chunk
+     *
+     * @param pointer
+     * @param kind
+     * @return
+     */
+    void release(Pointer pointer, MemoryKind kind);
 
     /**
      * This method detaches off-heap memory from passed INDArray instances, and optionally stores them in cache for future reuse
@@ -117,5 +134,22 @@ public interface MemoryManager {
      */
     void purgeCaches();
 
+    /**
+     * This method does memcpy  from source buffer to destination buffer
+     *
+     * PLEASE NOTE: This method is NOT safe.
+     *
+     * @param dstBuffer
+     * @param srcBuffer
+     */
     void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer);
+
+    /**
+     * This method temporary opens block out of any workspace scope.
+     *
+     * PLEASE NOTE: Do not forget to close this block.
+     *
+     * @return
+     */
+    MemoryWorkspace scopeOutOfWorkspaces();
 }

@@ -48,6 +48,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     private static final String DEBUG_ENABLED = "ND4J_DEBUG";
     private static final String VERBOSE = "ND4J_VERBOSE";
 
+    protected ThreadLocal<PointerPointer> extraz = new ThreadLocal<>();
+
     /**
      * Instead of allocating new memory chunks for each batch invocation, we reuse them on thread/opNum basis
      * Since for NativeOpExecutioner all executions are synchronous
@@ -113,6 +115,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         validateDataType(Nd4j.dataType(), op);
 
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
         Arrays.sort(dimension);
         for (int i = 0; i < dimension.length; i++) {
             if (dimension[i] < 0)
@@ -163,7 +168,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         DataBuffer offsets = tadBuffers.getSecond();
         Pointer hostTadOffsets = offsets == null ? null : offsets.addressPointer();
 
-        PointerPointer dummy = new PointerPointer(hostTadShapeInfo, hostTadOffsets);
+        PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets);
 
         long st = profilingHookIn(op, tadBuffers.getFirst());
 
@@ -218,6 +223,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         Arrays.sort(dimension);
 
         validateDataType(Nd4j.dataType(), op);
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
 
         for (int i = 0; i < dimension.length; i++)
             if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
@@ -281,7 +289,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         /**
          * This is a pointer to a pointer in c.
          */
-        PointerPointer dummy = new PointerPointer(hostTadShapeInfo, hostTadOffsets);
+        PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets);
 
         long st = profilingHookIn(op, tadBuffers.getFirst());
 
@@ -441,7 +449,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         devTadShapeInfoZ = tadBuffersZ.getFirst().addressPointer();
         devTadOffsetsZ = tadBuffersZ.getSecond().addressPointer();
 
-        PointerPointer dummy = new PointerPointer(hostTadShapeInfo, hostTadOffsets, devTadShapeInfoZ, devTadOffsetsZ);
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
+        PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets, devTadShapeInfoZ, devTadOffsetsZ);
 
 
         if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
@@ -478,16 +489,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 invoke(op, op.getDimension());
                 return;
             }
-            PointerPointer dummy = new PointerPointer(new Pointer[] {null});
+
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().elementWiseStride() >= 1
                                 && !op.isExecSpecial()) {
-                    loop.execScalarDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
+                    loop.execScalarDouble(null, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
                                     op.x().elementWiseStride(), (DoublePointer) op.z().data().addressPointer(),
                                     op.z().elementWiseStride(), op.scalar().doubleValue(),
                                     (DoublePointer) getPointerForExtraArgs(op), op.n());
                 } else
-                    loop.execScalarDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
+                    loop.execScalarDouble(null, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
                                     (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                     (DoublePointer) op.z().data().addressPointer(),
                                     (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
@@ -495,12 +506,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             } else {
                 if (op.x().elementWiseStride() >= 1 && !op.isExecSpecial() && op.z().elementWiseStride() >= 1
                                 && !op.isExecSpecial()) {
-                    loop.execScalarFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
+                    loop.execScalarFloat(null, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
                                     op.x().elementWiseStride(), (FloatPointer) op.z().data().addressPointer(),
                                     op.z().elementWiseStride(), op.scalar().floatValue(),
                                     (FloatPointer) getPointerForExtraArgs(op), op.n());
                 } else
-                    loop.execScalarFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
+                    loop.execScalarFloat(null, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
                                     (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                     (FloatPointer) op.z().data().addressPointer(),
                                     (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
@@ -523,7 +534,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         validateDataType(Nd4j.dataType(), op);
 
-        PointerPointer dummy = new PointerPointer(4);
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
+        PointerPointer dummy = extraz.get();
 
         /**
          * This is the {@link org.nd4j.linalg.api.ops.impl.transforms.IsMax}
@@ -673,7 +687,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         log.info("y shape: {}", Arrays.toString(op.y().shapeInfoDataBuffer().asInt()));
         log.info("-------------");
         */
-        PointerPointer dummy = new PointerPointer(hostTadShapeInfo, hostTadOffsets, devTadShapeInfoZ, devTadOffsetsZ);
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
+        PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets, devTadShapeInfoZ, devTadOffsetsZ);
 
         Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension).addressPointer();
 
@@ -707,15 +725,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             validateDataType(Nd4j.dataType(), op);
 
-            PointerPointer dummy = new PointerPointer(new Pointer[] {null});
+
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                op.setFinalResult((int) loop.execIndexReduceScalarDouble(dummy, op.opNum(),
+                op.setFinalResult((int) loop.execIndexReduceScalarDouble(null, op.opNum(),
                                 (DoublePointer) op.x().data().addressPointer(),
                                 (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                 (DoublePointer) getPointerForExtraArgs(op)));
 
             } else {
-                op.setFinalResult((int) loop.execIndexReduceScalarFloat(dummy, op.opNum(),
+                op.setFinalResult((int) loop.execIndexReduceScalarFloat(null, op.opNum(),
                                 (FloatPointer) op.x().data().addressPointer(),
                                 (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                 (FloatPointer) getPointerForExtraArgs(op)));
@@ -732,22 +750,22 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             validateDataType(Nd4j.dataType(), op);
 
-            PointerPointer dummy = new PointerPointer(new Pointer[] {null});
+
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 if (op instanceof Variance) {
-                    op.setFinalResult(loop.execSummaryStatsScalarDouble(dummy, op.opNum(),
+                    op.setFinalResult(loop.execSummaryStatsScalarDouble(null, op.opNum(),
                                     (DoublePointer) op.x().data().addressPointer(),
                                     (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                     (DoublePointer) getPointerForExtraArgs(op), true));
                 } else if (op.y() != null) {
-                    op.setFinalResult(loop.execReduce3ScalarDouble(dummy, op.opNum(),
+                    op.setFinalResult(loop.execReduce3ScalarDouble(null, op.opNum(),
                                     (DoublePointer) op.x().data().addressPointer(),
                                     (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                     (DoublePointer) getPointerForExtraArgs(op),
                                     (DoublePointer) op.y().data().addressPointer(),
                                     (IntPointer) op.y().shapeInfoDataBuffer().addressPointer()));
                 } else {
-                    op.setFinalResult(loop.execReduceScalarDouble(dummy, op.opNum(),
+                    op.setFinalResult(loop.execReduceScalarDouble(null, op.opNum(),
                                     (DoublePointer) op.x().data().addressPointer(),
                                     (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                     (DoublePointer) getPointerForExtraArgs(op)));
@@ -755,19 +773,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             } else {
                 if (op instanceof Variance) {
                     Variance variance = (Variance) op;
-                    op.setFinalResult(loop.execSummaryStatsScalarFloat(dummy, op.opNum(),
+                    op.setFinalResult(loop.execSummaryStatsScalarFloat(null, op.opNum(),
                                     (FloatPointer) op.x().data().addressPointer(),
                                     (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                     (FloatPointer) getPointerForExtraArgs(op), variance.isBiasCorrected()));
                 } else if (op.y() != null) {
-                    op.setFinalResult(loop.execReduce3ScalarFloat(dummy, op.opNum(),
+                    op.setFinalResult(loop.execReduce3ScalarFloat(null, op.opNum(),
                                     (FloatPointer) op.x().data().addressPointer(),
                                     (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                     (FloatPointer) getPointerForExtraArgs(op),
                                     (FloatPointer) op.y().data().addressPointer(),
                                     (IntPointer) op.y().shapeInfoDataBuffer().addressPointer()));
                 } else {
-                    op.setFinalResult(loop.execReduceScalarFloat(dummy, op.opNum(),
+                    op.setFinalResult(loop.execReduceScalarFloat(null, op.opNum(),
                                     (FloatPointer) op.x().data().addressPointer(),
                                     (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
                                     (FloatPointer) getPointerForExtraArgs(op)));
@@ -863,8 +881,12 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 }
             }
 
+            if (extraz.get() == null)
+                extraz.set(new PointerPointer(32));
+
             // putting arguments pointers
-            PointerPointer ptrPtr = new PointerPointer(pointer);
+            PointerPointer ptrPtr = extraz.get().put(pointer);
+
             for (int e = 0; e < op.getArguments().size(); e++) {
                 idx = argsPos + i * batch.getSample().maxArguments();
 

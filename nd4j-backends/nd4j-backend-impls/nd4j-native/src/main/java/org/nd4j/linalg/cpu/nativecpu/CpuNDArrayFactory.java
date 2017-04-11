@@ -20,6 +20,7 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
@@ -28,6 +29,7 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.TADManager;
@@ -56,6 +58,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class CpuNDArrayFactory extends BaseNDArrayFactory {
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
@@ -256,6 +259,15 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public INDArray createUninitialized(int[] shape, char ordering) {
         return new NDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
+    }
+
+    @Override
+    public INDArray createUninitializedDetached(int[] shape, char ordering) {
+        MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+        Nd4j.getMemoryManager().setCurrentWorkspace(null);
+        INDArray ret = new NDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
+        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+        return ret;
     }
 
     @Override
@@ -554,6 +566,59 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
             }
         }
         return ret;
+    }
+
+    public INDArray[] tear(INDArray tensor, int... dimensions) {
+        if (tensor.isCompressed())
+            Nd4j.getCompressor().decompressi(tensor);
+
+        Arrays.sort(dimensions);
+
+        Pair<DataBuffer, DataBuffer> tadBuffers = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(tensor, dimensions);
+
+        long tadLength = 1;
+        int[] shape = new int[dimensions.length];
+        for (int i = 0; i < dimensions.length; i++) {
+            tadLength *= tensor.shape()[dimensions[i]];
+            shape[i] = tensor.shape()[dimensions[i]];
+        }
+
+
+
+        int numTads = (int)(tensor.lengthLong() / tadLength);
+        INDArray[] result = new INDArray[numTads];
+
+        PointerPointer targets = new PointerPointer(numTads);
+
+        for (int x = 0; x < numTads; x++) {
+            result[x] = Nd4j.createUninitialized(shape);
+
+            targets.put(x, result[x].data().pointer());
+        }
+
+        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.tearDouble(null,
+                    (DoublePointer) tensor.data().pointer(),
+                    (IntPointer) tensor.shapeInfoDataBuffer().pointer(),
+                    targets,
+                    (IntPointer) result[0].shapeInfoDataBuffer().pointer(),
+                    (IntPointer) tadBuffers.getFirst().pointer(),
+                    (IntPointer) tadBuffers.getSecond().pointer()
+            );
+        } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.tearFloat(null,
+                    (FloatPointer) tensor.data().pointer(),
+                    (IntPointer) tensor.shapeInfoDataBuffer().pointer(),
+                    targets,
+                    (IntPointer) result[0].shapeInfoDataBuffer().pointer(),
+                    (IntPointer) tadBuffers.getFirst().pointer(),
+                    (IntPointer) tadBuffers.getSecond().pointer()
+                    );
+        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            throw new UnsupportedOperationException("Half precision isn't supported for CPU backend");
+        }
+
+        return result;
     }
 
     /**

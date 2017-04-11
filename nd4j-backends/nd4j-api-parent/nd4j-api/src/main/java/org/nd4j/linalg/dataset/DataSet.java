@@ -1475,4 +1475,19 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         result = 31 * result + (getLabelsMaskArray() != null ? getLabelsMaskArray().hashCode() : 0);
         return result;
     }
+
+    /**
+     * This method returns memory used by this DataSet
+     *
+     * @return
+     */
+    @Override
+    public long getMemoryFootprint() {
+        long reqMem = features.lengthLong() * Nd4j.sizeOfDataType();
+        reqMem += labels == null ? 0 : labels.lengthLong() * Nd4j.sizeOfDataType();
+        reqMem += featuresMask == null ? 0 : featuresMask.lengthLong() * Nd4j.sizeOfDataType();
+        reqMem += labelsMask == null ? 0 : labelsMask.lengthLong() * Nd4j.sizeOfDataType();
+
+        return reqMem;
+    }
 }

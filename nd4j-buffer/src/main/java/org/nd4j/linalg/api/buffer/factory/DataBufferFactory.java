@@ -25,6 +25,7 @@ import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.nio.ByteBuffer;
 
@@ -311,6 +312,8 @@ public interface DataBufferFactory {
      */
     DataBuffer createDouble(long length, boolean initialize);
 
+    DataBuffer createDouble(long length, boolean initialize, MemoryWorkspace workspace);
+
     /**
      * Create a float data buffer
      *
@@ -327,6 +330,8 @@ public interface DataBufferFactory {
      * @return the new data buffer
      */
     DataBuffer createFloat(long length, boolean initialize);
+
+    DataBuffer createFloat(long length, boolean initialize, MemoryWorkspace workspace);
 
     /**
      * Create an int data buffer
@@ -426,6 +431,8 @@ public interface DataBufferFactory {
      */
     DataBuffer createFloat(float[] data);
 
+    DataBuffer createFloat(float[] data, MemoryWorkspace workspace);
+
     /**
      * Creates an int data buffer
      *
@@ -468,6 +475,24 @@ public interface DataBufferFactory {
     DataBuffer createDouble(double[] data, boolean copy);
 
     /**
+     * Creates a double data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createDouble(double[] data, MemoryWorkspace workspace);
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data the data to create the buffer from
+     * @return the new buffer
+     */
+    DataBuffer createDouble(double[] data, boolean copy, MemoryWorkspace workspace);
+
+
+
+    /**
      * Creates a float data buffer
      *
      * @param data the data to create the buffer from
@@ -498,6 +523,8 @@ public interface DataBufferFactory {
      * @return the new buffer
      */
     DataBuffer createFloat(float[] data, boolean copy);
+
+    DataBuffer createFloat(float[] data, boolean copy, MemoryWorkspace workspace);
 
     /**
      * Creates an int data buffer
@@ -566,6 +593,8 @@ public interface DataBufferFactory {
      */
     DataBuffer createHalf(long length, boolean initialize);
 
+    DataBuffer createHalf(long length, boolean initialize, MemoryWorkspace workspace);
+
     /**
      * Creates a half-precision data buffer
      *
@@ -573,6 +602,12 @@ public interface DataBufferFactory {
      * @return the new buffer
      */
     DataBuffer createHalf(float[] data, boolean copy);
+
+    DataBuffer createHalf(float[] data, MemoryWorkspace workspace);
+
+    DataBuffer createHalf(float[] data, boolean copy, MemoryWorkspace workspace);
+
+
 
     /**
      * Creates a half-precision data buffer
