@@ -677,8 +677,7 @@ public class AtomicAllocator implements Allocator {
                                 } else {
                                     LockSupport.parkNanos(50000L);
                                 }
-                            } else
-                                LockSupport.parkNanos(500000L);
+                            }
                         } catch (Exception e) {
 
                         }
