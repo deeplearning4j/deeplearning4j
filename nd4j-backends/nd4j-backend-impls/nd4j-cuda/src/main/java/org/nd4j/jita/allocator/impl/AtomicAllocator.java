@@ -630,57 +630,61 @@ public class AtomicAllocator implements Allocator {
         @Override
         public void run() {
             while (true) {
-                GarbageBufferReference reference = (GarbageBufferReference) queue.poll();
-                if (reference != null) {
-                    AllocationPoint point = reference.getPoint();
+                try {
+                    GarbageBufferReference reference = threadId == 0 ? (GarbageBufferReference) queue.poll() : (GarbageBufferReference) queue.remove();
+                    if (reference != null) {
+                        AllocationPoint point = reference.getPoint();
 
-                    // skipping any allocation that is coming from workspace
-                    if (point.isAttached()) {
-                        // TODO: remove allocation point as well?
-                        if (!allocationsMap.containsKey(point.getObjectId()))
-                            throw new RuntimeException();
+                        // skipping any allocation that is coming from workspace
+                        if (point.isAttached()) {
+                            // TODO: remove allocation point as well?
+                            if (!allocationsMap.containsKey(point.getObjectId()))
+                                throw new RuntimeException();
 
-                        getFlowController().waitTillReleased(point);
+                            getFlowController().waitTillReleased(point);
 
-                        getFlowController().getEventsProvider().storeEvent(point.getLastWriteEvent());
-                        getFlowController().getEventsProvider().storeEvent(point.getLastReadEvent());
+                            getFlowController().getEventsProvider().storeEvent(point.getLastWriteEvent());
+                            getFlowController().getEventsProvider().storeEvent(point.getLastReadEvent());
 
-                        allocationsMap.remove(point.getObjectId());
+                            allocationsMap.remove(point.getObjectId());
 
-                        continue;
-                    }
+                            continue;
+                        }
 
-                    if (threadId == 0)
-                        stopper.set(System.currentTimeMillis());
+                        if (threadId == 0)
+                            stopper.set(System.currentTimeMillis());
 
-                    if (point.getAllocationStatus() == AllocationStatus.HOST) {
-                        purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
-                    } else if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
-                        purgeDeviceObject(0L, point.getDeviceId(), point.getObjectId(), point, false);
+                        if (point.getAllocationStatus() == AllocationStatus.HOST) {
+                            purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
+                        } else if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
+                            purgeDeviceObject(0L, point.getDeviceId(), point.getObjectId(), point, false);
 
-                        // and we deallocate host memory, since object is dereferenced
-                        purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
-                    }
+                            // and we deallocate host memory, since object is dereferenced
+                            purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
+                        }
 
-                } else {
-                    try {
-                        if (threadId == 0) {
-                            // we don't call for System.gc if last memory allocation was more then 3 seconds ago
-                            if (Nd4j.getMemoryManager().isPeriodicGcActive()) {
-                                long ct = System.currentTimeMillis();
-                                if (useTracker.get() > ct - 3000 && ct > Nd4j.getMemoryManager().getLastGcTime() + Nd4j.getMemoryManager().getAutoGcWindow()) {
-                                    Nd4j.getMemoryManager().invokeGc();
+                    } else {
+                        try {
+                            if (threadId == 0) {
+                                // we don't call for System.gc if last memory allocation was more then 3 seconds ago
+                                if (Nd4j.getMemoryManager().isPeriodicGcActive()) {
+                                    long ct = System.currentTimeMillis();
+                                    if (useTracker.get() > ct - 3000 && ct > Nd4j.getMemoryManager().getLastGcTime() + Nd4j.getMemoryManager().getAutoGcWindow()) {
+                                        Nd4j.getMemoryManager().invokeGc();
+                                    } else {
+                                        LockSupport.parkNanos(50000L);
+                                    }
                                 } else {
                                     LockSupport.parkNanos(50000L);
                                 }
-                            } else {
-                                LockSupport.parkNanos(50000L);
-                            }
-                        } else
-                            LockSupport.parkNanos(500000L);
-                    } catch (Exception e) {
+                            } else
+                                LockSupport.parkNanos(500000L);
+                        } catch (Exception e) {
 
+                        }
                     }
+                } catch (InterruptedException e) {
+                    // do nothing
                 }
             }
         }
