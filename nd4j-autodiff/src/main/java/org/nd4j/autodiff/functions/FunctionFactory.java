@@ -30,9 +30,9 @@ public interface FunctionFactory<X extends Field<X>> {
 
     DifferentialFunction<X> mean(DifferentialFunction<X> i_x,int...dimensions);
 
-    DifferentialFunction<X> std(DifferentialFunction<X> i_x,int...dimensions);
+    DifferentialFunction<X> std(DifferentialFunction<X> i_x, boolean biasCorrected, int... dimensions);
 
-    DifferentialFunction<X> variance(DifferentialFunction<X> i_x,int...dimensions);
+    DifferentialFunction<X> variance(DifferentialFunction<X> i_x, boolean biasCorrected, int... dimensions);
 
     DifferentialFunction<X> max(DifferentialFunction<X> i_x,int...dimensions);
 
@@ -53,6 +53,8 @@ public interface FunctionFactory<X extends Field<X>> {
     DifferentialFunction<X> sin(DifferentialFunction<X> iX);
 
     DifferentialFunction<X> tan(DifferentialFunction<X> iX);
+
+    DifferentialFunction<X> transpose(DifferentialFunction<X> iX);
 
     DifferentialFunction<X> acos(DifferentialFunction<X> iX);
 
@@ -121,4 +123,6 @@ public interface FunctionFactory<X extends Field<X>> {
     DifferentialFunction<X> leakyRelu(DifferentialFunction<X> iX, double cutoff);
 
     DifferentialFunction<X> leakyReluDerivative(DifferentialFunction<X> iX, double cutoff);
+
+    DifferentialFunction<X> reshape(Variable<X> arrayField, int[] shape);
 }

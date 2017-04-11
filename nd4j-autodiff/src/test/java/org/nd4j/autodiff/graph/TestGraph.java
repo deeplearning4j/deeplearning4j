@@ -1,14 +1,9 @@
 package org.nd4j.autodiff.graph;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Test;
 import org.nd4j.autodiff.graph.api.*;
-import org.nd4j.autodiff.graph.graph.Graph;
 import org.nd4j.autodiff.graph.iterator.RandomWalkIterator;
-import org.nd4j.autodiff.graph.iterator.WeightedRandomWalkIterator;
-import org.nd4j.linalg.io.ClassPathResource;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;

@@ -5,7 +5,7 @@ import org.nd4j.autodiff.graph.api.IVertexSequence;
 import org.nd4j.autodiff.graph.api.NoEdgeHandling;
 import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.graph.exception.NoEdgesException;
-import org.nd4j.autodiff.graph.graph.VertexSequence;
+import org.nd4j.autodiff.graph.VertexSequence;
 
 import java.util.NoSuchElementException;
 import java.util.Random;

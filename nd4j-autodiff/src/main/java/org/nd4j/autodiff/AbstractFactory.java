@@ -1,7 +1,7 @@
 package org.nd4j.autodiff;
 
 
-import org.nd4j.autodiff.graph.graph.Graph;
+import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
 
@@ -34,8 +34,8 @@ public interface AbstractFactory<X extends Field<X>>
  X sum(X i_x,int...dimensions);
  X prod(X i_x,int...dimensions);
  X mean(X i_x,int...dimensions);
- X std(X i_x,int...dimensions);
- X variance(X i_x,int...dimensions);
+ X std(X i_x, boolean biasCorrected, int... dimensions);
+ X variance(X i_x, boolean biasCorrected, int... dimensions);
  X max(X i_x,int...dimensions);
  X min(X i_x,int...dimensions);
  X norm1(X i_x,int...dimensions);

@@ -1,4 +1,4 @@
-package org.nd4j.autodiff.graph.graph;
+package org.nd4j.autodiff.graph;
 
 import guru.nidi.graphviz.attribute.Color;
 import guru.nidi.graphviz.attribute.Style;

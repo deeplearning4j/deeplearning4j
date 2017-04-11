@@ -2,7 +2,7 @@ package org.nd4j.autodiff;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.nd4j.autodiff.graph.graph.Graph;
+import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
@@ -89,12 +89,12 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
-    public ArrayField std(ArrayField i_x, int... dimensions) {
+    public ArrayField std(ArrayField i_x, boolean biasCorrected, int... dimensions) {
         return i_x.std(dimensions);
     }
 
     @Override
-    public ArrayField variance(ArrayField i_x, int... dimensions) {
+    public ArrayField variance(ArrayField i_x, boolean biasCorrected, int... dimensions) {
         return i_x.variance(dimensions);
     }
 
@@ -162,6 +162,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
                 x.doubleValue()) : new ArrayField(y.doubleValue());*/
         throw new UnsupportedOperationException();
     }
+
 
 
     @Override

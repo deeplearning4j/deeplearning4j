@@ -5,7 +5,7 @@ import java.util.List;
 import org.nd4j.autodiff.AbstractFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.graph.graph.Graph;
+import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.linalg.api.ops.impl.accum.*;
@@ -181,11 +181,15 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
     }
 
     @Override
-    public DifferentialFunction<X> std(DifferentialFunction<X> i_x, int... dimensions) {
+    public DifferentialFunction<X> std(DifferentialFunction<X> i_x,
+                                       boolean biasCorrected,
+                                       int... dimensions) {
         return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
             @Override
             protected X doGetValue() {
-                return mFactory.std(arg().doGetValue(),dimensions);
+                return mFactory.std(arg().doGetValue(),
+                        biasCorrected ,
+                        dimensions);
             }
 
             @Override
@@ -205,11 +209,14 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
     }
 
     @Override
-    public DifferentialFunction<X> variance(DifferentialFunction<X> i_x, int... dimensions) {
+    public DifferentialFunction<X> variance(DifferentialFunction<X> i_x,
+                                            boolean biasCorrected,
+                                            int... dimensions) {
         return new AbstractReduceUnaryFunction<X>(graph,i_x,dimensions) {
             @Override
             protected X doGetValue() {
-                return mFactory.variance(arg().doGetValue(),dimensions);
+                return mFactory.variance(arg().doGetValue(),
+                        biasCorrected, dimensions);
             }
 
 
@@ -446,6 +453,37 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public String functionName() {
                 return new Tan().name();
+            }
+        };
+    }
+
+
+
+
+    @Override
+    public DifferentialFunction<X> transpose(DifferentialFunction<X> iX) {
+        return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
+
+            @Override
+            public X doGetValue() {
+                return mFactory.transpose(arg().getValue());
+            }
+
+            @Override
+            public double getReal() {
+                return Math.tan(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                 return this;
+            }
+
+
+
+            @Override
+            public String functionName() {
+                return "transpose";
             }
         };
     }
@@ -1474,6 +1512,32 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public String functionName() {
                 return new LeakyReLUDerivative().name();
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> reshape(Variable<X> iX, int[] shape) {
+        return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
+
+            @Override
+            public X doGetValue() {
+                return mFactory.reshape(arg().getValue(),shape);
+            }
+
+            @Override
+            public double getReal() {
+                return Math.floor(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                return this;
+            }
+
+            @Override
+            public String functionName() {
+                return "reshape";
             }
         };
     }

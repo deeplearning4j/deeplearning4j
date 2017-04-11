@@ -1,4 +1,4 @@
-package org.nd4j.autodiff.graph.graph;
+package org.nd4j.autodiff.graph;
 
 import org.nd4j.autodiff.graph.api.IGraph;
 import org.nd4j.autodiff.graph.api.IVertexSequence;
