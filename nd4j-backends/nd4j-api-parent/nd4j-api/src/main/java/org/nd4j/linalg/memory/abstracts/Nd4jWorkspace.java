@@ -274,7 +274,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
         if (tagScope.get() > 0) {
             if (tagScope.decrementAndGet() == 0){
-//                Nd4j.getMemoryManager().setCurrentWorkspace(getParentWorkspace());
+                Nd4j.getMemoryManager().setCurrentWorkspace(this);
             }
             return;
         }
@@ -344,14 +344,14 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 resetWorkspace();
 
         } else if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && (resetPlanned.get() || currentSize.get() == hostOffset.get() ) && currentSize.get() > 0) {
-            hostOffset.set(0);
-            deviceOffset.set(0);
-            resetPlanned.set(false);
+            //hostOffset.set(0);
+            //deviceOffset.set(0);
+            //resetPlanned.set(false);
 
             //if (currentSize.get() > 0)
                 //resetWorkspace();
 
-            log.info("Resetting workspace at the end of loop... {} bytes ", hostOffset.get());
+            //log.info("Resetting workspace at the end of loop... {} bytes ", hostOffset.get());
         }
 
         clearExternalAllocations();

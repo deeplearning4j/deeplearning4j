@@ -5118,4 +5118,32 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         return copy;
     }
+
+    /**
+     * This method pulls this INDArray into current Workspace.
+     *
+     * PLEASE NOTE: If there's no current Workspace - INDArray returned as is
+     *
+     * @return
+     */
+    @Override
+    public INDArray migrate() {
+        MemoryWorkspace current = Nd4j.getMemoryManager().getCurrentWorkspace();
+
+        if (current == null)
+            return this;
+
+        INDArray copy = null;
+
+        if (!this.isView()) {
+            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
+            Nd4j.getMemoryManager().memcpy(buffer, this.data());
+
+            copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
+        } else {
+            copy = this.dup(this.ordering());
+        }
+
+        return copy;
+    }
 }

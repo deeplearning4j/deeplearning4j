@@ -2430,4 +2430,13 @@ public interface INDArray extends Serializable {
      * @return
      */
     INDArray leverageTo(String id);
+
+    /**
+     * This method pulls this INDArray into current Workspace.
+     *
+     * PLEASE NOTE: If there's no current Workspace - INDArray returned as is
+     *
+     * @return
+     */
+    INDArray migrate();
 }

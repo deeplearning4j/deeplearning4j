@@ -230,6 +230,9 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
             }
             assertFalse(array2.isAttached());
 
+            log.info("Current workspace: {}", Nd4j.getMemoryManager().getCurrentWorkspace());
+            assertTrue(wsOne == Nd4j.getMemoryManager().getCurrentWorkspace());
+
             INDArray array3 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
 
             reqMemory = 5 * Nd4j.sizeOfDataType();

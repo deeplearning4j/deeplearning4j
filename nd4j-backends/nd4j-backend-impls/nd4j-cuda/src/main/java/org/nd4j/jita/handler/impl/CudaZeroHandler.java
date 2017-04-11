@@ -854,7 +854,7 @@ public class CudaZeroHandler implements MemoryHandler {
         int deviceId = getDeviceId();
 
 
-        if (dstPoint.getDeviceId() >= 0 && dstPoint.getDeviceId() == deviceId) {
+        if (dstPoint.getDeviceId() >= 0 && dstPoint.getDeviceId() == deviceId ) {
             return;
         }
 
