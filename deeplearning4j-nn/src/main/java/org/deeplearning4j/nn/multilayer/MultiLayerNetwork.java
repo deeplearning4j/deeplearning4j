@@ -650,7 +650,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
 
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).policyLearning(LearningPolicy.OVER_TIME).build();
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .cyclesBeforeInitialization(layers.length)
+                .policyLearning(LearningPolicy.OVER_TIME)
+                .build();
 
         for (int i = 0; i < layers.length; i++) {
             try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "1")){
@@ -761,8 +765,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             }
         }
 
-        if (layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.SEPARATE)
-            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
+        //if (layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.SEPARATE)
+        //    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
 
         return activations;
     }
@@ -1142,6 +1146,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 .initialSize(0)
                 .overallocationLimit(0.3)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
+                .cyclesBeforeInitialization(layerFrom)
                 .policyLearning(LearningPolicy.OVER_TIME)
                 .build();
 
@@ -1175,8 +1180,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             }
         }
 
-        if (layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.SEPARATE)
-            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceBackProp).initializeWorkspace();
+        //if (layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.SEPARATE)
+        //    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceBackProp).initializeWorkspace();
 
         //Add gradients to Gradients (map), in correct order
         for (Triple<String, INDArray, Character> triple : gradientList) {
