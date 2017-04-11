@@ -1526,7 +1526,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
     @Override
     public DifferentialFunction<X> reshape(Variable<X> iX, int[] shape) {
-        return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
+        return new AbstractUnaryFunction<X>(mFactory.graph(),iX,shape) {
 
             @Override
             public X doGetValue() {
