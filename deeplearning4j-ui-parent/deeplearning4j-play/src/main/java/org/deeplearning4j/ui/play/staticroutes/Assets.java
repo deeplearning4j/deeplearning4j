@@ -4,7 +4,7 @@ import com.google.common.net.HttpHeaders;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
-import org.datavec.api.util.ClassPathResource;
+import org.nd4j.linalg.io.ClassPathResource;
 import play.api.libs.MimeTypes;
 import play.mvc.Result;
 
