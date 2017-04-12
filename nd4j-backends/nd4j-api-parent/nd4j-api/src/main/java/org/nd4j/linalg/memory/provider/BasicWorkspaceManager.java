@@ -27,7 +27,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     private DummyWorkspace dummyWorkspace = new DummyWorkspace();
     private ReferenceQueue<MemoryWorkspace> queue;
     private WorkspaceDeallocatorThread thread;
-    private Map<Long, Nd4jWorkspace.GarbageWorkspaceReference> referenceMap = new ConcurrentHashMap<>();
+    private Map<String, Nd4jWorkspace.GarbageWorkspaceReference> referenceMap = new ConcurrentHashMap<>();
 
     public BasicWorkspaceManager() {
         this(WorkspaceConfiguration.builder().initialSize(0).maxSize(0).overallocationLimit(0.3).policyAllocation(AllocationPolicy.OVERALLOCATE).policyLearning(LearningPolicy.FIRST_LOOP).policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.EXTERNAL).build());
@@ -73,7 +73,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
     protected void pickReference(MemoryWorkspace workspace) {
         Nd4jWorkspace.GarbageWorkspaceReference reference = new Nd4jWorkspace.GarbageWorkspaceReference(workspace, queue);
-        referenceMap.put(reference.getThreadId(), reference);
+        referenceMap.put(reference.getId()+ "_" + reference.getThreadId(), reference);
     }
 
     @Override
@@ -205,7 +205,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
                         PagedPointer ptrHost = reference.getPointerHost();
                         if (ptrHost != null) {
-                            referenceMap.remove(ptrHost.address());
+                            referenceMap.remove(reference.getId() + "_" + reference.getThreadId());
                             Nd4j.getMemoryManager().release(ptrHost, MemoryKind.HOST);
                         }
                     }
