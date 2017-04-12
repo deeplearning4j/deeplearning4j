@@ -12,7 +12,7 @@
 #include <templatemath.h>
 #include <ops/ops.h>
 #include <ops/special_ops.h>
-#ifndef __CUDACC__
+#ifdef _OPENMP
 #include <omp.h>
 #endif
 #include <pairwise_util.h>
@@ -26,6 +26,9 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <helper_cuda.h>
+#endif
+
+#ifndef _OPENMP
 #define omp_get_thread_num() 0
 #define omp_get_max_threads() 1
 #endif

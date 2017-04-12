@@ -5,7 +5,7 @@
 #ifndef NATIVEOPERATIONS_CONVOLUTION_H
 #define NATIVEOPERATIONS_CONVOLUTION_H
 
-#ifndef __CUDACC__
+#ifdef _OPENMP
 #include <omp.h>
 #endif
 

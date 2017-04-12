@@ -3,7 +3,7 @@
 #include <helpers/sharedmem.h>
 #include <stdio.h>
 #include <helpers/shape.h>
-#ifndef __CUDACC__
+#ifdef _OPENMP
 #include <omp.h>
 #endif
 #include <templatemath.h>
@@ -17,6 +17,9 @@
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
+#endif
+
+#ifndef _OPENMP
 #define omp_get_thread_num() 0
 #define omp_get_max_threads() 1
 #endif

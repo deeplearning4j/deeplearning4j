@@ -7,14 +7,18 @@
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
+#endif
+#ifndef _OPENMP
 #define omp_get_thread_num() 0
+#define omp_get_num_threads() 1
 #define omp_get_max_threads() 1
+#define omp_set_num_threads(threads)
 #endif
 #include <pairwise_util.h>
 #include <pointercast.h>
 #include <dll.h>
 #include <nd4jmemset.h>
-#ifndef __CUDACC__
+#ifdef _OPENMP
 #include <omp.h>
 #endif
 //Loops adapted from:
