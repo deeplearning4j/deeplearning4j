@@ -36,7 +36,7 @@ export ANDROID_NDK=/path/to/android-ndk/
 cd libnd4j
 bash buildnativeoperations.sh -platform android-xxx
 cd ../nd4j
-mvn clean install -Djavacpp.platform=android-xxx -DskipTests -pl '!:nd4j-cuda-8.0,!:nd4j-cuda-8.0-platform'
+mvn clean install -Djavacpp.platform=android-xxx -DskipTests -pl '!:nd4j-cuda-8.0,!:nd4j-cuda-8.0-platform,!:nd4j-tests'
 ```
 
 ### OSX
