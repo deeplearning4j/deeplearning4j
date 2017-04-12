@@ -602,7 +602,7 @@ template<typename OpType>
 
                 char xOrder = shape::order(xShapeInfo);
                 char yOrder = shape::order(yShapeInfo);
-                if(xOrder == yOrder && (xElementWiseStride  >= 1 && yElementWiseStride >= 1)) {
+                if(xOrder == yOrder && (xElementWiseStride  == 1 && yElementWiseStride == 1)) {
                     if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 
 // TODO:: proper reduction required here
@@ -620,6 +620,7 @@ template<typename OpType>
                     else {
 // TODO:: proper reduction required here
                         for(Nd4jIndex i = 0; i < length; i++) {
+                            printf("comparing [%f] -> [%f]\n", x[i * xElementWiseStride],y[i * yElementWiseStride]);
                             startingVal = OpType::update(startingVal, OpType::op(x[i * xElementWiseStride],y[i * yElementWiseStride], extraParamsVals), extraParamsVals);
                         }
 
@@ -630,47 +631,26 @@ template<typename OpType>
 
 
                 else {
+                    int xCoords[MAX_RANK];
+                    int yCoords[MAX_RANK];
+
+                    int xRank = shape::rank(xShapeInfo);
+                    int yRank = shape::rank(yShapeInfo);
+
                     int *xShape = shape::shapeOf(xShapeInfo);
                     int *xStride = shape::stride(xShapeInfo);
+                    int *yShape = shape::shapeOf(yShapeInfo);
                     int *yStride = shape::stride(yShapeInfo);
-                    T startingVal = OpType::startingValue(x);
-                    Nd4jIndex n = shape::length(xShapeInfo);
-                    int shapeIter[MAX_RANK];
-                    int coord[MAX_RANK];
-                    int dim;
-                    int xStridesIter[MAX_RANK];
-                    int yStridesIter[MAX_RANK];
-                    int rank = shape::rank(xShapeInfo);
-                    if(PrepareTwoRawArrayIter<T>(rank,
-                                                 xShape,
-                                                 x,
-                                                 xStride,
-                                                 y,
-                                                 yStride,
-                                                 &rank,
-                                                 shapeIter,
-                                                 &x,
-                                                 xStridesIter,
-                                                 &y,
-                                                 yStridesIter) >= 0) {
-                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); {
-                                /* Process the innermost dimension */
-                                startingVal = OpType::update(startingVal, OpType::op(x[0],y[0], extraParamsVals), extraParamsVals);
-                            } ND4J_RAW_ITER_TWO_NEXT(dim,
-                                                     rank,
-                                                     coord,
-                                                     shapeIter,
-                                                     x,
-                                                     xStridesIter,
-                                                     y,
-                                                     yStridesIter);
 
-                        return OpType::postProcess(startingVal, n, extraParamsVals);
-                    }
-                    else {
-                        printf("Unable to prepare array\n");
-                    }
+                    for(unsigned int i = 0 ;i < length; i++) {
+                        shape::ind2subC(xRank, xShape, i, xCoords);
+                        shape::ind2subC(yRank, yShape, i, yCoords);
 
+                        Nd4jIndex offset = shape::getOffset(0, xShape, xStride, xCoords, xRank);
+                        Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoords, yRank);
+
+                        startingVal = OpType::update(startingVal, OpType::op(x[offset], y[yOffset], extraParamsVals), extraParamsVals);
+                    }
                 }
 
                 return startingVal;
