@@ -3,20 +3,23 @@ package org.nd4j.linalg.api.blas.impl;
 import org.nd4j.linalg.api.blas.Level2;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.ndarray.BaseNDArray;
+import org.nd4j.linalg.api.ndarray.BaseSparseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
  * Created by audrey on 3/13/17.
  */
 public class SparseBaseLevel2 extends SparseBaseLevel implements Level2{
+
+
     @Override
     public void gemv(char order, char transA, double alpha, INDArray A, INDArray X, double beta, INDArray Y) {
-
     }
 
     @Override
     public void gemv(char order, char transA, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -26,7 +29,7 @@ public class SparseBaseLevel2 extends SparseBaseLevel implements Level2{
 
     @Override
     public void gbmv(char order, char TransA, int KL, int KU, IComplexNumber alpha, IComplexNDArray A, IComplexNDArray X, IComplexNumber beta, IComplexNDArray Y) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override

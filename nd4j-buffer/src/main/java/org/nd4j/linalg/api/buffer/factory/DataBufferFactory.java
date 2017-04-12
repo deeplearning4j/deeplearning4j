@@ -547,10 +547,7 @@ public interface DataBufferFactory {
      * backed by this pointer with the given
      * type and length.
      */
-    DataBuffer create(Pointer pointer,
-                      DataBuffer.Type type,
-                      long length,
-                      Indexer indexer);
+    DataBuffer create(Pointer pointer, DataBuffer.Type type, long length, Indexer indexer);
 
     /**
      *
@@ -558,7 +555,7 @@ public interface DataBufferFactory {
      * @param length
      * @return
      */
-    DataBuffer create(DoublePointer doublePointer,long length);
+    DataBuffer create(DoublePointer doublePointer, long length);
 
     /**
      *

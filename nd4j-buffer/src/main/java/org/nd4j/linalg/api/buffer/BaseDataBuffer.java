@@ -524,8 +524,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asFloatPointer(); //new FloatPointer(length());
             indexer = FloatIndexer.create((FloatPointer) pointer);
 
-//            if (initialize)
-//                fillPointerWithZero();
+            //            if (initialize)
+            //                fillPointerWithZero();
 
         } else if (dataType() == Type.INT) {
             pointer = new IntPointer(length());

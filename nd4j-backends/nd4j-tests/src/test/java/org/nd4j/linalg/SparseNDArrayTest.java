@@ -2,8 +2,8 @@ package org.nd4j.linalg;
 
 import org.junit.Test;
 
+import org.nd4j.linalg.api.ndarray.BaseSparseNDArrayCSR;
 import org.nd4j.linalg.api.ndarray.ISparseNDArray;
-import org.nd4j.linalg.cpu.nativecpu.SparseNDArrayCSR;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.*;
@@ -46,8 +46,8 @@ public class SparseNDArrayTest {
         *  [ 0 8 0 0 -5]]
         * */
         ISparseNDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
-        if(sparseNDArray instanceof SparseNDArrayCSR) {
-            SparseNDArrayCSR sparseCSRArray = (SparseNDArrayCSR) sparseNDArray;
+        if(sparseNDArray instanceof BaseSparseNDArrayCSR) {
+            BaseSparseNDArrayCSR sparseCSRArray = (BaseSparseNDArrayCSR) sparseNDArray;
             sparseCSRArray.putScalar(2, 1, 3);
 
             double[] expectedValues = {1, -2, -3, -2, 5, 3, 4, 6, 4, -4, 2, 7, 8, -5};
@@ -68,8 +68,8 @@ public class SparseNDArrayTest {
     @Test
     public void shouldReallocate(){
         ISparseNDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
-        if(sparseNDArray instanceof SparseNDArrayCSR) {
-            SparseNDArrayCSR sparseCSRArray = (SparseNDArrayCSR) sparseNDArray;
+        if(sparseNDArray instanceof BaseSparseNDArrayCSR) {
+            BaseSparseNDArrayCSR sparseCSRArray = (BaseSparseNDArrayCSR) sparseNDArray;
             int initialSize = sparseCSRArray.getDoubleValues().length;
 
             for(int i = 0; i< shape[0]; i++){
@@ -93,8 +93,8 @@ public class SparseNDArrayTest {
         *  [ 0 8 0 0 -5]]
         * */
         ISparseNDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
-        if(sparseNDArray instanceof SparseNDArrayCSR) {
-            SparseNDArrayCSR sparseCSRArray = (SparseNDArrayCSR) sparseNDArray;
+        if(sparseNDArray instanceof BaseSparseNDArrayCSR) {
+            BaseSparseNDArrayCSR sparseCSRArray = (BaseSparseNDArrayCSR) sparseNDArray;
             sparseCSRArray.putScalar(2, 2, 10);
 
             double[] expectedValues = {1, -2, -3, -2, 5, 10, 6, 4, -4, 2, 7, 8, -5};

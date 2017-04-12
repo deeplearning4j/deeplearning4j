@@ -58,17 +58,17 @@ public abstract class BaseSparseBlasWrapper implements BlasWrapper{
 
     @Override
     public IComplexNDArray scal(IComplexFloat alpha, IComplexNDArray x) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNDArray scal(IComplexDouble alpha, IComplexNDArray x) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNDArray scal(IComplexNumber alpha, IComplexNDArray x) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -78,7 +78,7 @@ public abstract class BaseSparseBlasWrapper implements BlasWrapper{
 
     @Override
     public IComplexNDArray copy(IComplexNDArray x, IComplexNDArray y) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -98,7 +98,7 @@ public abstract class BaseSparseBlasWrapper implements BlasWrapper{
 
     @Override
     public IComplexNDArray axpy(IComplexNumber da, IComplexNDArray dx, IComplexNDArray dy) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -108,12 +108,12 @@ public abstract class BaseSparseBlasWrapper implements BlasWrapper{
 
     @Override
     public IComplexNumber dotc(IComplexNDArray x, IComplexNDArray y) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNumber dotu(IComplexNDArray x, IComplexNDArray y) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -123,7 +123,7 @@ public abstract class BaseSparseBlasWrapper implements BlasWrapper{
 
     @Override
     public IComplexNumber nrm2(IComplexNDArray x) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -133,7 +133,7 @@ public abstract class BaseSparseBlasWrapper implements BlasWrapper{
 
     @Override
     public IComplexNumber asum(IComplexNDArray x) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -143,7 +143,7 @@ public abstract class BaseSparseBlasWrapper implements BlasWrapper{
 
     @Override
     public int iamax(IComplexNDArray x) {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -178,42 +178,42 @@ public abstract class BaseSparseBlasWrapper implements BlasWrapper{
 
     @Override
     public IComplexNDArray gemv(IComplexDouble alpha, IComplexNDArray a, IComplexNDArray x, IComplexDouble beta, IComplexNDArray y) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNDArray gemv(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray x, IComplexNumber beta, IComplexNDArray y) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNDArray gemv(IComplexFloat alpha, IComplexNDArray a, IComplexNDArray x, IComplexFloat beta, IComplexNDArray y) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNDArray geru(IComplexDouble alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNDArray geru(IComplexNumber alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNDArray geru(IComplexFloat alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNDArray gerc(IComplexFloat alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNDArray gerc(IComplexDouble alpha, IComplexNDArray x, IComplexNDArray y, IComplexNDArray a) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -228,7 +228,7 @@ public abstract class BaseSparseBlasWrapper implements BlasWrapper{
 
     @Override
     public IComplexNDArray gemm(IComplexNumber alpha, IComplexNDArray a, IComplexNDArray b, IComplexNumber beta, IComplexNDArray c) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override

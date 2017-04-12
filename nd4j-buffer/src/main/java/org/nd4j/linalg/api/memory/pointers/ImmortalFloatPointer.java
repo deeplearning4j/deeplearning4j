@@ -29,6 +29,6 @@ public class ImmortalFloatPointer extends FloatPointer {
     @Override
     public void deallocate(boolean deallocate) {
         log.info("deallocate 2");
-      //  super.deallocate(deallocate);
+        //  super.deallocate(deallocate);
     }
 }

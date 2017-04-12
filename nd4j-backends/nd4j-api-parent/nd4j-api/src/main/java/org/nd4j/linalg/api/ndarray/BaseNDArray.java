@@ -91,7 +91,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      *
      */
     private static final long serialVersionUID = 3285982317165542614L;
-    public static final boolean isSparse = false;
 
     protected transient volatile DataBuffer shapeInformation;
     protected transient volatile DataBuffer data;
@@ -2015,7 +2014,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
     @Override
     public boolean isSparse(){
-        return isSparse;
+        return false;
     }
 
     @Override

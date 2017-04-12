@@ -9,7 +9,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 /**
  * @author Audrey Loeffel
  */
-public class BaseSparseNDArrayCSR extends BaseSparseNDArray{
+public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     protected static final SparseFormat format = SparseFormat.CSR;
     protected transient volatile DataBuffer values;
     protected transient volatile DataBuffer columns;
@@ -36,6 +36,7 @@ public class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         checkArgument(data.length == columns.length);
         checkArgument(pointerB.length == pointerE.length);
 
+        // TODO
         if (shape.length == 2) {
             nbRows = shape[0];
             nbColumns = shape[1];
@@ -43,22 +44,21 @@ public class BaseSparseNDArrayCSR extends BaseSparseNDArray{
             nbRows = 1;
             nbColumns = shape[0];
         } else {
-            // ???
+            // ??
         }
 
         int valuesSpace = (int) (data.length * THRESHOLD_MEMORY_ALLOCATION) + data.length;
-        this.values = Nd4j.createBuffer(valuesSpace);// new DoubleBuffer(valuesSpace);
+        this.values = Nd4j.createBuffer(valuesSpace);
         this.values.setData(data);
-        this.columns = Nd4j.createBuffer(valuesSpace); // new DoubleBuffer(valuesSpace);
+        this.columns = Nd4j.createBuffer(valuesSpace);
         this.columns.setData(columns);
-        //bufferValuesLength = valuesSpace;
         nnz = data.length;
 
         // The size of these pointers are constant
         int pointersSpace = nbRows;
-        this.pointerB = Nd4j.createBuffer(pointersSpace); //new IntBuffer(pointersSpace);
+        this.pointerB = Nd4j.createBuffer(pointersSpace);
         this.pointerB.setData(pointerB);
-        this.pointerE = Nd4j.createBuffer(pointersSpace); /// new IntBuffer(pointersSpace);
+        this.pointerE = Nd4j.createBuffer(pointersSpace);
         this.pointerE.setData(pointerE);
     }
 

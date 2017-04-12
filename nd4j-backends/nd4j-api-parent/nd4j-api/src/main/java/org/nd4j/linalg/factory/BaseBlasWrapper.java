@@ -21,9 +21,6 @@ import org.nd4j.linalg.util.LinAlgExceptions;
 
 public abstract class BaseBlasWrapper implements BlasWrapper {
 
-    public BaseBlasWrapper() {
-        super();
-    }
 
     @Override
     public Lapack lapack() {
