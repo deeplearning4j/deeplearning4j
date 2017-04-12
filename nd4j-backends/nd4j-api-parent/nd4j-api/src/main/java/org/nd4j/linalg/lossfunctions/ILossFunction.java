@@ -76,4 +76,10 @@ public interface ILossFunction extends Serializable {
     Pair<Double, INDArray> computeGradientAndScore(INDArray labels, INDArray preOutput, IActivation activationFn,
                     INDArray mask, boolean average);
 
+    /**
+     * The name of this function
+     * @return
+     */
+    String name();
+
 }

@@ -430,4 +430,154 @@ public class TensorGrad {
                 .varName("transpose(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
     }
+
+
+
+   public TensorGradVariable rollAxis(TensorGradVariable x, int axis) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.rollAxis(x.getArrayField(),axis))
+                .varName("rollAxis(" + x.getVarName() + ")").tensorGrad(this)
+                .build();
+    }
+
+    public TensorGradVariable cosineSimilarity(TensorGradVariable iX,TensorGradVariable i_y, int...dimensions) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.cosineSimilarity(iX.getArrayField(),i_y.getArrayField(),dimensions))
+                .varName("cosineSimilarity(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .build();
+    }
+
+    public TensorGradVariable euclideanDistance(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.euclideanDistance(iX.getArrayField(),i_y.getArrayField(),dimensions))
+                .varName("euclideanDistance(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .build();
+    }
+
+    public TensorGradVariable manhattanDistance(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.manhattanDistance(iX.getArrayField(),i_y.getArrayField(),dimensions))
+                .varName("manhattanDistance(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .build();
+    }
+
+    public TensorGradVariable lossBinaryXENT(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.lossBinaryXENT(iX.getArrayField(),i_y.getArrayField(),dimensions))
+                .varName("lossBinaryXENT(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .build();
+    }
+
+    public TensorGradVariable lossCosineSimilarity(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.lossCosineSimilarity(iX.getArrayField(),i_y.getArrayField(),dimensions))
+                .varName("lossCosineSimilarity(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .build();
+    }
+
+    public TensorGradVariable lossHinge(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.lossHinge(iX.getArrayField(),i_y.getArrayField(),dimensions))
+                .varName("lossHinge(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .build();
+    }
+
+    public TensorGradVariable lossKLD(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.lossKLD(iX.getArrayField(),i_y.getArrayField(),dimensions))
+                .varName("lossKLD(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .build();
+    }
+
+    public TensorGradVariable lossL1(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.lossL1(iX.getArrayField(),i_y.getArrayField(),dimensions))
+                .varName("lossL1(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .build();
+    }
+
+    public TensorGradVariable lossL2(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.lossL2(iX.getArrayField(),i_y.getArrayField(),dimensions))
+                .varName("lossL2(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .build();
+    }
+
+    public TensorGradVariable lossMAE(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.lossMAE(iX.getArrayField(),i_y.getArrayField(),dimensions))
+                .varName("lossMAE(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .build();
+    }
+
+    public TensorGradVariable lossMAPE(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.lossMAPE(iX.getArrayField(),i_y.getArrayField(),dimensions))
+                .varName("lossMAPE(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .build();
+    }
+
+    public TensorGradVariable lossMSE(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.lossMSE(iX.getArrayField(),i_y.getArrayField(),dimensions))
+                .varName("lossMSE(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .build();
+    }
+
+    public TensorGradVariable lossMCXENT(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.lossMCXENT(iX.getArrayField(),i_y.getArrayField(),dimensions))
+                .varName("lossMCXENT(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .build();
+    }
+
+    public TensorGradVariable lossMSLE(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.lossMSLE(iX.getArrayField(),i_y.getArrayField(),dimensions))
+                .varName("lossMSLE(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .build();
+    }
+
+    public TensorGradVariable lossNegativeLogLikelihood(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.transpose(iX.getArrayField()))
+                .varName("lossNegativeLogLikelihood(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .build();
+    }
+
+    public  TensorGradVariable lossPoisson(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.lossPoisson(iX.getArrayField(),i_y.getArrayField(),dimensions))
+                .varName("lossPoisson(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .build();
+    }
+
+
+    public TensorGradVariable lossSquaredHinge(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.lossSquaredHinge(iX.getArrayField(),i_y.getArrayField(),dimensions))
+                .varName("lossSquaredHinge(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .build();
+    }
+
+
+
 }

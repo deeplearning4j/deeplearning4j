@@ -7,7 +7,11 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.*;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
+import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
@@ -17,6 +21,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
+import org.nd4j.linalg.lossfunctions.impl.*;
 import org.nd4j.linalg.util.ArrayUtil;
 
 /**
@@ -305,6 +310,15 @@ public class ArrayField implements Field<ArrayField> {
                 OpState.OpType.TRANSFORM);
     }
 
+    public ArrayField expandDims(int dim) {
+        return addArrayOp(
+                "expandDims",
+                new int[]{dim},
+                ArrayUtil.reverseCopy(input.getShape()),
+                null,
+                OpState.OpType.TRANSFORM);
+    }
+
     public ArrayField sum(int[] dimensions) {
         return addArrayOp(
                 new Sum().name(),
@@ -425,6 +439,217 @@ public class ArrayField implements Field<ArrayField> {
                 OpState.OpType.BROADCAST);
     }
 
+
+
+    public ArrayField repeat(int axis) {
+        return addArrayOp("repeat",
+                new int[]{axis},
+                input.getShape(),
+                null,
+                OpState.OpType.BROADCAST);
+    }
+
+    public ArrayField broadcast(int[] shape) {
+        return addArrayOp("broadcast",null,shape,null, OpState.OpType.BROADCAST);
+    }
+
+
+    public ArrayField eq(ArrayField i_y) {
+        return addPairTransformOp(new EqualsWithEps().name(),i_y);
+    }
+
+    public ArrayField neq(ArrayField i_y) {
+        return addPairTransformOp(new Not().name(),i_y);
+    }
+    public ArrayField or(ArrayField i_y) {
+        return addPairTransformOp(new Or().name(),i_y);
+    }
+
+    public ArrayField rollAxis(int axis) {
+        return addTransformOp("rollAxis",new Object[]{axis});
+    }
+
+    public ArrayField cosineSimilarity(ArrayField i_y, int...dimensions) {
+        return addPairReduceOp(new CosineSimilarity().name(),i_y,dimensions,null);
+    }
+
+    public ArrayField euclideanDistance(ArrayField i_y,int...dimensions) {
+        return addPairReduceOp(new EuclideanDistance().name(),i_y,dimensions,null);
+
+    }
+
+    public ArrayField manhattanDistance(ArrayField i_y,int...dimensions) {
+        return addPairReduceOp(new ManhattanDistance().name(),i_y,dimensions,null);
+
+    }
+
+    public ArrayField lossBinaryXENT(ArrayField i_y,int...dimensions) {
+        return addPairReduceOp(new LossBinaryXENT().name(),i_y,dimensions,null);
+    }
+
+
+    public ArrayField lossCosineSimilarity(ArrayField i_y,int...dimensions) {
+        return addPairReduceOp(new LossCosineProximity().name(),i_y,dimensions,null);
+
+    }
+
+    public ArrayField lossHinge(ArrayField i_y,int...dimensions) {
+        return addPairReduceOp(new LossHinge().name(),i_y,dimensions,null);
+
+    }
+
+    public ArrayField lossKLD(ArrayField i_y,int...dimensions) {
+        return addPairReduceOp(new LossKLD().name(),i_y,dimensions,null);
+    }
+
+
+    public ArrayField lossL1(ArrayField i_y,int...dimensions) {
+        return addPairReduceOp(new LossL1().name(),i_y,dimensions,null);
+    }
+
+    public ArrayField lossL2(ArrayField i_y,int...dimensions) {
+        return addPairReduceOp(new CosineSimilarity().name(),i_y,dimensions,null);
+    }
+
+    public ArrayField lossMAE(ArrayField i_y,int...dimensions) {
+        return addPairReduceOp(new LossMAE().name(),i_y,dimensions,null);
+    }
+
+    public ArrayField lossMAPE(ArrayField i_y,int...dimensions) {
+        return addPairReduceOp(new LossMAPE().name(),i_y,dimensions,null);
+    }
+
+    public ArrayField lossMSE(ArrayField i_y,int...dimensions) {
+        return addPairReduceOp(new LossMSE().name(),i_y,dimensions,null);
+    }
+
+    public ArrayField lossMCXENT(ArrayField i_y,int...dimensions) {
+        return addPairReduceOp(new LossMCXENT().name(),i_y,dimensions,null);
+    }
+
+    public ArrayField lossMSLE(ArrayField i_y,int...dimensions) {
+        return addPairReduceOp(new LossMSLE().name(),i_y,dimensions,null);
+    }
+
+    public ArrayField lossNegativeLogLikelihood(ArrayField i_y,int...dimensions) {
+        return addPairReduceOp(new LossNegativeLogLikelihood().name(),i_y,dimensions,null);
+    }
+
+    public ArrayField lossPoisson(ArrayField i_y,int...dimensions) {
+        return addPairReduceOp(new LossPoisson().name(),i_y,dimensions,null);
+    }
+
+    public ArrayField lossSquaredHinge(ArrayField i_y,int...dimensions) {
+        return addPairReduceOp(new LossSquaredHinge().name(),i_y,dimensions,null);
+    }
+
+
+    private ArrayField addTransformOp(String name) {
+        return addTransformOp(name,null,null);
+    }
+
+
+    private ArrayField addScalarTransformOp(String name,Number scalarValue) {
+        //result
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size(),
+                NDArrayInformation.builder()
+                        .id(name + "(" + input.getId() + ")")
+                        .shape(input.getShape()).build());
+
+        //add the result vertex to the graph
+        this.getOps().addVertex(newVertex);
+
+        //map x -> z
+        this.ops.addEdge(vertex.getIdx(),
+                newVertex.vertexID(),
+                OpState.builder()
+                        .n(ArrayUtil.prod(input.getShape()))
+                        .opName(name).extraArgs(new Object[]{scalarValue})
+                        .scalarValue(scalarValue)
+                        .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
+                        .opType(OpState.OpType.SCALAR_TRANSFORM).result(newVertex.getValue())
+                        .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
+                        .build(),true);
+
+        return new ArrayField(newVertex,ops);
+    }
+
+
+    private ArrayField addPairReduceOp(String name,ArrayField i_v,int[] dimensions,Object[] extraArgs) {
+        //result
+        int[] resultShape = ArrayUtil.removeIndex(input.getShape(),dimensions);
+        NDArrayInformation information =   NDArrayInformation.builder()
+                .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
+                .shape(resultShape).build();
+
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size(),information);
+
+
+        //add the result vertex to the graph
+        this.getOps().addVertex(newVertex);
+
+        //map x -> z
+        OpState xToz = OpState.builder()
+                .n(ArrayUtil.prod(resultShape))
+                .opName(name).extraArgs(extraArgs)
+                .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
+                .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
+                .opType(OpState.OpType.ACCUMULATION).build();
+        xToz.setResult(information);
+        this.ops.addEdge(vertex.vertexID(),
+                newVertex.vertexID(),xToz,true);
+        //map y -> z
+        OpState yToZ = OpState.builder()
+                .n(ArrayUtil.prod(resultShape))
+                .opName(name).extraArgs(extraArgs)
+                .id(i_v.getVertex().getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
+                .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
+                .opType(OpState.OpType.ACCUMULATION).build();
+        yToZ.setResult(information);
+        this.ops.addEdge(i_v.getVertex().vertexID(),
+                newVertex.vertexID(),yToZ,true);
+
+        return new ArrayField(newVertex,ops);
+    }
+
+    private ArrayField addPairTransformOp(String name,ArrayField i_v,Object[] extraArgs) {
+        //result
+        NDArrayInformation resultInfo =  NDArrayInformation.builder()
+                .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
+                .shape(input.getShape()).build();
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size(),resultInfo);
+
+        //add the result vertex to the graph
+        this.getOps().addVertex(newVertex);
+
+        //map x -> z
+        OpState xToZ = OpState.builder()
+                .n(ArrayUtil.prod(input.getShape()))
+                .opName(name).extraArgs(extraArgs)
+                .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
+                .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
+                .opType(OpState.OpType.TRANSFORM).build();
+        xToZ.setResult(resultInfo);
+        this.ops.addEdge(vertex.getIdx(),
+                newVertex.vertexID(),xToZ,true);
+        //map y -> z
+        OpState yToZ = OpState.builder()
+                .n(ArrayUtil.prod(input.getShape()))
+                .opName(name).extraArgs(extraArgs)
+                .id(i_v.getVertex().getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
+                .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
+                .opType(OpState.OpType.TRANSFORM).build();
+        yToZ.setResult(resultInfo);
+        this.ops.addEdge(i_v.getVertex().getIdx(),
+                newVertex.vertexID(),yToZ,true);
+
+        return new ArrayField(newVertex,ops);
+    }
+
+    private ArrayField addPairTransformOp(String name,ArrayField i_v) {
+        return addPairTransformOp(name,i_v,null);
+    }
+
     private ArrayField addTransformOp(String name,Object[] extraArgs) {
         return addTransformOp(name,null,extraArgs);
     }
@@ -473,7 +698,7 @@ public class ArrayField implements Field<ArrayField> {
         this.ops.addEdge(vertex.getIdx(),
                 newVertex.vertexID(),OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
-                        .opName(name).extraArgs(extraArgs).axes(axes)
+                        .opName(name).extraArgs(extraArgs).axes(axes).result(newVertex.getValue())
                         .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
                         .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                         .opType(opType).build(),true);
@@ -481,94 +706,6 @@ public class ArrayField implements Field<ArrayField> {
         return new ArrayField(newVertex,ops);
     }
 
-
-    public ArrayField repeat(int axis) {
-        return addArrayOp("repeat",
-                new int[]{axis},
-                input.getShape(),
-                null,
-                OpState.OpType.BROADCAST);
-    }
-
-    public ArrayField broadcast(int[] shape) {
-        return addArrayOp("broadcast",null,shape,null, OpState.OpType.BROADCAST);
-    }
-
-
-    public ArrayField eq(ArrayField i_y) {
-        return addPairTransformOp(new EqualsWithEps().name(),i_y);
-    }
-
-    public ArrayField neq(ArrayField i_y) {
-        return addPairTransformOp(new Not().name(),i_y);
-    }
-    public ArrayField or(ArrayField i_y) {
-        return addPairTransformOp(new Or().name(),i_y);
-    }
-
-    private ArrayField addTransformOp(String name) {
-        return addTransformOp(name,null,null);
-    }
-
-
-    private ArrayField addScalarTransformOp(String name,Number scalarValue) {
-        //result
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size(),
-                NDArrayInformation.builder()
-                        .id(name + "(" + input.getId() + ")")
-                        .shape(input.getShape()).build());
-
-        //add the result vertex to the graph
-        this.getOps().addVertex(newVertex);
-
-        //map x -> z
-        this.ops.addEdge(vertex.getIdx(),
-                newVertex.vertexID(),
-                OpState.builder()
-                        .n(ArrayUtil.prod(input.getShape()))
-                        .opName(name).extraArgs(new Object[]{scalarValue})
-                        .scalarValue(scalarValue)
-                        .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
-                        .opType(OpState.OpType.SCALAR_TRANSFORM)
-                        .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
-                        .build(),true);
-
-        return new ArrayField(newVertex,ops);
-    }
-
-    private ArrayField addPairTransformOp(String name,ArrayField i_v,Object[] extraArgs) {
-        //result
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size() ,
-                NDArrayInformation.builder()
-                        .id(name + "(" + i_v.getVertex().getValue().getId() + ")")
-                        .shape(input.getShape()).build());
-
-        //add the result vertex to the graph
-        this.getOps().addVertex(newVertex);
-
-        //map x -> z
-        this.ops.addEdge(vertex.getIdx(),
-                newVertex.vertexID(),OpState.builder()
-                        .n(ArrayUtil.prod(input.getShape()))
-                        .opName(name).extraArgs(extraArgs)
-                        .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
-                        .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
-                        .opType(OpState.OpType.TRANSFORM).build(),true);
-        //map y -> z
-        this.ops.addEdge(i_v.getVertex().getIdx(),
-                newVertex.vertexID(),OpState.builder()
-                        .n(ArrayUtil.prod(input.getShape()))
-                        .opName(name).extraArgs(extraArgs)
-                        .id(i_v.getVertex().getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
-                        .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
-                        .opType(OpState.OpType.TRANSFORM).build(),true);
-
-        return new ArrayField(newVertex,ops);
-    }
-
-    private ArrayField addPairTransformOp(String name,ArrayField i_v) {
-        return addPairTransformOp(name,i_v,null);
-    }
 
 
     @Override

@@ -68,4 +68,17 @@ public class TensorGradTests {
 
     }
 
+    @Test
+    public void testDistance() {
+        TensorGrad tensorGrad = TensorGrad.create();
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1,4,4)).reshape(2,2);
+        TensorGradVariable x = tensorGrad.var("x",arr);
+        TensorGradVariable y = tensorGrad.var("y",arr);
+        TensorGradVariable result = tensorGrad.cosineSimilarity(x,y,1);
+        assertEquals("cosineSimilarity(x,y)",result.getVarName());
+        assertEquals(3,tensorGrad.graph().numVertices());
+        assertEquals(2,tensorGrad.graph().getEdges().size());
+        assertArrayEquals(new int[]{1,2},result.getShape());
+    }
+
 }

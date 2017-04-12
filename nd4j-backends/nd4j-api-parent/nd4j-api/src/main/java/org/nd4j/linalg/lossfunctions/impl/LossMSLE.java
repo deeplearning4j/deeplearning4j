@@ -129,6 +129,17 @@ public class LossMSLE implements ILossFunction {
                         computeGradient(labels, preOutput, activationFn, mask));
     }
 
+    /**
+     * The name of this function
+     *
+     * @return
+     */
+    @Override
+    public String name() {
+        return toString();
+    }
+
+
     @Override
     public String toString() {
         if (weights == null)

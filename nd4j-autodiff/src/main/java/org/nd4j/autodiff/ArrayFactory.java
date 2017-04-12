@@ -2,6 +2,7 @@ package org.nd4j.autodiff;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
@@ -468,6 +469,101 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     @Override
     public ArrayField softplus(ArrayField value) {
         return value.softplus();
+    }
+
+    @Override
+    public ArrayField rollAxis(ArrayField value, int axis) {
+        return value.rollAxis(axis);
+    }
+
+    @Override
+    public ArrayField lossSquaredHinge(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int[] dimensions) {
+        return iX.getValue().lossSquaredHinge(i_y.getValue(),dimensions);
+    }
+
+    @Override
+    public ArrayField lossPoisson(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int[] dimensions) {
+        return iX.getValue().lossPoisson(i_y.getValue(),dimensions);
+    }
+
+    @Override
+    public ArrayField lossNegativeLogLikelihood(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int[] dimensions) {
+        return iX.getValue().lossNegativeLogLikelihood(i_y.getValue(),dimensions);
+    }
+
+    @Override
+    public ArrayField lossMSLE(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int[] dimensions) {
+        return iX.getValue().lossMSLE(i_y.getValue(),dimensions);
+    }
+
+    @Override
+    public ArrayField lossMCXENT(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int[] dimensions) {
+        return iX.getValue().lossMCXENT(i_y.getValue(),dimensions);
+    }
+
+    @Override
+    public ArrayField lossMSE(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int[] dimensions) {
+        return iX.getValue().lossMSE(i_y.getValue(),dimensions);
+    }
+
+    @Override
+    public ArrayField lossMAPE(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int[] dimensions) {
+        return iX.getValue().lossMAPE(i_y.getValue(),dimensions);
+    }
+
+    @Override
+    public ArrayField lossMAE(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int[] dimensions) {
+        return iX.getValue().lossMAE(i_y.getValue(),dimensions);
+    }
+
+    @Override
+    public ArrayField lossL2(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int[] dimensions) {
+        return iX.getValue().lossL2(i_y.getValue(),dimensions);
+    }
+
+    @Override
+    public ArrayField lossL1(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int[] dimensions) {
+        return iX.getValue().lossL1(i_y.getValue(),dimensions);
+    }
+
+    @Override
+    public ArrayField lossKLD(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int[] dimensions) {
+        return iX.getValue().lossKLD(i_y.getValue(),dimensions);
+    }
+
+    @Override
+    public ArrayField lossHinge(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int[] dimensions) {
+        return iX.getValue().lossHinge(i_y.getValue(),dimensions);
+    }
+
+    @Override
+    public ArrayField lossCosineSimilarity(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int[] dimensions) {
+        return iX.getValue().lossCosineSimilarity(i_y.getValue(),dimensions);
+    }
+
+    @Override
+    public ArrayField lossBinaryXENT(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int[] dimensions) {
+        return iX.getValue().lossBinaryXENT(i_y.getValue(),dimensions);
+    }
+
+    @Override
+    public ArrayField manhattanDistance(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int[] dimensions) {
+        return iX.getValue().manhattanDistance(i_y.getValue(),dimensions);
+    }
+
+    @Override
+    public ArrayField euclideanDistance(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int[] dimensions) {
+        return iX.getValue().euclideanDistance(i_y.getValue(),dimensions);
+    }
+
+    @Override
+    public ArrayField cosineSimilarity(DifferentialFunction<ArrayField> iX, DifferentialFunction<ArrayField> i_y, int[] dimensions) {
+        return iX.getValue().cosineSimilarity(i_y.getValue(),dimensions);
+    }
+
+    @Override
+    public ArrayField expandDims(ArrayField input, int dim) {
+        return input.expandDims(dim);
     }
 
 }
