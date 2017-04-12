@@ -151,4 +151,6 @@ public interface FunctionFactory<X extends Field<X>> {
     DifferentialFunction<X> lossSquaredHinge(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
 
 
+    DifferentialFunction<X> mmul(Variable<X> arrayField);
+    DifferentialFunction<X> tensorMmul(Variable<X> arrayField, int[][] dimensions);
 }

@@ -2092,4 +2092,14 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             }
         };
     }
+
+    @Override
+    public DifferentialFunction<X> mmul(Variable<X> arrayField) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> tensorMmul(Variable<X> arrayField, int[][] dimensions) {
+        return null;
+    }
 }

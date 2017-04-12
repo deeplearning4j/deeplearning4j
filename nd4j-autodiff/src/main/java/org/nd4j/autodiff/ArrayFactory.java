@@ -566,4 +566,15 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
         return input.expandDims(dim);
     }
 
+    @Override
+    public ArrayField mmul(DifferentialFunction<ArrayField> input, DifferentialFunction<ArrayField> y) {
+        return input.getValue().mmul(y.getValue());
+
+    }
+
+    @Override
+    public ArrayField tensorMmul(DifferentialFunction<ArrayField> arrayField, DifferentialFunction<ArrayField> y, int[][] dimensions) {
+        return arrayField.getValue().tensorMmul(y,dimensions);
+    }
+
 }

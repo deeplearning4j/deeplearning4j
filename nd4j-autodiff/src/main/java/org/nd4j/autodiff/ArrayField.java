@@ -3,6 +3,7 @@ package org.nd4j.autodiff;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
@@ -716,4 +717,12 @@ public class ArrayField implements Field<ArrayField> {
     }
 
 
+    public ArrayField mmul(ArrayField value) {
+        return addPairTransformOp("mmul",value,null);
+    }
+
+    public ArrayField tensorMmul(DifferentialFunction<ArrayField> y, int[][] dimensions) {
+        return addPairTransformOp("tensorMmul",y.getValue(),new Object[]{dimensions});
+
+    }
 }

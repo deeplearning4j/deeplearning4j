@@ -441,6 +441,23 @@ public class TensorGrad {
                 .build();
     }
 
+    public TensorGradVariable mmul(TensorGradVariable x) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.mmul(x.getArrayField()))
+                .varName("mmul(" + x.getVarName() + ")").tensorGrad(this)
+                .build();
+    }
+
+    public TensorGradVariable tensorMmul(TensorGradVariable x, int[][]dimensions) {
+        return TensorGradVariable.builder()
+                .arr(null)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.tensorMmul(x.getArrayField(),dimensions))
+                .varName("tensorMmul(" + x.getVarName() + ")").tensorGrad(this)
+                .build();
+    }
+
+
     public TensorGradVariable cosineSimilarity(TensorGradVariable iX,TensorGradVariable i_y, int...dimensions) {
         return TensorGradVariable.builder()
                 .arr(null)

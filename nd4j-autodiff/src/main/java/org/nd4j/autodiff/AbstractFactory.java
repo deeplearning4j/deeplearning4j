@@ -190,4 +190,8 @@ public interface AbstractFactory<X extends Field<X>>
     X cosineSimilarity(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int[] dimensions);
 
     X expandDims(X input,int dim);
+
+    X mmul(DifferentialFunction<X> arrayField, DifferentialFunction<X> y);
+
+    X tensorMmul(DifferentialFunction<X> arrayField, DifferentialFunction<X> y, int[][] dimensions);
 }
