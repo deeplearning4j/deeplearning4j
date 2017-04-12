@@ -9,11 +9,13 @@ import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.CudaGridExecutioner;
 import org.nd4j.linalg.memory.BasicMemoryManager;
-import org.nd4j.linalg.memory.MemoryKind;
+import org.nd4j.linalg.api.memory.enums.MemoryKind;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 /**
  * @author raver119@gmail.com
@@ -22,7 +24,8 @@ import org.nd4j.linalg.memory.MemoryKind;
 public class CudaMemoryManager extends BasicMemoryManager {
 
     /**
-     * This method returns
+     * This method returns Pointer to allocated memory chunk
+     *
      * PLEASE NOTE: Cache options depend on specific implementations
      *
      * @param bytes
@@ -33,10 +36,36 @@ public class CudaMemoryManager extends BasicMemoryManager {
     public Pointer allocate(long bytes, MemoryKind kind, boolean initialize) {
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
+        //log.info("Allocating {} bytes in {} memory...", bytes, kind);
+
         if (kind == MemoryKind.HOST) {
-            return allocator.getMemoryHandler().alloc(AllocationStatus.HOST, null, null, initialize).getHostPointer();
+            Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocHost(bytes, 0);
+
+            if (ptr == null)
+                throw new RuntimeException("Failed to allocate " + bytes + " bytes from HOST memory");
+
+            if (initialize)
+                Pointer.memset(ptr, 0, bytes);
+
+            return ptr;//allocator.getMemoryHandler().alloc(AllocationStatus.HOST, null, null, initialize).getHostPointer();
         } else if (kind == MemoryKind.DEVICE) {
-            return allocator.getMemoryHandler().alloc(AllocationStatus.HOST, null, null, initialize).getDevicePointer();
+            Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, null, 0);
+
+            if (ptr == null)
+                throw new RuntimeException("Failed to allocate " + bytes + " bytes from DEVICE memory");
+
+            if (initialize) {
+                CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+                int i = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, bytes, 0, context.getSpecialStream());
+                if (i == 0)
+                    throw new ND4JIllegalStateException("memset failed");
+
+                context.getSpecialStream().synchronize();
+            }
+
+
+            return ptr; //allocator.getMemoryHandler().alloc(AllocationStatus.HOST, null, null, initialize).getDevicePointer();
         } else
             throw new RuntimeException("Unknown MemoryKind requested: " + kind);
     }
@@ -147,6 +176,22 @@ public class CudaMemoryManager extends BasicMemoryManager {
         } else {
             // both buffers are NOT compressed
             AtomicAllocator.getInstance().memcpy(dstBuffer, srcBuffer);
+        }
+    }
+
+    /**
+     * This method releases previously allocated memory chunk
+     *
+     * @param pointer
+     * @param kind
+     * @return
+     */
+    @Override
+    public void release(Pointer pointer, MemoryKind kind) {
+        if (kind == MemoryKind.DEVICE) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pointer, null);
+        } else if (kind == MemoryKind.HOST) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pointer);
         }
     }
 

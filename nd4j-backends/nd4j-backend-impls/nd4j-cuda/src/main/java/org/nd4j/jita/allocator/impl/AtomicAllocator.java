@@ -21,8 +21,11 @@ import org.nd4j.jita.constant.ConstantProtector;
 import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.handler.MemoryHandler;
 import org.nd4j.jita.handler.impl.CudaZeroHandler;
+import org.nd4j.jita.workspace.CudaWorkspace;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.enums.MemoryKind;
+import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
@@ -385,10 +388,36 @@ public class AtomicAllocator implements Allocator {
         point.attachReference(reference);
         point.setDeviceId(-1);
 
+        if (buffer.isAttached()) {
+            long reqMem = AllocationUtils.getRequiredMemory(requiredMemory);
+            //log.info("Allocating {} bytes from attached memory...", reqMem);
 
-        // we stay naive on PointersPair, we just don't know on this level, which pointers are set. MemoryHandler will be used for that
-        PointersPair pair = memoryHandler.alloc(location, point, requiredMemory, initialize);
-        point.setPointers(pair);
+            // workaround for init order
+            getMemoryHandler().getCudaContext();
+            point.setDeviceId(Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
+            CudaWorkspace workspace = (CudaWorkspace) Nd4j.getMemoryManager().getCurrentWorkspace();
+
+            PointersPair pair = new PointersPair();
+
+            PagedPointer ptrDev = workspace.alloc(reqMem, MemoryKind.DEVICE, requiredMemory.getDataType(), initialize);
+            PagedPointer ptrHost = workspace.alloc(reqMem, MemoryKind.HOST, requiredMemory.getDataType(), initialize);
+
+            pair.setDevicePointer(ptrDev);
+            pair.setHostPointer(ptrHost);
+
+            point.setAllocationStatus(AllocationStatus.DEVICE);
+
+
+            if (!ptrDev.isLeaked())
+                point.setAttached(true);
+
+            point.setPointers(pair);
+        } else {
+            // we stay naive on PointersPair, we just don't know on this level, which pointers are set. MemoryHandler will be used for that
+            PointersPair pair = memoryHandler.alloc(location, point, requiredMemory, initialize);
+            point.setPointers(pair);
+        }
 
         allocationsMap.put(allocId, point);
         return point;
@@ -601,41 +630,60 @@ public class AtomicAllocator implements Allocator {
         @Override
         public void run() {
             while (true) {
-                GarbageBufferReference reference = (GarbageBufferReference) queue.poll();
-                if (reference != null) {
-                    AllocationPoint point = reference.getPoint();
+                try {
+                    GarbageBufferReference reference = threadId == 0 ? (GarbageBufferReference) queue.poll() : (GarbageBufferReference) queue.remove();
+                    if (reference != null) {
+                        AllocationPoint point = reference.getPoint();
 
-                    if (threadId == 0)
-                        stopper.set(System.currentTimeMillis());
+                        // skipping any allocation that is coming from workspace
+                        if (point.isAttached()) {
+                            // TODO: remove allocation point as well?
+                            if (!allocationsMap.containsKey(point.getObjectId()))
+                                throw new RuntimeException();
 
-                    if (point.getAllocationStatus() == AllocationStatus.HOST) {
-                        purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
-                    } else if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
-                        purgeDeviceObject(0L, point.getDeviceId(), point.getObjectId(), point, false);
+                            getFlowController().waitTillReleased(point);
 
-                        // and we deallocate host memory, since object is dereferenced
-                        purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
-                    }
+                            getFlowController().getEventsProvider().storeEvent(point.getLastWriteEvent());
+                            getFlowController().getEventsProvider().storeEvent(point.getLastReadEvent());
 
-                } else {
-                    try {
-                        if (threadId == 0) {
-                            // we don't call for System.gc if last memory allocation was more then 3 seconds ago
-                            if (Nd4j.getMemoryManager().isPeriodicGcActive()) {
-                                long ct = System.currentTimeMillis();
-                                if (useTracker.get() > ct - 3000 && ct > Nd4j.getMemoryManager().getLastGcTime() + Nd4j.getMemoryManager().getAutoGcWindow()) {
-                                    Nd4j.getMemoryManager().invokeGc();
+                            allocationsMap.remove(point.getObjectId());
+
+                            continue;
+                        }
+
+                        if (threadId == 0)
+                            stopper.set(System.currentTimeMillis());
+
+                        if (point.getAllocationStatus() == AllocationStatus.HOST) {
+                            purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
+                        } else if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
+                            purgeDeviceObject(0L, point.getDeviceId(), point.getObjectId(), point, false);
+
+                            // and we deallocate host memory, since object is dereferenced
+                            purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
+                        }
+
+                    } else {
+                        try {
+                            if (threadId == 0) {
+                                // we don't call for System.gc if last memory allocation was more then 3 seconds ago
+                                if (Nd4j.getMemoryManager().isPeriodicGcActive()) {
+                                    long ct = System.currentTimeMillis();
+                                    if (useTracker.get() > ct - 3000 && ct > Nd4j.getMemoryManager().getLastGcTime() + Nd4j.getMemoryManager().getAutoGcWindow()) {
+                                        Nd4j.getMemoryManager().invokeGc();
+                                    } else {
+                                        LockSupport.parkNanos(50000L);
+                                    }
                                 } else {
                                     LockSupport.parkNanos(50000L);
                                 }
-                            } else {
-                                LockSupport.parkNanos(50000L);
                             }
-                        } else
-                            LockSupport.parkNanos(500000L);
-                    } catch (Exception e) {
+                        } catch (Exception e) {
 
+                        }
                     }
+                } catch (InterruptedException e) {
+                    // do nothing
                 }
             }
         }

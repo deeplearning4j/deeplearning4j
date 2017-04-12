@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
@@ -69,7 +70,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
     private static Logger log = LoggerFactory.getLogger(JCublasNDArrayFactory.class);
 
-    public JCublasNDArrayFactory() {}
+    public JCublasNDArrayFactory() { }
 
     public JCublasNDArrayFactory(DataBuffer.Type dtype, Character order) {
         super(dtype, order);
@@ -77,6 +78,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     public JCublasNDArrayFactory(DataBuffer.Type dtype, char order) {
         super(dtype, order);
+        AtomicAllocator.getInstance();
     }
 
     @Override
@@ -234,6 +236,15 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     @Override
     public INDArray createUninitialized(int[] shape, char ordering) {
         return new JCublasNDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
+    }
+
+    @Override
+    public INDArray createUninitializedDetached(int[] shape, char ordering) {
+        MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+        Nd4j.getMemoryManager().setCurrentWorkspace(null);
+        INDArray ret = new JCublasNDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
+        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+        return ret;
     }
 
     @Override
@@ -1213,5 +1224,78 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     public INDArray createFromNpyFile(File file) {
         Pointer pointer = nativeOps.numpyFromFile(new BytePointer(file.getAbsolutePath().getBytes()));
         return createFromNpyPointer(pointer);
+    }
+
+    public INDArray[] tear(INDArray tensor, int... dimensions) {
+        if (tensor.isCompressed())
+            Nd4j.getCompressor().decompressi(tensor);
+
+        Arrays.sort(dimensions);
+
+        Pair<DataBuffer, DataBuffer> tadBuffers = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(tensor, dimensions);
+
+        long tadLength = 1;
+        int[] shape = new int[dimensions.length];
+        for (int i = 0; i < dimensions.length; i++) {
+            tadLength *= tensor.shape()[dimensions[i]];
+            shape[i] = tensor.shape()[dimensions[i]];
+        }
+
+
+        int numTads = (int)(tensor.lengthLong() / tadLength);
+        INDArray[] result = new INDArray[numTads];
+
+        long[] xPointers = new long[numTads];
+
+        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(null, tensor);
+
+        for (int x = 0; x < numTads; x++) {
+            result[x] = Nd4j.createUninitialized(shape);
+
+            context = AtomicAllocator.getInstance().getFlowController().prepareAction(result[x]);
+
+            xPointers[x] = AtomicAllocator.getInstance().getPointer(result[x], context).address();
+        }
+
+        CudaDoubleDataBuffer tempX = new CudaDoubleDataBuffer(numTads);
+
+        AtomicAllocator.getInstance().memcpyBlocking(tempX, new LongPointer(xPointers), xPointers.length * 8, 0);
+
+        PointerPointer extraz = new PointerPointer(null, // not used
+                context.getOldStream(), AtomicAllocator.getInstance().getDeviceIdPointer());
+
+        if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.tearDouble(extraz,
+                    (DoublePointer) AtomicAllocator.getInstance().getPointer(tensor, context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tensor.shapeInfoDataBuffer(), context),
+                    new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context)),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(result[0].shapeInfoDataBuffer(), context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context)
+            );
+        } else if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.tearFloat(extraz,
+                    (FloatPointer) AtomicAllocator.getInstance().getPointer(tensor, context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tensor.shapeInfoDataBuffer(), context),
+                    new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context)),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(result[0].shapeInfoDataBuffer(), context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context)
+            );
+        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            nativeOps.tearHalf(extraz,
+                    (ShortPointer) AtomicAllocator.getInstance().getPointer(tensor, context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tensor.shapeInfoDataBuffer(), context),
+                    new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context)),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(result[0].shapeInfoDataBuffer(), context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context)
+            );
+        }
+
+        AtomicAllocator.getInstance().getFlowController().registerActionAllWrite(context, result);
+        AtomicAllocator.getInstance().getFlowController().registerAction(context,null, result);
+
+        return result;
     }
 }

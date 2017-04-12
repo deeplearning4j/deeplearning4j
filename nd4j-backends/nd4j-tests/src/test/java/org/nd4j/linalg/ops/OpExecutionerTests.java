@@ -46,6 +46,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import static org.junit.Assert.*;
 
 
@@ -700,6 +704,52 @@ public class OpExecutionerTests extends BaseNd4jTest {
         System.out.println(result.toString());
     }
 
+
+    @Test
+    public void testPile1() throws Exception {
+        List<INDArray> arrays = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            arrays.add(Nd4j.create(10, 10).assign(i));
+        }
+
+        INDArray pile = Nd4j.pile(arrays);
+
+        assertEquals(3, pile.rank());
+        for (int i = 0; i < 10; i++) {
+            assertEquals((float) i, pile.tensorAlongDimension(i, 1,2).getDouble(0),0.01);
+        }
+    }
+
+    @Test
+    public void testPile2() throws Exception {
+        List<INDArray> arrays = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            arrays.add(Nd4j.create(10, 10, 10).assign(i));
+        }
+
+        INDArray pile = Nd4j.pile(arrays);
+
+        assertEquals(4, pile.rank());
+        for (int i = 0; i < 10; i++) {
+            assertEquals((float) i, pile.tensorAlongDimension(i, 1, 2, 3).getDouble(0),0.01);
+        }
+    }
+
+    @Test
+    public void testTear1() {
+        List<INDArray> arrays = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            arrays.add(Nd4j.create(10, 10).assign(i));
+        }
+
+        INDArray pile = Nd4j.pile(arrays);
+
+        INDArray[] tears = Nd4j.tear(pile, 1,2);
+
+        for (int i = 0; i < 10; i++) {
+            assertEquals((float) i, tears[i].meanNumber().floatValue(), 0.01f);
+        }
+    }
 
     @Override
     public char ordering() {

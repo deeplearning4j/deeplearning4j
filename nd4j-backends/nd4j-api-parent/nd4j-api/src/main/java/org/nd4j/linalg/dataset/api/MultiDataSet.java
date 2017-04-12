@@ -169,4 +169,7 @@ public interface MultiDataSet extends Serializable {
      */
     List<Serializable> getExampleMetaData();
 
+
+    long getMemoryFootprint();
+
 }

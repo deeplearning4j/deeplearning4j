@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.IndexAccumulation;
 import org.nd4j.linalg.api.ops.TadCollapseAccumulation;
 import org.nd4j.linalg.api.ops.exception.IllegalOpException;
+import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
@@ -55,9 +56,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.Assert.*;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
@@ -953,6 +952,102 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         }
 
         DataTypeUtil.setDTypeForContext(initialType);
+    }
+
+    @Test
+    public void testPile1() throws Exception {
+        List<INDArray> arrays = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            arrays.add(Nd4j.create(10, 10).assign(i));
+        }
+
+        INDArray pile = Nd4j.pile(arrays);
+
+        assertEquals(3, pile.rank());
+        for (int i = 0; i < 10; i++) {
+            assertEquals((float) i, pile.tensorAlongDimension(i, 1,2).getDouble(0),0.01);
+        }
+    }
+
+    @Test
+    public void testPile2() throws Exception {
+        List<INDArray> arrays = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            arrays.add(Nd4j.create(10, 10, 10).assign(i));
+        }
+
+        INDArray pile = Nd4j.pile(arrays);
+
+        assertEquals(4, pile.rank());
+        for (int i = 0; i < 10; i++) {
+            assertEquals((float) i, pile.tensorAlongDimension(i, 1, 2, 3).getDouble(0),0.01);
+        }
+    }
+
+    @Test
+    public void testMean1() throws Exception {
+        INDArray array = Nd4j.create(32, 100, 100);
+        for (int i = 0; i < 32; i++) {
+            array.tensorAlongDimension(i, 1, 2).assign((float) 100 + i);
+        }
+
+        for (int i = 0; i < 32; i++) {
+            INDArray tensor = array.tensorAlongDimension(i, 1, 2);
+            assertEquals((float) (100 + i) * (100 * 100), tensor.sumNumber().floatValue(), 0.001f);
+            assertEquals((float) 100 + i, tensor.meanNumber().floatValue(), 0.001f);
+        }
+    }
+
+    @Test
+    public void testMean2() throws Exception {
+        INDArray array = Nd4j.create(32, 100, 100);
+        for (int i = 0; i < 32; i++) {
+            array.tensorAlongDimension(i, 1, 2).assign((float) 100 + i);
+        }
+
+        INDArray mean = array.mean(1, 2);
+        for (int i = 0; i < 32; i++) {
+            assertEquals((float) 100 + i, mean.getFloat(i), 0.001f);
+        }
+    }
+
+
+    @Test
+    public void testNorm2_1() throws Exception {
+        INDArray array = Nd4j.rand(1769472, 9);
+
+        INDArray max = array.max(1);
+    }
+
+    @Test
+    public void testNorm2_2() throws Exception {
+        INDArray array = Nd4j.rand(127,164, 100, 1, 1);
+
+        double norm2 = array.norm2Number().doubleValue();
+    }
+
+    @Test
+    public void testTadEws() throws Exception {
+        INDArray array = Nd4j.create(32, 5, 10);
+        assertEquals(1, array.tensorAlongDimension(0, 1, 2).elementWiseStride());
+    }
+
+
+
+    @Test
+    public void testTear1() {
+        List<INDArray> arrays = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            arrays.add(Nd4j.create(10, 10).assign(i));
+        }
+
+        INDArray pile = Nd4j.pile(arrays);
+
+        INDArray[] tears = Nd4j.tear(pile, 1,2);
+
+        for (int i = 0; i < 10; i++) {
+            assertEquals((float) i, tears[i].meanNumber().floatValue(), 0.01f);
+        }
     }
 
     @Override

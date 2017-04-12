@@ -46,6 +46,13 @@ public interface OpExecutioner {
         DISABLED, NAN_PANIC, INF_PANIC, ANY_PANIC, OPERATIONS, METHODS, ALL
     }
 
+    /**
+     * This method returns name of the last invoked op
+     *
+     * @return
+     */
+    String getLastOp();
+
 
     /**
      * Execute the operation

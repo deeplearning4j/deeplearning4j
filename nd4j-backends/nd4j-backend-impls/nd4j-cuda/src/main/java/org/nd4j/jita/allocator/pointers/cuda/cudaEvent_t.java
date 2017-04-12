@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.Setter;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
+import org.nd4j.linalg.exception.ND4JException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,13 +50,17 @@ public class cudaEvent_t extends CudaPointer {
 
     public void synchronize() {
         if (!isDestroyed()) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().eventSynchronize(this);
+            int res = NativeOpsHolder.getInstance().getDeviceNativeOps().eventSynchronize(this);
+            if (res == 0)
+                throw new ND4JException("CUDA exception happened. Terminating. Last op: [" + Nd4j.getExecutioner().getLastOp() +"]");
         }
     }
 
     public void register(cudaStream_t stream) {
         if (!isDestroyed()) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().registerEvent(this, stream);
+            int res = NativeOpsHolder.getInstance().getDeviceNativeOps().registerEvent(this, stream);
+            if (res == 0)
+                throw new ND4JException("CUDA exception happened. Terminating. Last op: [" + Nd4j.getExecutioner().getLastOp() +"]");
         }
     }
 }

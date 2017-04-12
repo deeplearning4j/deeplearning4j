@@ -22,6 +22,7 @@ package org.nd4j.linalg.jcublas.buffer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.ByteArrayOutputStream;
@@ -59,6 +60,11 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
         super(length, 4, initialize);
     }
 
+    public CudaFloatDataBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
+        super(length, 4, initialize, workspace);
+    }
+
+
     public CudaFloatDataBuffer(long length, int elementSize) {
         super(length, elementSize);
     }
@@ -86,6 +92,10 @@ public class CudaFloatDataBuffer extends BaseCudaDataBuffer {
 
     public CudaFloatDataBuffer(float[] data, boolean copy) {
         super(data, copy);
+    }
+
+    public CudaFloatDataBuffer(float[] data, boolean copy, MemoryWorkspace workspace) {
+        super(data, copy, workspace);
     }
 
     public CudaFloatDataBuffer(float[] data, boolean copy, int offset) {

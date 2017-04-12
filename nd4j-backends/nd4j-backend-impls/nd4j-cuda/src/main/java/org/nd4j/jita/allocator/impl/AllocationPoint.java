@@ -48,6 +48,10 @@ public class AllocationPoint {
     @Setter
     private Long bucketId;
 
+    @Getter
+    @Setter
+    private boolean isAttached = false;
+
     // thread safety is guaranteed by allocLock
     private volatile AllocationStatus allocationStatus = AllocationStatus.UNDEFINED;
 
@@ -90,6 +94,10 @@ public class AllocationPoint {
     private volatile int deviceId;
 
     private volatile ReentrantLock lock = new ReentrantLock();
+
+    public AllocationPoint() {
+        //
+    }
 
     public void acquireLock() {
         //lock.lock();

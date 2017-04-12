@@ -78,34 +78,42 @@ public class CudaAffinityManager extends BasicAffinityManager {
         if (getNumberOfDevices() == 1)
             return 0;
 
-        if (!affinityMap.containsKey(threadId)) {
+        Integer aff = affinityMap.get(threadId);
+
+        if (aff == null) {
             Integer deviceId = getNextDevice(threadId);
             affinityMap.put(threadId, deviceId);
             affiliated.set(new AtomicBoolean(false));
 
             if (threadId == Thread.currentThread().getId()) {
                 NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
-                //       logger.debug("setDevice({}) called for thread {}", deviceId, threadId);
+                //logger.error("setDevice({}) called for thread {}", deviceId, Thread.currentThread().getName());
                 affiliated.get().set(true);
             }
 
             return deviceId;
-        }
+        } else {
 
-        if (threadId == Thread.currentThread().getId()) {
-            if (affiliated.get() == null)
-                affiliated.set(new AtomicBoolean(false));
+            if (threadId == Thread.currentThread().getId()) {
+                if (affiliated.get() == null)
+                    affiliated.set(new AtomicBoolean(false));
 
-            if (!affiliated.get().get()) {
-                int deviceId = affinityMap.get(threadId);
-                NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
-                //        logger.debug("SCARY setDevice({}) called for thread {}", deviceId, threadId);
-                affiliated.get().set(true);
-                return deviceId;
+                if (!affiliated.get().get()) {
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(aff));
+                    //logger.error("SCARY setDevice({}) called for thread {}", aff, threadId);
+                    affiliated.get().set(true);
+                    return aff;
+                }
             }
+
+            return aff;
         }
+/*
+
 
         return affinityMap.get(threadId);
+*/
+        //return 0;
     }
 
     /**

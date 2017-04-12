@@ -27,6 +27,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaHalfDataBuffer;
@@ -78,6 +79,16 @@ public class CudaDataBufferFactory implements DataBufferFactory {
             return new CudaHalfDataBuffer(underlyingBuffer, length, offset);
         }
         return null;
+    }
+
+    @Override
+    public DataBuffer createFloat(float[] data, MemoryWorkspace workspace) {
+        return createFloat(data, true, workspace);
+    }
+
+    @Override
+    public DataBuffer createFloat(float[] data, boolean copy, MemoryWorkspace workspace) {
+        return new CudaFloatDataBuffer(data, copy, workspace);
     }
 
     @Override
@@ -243,6 +254,11 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createFloat(long length, boolean initialize) {
         return new CudaFloatDataBuffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createFloat(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new CudaFloatDataBuffer(length, initialize, workspace);
     }
 
     @Override
@@ -629,5 +645,49 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createHalf(byte[] data, int length) {
         return new CudaHalfDataBuffer(data, length);
+    }
+
+    @Override
+    public DataBuffer createDouble(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new CudaDoubleDataBuffer(length, initialize, workspace);
+    }
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data      the data to create the buffer from
+     * @param workspace
+     * @return the new buffer
+     */
+    @Override
+    public DataBuffer createDouble(double[] data, MemoryWorkspace workspace) {
+        return createDouble(data, true, workspace);
+    }
+
+    /**
+     * Creates a double data buffer
+     *
+     * @param data      the data to create the buffer from
+     * @param copy
+     * @param workspace @return the new buffer
+     */
+    @Override
+    public DataBuffer createDouble(double[] data, boolean copy, MemoryWorkspace workspace) {
+        return new CudaDoubleDataBuffer(data, copy, workspace);
+    }
+
+    @Override
+    public DataBuffer createHalf(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new CudaHalfDataBuffer(length, initialize, workspace);
+    }
+
+    @Override
+    public DataBuffer createHalf(float[] data, MemoryWorkspace workspace) {
+        return createHalf(data, true, workspace);
+    }
+
+    @Override
+    public DataBuffer createHalf(float[] data, boolean copy, MemoryWorkspace workspace) {
+        return new CudaHalfDataBuffer(data, copy, workspace);
     }
 }

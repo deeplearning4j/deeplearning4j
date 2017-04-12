@@ -56,7 +56,7 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
         ShapeDescriptor descriptor = new ShapeDescriptor(shape, stride, offset, elementWiseStride, order);
 
         if (!protector.containsDataBuffer(deviceId, descriptor)) {
-            //            log.info("Cache miss: {}", descriptor);
+            //log.info("Cache miss: {}", descriptor);
             DataBuffer buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
             buffer.setConstant(true);
 

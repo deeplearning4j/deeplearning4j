@@ -609,4 +609,19 @@ public interface DataBuffer extends Serializable {
      * @param reallyConstant
      */
     void setConstant(boolean reallyConstant);
+
+    /**
+     * This method returns True, if this DataBuffer is attached to some workspace. False otherwise
+     *
+     * @return
+     */
+    boolean isAttached();
+
+    /**
+     * This method checks, if given attached INDArray is still in scope of its parent Workspace
+     *
+     * PLEASE NOTE: if this INDArray isn't attached to any Workspace, this method will return true
+     * @return
+     */
+    boolean isInScope();
 }

@@ -11,7 +11,7 @@ import org.nd4j.linalg.factory.Nd4j;
 /**
  * Compressor implementation based on half-precision floats, aka FP16
  *
- * @author raver119@
+ * @author raver119@gmail.com
  */
 public class Float16 extends AbstractCompressor {
 

@@ -2,11 +2,14 @@ package org.nd4j.linalg.memory;
 
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -14,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author raver119@gmail.com
  */
-public class BasicMemoryManager implements MemoryManager {
+public abstract class BasicMemoryManager implements MemoryManager {
     protected AtomicInteger frequency = new AtomicInteger(0);
     protected AtomicLong freqCounter = new AtomicLong(0);
 
@@ -31,6 +34,12 @@ public class BasicMemoryManager implements MemoryManager {
     protected static final int intervalTail = 100;
 
     protected Queue<Integer> intervals = new ConcurrentLinkedQueue<>();
+
+    private ThreadLocal<MemoryWorkspace> workspace = new ThreadLocal<>();
+
+    private ThreadLocal<MemoryWorkspace> tempWorkspace = new ThreadLocal<>();
+
+    private DummyWorkspace dummyWorkspace = new DummyWorkspace();
 
     /**
      * This method returns
@@ -157,5 +166,27 @@ public class BasicMemoryManager implements MemoryManager {
             return cnt;
         } else return 0;
 
+    }
+
+    @Override
+    public MemoryWorkspace getCurrentWorkspace() {
+        return workspace.get();
+    }
+
+    @Override
+    public void setCurrentWorkspace(MemoryWorkspace workspace) {
+        this.workspace.set(workspace);
+    }
+
+
+    @Override
+    public MemoryWorkspace scopeOutOfWorkspaces() {
+        MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+        if (workspace == null)
+            return dummyWorkspace;
+        else {
+            Nd4j.getMemoryManager().setCurrentWorkspace(null);
+            return workspace.tagOutOfScopeUse();
+        }
     }
 }
