@@ -48,7 +48,7 @@ MultiLayerConfiguration（多层网络配置）类是在Deeplearning4j中创建�
 
             .override(new ClassifierOverride(1))
 
-- **useDropConnect**：*boolean*参数，由丢弃法（dropout）推广而来的正则化方法；对神经网络的权重进行随机置零。
+- **useDropConnect**：*boolean*，由丢弃法（dropout）推广而来的正则化方法；对神经网络的权重进行随机置零。
     - 默认 = false
 
 该类的更多详情参见[JavaDoc](http://deeplearning4j.org/doc/)。
