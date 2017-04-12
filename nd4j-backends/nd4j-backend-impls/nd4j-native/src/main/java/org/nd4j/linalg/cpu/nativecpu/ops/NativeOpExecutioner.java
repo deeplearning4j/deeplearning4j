@@ -885,13 +885,15 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 extraz.set(new PointerPointer(32));
 
             // putting arguments pointers
-            PointerPointer ptrPtr = extraz.get().put(pointer);
+
+            PointerPointer ptrPtr = new PointerPointer(pointer);//extraz.get().put(pointer);
 
             for (int e = 0; e < op.getArguments().size(); e++) {
                 idx = argsPos + i * batch.getSample().maxArguments();
 
-                if (op.getArguments().get(e) != null)
+                if (op.getArguments().get(e) != null) {
                     ptrPtr.put(idx + e, op.getArguments().get(e).data().addressPointer());
+                }
             }
 
 
