@@ -63,6 +63,8 @@ public class ParallelWrapper implements AutoCloseable {
     protected boolean isMQ;
     private Object[] trainerContextArgs;
 
+    private MagicQueue mq;
+
     // log uncaught exceptions
     Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
         public void uncaughtException(Thread th, Throwable ex) {
@@ -340,9 +342,12 @@ public class ParallelWrapper implements AutoCloseable {
                     log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
                             Nd4j.getAffinityManager().getNumberOfDevices());
 
-                MagicQueue queue = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL)
+                if (mq == null)
+                    mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL)
                         .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
-                iterator = new AsyncDataSetIterator(source, prefetchSize * workers, queue);
+
+                iterator = new AsyncDataSetIterator(source, prefetchSize * workers, mq);
+
             } else
                 iterator = new AsyncDataSetIterator(source, prefetchSize * workers);
         } else
