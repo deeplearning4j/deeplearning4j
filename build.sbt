@@ -73,9 +73,8 @@ lazy val commonSettings = Seq(
 )
 
 lazy val publisNexus = Seq(
-  externalResolvers += "Local Sonatype OSS Snapshots" at "http://master-jenkins.eastus.cloudapp.azure.com:8088/nexus/content/repositories/snapshots/",
   publishTo := {
-    val nexus = "http://master-jenkins.eastus.cloudapp.azure.com:8088/nexus/"
+    val nexus = "http://master-jenkins.skymind.io:8088/nexus/"
     if (isSnapshot.value)
       Some("snapshots" at nexus + "content/repositories/snapshots")
     else
@@ -84,9 +83,8 @@ lazy val publisNexus = Seq(
 )
 
 lazy val publishJfrog = Seq(
-  externalResolvers += "Local JFrog OSS Snapshots" at "http://master-jenkins.eastus.cloudapp.azure.com:8081/artifactory/libs-snapshot/",
   publishTo := {
-    val jfrog = "http://master-jenkins.eastus.cloudapp.azure.com:8081/artifactory/"
+    val jfrog = "http://master-jenkins.skymind.io:8081/artifactory/"
     if (isSnapshot.value)
       Some("snapshots" at jfrog + "libs-snapshot-local")
     else
@@ -95,7 +93,6 @@ lazy val publishJfrog = Seq(
 )
 
 lazy val publishBintray = Seq(
-  externalResolvers += "JFrog OSS Snapshots" at "https://oss.jfrog.org/artifactory/libs-snapshot/",
   publishTo := {
     val jfrog = "https://oss.jfrog.org/artifactory/"
     if (isSnapshot.value)
@@ -106,7 +103,6 @@ lazy val publishBintray = Seq(
 )
 
 lazy val publishSonatype = Seq(
-  externalResolvers += "Sonatype OSS Snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/",
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
     if (isSnapshot.value)
@@ -128,4 +124,3 @@ lazy val root = (project in file(".")).settings(
   commonSettings,
   publishSomeThing
 )
-
