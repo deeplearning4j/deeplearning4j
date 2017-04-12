@@ -15,9 +15,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public abstract class BaseSparseBlasWrapper implements BlasWrapper{
 
-    public BaseSparseBlasWrapper() {
-        super();
-    }
 
     @Override
     public Lapack lapack() {

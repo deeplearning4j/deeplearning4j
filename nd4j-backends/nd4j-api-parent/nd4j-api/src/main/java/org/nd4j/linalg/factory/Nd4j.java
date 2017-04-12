@@ -30,10 +30,7 @@ import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.indexer.DoubleRawIndexer;
-import org.bytedeco.javacpp.indexer.FloatRawIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
-import org.bytedeco.javacpp.indexer.IntRawIndexer;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
@@ -76,7 +73,6 @@ import org.nd4j.linalg.fft.DefaultFFTInstance;
 import org.nd4j.linalg.fft.FFTInstance;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.memory.MemoryManager;
-import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -109,7 +105,7 @@ public class Nd4j {
     public final static String NATIVE_OPS = "native.ops";
     public final static String ORDER_KEY = "ndarray.order";
     public final static String NDARRAY_FACTORY_CLASS = "ndarrayfactory.class";
-    public final static String ISPARSE_NDARRAY_FACTORY_CLASS = "isparsendarrayfactory.class";
+    public final static String SPARSE_NDARRAY_FACTORY_CLASS = "sparsendarrayfactory.class";
     public final static String COPY_OPS = "ndarray.copyops";
     public final static String OP_EXECUTIONER = "opexec";
     public final static String OP_FACTORY = "opfactory";
@@ -5916,7 +5912,6 @@ public class Nd4j {
 
             Nd4j.backend = backend;
             updateNd4jContext();
-            props = Nd4jContext.getInstance().getConf();
             String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
             dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT
                     : otherDtype.equals("half") ? DataBuffer.Type.HALF : DataBuffer.Type.DOUBLE;
@@ -5946,7 +5941,7 @@ public class Nd4j {
             ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(
                     System.getProperty(NDARRAY_FACTORY_CLASS, props.get(NDARRAY_FACTORY_CLASS).toString()));
             sparseNDArrayClazz = (Class<? extends SparseNDArrayFactory>) Class.forName(
-                    System.getProperty(ISPARSE_NDARRAY_FACTORY_CLASS, props.getProperty(ISPARSE_NDARRAY_FACTORY_CLASS).toString()));
+                    System.getProperty(SPARSE_NDARRAY_FACTORY_CLASS, props.getProperty(SPARSE_NDARRAY_FACTORY_CLASS).toString()));
             convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class
                     .forName(System.getProperty(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
             String defaultName = props.getProperty(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName());
