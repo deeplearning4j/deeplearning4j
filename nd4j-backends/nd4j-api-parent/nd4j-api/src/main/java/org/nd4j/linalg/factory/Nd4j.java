@@ -76,6 +76,8 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4jBackend.NoAvailableBackendException;
 import org.nd4j.linalg.fft.DefaultFFTInstance;
 import org.nd4j.linalg.fft.FFTInstance;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.memory.MemoryManager;
 import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
@@ -377,6 +379,24 @@ public class Nd4j {
         return Nd4j.concat(axis, concatArr, arr);
     }
 
+    /**
+     * Expand the array dimensions.
+     * This is equivalent to
+     * adding a new axis dimension
+     * @param input the input array
+     * @param dimension the dimension to add the
+     *                  new axis at
+     * @return the array with the new axis dimension
+     */
+    public static INDArray expandDims(INDArray input,int dimension) {
+        if(dimension < 0)
+            dimension += input.rank();
+        INDArrayIndex[] indexes = new INDArrayIndex[input.rank()];
+        for(int i = 0; i < indexes.length; i++)
+            indexes[i] = NDArrayIndex.all();
+        indexes[dimension] = NDArrayIndex.newAxis();
+        return input.get(indexes);
+    }
 
     /**
      * Backend specific:
@@ -398,19 +418,6 @@ public class Nd4j {
      * @return
      */
     public static void shuffle(INDArray toShuffle, Random random, int... dimension) {
-        /*List<Integer> vectorsAlongDimension = Ints.asList(ArrayUtil.range(0, toShuffle.tensorssAlongDimension(dimension)));
-        Collections.rotate(vectorsAlongDimension, 3);
-        Collections.shuffle(vectorsAlongDimension, random);
-        for(int i = 0; i < toShuffle.tensorssAlongDimension(dimension); i++) {
-            int currTensorAlongDimension = vectorsAlongDimension.get(i);
-            if(i == currTensorAlongDimension)
-                continue;
-            INDArray curr = toShuffle.tensorAlongDimension(i,dimension);
-            INDArray toShuffleTensor = toShuffle.tensorAlongDimension(currTensorAlongDimension,dimension);
-            INDArray temp = curr.dup();
-            curr.assign(toShuffleTensor);
-            toShuffleTensor.assign(temp);
-        }*/
         INSTANCE.shuffle(toShuffle, random, dimension);
     }
 

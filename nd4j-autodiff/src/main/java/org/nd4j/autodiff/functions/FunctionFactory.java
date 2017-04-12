@@ -20,6 +20,8 @@ public interface FunctionFactory<X extends Field<X>> {
     One<X> one();
 
 
+
+
     DifferentialFunction<X> tile(DifferentialFunction<X> iX, int[] repeat);
 
     DifferentialFunction<X> valueArrayOf(DifferentialFunction<X> iX, int[] shape);
@@ -45,6 +47,7 @@ public interface FunctionFactory<X extends Field<X>> {
     DifferentialFunction<X> normmax(DifferentialFunction<X> i_x,int...dimensions);
 
 
+    DifferentialFunction<X> expandDims(DifferentialFunction<X> iX, int axis);
 
     DifferentialFunction<X> abs(DifferentialFunction<X> iX);
 
@@ -125,4 +128,27 @@ public interface FunctionFactory<X extends Field<X>> {
     DifferentialFunction<X> leakyReluDerivative(DifferentialFunction<X> iX, double cutoff);
 
     DifferentialFunction<X> reshape(Variable<X> arrayField, int[] shape);
+
+
+    DifferentialFunction<X> rollAxis(Variable<X> iX, int axis);
+
+    DifferentialFunction<X> cosineSimilarity(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int...dimensions);
+    DifferentialFunction<X> euclideanDistance(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
+    DifferentialFunction<X> manhattanDistance(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
+    DifferentialFunction<X> lossBinaryXENT(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
+    DifferentialFunction<X> lossCosineSimilarity(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
+    DifferentialFunction<X> lossHinge(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
+    DifferentialFunction<X> lossKLD(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
+    DifferentialFunction<X> lossL1(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
+    DifferentialFunction<X> lossL2(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
+    DifferentialFunction<X> lossMAE(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
+    DifferentialFunction<X> lossMAPE(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
+    DifferentialFunction<X> lossMSE(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
+    DifferentialFunction<X> lossMCXENT(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
+    DifferentialFunction<X> lossMSLE(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
+    DifferentialFunction<X> lossNegativeLogLikelihood(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
+    DifferentialFunction<X> lossPoisson(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
+    DifferentialFunction<X> lossSquaredHinge(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
+
+
 }

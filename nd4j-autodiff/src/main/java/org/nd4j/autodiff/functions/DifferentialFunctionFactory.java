@@ -2,7 +2,6 @@ package org.nd4j.autodiff.functions;
 
 import java.util.List;
 
-import com.kitfox.svg.A;
 import org.nd4j.autodiff.AbstractFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
@@ -298,7 +297,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v1) {
-                return null;
+                return doNormGrad(this,i_v1,"norm1",dimensions);
             }
         };
     }
@@ -321,7 +320,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v1) {
-                return null;
+                return doNormGrad(this,i_v1,"norm2",dimensions);
             }
         };
     }
@@ -343,10 +342,63 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v1) {
-                return null;
+                return doNormGrad(this,i_v1,"max",dimensions);
             }
         };
     }
+
+    private DifferentialFunction<X> doNormGrad(DifferentialFunction<X> func,
+                                               Variable<X> input,
+                                               String type,
+                                               int...axes) {
+
+        DifferentialFunction<X> result;
+        if(Shape.isWholeArray(axes)) {
+            result = input;
+        }
+        else if(axes.length > 1) {
+            if(axes[0] > axes[1]) {
+                axes[0]--;
+            }
+
+            result = expandDims(expandDims(func.div(input).mul(func.args()[0]),axes[0]),axes[1]);
+        }
+        else {
+            result = expandDims(func.div(input).mul(func.args()[0]),axes[0]);
+        }
+
+        return result;
+    }
+
+
+
+    @Override
+    public DifferentialFunction<X> expandDims(DifferentialFunction<X> iX,int axis) {
+        return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
+
+            @Override
+            public X doGetValue() {
+                return mFactory.expandDims(arg().getValue(),axis);
+            }
+
+            @Override
+            public double getReal() {
+                return Math.abs(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                return arg().div(abs(arg()));
+            }
+
+
+            @Override
+            public String functionName() {
+                return "expandDims";
+            }
+        };
+    }
+
 
 
     @Override
@@ -1546,6 +1598,497 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public String functionName() {
                 return "reshape";
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> rollAxis(Variable<X> iX, int axis) {
+        return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
+
+            @Override
+            public X doGetValue() {
+                return mFactory.rollAxis(arg().getValue(),axis);
+            }
+
+            @Override
+            public double getReal() {
+                return Math.floor(arg().getReal());
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                return this;
+            }
+
+            @Override
+            public String functionName() {
+                return "rollAxis";
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> cosineSimilarity(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
+        return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return mFactory.cosineSimilarity(iX,i_y,dimensions);
+            }
+
+            @Override
+            public double getReal() {
+                return 0;
+            }
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return "cosineSimilarity";
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> euclideanDistance(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
+        return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return mFactory.euclideanDistance(iX,i_y,dimensions);
+            }
+
+
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return "euclideanDistance";
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> manhattanDistance(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
+        return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return mFactory.manhattanDistance(iX,i_y,dimensions);
+            }
+
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return "manhattanDistance";
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> lossBinaryXENT(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
+        return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return mFactory.lossBinaryXENT(iX,i_y,dimensions);
+            }
+
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return "lossBinaryXENT";
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> lossCosineSimilarity(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
+        return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return mFactory.lossCosineSimilarity(iX,i_y,dimensions);
+            }
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return "lossCosineSimilarity";
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> lossHinge(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
+        return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return mFactory.lossHinge(iX,i_y,dimensions);
+            }
+
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return "lossHinge";
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> lossKLD(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
+        return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return mFactory.lossKLD(iX,i_y,dimensions);
+            }
+
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return "lossKLD";
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> lossL1(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
+        return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return mFactory.lossL1(iX,i_y,dimensions);
+            }
+
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return "lossL1";
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> lossL2(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
+        return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return mFactory.lossL2(iX,i_y,dimensions);
+            }
+
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return "lossL2";
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> lossMAE(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
+        return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return mFactory.lossMAE(iX,i_y,dimensions);
+            }
+
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return "lossMAE";
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> lossMAPE(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
+        return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return mFactory.lossMAPE(iX,i_y,dimensions);
+            }
+
+
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return "lossMAPE";
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> lossMSE(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
+        return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return mFactory.lossMSE(iX,i_y,dimensions);
+            }
+
+
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return "lossMSE";
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> lossMCXENT(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
+        return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return mFactory.lossMCXENT(iX,i_y,dimensions);
+            }
+
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return "lossMCXENT";
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> lossMSLE(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
+        return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return mFactory.lossMSLE(iX,i_y,dimensions);
+            }
+
+
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return "lossMSLE";
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> lossNegativeLogLikelihood(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
+        return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return mFactory.lossNegativeLogLikelihood(iX,i_y,dimensions);
+            }
+
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return "lossNegativeLogLikelihood";
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> lossPoisson(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
+        return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return mFactory.lossPoisson(iX,i_y,dimensions);
+            }
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return "lossPoisson";
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
+            }
+        };
+    }
+
+    @Override
+    public DifferentialFunction<X> lossSquaredHinge(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
+        return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
+            @Override
+            protected X doGetValue() {
+                return mFactory.lossSquaredHinge(iX,i_y,dimensions);
+            }
+
+
+            @Override
+            public String doGetFormula(List<Variable<X>> variables) {
+                return null;
+            }
+
+            @Override
+            public String functionName() {
+                return "lossSquaredHinge";
+            }
+
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                return null;
             }
         };
     }

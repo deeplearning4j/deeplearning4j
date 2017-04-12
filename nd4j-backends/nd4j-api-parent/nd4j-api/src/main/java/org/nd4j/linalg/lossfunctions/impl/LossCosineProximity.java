@@ -16,6 +16,14 @@ import java.util.Arrays;
 @EqualsAndHashCode
 public class LossCosineProximity implements ILossFunction {
 
+    /**
+     *
+     * @param labels
+     * @param preOutput
+     * @param activationFn
+     * @param mask
+     * @return
+     */
     public INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         /*
          mean of -(y.dot(yhat)/||y||*||yhat||)
