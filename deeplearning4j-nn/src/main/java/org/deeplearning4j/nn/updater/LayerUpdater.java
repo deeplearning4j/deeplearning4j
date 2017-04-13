@@ -314,21 +314,4 @@ public class LayerUpdater implements Updater {
         result = 31 * result + (updaterForVariable == null ? 0 : updaterForVariable.hashCode());
         return result;
     }
-
-    @Override
-    public Updater clone() {
-        Map<String, GradientUpdater> newMap = new HashMap<>();
-        for (Map.Entry<String, GradientUpdater> entry : updaterForVariable.entrySet()) {
-            newMap.put(entry.getKey(), entry.getValue().getAggregator(true).getUpdater());
-        }
-
-        LayerUpdater updater;
-        try {
-            updater = this.getClass().getConstructor().newInstance();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        updater.updaterForVariable = newMap;
-        return updater;
-    }
 }

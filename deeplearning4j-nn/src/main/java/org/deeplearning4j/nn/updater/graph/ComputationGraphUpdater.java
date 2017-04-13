@@ -21,7 +21,7 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-public class ComputationGraphUpdater implements Serializable, Cloneable {
+public class ComputationGraphUpdater implements Serializable {
 
     private final Updater[] layerUpdaters;
     private final Map<String, Integer> layerUpdatersMap;
@@ -98,18 +98,6 @@ public class ComputationGraphUpdater implements Serializable, Cloneable {
     private ComputationGraphUpdater(int size, Map<String, Integer> layerUpdatersMap) {
         layerUpdaters = new Updater[size];
         this.layerUpdatersMap = layerUpdatersMap;
-    }
-
-    private ComputationGraphUpdater(ComputationGraphUpdater updater) {
-        layerUpdaters = new Updater[updater.layerUpdaters.length];
-        for (int i = 0; i < layerUpdaters.length; i++)
-            layerUpdaters[i] = updater.layerUpdaters[i].clone();
-        layerUpdatersMap = new HashMap<>(updater.layerUpdatersMap);
-    }
-
-    @Override
-    public ComputationGraphUpdater clone() {
-        return new ComputationGraphUpdater(this);
     }
 
     /**
