@@ -31,6 +31,7 @@ import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
+import org.nd4j.nativeblas.NativeOpsHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +73,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class AtomicAllocator implements Allocator {
     private static final AtomicAllocator INSTANCE = new AtomicAllocator();
 
-    private Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
+    private Configuration configuration;
 
     @Getter
     private transient MemoryHandler memoryHandler;
@@ -121,13 +122,41 @@ public class AtomicAllocator implements Allocator {
     protected static ConstantProtector protector;
 
     private AtomicAllocator() {
+        this.configuration = CudaEnvironment.getInstance().getConfiguration();
+        applyConfiguration();
+
         this.memoryHandler = new CudaZeroHandler();
+
         this.memoryHandler.init(configuration, this);
 
         initDeviceCollectors();
         initHostCollectors();
         this.protector = ConstantProtector.getInstance();
 
+    }
+
+    public void applyConfiguration() {
+        //log.info("Applying CUDA configuration...");
+
+        CudaEnvironment.getInstance().notifyConfigurationApplied();
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableDebugMode(configuration.isDebug());
+        //configuration.enableDebug(configuration.isDebug());
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableVerboseMode(configuration.isVerbose());
+        //configuration.setVerbose(configuration.isVerbose());
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().enableP2P(configuration.isCrossDeviceAccessAllowed());
+        //configuration.allowCrossDeviceAccess(configuration.isCrossDeviceAccessAllowed());
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().setGridLimit(configuration.getMaximumGridSize());
+        //configuration.setMaximumGridSize(configuration.getMaximumGridSize());
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().setOmpNumThreads(configuration.getMaximumBlockSize());
+        // configuration.setMaximumBlockSize(configuration.getMaximumBlockSize());
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().setOmpMinThreads(configuration.getMinimumBlockSize());
+        // configuration.setMinimumBlockSize(configuration.getMinimumBlockSize());
     }
 
     /**
