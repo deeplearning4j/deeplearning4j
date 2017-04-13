@@ -33,6 +33,7 @@ import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 public class UpdaterTest extends BaseNd4jTest {
@@ -500,6 +501,12 @@ public class UpdaterTest extends BaseNd4jTest {
         assertEquals(avgLr, combined2.getLearningRate(), 1e-10);
     }
 
+
+    @Test
+    public void adamRegressionTest(){
+
+        fail();
+    }
 
 
     @Override
