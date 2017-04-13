@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.functions;
 
+import java.util.Arrays;
 import java.util.List;
 
 import org.nd4j.autodiff.AbstractFactory;
@@ -12,6 +13,8 @@ import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import static org.nd4j.linalg.util.ArrayUtil.copyOfRangeFrom;
 
 /**
  *
@@ -1307,52 +1310,6 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
         };
     }
 
-    private int getInputLength(Variable<X> func) {
-        if(func.getValue() instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) func.getValue();
-            int[] inputShape = arrayField.getInput().getShape();
-            return ArrayUtil.prod(inputShape);
-        }
-
-        throw new IllegalStateException("Only able to compute on array field");
-    }
-
-    private DifferentialFunction<X> doGradChoose(DifferentialFunction<X> func,Variable<X> input,int...axes) {
-        if(input.getValue() instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) input.getValue();
-            DifferentialFunction<X> repeatedGrad = doRepeat(func,input,axes);
-            DifferentialFunction<X> resultRepeated = doRepeat(func.args()[0],input,axes);
-            DifferentialFunction<X> argMaxLocations = eq(input,resultRepeated);
-            return argMaxLocations.mul(repeatedGrad).div(sum(argMaxLocations,axes));
-        }
-
-        throw new UnsupportedOperationException("Must be an ArrayField argument");
-
-    }
-
-
-    private DifferentialFunction<X> doRepeat(DifferentialFunction<X> func,
-                                             Variable<X> input,
-                                             int...axes) {
-        if(input.getValue() instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) input.getValue();
-            int[] inputShape = arrayField.getInput().getShape();
-            if(Shape.isWholeArray(inputShape,axes)) {
-                return valueArrayOf(input,inputShape);
-            }
-
-            for(int i = 0; i < inputShape.length; i++) {
-                inputShape[axes[i]] = 1;
-            }
-
-            return broadcast(func,inputShape);
-
-        }
-
-        throw new UnsupportedOperationException("Must be an ArrayField argument");
-
-    }
-
     @Override
     public DifferentialFunction<X> repeat(DifferentialFunction<X> iX, int axis) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX) {
@@ -2102,4 +2059,113 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
     public DifferentialFunction<X> tensorMmul(Variable<X> arrayField, int[][] dimensions) {
         return null;
     }
+
+
+
+    private int getInputLength(Variable<X> func) {
+        if(func.getValue() instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) func.getValue();
+            int[] inputShape = arrayField.getInput().getShape();
+            return ArrayUtil.prod(inputShape);
+        }
+
+        throw new IllegalStateException("Only able to compute on array field");
+    }
+
+    private DifferentialFunction<X> doGradChoose(DifferentialFunction<X> func,Variable<X> input,int...axes) {
+        if(input.getValue() instanceof ArrayField) {
+            DifferentialFunction<X> repeatedGrad = doRepeat(func,input,axes);
+            DifferentialFunction<X> resultRepeated = doRepeat(func.args()[0],input,axes);
+            DifferentialFunction<X> argMaxLocations = eq(input,resultRepeated);
+            return argMaxLocations.mul(repeatedGrad).div(sum(argMaxLocations,axes));
+        }
+
+        throw new UnsupportedOperationException("Must be an ArrayField argument");
+
+    }
+
+
+    private DifferentialFunction<X> doRepeat(DifferentialFunction<X> func,
+                                             Variable<X> input,
+                                             int...axes) {
+        if(input.getValue() instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) input.getValue();
+            int[] inputShape = arrayField.getInput().getShape();
+            if(Shape.isWholeArray(inputShape,axes)) {
+                return valueArrayOf(input,inputShape);
+            }
+
+            for(int i = 0; i < inputShape.length; i++) {
+                inputShape[axes[i]] = 1;
+            }
+
+            return broadcast(func,inputShape);
+
+        }
+
+        throw new UnsupportedOperationException("Must be an ArrayField argument");
+
+    }
+
+
+    private DifferentialFunction<X> doTensorMmul(int argNum,
+                                                 DifferentialFunction<X> a,
+                                                 DifferentialFunction<X> b,int...dimensions) {
+        if(a.getValue() instanceof ArrayField) {
+            ArrayField xField = (ArrayField) a.getValue();
+            ArrayField yField = (ArrayField) b.getValue();
+            int[] aDimensions;
+            int[] bDimensions;
+            if(dimensions.length == 1) {
+                aDimensions = copyOfRangeFrom(
+                        xField.getInput().getShape().length,
+                        xField.getInput().getShape().length - dimensions[0],
+                        xField.getInput().getShape().length);
+                bDimensions = copyOfRangeFrom(yField.getInput().getShape().length,
+                        0,
+                        yField.getInput().getShape().length);
+            }
+            else {
+                aDimensions = new int[0];
+                bDimensions = new int[0];
+            }
+
+            if(aDimensions.length != bDimensions.length)
+                throw new IllegalStateException("A and b must be the same rank");
+
+            int[] outputShape = Shape.getMatrixMultiplyShape(xField.getInput().getShape(),yField.getInput().getShape());
+            int axesSummed = aDimensions.length;
+            DifferentialFunction<X> x,y;
+            int xRank,yRank;
+            int[] xAxesSummed,yAxesSummed;
+
+            if(argNum == 0) {
+               x = a;
+               y = b;
+               xRank = aDimensions.length;
+               yRank = bDimensions.length;
+               xAxesSummed = aDimensions;
+               yAxesSummed = bDimensions;
+
+               //        g_axes_from_Y = list(range(g_ndim))[(X_ndim - N_axes_summed):]
+
+
+            }
+            else if(argNum == 1) {
+               x = b;
+               y = a;
+               xRank = bDimensions.length;
+               yRank = aDimensions.length;
+                xAxesSummed = bDimensions;
+                yAxesSummed = aDimensions;
+                //               g_axes_from_Y = list(range(g_ndim))[:(Y_ndim - N_axes_summed)]
+
+
+            }
+            else
+                throw new IllegalArgumentException("Arg num must be 0 or 1");
+
+        }
+    }
+
 }

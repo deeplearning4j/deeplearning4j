@@ -767,6 +767,19 @@ public class ArrayUtil {
     }
 
 
+    /**
+     * Generate an array from 0 to length
+     * and generate take a subset
+     * @param length the length to generate to
+     * @param from the begin of the interval to take
+     * @param to the end of the interval to take
+     * @return the generated array
+     */
+    public static int[] copyOfRangeFrom(int length,int from,int to) {
+        return  Arrays.copyOfRange(ArrayUtil.range(0,length),from,to);
+
+    }
+
     //Credit: http://stackoverflow.com/questions/15533854/converting-byte-array-to-double-array
 
     /**

@@ -92,6 +92,26 @@ public class Shape {
 
 
     /**
+     * Get the output shape of a matrix multiply
+     *
+     * @param left the first matrix shape to multiply
+     * @param right the second matrix shape to multiply
+     * @return the shape of the output array (the left's rows and right's columns)
+     */
+    public static int[] getMatrixMultiplyShape(int[] left,int[] right) {
+        if(left.length != 2 && right.length != 2) {
+            throw new IllegalArgumentException("Illegal shapes for matrix multiply. Must be of length 2");
+        }
+
+        if(left[1] != right[0])
+            throw new IllegalArgumentException("Columns of left not equal to rows of right");
+
+        int[] shape = {left[0], right[1]};
+        return shape;
+
+    }
+
+    /**
      * Create a copy of the matrix
      * where the new offset is zero
      *
