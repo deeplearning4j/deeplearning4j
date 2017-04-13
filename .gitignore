@@ -231,42 +231,22 @@ $RECYCLE.BIN/
 
 
 # Specific for Nd4j
-pom.xml.releaseBackup 
 *.md5
 *.pom
 *.sha1
-target/
 *.ser
 *.so
 application.home_IS_UNDEFINEiD
-README.md~
-*.jpg
-*.png
-*.bin
-*.swp
-*.releaseBackup
 *.jpg
 *.png
 *.bin
 *.out
-*~
 *.iml
-.pydevproject
-.vscode
-release.properties
 .idea/
-*.iml
-*.png
 *.prefs
-*.settings/*
 model-saver-*
 mnist-pretrain-dbn.bin-*
 deeplearning4j-scaleout/deeplearning4j-aws/src/main/java/org/deeplearning4j/aws/ec2/provision/Ec2CommandRunner.java.settings/
-*.log
-.project
-.classpath
-.class
 *.dylib
-.DS_Store*
 lib/
 nd4j-shade/jackson/dependency-reduced-pom.xml
