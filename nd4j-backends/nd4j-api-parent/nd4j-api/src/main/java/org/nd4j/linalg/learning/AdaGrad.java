@@ -51,6 +51,8 @@ public class AdaGrad implements Serializable, GradientUpdater {
     protected int numIterations = 0;
     private double epsilon = DEFAULT_ADAGRAD_EPSILON;
 
+    private char gradientReshapeOrder;
+
     @Override
     public int stateSizeForInputSize(int inputSize) {
         return inputSize;
@@ -67,6 +69,8 @@ public class AdaGrad implements Serializable, GradientUpdater {
         this.historicalGradient = Shape.newShapeNoCopy(this.historicalGradient, gradientShape, gradientOrder == 'f');
         if (historicalGradient == null)
             throw new IllegalStateException("Could not correctly reshape gradient view array");
+
+        this.gradientReshapeOrder = gradientOrder;
     }
 
     /**
@@ -121,7 +125,7 @@ public class AdaGrad implements Serializable, GradientUpdater {
 
         historicalGradient.addi(gradient.mul(gradient));
 
-        INDArray sqrtHistory = sqrt(historicalGradient, true).addi(epsilon);
+        INDArray sqrtHistory = sqrt(historicalGradient.dup(gradientReshapeOrder), false).addi(epsilon);
         // lr * gradient / (sqrt(sumSquaredGradients) + epsilon)
         INDArray ret = gradient.muli(sqrtHistory.rdivi(learningRate));
         numIterations++;

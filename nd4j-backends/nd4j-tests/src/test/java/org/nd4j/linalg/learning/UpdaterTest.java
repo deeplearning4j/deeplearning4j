@@ -166,14 +166,6 @@ public class UpdaterTest extends BaseNd4jTest {
         }
     }
 
-
-    @Test
-    public void adamRegressionTest(){
-
-        fail();
-    }
-
-
     @Override
     public char ordering() {
         return 'f';
