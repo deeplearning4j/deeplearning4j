@@ -30,6 +30,8 @@ public class Adam implements Serializable, GradientUpdater {
     private double epsilon = DEFAULT_ADAM_EPSILON;
     private INDArray m, v; // moving avg & sqrd gradients
 
+    private char gradientReshapeOrder;
+
     @Override
     public int stateSizeForInputSize(int inputSize) {
         return 2 * inputSize;
@@ -50,6 +52,8 @@ public class Adam implements Serializable, GradientUpdater {
         this.v = Shape.newShapeNoCopy(this.v, gradientShape, gradientOrder == 'f');
         if (m == null || v == null)
             throw new IllegalStateException("Could not correctly reshape gradient view arrays");
+
+        this.gradientReshapeOrder = gradientOrder;
     }
 
     public Adam(double alpha, double beta1, double beta2, double epsilon) {
@@ -100,74 +104,9 @@ public class Adam implements Serializable, GradientUpdater {
         double alphat = learningRate * FastMath.sqrt(1 - beta2t) / (1 - beta1t);
         if (Double.isNaN(alphat) || alphat == 0.0)
             alphat = epsilon;
-        INDArray sqrtV = Transforms.sqrt(v, true).addi(epsilon);
-        INDArray ret = m.mul(alphat).divi(sqrtV);
-        gradient.assign(ret);
+        INDArray sqrtV = Transforms.sqrt(v.dup(gradientReshapeOrder), false).addi(epsilon);
+
+        gradient.assign(m).muli(alphat).divi(sqrtV);
         return gradient;
     }
-
-    @Override
-    public GradientUpdaterAggregator getAggregator(boolean addThis) {
-        AdamAggregator ag = new AdamAggregator();
-        if (addThis)
-            ag.aggregate(this);
-        return ag;
-    }
-
-    public static class AdamAggregator implements GradientUpdaterAggregator {
-        private INDArray mSum;
-        private INDArray vSum;
-        private double lrSum;
-        private double beta1Sum;
-        private double beta2Sum;
-        private double epsilonSum;
-        private int count = 0;
-
-        @Override
-        public GradientUpdater getUpdater() {
-            Adam adam = new Adam(lrSum / count, beta1Sum / count, beta2Sum / count, epsilonSum / count);
-            adam.setM(mSum.div(count));
-            adam.setV(vSum.div(count));
-            return adam;
-        }
-
-        @Override
-        public void aggregate(GradientUpdater updater) {
-            if (!(updater instanceof Adam))
-                throw new UnsupportedOperationException("Cannot aggregate Adam with updater: " + updater);
-            Adam adam = (Adam) updater;
-            if (mSum == null) {
-                mSum = adam.m.dup();
-                vSum = adam.v.dup();
-                lrSum = adam.learningRate;
-                beta1Sum = adam.beta1;
-                beta2Sum = adam.beta2;
-                epsilonSum = adam.epsilon;
-            } else {
-                mSum.addi(adam.m);
-                vSum.addi(adam.v);
-                lrSum += adam.learningRate;
-                beta1Sum += adam.beta1;
-                beta2Sum += adam.beta2;
-                epsilonSum += adam.epsilon;
-            }
-            count++;
-        }
-
-        @Override
-        public GradientUpdaterAggregator combine(GradientUpdaterAggregator other) {
-            if (!(other instanceof AdamAggregator))
-                throw new IllegalArgumentException("Cannot combine AdamAggregator with aggregator: " + other);
-            AdamAggregator aggregator = (AdamAggregator) other;
-            mSum.addi(aggregator.mSum);
-            vSum.addi(aggregator.vSum);
-            lrSum += aggregator.lrSum;
-            beta1Sum += aggregator.beta1Sum;
-            beta2Sum += aggregator.beta2Sum;
-            epsilonSum += aggregator.epsilonSum;
-            count += aggregator.count;
-            return this;
-        }
-    }
-
 }
