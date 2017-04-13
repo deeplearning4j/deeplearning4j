@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicLong;
 public class CudaCachingZeroProvider extends CudaDirectProvider implements MemoryProvider {
     private static Logger log = LoggerFactory.getLogger(CudaCachingZeroProvider.class);
 
-    protected final Configuration configuration = CudaEnvironment.getInstance().getConfiguration();
     protected volatile ConcurrentHashMap<AllocationShape, CacheHolder> zeroCache = new ConcurrentHashMap<>();
 
     protected final AtomicLong cacheZeroHit = new AtomicLong(0);
@@ -53,17 +52,17 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
     protected final Semaphore singleLock = new Semaphore(1);
 
     // we don't cache allocations greater then this value
-    protected final long MAX_SINGLE_ALLOCATION = configuration.getMaximumHostCacheableLength();
+    //protected final long MAX_SINGLE_ALLOCATION = configuration.getMaximumHostCacheableLength();
 
     // maximum cached size of memory
-    protected final long MAX_CACHED_MEMORY = configuration.getMaximumHostCache();
+    //protected final long MAX_CACHED_MEMORY = configuration.getMaximumHostCache();
 
     // memory chunks below this threshold will be guaranteed regardless of number of cache entries
     // that especially covers all possible variations of shapeInfoDataBuffers in all possible cases
     protected final long FORCED_CACHE_THRESHOLD = 96;
 
     //  number of preallocation entries for each yet-unknown shape
-    protected final int PREALLOCATION_LIMIT = configuration.getPreallocationCalls();
+    //protected final int PREALLOCATION_LIMIT = configuration.getPreallocationCalls();
 
     public CudaCachingZeroProvider() {
 
@@ -83,7 +82,7 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
     public PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
         long reqMemory = AllocationUtils.getRequiredMemory(shape);
 
-        if (location == AllocationStatus.HOST && reqMemory < MAX_SINGLE_ALLOCATION) {
+        if (location == AllocationStatus.HOST && reqMemory < CudaEnvironment.getInstance().getConfiguration().getMaximumHostCacheableLength()) {
 
             CacheHolder cache = zeroCache.get(shape);
             if (cache != null) {
@@ -104,9 +103,9 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
             }
             cacheZeroMiss.incrementAndGet();
 
-            if (configuration.isUsePreallocation() && zeroCachedAmount.get() < MAX_CACHED_MEMORY / 10
+            if (CudaEnvironment.getInstance().getConfiguration().isUsePreallocation() && zeroCachedAmount.get() < CudaEnvironment.getInstance().getConfiguration().getMaximumHostCache() / 10
                             && reqMemory < 16 * 1024 * 1024L) {
-                CachePreallocator preallocator = new CachePreallocator(shape, location, PREALLOCATION_LIMIT);
+                CachePreallocator preallocator = new CachePreallocator(shape, location, CudaEnvironment.getInstance().getConfiguration().getPreallocationCalls());
                 preallocator.start();
             }
 
@@ -151,13 +150,15 @@ public class CudaCachingZeroProvider extends CudaDirectProvider implements Memor
             long reqMemory = AllocationUtils.getRequiredMemory(shape);
 
             // we don't cache too big objects
-            if (reqMemory > MAX_SINGLE_ALLOCATION || zeroCachedAmount.get() >= MAX_CACHED_MEMORY) {
+            if (reqMemory > CudaEnvironment.getInstance().getConfiguration().getMaximumHostCacheableLength() || zeroCachedAmount.get() >= CudaEnvironment.getInstance().getConfiguration().getMaximumHostCache()) {
                 //log.info("HOST memory purging: {} bytes; MS: {}; MT: {}", reqMemory, MAX_SINGLE_ALLOCATION, MAX_CACHED_MEMORY);
                 super.free(point);
                 return;
             }
 
             ensureCacheHolder(shape);
+
+            //log.info("Saving DEVICE memory into cache...");
 
             /*
                 Now we should decide if this object can be cached or not

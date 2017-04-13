@@ -8,6 +8,7 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,9 +24,9 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class CudaFullCachingProvider extends CudaCachingZeroProvider {
 
-    protected final long MAX_GPU_ALLOCATION = configuration.getMaximumSingleDeviceAllocation();
+    //protected final long MAX_GPU_ALLOCATION = configuration.getMaximumSingleDeviceAllocation();
 
-    protected final long MAX_GPU_CACHE = configuration.getMaximumDeviceCache();
+    //protected final long MAX_GPU_CACHE = configuration.getMaximumDeviceCache();
 
 
     protected volatile ConcurrentHashMap<Integer, ConcurrentHashMap<AllocationShape, CacheHolder>> deviceCache =
@@ -62,7 +63,7 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
     @Override
     public PointersPair malloc(AllocationShape shape, AllocationPoint point, AllocationStatus location) {
         long reqMemory = AllocationUtils.getRequiredMemory(shape);
-        if (location == AllocationStatus.DEVICE && reqMemory < MAX_GPU_ALLOCATION) {
+        if (location == AllocationStatus.DEVICE && reqMemory < CudaEnvironment.getInstance().getConfiguration().getMaximumDeviceAllocation()) {
 
 
             int deviceId = AtomicAllocator.getInstance().getDeviceId();
@@ -109,11 +110,13 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
             long reqMemory = AllocationUtils.getRequiredMemory(shape);
             // we don't cache too big objects
 
-            if (reqMemory > MAX_GPU_ALLOCATION || deviceCachedAmount.get(deviceId).get() >= MAX_GPU_CACHE) {
+            if (reqMemory > CudaEnvironment.getInstance().getConfiguration().getMaximumDeviceCacheableLength() || deviceCachedAmount.get(deviceId).get() >= CudaEnvironment.getInstance().getConfiguration().getMaximumHostCache()) {
                 //log.info("DEVICE_{} memory purging: {} bytes; MS: {}; MT: {}", deviceId, reqMemory, MAX_GPU_ALLOCATION, MAX_GPU_CACHE);
                 super.free(point);
                 return;
             }
+
+//            log.info("Saving HOST memory into cache...");
 
             ensureDeviceCacheHolder(deviceId, shape);
 

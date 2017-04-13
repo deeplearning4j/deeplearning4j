@@ -2,6 +2,7 @@ package org.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
+import org.bytedeco.javacpp.Pointer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -184,6 +185,25 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
             thread.join();
 
             System.gc();
+        }
+    }
+
+    @Test
+    public void endlessTest6() throws Exception {
+        Nd4j.getMemoryManager().togglePeriodicGc(false);
+        WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
+                .initialSize(10 * 1024L * 1024L)
+                .policyLearning(LearningPolicy.NONE)
+                .build();
+        final AtomicLong cnt = new AtomicLong(0);
+        while (true) {
+
+            try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf, "PEW-PEW")) {
+                INDArray array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+            }
+
+            if (cnt.incrementAndGet() % 1000000 == 0)
+                log.info("TotalBytes: {}", Pointer.totalBytes());
         }
     }
 
