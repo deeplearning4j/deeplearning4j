@@ -1,6 +1,7 @@
 package org.deeplearning4j.parallelism.factory;
 
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.deeplearning4j.parallelism.trainer.Trainer;
 
@@ -32,6 +33,6 @@ public interface TrainerContext {
      *                for coordination with the {@link ParallelWrapper} 's {@link org.deeplearning4j.optimize.api.IterationListener}
      * @return the created training instance
      */
-    Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper);
+    Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper, WorkspaceMode workspaceMode);
 
 }

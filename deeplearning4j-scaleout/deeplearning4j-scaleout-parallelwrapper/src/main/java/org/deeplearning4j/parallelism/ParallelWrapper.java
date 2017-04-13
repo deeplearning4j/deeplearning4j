@@ -10,6 +10,7 @@ import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
@@ -61,6 +62,7 @@ public class ParallelWrapper implements AutoCloseable {
     protected List<IterationListener> listeners = new ArrayList<>();
     protected StatsStorageRouter storageRouter;
     protected boolean isMQ;
+    protected WorkspaceMode workspaceMode;
     private Object[] trainerContextArgs;
 
     private MagicQueue mq;
@@ -456,7 +458,7 @@ public class ParallelWrapper implements AutoCloseable {
                         model,
                         Nd4j.getAffinityManager().getDeviceForCurrentThread(),
                         useMDS,
-                        this);
+                        this, workspaceMode);
                 zoo[cnt].setUncaughtExceptionHandler(handler);
                 zoo[cnt].start();
             }
@@ -474,6 +476,7 @@ public class ParallelWrapper implements AutoCloseable {
         protected boolean isMQ = false; // Nd4j.getAffinityManager().getNumberOfDevices() > 1;
         protected TrainerContext trainerContext = new DefaultTrainerContext();
         protected Object[] trainerContextArgs;
+        protected WorkspaceMode workspaceMode = WorkspaceMode.SEPARATE;
 
         /**
          * Transer context args are for calling a
@@ -501,6 +504,12 @@ public class ParallelWrapper implements AutoCloseable {
             this.trainerContext = trainerContext;
             return this;
         }
+
+        public Builder workspaceMode(@NonNull WorkspaceMode mode) {
+            this.workspaceMode = mode;
+            return this;
+        }
+
         /**
          * Build ParallelWrapper for MultiLayerNetwork
          *
@@ -621,6 +630,7 @@ public class ParallelWrapper implements AutoCloseable {
             wrapper.averageUpdaters = this.averageUpdaters;
             wrapper.legacyAveraging = this.legacyAveraging;
             wrapper.isMQ = this.isMQ;
+            wrapper.workspaceMode = this.workspaceMode;
 
             return wrapper;
         }

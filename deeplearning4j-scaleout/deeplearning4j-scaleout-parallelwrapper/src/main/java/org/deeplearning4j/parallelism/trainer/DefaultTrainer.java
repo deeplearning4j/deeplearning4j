@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
@@ -56,6 +57,7 @@ public class DefaultTrainer extends Thread implements Trainer {
     protected final String uuid = UUID.randomUUID().toString();
     protected boolean onRootModel = false;
     protected ParallelWrapper parallelWrapper;
+    protected WorkspaceMode workspaceMode;
 
 
 
@@ -158,7 +160,7 @@ public class DefaultTrainer extends Thread implements Trainer {
             if (originalModel instanceof MultiLayerNetwork) {
                 if (!onRootModel) {
                     MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(((MultiLayerNetwork) originalModel).getLayerWiseConfigurations().toJson());
-
+                    conf.setWorkspaceMode(workspaceMode);
                     this.replicatedModel = new MultiLayerNetwork(conf);
 
                     replicatedModel.init();
@@ -170,7 +172,8 @@ public class DefaultTrainer extends Thread implements Trainer {
                         Updater updaterReplica = ((MultiLayerNetwork) replicatedModel).getUpdater();
                         Updater updaterOrigina = ((MultiLayerNetwork) originalModel).getUpdater();
 
-                        updaterReplica.setStateViewArray((MultiLayerNetwork) replicatedModel, updaterOrigina.getStateViewArray().dup(), false);
+                        if (updaterOrigina != null && updaterOrigina.getStateViewArray() != null)
+                            updaterReplica.setStateViewArray((MultiLayerNetwork) replicatedModel, updaterOrigina.getStateViewArray().dup(), false);
 
                         if (Nd4j.getExecutioner() instanceof GridExecutioner)
                             ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
@@ -191,7 +194,10 @@ public class DefaultTrainer extends Thread implements Trainer {
             }
             else if (originalModel instanceof ComputationGraph) {
                 if (!onRootModel) {
-                    this.replicatedModel = new ComputationGraph(ComputationGraphConfiguration.fromJson(((ComputationGraph) originalModel).getConfiguration().toJson()));
+                    ComputationGraphConfiguration conf = ComputationGraphConfiguration.fromJson(((ComputationGraph) originalModel).getConfiguration().toJson());
+                    conf.setWorkspaceMode(workspaceMode);
+
+                    this.replicatedModel = new ComputationGraph(conf);
                     this.replicatedModel.init();
 
                     // we replicate original model params & updater state, just in case it's pre-trained model
@@ -201,7 +207,8 @@ public class DefaultTrainer extends Thread implements Trainer {
                         ComputationGraphUpdater updaterReplica = ((ComputationGraph) replicatedModel).getUpdater();
                         ComputationGraphUpdater updaterOrigina = ((ComputationGraph) originalModel).getUpdater();
 
-                        updaterReplica.setStateViewArray(updaterOrigina.getStateViewArray().dup());
+                        if (updaterOrigina != null && updaterOrigina.getStateViewArray() != null)
+                            updaterReplica.setStateViewArray(updaterOrigina.getStateViewArray().dup());
 
                         if (Nd4j.getExecutioner() instanceof GridExecutioner)
                             ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
