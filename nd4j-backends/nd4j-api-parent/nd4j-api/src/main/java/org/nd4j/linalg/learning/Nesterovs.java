@@ -25,6 +25,8 @@ public class Nesterovs implements Serializable, GradientUpdater {
     private volatile INDArray v;
     private double learningRate = 0.1;
 
+    private char gradientReshapeOrder;
+
     @Override
     public int stateSizeForInputSize(int inputSize) {
         return inputSize;
@@ -42,6 +44,7 @@ public class Nesterovs implements Serializable, GradientUpdater {
         this.v = Shape.newShapeNoCopy(this.v, gradientShape, gradientOrder == 'f');
         if (v == null)
             throw new IllegalStateException("Could not correctly reshape gradient view array");
+        this.gradientReshapeOrder = gradientOrder;
     }
 
     public Nesterovs(double momentum, double learningRate) {
@@ -82,8 +85,8 @@ public class Nesterovs implements Serializable, GradientUpdater {
         //i.e., we do params -= updatedGradient, not params += updatedGradient
 
         //v = mu * v - lr * gradient
-        INDArray vPrev = v.dup();
-        v.muli(momentum).subi(gradient.mul(learningRate));              //Modify state array in-place
+        INDArray vPrev = v.dup(gradientReshapeOrder);
+        v.muli(momentum).subi(gradient.dup(gradientReshapeOrder).muli(learningRate));              //Modify state array in-place
 
         /*
         Next line is equivalent to:
