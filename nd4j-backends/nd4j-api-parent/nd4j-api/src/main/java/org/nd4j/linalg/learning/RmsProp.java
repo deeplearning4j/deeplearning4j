@@ -25,6 +25,8 @@ public class RmsProp implements GradientUpdater {
     private double learningRate = 1e-1;
     private double epsilon = DEFAULT_RMSPROP_EPSILON;
 
+    private char gradientReshapeOrder;
+
     public RmsProp(double learningRate, double rmsDecay) {
         this(learningRate, rmsDecay, DEFAULT_RMSPROP_EPSILON);
     }
@@ -52,6 +54,8 @@ public class RmsProp implements GradientUpdater {
         this.lastGradient = Shape.newShapeNoCopy(this.lastGradient, gradientShape, gradientOrder == 'f');
         if (lastGradient == null)
             throw new IllegalStateException("Could not correctly reshape gradient view array");
+
+        gradientReshapeOrder = gradientOrder;
     }
 
     @Override
@@ -68,6 +72,6 @@ public class RmsProp implements GradientUpdater {
 
         lastGradient.muli(rmsDecay).addi(gradient.mul(gradient).muli(1 - rmsDecay));
         // lr * gradient / (sqrt(cache) + 1e-8)
-        return gradient.muli(learningRate).divi(Transforms.sqrt(lastGradient, true).addi(epsilon));
+        return gradient.muli(learningRate).divi(Transforms.sqrt(lastGradient.dup(gradientReshapeOrder), false).addi(epsilon));
     }
 }
