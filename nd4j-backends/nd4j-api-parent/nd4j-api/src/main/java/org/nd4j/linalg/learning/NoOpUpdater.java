@@ -26,27 +26,4 @@ public class NoOpUpdater implements GradientUpdater {
     public INDArray getGradient(INDArray gradient, int iteration) {
         return gradient;
     }
-
-    @Override
-    public GradientUpdaterAggregator getAggregator(boolean addThis) {
-        return new NoOpUpdaterAggregator();
-    }
-
-    @EqualsAndHashCode
-    private static class NoOpUpdaterAggregator implements GradientUpdaterAggregator {
-        @Override
-        public GradientUpdater getUpdater() {
-            return new NoOpUpdater();
-        }
-
-        @Override
-        public void aggregate(GradientUpdater updater) {
-            //No op
-        }
-
-        @Override
-        public GradientUpdaterAggregator combine(GradientUpdaterAggregator other) {
-            return this;
-        }
-    }
 }
