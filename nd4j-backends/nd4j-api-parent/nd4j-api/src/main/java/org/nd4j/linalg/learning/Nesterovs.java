@@ -25,6 +25,8 @@ public class Nesterovs implements Serializable, GradientUpdater {
     private volatile INDArray v;
     private double learningRate = 0.1;
 
+    private char gradientReshapeOrder;
+
     @Override
     public int stateSizeForInputSize(int inputSize) {
         return inputSize;
@@ -42,6 +44,7 @@ public class Nesterovs implements Serializable, GradientUpdater {
         this.v = Shape.newShapeNoCopy(this.v, gradientShape, gradientOrder == 'f');
         if (v == null)
             throw new IllegalStateException("Could not correctly reshape gradient view array");
+        this.gradientReshapeOrder = gradientOrder;
     }
 
     public Nesterovs(double momentum, double learningRate) {
@@ -82,8 +85,8 @@ public class Nesterovs implements Serializable, GradientUpdater {
         //i.e., we do params -= updatedGradient, not params += updatedGradient
 
         //v = mu * v - lr * gradient
-        INDArray vPrev = v.dup();
-        v.muli(momentum).subi(gradient.mul(learningRate));              //Modify state array in-place
+        INDArray vPrev = v.dup(gradientReshapeOrder);
+        v.muli(momentum).subi(gradient.dup(gradientReshapeOrder).muli(learningRate));              //Modify state array in-place
 
         /*
         Next line is equivalent to:
@@ -93,56 +96,5 @@ public class Nesterovs implements Serializable, GradientUpdater {
         Nd4j.getExecutioner().exec(new AddOp(vPrev.muli(momentum), v.mul(-momentum - 1), gradient));
 
         return gradient;
-    }
-
-    @Override
-    public GradientUpdaterAggregator getAggregator(boolean addThis) {
-        NesterovsAggregator ag = new NesterovsAggregator();
-        if (addThis)
-            ag.aggregate(this);
-        return ag;
-    }
-
-    public static class NesterovsAggregator implements GradientUpdaterAggregator {
-        private INDArray vSum;
-        private double lrSum;
-        private double momentumSum;
-        private int count = 0;
-
-        @Override
-        public GradientUpdater getUpdater() {
-            Nesterovs nesterovs = new Nesterovs(momentumSum / count, lrSum / count);
-            nesterovs.setV(vSum.div(count));
-            return nesterovs;
-        }
-
-        @Override
-        public void aggregate(GradientUpdater updater) {
-            if (!(updater instanceof Nesterovs))
-                throw new UnsupportedOperationException("Cannot aggregate Nesterovs with updater: " + updater);
-            Nesterovs nesterovs = (Nesterovs) updater;
-            if (vSum == null) {
-                vSum = nesterovs.v.dup();
-                lrSum = nesterovs.learningRate;
-                momentumSum = nesterovs.momentum;
-            } else {
-                vSum.addi(nesterovs.v);
-                lrSum += nesterovs.learningRate;
-                momentumSum += nesterovs.momentum;
-            }
-            count++;
-        }
-
-        @Override
-        public GradientUpdaterAggregator combine(GradientUpdaterAggregator other) {
-            if (!(other instanceof NesterovsAggregator))
-                throw new IllegalArgumentException("Cannot combine NesterovsAggregator with aggregator: " + other);
-            NesterovsAggregator aggregator = (NesterovsAggregator) other;
-            vSum.addi(aggregator.vSum);
-            lrSum += aggregator.lrSum;
-            momentumSum += aggregator.momentumSum;
-            count += aggregator.count;
-            return this;
-        }
     }
 }
