@@ -2,6 +2,7 @@ package org.deeplearning4j.parallelism.parameterserver;
 
 import io.aeron.driver.MediaDriver;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.parallelism.MagicQueue;
 import org.deeplearning4j.parallelism.ParallelWrapper;
@@ -59,7 +60,7 @@ public class ParameterServerTrainerContext implements TrainerContext {
      * @return the created training instance
      */
     @Override
-    public Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper) {
+    public Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper, WorkspaceMode mode) {
         return ParameterServerTrainer.builder()
                 .originalModel(model)
                 .parameterServerClient(ParameterServerClient.builder()
