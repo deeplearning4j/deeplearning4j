@@ -18,6 +18,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -89,6 +90,8 @@ public class MultiLayerUpdater implements Updater {
                 lastVariable = variables.get(j);
                 updaterStateSize += updaterStateSizeThisVariable;
                 paramsViewSoFar += paramSizeThisVariable;
+
+//                System.out.println(layers[i].getClass() + "\t" + var + "\tParams: " + paramSizeThisVariable + ", updater size: " + updaterStateSizeThisVariable );
             }
         }
 
@@ -102,6 +105,9 @@ public class MultiLayerUpdater implements Updater {
             updaterStateViewArray = Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order());
             updaterRequiresInit = true;
         }
+
+//        System.out.println("Updater state array: " + Arrays.toString(updaterStateViewArray.shape()));
+//        System.out.println("Parameters array shape: " + Arrays.toString(paramsView.shape()));
 
         //Set up the updaters, for the updater blocks:
 

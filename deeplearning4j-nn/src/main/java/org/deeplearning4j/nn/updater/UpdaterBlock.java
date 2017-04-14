@@ -11,6 +11,7 @@ import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -55,8 +56,9 @@ public class UpdaterBlock {
             gradientUpdater = UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getVarName());
             if(updaterView != null) {
                 //May be null for SGD and no-op updaters
-                int gradientLength = gradientView.length();
-                gradientUpdater.setStateViewArray(updaterView, new int[]{1, gradientLength}, 'c', updaterViewRequiresInitialization);
+                int[] gradientViewShape = gradientView.shape();
+                System.out.println(Arrays.toString(gradientViewShape));
+                gradientUpdater.setStateViewArray(updaterView, gradientViewShape, 'c', updaterViewRequiresInitialization);
             }
         }
 

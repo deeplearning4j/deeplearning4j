@@ -49,11 +49,11 @@ public class UpdaterUtils {
             case NESTEROVS:
             case ADAGRAD:
             case RMSPROP:
-                return layer.numParams();
+                return layer.getParam(variable).length();
 
             case ADAM:
             case ADADELTA:
-                return 2* layer.numParams();
+                return 2 * layer.getParam(variable).length();
 
             default:
                 throw new UnsupportedOperationException("Unknown updater: " + layer.conf().getLayer().getUpdaterByParam(variable));
