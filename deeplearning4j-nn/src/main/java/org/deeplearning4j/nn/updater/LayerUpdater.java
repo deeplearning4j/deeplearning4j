@@ -263,39 +263,40 @@ public class LayerUpdater implements Updater {
     public GradientUpdater init(String variable, Layer layer) {
         GradientUpdater updater = updaterForVariable.get(variable);
         if (updater == null) {
-            org.deeplearning4j.nn.conf.Updater u = layer.conf().getLayer().getUpdaterByParam(variable);
-            switch (u) {
-                case SGD:
-                    updater = new org.nd4j.linalg.learning.Sgd(layer.conf().getLearningRateByParam(variable));
-                    break;
-                case ADAM:
-                    updater = new Adam(layer.conf().getLearningRateByParam(variable),
-                                    layer.conf().getLayer().getAdamMeanDecay(),
-                                    layer.conf().getLayer().getAdamVarDecay(), layer.conf().getLayer().getEpsilon());
-                    break;
-                case ADADELTA:
-                    updater = new AdaDelta(layer.conf().getLayer().getRho(), layer.conf().getLayer().getEpsilon());
-                    break;
-                case NESTEROVS:
-                    updater = new Nesterovs(layer.conf().getLayer().getMomentum(),
-                                    layer.conf().getLearningRateByParam(variable));
-                    break;
-                case ADAGRAD:
-                    updater = new AdaGrad(layer.conf().getLearningRateByParam(variable),
-                                    layer.conf().getLayer().getEpsilon());
-                    break;
-                case RMSPROP:
-                    updater = new org.nd4j.linalg.learning.RmsProp(layer.conf().getLearningRateByParam(variable),
-                                    layer.conf().getLayer().getRmsDecay(), layer.conf().getLayer().getEpsilon());
-                    break;
-                case NONE:
-                    updater = new NoOpUpdater();
-                    break;
-                case CUSTOM:
-                    throw new UnsupportedOperationException("Custom updaters: not yet implemented");
-                default:
-                    throw new IllegalArgumentException("Unknown updater: " + u);
-            }
+            updater = UpdaterUtils.getGradientUpdater(layer, variable);
+//            org.deeplearning4j.nn.conf.Updater u = layer.conf().getLayer().getUpdaterByParam(variable);
+//            switch (u) {
+//                case SGD:
+//                    updater = new org.nd4j.linalg.learning.Sgd(layer.conf().getLearningRateByParam(variable));
+//                    break;
+//                case ADAM:
+//                    updater = new Adam(layer.conf().getLearningRateByParam(variable),
+//                                    layer.conf().getLayer().getAdamMeanDecay(),
+//                                    layer.conf().getLayer().getAdamVarDecay(), layer.conf().getLayer().getEpsilon());
+//                    break;
+//                case ADADELTA:
+//                    updater = new AdaDelta(layer.conf().getLayer().getRho(), layer.conf().getLayer().getEpsilon());
+//                    break;
+//                case NESTEROVS:
+//                    updater = new Nesterovs(layer.conf().getLayer().getMomentum(),
+//                                    layer.conf().getLearningRateByParam(variable));
+//                    break;
+//                case ADAGRAD:
+//                    updater = new AdaGrad(layer.conf().getLearningRateByParam(variable),
+//                                    layer.conf().getLayer().getEpsilon());
+//                    break;
+//                case RMSPROP:
+//                    updater = new org.nd4j.linalg.learning.RmsProp(layer.conf().getLearningRateByParam(variable),
+//                                    layer.conf().getLayer().getRmsDecay(), layer.conf().getLayer().getEpsilon());
+//                    break;
+//                case NONE:
+//                    updater = new NoOpUpdater();
+//                    break;
+//                case CUSTOM:
+//                    throw new UnsupportedOperationException("Custom updaters: not yet implemented");
+//                default:
+//                    throw new IllegalArgumentException("Unknown updater: " + u);
+//            }
             updaterForVariable.put(variable, updater);
         }
         return updater;

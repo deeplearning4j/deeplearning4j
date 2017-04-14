@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.updater;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.LearningRatePolicy;
+import org.nd4j.linalg.learning.*;
 
 import java.util.Objects;
 
@@ -9,6 +10,55 @@ import java.util.Objects;
  * Created by Alex on 14/04/2017.
  */
 public class UpdaterUtils {
+
+    public static GradientUpdater getGradientUpdater(Layer layer, String variable){
+        org.deeplearning4j.nn.conf.Updater u = layer.conf().getLayer().getUpdaterByParam(variable);
+        switch (u) {
+            case SGD:
+                return new org.nd4j.linalg.learning.Sgd(layer.conf().getLearningRateByParam(variable));
+            case ADAM:
+                return new Adam(layer.conf().getLearningRateByParam(variable),
+                        layer.conf().getLayer().getAdamMeanDecay(),
+                        layer.conf().getLayer().getAdamVarDecay(), layer.conf().getLayer().getEpsilon());
+            case ADADELTA:
+                return new AdaDelta(layer.conf().getLayer().getRho(), layer.conf().getLayer().getEpsilon());
+            case NESTEROVS:
+                return new Nesterovs(layer.conf().getLayer().getMomentum(),
+                        layer.conf().getLearningRateByParam(variable));
+            case ADAGRAD:
+                return new AdaGrad(layer.conf().getLearningRateByParam(variable),
+                        layer.conf().getLayer().getEpsilon());
+            case RMSPROP:
+                return new org.nd4j.linalg.learning.RmsProp(layer.conf().getLearningRateByParam(variable),
+                        layer.conf().getLayer().getRmsDecay(), layer.conf().getLayer().getEpsilon());
+            case NONE:
+                return new NoOpUpdater();
+            case CUSTOM:
+                throw new UnsupportedOperationException("Custom updaters: not yet implemented");
+            default:
+                throw new IllegalArgumentException("Unknown updater: " + u);
+        }
+    }
+
+    public static int stateSizeForLayerVariable(Layer layer, String variable){
+        switch(layer.conf().getLayer().getUpdaterByParam(variable)){
+            case SGD:
+            case NONE:
+                return 0;
+
+            case NESTEROVS:
+            case ADAGRAD:
+            case RMSPROP:
+                return layer.numParams();
+
+            case ADAM:
+            case ADADELTA:
+                return 2* layer.numParams();
+
+            default:
+                throw new UnsupportedOperationException("Unknown updater: " + layer.conf().getLayer().getUpdaterByParam(variable));
+        }
+    }
 
 
     public static boolean updaterConfigurationsEquals(Layer layer1, String param1, Layer layer2, String param2){
