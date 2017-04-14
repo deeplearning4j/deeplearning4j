@@ -55,7 +55,8 @@ public class UpdaterBlock {
             gradientUpdater = UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getVarName());
             if(updaterView != null) {
                 //May be null for SGD and no-op updaters
-                gradientUpdater.setStateViewArray(updaterView, new int[]{1, updaterView.length()}, 'c', updaterViewRequiresInitialization);
+                int gradientLength = gradientView.length();
+                gradientUpdater.setStateViewArray(updaterView, new int[]{1, gradientLength}, 'c', updaterViewRequiresInitialization);
             }
         }
 

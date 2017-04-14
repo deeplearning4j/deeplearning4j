@@ -99,8 +99,7 @@ public class MultiLayerUpdater implements Updater {
             updaterRequiresInit = false;
         } else if (updaterStateSize > 0) {
             //May be 0 if all SGD updaters, for example
-            int gradientLength = gradientView.length();
-            updaterStateViewArray = Nd4j.createUninitialized(new int[] {1, gradientLength}, Nd4j.order());
+            updaterStateViewArray = Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order());
             updaterRequiresInit = true;
         }
 
