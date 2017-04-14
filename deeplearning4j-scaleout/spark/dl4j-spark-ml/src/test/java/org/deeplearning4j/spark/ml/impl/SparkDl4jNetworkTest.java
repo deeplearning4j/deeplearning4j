@@ -25,6 +25,8 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 public class SparkDl4jNetworkTest  {
@@ -44,13 +46,17 @@ public class SparkDl4jNetworkTest  {
         Collection<IterationListener> il = new ArrayList<>();
         il.add(new ScoreIterationListener(1));
 
-        SparkDl4jNetwork sparkDl4jNetwork = new SparkDl4jNetwork(mc, 2, ps, 1, il)
+        SparkDl4jNetwork sparkDl4jNetwork = new SparkDl4jNetwork(mc, 2, ps, 1, il, true)
                 .setFeaturesCol("features")
                 .setLabelCol("label");
 
         SparkDl4jModel sm = sparkDl4jNetwork.fit(part2.get());
         MultiLayerNetwork mln = sm.getMultiLayerNetwork();
         Assert.assertNotNull(mln);
+        DatasetFacade transformed = DatasetFacade.dataRows(sm.transform(part2.get()));
+        List<?> rows = transformed.get().collectAsList();
+        Assert.assertNotNull(sm.getTrainingStats());
+        Assert.assertNotNull(rows);
     }
 
     private MultiLayerConfiguration getNNConfiguration(){
