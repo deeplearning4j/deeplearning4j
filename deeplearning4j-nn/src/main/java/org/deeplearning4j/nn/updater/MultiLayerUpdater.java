@@ -189,7 +189,7 @@ public class MultiLayerUpdater implements Updater {
 
         //Apply the updaters in blocks (this also does
         for(UpdaterBlock ub : updaterBlocks){
-            ub.update(iteration, batchSize);
+            ub.update(iteration);
         }
 
         if(mln.conf().isMiniBatch()){
