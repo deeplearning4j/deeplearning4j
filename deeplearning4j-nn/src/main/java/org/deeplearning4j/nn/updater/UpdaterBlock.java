@@ -26,6 +26,7 @@ public class UpdaterBlock {
 
     private INDArray updaterView;
     private INDArray gradientView;
+    private boolean updaterViewRequiresInitialization;
 
     private GradientUpdater gradientUpdater;
 
@@ -77,7 +78,8 @@ public class UpdaterBlock {
             gradientView.addi(paramsView.mul(conf.getL2ByParam(paramName))); //dC/dw = dC0/dw + lambda/n * w where C0 is pre-l2 cost function
         if (conf.isUseRegularization() && conf.getL1ByParam(paramName) > 0)
             gradientView.addi(Transforms.sign(paramsView).muli(conf.getL1ByParam(paramName)));
-        if (conf.isMiniBatch())
-            gradientView.divi(miniBatchSize);
+        //Done in MultiLayerUpdater.update
+//        if (conf.isMiniBatch())
+//            gradientView.divi(miniBatchSize);
     }
 }
