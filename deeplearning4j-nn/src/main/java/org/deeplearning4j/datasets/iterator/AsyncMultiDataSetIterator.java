@@ -13,6 +13,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ConcurrentModificationException;
 import java.util.NoSuchElementException;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -30,16 +31,24 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
     private final MultiDataSetIterator iterator;
-    private final LinkedBlockingQueue<MultiDataSet> queue;
+    private final BlockingQueue<MultiDataSet> queue;
     private IteratorRunnable runnable;
     private Thread thread;
     private MemoryWorkspace workspace;
 
     public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueLength) {
-        this(iterator, queueLength, true);
+        this(iterator, queueLength, new LinkedBlockingQueue<MultiDataSet>(), true);
     }
 
     public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueLength, boolean useWorkspace) {
+        this(iterator, queueLength, new LinkedBlockingQueue<MultiDataSet>(), useWorkspace);
+    }
+
+    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueLength, BlockingQueue<MultiDataSet> queue) {
+        this(iterator, queueLength, queue, true);
+    }
+
+    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueLength, BlockingQueue<MultiDataSet> queue, boolean useWorkspace) {
         if (queueLength <= 0)
             throw new IllegalArgumentException("Queue size must be > 0");
 
@@ -67,7 +76,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         this.iterator = iterator;
         if (this.iterator.resetSupported())
             this.iterator.reset();
-        this.queue = new LinkedBlockingQueue<>(queueLength);
+        this.queue = queue;
 
         runnable = new IteratorRunnable(iterator.hasNext(), workspace);
         thread = new Thread(runnable);

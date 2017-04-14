@@ -128,7 +128,17 @@ public class ParallelWrapper implements AutoCloseable {
 
         MultiDataSetIterator iterator;
         if (prefetchSize > 0 && source.asyncSupported()) {
-            iterator = new AsyncMultiDataSetIterator(source, prefetchSize);
+            if (isMQ) {
+                if (workers % Nd4j.getAffinityManager().getNumberOfDevices() != 0)
+                    log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
+                            Nd4j.getAffinityManager().getNumberOfDevices());
+
+                if (mq == null)
+                    mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL).setType(MagicQueue.Type.MDS)
+                            .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
+
+                iterator = new AsyncMultiDataSetIterator(source, prefetchSize * workers, mq );
+            } else iterator = new AsyncMultiDataSetIterator(source, prefetchSize);
         } else
             iterator = source;
 
@@ -345,7 +355,7 @@ public class ParallelWrapper implements AutoCloseable {
                             Nd4j.getAffinityManager().getNumberOfDevices());
 
                 if (mq == null)
-                    mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL)
+                    mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL).setType(MagicQueue.Type.DS)
                         .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
 
                 iterator = new AsyncDataSetIterator(source, prefetchSize * workers, mq);
