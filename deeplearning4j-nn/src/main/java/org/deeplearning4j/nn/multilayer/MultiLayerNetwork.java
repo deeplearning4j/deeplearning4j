@@ -2546,7 +2546,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return
      */
     public RegressionEvaluation evaluateRegression(DataSetIterator iterator) {
-        return doEvaluation(iterator, new RegressionEvaluation(iterator.totalOutcomes()));
+
+        DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
+
+        return doEvaluation(adsi, new RegressionEvaluation(iterator.totalOutcomes()));
     }
 
     /**
@@ -2557,7 +2560,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return ROC evaluation on the given dataset
      */
     public ROC evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
-        return doEvaluation(iterator, new ROC(rocThresholdSteps));
+        DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
+
+        return doEvaluation(adsi, new ROC(rocThresholdSteps));
     }
 
     /**
@@ -2568,7 +2573,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
-        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps));
+        DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
+
+        return doEvaluation(adsi, new ROCMultiClass(rocThresholdSteps));
     }
 
     /**
@@ -2632,8 +2639,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (labelsList == null)
             labelsList = iterator.getLabels();
 
+        DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
+
         Evaluation e = new Evaluation(labelsList, topN);
-        doEvaluation(iterator, e);
+        doEvaluation(adsi, e);
 
         return e;
     }
