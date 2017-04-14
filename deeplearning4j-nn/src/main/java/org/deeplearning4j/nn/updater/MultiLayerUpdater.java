@@ -1,8 +1,8 @@
 package org.deeplearning4j.nn.updater;
 
 import com.google.common.base.Preconditions;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
+import lombok.*;
+import org.deeplearning4j.berkeley.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
@@ -15,7 +15,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * MultiLayerUpdater: Gradient updater for MultiLayerNetworks.
@@ -29,21 +32,89 @@ public class MultiLayerUpdater implements Updater {
     private final Updater[] layerUpdaters;
     private INDArray viewArray;
 
+//    public MultiLayerUpdater(MultiLayerNetwork network) {
+//        Layer[] layers = network.getLayers();
+//        for (int i = 0; i < layers.length; i++) {
+//            while (layers[i] == null)
+//                layers = network.getLayers();
+//        }
+//        layerUpdaters = new Updater[layers.length];
+//
+//        int updaterStateSize = 0;
+//        for (int i = 0; i < layers.length; i++) {
+//            Layer layer = layers[i];
+//            Preconditions.checkNotNull(layer);
+//            layerUpdaters[i] = UpdaterCreator.getUpdater(layer);
+//            updaterStateSize += layerUpdaters[i].stateSizeForLayer(layer);
+//        }
+//
+//        //Initialize the updater state:
+//        if (updaterStateSize > 0) {
+//            //May be 0 if all SGD updaters, for example
+//            viewArray = Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order());
+//        }
+//        int soFar = 0;
+//        for (int i = 0; i < layers.length; i++) {
+//            int thisSize = layerUpdaters[i].stateSizeForLayer(layers[i]);
+//            if (thisSize == 0)
+//                continue;
+//            INDArray view = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + thisSize));
+//            layerUpdaters[i].setStateViewArray(layers[i], view, true);
+//            soFar += thisSize;
+//        }
+//    }
+
     public MultiLayerUpdater(MultiLayerNetwork network) {
         Layer[] layers = network.getLayers();
-        for (int i = 0; i < layers.length; i++) {
-            while (layers[i] == null)
-                layers = network.getLayers();
-        }
-        layerUpdaters = new Updater[layers.length];
 
         int updaterStateSize = 0;
-        for (int i = 0; i < layers.length; i++) {
-            Layer layer = layers[i];
-            Preconditions.checkNotNull(layer);
-            layerUpdaters[i] = UpdaterCreator.getUpdater(layer);
-            updaterStateSize += layerUpdaters[i].stateSizeForLayer(layer);
+        //Iterate through layers, and variables for each layer.
+        //While the updater configuration is the same: combine
+        Layer lastLayer = null;
+        String lastVariable = null;
+        UpdaterBlock currentBlock = null;
+        List<UpdaterBlock> updaterBlocks = new ArrayList<>();
+        int currentParamOffset = 0;
+        int currentUpdaterOffset = 0;
+        for( int i=0; i<layers.length; i++ ){
+            Map<String,INDArray> layerParamTable = layers[i].paramTable();
+            List<String> variables = new ArrayList<>(layerParamTable.keySet());    //Is a set, but iteration order should be fixed per layer as it's a from a LinkedHashSet
+            for( int j=0; j<variables.size(); j++ ){
+                String var = variables.get(j);
+                int paramSizeThisVariable = layerParamTable.get(var).length();
+                int updaterStateSizeThisVariable = -1;  //TODO
+
+                //First: decide whether to add to the existing updater block, or create a new one
+                if(currentBlock == null || !updaterConfigurationsEquals(lastLayer, lastVariable, layers[i], var)){
+                    List<Pair<Layer,String>> list = new ArrayList<>();
+                    list.add(new Pair<>(layers[i], var));
+                    currentBlock = new UpdaterBlock(currentParamOffset, currentParamOffset+paramSizeThisVariable,
+                            currentUpdaterOffset, currentUpdaterOffset+updaterStateSizeThisVariable, list);
+
+                    updaterBlocks.add(currentBlock);
+                } else {
+                    //Add to existing updater block
+                    currentBlock.paramOffsetEnd += paramSizeThisVariable;
+                    currentBlock.updaterViewOffsetEnd += updaterStateSizeThisVariable;
+                    currentBlock.layersAndVariablesInBlock.add(new Pair<>(layers[i], var));
+                }
+
+                lastLayer = layers[i];
+                lastVariable = variables.get(j);
+                updaterStateSize += updaterStateSizeThisVariable;
+            }
         }
+
+
+        layerUpdaters = new Updater[layers.length];
+
+//        int updaterStateSize = 0;
+//        for (int i = 0; i < layers.length; i++) {
+//            Layer layer = layers[i];
+//            Preconditions.checkNotNull(layer);
+//            layerUpdaters[i] = UpdaterCreator.getUpdater(layer);
+//            updaterStateSize += layerUpdaters[i].stateSizeForLayer(layer);
+//        }
 
         //Initialize the updater state:
         if (updaterStateSize > 0) {
@@ -60,6 +131,17 @@ public class MultiLayerUpdater implements Updater {
             soFar += thisSize;
         }
     }
+
+    @AllArgsConstructor @NoArgsConstructor @Data
+    private static class UpdaterBlock {
+        private int paramOffsetStart;
+        private int paramOffsetEnd;
+        private int updaterViewOffsetStart;
+        private int updaterViewOffsetEnd;
+        private List<Pair<Layer,String>> layersAndVariablesInBlock = new ArrayList<>();
+    }
+
+
 
     public MultiLayerUpdater(MultiLayerNetwork network, INDArray updaterState) {
         Layer[] layers = network.getLayers();
