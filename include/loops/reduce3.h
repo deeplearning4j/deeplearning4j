@@ -192,7 +192,7 @@ template<typename OpType>
 				char xOrder = shape::order(xShapeInfo);
 				char yOrder = shape::order(yShapeInfo);
 
-				if(xOrder == yOrder && (xElementWiseStride > 0 && yElementWiseStride > 0)) {
+				if(xOrder == yOrder && (xElementWiseStride > 0 && yElementWiseStride > 0) && shape::strideDescendingCAscendingF(xShapeInfo) && shape::strideDescendingCAscendingF(yShapeInfo)) {
 					if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 						for(Nd4jIndex i = tid; i < length; i+= gridDim.x * blockDim.x) {
 							startingVal = OpType::update(startingVal, OpType::opAtomic(dx[i], dy[i], extraZ), extraZ);
@@ -210,20 +210,14 @@ template<typename OpType>
 				    __shared__ int *yShape;
 				    __shared__ int *xStride;
 				    __shared__ int *yStride;
-				    __shared__ int xElementWiseStride;
-				    __shared__ int yElementWiseStride;
 				    __shared__ int rank;
-				    __shared__ Nd4jIndex length;
 				    if (threadIdx.x == 0) {
 
 					    xShape = shape::shapeOf(xShapeInfo);
 					    yShape = shape::shapeOf(yShapeInfo);
 					    xStride = shape::stride(xShapeInfo);
 					    yStride = shape::stride(yShapeInfo);
-					    xElementWiseStride = shape::elementWiseStride(xShapeInfo);
-					    yElementWiseStride = shape::elementWiseStride(yShapeInfo);
 					    rank = shape::rank(xShapeInfo);
-					    length = shape::length(xShapeInfo);
 					}
 					__syncthreads();
 					T startingVal = OpType::startingValue(dx);
@@ -602,7 +596,7 @@ template<typename OpType>
 
                 char xOrder = shape::order(xShapeInfo);
                 char yOrder = shape::order(yShapeInfo);
-                if(xOrder == yOrder && (xElementWiseStride  == 1 && yElementWiseStride == 1)) {
+                if(xOrder == yOrder && (xElementWiseStride  >=1 && yElementWiseStride >= 1) && shape::strideDescendingCAscendingF(xShapeInfo) && shape::strideDescendingCAscendingF(yShapeInfo)) {
                     if (xElementWiseStride == 1 && yElementWiseStride == 1) {
 
 // TODO:: proper reduction required here
@@ -620,7 +614,6 @@ template<typename OpType>
                     else {
 // TODO:: proper reduction required here
                         for(Nd4jIndex i = 0; i < length; i++) {
-                            printf("comparing [%f] -> [%f]\n", x[i * xElementWiseStride],y[i * yElementWiseStride]);
                             startingVal = OpType::update(startingVal, OpType::op(x[i * xElementWiseStride],y[i * yElementWiseStride], extraParamsVals), extraParamsVals);
                         }
 

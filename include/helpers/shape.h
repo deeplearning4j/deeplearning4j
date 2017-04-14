@@ -100,7 +100,6 @@ namespace shape {
 #ifdef __CUDACC__
     __host__ __device__
     INLINEDEF void traceNew(int id) {
-        //TODO: remove this method before going to release
       //  printf("new happened: [%i]\n", id);
     }
 #else
@@ -214,6 +213,12 @@ namespace shape {
 #endif
 
     INLINEDEF ShapeInformation *shapeCopy( ShapeInformation *toCopy);
+
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF bool strideDescendingCAscendingF(int *shapeBuffer);
 
 /**
  * Compute the element wise stride
@@ -4885,6 +4890,32 @@ __device__ int tadOffset(int *xInfo, int offset) {
             delete[] newShape;
             return shapeBufferRet;
 
+        }
+    }
+
+#ifdef __CUDACC__
+    __host__ __device__
+#endif
+    INLINEDEF bool strideDescendingCAscendingF(int *shapeBuffer) {
+        int rank = shape::rank(shapeBuffer);
+        int *strides = shape::stride(shapeBuffer);
+        char order = shape::order(shapeBuffer);
+
+        if (shape::isRowVector(shapeBuffer) && strides[0] == 1 && strides[1] == 1)
+            return true;
+
+        if (order == 'c') {
+            for (int i = 1; i < rank; i++)
+                if (strides[i-1] <= strides[i])
+                    return false;
+            return true;
+        } else if (order == 'f') {
+            for (int i = 1; i < rank; i++)
+                if (strides[i-1] >= strides[i])
+                    return false;
+            return true;
+        } else {
+            printf("Unknown order for array!\n");
         }
     }
 }
