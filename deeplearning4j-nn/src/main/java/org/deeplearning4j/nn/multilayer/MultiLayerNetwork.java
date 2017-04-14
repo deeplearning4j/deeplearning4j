@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.multilayer;
 
 
+import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -99,6 +100,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Setter
     protected boolean initDone = false;
     protected INDArray flattenedParams; //Params for all layers are a view/subset of this array
+    @Getter
     protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
 
     protected ThreadLocal<Long> lastEtlTime = new ThreadLocal<>();

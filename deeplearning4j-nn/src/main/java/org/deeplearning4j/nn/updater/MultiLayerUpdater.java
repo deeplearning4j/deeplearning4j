@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.updater;
 import com.google.common.base.Preconditions;
 import lombok.*;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.berkeley.Triple;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
@@ -29,6 +30,8 @@ import java.util.Set;
 @Getter
 @Slf4j
 public class MultiLayerUpdater implements Updater {
+
+    private final List<UpdaterBlock> updaterBlocks;
     private final Updater[] layerUpdaters;
     private INDArray viewArray;
 
@@ -73,40 +76,83 @@ public class MultiLayerUpdater implements Updater {
         Layer lastLayer = null;
         String lastVariable = null;
         UpdaterBlock currentBlock = null;
-        List<UpdaterBlock> updaterBlocks = new ArrayList<>();
+        updaterBlocks = new ArrayList<>();
         int currentParamOffset = 0;
         int currentUpdaterOffset = 0;
+
+        INDArray paramsView = network.params();
+        INDArray gradientView = network.getFlattenedGradients();
+        int paramsViewSoFar = 0;
         for( int i=0; i<layers.length; i++ ){
             Map<String,INDArray> layerParamTable = layers[i].paramTable();
             List<String> variables = new ArrayList<>(layerParamTable.keySet());    //Is a set, but iteration order should be fixed per layer as it's a from a LinkedHashSet
             for( int j=0; j<variables.size(); j++ ){
                 String var = variables.get(j);
                 int paramSizeThisVariable = layerParamTable.get(var).length();
-                int updaterStateSizeThisVariable = -1;  //TODO
+                int updaterStateSizeThisVariable = UpdaterUtils.stateSizeForLayerVariable(layers[i], var);
+
+                INDArray gradientViewSubset = null;
+                INDArray paramsViewSubset = null;
+                if(paramSizeThisVariable > 0) {
+                    paramsViewSubset = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable));
+                    gradientViewSubset = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable));
+                }
 
                 //First: decide whether to add to the existing updater block, or create a new one
-                if(currentBlock == null || !updaterConfigurationsEquals(lastLayer, lastVariable, layers[i], var)){
-                    List<Pair<Layer,String>> list = new ArrayList<>();
-                    list.add(new Pair<>(layers[i], var));
+                if(currentBlock == null || !UpdaterUtils.updaterConfigurationsEquals(lastLayer, lastVariable, layers[i], var)){
+                    List<UpdaterBlock.VarState> list = new ArrayList<>();
+                    list.add(new UpdaterBlock.VarState(layers[i], var, paramsViewSubset, gradientViewSubset));
                     currentBlock = new UpdaterBlock(currentParamOffset, currentParamOffset+paramSizeThisVariable,
                             currentUpdaterOffset, currentUpdaterOffset+updaterStateSizeThisVariable, list);
 
                     updaterBlocks.add(currentBlock);
                 } else {
                     //Add to existing updater block
-                    currentBlock.paramOffsetEnd += paramSizeThisVariable;
-                    currentBlock.updaterViewOffsetEnd += updaterStateSizeThisVariable;
-                    currentBlock.layersAndVariablesInBlock.add(new Pair<>(layers[i], var));
+                    currentBlock.setParamOffsetEnd( currentBlock.getParamOffsetEnd() + paramSizeThisVariable);
+                    currentBlock.setUpdaterViewOffsetEnd( currentBlock.getUpdaterViewOffsetEnd() + updaterStateSizeThisVariable);
+                    currentBlock.getLayersAndVariablesInBlock().add(
+                            new UpdaterBlock.VarState(layers[i], var, paramsViewSubset, gradientViewSubset));
                 }
 
                 lastLayer = layers[i];
                 lastVariable = variables.get(j);
                 updaterStateSize += updaterStateSizeThisVariable;
+                paramsViewSoFar += paramSizeThisVariable;
             }
         }
 
 
         layerUpdaters = new Updater[layers.length];
+
+        //Initialize the updater state:
+        if (updaterStateSize > 0) {
+            //May be 0 if all SGD updaters, for example
+            viewArray = Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order());
+        }
+
+        //Set up the updaters, for the updater blocks:
+
+        int updaterViewSoFar = 0;
+        paramsViewSoFar = 0;
+        for( int i=0; i<updaterBlocks.size(); i++ ){
+            UpdaterBlock ub = updaterBlocks.get(i);
+
+            int viewStateSize = ub.getUpdaterViewOffsetEnd() - ub.getUpdaterViewOffsetStart();
+            int gradSize = ub.getParamOffsetEnd() - ub.getParamOffsetStart();
+
+            if(viewStateSize > 0) {
+                INDArray updaterViewSubset = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(updaterViewSoFar, updaterViewSoFar + viewStateSize));
+                ub.setUpdaterView(updaterViewSubset);
+            }
+
+            if(gradSize > 0) {
+                INDArray gradientViewSubset = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramsViewSoFar, paramsViewSoFar + gradSize));
+                ub.setGradientView(gradientViewSubset);
+            }
+
+            updaterViewSoFar += viewStateSize;
+            paramsViewSoFar += gradSize;
+        }
 
 //        int updaterStateSize = 0;
 //        for (int i = 0; i < layers.length; i++) {
@@ -116,64 +162,53 @@ public class MultiLayerUpdater implements Updater {
 //            updaterStateSize += layerUpdaters[i].stateSizeForLayer(layer);
 //        }
 
-        //Initialize the updater state:
-        if (updaterStateSize > 0) {
-            //May be 0 if all SGD updaters, for example
-            viewArray = Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order());
-        }
-        int soFar = 0;
-        for (int i = 0; i < layers.length; i++) {
-            int thisSize = layerUpdaters[i].stateSizeForLayer(layers[i]);
-            if (thisSize == 0)
-                continue;
-            INDArray view = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + thisSize));
-            layerUpdaters[i].setStateViewArray(layers[i], view, true);
-            soFar += thisSize;
-        }
-    }
+//        int soFar = 0;
+//        for (int i = 0; i < layers.length; i++) {
+//            int thisSize = layerUpdaters[i].stateSizeForLayer(layers[i]);
+//            if (thisSize == 0)
+//                continue;
+//            INDArray view = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + thisSize));
+//            layerUpdaters[i].setStateViewArray(layers[i], view, true);
+//            soFar += thisSize;
+//        }
 
-    @AllArgsConstructor @NoArgsConstructor @Data
-    private static class UpdaterBlock {
-        private int paramOffsetStart;
-        private int paramOffsetEnd;
-        private int updaterViewOffsetStart;
-        private int updaterViewOffsetEnd;
-        private List<Pair<Layer,String>> layersAndVariablesInBlock = new ArrayList<>();
+        System.out.println();
     }
 
 
 
     public MultiLayerUpdater(MultiLayerNetwork network, INDArray updaterState) {
-        Layer[] layers = network.getLayers();
-        layerUpdaters = new Updater[layers.length];
-
-        int updaterStateSize = 0;
-        for (int i = 0; i < layers.length; i++) {
-            layerUpdaters[i] = UpdaterCreator.getUpdater(layers[i]);
-            updaterStateSize += layerUpdaters[i].stateSizeForLayer(layers[i]);
-        }
-
-        if (updaterState != null) {
-            if (updaterState.length() != updaterStateSize) {
-                throw new IllegalStateException("Expected updater state with size " + updaterStateSize + ", got size "
-                                + updaterState.length());
-            }
-            //Assign subsets to the various updaters, without initializing (overwriting) the layer values
-            this.viewArray = updaterState;
-            int soFar = 0;
-            for (int i = 0; i < layers.length; i++) {
-                int thisSize = layerUpdaters[i].stateSizeForLayer(layers[i]);
-                if (thisSize == 0)
-                    continue;
-                INDArray view = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + thisSize));
-                layerUpdaters[i].setStateViewArray(layers[i], view, false);
-                soFar += thisSize;
-            }
-        } else if (updaterStateSize != 0) {
-            //Updater state size is non-zero, but we didn't get an array...
-            throw new IllegalStateException(
-                            "Expected updater state with size " + updaterStateSize + ", got null input");
-        }
+        throw new UnsupportedOperationException("Not yet re-implemented");
+//        Layer[] layers = network.getLayers();
+//        layerUpdaters = new Updater[layers.length];
+//
+//        int updaterStateSize = 0;
+//        for (int i = 0; i < layers.length; i++) {
+//            layerUpdaters[i] = UpdaterCreator.getUpdater(layers[i]);
+//            updaterStateSize += layerUpdaters[i].stateSizeForLayer(layers[i]);
+//        }
+//
+//        if (updaterState != null) {
+//            if (updaterState.length() != updaterStateSize) {
+//                throw new IllegalStateException("Expected updater state with size " + updaterStateSize + ", got size "
+//                                + updaterState.length());
+//            }
+//            //Assign subsets to the various updaters, without initializing (overwriting) the layer values
+//            this.viewArray = updaterState;
+//            int soFar = 0;
+//            for (int i = 0; i < layers.length; i++) {
+//                int thisSize = layerUpdaters[i].stateSizeForLayer(layers[i]);
+//                if (thisSize == 0)
+//                    continue;
+//                INDArray view = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + thisSize));
+//                layerUpdaters[i].setStateViewArray(layers[i], view, false);
+//                soFar += thisSize;
+//            }
+//        } else if (updaterStateSize != 0) {
+//            //Updater state size is non-zero, but we didn't get an array...
+//            throw new IllegalStateException(
+//                            "Expected updater state with size " + updaterStateSize + ", got null input");
+//        }
     }
 
     @Override
@@ -201,33 +236,35 @@ public class MultiLayerUpdater implements Updater {
     public void update(Layer layer, Gradient gradient, int iteration, int batchSize) {
         MultiLayerNetwork mln = (MultiLayerNetwork) layer;
 
-        Gradient[] layerGradients = new Gradient[layerUpdaters.length];
-
-
-        for (int i = 0; i < layerGradients.length; i++)
-            layerGradients[i] = new DefaultGradient();
-
-
-        for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
-            String key = gradientPair.getKey();
-            int idx = key.indexOf('_');
-
-            if (idx == -1)
-                throw new IllegalStateException("Invalid key: MuliLayerNetwork Gradient key does not have layer separator: \"" + key + "\"");
-            int layerIdx = Integer.parseInt(key.substring(0, idx));
-
-            String newKey = key.substring(idx + 1);
-            layerGradients[layerIdx].gradientForVariable().put(newKey, gradientPair.getValue());
+        for(UpdaterBlock ub : updaterBlocks){
+            ub.update(iteration, batchSize);
         }
 
-        for (int i = 0; i < layerUpdaters.length; i++) {
-            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceFeedForward)) {
-                try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(ComputationGraph.workspaceFeedForward)) {
-                    layerUpdaters[i].update(mln.getLayer(i), layerGradients[i], iteration, batchSize);
-                }
-            } else
-                layerUpdaters[i].update(mln.getLayer(i), layerGradients[i], iteration, batchSize);
-        }
+//        Gradient[] layerGradients = new Gradient[layerUpdaters.length];
+//
+//
+//        for (int i = 0; i < layerGradients.length; i++)
+//            layerGradients[i] = new DefaultGradient();
+//
+//
+//        for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
+//            String key = gradientPair.getKey();
+//            int idx = key.indexOf('_');
+//            if (idx == -1)
+//                throw new IllegalStateException(
+//                        "Invalid key: MuliLayerNetwork Gradient key does not have layer separator: \"" + key
+//                                + "\"");
+//            int layerIdx = Integer.parseInt(key.substring(0, idx));
+//
+//            String newKey = key.substring(idx + 1);
+//            layerGradients[layerIdx].gradientForVariable().put(newKey, gradientPair.getValue());
+//        }
+//
+//        //First: update using the UpdaterBlocks
+//
+//        for (int i = 0; i < layerUpdaters.length; i++) {
+//            layerUpdaters[i].update(mln.getLayer(i), layerGradients[i], iteration, batchSize);
+//        }
     }
 
     @Override
