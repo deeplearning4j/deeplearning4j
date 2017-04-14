@@ -738,16 +738,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return list of activations.
      */
     public List<INDArray> feedForwardToLayer(int layerNum, boolean train) {
-        INDArray currInput = input;
+        INDArray currInput = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? input : input.migrate();
         List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
 
         //WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).cyclesBeforeInitialization(100).policyLearning(LearningPolicy.OVER_TIME).build();
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
-                .overallocationLimit(10.0)
+                .overallocationLimit(5.0)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
-                .cyclesBeforeInitialization(layerNum)
+                //.cyclesBeforeInitialization(layerNum)
                 .policyLearning(LearningPolicy.OVER_TIME)
                 .build();
 
@@ -765,8 +765,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             }
         }
 
-        //if (layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.SEPARATE)
-        //    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
+        if (layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.SEPARATE)
+            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
 
         return activations;
     }
@@ -1144,9 +1144,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
-                .overallocationLimit(0.3)
+                .overallocationLimit(1.0)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
-                .cyclesBeforeInitialization(layerFrom)
+                //.cyclesBeforeInitialization(layerFrom)
                 .policyLearning(LearningPolicy.OVER_TIME)
                 .build();
 
@@ -1180,8 +1180,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             }
         }
 
-        //if (layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.SEPARATE)
-        //    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceBackProp).initializeWorkspace();
+        if (layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.SEPARATE)
+            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceBackProp).initializeWorkspace();
 
         //Add gradients to Gradients (map), in correct order
         for (Triple<String, INDArray, Character> triple : gradientList) {
