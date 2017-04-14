@@ -1186,7 +1186,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 }
                 currPair = currLayer.backpropGradient(currPair.getSecond());
                 if(currPair.getSecond() != null){
-                    //Epsilons may be null for embedding layer
+                    //May be null for embedding layer, etc
                     currPair.setSecond(currPair.getSecond().leverageTo(workspaceExternal));
                 }
 
@@ -1811,7 +1811,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             //Network updater state: should be cloned over also
             INDArray updaterView = network.getUpdater().getStateViewArray();
             if (updaterView != null) {
-                Updater newUpdater = new MultiLayerUpdater(this, updaterView.dup());
+//                Updater newUpdater = new MultiLayerUpdater(this, updaterView.dup());
+                Updater newUpdater = new MultiLayerUpdater(this);
+                newUpdater.setStateViewArray(this, updaterView.dup(), false);
                 this.setUpdater(newUpdater);
             }
         } else {

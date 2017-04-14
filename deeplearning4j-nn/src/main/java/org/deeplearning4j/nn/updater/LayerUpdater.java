@@ -30,6 +30,7 @@ import java.util.Map;
  * @author Adam Gibson
  */
 @Slf4j
+@Deprecated
 public class LayerUpdater implements Updater {
     protected Map<String, GradientUpdater> updaterForVariable = new LinkedHashMap<>();
     protected INDArray viewArray;
