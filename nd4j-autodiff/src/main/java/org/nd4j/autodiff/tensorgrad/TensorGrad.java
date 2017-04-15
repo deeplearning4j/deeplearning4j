@@ -4,10 +4,8 @@ import lombok.AllArgsConstructor;
 import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
-import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
-import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.impl.TensorGradVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -441,18 +439,21 @@ public class TensorGrad {
                 .build();
     }
 
-    public TensorGradVariable mmul(TensorGradVariable x) {
+    public TensorGradVariable mmul(int argNum,TensorGradVariable x,TensorGradVariable y) {
         return TensorGradVariable.builder()
                 .arr(null)
-                .differentialFunction(arrayFieldDifferentialFunctionFactory.mmul(x.getArrayField()))
-                .varName("mmul(" + x.getVarName() + ")").tensorGrad(this)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.mmul(argNum ,x.getArrayField(), y.getArrayField()))
+                .varName("mmul(" + x.getVarName() + "," + y.getVarName()  + ")").tensorGrad(this)
                 .build();
     }
 
-    public TensorGradVariable tensorMmul(TensorGradVariable x, int[][]dimensions) {
+    public TensorGradVariable tensorMmul(TensorGradVariable x,
+                                         TensorGradVariable y,
+                                         int[][]dimensions,
+                                         int argNum) {
         return TensorGradVariable.builder()
                 .arr(null)
-                .differentialFunction(arrayFieldDifferentialFunctionFactory.tensorMmul(x.getArrayField(),dimensions))
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.tensorMmul(x.getArrayField(),y.getArrayField(),dimensions,argNum))
                 .varName("tensorMmul(" + x.getVarName() + ")").tensorGrad(this)
                 .build();
     }

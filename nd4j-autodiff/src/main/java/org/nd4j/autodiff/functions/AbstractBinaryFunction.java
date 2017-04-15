@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.functions;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.graph.Graph;
@@ -8,7 +9,7 @@ import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.linalg.util.ArrayUtil;
 
-
+@NoArgsConstructor
 public abstract class AbstractBinaryFunction<X extends Field<X>> extends DifferentialFunction<X> {
 
     protected DifferentialFunction<X> m_x1;
@@ -31,12 +32,24 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
     }
 
 
+
     protected void addEdges(Graph<NDArrayInformation,OpState> graph,
                             DifferentialFunction<X> i_v1,
                             DifferentialFunction<X> i_v2,
                             String opName,
                             OpState.OpType opType,
                             int[] shape) {
+        addEdges(graph, i_v1, i_v2, opName, opType, shape,null);
+
+    }
+
+
+    protected void addEdges(Graph<NDArrayInformation,OpState> graph,
+                            DifferentialFunction<X> i_v1,
+                            DifferentialFunction<X> i_v2,
+                            String opName,
+                            OpState.OpType opType,
+                            int[] shape,Object[] extraArgs) {
         if(i_v1.getValue() instanceof ArrayField) {
             ArrayField v1 = (ArrayField) i_v1.getValue();
             ArrayField v2 = (ArrayField) i_v2.getValue();
@@ -62,7 +75,7 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
                         .opName(opName)
                         .id(opName + "(" + dupVertex.getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
                         .vertexIds(new String[]{String.valueOf(dupVertex.vertexID()),String.valueOf(newVertex.vertexID())})
-                        .n(ArrayUtil.prod(shape))
+                        .n(ArrayUtil.prod(shape)).extraArgs(extraArgs)
                         .build();
                 graph.addEdge(
                         dupVertex.vertexID(),
@@ -75,7 +88,7 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
                         .opName(opName)
                         .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
                         .vertexIds(new String[]{String.valueOf(v2.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
-                        .n(ArrayUtil.prod(shape))
+                        .n(ArrayUtil.prod(shape)).extraArgs(extraArgs)
                         .build();
                 graph.addEdge(v2.getVertex().vertexID(),
                         newVertex.vertexID(),
@@ -88,7 +101,7 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
                     .opName(opName).result(arrInfo)
                     .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
                     .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
-                    .n(ArrayUtil.prod(shape))
+                    .n(ArrayUtil.prod(shape)).extraArgs(extraArgs)
                     .build();
             //add the first vertex no matter what as normal
             graph.addEdge(v1.getVertex().vertexID(),

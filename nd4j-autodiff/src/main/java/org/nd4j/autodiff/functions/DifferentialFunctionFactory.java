@@ -1,11 +1,12 @@
 package org.nd4j.autodiff.functions;
 
-import java.util.Arrays;
 import java.util.List;
 
 import org.nd4j.autodiff.AbstractFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
+import org.nd4j.autodiff.functions.mmul.Mmul;
+import org.nd4j.autodiff.functions.mmul.TensorMmul;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
@@ -13,8 +14,6 @@ import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
-
-import static org.nd4j.linalg.util.ArrayUtil.copyOfRangeFrom;
 
 /**
  *
@@ -513,7 +512,38 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
         };
     }
 
+    @Override
+    public DifferentialFunction<X> permute(DifferentialFunction<X> iX, int... dimensions) {
+        if(iX.getValue() instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) iX.getValue();
+            return new AbstractUnaryFunction<X>(mFactory.graph(),iX,ArrayUtil.reverseCopy(arrayField.getInput().getShape())) {
 
+                @Override
+                public X doGetValue() {
+                    return mFactory.permute(arg().getValue(),dimensions);
+                }
+
+                @Override
+                public double getReal() {
+                    return Math.tan(arg().getReal());
+                }
+
+                @Override
+                public DifferentialFunction<X> diff(Variable<X> i_v) {
+                    return this;
+                }
+
+
+
+                @Override
+                public String functionName() {
+                    return "transpose";
+                }
+            };
+        }
+
+        throw new IllegalStateException("Need the shape. This is only possible with ArrayField");
+    }
 
 
     @Override
@@ -2051,13 +2081,18 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
     }
 
     @Override
-    public DifferentialFunction<X> mmul(Variable<X> arrayField) {
-        return null;
+    public DifferentialFunction<X> mmul(int argNum,
+                                        DifferentialFunction<X> x,
+                                        DifferentialFunction<X> y) {
+        return new Mmul<>(graph,x,y,this,argNum);
     }
 
     @Override
-    public DifferentialFunction<X> tensorMmul(Variable<X> arrayField, int[][] dimensions) {
-        return null;
+    public DifferentialFunction<X> tensorMmul(DifferentialFunction<X> x,
+                                              DifferentialFunction<X> y,
+                                              int[][] dimensions,
+                                              int argNum) {
+        return new TensorMmul<>(graph,x,y,this,dimensions,argNum);
     }
 
 
@@ -2108,64 +2143,5 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
     }
 
 
-    private DifferentialFunction<X> doTensorMmul(int argNum,
-                                                 DifferentialFunction<X> a,
-                                                 DifferentialFunction<X> b,int...dimensions) {
-        if(a.getValue() instanceof ArrayField) {
-            ArrayField xField = (ArrayField) a.getValue();
-            ArrayField yField = (ArrayField) b.getValue();
-            int[] aDimensions;
-            int[] bDimensions;
-            if(dimensions.length == 1) {
-                aDimensions = copyOfRangeFrom(
-                        xField.getInput().getShape().length,
-                        xField.getInput().getShape().length - dimensions[0],
-                        xField.getInput().getShape().length);
-                bDimensions = copyOfRangeFrom(yField.getInput().getShape().length,
-                        0,
-                        yField.getInput().getShape().length);
-            }
-            else {
-                aDimensions = new int[0];
-                bDimensions = new int[0];
-            }
-
-            if(aDimensions.length != bDimensions.length)
-                throw new IllegalStateException("A and b must be the same rank");
-
-            int[] outputShape = Shape.getMatrixMultiplyShape(xField.getInput().getShape(),yField.getInput().getShape());
-            int axesSummed = aDimensions.length;
-            DifferentialFunction<X> x,y;
-            int xRank,yRank;
-            int[] xAxesSummed,yAxesSummed;
-
-            if(argNum == 0) {
-               x = a;
-               y = b;
-               xRank = aDimensions.length;
-               yRank = bDimensions.length;
-               xAxesSummed = aDimensions;
-               yAxesSummed = bDimensions;
-
-               //        g_axes_from_Y = list(range(g_ndim))[(X_ndim - N_axes_summed):]
-
-
-            }
-            else if(argNum == 1) {
-               x = b;
-               y = a;
-               xRank = bDimensions.length;
-               yRank = aDimensions.length;
-                xAxesSummed = bDimensions;
-                yAxesSummed = aDimensions;
-                //               g_axes_from_Y = list(range(g_ndim))[:(Y_ndim - N_axes_summed)]
-
-
-            }
-            else
-                throw new IllegalArgumentException("Arg num must be 0 or 1");
-
-        }
-    }
 
 }

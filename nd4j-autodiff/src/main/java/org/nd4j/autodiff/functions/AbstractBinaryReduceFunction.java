@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.functions;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.graph.Graph;
@@ -8,10 +9,13 @@ import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.List;
+
 
 /**
  * Created by agibsonccc on 4/12/17.
  */
+@NoArgsConstructor
 public abstract class AbstractBinaryReduceFunction<X extends  Field<X>> extends AbstractBinaryFunction<X> {
     protected int[] dimensions;
 
@@ -21,6 +25,8 @@ public abstract class AbstractBinaryReduceFunction<X extends  Field<X>> extends 
         this.dimensions = dimensions;
         addEdges(graph,i_v1,i_v2,functionName());
     }
+
+
 
     @Override
     protected void addEdges(Graph<NDArrayInformation,OpState> graph,
@@ -41,6 +47,11 @@ public abstract class AbstractBinaryReduceFunction<X extends  Field<X>> extends 
 
         else
             throw new UnsupportedOperationException("Only supporting array fields");
+    }
+
+    @Override
+    public String doGetFormula(List<Variable<X>> variables) {
+        return null;
     }
 
     @Override

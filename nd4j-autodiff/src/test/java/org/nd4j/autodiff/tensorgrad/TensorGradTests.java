@@ -81,4 +81,17 @@ public class TensorGradTests {
         assertArrayEquals(new int[]{1,2},result.getShape());
     }
 
+    @Test
+    public void testTensorGradMmul() {
+        TensorGrad tensorGrad = TensorGrad.create();
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1,4,4)).reshape(2,2);
+        TensorGradVariable x = tensorGrad.var("x",arr);
+        TensorGradVariable y = tensorGrad.var("y",arr);
+        TensorGradVariable result = tensorGrad.mmul(0,x,y);
+        assertEquals("mmul(x,y)",result.getVarName());
+        assertEquals(6,tensorGrad.graph().numVertices());
+        assertEquals(2,tensorGrad.graph().getEdges().size());
+        assertArrayEquals(new int[]{2,2},result.getShape());
+    }
+
 }

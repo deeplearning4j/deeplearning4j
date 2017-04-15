@@ -57,6 +57,8 @@ public interface FunctionFactory<X extends Field<X>> {
 
     DifferentialFunction<X> tan(DifferentialFunction<X> iX);
 
+    DifferentialFunction<X> permute(DifferentialFunction<X> iX, int... dimensions);
+
     DifferentialFunction<X> transpose(DifferentialFunction<X> iX);
 
     DifferentialFunction<X> acos(DifferentialFunction<X> iX);
@@ -151,6 +153,6 @@ public interface FunctionFactory<X extends Field<X>> {
     DifferentialFunction<X> lossSquaredHinge(DifferentialFunction<X> iX, DifferentialFunction<X> i_y,int...dimensions);
 
 
-    DifferentialFunction<X> mmul(Variable<X> arrayField);
-    DifferentialFunction<X> tensorMmul(Variable<X> arrayField, int[][] dimensions);
+    DifferentialFunction<X> mmul(int argNum, DifferentialFunction<X> x, DifferentialFunction<X> y);
+    DifferentialFunction<X> tensorMmul(DifferentialFunction<X> x, DifferentialFunction<X> y, int[][] dimensions, int argNum);
 }

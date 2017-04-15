@@ -4,6 +4,7 @@ import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
@@ -12,6 +13,7 @@ import org.nd4j.autodiff.opstate.OpState;
 
 @AllArgsConstructor
 @Data
+@NoArgsConstructor
 public abstract class DifferentialFunction<X extends Field<X>>
         implements Field<DifferentialFunction<X>>,
         Differential<X, DifferentialFunction<X>> {

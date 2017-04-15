@@ -311,6 +311,16 @@ public class ArrayField implements Field<ArrayField> {
                 OpState.OpType.TRANSFORM);
     }
 
+    public ArrayField permute(int[] dimensions) {
+        return addArrayOp(
+                "permute",
+                null,
+                ArrayUtil.permute(input.getShape(),dimensions),
+                null,
+                OpState.OpType.TRANSFORM);
+
+    }
+
     public ArrayField expandDims(int dim) {
         return addArrayOp(
                 "expandDims",
@@ -725,4 +735,6 @@ public class ArrayField implements Field<ArrayField> {
         return addPairTransformOp("tensorMmul",y.getValue(),new Object[]{dimensions});
 
     }
+
+
 }

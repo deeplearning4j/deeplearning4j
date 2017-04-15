@@ -194,4 +194,6 @@ public interface AbstractFactory<X extends Field<X>>
     X mmul(DifferentialFunction<X> arrayField, DifferentialFunction<X> y);
 
     X tensorMmul(DifferentialFunction<X> arrayField, DifferentialFunction<X> y, int[][] dimensions);
+
+    X permute(X value, int[] dimensions);
 }

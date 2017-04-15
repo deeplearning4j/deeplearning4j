@@ -577,4 +577,9 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
         return arrayField.getValue().tensorMmul(y,dimensions);
     }
 
+    @Override
+    public ArrayField permute(ArrayField value, int[] dimensions) {
+        return value.permute(dimensions);
+    }
+
 }
