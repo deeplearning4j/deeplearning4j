@@ -37,7 +37,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Alex Black
  */
 @Data
-@EqualsAndHashCode(callSuper = false)
 public class LastTimeStepVertex extends GraphVertex {
 
     private String maskArrayInputName;
