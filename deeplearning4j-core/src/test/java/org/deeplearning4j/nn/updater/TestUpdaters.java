@@ -383,76 +383,78 @@ public class TestUpdaters {
         assertTrue(updaters[3] instanceof LayerUpdater);
 
         int count = 0;
-        for (Updater u : updaters) {
-            LayerUpdater lu = (LayerUpdater) u;
-            for (GradientUpdater gu : lu.updaterForVariable.values()) {
-                switch (count) {
-                    case 0:
-                        assertTrue(gu instanceof Sgd);
-                        break;
-                    case 1:
-                        assertTrue(gu instanceof org.nd4j.linalg.learning.NoOpUpdater);
-                        break;
-                    case 2:
-                        assertTrue(gu instanceof AdaGrad);
-                        break;
-                    case 3:
-                        assertTrue(gu instanceof Nesterovs);
-                        break;
-                    default:
-                        throw new RuntimeException();
-                }
-            }
-            count++;
-        }
+//        for (Updater u : updaters) {
+//            LayerUpdater lu = (LayerUpdater) u;
+//            for (GradientUpdater gu : lu.updaterForVariable.values()) {
+//                switch (count) {
+//                    case 0:
+//                        assertTrue(gu instanceof Sgd);
+//                        break;
+//                    case 1:
+//                        assertTrue(gu instanceof org.nd4j.linalg.learning.NoOpUpdater);
+//                        break;
+//                    case 2:
+//                        assertTrue(gu instanceof AdaGrad);
+//                        break;
+//                    case 3:
+//                        assertTrue(gu instanceof Nesterovs);
+//                        break;
+//                    default:
+//                        throw new RuntimeException();
+//                }
+//            }
+//            count++;
+//        }
 
         LayerUpdater u = (LayerUpdater) updaters[0];
 
 
-        Updater[] uArr = new Updater[4];
-        uArr[0] = new LayerUpdater();
-        uArr[1] = new LayerUpdater();
-        uArr[2] = new LayerUpdater();
-        INDArray updaterState = Nd4j.create(1, 6 * 7 + 7, 'f');
-        uArr[2].setStateViewArray(net.getLayer(2), updaterState, true);
+//        Updater[] uArr = new Updater[4];
+//        uArr[0] = new LayerUpdater();
+//        uArr[1] = new LayerUpdater();
+//        uArr[2] = new LayerUpdater();
+//        INDArray updaterState = Nd4j.create(1, 6 * 7 + 7, 'f');
+//        uArr[2].setStateViewArray(net.getLayer(2), updaterState, true);
+//
+//        uArr[3] = new LayerUpdater();
+//        //        updaterStateSize = uArr[3].stateSizeForLayer(net.getLayer(3));
+//        updaterState = Nd4j.create(1, 7 * 8 + 8, 'f');
+//        uArr[3].setStateViewArray(net.getLayer(3), updaterState, true);
+//
+//        int[] nIns = {4, 5, 6, 7};
+//        int[] nOuts = {5, 6, 7, 8};
+//
+//        for (int i = 0; i < 5; i++) {
+//            Gradient gradient = new DefaultGradient();
+//            Map<String, INDArray> expectedGradient = new LinkedHashMap<>();
+//
+//            for (int j = 0; j < net.getnLayers(); j++) {
+//                //Generate test gradient:
+//                INDArray wGrad = Nd4j.rand(nIns[j], nOuts[j]);
+//                INDArray bGrad = Nd4j.rand(1, nOuts[j]);
+//
+//                String wKey = j + "_" + DefaultParamInitializer.WEIGHT_KEY;
+//                String bKey = j + "_" + DefaultParamInitializer.BIAS_KEY;
+//
+//                gradient.setGradientFor(wKey, wGrad);
+//                gradient.setGradientFor(bKey, bGrad);
+//
+//                //Also put copy of gradient through separate layer updaters to compare
+//                Gradient layerGradient = new DefaultGradient();
+//                layerGradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wGrad.dup());
+//                layerGradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, bGrad.dup());
+//
+//                uArr[j].update(net.getLayer(j), layerGradient, i, 1);
+//                for (String s : layerGradient.gradientForVariable().keySet()) {
+//                    expectedGradient.put(j + "_" + s, layerGradient.getGradientFor(s));
+//                }
+//            }
+//
+//            updater.update(net, gradient, i, 1);
+//            assertEquals(gradient.gradientForVariable(), expectedGradient);
+//        }
 
-        uArr[3] = new LayerUpdater();
-        //        updaterStateSize = uArr[3].stateSizeForLayer(net.getLayer(3));
-        updaterState = Nd4j.create(1, 7 * 8 + 8, 'f');
-        uArr[3].setStateViewArray(net.getLayer(3), updaterState, true);
-
-        int[] nIns = {4, 5, 6, 7};
-        int[] nOuts = {5, 6, 7, 8};
-
-        for (int i = 0; i < 5; i++) {
-            Gradient gradient = new DefaultGradient();
-            Map<String, INDArray> expectedGradient = new LinkedHashMap<>();
-
-            for (int j = 0; j < net.getnLayers(); j++) {
-                //Generate test gradient:
-                INDArray wGrad = Nd4j.rand(nIns[j], nOuts[j]);
-                INDArray bGrad = Nd4j.rand(1, nOuts[j]);
-
-                String wKey = j + "_" + DefaultParamInitializer.WEIGHT_KEY;
-                String bKey = j + "_" + DefaultParamInitializer.BIAS_KEY;
-
-                gradient.setGradientFor(wKey, wGrad);
-                gradient.setGradientFor(bKey, bGrad);
-
-                //Also put copy of gradient through separate layer updaters to compare
-                Gradient layerGradient = new DefaultGradient();
-                layerGradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wGrad.dup());
-                layerGradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, bGrad.dup());
-
-                uArr[j].update(net.getLayer(j), layerGradient, i, 1);
-                for (String s : layerGradient.gradientForVariable().keySet()) {
-                    expectedGradient.put(j + "_" + s, layerGradient.getGradientFor(s));
-                }
-            }
-
-            updater.update(net, gradient, i, 1);
-            assertEquals(gradient.gradientForVariable(), expectedGradient);
-        }
+        fail("Not yet fixed for new updater functionality");
     }
 
 

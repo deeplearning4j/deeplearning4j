@@ -1942,6 +1942,11 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     @Override
+    public INDArray getGradientsViewArray() {
+        return flattenedGradients;
+    }
+
+    @Override
     public void setBackpropGradientsViewArray(INDArray gradient) {
         int paramsSoFar = 0;
         for (int i = 0; i < topologicalOrder.length; i++) {

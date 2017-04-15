@@ -441,6 +441,11 @@ public class VariationalAutoencoder implements Layer {
     }
 
     @Override
+    public INDArray getGradientsViewArray() {
+        return gradientsFlattened;
+    }
+
+    @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
         if (this.params != null && gradients.length() != numParams()) {
             throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams()

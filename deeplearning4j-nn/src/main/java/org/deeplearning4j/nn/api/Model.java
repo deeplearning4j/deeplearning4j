@@ -128,7 +128,7 @@ public interface Model {
     void setParamsViewArray(INDArray params);
 
 
-    INDArray getBackpropGradientsViewArray();
+    INDArray getGradientsViewArray();
 
     /**
      * Set the gradients array as a view of the full (backprop) network parameters

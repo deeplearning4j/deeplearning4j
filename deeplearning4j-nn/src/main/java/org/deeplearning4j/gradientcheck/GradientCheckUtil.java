@@ -304,7 +304,7 @@ public class GradientCheckUtil {
         Pair<Gradient, Double> gradAndScore = graph.gradientAndScore();
 
         ComputationGraphUpdater updater = new ComputationGraphUpdater(graph);
-        updater.update(graph, gradAndScore.getFirst(), 0, graph.batchSize());
+        updater.update(gradAndScore.getFirst(), 0, graph.batchSize());
 
         INDArray gradientToCheck = gradAndScore.getFirst().gradient().dup(); //need dup: gradients are a *view* of the full gradient array (which will change every time backprop is done)
         INDArray originalParams = graph.params().dup(); //need dup: params are a *view* of full parameters

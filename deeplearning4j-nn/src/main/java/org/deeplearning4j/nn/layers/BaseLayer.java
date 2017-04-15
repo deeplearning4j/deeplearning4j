@@ -327,6 +327,11 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     @Override
+    public INDArray getGradientsViewArray() {
+        return gradientsFlattened;
+    }
+
+    @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
         if (this.params != null && gradients.length() != numParams())
             throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true)

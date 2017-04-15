@@ -1060,5 +1060,10 @@ public class TestOptimizers {
                         int minibatchSize) {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public INDArray getGradientsViewArray() {
+            throw new UnsupportedOperationException();
+        }
     }
 }

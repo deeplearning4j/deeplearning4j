@@ -484,23 +484,24 @@ public class BatchNormalizationTest {
         assertNotNull(updaters);
         assertEquals(6, updaters.length);
 
-        for (int i = 0; i <= 5; i++) {
-            LayerUpdater lu = (LayerUpdater) updaters[i];
-            Map<String, GradientUpdater> guMap = lu.getUpdaterForVariable();
-            for (Map.Entry<String, GradientUpdater> entry : guMap.entrySet()) {
-                if (i == 1 || i == 4) {
-                    String param = entry.getKey();
-                    if (BatchNormalizationParamInitializer.GLOBAL_MEAN.equals(param)
-                                    || BatchNormalizationParamInitializer.GLOBAL_VAR.equals(param)) {
-                        assertTrue(entry.getValue() instanceof NoOpUpdater);
-                    } else {
-                        assertTrue(entry.getValue() instanceof RmsProp);
-                    }
-                } else {
-                    assertTrue(entry.getValue() instanceof RmsProp);
-                }
-            }
-        }
+//        for (int i = 0; i <= 5; i++) {
+//            LayerUpdater lu = (LayerUpdater) updaters[i];
+//            Map<String, GradientUpdater> guMap = lu.getUpdaterForVariable();
+//            for (Map.Entry<String, GradientUpdater> entry : guMap.entrySet()) {
+//                if (i == 1 || i == 4) {
+//                    String param = entry.getKey();
+//                    if (BatchNormalizationParamInitializer.GLOBAL_MEAN.equals(param)
+//                                    || BatchNormalizationParamInitializer.GLOBAL_VAR.equals(param)) {
+//                        assertTrue(entry.getValue() instanceof NoOpUpdater);
+//                    } else {
+//                        assertTrue(entry.getValue() instanceof RmsProp);
+//                    }
+//                } else {
+//                    assertTrue(entry.getValue() instanceof RmsProp);
+//                }
+//            }
+//        }
+        fail("Not yet reimplemented");
     }
 
 
