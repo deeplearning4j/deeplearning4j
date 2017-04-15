@@ -184,8 +184,6 @@ public class Configuration implements Serializable {
 
     private final AtomicBoolean initialized = new AtomicBoolean(false);
 
-    private NativeOps nativeOps;
-
     public boolean isInitialized() {
         return initialized.get();
     }
@@ -380,27 +378,22 @@ public class Configuration implements Serializable {
     }
 
     public Configuration() {
-        Nd4j.getAffinityManager();
+        parseEnvironmentVariables();
+    }
 
-        nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
 
-        int cnt = nativeOps.getAvailableDevices();
+    void updateDevice() {
+        int cnt = Nd4j.getAffinityManager().getNumberOfDevices();
+
         if (cnt == 0)
             throw new RuntimeException("No CUDA devices were found in system");
 
         for (int i = 0; i < cnt; i++) {
             availableDevices.add(i);
         }
-
-        parseEnvironmentVariables();
-
-        nativeOps.setOmpNumThreads(maximumBlockSize);
-        nativeOps.setGridLimit(maximumGridSize);
-
-        // if we have multi-gpu system - force DELAYED memory model by default
-        //if (cnt > 1 && !forceSingleGPU)
-        //this.memoryModel = MemoryModel.DELAYED;
     }
+
+
 
     /**
      * This method checks, if GPU subsystem supports cross-device P2P access over PCIe.
@@ -410,7 +403,7 @@ public class Configuration implements Serializable {
      * @return
      */
     public boolean isP2PSupported() {
-        return nativeOps.isP2PAvailable();
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().isP2PAvailable();
     }
 
     /**
@@ -541,8 +534,6 @@ public class Configuration implements Serializable {
 
         this.maximumGridSize = gridDim;
 
-        nativeOps.setGridLimit(maximumGridSize);
-
         return this;
     }
 
@@ -561,8 +552,6 @@ public class Configuration implements Serializable {
 
         this.maximumBlockSize = blockDim;
 
-        nativeOps.setOmpNumThreads(blockDim);
-
         return this;
     }
 
@@ -572,8 +561,6 @@ public class Configuration implements Serializable {
 
 
         this.minimumBlockSize = blockDim;
-
-        nativeOps.setOmpMinThreads(blockDim);
 
         return this;
     }
@@ -587,17 +574,11 @@ public class Configuration implements Serializable {
      */
     public Configuration enableDebug(boolean debug) {
         this.debug = debug;
-
-        nativeOps.enableDebugMode(debug);
-
         return this;
     }
 
     public Configuration setVerbose(boolean verbose) {
         this.verbose = verbose;
-
-        nativeOps.enableVerboseMode(verbose);
-
         return this;
     }
 
@@ -609,8 +590,6 @@ public class Configuration implements Serializable {
      */
     public Configuration allowCrossDeviceAccess(boolean reallyAllow) {
         this.crossDeviceAccessAllowed = reallyAllow;
-
-        nativeOps.enableP2P(reallyAllow);
 
         return this;
     }

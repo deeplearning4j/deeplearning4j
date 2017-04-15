@@ -24,12 +24,7 @@ public class CudaEnvironment {
 
     private CudaEnvironment() {
         configuration = new Configuration();
-        configuration.enableDebug(configuration.isDebug());
-        configuration.setVerbose(configuration.isVerbose());
-        configuration.allowCrossDeviceAccess(configuration.isCrossDeviceAccessAllowed());
-        configuration.setMaximumGridSize(configuration.getMaximumGridSize());
-        configuration.setMaximumBlockSize(configuration.getMaximumBlockSize());
-        configuration.setMinimumBlockSize(configuration.getMinimumBlockSize());
+
     }
 
     public static CudaEnvironment getInstance() {
@@ -61,5 +56,9 @@ public class CudaEnvironment {
         }
 
         return arch.get(deviceId);
+    }
+
+    public void notifyConfigurationApplied() {
+        configuration.updateDevice();
     }
 }
