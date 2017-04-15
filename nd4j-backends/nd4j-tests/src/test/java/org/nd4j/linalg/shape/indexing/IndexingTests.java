@@ -107,9 +107,29 @@ public class IndexingTests extends BaseNd4jTest {
         INDArray secondAssertion = Nd4j.create(new double[] {3, 9});
         INDArray secondTest = threeTwoTwo.get(NDArrayIndex.point(2), NDArrayIndex.point(0), NDArrayIndex.all());
         assertEquals(secondAssertion, secondTest);
+    }
 
+    @Test
+    public void concatGetBug() {
+        int width = 5;
+        int height = 4;
+        int depth = 3;
+        int nExamples1 = 2;
+        int nExamples2 = 1;
 
+        int length1 = width * height * depth * nExamples1;
+        int length2 = width * height * depth * nExamples2;
 
+        INDArray first = Nd4j.linspace(1, length1, length1).reshape('c', nExamples1, depth, width, height);
+        INDArray second = Nd4j.linspace(1, length2, length2).reshape('c', nExamples2, depth, width, height).addi(0.1);
+
+        INDArray fMerged = Nd4j.concat(0, first, second);
+
+        assertEquals(first, fMerged.get(NDArrayIndex.interval(0, nExamples1), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+
+        INDArray get = fMerged.get(NDArrayIndex.interval(nExamples1, nExamples1 + nExamples2, true), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
+        assertEquals(second, get.dup());    //Passes
+        assertEquals(second, get);             //Fails
     }
 
     @Test
