@@ -56,11 +56,11 @@ public class DefaultOpFactory implements OpFactory {
         opClazzes = new HashMap<>();
 
         Reflections f = new Reflections(new ConfigurationBuilder().filterInputsBy(
-                        new FilterBuilder().include(FilterBuilder.prefix("org.nd4j")).exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
-                                        .exclude("^(?!org\\.nd4j\\.linalg\\.api\\.ops).*") //Exclude any not in the ops directory
+                new FilterBuilder().include(FilterBuilder.prefix("org.nd4j")).exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
+                        .exclude("^(?!org\\.nd4j\\.linalg\\.api\\.ops).*") //Exclude any not in the ops directory
         )
 
-                        .setUrls(ClasspathHelper.forPackage("org.nd4j")).setScanners(new SubTypesScanner()));
+                .setUrls(ClasspathHelper.forPackage("org.nd4j")).setScanners(new SubTypesScanner()));
 
         Set<Class<? extends Op>> clazzes = f.getSubTypesOf(Op.class);
 
@@ -81,7 +81,7 @@ public class DefaultOpFactory implements OpFactory {
         Class<? extends Op> clazz = opClazzes.get(name);
         try {
             Constructor<Op> constructor =
-                            (Constructor<Op>) clazz.getDeclaredConstructor(INDArray.class, INDArray.class);
+                    (Constructor<Op>) clazz.getDeclaredConstructor(INDArray.class, INDArray.class);
             Op create = constructor.newInstance(x, y);
             return (LossFunction) create;
         } catch (Exception e) {
@@ -92,367 +92,242 @@ public class DefaultOpFactory implements OpFactory {
 
     @Override
     public Accumulation createAccum(String name, INDArray x) {
-        switch (name) {
-            case "sum":
-                return new Sum(x);
-            case "max":
-                return new Max(x);
-            case "min":
-                return new Min(x);
-            case "norm1":
-                return new Norm1(x);
-            case "norm2":
-                return new Norm2(x);
-            case "prod":
-                return new Prod(x);
-            case "std":
-                return new StandardDeviation(x);
-            case "var":
-                return new Variance(x);
-            case "euclidean":
-                return new EuclideanDistance(x);
-            case "cosine":
-            case "cosinesimilarity":
-                return new CosineSimilarity(x);
-            case "manhattan":
-                return new ManhattanDistance(x);
-
-            default:
-                throw new IllegalArgumentException("Illegal name " + name);
-        }
+        return createAccum(name,x,null,x,null);
     }
 
     @Override
     public Accumulation createAccum(String name, INDArray x, INDArray y, INDArray z) {
+        return createAccum(name,x,y,z,null);
+    }
+
+
+    @Override
+    public Accumulation createAccum(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs) {
+        Accumulation ret = null;
         switch (name) {
             case "sum":
-                return new Sum(x, y, x.length());
+                ret = new Sum(x, y, x.length());
+                break;
             case "max":
-                return new Max(x, y, x.length());
+                ret = new Max(x, y, x.length());
+                break;
             case "min":
-                return new Min(x, y, x.length());
+                ret = new Min(x, y, x.length());
+                break;
             case "norm1":
-                return new Norm1(x, y, x.length());
+                ret = new Norm1(x, y, x.length());
+                break;
             case "norm2":
-                return new Norm2(x, y, x.length());
+                ret = new Norm2(x, y, x.length());
+                break;
             case "prod":
-                return new Prod(x, y, x.length());
+                ret = new Prod(x, y, x.length());
+                break;
             case "std":
-                return new StandardDeviation(x, y, x.length());
+                ret = new StandardDeviation(x, y, x.length());
+                break;
             case "var":
-                return new Variance(x, y, x.length());
+                ret = new Variance(x, y, x.length());
+                break;
             case "euclidean":
-                return new EuclideanDistance(x, y, x.length());
+                ret = new EuclideanDistance(x, y, x.length());
+                break;
             case "cosine":
             case "cosinesimilarity":
-                return new CosineSimilarity(x, y, x.length());
+                ret = new CosineSimilarity(x, y, x.length());
+                break;
             case "manhattan":
-                return new ManhattanDistance(x, y, x.length());
+                ret = new ManhattanDistance(x, y, x.length());
+                break;
 
-            default:
-                throw new IllegalArgumentException("Illegal name " + name);
         }
+
+        ret.setExtraArgs(extraArgs);
+        return ret;
     }
+
 
     @Override
     public Accumulation createAccum(String name, INDArray x, INDArray y) {
-        switch (name) {
-            case "sum":
-                return new Sum(x, y);
-            case "max":
-                return new Max(x, y);
-            case "min":
-                return new Min(x, y);
-            case "norm1":
-                return new Norm1(x, y);
-            case "norm2":
-                return new Norm2(x, y);
-            case "prod":
-                return new Prod(x, y);
-            case "std":
-                return new StandardDeviation(x, y);
-            case "var":
-                return new Variance(x, y);
-            case "euclidean":
-                return new EuclideanDistance(x, y, x.length());
-            case "cosine":
-            case "cosinesimilarity":
-                return new CosineSimilarity(x, y, x.length());
-            case "manhattan":
-                return new ManhattanDistance(x, y, x.length());
+        return createAccum(name,x,y,x,null);
+    }
 
-            default:
-                throw new IllegalArgumentException("Illegal name " + name);
+    /**
+     *
+     * @param opName
+     * @param x
+     * @param y
+     *@param z
+     * @param extraArgs   @return
+     */
+    @Override
+    public IndexAccumulation createIndexAccum(String opName, INDArray x, INDArray y, INDArray z, Object[] extraArgs) {
+        IndexAccumulation ret = null;
+        switch (opName) {
+            case "iamax":
+                ret = new IAMax(x,y);
+                break;
+            case "imax":
+                ret = new IMax(x,y);
+                break;
+            case "imin":
+                ret = new IMin(x,y);
+                break;
         }
+
+        ret.setExtraArgs(extraArgs);
+        return ret;
     }
 
     @Override
     public IndexAccumulation createIndexAccum(String name, INDArray x) {
-        switch (name) {
-            case "iamax":
-                return new IAMax(x);
-            case "imax":
-                return new IMax(x);
-            case "imin":
-                return new IMin(x);
-            default:
-                throw new IllegalArgumentException("Illegal name: " + name);
-        }
+        return createIndexAccum(name,x,null , x, null);
     }
 
     @Override
     public IndexAccumulation createIndexAccum(String name, INDArray x, INDArray y) {
-        switch (name) {
-            case "iamax":
-                return new IAMax(x, y);
-            case "imax":
-                return new IMax(x, y);
-            case "imin":
-                return new IMin(x, y);
-            default:
-                throw new IllegalArgumentException("Illegal name: " + name);
-        }
+        return createIndexAccum(name,x,y,x,null);
     }
 
     @Override
     public TransformOp createTransform(String name, INDArray x, INDArray y) {
-        switch (name) {
-            case "relu":
-                return new RectifedLinear(x, 0);
-            case "abs":
-                return new Abs(x, y);
-            case "acos":
-                return new ACos(x, y);
-            case "asin":
-                return new ASin(x, y);
-            case "atan":
-                return new ATan(x, y);
-            case "ceil":
-                return new Ceil(x, y);
-            case "cos":
-                return new Cos(x, y);
-            case "exp":
-                return new Exp(x, y);
-            case "elu":
-                return new ELU(x, y);
-            case "floor":
-                return new Floor(x, y);
-            case "hardtanh":
-                return new HardTanh(x, y);
-            case "hardsigmoid":
-                return new HardSigmoid(x, y);
-            case "identity":
-                return new Identity(x, y);
-            case "log":
-                return new Log(x, y);
-            case "logsoftmax":
-                return new LogSoftMax(x, y);
-            case "leakyrelu":
-                return new LeakyReLU(x, y);
-            case "maxout":
-                return new MaxOut(x, y);
-            case "negative":
-                return new Negative(x, y);
-            case "pow":
-                return new Pow(x, y, 2);
-            case "round":
-                return new Round(x, y);
-            case "sigmoid":
-                return new Sigmoid(x, y);
-            case "sign":
-                return new Sign(x, y);
-            case "sin":
-                return new Sin(x, y);
-            case "softsign":
-                return new SoftSign(x, y);
-            case "sqrt":
-                return new Sqrt(x, y);
-            case "stabilize":
-                return new Stabilize(x, y, 1);
-            case "tanh":
-                return new Tanh(x, y);
-            case "rationaltanh":
-                return new RationalTanh(x, y);
-            case "timesoneminus":
-                return new TimesOneMinus(x, y);
-            case "softmax":
-                return new SoftMax(x, y);
-            case "softplus":
-                return new SoftPlus(x);
-            case "step":
-                return new Step(x, y);
-            case "cube":
-                return new Cube(x, y);
-            default:
-                throw new IllegalArgumentException("Illegal name " + name);
-        }
+        return createTransform(name,x,y,x,null);
 
     }
 
     @Override
     public TransformOp createTransform(String name, INDArray x) {
-        switch (name) {
-            case "relu":
-                return new RectifedLinear(x, 0);
-            case "abs":
-                return new Abs(x);
-            case "acos":
-                return new ACos(x);
-            case "asin":
-                return new ASin(x);
-            case "atan":
-                return new ATan(x);
-            case "ceil":
-                return new Ceil(x);
-            case "cos":
-                return new Cos(x);
-            case "elu":
-                return new ELU(x);
-            case "exp":
-                return new Exp(x);
-            case "floor":
-                return new Floor(x);
-            case "hardtanh":
-                return new HardTanh(x);
-            case "hardsigmoid":
-                return new HardSigmoid(x);
-            case "identity":
-                return new Identity(x);
-            case "leakyrelu":
-                return new LeakyReLU(x);
-            case "log":
-                return new Log(x);
-            case "logsoftmax":
-                return new LogSoftMax(x);
-            case "maxout":
-                return new MaxOut(x);
-            case "negative":
-                return new Negative(x);
-            case "pow":
-                return new Pow(x, 2);
-            case "round":
-                return new Round(x);
-            case "sigmoid":
-                return new Sigmoid(x);
-            case "sign":
-                return new Sign(x);
-            case "sin":
-                return new Sin(x);
-            case "softsign":
-                return new SoftSign(x);
-            case "sqrt":
-                return new Sqrt(x);
-            case "stabilize":
-                return new Stabilize(x, 1);
-            case "tanh":
-                return new Tanh(x);
-            case "rationaltanh":
-                return new RationalTanh(x);
-            case "timesoneminus":
-                return new TimesOneMinus(x);
-            case "softmax":
-                return new SoftMax(x);
-            case "softplus":
-                return new SoftPlus(x);
-            case "step":
-                return new Step(x);
-            case "cube":
-                return new Cube(x);
-            default:
-                throw new IllegalArgumentException("Illegal name " + name);
-        }
-
+        return createTransform(name,x,null,x,null);
     }
 
     @Override
     public TransformOp createTransform(String name, INDArray x, Object[] extraArgs) {
-        if (extraArgs == null || extraArgs.length == 0) {
-            return createTransform(name, x);
-        } else {
-            switch (name) {
-                //placeholder for adding relu param as user specified
-                case "relu":
-                    return new RectifedLinear(x, 0);
-                case "leakyrelu":
-                    return new LeakyReLU(x, (double) extraArgs[0]);
-                default:
-                    throw new IllegalArgumentException("Illegal name " + name);
-            }
-        }
+        return createTransform(name,x,null,x,extraArgs);
     }
 
 
     @Override
     public TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z) {
+        return createTransform(name,x,y,z,null);
+    }
+
+    /**
+     * @param name
+     * @param x
+     * @param y
+     * @param z
+     * @param extraArgs
+     * @return
+     */
+    @Override
+    public TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs) {
+        TransformOp op = null;
         switch (name) {
             case "relu":
-                return new RectifedLinear(x, z, 0);
+                op = new RectifedLinear(x, z, 0);
             case "abs":
-                return new Abs(x, z);
+                op = new Abs(x, z);
+                break;
             case "acos":
-                return new ACos(x, z);
+                op = new ACos(x, z);
+                break;
             case "asin":
-                return new ASin(x, z);
+                op = new ASin(x, z);
+                break;
             case "atan":
-                return new ATan(x, z);
+                op = new ATan(x, z);
+                break;
             case "ceil":
-                return new Ceil(x, z);
+                op = new Ceil(x, z);
+                break;
             case "cos":
-                return new Cos(x, z);
+                op = new Cos(x, z);
+                break;
             case "exp":
-                return new Exp(x, z);
+                op = new Exp(x, z);
+                break;
             case "elu":
-                return new ELU(x, z);
+                op = new ELU(x, z);
+                break;
             case "floor":
-                return new Floor(x, z);
+                op = new Floor(x, z);
+                break;
             case "hardtanh":
-                return new HardTanh(x, z);
+                op = new HardTanh(x, z);
+                break;
             case "hardsigmoid":
-                return new HardSigmoid(x, z);
+                op = new HardSigmoid(x, z);
+                break;
             case "identity":
-                return new Identity(x, z);
+                op = new Identity(x, z);
+                break;
             case "leakyrelu":
-                return new LeakyReLU(x, z);
+                op = new LeakyReLU(x, z);
+                break;
             case "log":
-                return new Log(x, z);
+                op = new Log(x, z);
+                break;
             case "logsoftmax":
-                return new LogSoftMax(x, z);
+                op = new LogSoftMax(x, z);
+                break;
             case "maxout":
-                return new MaxOut(x, z);
+                op = new MaxOut(x, z);
+                break;
             case "negative":
-                return new Negative(x, z);
+                op = new Negative(x, z);
+                break;
             case "pow":
-                return new Pow(x, z, 2);
+                op = new Pow(x, z, 2);
+                break;
             case "round":
-                return new Round(x, z);
+                op = new Round(x, z);
+                break;
             case "sigmoid":
-                return new Sigmoid(x, z);
+                op = new Sigmoid(x, z);
+                break;
             case "sign":
-                return new Sign(x, z);
+                op = new Sign(x, z);
+                break;
             case "sin":
-                return new Sin(x, z);
+                op = new Sin(x, z);
+                break;
             case "softsign":
-                return new SoftSign(x, z);
+                op = new SoftSign(x, z);
+                break;
             case "sqrt":
-                return new Sqrt(x, z);
+                op = new Sqrt(x, z);
+                break;
             case "stabilize":
-                return new Stabilize(x, z, 1);
+                op = new Stabilize(x, z, 1);
+                break;
             case "tanh":
-                return new Tanh(x, z);
+                op = new Tanh(x, z);
+                break;
             case "rationaltanh":
-                return new RationalTanh(x, z);
+                op = new RationalTanh(x, z);
+                break;
             case "timesoneminus":
-                return new TimesOneMinus(x, z);
+                op = new TimesOneMinus(x, z);
+                break;
             case "softmax":
-                return new SoftMax(x, z);
+                op = new SoftMax(x, z);
+                break;
             case "softplus":
-                return new SoftPlus(x, z);
+                op = new SoftPlus(x, z);
+                break;
             case "cube":
-                return new Cube(x, z);
-            default:
-                throw new IllegalArgumentException("Illegal name " + name);
+                op = new Cube(x, z);
+                break;
+
         }
+
+
+        op.setExtraArgs(extraArgs);
+        return op;
     }
+
+
+
 
     protected Class<? extends Op> lookupFunctionByName(String name) {
         return opClazzes.get(name);
@@ -461,45 +336,42 @@ public class DefaultOpFactory implements OpFactory {
 
     @Override
     public BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, INDArray z, int... dimension) {
+        return createBroadcastOp(name,x,y,z,null,dimension);
+    }
+
+    @Override
+    public BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs, int... dimension) {
+        BroadcastOp broadcastOp = null;
         switch (name) {
             case "broadcastadd":
-                return new BroadcastAddOp(x, y, z, dimension);
+                broadcastOp = new BroadcastAddOp(x, y, z, dimension);
+                break;
             case "broadcastsub":
-                return new BroadcastSubOp(x, y, z, dimension);
+                broadcastOp = new BroadcastSubOp(x, y, z, dimension);
+                break;
             case "broadcastmul":
-                return new BroadcastMulOp(x, y, z, dimension);
+                broadcastOp = new BroadcastMulOp(x, y, z, dimension);
+                break;
             case "broadcastdiv":
-                return new BroadcastDivOp(x, y, z, dimension);
+                broadcastOp = new BroadcastDivOp(x, y, z, dimension);
+                break;
             case "broadcastrsub":
-                return new BroadcastRSubOp(x, y, z, dimension);
+                broadcastOp = new BroadcastRSubOp(x, y, z, dimension);
+                break;
             case "broadcastrdiv":
-                return new BroadcastRDivOp(x, y, z, dimension);
+                broadcastOp = new BroadcastRDivOp(x, y, z, dimension);
+                break;
             case "broadcastcopy":
-                return new BroadcastCopyOp(x, y, z, dimension);
-            default:
-                throw new IllegalArgumentException("Illegal name " + name);
+                broadcastOp = new BroadcastCopyOp(x, y, z, dimension);
+                break;
         }
+
+        broadcastOp.setExtraArgs(extraArgs);
+        return broadcastOp;
     }
 
     @Override
     public BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, int... dimension) {
-        switch (name) {
-            case "broadcastadd":
-                return new BroadcastAddOp(x, y, x, dimension);
-            case "broadcastsub":
-                return new BroadcastSubOp(x, y, x, dimension);
-            case "broadcastmul":
-                return new BroadcastMulOp(x, y, x, dimension);
-            case "broadcastdiv":
-                return new BroadcastDivOp(x, y, x, dimension);
-            case "broadcastrsub":
-                return new BroadcastRSubOp(x, y, x, dimension);
-            case "broadcastrdiv":
-                return new BroadcastRDivOp(x, y, x, dimension);
-            case "broadcastcopy":
-                return new BroadcastCopyOp(x, y, x, dimension);
-            default:
-                throw new IllegalArgumentException("Illegal name " + name);
-        }
+        return createBroadcastOp(name,x,y,x,null,dimension);
     }
 }

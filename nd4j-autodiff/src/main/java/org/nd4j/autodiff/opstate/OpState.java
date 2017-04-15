@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
 
@@ -34,5 +35,7 @@ public class OpState implements Serializable {
         INDEX_ACCUMULATION,
         AGGREGATE
     }
+
+
 
 }

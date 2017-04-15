@@ -106,6 +106,7 @@ public class TensorGradTests {
         assertEquals(3,tensorGrad.graph().numVertices());
         assertEquals(2,tensorGrad.graph().getEdges().size());
         assertArrayEquals(ArrayUtil.getTensorMmulShape(new int[]{2,2,2},new int[]{2,2,2},new int[][]{{0},{1}}),result.getShape());
+        assertEquals(32,tensorGrad.numElements());
     }
 
 }

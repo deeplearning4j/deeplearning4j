@@ -58,6 +58,8 @@ public interface OpFactory {
      */
     Accumulation createAccum(String name, INDArray x, INDArray y, INDArray z);
 
+    Accumulation createAccum(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs);
+
     /**
      * @param name
      * @param x
@@ -67,12 +69,16 @@ public interface OpFactory {
     Accumulation createAccum(String name, INDArray x, INDArray y);
 
     /**
-     * Index accumulation operation
      *
-     * @param name the name of the function to create
-     * @param x    the input to the function
-     * @return the operation
+     * @param opName
+     * @param x
+     * @param y
+     *@param z
+     * @param extraArgs   @return
      */
+    IndexAccumulation createIndexAccum(String opName, INDArray x, INDArray y, INDArray z, Object[] extraArgs);
+
+
     IndexAccumulation createIndexAccum(String name, INDArray x);
 
     /**Index accumulation operation
@@ -116,6 +122,17 @@ public interface OpFactory {
      */
     TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z);
 
+
+    /**
+     * @param name
+     * @param x
+     * @param y
+     * @param z
+     * @return
+     */
+    TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z,Object[] extraArgs);
+
+
     /** Create a vector operation
      *
      * @param name Name of the vector op
@@ -126,6 +143,8 @@ public interface OpFactory {
      * @return VectorOp
      */
     BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, INDArray z, int... dimension);
+
+    BroadcastOp createBroadcastOp(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs, int... dimension);
 
     /** Create a vector operation
      *

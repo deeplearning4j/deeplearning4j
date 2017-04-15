@@ -8,6 +8,7 @@ import org.nd4j.autodiff.functions.Variable;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.TensorGrad;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
 /**
@@ -32,6 +33,15 @@ public class TensorGradVariable {
                 throw new IllegalStateException("Unable to determine shape!");
             return opState.getResult().getShape();
         }
+    }
+
+
+    public boolean isAllocated() {
+        return arr != null;
+    }
+
+    public void allocate() {
+        arr = Nd4j.create(getShape());
     }
 
 

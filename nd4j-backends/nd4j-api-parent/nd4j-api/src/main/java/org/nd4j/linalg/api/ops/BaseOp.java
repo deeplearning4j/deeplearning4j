@@ -19,6 +19,7 @@
 
 package org.nd4j.linalg.api.ops;
 
+import lombok.Data;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -31,6 +32,7 @@ import java.nio.Buffer;
  *
  * @author Adam Gibson
  */
+@Data
 public abstract class BaseOp implements Op {
 
     protected INDArray x, y, z;
@@ -81,20 +83,6 @@ public abstract class BaseOp implements Op {
         return type;
     }
 
-    /*
-    op instanceof Variance
-    op instanceof CosineSimilarity
-    op instanceof Im2col
-    op instanceof Col2Im
-    op instanceof Pow
-    op instanceof LeakyReLU
-    op instanceof RectifedLinear
-    op instanceof LeakyReLUDerivative
-    op instanceof Stabilize
-    op instanceof Step
-    op instanceof SetRange
-    op instanceof IsMax
-    */
 
     @Override
     public DataBuffer extraArgsDataBuff() {

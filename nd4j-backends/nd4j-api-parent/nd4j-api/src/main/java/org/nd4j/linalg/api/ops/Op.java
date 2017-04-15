@@ -269,4 +269,10 @@ public interface Op {
      */
     void setN(long n);
 
+    /**
+     *
+     * @param extraArgs
+     */
+    void setExtraArgs(Object[] extraArgs);
+
 }
