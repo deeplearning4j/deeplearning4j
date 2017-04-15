@@ -790,7 +790,7 @@ public class ArrayUtil {
      * @param axes the axes to do the multiply
      * @return the shape for tensor matrix multiply
      */
-    public static int[] getTensorMmlShape(int[] aShape,int[] bShape,int[][] axes) {
+    public static int[] getTensorMmulShape(int[] aShape, int[] bShape, int[][] axes) {
         int validationLength = Math.min(axes[0].length, axes[1].length);
         for (int i = 0; i < validationLength; i++) {
             if (aShape[axes[0][i]] != bShape[axes[1][i]])

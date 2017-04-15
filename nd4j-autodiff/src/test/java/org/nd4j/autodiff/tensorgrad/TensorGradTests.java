@@ -5,6 +5,7 @@ import org.nd4j.autodiff.tensorgrad.impl.TensorGradVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -92,6 +93,19 @@ public class TensorGradTests {
         assertEquals(3,tensorGrad.graph().numVertices());
         assertEquals(2,tensorGrad.graph().getEdges().size());
         assertArrayEquals(new int[]{2,2},result.getShape());
+    }
+
+    @Test
+    public void testTensorGradTensorMmul() {
+        TensorGrad tensorGrad = TensorGrad.create();
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1,8,8)).reshape(2,2,2);
+        TensorGradVariable x = tensorGrad.var("x",arr);
+        TensorGradVariable y = tensorGrad.var("y",arr);
+        TensorGradVariable result = tensorGrad.tensorMmul(x,y,new int[][]{{0},{1}},0);
+        assertEquals("tensorMmul(x,y)",result.getVarName());
+        assertEquals(3,tensorGrad.graph().numVertices());
+        assertEquals(2,tensorGrad.graph().getEdges().size());
+        assertArrayEquals(ArrayUtil.getTensorMmulShape(new int[]{2,2,2},new int[]{2,2,2},new int[][]{{0},{1}}),result.getShape());
     }
 
 }

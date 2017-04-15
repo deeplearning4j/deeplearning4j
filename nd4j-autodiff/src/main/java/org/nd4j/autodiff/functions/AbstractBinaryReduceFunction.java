@@ -50,7 +50,7 @@ public abstract class AbstractBinaryReduceFunction<X extends  Field<X>> extends 
 
     @Override
     public String doGetFormula(List<Variable<X>> variables) {
-        return null;
+        return toString();
     }
 
     @Override

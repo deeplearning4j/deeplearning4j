@@ -454,7 +454,7 @@ public class TensorGrad {
         return TensorGradVariable.builder()
                 .arr(null)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.tensorMmul(x.getArrayField(),y.getArrayField(),dimensions,argNum))
-                .varName("tensorMmul(" + x.getVarName() + ")").tensorGrad(this)
+                .varName("tensorMmul(" + x.getVarName() + "," + y.getVarName() +  ")").tensorGrad(this)
                 .build();
     }
 

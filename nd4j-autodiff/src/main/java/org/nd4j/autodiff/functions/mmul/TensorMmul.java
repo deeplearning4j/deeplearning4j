@@ -1,7 +1,6 @@
 package org.nd4j.autodiff.functions.mmul;
 
 import com.google.common.primitives.Ints;
-import lombok.AllArgsConstructor;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.functions.AbstractBinaryReduceFunction;
@@ -28,7 +27,7 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
     private int argNum;
     private int[][] axes;
     private DifferentialFunctionFactory<X> differentialFunctionFactory;
-
+    private boolean addedEdges = false;
 
     public TensorMmul(Graph<NDArrayInformation, OpState> graph,
                       DifferentialFunction<X> i_v1,
@@ -39,6 +38,8 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
         this.axes = dimensions;
         this.argNum = argNum;
         this.differentialFunctionFactory = differentialFunctionFactory;
+        if(!addedEdges)
+            addEdges(graph,i_v1,i_v2,functionName());
     }
 
 
@@ -47,18 +48,19 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
                             DifferentialFunction<X> i_v1,
                             DifferentialFunction<X> i_v2,
                             String opName) {
-        if(i_v1.getValue() instanceof ArrayField) {
+        if(i_v1.getValue() instanceof ArrayField && axes != null && !addedEdges) {
+            addedEdges = true;
             ArrayField arrayField = (ArrayField) i_v1.getValue();
             ArrayField secondVal = (ArrayField) i_v2.getValue();
 
             addEdges(graph,i_v1,i_v2,opName,
                     OpState.OpType.ACCUMULATION,
-                    ArrayUtil.getTensorMmlShape(arrayField.getInput().getShape(),secondVal.getInput().getShape(),axes),new Object[]{argNum});
+                    ArrayUtil.getTensorMmulShape(arrayField.getInput().getShape(),
+                            secondVal.getInput().getShape(),
+                            axes),new Object[]{argNum});
 
         }
 
-        else
-            throw new UnsupportedOperationException("Only supporting array fields");
     }
 
     /**
@@ -69,11 +71,6 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
     @Override
     protected X doGetValue() {
         return differentialFunctionFactory.tensorMmul(larg(),rarg(),axes,argNum).getValue();
-    }
-
-    @Override
-    public double getReal() {
-        return 0;
     }
 
 
@@ -117,7 +114,7 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
             if (aDimensions.length != bDimensions.length)
                 throw new IllegalStateException("A and b must be the same rank");
 
-            int[] outputShape = ArrayUtil.getTensorMmlShape(xField.getInput().getShape(),yField.getInput().getShape(),axes);
+            int[] outputShape = ArrayUtil.getTensorMmulShape(xField.getInput().getShape(),yField.getInput().getShape(),axes);
             int axesSummed = aDimensions.length;
             DifferentialFunction<X> x, y;
             int xRank, yRank;
