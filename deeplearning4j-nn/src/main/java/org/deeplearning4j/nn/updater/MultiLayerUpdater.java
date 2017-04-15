@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.updater;
 
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
@@ -15,6 +14,8 @@ import java.util.HashMap;
  * MultiLayerUpdater: Gradient updater for MultiLayerNetworks.
  * Expects backprop gradients for all layers to be in single Gradient object,
  * keyed by "0_b", "1_w" etc., as per MultiLayerNetwork.backward()
+ *
+ * @author Alex Black
  */
 @Getter
 @Slf4j

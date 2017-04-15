@@ -17,7 +17,10 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Created by Alex on 14/04/2017.
+ * UpdaterBlock: used in {@link BaseMultiLayerUpdater}, this class implements updating (i.e., Adam, RMSProp, Momentum,
+ * etc) across multiple contiguous layers/parameters, as described in the {@link BaseMultiLayerUpdater} javadoc.
+ *
+ * @author Alex Black
  */
 @Data
 public class UpdaterBlock {
@@ -34,7 +37,8 @@ public class UpdaterBlock {
     private GradientUpdater gradientUpdater;
 
 
-    @AllArgsConstructor @Data
+    @AllArgsConstructor
+    @Data
     public static class VarState {
         private final Layer layer;
         private final String varName;
@@ -42,6 +46,18 @@ public class UpdaterBlock {
         private final INDArray gradView;
     }
 
+    /**
+     * @param paramOffsetStart          Start offset of the parameters in this block (relative to overall net params
+     *                                  view array)
+     * @param paramOffsetEnd            End offset of the parameters in this block (relative to overall net params
+     *                                  view array)
+     * @param updaterViewOffsetStart    Start offset of the updater state array in this block (relative to overall net
+     *                                  updater state view array)
+     * @param updaterViewOffsetEnd      End offset of the updater state array in this block (relative to overall net
+     *                                  updater state view array)
+     * @param layersAndVariablesInBlock List of layers and variables in this updater block. By definition, all layers
+     *                                  and variables in this list <i>must</i> have an identical updater configuration.
+     */
     public UpdaterBlock(int paramOffsetStart, int paramOffsetEnd, int updaterViewOffsetStart, int updaterViewOffsetEnd,
                         List<VarState> layersAndVariablesInBlock) {
         this.paramOffsetStart = paramOffsetStart;
@@ -51,13 +67,17 @@ public class UpdaterBlock {
         this.layersAndVariablesInBlock = layersAndVariablesInBlock;
     }
 
-    public void update(int iteration){
-
+    /**
+     * Update the gradient for this block
+     *
+     * @param iteration The current iteration (i.e., total number of parameter updates so far)
+     */
+    public void update(int iteration) {
         //Initialize the updater, if necessary
-        if(gradientUpdater == null){
+        if (gradientUpdater == null) {
             VarState varState = layersAndVariablesInBlock.get(0);
             gradientUpdater = UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getVarName());
-            if(updaterView != null) {
+            if (updaterView != null) {
                 //May be null for SGD and no-op updaters
                 int[] gradientViewShape = gradientView.shape();
                 System.out.println(Arrays.toString(gradientViewShape));
@@ -81,29 +101,43 @@ public class UpdaterBlock {
         gradientUpdater.getGradient(gradientView, iteration);
 
         //Post apply: l1 and l2 by params
-        for(VarState p : layersAndVariablesInBlock){
-            postApply(p.getLayer(), p.getVarName(), p.getGradView(), p.getParamView() );
+        for (VarState p : layersAndVariablesInBlock) {
+            postApply(p.getLayer(), p.getVarName(), p.getGradView(), p.getParamView());
         }
     }
 
+    /**
+     * Apply L1 and L2 regularization, if necessary. Note that L1/L2 may differ for different layers in the same block
+     *
+     * @param layer        The layer to apply L1/L2 to
+     * @param paramName    Parameter name in the given layer
+     * @param gradientView Gradient view array for the layer + param
+     * @param paramsView   Parameter view array for the layer + param
+     */
     public void postApply(Layer layer, String paramName, INDArray gradientView, INDArray paramsView) {
         NeuralNetConfiguration conf = layer.conf();
 
         //TODO: do this for multiple contiguous params/layers (fewer, larger ops)
 
         double l2 = conf.getL2ByParam(paramName);
-        if (conf.isUseRegularization() && l2 > 0){
+        if (conf.isUseRegularization() && l2 > 0) {
             //This can be an axpy op, saving an allocation...
             //gradientView += params * l2           i.e., dC/dw = dC0/dw + lambda/n * w where C0 is pre-l2 cost function
             //Equivalent to gradientView.addi(paramsView.mul(conf.getL2ByParam(paramName)));
             int length = gradientView.length();
-            Nd4j.getBlasWrapper().level1().axpy(length, l2, paramsView, gradientView );
+            Nd4j.getBlasWrapper().level1().axpy(length, l2, paramsView, gradientView);
         }
         if (conf.isUseRegularization() && conf.getL1ByParam(paramName) > 0) {
-            gradientView.addi(Transforms.sign(paramsView).muli(conf.getL1ByParam(paramName)));
+            gradientView.addi(Transforms.sign(paramsView,true).muli(conf.getL1ByParam(paramName)));
         }
     }
 
+    /**
+     * Apply learning rate decay, based on the configuration
+     *
+     * @param decay     Learning rate schedule enumeration
+     * @param iteration Current iteration
+     */
     public void applyLrDecayPolicy(LearningRatePolicy decay, int iteration) {
         Layer layer = layersAndVariablesInBlock.get(0).getLayer();
         String variable = layersAndVariablesInBlock.get(0).getVarName();
@@ -124,7 +158,7 @@ public class UpdaterBlock {
                 newLr = lr * Math.pow(decayRate, Math.floor(iteration / conf.getLrPolicySteps()));
                 break;
             case TorchStep:
-                if (iteration > 1 && conf.getLrPolicySteps() % iteration == 0){
+                if (iteration > 1 && conf.getLrPolicySteps() % iteration == 0) {
                     newLr = lr * decayRate;
                 } else {
                     newLr = lr;
@@ -137,7 +171,7 @@ public class UpdaterBlock {
                 newLr = lr / (1 + Math.exp(-decayRate * (iteration - conf.getLrPolicySteps())));
                 break;
             case Schedule:
-                if (conf.getLayer().getLearningRateSchedule().containsKey(iteration)){
+                if (conf.getLayer().getLearningRateSchedule().containsKey(iteration)) {
                     newLr = conf.getLayer().getLearningRateSchedule().get(iteration);
                 } else {
                     newLr = lr;
@@ -159,7 +193,7 @@ public class UpdaterBlock {
 
         //Need to set the LR for *all* variables in the Updater block. All variables (by definition of being in the
         // same block) share the same LR schedule
-        for(VarState vs : layersAndVariablesInBlock){
+        for (VarState vs : layersAndVariablesInBlock) {
             vs.getLayer().conf().setLearningRateByParam(vs.getVarName(), newLr);
             if (layer.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS) {
                 vs.getLayer().conf().getLayer().setMomentum(newMomentum);

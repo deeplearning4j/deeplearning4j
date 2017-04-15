@@ -11,9 +11,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import java.util.HashMap;
 
 /**
- * Gradient updater for ComputationGraph.<br>
- * Note: ComputationGraph does not implement the Layer interface (due to multiple in/out etc), hence ComputationGraphUpdater
- * can't be defined as an {@link Updater}.
+ * Gradient updater for ComputationGraph. Most of the functionality is shared with
+ * {@link org.deeplearning4j.nn.updater.MultiLayerUpdater} via {@link BaseMultiLayerUpdater}
  *
  * @author Alex Black
  */
