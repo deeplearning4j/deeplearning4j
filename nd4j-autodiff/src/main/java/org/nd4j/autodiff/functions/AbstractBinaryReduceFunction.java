@@ -23,7 +23,6 @@ public abstract class AbstractBinaryReduceFunction<X extends  Field<X>> extends 
     public AbstractBinaryReduceFunction(Graph<NDArrayInformation, OpState> graph, DifferentialFunction<X> i_v1, DifferentialFunction<X> i_v2,int...dimensions) {
         super(graph, i_v1, i_v2);
         this.dimensions = dimensions;
-        addEdges(graph,i_v1,i_v2,functionName());
     }
 
 

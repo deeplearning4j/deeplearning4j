@@ -39,7 +39,6 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
         this.axes = dimensions;
         this.argNum = argNum;
         this.differentialFunctionFactory = differentialFunctionFactory;
-        addEdges(graph,i_v1,i_v2,functionName());
     }
 
 

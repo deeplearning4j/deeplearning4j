@@ -89,7 +89,7 @@ public class TensorGradTests {
         TensorGradVariable y = tensorGrad.var("y",arr);
         TensorGradVariable result = tensorGrad.mmul(0,x,y);
         assertEquals("mmul(x,y)",result.getVarName());
-        assertEquals(6,tensorGrad.graph().numVertices());
+        assertEquals(3,tensorGrad.graph().numVertices());
         assertEquals(2,tensorGrad.graph().getEdges().size());
         assertArrayEquals(new int[]{2,2},result.getShape());
     }

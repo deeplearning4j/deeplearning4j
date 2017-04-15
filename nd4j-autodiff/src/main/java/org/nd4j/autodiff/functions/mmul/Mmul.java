@@ -27,7 +27,6 @@ public class Mmul<X extends Field<X>> extends TensorMmul<X> {
                 differentialFunctionFactory,new int[][] {
                 {1},{0}
         },argNum);
-        addEdges(graph,i_v1,i_v2,functionName());
     }
 
 
