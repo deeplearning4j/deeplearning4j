@@ -280,8 +280,12 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                     if (workspace != null) {
                         try (MemoryWorkspace ws1 = workspace.notifyScopeEntered()) {
                             ds = iterator.next();
+                            ds.decompress();
                         }
-                    } else ds = iterator.next();
+                    } else {
+                        ds = iterator.next();
+                        ds.decompress();
+                    }
 
                     if (Nd4j.getExecutioner() instanceof GridExecutioner)
                         ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
