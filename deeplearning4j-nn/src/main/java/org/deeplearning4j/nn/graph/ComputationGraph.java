@@ -103,7 +103,7 @@ public class ComputationGraph implements Serializable, Model {
 
     protected final static MemoryWorkspace dummy = new DummyWorkspace();
 
-    protected ThreadLocal<Long> lastEtlTime;
+    protected ThreadLocal<Long> lastEtlTime = new ThreadLocal<>();
 
     /**
      * All GraphVertex objects in the network.

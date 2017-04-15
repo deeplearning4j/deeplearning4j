@@ -100,7 +100,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected INDArray flattenedParams; //Params for all layers are a view/subset of this array
     protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
 
-    protected ThreadLocal<Long> lastEtlTime;
+    protected ThreadLocal<Long> lastEtlTime = new ThreadLocal<>();
 
     /*
       Binary drop connect mask
