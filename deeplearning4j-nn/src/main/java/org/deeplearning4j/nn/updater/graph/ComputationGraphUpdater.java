@@ -1,18 +1,27 @@
 package org.deeplearning4j.nn.updater.graph;
 
+import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.updater.UpdaterCreator;
+import org.deeplearning4j.nn.graph.vertex.GraphVertex;
+import org.deeplearning4j.nn.updater.UpdaterBlock;
+import org.deeplearning4j.nn.updater.UpdaterUtils;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -24,99 +33,133 @@ import java.util.Map;
  */
 public class ComputationGraphUpdater implements Serializable {
 
-    private final Updater[] layerUpdaters;
-    private final Map<String, Integer> layerUpdatersMap;
-    private INDArray viewArray;
+    private final List<UpdaterBlock> updaterBlocks;
+    private INDArray updaterStateViewArray;
 
     public ComputationGraphUpdater(ComputationGraph graph) {
-        layerUpdaters = new Updater[graph.getNumLayers()];
-        layerUpdatersMap = new HashMap<>();
-
-        int i = 0;
-        int updaterStateSize = 0;
-        for (Layer layer : graph.getLayers()) {
-            Updater u = UpdaterCreator.getUpdater(layer);
-            layerUpdaters[i] = u;
-            layerUpdatersMap.put(layer.conf().getLayer().getLayerName(), i);
-            updaterStateSize += layerUpdaters[i].stateSizeForLayer(layer);
-            i++;
-        }
-
-        //Initialize the updater state
-        if (updaterStateSize > 0) {
-            //May be 0 if all SGD updaters, for example
-            viewArray = Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order());
-        }
-        int soFar = 0;
-        i = 0;
-        for (Layer layer : graph.getLayers()) {
-            int thisSize = layerUpdaters[i].stateSizeForLayer(layer);
-            if (thisSize == 0) {
-                i++;
-                continue;
-            }
-            INDArray view = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + thisSize));
-            layerUpdaters[i++].setStateViewArray(layer, view, true);
-            soFar += thisSize;
-        }
+        this(graph, null);
     }
 
     public ComputationGraphUpdater(ComputationGraph graph, INDArray updaterState) {
-        layerUpdatersMap = new HashMap<>();
         Layer[] layers = graph.getLayers();
-        layerUpdaters = new Updater[layers.length];
+        GraphVertex[] vertices = graph.getVertices();
+
+        //In CompGraph: we need to know topological ordering, so we know how parameters are laid out in the 1d view arrays
+        int[] topologicalOrdering = graph.topologicalSortOrder();
 
         int updaterStateSize = 0;
-        for (int i = 0; i < layers.length; i++) {
-            layerUpdaters[i] = UpdaterCreator.getUpdater(layers[i]);
-            updaterStateSize += layerUpdaters[i].stateSizeForLayer(layers[i]);
-            layerUpdatersMap.put(layers[i].conf().getLayer().getLayerName(), i);
+        //Iterate through layers, and variables for each layer.
+        //While the updater configuration is the same: combine
+        Layer lastLayer = null;
+        String lastVariable = null;
+        UpdaterBlock currentBlock = null;
+        updaterBlocks = new ArrayList<>();
+        int currentParamOffset = 0;
+        int currentUpdaterOffset = 0;
+
+        INDArray paramsView = graph.params();
+        INDArray gradientView = graph.getFlattenedGradients();
+        int paramsViewSoFar = 0;
+
+        for( int i=0; i<topologicalOrdering.length; i++ ){
+            GraphVertex currentVertex = vertices[topologicalOrdering[i]];
+            if(!currentVertex.hasLayer()){
+                continue;
+            }
+
+            Layer currentLayer = currentVertex.getLayer();
+            Map<String,INDArray> layerParamTable = currentLayer.paramTable();
+            List<String> variables = new ArrayList<>(layerParamTable.keySet());    //Is from a set, but iteration order should be fixed per layer as it's a from a LinkedHashSet
+
+            for( int j=0; j<variables.size(); j++ ){
+                String var = variables.get(j);
+                int paramSizeThisVariable = layerParamTable.get(var).length();
+                int updaterStateSizeThisVariable = UpdaterUtils.stateSizeForLayerVariable(currentLayer, var);
+
+                INDArray gradientViewSubset = null;
+                INDArray paramsViewSubset = null;
+                if(paramSizeThisVariable > 0) {
+                    paramsViewSubset = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable));
+                    gradientViewSubset = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable));
+                }
+
+                //First: decide whether to add to the existing updater block, or create a new one
+                if(currentBlock == null || !UpdaterUtils.updaterConfigurationsEquals(lastLayer, lastVariable, currentLayer, var)){
+                    List<UpdaterBlock.VarState> list = new ArrayList<>();
+                    list.add(new UpdaterBlock.VarState(currentLayer, var, paramsViewSubset, gradientViewSubset));
+                    currentBlock = new UpdaterBlock(currentParamOffset, currentParamOffset+paramSizeThisVariable,
+                            currentUpdaterOffset, currentUpdaterOffset+updaterStateSizeThisVariable, list);
+
+                    updaterBlocks.add(currentBlock);
+                } else {
+                    //Add to existing updater block
+                    currentBlock.setParamOffsetEnd( currentBlock.getParamOffsetEnd() + paramSizeThisVariable);
+                    currentBlock.setUpdaterViewOffsetEnd( currentBlock.getUpdaterViewOffsetEnd() + updaterStateSizeThisVariable);
+                    currentBlock.getLayersAndVariablesInBlock().add(
+                            new UpdaterBlock.VarState(currentLayer, var, paramsViewSubset, gradientViewSubset));
+                }
+
+                lastLayer = currentLayer;
+                lastVariable = variables.get(j);
+                updaterStateSize += updaterStateSizeThisVariable;
+                paramsViewSoFar += paramSizeThisVariable;
+            }
         }
 
-        if (updaterState != null) {
-            if (updaterState.length() != updaterStateSize) {
-                throw new IllegalStateException("Expected updater state with size " + updaterStateSize + ", got size "
-                                + updaterState.length());
+
+
+        //Initialize the updater state, if required
+        boolean updaterRequiresInit = false;
+        if(updaterState != null){
+            updaterStateViewArray = updaterState;
+            updaterRequiresInit = false;
+        } else if (updaterStateSize > 0) {
+            //May be 0 if all SGD updaters, for example
+            updaterStateViewArray = Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order());
+            updaterRequiresInit = true;
+        }
+
+//        System.out.println("Updater state array: " + Arrays.toString(updaterStateViewArray.shape()));
+//        System.out.println("Parameters array shape: " + Arrays.toString(paramsView.shape()));
+
+        //Set up the updaters, for each updater block:
+        int updaterViewSoFar = 0;
+        paramsViewSoFar = 0;
+        for( int i=0; i<updaterBlocks.size(); i++ ){
+            UpdaterBlock ub = updaterBlocks.get(i);
+
+            int viewStateSize = ub.getUpdaterViewOffsetEnd() - ub.getUpdaterViewOffsetStart();
+            int gradSize = ub.getParamOffsetEnd() - ub.getParamOffsetStart();
+
+            if(viewStateSize > 0) {
+                INDArray updaterViewSubset = updaterStateViewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(updaterViewSoFar, updaterViewSoFar + viewStateSize));
+                ub.setUpdaterView(updaterViewSubset);
+                ub.setUpdaterViewRequiresInitialization(updaterRequiresInit);
             }
-            //Assign subsets to the various updaters, without initializing (overwriting) the layer values
-            this.viewArray = updaterState;
-            int soFar = 0;
-            for (int i = 0; i < layers.length; i++) {
-                int thisSize = layerUpdaters[i].stateSizeForLayer(layers[i]);
-                if (thisSize == 0)
-                    continue;
-                INDArray view = viewArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(soFar, soFar + thisSize));
-                layerUpdaters[i].setStateViewArray(layers[i], view, false);
-                soFar += thisSize;
+
+            if(gradSize > 0) {
+                INDArray gradientViewSubset = gradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramsViewSoFar, paramsViewSoFar + gradSize));
+                ub.setGradientView(gradientViewSubset);
             }
-        } else if (updaterStateSize != 0) {
-            //Updater state size is non-zero, but we didn't get an array...
-            throw new IllegalStateException(
-                            "Expected updater state with size " + updaterStateSize + ", got null input");
+
+            updaterViewSoFar += viewStateSize;
+            paramsViewSoFar += gradSize;
         }
     }
 
-    private ComputationGraphUpdater(int size, Map<String, Integer> layerUpdatersMap) {
-        layerUpdaters = new Updater[size];
-        this.layerUpdatersMap = layerUpdatersMap;
-    }
-
-    /**
-     * Update the gradients for the given ComputationGraph
-     */
     public void update(ComputationGraph graph, Gradient gradient, int iteration, int batchSize) {
         Map<String, Gradient> layerGradients = new HashMap<>();
+
 
         for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
             String key = gradientPair.getKey();
             int idx = key.lastIndexOf('_');
             if (idx == -1)
                 throw new IllegalStateException(
-                                "Invalid key: ComputationGraph Gradient key does not have layer separator: \"" + key
-                                                + "\"");
+                        "Invalid key: MuliLayerNetwork Gradient key does not have layer separator: \"" + key
+                                + "\"");
 
             String layerName = key.substring(0, idx);
-
             Gradient g = layerGradients.get(layerName);
             if (g == null) {
                 g = new DefaultGradient();
@@ -127,55 +170,113 @@ public class ComputationGraphUpdater implements Serializable {
             g.setGradientFor(newKey, gradientPair.getValue());
         }
 
+        //PRE apply (gradient clipping, etc): done on a per-layer basis
         for (Map.Entry<String, Gradient> entry : layerGradients.entrySet()) {
-            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceFeedForward)) {
-                try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(ComputationGraph.workspaceFeedForward)) {
-                    String layerName = entry.getKey();
-                    int updaterIdx = layerUpdatersMap.get(layerName);
-                    layerUpdaters[updaterIdx].update(graph.getLayer(layerName), entry.getValue(), iteration, batchSize);
+            String layerName = entry.getKey();
+            Layer layer = graph.getLayer(layerName);
+
+            preApply(layer, layerGradients.get(layerName), iteration);
+        }
 
 
-                    //Gradients may be replaced by BaseUpdater.update()
-                    for (Map.Entry<String, INDArray> entry2 : layerGradients.get(layerName).gradientForVariable().entrySet()) {
-                        gradient.setGradientFor(entry.getKey() + "_" + entry2.getKey(), entry2.getValue());
-                    }
-                }
-            } else {
-                String layerName = entry.getKey();
-                int updaterIdx = layerUpdatersMap.get(layerName);
-                layerUpdaters[updaterIdx].update(graph.getLayer(layerName), entry.getValue(), iteration, batchSize);
+        //Apply the updaters in blocks
+        for(UpdaterBlock ub : updaterBlocks){
+            ub.update(iteration);
+        }
 
-
-                //Gradients may be replaced by BaseUpdater.update()
-                for (Map.Entry<String, INDArray> entry2 : layerGradients.get(layerName).gradientForVariable().entrySet()) {
-                    gradient.setGradientFor(entry.getKey() + "_" + entry2.getKey(), entry2.getValue());
-                }
-            }
+        if(graph.conf().isMiniBatch()){
+            graph.getFlattenedGradients().divi(batchSize);
         }
     }
 
 
     public void setStateViewArray(INDArray viewArray) {
-        if (this.viewArray.length() != viewArray.length())
+        if (this.updaterStateViewArray.length() != viewArray.length())
             throw new IllegalStateException("Invalid input: view arrays differ in length. " + "Expected length "
-                            + this.viewArray.length() + ", got length " + viewArray.length());
-        this.viewArray.assign(viewArray);
+                            + this.updaterStateViewArray.length() + ", got length " + viewArray.length());
+        this.updaterStateViewArray.assign(viewArray);
     }
 
 
     public INDArray getStateViewArray() {
-        return viewArray;
+        return updaterStateViewArray;
     }
 
     @Override
     public boolean equals(Object other) {
         if (!(other instanceof ComputationGraphUpdater))
             return false;
-        return layerUpdatersMap.equals(((ComputationGraphUpdater) other).layerUpdatersMap);
+//        return layerUpdatersMap.equals(((ComputationGraphUpdater) other).layerUpdatersMap);
+        throw new UnsupportedOperationException("Not yet re-implemented");
     }
 
     @Override
     public int hashCode() {
-        return layerUpdatersMap.hashCode();
+//        return layerUpdatersMap.hashCode();
+        throw new UnsupportedOperationException("Not yet re-implemented");
+    }
+
+
+    public void preApply(Layer layer, Gradient gradient, int iteration) {
+
+        GradientNormalization normalization = layer.conf().getLayer().getGradientNormalization();
+        if (normalization == null || normalization == GradientNormalization.None || layer.conf().isPretrain())
+            return; //no op
+
+        final double threshold = layer.conf().getLayer().getGradientNormalizationThreshold();
+
+        switch (normalization) {
+            case RenormalizeL2PerLayer:
+                double sumSquares = 0.0;
+                for (INDArray g : gradient.gradientForVariable().values()) {
+                    double l2 = g.norm2Number().doubleValue();
+                    //l2 norm: sqrt(sum_i g_i^2)
+                    sumSquares += l2 * l2;
+                }
+                double layerL2 = FastMath.sqrt(sumSquares);
+                for (INDArray g : gradient.gradientForVariable().values()) {
+                    g.divi(layerL2);
+                }
+                break;
+            case RenormalizeL2PerParamType:
+                for (INDArray g : gradient.gradientForVariable().values()) {
+                    double l2 = Nd4j.getExecutioner().execAndReturn(new Norm2(g)).getFinalResult().doubleValue();
+                    g.divi(l2);
+                }
+                break;
+            case ClipElementWiseAbsoluteValue:
+                for (INDArray g : gradient.gradientForVariable().values()) {
+                    BooleanIndexing.replaceWhere(g, threshold, Conditions.greaterThan(threshold));
+                    BooleanIndexing.replaceWhere(g, -threshold, Conditions.lessThan(-threshold));
+                }
+                break;
+            case ClipL2PerLayer:
+                double sumSquares2 = 0.0;
+                for (INDArray g : gradient.gradientForVariable().values()) {
+                    double l2 = Nd4j.getExecutioner().execAndReturn(new Norm2(g)).getFinalResult().doubleValue();
+                    //l2 norm: sqrt(sum_i g_i^2)
+                    sumSquares2 += l2 * l2;
+                }
+                double layerL22 = FastMath.sqrt(sumSquares2);
+                if (layerL22 > threshold) {
+                    double scalingFactor = threshold / layerL22; // g = g / l2 * threshold ->
+                    for (INDArray g : gradient.gradientForVariable().values()) {
+                        g.muli(scalingFactor);
+                    }
+                }
+                break;
+            case ClipL2PerParamType:
+                for (INDArray g : gradient.gradientForVariable().values()) {
+                    double l2 = g.norm2Number().doubleValue();
+                    if (l2 > threshold) {
+                        double scalingFactor = l2 / threshold;
+                        g.divi(scalingFactor);
+                    }
+                }
+                break;
+            default:
+                throw new RuntimeException(
+                        "Unknown (or not implemented) gradient normalization strategy: " + normalization);
+        }
     }
 }

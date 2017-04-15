@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.graph;
 
+import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -91,6 +92,7 @@ public class ComputationGraph implements Serializable, Model {
     protected boolean initCalled = false;
     protected transient Solver solver; //Used to call optimizers during backprop
     protected INDArray flattenedParams; //Params for all layers are a view/subset of this array
+    @Getter
     protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
     protected Gradient gradient;
     protected double score;
@@ -998,6 +1000,8 @@ public class ComputationGraph implements Serializable, Model {
      * (a) working out what order to do forward pass,
      * (b) what order to do backprop (i.e., reverse of this)
      * (c) order to flatten parameters (and gradients)
+     *
+     * Specifically, gradients/params/forward pass are executed on vertex[topologicalSortOrder[i]], for i=0..nVertices-1
      */
     public int[] topologicalSortOrder() {
         if (topologicalOrder != null)
