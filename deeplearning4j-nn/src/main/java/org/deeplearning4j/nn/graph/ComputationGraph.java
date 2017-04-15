@@ -103,6 +103,8 @@ public class ComputationGraph implements Serializable, Model {
 
     protected final static MemoryWorkspace dummy = new DummyWorkspace();
 
+    protected ThreadLocal<Long> lastEtlTime;
+
     /**
      * All GraphVertex objects in the network.
      */
@@ -151,6 +153,11 @@ public class ComputationGraph implements Serializable, Model {
         this.inputs = new INDArray[numInputArrays];
         this.labels = new INDArray[numOutputArrays];
         this.defaultConfiguration = configuration.getDefaultConfiguration();
+    }
+
+    public long getLastEtlTime() {
+        Long time = lastEtlTime.get();
+        return time == null ? 0L : time;
     }
 
     public ComputationGraphConfiguration getConfiguration() {
@@ -750,7 +757,12 @@ public class ComputationGraph implements Serializable, Model {
         if (configuration.isBackprop()) {
             update(TaskUtils.buildTask(dataSetIterator));
             while (dataSetIterator.hasNext()) {
+                long time1 = System.currentTimeMillis();
                 DataSet next = dataSetIterator.next();
+                long time2 = System.currentTimeMillis();
+
+                lastEtlTime.set((time2 - time1));
+
                 if (next.getFeatures() == null || next.getLabels() == null)
                     break;
 
@@ -836,7 +848,12 @@ public class ComputationGraph implements Serializable, Model {
 
         if (configuration.isBackprop()) {
             while (multiDataSetIterator.hasNext()) {
+                long time1 = System.currentTimeMillis();
                 MultiDataSet next = multiDataSetIterator.next();
+                long time2 = System.currentTimeMillis();
+
+                lastEtlTime.set((time2 - time1));
+
                 if (next.getFeatures() == null || next.getLabels() == null)
                     break;
 

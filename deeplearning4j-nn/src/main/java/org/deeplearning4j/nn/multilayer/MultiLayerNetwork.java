@@ -100,6 +100,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected INDArray flattenedParams; //Params for all layers are a view/subset of this array
     protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
 
+    protected ThreadLocal<Long> lastEtlTime;
+
     /*
       Binary drop connect mask
      */
@@ -117,6 +119,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public MultiLayerNetwork(MultiLayerConfiguration conf) {
         this.layerWiseConfigurations = conf;
         this.defaultConfiguration = conf.getConf(0).clone();
+    }
+
+    public long getLastEtlTime() {
+        Long time = lastEtlTime.get();
+        return time == null ? 0L : time;
     }
 
     /**
@@ -1023,7 +1030,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 iter.reset();
             }
             while (iter.hasNext()) {
+                long time1 = System.currentTimeMillis();
                 DataSet next = iter.next();
+                long time2 = System.currentTimeMillis();
+
+                lastEtlTime.set((time2 - time1));
+
                 if (next.getFeatureMatrix() == null || next.getLabels() == null)
                     break;
 
