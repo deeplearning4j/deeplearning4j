@@ -2,7 +2,6 @@ package org.nd4j.autodiff.graph;
 
 import org.junit.Test;
 import org.nd4j.autodiff.graph.api.*;
-import org.nd4j.autodiff.graph.iterator.RandomWalkIterator;
 
 import java.util.HashSet;
 import java.util.List;
@@ -63,49 +62,5 @@ public class TestGraph {
         }
     }
 
-
-    @Test
-    public void testRandomWalkIterator() {
-        Graph<String, String> graph = new Graph<>(false);
-
-        for (int i = 0; i < 10; i++) {
-            //Add some undirected edges
-            String str = i + "--" + (i + 1) % 10;
-            graph.addVertex(new Vertex<>(i,str));
-            Edge<String> edge = new Edge<>(i, (i + 1) % 10, str, false);
-            graph.addEdge(edge);
-        }
-
-        assertEquals(10, graph.numVertices());
-
-        int walkLength = 4;
-        RandomWalkIterator<String> iter =
-                        new RandomWalkIterator<>(graph, walkLength, 1235, NoEdgeHandling.EXCEPTION_ON_DISCONNECTED);
-
-        int count = 0;
-        Set<Integer> startIdxSet = new HashSet<>();
-        while (iter.hasNext()) {
-            count++;
-            IVertexSequence<String> sequence = iter.next();
-            int seqCount = 1;
-            int first = sequence.next().vertexID();
-            int previous = first;
-            while (sequence.hasNext()) {
-                //Possible next vertices for this particular graph: (previous+1)%10 or (previous-1+10)%10
-                int left = (previous - 1 + 10) % 10;
-                int right = (previous + 1) % 10;
-                int current = sequence.next().vertexID();
-                assertTrue("expected: " + left + " or " + right + ", got " + current,
-                                current == left || current == right);
-                seqCount++;
-                previous = current;
-            }
-            assertEquals(seqCount, walkLength + 1); //walk of 0 -> 1 element, walk of 2 -> 3 elements etc
-            assertFalse(startIdxSet.contains(first)); //Expect to see each node exactly once
-            startIdxSet.add(first);
-        }
-        assertEquals(10, count); //Expect exactly 10 starting nodes
-        assertEquals(10, startIdxSet.size());
-    }
 
 }

@@ -1,26 +1,20 @@
 package org.nd4j.autodiff.graph;
 
-import guru.nidi.graphviz.attribute.Color;
-import guru.nidi.graphviz.attribute.Style;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.model.Label;
 import lombok.Data;
-import org.apache.commons.collections4.set.ListOrderedSet;
 import org.nd4j.autodiff.graph.api.BaseGraph;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.IGraph;
 import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.graph.exception.NoEdgesException;
-import org.nd4j.autodiff.graph.vertexfactory.VertexFactory;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 
 import java.io.File;
-import java.io.IOError;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.*;
 
 import static guru.nidi.graphviz.model.Factory.graph;
@@ -34,7 +28,7 @@ import static guru.nidi.graphviz.model.Link.to;
  * multiple edges between any two adjacent nodes. If multiple edges are required (such that two or more distinct edges
  * between vertices X and Y exist simultaneously) then {@code allowMultipleEdges} should be set to {@code true}.<br>
  * As per {@link IGraph}, this graph representation can have arbitrary objects attached<br>
- * Vertices are initialized either directly via list, or via a {@link VertexFactory}. Edges are added using one of the
+ * Vertices are initialized either directly via list. Edges are added using one of the
  * addEdge methods.
  * @param <V> Type parameter for vertices (type of objects attached to each vertex)
  * @param <E> Type parameter for edges (type of objects attached to each edge)
@@ -46,6 +40,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     private Map<Integer,List<Edge<E>>> edges; //edge[i].get(j).to = k, then edge from i -> k
     private Map<Integer,Vertex<V>> vertices;
     private boolean frozen = false;
+    private Map<Integer,List<Edge<E>>> incomingEdges;
     public Graph() {
         this(true);
     }
@@ -55,6 +50,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         this.allowMultipleEdges = allowMultipleEdges;
         vertices = new TreeMap<>();
         edges = new HashMap<>();
+        this.incomingEdges = new TreeMap<>();
     }
 
     public void addVertex(Vertex<V> vVertex) {
@@ -75,6 +71,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
             this.vertices.put(v.getIdx(),v);
         this.allowMultipleEdges = allowMultipleEdges;
         edges = new HashMap<>();
+        this.incomingEdges = new TreeMap<>();
     }
 
     public Graph(List<Vertex<V>> vertices) {
@@ -142,6 +139,15 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         }
 
         addEdgeHelper(edge, fromList);
+
+        List<Edge<E>> incomingList =  incomingEdges.get(edge.getFrom());
+        if(incomingList == null) {
+            incomingList = new ArrayList<>();
+            incomingEdges.put(edge.getTo(),incomingList);
+        }
+
+        addEdgeHelper(edge, incomingList);
+
         if (edge.isDirected())
             return;
 
@@ -154,6 +160,9 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         }
 
         addEdgeHelper(edge, toList);
+
+
+
     }
 
     @Override
@@ -174,9 +183,9 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     @Override
     public int getVertexInDegree(int vertex) {
         int ret = 0;
-        if(!edges.containsKey(vertex))
+        if(!incomingEdges.containsKey(vertex))
             return 0;
-        for(Edge<E> edge : edges.get(vertex)) {
+        for(Edge<E> edge : incomingEdges.get(vertex)) {
             if(edge.getTo() == vertex)
                 ret++;
         }

@@ -14,5 +14,7 @@ public class OpExecAction implements Serializable {
     private OpState opState;
     private NDArrayInformation[] inputs;
     private NDArrayInformation output;
+    private int[] inputsIds;
+    private int outputId;
 
 }

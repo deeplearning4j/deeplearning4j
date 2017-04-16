@@ -758,48 +758,66 @@ public class TensorGrad {
     }
 
 
+    private INDArray getX(OpExecAction opExecAction) {
+        return variables().get(opExecAction.getInputsIds()[0]).getArr();
+    }
+
+    private INDArray getY(OpExecAction opExecAction) {
+        if(opExecAction.getInputsIds().length > 1)
+            return variables().get(opExecAction.getInputsIds()[1]).getArr();
+        return null;
+    }
+
+    private INDArray getZ(OpExecAction opExecAction) {
+        return variables().get(opExecAction.getOutputId()).getArr();
+    }
+
+
     public Op createOp(OpState.OpType opType,OpExecAction opExecAction) {
         OpState opState = opExecAction.getOpState();
         switch (opType) {
             case SCALAR_TRANSFORM:
-                return Nd4j.getOpFactory().createTransform(
+                return Nd4j.getOpFactory().createScalarTransform(
                         opState.getOpName(),
-                        null,
-                        null,
-                        null,
-                        opState.getExtraArgs());
+                        getX(opExecAction),
+                        getY(opExecAction),
+                        getZ(opExecAction),
+                        opState.getExtraArgs(),
+                        opState.getScalarValue().doubleValue());
             case ACCUMULATION:
                 return Nd4j.getOpFactory().createAccum(
                         opState.getOpName(),
-                        null,
-                        null,
-                        null,
+                        getX(opExecAction),
+                        getY(opExecAction),
+                        getZ(opExecAction),
                         opState.getExtraArgs());
             case TRANSFORM:
                 return Nd4j.getOpFactory().createTransform(opState.getOpName(),
-                        null,
-                        null,
-                        null,
+                        getX(opExecAction),
+                        getY(opExecAction),
+                        getZ(opExecAction),
                         opState.getExtraArgs());
             case BROADCAST:
                 return Nd4j.getOpFactory().createBroadcastOp(
                         opState.getOpName(),
-                        null,
-                        null,
-                        null,
+                        getX(opExecAction),
+                        getY(opExecAction),
+                        getZ(opExecAction),
                         opState.getExtraArgs());
 
             case INDEX_ACCUMULATION:
                 return Nd4j.getOpFactory().createIndexAccum(
                         opState.getOpName(),
-                        null,
-                        null,
-                        null, opState.getExtraArgs());
+                        getX(opExecAction),
+                        getY(opExecAction),
+                        getZ(opExecAction),
+                        opState.getExtraArgs());
             case AGGREGATE: break;
         }
 
         throw new IllegalStateException("");
     }
+
 
 
 }
