@@ -4,6 +4,7 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
+import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.linalg.api.ops.Op;
 
@@ -26,18 +27,46 @@ public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
 
 
 
-    public List<OpState> getOpOrder() {
+    public List<OpExecAction> getOpOrder() {
         int[] order = topologicalSort();
-        List<OpState> ret = new ArrayList<>();
+        List<OpExecAction> ret = new ArrayList<>();
+        //iterate over op execution order skipping
+        // nodes that are only inputs
+        //the goal is to get all of the needed op executions
         for(int i = 0; i < order.length; i++) {
+            //skip vertices that are only inputs
+            if(getVertexInDegree(i) < 1) {
+                continue;
+            }
+
+            int numInputs = getVertexDegree(i);
+            int inputsCount = 0;
+            NDArrayInformation[] inputs = new NDArrayInformation[numInputs];
+            List<Edge<OpState>> inputOpStates = getEdges().get(i);
+            //get the inputs for this this output array
+            for(Edge<OpState> edge : inputOpStates) {
+                if(edge.getTo() == i) {
+                    inputs[inputsCount++] = getInformationFor(edge.getFrom());
+                }
+            }
+
             List<Edge<OpState>> edges = getEdgesOut(i);
             for(Edge<OpState> opStateEdge : edges) {
-                ret.add(opStateEdge.getValue());
+                ret.add(OpExecAction.builder()
+                        .output(opStateEdge.getValue().getResult())
+                        .opState(opStateEdge.getValue())
+                        .inputs(inputs)
+                        .build());
             }
+
 
         }
 
         return ret;
+    }
+
+    public NDArrayInformation getInformationFor(int vertex) {
+        return getVertex(vertex).getValue();
     }
 
 
