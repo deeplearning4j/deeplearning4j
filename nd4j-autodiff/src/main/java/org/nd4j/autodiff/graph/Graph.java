@@ -172,6 +172,21 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     }
 
     @Override
+    public int getVertexInDegree(int vertex) {
+        int ret = 0;
+        if(!edges.containsKey(vertex))
+            return 0;
+        for(Edge<E> edge : edges.get(vertex)) {
+            if(edge.getTo() == vertex)
+                ret++;
+        }
+
+        return ret;
+    }
+
+
+
+    @Override
     public Vertex<V> getRandomConnectedVertex(int vertex, Random rng) throws NoEdgesException {
         if (vertex < 0 || vertex >= vertices.size())
             throw new IllegalArgumentException("Invalid vertex index: " + vertex);

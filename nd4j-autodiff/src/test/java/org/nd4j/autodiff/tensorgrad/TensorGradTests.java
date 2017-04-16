@@ -1,11 +1,14 @@
 package org.nd4j.autodiff.tensorgrad;
 
 import org.junit.Test;
+import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.impl.TensorGradVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -24,6 +27,10 @@ public class TensorGradTests {
         assertEquals(2,tensorGrad.graph().numVertices());
         assertEquals(1,tensorGrad.graph().getEdges().size());
         assertArrayEquals(arr.shape(),sigmoid.getShape());
+        assertArrayEquals(new int[]{0,1},tensorGrad.graph().topologicalSort());
+        assertEquals(1,tensorGrad.graph().getOpOrder().size());
+        OpState opState = tensorGrad.graph().getOpOrder().get(0);
+        assertEquals("sigmoid",opState.getOpName());
 
     }
 
@@ -37,6 +44,7 @@ public class TensorGradTests {
         assertEquals(2,tensorGrad.graph().numVertices());
         assertEquals(1,tensorGrad.graph().getEdges().size());
         assertArrayEquals(arr.shape(),result.getShape());
+        assertArrayEquals(new int[]{0,1},tensorGrad.graph().topologicalSort());
 
 
     }
