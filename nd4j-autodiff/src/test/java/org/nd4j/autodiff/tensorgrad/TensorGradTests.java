@@ -29,8 +29,9 @@ public class TensorGradTests {
         assertArrayEquals(arr.shape(),sigmoid.getShape());
         assertArrayEquals(new int[]{0,1},tensorGrad.graph().topologicalSort());
         assertEquals(1,tensorGrad.graph().getOpOrder().size());
-        OpState opState = tensorGrad.graph().getOpOrder().get(0);
+        OpState opState = tensorGrad.graph().getOpOrder().get(0).getOpState();
         assertEquals("sigmoid",opState.getOpName());
+        tensorGrad.allocate();
 
     }
 

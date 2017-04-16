@@ -41,7 +41,8 @@ public class TensorGradVariable {
     }
 
     public void allocate() {
-        arr = Nd4j.create(getShape());
+        if(arr == null)
+            arr = Nd4j.createUninitialized(getShape());
     }
 
 

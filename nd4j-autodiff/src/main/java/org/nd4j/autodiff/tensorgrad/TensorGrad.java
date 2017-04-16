@@ -6,6 +6,7 @@ import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
+import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.impl.TensorGradVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -51,6 +52,11 @@ public class TensorGrad {
         return ret;
     }
 
+    public void allocate() {
+        for(TensorGradVariable variable : variables()) {
+            variable.allocate();
+        }
+    }
 
     public List<TensorGradVariable> variables() {
         return tensorGradVariables;
@@ -752,7 +758,8 @@ public class TensorGrad {
     }
 
 
-    public Op createOp(OpState.OpType opType,OpState opState) {
+    public Op createOp(OpState.OpType opType,OpExecAction opExecAction) {
+        OpState opState = opExecAction.getOpState();
         switch (opType) {
             case SCALAR_TRANSFORM:
                 return Nd4j.getOpFactory().createTransform(
