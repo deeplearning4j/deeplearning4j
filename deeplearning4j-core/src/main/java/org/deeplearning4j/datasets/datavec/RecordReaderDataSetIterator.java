@@ -74,8 +74,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
 
     private static final int NUM_CORES = Runtime.getRuntime().availableProcessors();
-    private static final int numThreads = NUM_CORES * 2;
-    private ExecutorService taskExecutor = Executors.newFixedThreadPool(numThreads);
+    private ExecutorService taskExecutor = Executors.newFixedThreadPool( NUM_CORES==1 ? NUM_CORES : NUM_CORES-1 );
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize) {
         this(recordReader, converter, batchSize, -1,
@@ -230,8 +229,12 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         batchNum++;
 
         // convert arrays to return types
-        final List<DataSet> dataSets = Arrays.asList(dataSetArray);
-        final List<RecordMetaData> meta = (collectMetaData ? Arrays.asList(metaArray) : null);
+        final List<DataSet> dataSets = new ArrayList<>(Arrays.asList(dataSetArray));
+        final List<RecordMetaData> meta = (collectMetaData ? new ArrayList<>(Arrays.asList(metaArray)) : null);
+
+        // fix for imbalanced batches // TODO: does this impact performance?
+        dataSets.removeAll(Collections.singleton(null));
+        if(meta != null) meta.removeAll(Collections.singleton(null));
 
         if (dataSets.isEmpty()) {
             return null;
