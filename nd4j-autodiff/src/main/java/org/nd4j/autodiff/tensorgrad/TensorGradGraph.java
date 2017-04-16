@@ -2,11 +2,9 @@ package org.nd4j.autodiff.tensorgrad;
 
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.graph.api.Edge;
-import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.linalg.api.ops.Op;
 
 import java.util.*;
 
@@ -53,7 +51,7 @@ public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
                 }
             }
 
-            //add edges reflecting the input states
+            //add edges
             for(Edge<OpState> opStateEdge : inputOpStates) {
                 ret.add(OpExecAction.builder()
                         .output(opStateEdge.getValue().getResult())

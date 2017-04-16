@@ -23,7 +23,7 @@ public class TensorGradTests {
     @Test
     public void testSigmoid() {
         TensorGrad tensorGrad = TensorGrad.create();
-        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1,4,4));
+        INDArray arr = Nd4j.linspace(1,4,4);
         TensorGradVariable x = tensorGrad.var("x",arr);
         TensorGradVariable sigmoid = tensorGrad.sigmoid(x);
         assertEquals("sigmoid(x)",sigmoid.getVarName());
@@ -38,6 +38,8 @@ public class TensorGradTests {
         tensorGrad.allocate();
         Op op = tensorGrad.createOp(OpState.OpType.TRANSFORM,tensorGrad.graph().getOpOrder().get(0));
         assertTrue(op instanceof Sigmoid);
+        Nd4j.getExecutioner().exec(op);
+        assertEquals(Transforms.sigmoid(Nd4j.linspace(1,4,4)),op.z());
 
     }
 
