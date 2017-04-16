@@ -48,6 +48,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
             isInit.set(true);
 
             log.info("Allocating [{}] workspace on device_{}, {} bytes...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), currentSize.get());
+            Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
+
             Pointer ptr = memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, false);
             if (ptr == null)
                 throw new ND4JIllegalStateException("Can't allocate memory for workspace");
@@ -122,7 +124,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
                     return alloc(requiredMemory, kind, type, initialize);
                 }
 
-                //log.info("Workspace [{}]: spilled DEVICE array of {} bytes, capacity of {} elements", id, requiredMemory, numElements);
+                //log.info("Workspace [{}] device_{}: spilled DEVICE array of {} bytes, capacity of {} elements", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory, numElements);
+                //Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
 
                 AllocationShape shape = new AllocationShape(requiredMemory / Nd4j.sizeOfDataType(type), Nd4j.sizeOfDataType(type), type);
 
@@ -191,6 +194,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
     @Override
     protected void clearExternalAllocations() {
+        log.info("Workspace [{}]: clearing external allocations...", id);
         for (PointersPair pair : externalAllocations) {
             if (pair.getHostPointer() != null)
                 NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pair.getHostPointer());
@@ -198,6 +202,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
             if (pair.getDevicePointer() != null)
                 NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getDevicePointer(), null);
         }
+
+        spilledAllocations.set(0);
     }
 
     @Override

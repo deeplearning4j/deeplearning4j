@@ -99,6 +99,10 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         init();
     }
 
+    public long getSpilledSize() {
+        return spilledAllocations.get();
+    }
+
     /**
      * This method returns parent Workspace, if any. Null if there's none.
      *
@@ -301,8 +305,17 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         if (cycleAllocations.get() > maxCycle.get())
             maxCycle.set(cycleAllocations.get());
 
-        if (currentSize.get() == 0 && workspaceConfiguration.getPolicyLearning() == LearningPolicy.FIRST_LOOP && maxCycle.get() > 0)
+        if (currentSize.get() == 0 && workspaceConfiguration.getPolicyLearning() == LearningPolicy.FIRST_LOOP && maxCycle.get() > 0) {
+            log.info("Delayed workspace {}, device_{} initialization starts...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+            if (externalAllocations.size() > 0) {
+                clearExternalAllocations();
+                externalAllocations.clear();
+            }
+
             initializeWorkspace();
+            hostOffset.set(0);
+            deviceOffset.set(0);
+        }
 
         lastCycleAllocations.set(cycleAllocations.get());
 
@@ -356,8 +369,10 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             //log.info("Resetting workspace at the end of loop... {} bytes ", hostOffset.get());
         }
 
-        clearExternalAllocations();
-        externalAllocations.clear();
+        if (externalAllocations.size() > 0) {
+            clearExternalAllocations();
+            externalAllocations.clear();
+        }
 
         cycleAllocations.set(0);
         disabledCounter.set(0);

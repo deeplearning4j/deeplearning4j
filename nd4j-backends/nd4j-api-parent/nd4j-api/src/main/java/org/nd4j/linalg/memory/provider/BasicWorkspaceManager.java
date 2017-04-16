@@ -215,4 +215,17 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
             }
         }
     }
+
+
+    public void printAllocationStatisticsForCurrentThread() {
+        ensureThreadExistense();
+        Map<String, MemoryWorkspace> map = backingMap.get();
+        log.info("Workspace statistics: ---------------------------------");
+        for (String key : map.keySet()) {
+            log.info("Workspace: {}", key);
+            log.info("Allocated amount: {} bytes", ((Nd4jWorkspace)map.get(key)).getCurrentSize());
+            log.info("External (spilled) amount: {} bytes", ((Nd4jWorkspace)map.get(key)).getSpilledSize());
+            System.out.println();
+        }
+    }
 }

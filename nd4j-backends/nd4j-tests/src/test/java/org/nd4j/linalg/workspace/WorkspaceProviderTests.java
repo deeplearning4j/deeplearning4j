@@ -44,6 +44,16 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             .policyAllocation(AllocationPolicy.STRICT)
             .build();
 
+
+    private static final WorkspaceConfiguration firstConfiguration = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.1)
+            .policySpill(SpillPolicy.EXTERNAL)
+            .policyLearning(LearningPolicy.FIRST_LOOP)
+            .policyMirroring(MirroringPolicy.FULL)
+            .policyAllocation(AllocationPolicy.STRICT)
+            .build();
+
     DataBuffer.Type initialType;
 
     public WorkspaceProviderTests(Nd4jBackend backend) {
@@ -237,6 +247,31 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         }
 
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
+
+    @Test
+    public void testNestedWorkspaces6() throws Exception {
+
+        try(Nd4jWorkspace wsExternal = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(firstConfiguration,"External")) {
+            Nd4j.create(10);
+
+            try(Nd4jWorkspace wsFeedForward = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(firstConfiguration,"FeedForward")) {
+                Nd4j.create(10);
+
+
+                try (Nd4jWorkspace borrowed = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("External").notifyScopeBorrowed()) {
+                    Nd4j.create(10);
+                }
+
+                try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    Nd4j.create(10);
+                }
+            }
+
+
+            assertEquals(0, wsExternal.getCurrentSize());
+            log.info("------");
+        }
     }
 
     @Test

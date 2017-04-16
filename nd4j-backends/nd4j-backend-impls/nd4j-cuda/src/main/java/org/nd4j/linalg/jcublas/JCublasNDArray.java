@@ -515,6 +515,9 @@ public class JCublasNDArray extends BaseNDArray {
         if (current == target)
             return this;
 
+        if (this.data.getParentWorkspace() == target)
+            return this;
+
         Nd4j.getMemoryManager().setCurrentWorkspace(target);
         INDArray copy = null;
         if (!this.isView()) {

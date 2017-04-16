@@ -5052,6 +5052,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         MemoryWorkspace parentWorkspace = workspace.getParentWorkspace();
+
+        if (this.data.getParentWorkspace() == parentWorkspace)
+            return this;
+
         // if there's no parent ws - just detach
         if (parentWorkspace == null)
             return this.detach();
@@ -5101,6 +5105,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         MemoryWorkspace target = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(id);
 
         if (current == target)
+            return this;
+
+        if (this.data.getParentWorkspace() == target)
             return this;
 
         Nd4j.getMemoryManager().setCurrentWorkspace(target);
