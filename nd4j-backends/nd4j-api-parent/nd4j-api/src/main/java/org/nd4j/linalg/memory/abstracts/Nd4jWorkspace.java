@@ -312,6 +312,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
         Nd4j.getMemoryManager().setCurrentWorkspace(previousWorkspace);
         isOpen.set(false);
+        isDebug.set(false);
         /*
             Basically all we want here, is:
             1) memset primary page(s)
