@@ -27,10 +27,12 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
@@ -198,7 +200,7 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
                         zData, cudnnContext.deltaTensorDesc, epsData, cudnnContext.srcTensorDesc, srcData, beta,
                         cudnnContext.dstTensorDesc, dstData));
 
-        allocator.registerAction(context, input, epsilon, reduced, outEpsilon);
+        allocator.registerAction(context,outEpsilon, input, epsilon, reduced);
 
         return new Pair<>(retGradient, outEpsilon);
     }
@@ -247,7 +249,10 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
 
-        reduced = Nd4j.createUninitialized(new int[] {miniBatch, inDepth, outH, outW}, 'c');
+        try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
+            reduced = Nd4j.createUninitialized(new int[]{miniBatch, inDepth, outH, outW}, 'c');
+        }
+
         int[] dstStride = reduced.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, inDepth, outH, outW,
                         dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
@@ -261,7 +266,7 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
         checkCudnn(cudnnPoolingForward(cudnnContext, cudnnContext.poolingDesc, alpha, cudnnContext.srcTensorDesc,
                         srcData, beta, cudnnContext.dstTensorDesc, dstData));
 
-        allocator.registerAction(context, input, reduced);
+        allocator.registerAction(context, reduced, input);
 
         return reduced;
     }

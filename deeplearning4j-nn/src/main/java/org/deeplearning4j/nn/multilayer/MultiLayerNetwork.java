@@ -1172,7 +1172,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         // Calculate gradients for previous layers & drops output layer in count
         for (int j = layerFrom; j >= 0; j--) {
-            //log.info("BP on layer {}", j);
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
                 if (j == 1)
                     ws.enableDebug(false);
