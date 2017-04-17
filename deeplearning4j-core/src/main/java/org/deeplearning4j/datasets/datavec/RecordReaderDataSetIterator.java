@@ -170,56 +170,62 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             return last;
         }
 
+        final ArrayList<List<Writable>> writeables = new ArrayList<>();
+        final ArrayList<Record> records = new ArrayList<>();
+
+        // below we want IO from record reader to be sequential (for UX)
+        // however, conversion is agnostic and we then parallelize further operations
+        // it's up to record readers to implement prefetch to speed up ops
+        for(int i = 0; i < num; i++) {
+            if(hasNext()) {
+                if (recordReader instanceof SequenceRecordReader) {
+                    if (sequenceIter == null || !sequenceIter.hasNext()) {
+                        List<List<Writable>> sequenceRecord = ((SequenceRecordReader) recordReader).sequenceRecord();
+                        sequenceIter = sequenceRecord.iterator();
+                    }
+                    writeables.add(sequenceIter.next());
+
+                } else {
+                    if (collectMetaData) {
+                        records.add(recordReader.nextRecord());
+                    } else {
+                        writeables.add(recordReader.next());
+                    }
+                }
+            }
+        }
+
+
         final DataSet[] dataSetArray = new DataSet[num];
         final RecordMetaData[] metaArray = new RecordMetaData[num];
 
-        // here we parallelize our for loop to speed up underlying bottlenecks such as NativeImageLoader
+        // here we parallelize our for loop to speed up underlying bottlenecks in array conversion
         // num is passed to specify how many loops will be run
         Parallel.For(
             num,
             taskExecutor,
             new Parallel.Operation() {
                 public void perform(int i) {
-                    if (!hasNext()) {
-                        // do nothing
-                        // TODO: modify list capacity?
+                    if (recordReader instanceof SequenceRecordReader) {
+                        dataSetArray[i] = getDataSet(writeables.get(i));
                     } else {
-                        if (recordReader instanceof SequenceRecordReader) {
-                            if (sequenceIter == null || !sequenceIter.hasNext()) {
-                                List<List<Writable>> sequenceRecord = ((SequenceRecordReader) recordReader).sequenceRecord();
-                                sequenceIter = sequenceRecord.iterator();
-                            }
-
-                            try {
-                                List<Writable> record = sequenceIter.next();
-                                DataSet d = getDataSet(record);
-                                //account for transform process
-                                if (d != null)
-                                    dataSetArray[i] = d;
-//                                    dataSets.add(i, d);
-                            } catch (Exception e) {
-                                log.warn("Unable to get dataset ...skipping", e);
-                            }
-                        } else {
-                            if (collectMetaData) {
-                                Record record = recordReader.nextRecord();
-                                DataSet d = getDataSet(record.getRecord());
-                                if (d != null) {
-                                    dataSetArray[i] = d;
-                                    metaArray[i] = record.getMetaData();
+                        if (collectMetaData) {
+                            DataSet d = getDataSet(records.get(i));
+                            if (d != null) {
+                                dataSetArray[i] = d;
+                                metaArray[i] = record.getMetaData();
 //                                    dataSets.add(i, d);
 //                                    meta.add(i, record.getMetaData());
-                                }
-                            } else {
-                                try {
-                                    List<Writable> record = recordReader.next();
-                                    DataSet d = getDataSet(record);
-                                    if (d != null)
-                                        dataSetArray[i] = d;
+                            }
+                        } else {
+                            try {
+                                List<Writable> record = recordReader.next();
+                                DataSet d = getDataSet(record);
+                                if (d != null)
+                                    dataSetArray[i] = d;
 //                                        dataSets.add(i, d);
-                                } catch (Exception e) {
-                                    log.warn("Unable to get dataset ...skipping", e);
-                                }
+                            } catch (Exception e) {
+                                log.warn("Unable to get dataset ...skipping", e);
                             }
                         }
                     }
@@ -492,4 +498,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             ret.setLabelNames(recordReader.getLabels());
         return ret;
     }
+
+    public void shutdown() { taskExecutor.shutdown(); }
 }
