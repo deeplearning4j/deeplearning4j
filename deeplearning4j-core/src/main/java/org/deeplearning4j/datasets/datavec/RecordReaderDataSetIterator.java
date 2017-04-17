@@ -30,6 +30,7 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
+import org.deeplearning4j.datasets.parallel.Parallel;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -39,10 +40,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -70,6 +71,10 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     @Getter
     @Setter
     private boolean collectMetaData = false;
+
+
+    private static final int NUM_CORES = Runtime.getRuntime().availableProcessors();
+    private ExecutorService taskExecutor = Executors.newFixedThreadPool( NUM_CORES==1 ? NUM_CORES : NUM_CORES-1 );
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize) {
         this(recordReader, converter, batchSize, -1,
@@ -165,47 +170,77 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             return last;
         }
 
-        List<DataSet> dataSets = new ArrayList<>();
-        List<RecordMetaData> meta = (collectMetaData ? new ArrayList<RecordMetaData>() : null);
-        for (int i = 0; i < num; i++) {
-            if (!hasNext())
-                break;
-            if (recordReader instanceof SequenceRecordReader) {
-                if (sequenceIter == null || !sequenceIter.hasNext()) {
-                    List<List<Writable>> sequenceRecord = ((SequenceRecordReader) recordReader).sequenceRecord();
-                    sequenceIter = sequenceRecord.iterator();
-                }
+        final ArrayList<List<Writable>> writeables = new ArrayList<>();
+        final ArrayList<Record> records = new ArrayList<>();
 
-                try {
-                    List<Writable> record = sequenceIter.next();
-                    DataSet d = getDataSet(record);
-                    //account for transform process
-                    if (d != null)
-                        dataSets.add(d);
-                }catch(Exception e) {
-                    log.warn("Unable to get dataset ...skipping",e);
-                }
-            } else {
-                if (collectMetaData) {
-                    Record record = recordReader.nextRecord();
-                    DataSet d = getDataSet(record.getRecord());
-                    if(d != null) {
-                        dataSets.add(d);
-                        meta.add(record.getMetaData());
+        // below we want IO from record reader to be sequential (for UX)
+        // however, conversion is agnostic and we then parallelize further operations
+        // it's up to record readers to implement prefetch to speed up ops
+        for(int i = 0; i < num; i++) {
+            if(hasNext()) {
+                if (recordReader instanceof SequenceRecordReader) {
+                    if (sequenceIter == null || !sequenceIter.hasNext()) {
+                        List<List<Writable>> sequenceRecord = ((SequenceRecordReader) recordReader).sequenceRecord();
+                        sequenceIter = sequenceRecord.iterator();
                     }
+                    writeables.add(sequenceIter.next());
+
                 } else {
-                   try {
-                       List<Writable> record = recordReader.next();
-                       DataSet d = getDataSet(record);
-                       if (d != null)
-                           dataSets.add(d);
-                   }catch(Exception e) {
-                       log.warn("Unable to get dataset ...skipping",e);
-                   }
+                    if (collectMetaData) {
+                        records.add(recordReader.nextRecord());
+                    } else {
+                        writeables.add(recordReader.next());
+                    }
                 }
             }
         }
+
+
+        final DataSet[] dataSetArray = new DataSet[num];
+        final RecordMetaData[] metaArray = new RecordMetaData[num];
+
+        // here we parallelize our for loop to speed up underlying bottlenecks in array conversion
+        // num is passed to specify how many loops will be run
+        Parallel.For(
+            num,
+            taskExecutor,
+            new Parallel.Operation() {
+                public void perform(int i) {
+                    if (recordReader instanceof SequenceRecordReader) {
+                        dataSetArray[i] = getDataSet(writeables.get(i));
+                    } else {
+                        if (collectMetaData) {
+                            DataSet d = getDataSet(records.get(i));
+                            if (d != null) {
+                                dataSetArray[i] = d;
+                                metaArray[i] = record.getMetaData();
+//                                    dataSets.add(i, d);
+//                                    meta.add(i, record.getMetaData());
+                            }
+                        } else {
+                            try {
+                                List<Writable> record = recordReader.next();
+                                DataSet d = getDataSet(record);
+                                if (d != null)
+                                    dataSetArray[i] = d;
+//                                        dataSets.add(i, d);
+                            } catch (Exception e) {
+                                log.warn("Unable to get dataset ...skipping", e);
+                            }
+                        }
+                    }
+                }
+            }
+        );
         batchNum++;
+
+        // convert arrays to return types
+        final List<DataSet> dataSets = new ArrayList<>(Arrays.asList(dataSetArray));
+        final List<RecordMetaData> meta = (collectMetaData ? new ArrayList<>(Arrays.asList(metaArray)) : null);
+
+        // fix for imbalanced batches // TODO: does this impact performance?
+        dataSets.removeAll(Collections.singleton(null));
+        if(meta != null) meta.removeAll(Collections.singleton(null));
 
         if (dataSets.isEmpty()) {
             return null;
@@ -463,4 +498,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             ret.setLabelNames(recordReader.getLabels());
         return ret;
     }
+
+    public void shutdown() { taskExecutor.shutdown(); }
 }
