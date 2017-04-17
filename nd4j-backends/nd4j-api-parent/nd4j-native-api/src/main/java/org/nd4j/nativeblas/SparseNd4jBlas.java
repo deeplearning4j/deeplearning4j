@@ -8,23 +8,18 @@ public abstract class SparseNd4jBlas implements Blas {
 
     }
 
-    @Override
-    public void setMaxThreads(int num) {
-
-    }
-
-    @Override
-    public int getMaxThreads() {
-        return 0;
-    }
-
-    @Override
-    public int getBlasVendorId() {
-        return 0;
-    }
-
+    /**
+     * Returns the BLAS library vendor
+     *
+     * @return the BLAS library vendor
+     */
     @Override
     public Vendor getBlasVendor() {
-        return null;
+        int vendor = getBlasVendorId();
+        boolean isUnknowVendor = ((vendor > Vendor.values().length - 1) || (vendor <= 0));
+        if (isUnknowVendor) {
+            return Vendor.UNKNOWN;
+        }
+        return Vendor.values()[vendor];
     }
 }
