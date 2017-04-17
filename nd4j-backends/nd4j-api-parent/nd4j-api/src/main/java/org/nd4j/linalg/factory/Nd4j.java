@@ -5912,6 +5912,8 @@ public class Nd4j {
 
             Nd4j.backend = backend;
             updateNd4jContext();
+            props = Nd4jContext.getInstance().getConf();
+
             String otherDtype = System.getProperty(DTYPE, props.get(DTYPE).toString());
             dtype = otherDtype.equals("float") ? DataBuffer.Type.FLOAT
                     : otherDtype.equals("half") ? DataBuffer.Type.HALF : DataBuffer.Type.DOUBLE;
