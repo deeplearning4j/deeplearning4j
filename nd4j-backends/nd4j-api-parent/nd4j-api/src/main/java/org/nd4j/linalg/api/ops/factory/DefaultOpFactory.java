@@ -222,11 +222,16 @@ public class DefaultOpFactory implements OpFactory {
      * @return
      */
     @Override
-    public TransformOp createTransform(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs) {
+    public TransformOp createTransform(String name,
+                                       INDArray x,
+                                       INDArray y,
+                                       INDArray z,
+                                       Object[] extraArgs) {
         TransformOp op = null;
         switch (name) {
             case "relu":
                 op = new RectifedLinear(x, z, 0);
+                break;
             case "abs":
                 op = new Abs(x, z);
                 break;
@@ -320,8 +325,23 @@ public class DefaultOpFactory implements OpFactory {
             case "cube":
                 op = new Cube(x, z);
                 break;
-
+            case "sigmoidderivative":
+                op = new SigmoidDerivative(x,z);
+                break;
+            case "hard_sigmoidderivative":
+                op = new HardSigmoidDerivative(x,z);
+                break;
+            case "hardtanhderivative":
+                op = new HardTanhDerivative(x,z);
+                break;
+            case "tanhderivative":
+                op = new TanhDerivative(x,z);
+                break;
+            case "leakyreluderivative":
+                op = new LeakyReLUDerivative(x,z);
+                break;
         }
+
 
 
         op.setExtraArgs(extraArgs);

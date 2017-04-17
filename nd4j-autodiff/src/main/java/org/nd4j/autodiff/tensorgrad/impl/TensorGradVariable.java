@@ -79,4 +79,10 @@ public class TensorGradVariable {
                 .build();
     }
 
+    @Override
+    public String toString() {
+        return "TensorGradVariable{" +
+                "varName='" + varName + '\'' +
+                '}';
+    }
 }

@@ -9,6 +9,10 @@ import org.nd4j.linalg.api.ops.grid.OpDescriptor;
  * @author raver119@gmail.com
  */
 public interface MetaOp extends GridOp {
+    /**
+     *
+     * @return
+     */
     Op getFirstOp();
 
     Op getSecondOp();

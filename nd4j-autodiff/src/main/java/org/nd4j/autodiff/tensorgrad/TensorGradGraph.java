@@ -25,6 +25,15 @@ public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
 
 
 
+    public TensorGradGraph optimize() {
+        List<OpExecAction> opOrder = getOpOrder();
+
+        for(OpExecAction opExecAction : opOrder) {
+
+        }
+        return this;
+    }
+
     public List<OpExecAction> getOpOrder() {
         int[] order = topologicalSort();
         List<OpExecAction> ret = new ArrayList<>();

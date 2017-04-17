@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.tensorgrad;
 
 import org.junit.Test;
+import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.impl.TensorGradVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -11,6 +12,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -124,6 +126,26 @@ public class TensorGradTests {
         assertEquals(2,tensorGrad.graph().getEdges().size());
         assertArrayEquals(ArrayUtil.getTensorMmulShape(new int[]{2,2,2},new int[]{2,2,2},new int[][]{{0},{1}}),result.getShape());
         assertEquals(32,tensorGrad.numElements());
+    }
+
+    @Test
+    public void testOpExecutionWithAutoDiff() {
+        TensorGrad tensorGrad = TensorGrad.create();
+        tensorGrad.getArrayFactory().toString();
+        INDArray arr = Nd4j.linspace(1,4,4);
+        TensorGradVariable x = tensorGrad.var("x",arr);
+        tensorGrad.toString();
+        TensorGradVariable sigmoid = tensorGrad.sigmoid(x);
+        TensorGradVariable grad = tensorGrad.grad(x,sigmoid);
+        List<OpExecAction> states = tensorGrad.graph().getOpOrder();
+        OpState opState = tensorGrad.graph().getOpOrder().get(0).getOpState();
+        assertEquals("sigmoid",opState.getOpName());
+        tensorGrad.allocate();
+        Op op = tensorGrad.createOp(OpState.OpType.TRANSFORM,tensorGrad.graph().getOpOrder().get(0));
+        assertTrue(op instanceof Sigmoid);
+        Nd4j.getExecutioner().exec(op);
+        assertEquals(Transforms.sigmoid(Nd4j.linspace(1,4,4)),op.z());
+
     }
 
 }

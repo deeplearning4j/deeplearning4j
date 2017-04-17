@@ -1,8 +1,10 @@
 package org.nd4j.autodiff.tensorgrad;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
+import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
@@ -21,6 +23,7 @@ import java.util.List;
  * Created by agibsonccc on 4/9/17.
  */
 @AllArgsConstructor
+@Data
 public class TensorGrad {
     private TensorGradGraph graph = new TensorGradGraph();
     private ArrayFactory arrayFactory = new ArrayFactory(graph);
@@ -80,9 +83,10 @@ public class TensorGrad {
 
 
     public TensorGradVariable grad(TensorGradVariable iX,TensorGradVariable wrt) {
+        DifferentialFunction<ArrayField> arrField = iX.getArrayField().diff(wrt.getArrayField());
         TensorGradVariable ret = TensorGradVariable.builder()
                 .arr(null)
-                .differentialFunction(iX.getArrayField().diff(wrt.getArrayField()))
+                .differentialFunction(arrField)
                 .varName("grad(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
         tensorGradVariables.add(ret);

@@ -17,10 +17,12 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     private X m_x;
     private AbstractIdentityFactory<X> m_factory;
     private String m_name;
-
     private PreEvaluator<X> preEvaluator;
 
-    protected Variable(Graph<NDArrayInformation,OpState> graph,String i_name, X i_v, AbstractIdentityFactory<X> i_factory) {
+    protected Variable(Graph<NDArrayInformation,OpState> graph,
+                       String i_name,
+                       X i_v,
+                       AbstractIdentityFactory<X> i_factory) {
         this(graph,i_name, i_v, i_factory, null);
     }
 
@@ -92,6 +94,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
         if(m_x instanceof ArrayField) {
             ArrayField arrayField = (ArrayField) ret.getM_x();
             addEdge("diff",arrayField.getVertex());
+            ret.setOpState(opState);
 
         }
 
@@ -104,14 +107,16 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
         if(m_x instanceof ArrayField) {
             ArrayField arrayField = (ArrayField) m_x;
             graph.addVertex(newVertex);
-            graph.addEdge(arrayField.getVertex().getIdx(),
-                    newVertex.vertexID(),OpState.builder()
-                            .n(ArrayUtil.prod(arrayField.getInput().getShape()))
-                            .opName(opName)
-                            .id(arrayField.getVertex().getValue().getId() +  "->  " + functionName() + " " +  newVertex.getValue().getId())
-                            .vertexIds(new String[]{String.valueOf(arrayField.getVertex().vertexID()),
-                                    String.valueOf(newVertex.vertexID())})
-                            .opType(OpState.OpType.TRANSFORM).build(),true);
+            OpState opState = OpState.builder()
+                    .n(ArrayUtil.prod(arrayField.getInput().getShape()))
+                    .opName(opName).result(arrayField.getInput())
+                    .id(arrayField.getVertex().getValue().getId() +  "->  " + functionName() + " " +  newVertex.getValue().getId())
+                    .vertexIds(new String[]{String.valueOf(arrayField.getVertex().vertexID()),
+                            String.valueOf(newVertex.vertexID())})
+                    .opType(OpState.OpType.TRANSFORM).build();
+            setOpState(opState);
+            graph.addEdge(arrayField.getVertex().vertexID(),
+                    newVertex.vertexID(),opState,true);
 
         }
     }
