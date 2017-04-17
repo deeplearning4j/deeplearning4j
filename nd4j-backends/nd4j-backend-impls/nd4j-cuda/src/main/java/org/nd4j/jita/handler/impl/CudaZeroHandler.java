@@ -34,6 +34,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
@@ -592,7 +593,8 @@ public class CudaZeroHandler implements MemoryHandler {
 
         Pointer dP = new CudaPointer((point.getPointers().getDevicePointer().address()) + dstOffset);
 
-        nativeOps.memcpyAsync(dP, srcPointer, length, CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream());
+        if (nativeOps.memcpyAsync(dP, srcPointer, length, CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream()) == 0)
+            throw new ND4JIllegalStateException("memcpyAsync failed");
 
         point.tickDeviceWrite();
     }
@@ -617,13 +619,15 @@ public class CudaZeroHandler implements MemoryHandler {
 
         Pointer dP = new CudaPointer((point.getPointers().getHostPointer().address()) + dstOffset);
 
-        nativeOps.memcpyAsync(dP, srcPointer, length, CudaConstants.cudaMemcpyHostToHost, context.getOldStream());
+        if (nativeOps.memcpyAsync(dP, srcPointer, length, CudaConstants.cudaMemcpyHostToHost, context.getOldStream()) == 0)
+            throw new ND4JIllegalStateException("memcpyAsync failed");
 
 
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
             Pointer rDP = new CudaPointer(point.getPointers().getDevicePointer().address() + dstOffset);
 
-            nativeOps.memcpyAsync(rDP, dP, length, CudaConstants.cudaMemcpyHostToDevice, context.getOldStream());
+            if (nativeOps.memcpyAsync(rDP, dP, length, CudaConstants.cudaMemcpyHostToDevice, context.getOldStream()) == 0)
+                throw new ND4JIllegalStateException("memcpyAsync failed");
 
             context.syncOldStream();
         }
@@ -683,8 +687,10 @@ public class CudaZeroHandler implements MemoryHandler {
                     cudaMemcpyKind.cudaMemcpyHostToDevice,
                     context.getOldStream()
             );*/
-            nativeOps.memcpyAsync(dP, sP, srcBuffer.length() * srcBuffer.getElementSize(),
-                            CudaConstants.cudaMemcpyHostToDevice, context.getOldStream());
+            if (nativeOps.memcpyAsync(dP, sP, srcBuffer.length() * srcBuffer.getElementSize(),
+                            CudaConstants.cudaMemcpyHostToDevice, context.getOldStream()) == 0) {
+                throw new ND4JIllegalStateException("memcpyAsync failed");
+            }
         } else {
             sP = new CudaPointer(srcPoint.getPointers().getHostPointer().address());
             /*
@@ -695,8 +701,10 @@ public class CudaZeroHandler implements MemoryHandler {
                     cudaMemcpyKind.cudaMemcpyHostToDevice,
                     context.getOldStream()
             );*/
-            nativeOps.memcpyAsync(dP, sP, srcBuffer.length() * srcBuffer.getElementSize(),
-                            CudaConstants.cudaMemcpyHostToDevice, context.getOldStream());
+            if (nativeOps.memcpyAsync(dP, sP, srcBuffer.length() * srcBuffer.getElementSize(),
+                            CudaConstants.cudaMemcpyHostToDevice, context.getOldStream()) == 0) {
+                throw new ND4JIllegalStateException("memcpyAsync failed");
+            }
         }
 
         if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
@@ -710,8 +718,10 @@ public class CudaZeroHandler implements MemoryHandler {
                     cudaMemcpyKind.cudaMemcpyHostToDevice,
                     context.getOldStream()
             );*/
-            nativeOps.memcpyAsync(rDP, dP, srcBuffer.length() * srcBuffer.getElementSize(),
-                            CudaConstants.cudaMemcpyHostToDevice, context.getOldStream());
+            if (nativeOps.memcpyAsync(rDP, dP, srcBuffer.length() * srcBuffer.getElementSize(),
+                            CudaConstants.cudaMemcpyHostToDevice, context.getOldStream()) == 0) {
+                throw new ND4JIllegalStateException("memcpyAsync failed");
+            }
         }
 
         dstPoint.tickDeviceWrite();
@@ -875,8 +885,10 @@ public class CudaZeroHandler implements MemoryHandler {
                 alloc(AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), false);
 
                 CudaContext context = getCudaContext();
-                nativeOps.memcpyAsync(dstPoint.getDevicePointer(), dstPoint.getHostPointer(),
-                        buffer.length() * buffer.getElementSize(), 1, context.getSpecialStream());
+                if (nativeOps.memcpyAsync(dstPoint.getDevicePointer(), dstPoint.getHostPointer(),
+                        buffer.length() * buffer.getElementSize(), 1, context.getSpecialStream()) == 0)
+                    throw new ND4JIllegalStateException("memcpyAsync failed");
+
                 context.syncSpecialStream();
 
                 // updating host pointer now
@@ -922,8 +934,10 @@ public class CudaZeroHandler implements MemoryHandler {
             //   log.info("Pointer after alloc: {}", dstPoint.getPointers().getDevicePointer().address());
 
             CudaContext context = getCudaContext();
-            nativeOps.memcpyAsync(dstPoint.getDevicePointer(), dstPoint.getHostPointer(),
-                            buffer.length() * buffer.getElementSize(), 1, context.getSpecialStream());
+            if (nativeOps.memcpyAsync(dstPoint.getDevicePointer(), dstPoint.getHostPointer(),
+                            buffer.length() * buffer.getElementSize(), 1, context.getSpecialStream()) == 0)
+                throw new ND4JIllegalStateException("memcpyAsync failed");
+
             context.syncSpecialStream();
 
             dstPoint.tickDeviceRead();
