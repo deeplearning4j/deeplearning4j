@@ -58,6 +58,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
 
             workspace.setDevicePointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.DEVICE, false)));
+
+            log.info("Workspace [{}] initialized successfully", id);
         }
     }
 
@@ -92,12 +94,14 @@ public class CudaWorkspace extends Nd4jWorkspace {
         if (div!= 0)
             requiredMemory += div;
 
-//        log.info("Allocating {} memory from Workspace... reqMem: {} bytes; Type: {}", kind, requiredMemory, type);
 
         if (kind == MemoryKind.DEVICE) {
             if (deviceOffset.get() + requiredMemory <= currentSize.get()) {
 
                 long prevOffset = deviceOffset.getAndAdd(requiredMemory);
+
+                if (isDebug.get())
+                    log.info("Workspace [{}] device_{}: alloc array of {} bytes, capacity of {} elements", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory, numElements);
 
                 PagedPointer ptr = workspace.getDevicePointer().withOffset(prevOffset, numElements);
 
@@ -124,7 +128,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
                     return alloc(requiredMemory, kind, type, initialize);
                 }
 
-                //log.info("Workspace [{}] device_{}: spilled DEVICE array of {} bytes, capacity of {} elements", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory, numElements);
+                if (isDebug.get()) {
+                    log.info("Workspace [{}] device_{}: spilled DEVICE array of {} bytes, capacity of {} elements", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory, numElements);
+                }
                 //Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
 
                 AllocationShape shape = new AllocationShape(requiredMemory / Nd4j.sizeOfDataType(type), Nd4j.sizeOfDataType(type), type);
@@ -194,7 +200,6 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
     @Override
     protected void clearExternalAllocations() {
-        log.info("Workspace [{}]: clearing external allocations...", id);
         for (PointersPair pair : externalAllocations) {
             if (pair.getHostPointer() != null)
                 NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pair.getHostPointer());

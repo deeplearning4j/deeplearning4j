@@ -102,6 +102,20 @@ public interface MemoryWorkspace extends AutoCloseable {
     void toggleWorkspaceUse(boolean isEnabled);
 
     /**
+     * This method returns amount of memory consumed in current cycle, in bytes
+     *
+     * @return
+     */
+    long getThisCycleAllocations();
+
+    /**
+     * This method enabled debugging mode for this workspace
+     *
+     * @param reallyEnable
+     */
+    void enableDebug(boolean reallyEnable);
+
+    /**
      * This method returns amount of memory consumed in last successful cycle, in bytes
      *
      * @return
