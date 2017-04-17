@@ -317,8 +317,8 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         ByteBuffer imageData = image.createBuffer();
 
         for (int i = 0; i < HEIGHT * WIDTH; i++) {
-            imageData.put(3 * i, byteFeature[i + 1 + 2 * height * width]); // blue
-            imageData.put(3 * i + 1, byteFeature[i + 1 + height * width]); // green
+            imageData.put(3 * i, byteFeature[i + 1 + 2 * HEIGHT * WIDTH]); // blue
+            imageData.put(3 * i + 1, byteFeature[i + 1 + HEIGHT * WIDTH]); // green
             imageData.put(3 * i + 2, byteFeature[i + 1]); // red
         }
         //        if (useSpecialPreProcessCifar) {
