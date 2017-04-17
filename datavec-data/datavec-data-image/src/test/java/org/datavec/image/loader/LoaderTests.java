@@ -148,6 +148,26 @@ public class LoaderTests {
         assertEquals(numExamples, data.getLabels().size(0));
     }
 
+    @Test
+    public void testCifarLoaderWithBiggerImage() {
+        boolean train = true;
+        boolean preProcessCifar = false;
+        int row = 128;
+        int col = 128;
+        int channels = 3;
+        int numExamples = 10;
+
+        CifarLoader loader = new CifarLoader(row, col, channels, train, preProcessCifar);
+        DataSet data = loader.next(numExamples);
+        int shape[] = data.getFeatures().shape();
+        assertEquals(shape.length, 4);
+        assertEquals(shape[0], numExamples);
+        assertEquals(shape[1], channels);
+        assertEquals(shape[2], row);
+        assertEquals(shape[2], col);
+
+    }
+
 
     @Ignore // Use when confirming data is getting stored
     @Test
