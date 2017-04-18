@@ -767,6 +767,7 @@ public class ComputationGraph implements Serializable, Model {
                     break;
 
                 try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                    migrate(next);
 
                     boolean hasMaskArrays = next.hasMaskArrays();
                     if (hasMaskArrays) {
@@ -858,6 +859,7 @@ public class ComputationGraph implements Serializable, Model {
                     break;
 
                 try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                    migrate(next);
 
                     if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
                         doTruncatedBPTT(next.getFeatures(), next.getLabels(), next.getFeaturesMaskArrays(),
@@ -887,6 +889,43 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         clearLayersStates();
+    }
+
+    protected void migrate(MultiDataSet ds) {
+        if (ds.getFeatures() != null)
+            for (int i = 0; i < ds.getFeatures().length; i++)
+                if (ds.getFeatures()[i] != null && ds.getFeatures()[i].isAttached())
+                    ds.getFeatures()[i] = ds.getFeatures()[i].migrate();
+
+        if (ds.getFeaturesMaskArrays() != null)
+            for (int i = 0; i < ds.getFeaturesMaskArrays().length; i++)
+                if (ds.getFeaturesMaskArrays()[i] != null && ds.getFeaturesMaskArrays()[i].isAttached())
+                    ds.getFeaturesMaskArrays()[i] = ds.getFeaturesMaskArrays()[i].migrate();
+
+        if (ds.getLabels() != null)
+            for (int i = 0; i < ds.getLabels().length; i++)
+                if (ds.getLabels()[i] != null && ds.getLabels()[i].isAttached())
+                    ds.getLabels()[i] = ds.getLabels()[i].migrate();
+
+        if (ds.getLabelsMaskArrays() != null)
+            for (int i = 0; i < ds.getLabelsMaskArrays().length; i++)
+                if (ds.getLabelsMaskArrays()[i] != null && ds.getLabelsMaskArrays()[i].isAttached())
+                    ds.getLabelsMaskArrays()[i] = ds.getLabelsMaskArrays()[i].migrate();
+
+    }
+
+    protected void migrate(DataSet ds) {
+        if (ds.getFeatures() != null && ds.getFeatures().isAttached())
+            ds.setFeatures(ds.getFeatures().migrate());
+
+        if (ds.getLabels() != null && ds.getLabels().isAttached())
+            ds.setLabels(ds.getLabels().migrate());
+
+        if (ds.getFeaturesMaskArray() != null && ds.getFeaturesMaskArray().isAttached())
+            ds.setFeaturesMaskArray(ds.getFeaturesMaskArray().migrate());
+
+        if (ds.getLabelsMaskArray() != null && ds.getLabelsMaskArray().isAttached())
+            ds.setLabelsMaskArray(ds.getLabelsMaskArray().migrate());
     }
 
     /**
