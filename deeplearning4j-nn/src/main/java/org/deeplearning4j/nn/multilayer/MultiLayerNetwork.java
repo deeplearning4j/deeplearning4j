@@ -1173,7 +1173,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 if (currLayer instanceof FrozenLayer)
                     break;
                 currPair = currLayer.backpropGradient(currPair.getSecond());
-                currPair.setSecond(currPair.getSecond().leverageTo(workspaceExternal));
+                if(currPair.getSecond() != null){
+                    //Epsilons may be null for embedding layer
+                    currPair.setSecond(currPair.getSecond().leverageTo(workspaceExternal));
+                }
 
                 LinkedList<Triple<String, INDArray, Character>> tempList = new LinkedList<>();
                 for (Map.Entry<String, INDArray> entry : currPair.getFirst().gradientForVariable().entrySet()) {

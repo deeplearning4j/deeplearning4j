@@ -1126,4 +1126,43 @@ public class GradientCheckTestsComputationGraph {
             assertTrue(testName, gradOK);
         }
     }
+
+    @Test
+    public void testGraphEmbeddingLayerSimple() {
+        Random r = new Random(12345);
+        int nExamples = 5;
+        INDArray input = Nd4j.zeros(nExamples, 1);
+        INDArray labels = Nd4j.zeros(nExamples, 3);
+        for (int i = 0; i < nExamples; i++) {
+            input.putScalar(i, r.nextInt(4));
+            labels.putScalar(new int[] {i, r.nextInt(3)}, 1.0);
+        }
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true).l2(0.2).l1(0.1)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345L)
+                .updater(Updater.NONE)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("0", new EmbeddingLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
+                                .activation(Activation.TANH).build(), "in")
+                .addLayer("1", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3)
+                        .activation(Activation.SOFTMAX).build(), "0")
+                .setOutputs("1")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        if (PRINT_RESULTS) {
+            System.out.println("testGraphEmbeddingLayerSimple");
+            for (int j = 0; j < cg.getNumLayers(); j++)
+                System.out.println("Layer " + j + " # params: " + cg.getLayer(j).numParams());
+        }
+
+        boolean gradOK = GradientCheckUtil.checkGradients(cg, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
+                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
+
+        String msg = "testGraphEmbeddingLayerSimple";
+        assertTrue(msg, gradOK);
+    }
 }
