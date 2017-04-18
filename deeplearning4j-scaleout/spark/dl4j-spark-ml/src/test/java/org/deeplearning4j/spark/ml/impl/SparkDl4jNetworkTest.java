@@ -20,6 +20,7 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.deeplearning4j.spark.ml.utils.DatasetFacade;
 import org.deeplearning4j.spark.ml.utils.ParamSerializer;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -57,6 +58,11 @@ public class SparkDl4jNetworkTest  {
         List<?> rows = transformed.get().collectAsList();
         Assert.assertNotNull(sm.getTrainingStats());
         Assert.assertNotNull(rows);
+    }
+
+    @After
+    public void closeIt() {
+        sparkContext.close();
     }
 
     private MultiLayerConfiguration getNNConfiguration(){

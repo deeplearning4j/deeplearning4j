@@ -16,12 +16,13 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.deeplearning4j.spark.ml.utils.DatasetFacade;
 import org.deeplearning4j.spark.ml.utils.ParamSerializer;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 
-public class AutoEncoderNetworkTest {
+public class AutoEncoderNetworkTest  {
 
     private SparkConf sparkConf = new SparkConf().setAppName("testing").setMaster("local[4]");
     private JavaSparkContext sparkContext = new JavaSparkContext(sparkConf);
@@ -43,6 +44,11 @@ public class AutoEncoderNetworkTest {
         AutoEncoderModel sm = sparkDl4jNetwork.fit(part2.get());
         MultiLayerNetwork mln = sm.getNetwork();
         Assert.assertNotNull(mln);
+    }
+
+    @After
+    public void closeIt() {
+        sparkContext.close();
     }
 
     private MultiLayerConfiguration getNNConfiguration(){
