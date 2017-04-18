@@ -338,7 +338,7 @@ public class MultiLayerNeuralNetConfigurationTest {
                 .biasLearningRate(0.5)
                 .updater(Updater.ADAM)
                 .list()
-                .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).dropOut(0.5).weightInit(WeightInit.XAVIER)
+                .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).weightInit(WeightInit.XAVIER)
                         .activation(Activation.RELU).build())
                 .layer(1, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).build())
                 .layer(2, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).biasLearningRate(0.25).build())

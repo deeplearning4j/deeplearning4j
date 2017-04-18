@@ -146,7 +146,7 @@ public class LayerValidation {
         if (useDropConnect && (Double.isNaN(dropOut) && (Double.isNaN(layer.getDropOut()))))
             log.warn("Layer \"" + layerName
                             + "\" dropConnect is set to true but dropout rate has not been added to configuration.");
-        if (useDropConnect && dropOut == 0.0)
+        if (useDropConnect && layer.getDropOut() == 0.0 )
             log.warn("Layer \"" + layerName + " dropConnect is set to true but dropout rate is set to 0.0");
         if (useRegularization && (Double.isNaN(l1) && layer != null && Double.isNaN(layer.getL1()) && Double.isNaN(l2)
                         && Double.isNaN(layer.getL2()) && Double.isNaN(l2Bias) && Double.isNaN(l1Bias)
