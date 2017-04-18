@@ -8,7 +8,7 @@ import org.nd4j.linalg.api.ndarray.BaseSparseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
- * Created by audrey on 3/13/17.
+ * @author Audrey Loeffel
  */
 public class SparseBaseLevel2 extends SparseBaseLevel implements Level2{
 
