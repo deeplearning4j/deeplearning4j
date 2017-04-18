@@ -63,12 +63,12 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
         String lastVariable = null;
         UpdaterBlock currentBlock = null;
         updaterBlocks = new ArrayList<>();
-        int currentParamOffset = 0;
-        int currentUpdaterOffset = 0;
+
 
         INDArray paramsView = network.params();
         INDArray gradientView = getFlattenedGradientsView();
         int paramsViewSoFar = 0;
+        int currentUpdaterOffset = 0;
         for( int i=0; i<layers.length; i++ ){
             Map<String,INDArray> layerParamTable = layers[i].paramTable();
             List<String> variables = new ArrayList<>(layerParamTable.keySet());    //Is from a set, but iteration order should be fixed per layer as it's a from a LinkedHashSet
@@ -89,7 +89,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                     //Create a new block
                     List<UpdaterBlock.VarState> list = new ArrayList<>();
                     list.add(new UpdaterBlock.VarState(layers[i], var, paramsViewSubset, gradientViewSubset));
-                    currentBlock = new UpdaterBlock(currentParamOffset, currentParamOffset+paramSizeThisVariable,
+                    currentBlock = new UpdaterBlock(paramsViewSoFar, paramsViewSoFar+paramSizeThisVariable,
                             currentUpdaterOffset, currentUpdaterOffset+updaterStateSizeThisVariable, list);
 
                     updaterBlocks.add(currentBlock);
@@ -105,6 +105,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 lastVariable = variables.get(j);
                 updaterStateSize += updaterStateSizeThisVariable;
                 paramsViewSoFar += paramSizeThisVariable;
+                currentUpdaterOffset += updaterStateSizeThisVariable;
             }
         }
 

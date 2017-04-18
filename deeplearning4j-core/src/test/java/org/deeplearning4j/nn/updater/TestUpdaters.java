@@ -674,4 +674,85 @@ public class TestUpdaters {
 //        assertEquals(e, adaGrad.getEpsilon(), 0.0);
         fail();
     }
+
+    @Test
+    public void testUpdaterBlockMln(){
+
+        //        double e = 7e-2;
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .learningRate(0.5)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10)
+                        .name("l0")
+                        .updater(org.deeplearning4j.nn.conf.Updater.ADAM).build())
+                .layer(1, new DenseLayer.Builder().nIn(10).nOut(10)
+                        .name("l1")
+                        .updater(org.deeplearning4j.nn.conf.Updater.ADAM)
+                        .biasLearningRate(0.25).build())
+                .layer(2, new DenseLayer.Builder().nIn(10).nOut(10)
+                        .name("l2")
+                        .updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
+                .layer(3, new DenseLayer.Builder().nIn(10).nOut(10)
+                        .name("l3")
+                        .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+//        net.initGradientsView();
+
+        MultiLayerUpdater u = (MultiLayerUpdater)net.getUpdater();
+        List<UpdaterBlock> blocks = u.getUpdaterBlocks();
+
+        //Expect 4 blocks: (layer0 W, layer0 B, layer 1 W], [layer 1 B], [layer 2 W, layer 2 B], [layer 3 W, layer 3 B]
+//        assertEquals(4, blocks.size());
+
+
+        //Check first updater block:
+        UpdaterBlock ub0 = blocks.get(0);
+        assertEquals(3, ub0.getLayersAndVariablesInBlock().size());
+        assertEquals("l0", ub0.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
+        assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub0.getLayersAndVariablesInBlock().get(0).getVarName());
+        assertEquals("l0", ub0.getLayersAndVariablesInBlock().get(1).getLayer().conf().getLayer().getLayerName());
+        assertEquals(DefaultParamInitializer.BIAS_KEY, ub0.getLayersAndVariablesInBlock().get(1).getVarName());
+        assertEquals("l1", ub0.getLayersAndVariablesInBlock().get(2).getLayer().conf().getLayer().getLayerName());
+        assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub0.getLayersAndVariablesInBlock().get(2).getVarName());
+
+        int nParams0 = 10*10 + 10 + 10*10;
+        assertEquals(0, ub0.getParamOffsetStart());
+        assertEquals(nParams0, ub0.getParamOffsetEnd());
+        int nUpdaterVals0 = 2 * nParams0;   //2x for Adam
+        assertEquals(0, ub0.getUpdaterViewOffsetStart());
+        assertEquals(nUpdaterVals0, ub0.getUpdaterViewOffsetEnd());
+
+        //Check second updater block:
+        UpdaterBlock ub1 = blocks.get(1);
+        assertEquals(1, ub1.getLayersAndVariablesInBlock().size());
+        assertEquals("l1", ub1.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
+        assertEquals(DefaultParamInitializer.BIAS_KEY, ub1.getLayersAndVariablesInBlock().get(0).getVarName());
+
+        int nParams1 = 10;
+        assertEquals(nParams0, ub1.getParamOffsetStart());
+        assertEquals(nParams0 + nParams1, ub1.getParamOffsetEnd());
+        int nUpdaterVals1 = 2 * nParams1;   //2x for Adam
+        assertEquals(nUpdaterVals0, ub1.getUpdaterViewOffsetStart());
+        assertEquals(nUpdaterVals0 + nUpdaterVals1, ub1.getUpdaterViewOffsetEnd());
+
+        //Check third updater block:
+        UpdaterBlock ub2 = blocks.get(2);
+        assertEquals(2, ub2.getLayersAndVariablesInBlock().size());
+        assertEquals("l2", ub1.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
+        assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub2.getLayersAndVariablesInBlock().get(0).getVarName());
+        assertEquals("l2", ub2.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
+        assertEquals(DefaultParamInitializer.BIAS_KEY, ub2.getLayersAndVariablesInBlock().get(0).getVarName());
+
+        int nParams2 = 10*10+10;
+        assertEquals(nParams0 + nParams1, ub2.getParamOffsetStart());
+        assertEquals(nParams0 + nParams1 + nParams2, ub2.getParamOffsetEnd());
+        int nUpdaterVals2 = 2 * nParams1;   //2x for Adadelta
+        assertEquals(nUpdaterVals0+nUpdaterVals1, ub2.getUpdaterViewOffsetStart());
+        assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2, ub2.getUpdaterViewOffsetEnd());
+
+    }
 }
