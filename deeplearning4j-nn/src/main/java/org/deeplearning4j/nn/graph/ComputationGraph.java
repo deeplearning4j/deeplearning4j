@@ -423,7 +423,7 @@ public class ComputationGraph implements Serializable, Model {
             for (String s : vertexInputNames) {
                 List<String> list = verticesOutputTo.get(s);
                 if (list == null) {
-                    list = new ArrayList<>();
+                    list  = new ArrayList<>();
                     verticesOutputTo.put(s, list);
                 }
                 list.add(vertexName); //Edge: s -> vertexName
