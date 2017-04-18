@@ -1549,4 +1549,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         return parentWorkspace.isScopeActive();
     }
+
+
+    @Override
+    public MemoryWorkspace getParentWorkspace() {
+        return parentWorkspace;
+    }
 }

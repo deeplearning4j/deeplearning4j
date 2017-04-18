@@ -12,6 +12,7 @@ import org.nd4j.jita.flow.FlowController;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.cache.ArrayDescriptor;
 import org.nd4j.linalg.cache.ConstantHandler;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.buffer.CudaFloatDataBuffer;
@@ -117,8 +118,10 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
                                 false);
             }
 
-            NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(),
-                            requiredMemoryBytes, 1, context.getSpecialStream());
+            if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(),
+                            requiredMemoryBytes, 1, context.getSpecialStream()) == 0) {
+                throw new ND4JIllegalStateException("memcpyAsync failed");
+            }
             flowController.commitTransfer(context.getSpecialStream());
 
             point.setConstant(true);
@@ -164,8 +167,10 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
                                 false);
             }
 
-            NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(),
-                            requiredMemoryBytes, 1, context.getSpecialStream());
+            if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(point.getPointers().getDevicePointer(), point.getPointers().getHostPointer(),
+                            requiredMemoryBytes, 1, context.getSpecialStream()) == 0) {
+                throw new ND4JIllegalStateException("memcpyAsync failed");
+            }
             flowController.commitTransfer(context.getSpecialStream());
 
             point.setConstant(true);

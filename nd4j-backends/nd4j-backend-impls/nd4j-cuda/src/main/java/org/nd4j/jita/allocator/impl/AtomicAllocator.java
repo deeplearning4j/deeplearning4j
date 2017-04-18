@@ -683,6 +683,8 @@ public class AtomicAllocator implements Allocator {
                         if (threadId == 0)
                             stopper.set(System.currentTimeMillis());
 
+                        //log.info("Purging {} bytes...", AllocationUtils.getRequiredMemory(point.getShape()));
+
                         if (point.getAllocationStatus() == AllocationStatus.HOST) {
                             purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
                         } else if (point.getAllocationStatus() == AllocationStatus.DEVICE) {

@@ -172,6 +172,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.offset = 0;
         this.originalOffset = 0;
 
+        //  if (Nd4j.getAffinityManager().getDeviceForCurrentThread() == 0)
+        //log.info("Allocating {} bytes on device_{}", length, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
         if (dataType() == Type.DOUBLE) {
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asDoublePointer();
             indexer = DoubleIndexer.create((DoublePointer) pointer);
