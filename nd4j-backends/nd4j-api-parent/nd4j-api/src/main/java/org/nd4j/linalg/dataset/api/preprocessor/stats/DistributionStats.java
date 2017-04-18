@@ -111,6 +111,13 @@ public class DistributionStats implements NormalizerStats {
                 runningMean = mean;
                 runningVariance = variance;
                 runningCount = count;
+
+                if(data.size(0) == 1){
+                    //Handle edge case: currently, reduction ops may return the same array
+                    //But we don't want to modify this array in-place later
+                    runningMean = runningMean.dup();
+                    runningVariance = runningVariance.dup();
+                }
             } else {
                 // Update running variance
                 INDArray deltaSquared = Transforms.pow(mean.subRowVector(runningMean), 2);
