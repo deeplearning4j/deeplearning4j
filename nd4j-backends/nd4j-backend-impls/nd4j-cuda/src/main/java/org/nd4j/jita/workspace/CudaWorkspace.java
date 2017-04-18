@@ -120,13 +120,13 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 return ptr;
             } else {
                 // spill
-                spilledAllocations.addAndGet(requiredMemory);
-
                 if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0) {
                     hostOffset.set(0);
                     deviceOffset.set(0);
                     return alloc(requiredMemory, kind, type, initialize);
                 }
+
+                spilledAllocations.addAndGet(requiredMemory);
 
                 if (isDebug.get()) {
                     log.info("Workspace [{}] device_{}: spilled DEVICE array of {} bytes, capacity of {} elements", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory, numElements);
