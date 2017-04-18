@@ -1056,8 +1056,17 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             if (layer != null) {
                 if (Double.isNaN(layer.getLearningRate()))
                     layer.setLearningRate(learningRate);
-                if (Double.isNaN(layer.getBiasLearningRate()))
-                    layer.setBiasLearningRate(layer.getLearningRate());
+                if (Double.isNaN(layer.getBiasLearningRate())){
+                    //Two possibilities when bias LR isn't set for layer:
+                    // (a) If global bias LR *is* set -> set it to that
+                    // (b) Otherwise, set to layer LR (and, by extension, the global LR)
+                    if(!Double.isNaN(biasLearningRate)){
+                        //Global bias LR is set
+                        layer.setBiasLearningRate(biasLearningRate);
+                    } else {
+                        layer.setBiasLearningRate(layer.getLearningRate());
+                    }
+                }
                 if (layer.getLearningRateSchedule() == null)
                     layer.setLearningRateSchedule(learningRateSchedule);
                 if (Double.isNaN(layer.getL1()))
