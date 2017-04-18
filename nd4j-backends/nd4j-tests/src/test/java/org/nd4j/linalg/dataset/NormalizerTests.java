@@ -155,6 +155,11 @@ public class NormalizerTests extends BaseNd4jTest {
             normFitSubset.transform(dsCopy1);
             normByRow.transform(dsCopy2);
 
+            assertEquals(ds.getFeatures(), dsCopy1.getFeatures());
+            assertEquals(ds.getLabels(), dsCopy1.getLabels());
+            assertEquals(ds.getFeaturesMaskArray(), dsCopy1.getFeaturesMaskArray());
+            assertEquals(ds.getLabelsMaskArray(), dsCopy1.getLabelsMaskArray());
+
             assertEquals(ds, dsCopy1);
             assertEquals(ds, dsCopy2);
 
