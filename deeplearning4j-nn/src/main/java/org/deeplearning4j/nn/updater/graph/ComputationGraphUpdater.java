@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -127,15 +128,29 @@ public class ComputationGraphUpdater implements Serializable {
         }
 
         for (Map.Entry<String, Gradient> entry : layerGradients.entrySet()) {
-            String layerName = entry.getKey();
-            int updaterIdx = layerUpdatersMap.get(layerName);
-            layerUpdaters[updaterIdx].update(graph.getLayer(layerName), entry.getValue(), iteration, batchSize);
+            /*if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceFeedForward)) {
+                try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(ComputationGraph.workspaceFeedForward)) {
+                    String layerName = entry.getKey();
+                    int updaterIdx = layerUpdatersMap.get(layerName);
+                    layerUpdaters[updaterIdx].update(graph.getLayer(layerName), entry.getValue(), iteration, batchSize);
 
 
-            //Gradients may be replaced by BaseUpdater.update()
-            for (Map.Entry<String, INDArray> entry2 : layerGradients.get(layerName).gradientForVariable().entrySet()) {
-                gradient.setGradientFor(entry.getKey() + "_" + entry2.getKey(), entry2.getValue());
-            }
+                    //Gradients may be replaced by BaseUpdater.update()
+                    for (Map.Entry<String, INDArray> entry2 : layerGradients.get(layerName).gradientForVariable().entrySet()) {
+                        gradient.setGradientFor(entry.getKey() + "_" + entry2.getKey(), entry2.getValue());
+                    }
+                }
+            } else {*/
+                String layerName = entry.getKey();
+                int updaterIdx = layerUpdatersMap.get(layerName);
+                layerUpdaters[updaterIdx].update(graph.getLayer(layerName), entry.getValue(), iteration, batchSize);
+
+
+                //Gradients may be replaced by BaseUpdater.update()
+                for (Map.Entry<String, INDArray> entry2 : layerGradients.get(layerName).gradientForVariable().entrySet()) {
+                    gradient.setGradientFor(entry.getKey() + "_" + entry2.getKey(), entry2.getValue());
+                }
+            //}
         }
     }
 

@@ -411,7 +411,7 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
                 activation = null;
         }
 
-        allocator.registerAction(context, z);
+        allocator.registerAction(context, activation);
 
         return activation;
     }

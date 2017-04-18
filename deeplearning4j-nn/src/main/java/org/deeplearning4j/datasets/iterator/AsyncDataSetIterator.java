@@ -14,6 +14,7 @@ import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -77,6 +78,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
             iterator.reset();
 
             DataSet ds = iterator.next();
+
+            logger.info("Sample dimensions: {}", Arrays.toString(ds.getFeatures().shape()));
 
             long initSize = Math.max(ds.getMemoryFootprint() * queueSize, 10 * 1024L * 1024L);
 

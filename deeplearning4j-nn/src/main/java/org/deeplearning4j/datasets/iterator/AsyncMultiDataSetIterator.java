@@ -37,11 +37,11 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     private MemoryWorkspace workspace;
 
     public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueLength) {
-        this(iterator, queueLength, new LinkedBlockingQueue<MultiDataSet>(), true);
+        this(iterator, queueLength, new LinkedBlockingQueue<MultiDataSet>(queueLength), true);
     }
 
     public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueLength, boolean useWorkspace) {
-        this(iterator, queueLength, new LinkedBlockingQueue<MultiDataSet>(), useWorkspace);
+        this(iterator, queueLength, new LinkedBlockingQueue<MultiDataSet>(queueLength), useWorkspace);
     }
 
     public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueLength, BlockingQueue<MultiDataSet> queue) {
@@ -52,8 +52,8 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         if (queueLength <= 0)
             throw new IllegalArgumentException("Queue size must be > 0");
 
-        if (queueLength < 2)
-            queueLength = 2;
+        if (queueLength < 4)
+            queueLength = 4;
 
         if (iterator.resetSupported() && useWorkspace) {
             iterator.reset();
@@ -64,7 +64,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
             WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
                     .initialSize(initSize)
-                    .overallocationLimit(1.0)
+                    .overallocationLimit(2.0)
                     .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
                     .policyAllocation(AllocationPolicy.OVERALLOCATE)
                     .build();

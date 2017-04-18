@@ -3,10 +3,12 @@ package org.deeplearning4j.nn.updater;
 import com.google.common.base.Preconditions;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -22,6 +24,7 @@ import java.util.Map;
  */
 @EqualsAndHashCode
 @Getter
+@Slf4j
 public class MultiLayerUpdater implements Updater {
     private final Updater[] layerUpdaters;
     private INDArray viewArray;
@@ -119,28 +122,30 @@ public class MultiLayerUpdater implements Updater {
         Gradient[] layerGradients = new Gradient[layerUpdaters.length];
 
 
-            for (int i = 0; i < layerGradients.length; i++)
-                layerGradients[i] = new DefaultGradient();
+        for (int i = 0; i < layerGradients.length; i++)
+            layerGradients[i] = new DefaultGradient();
 
 
-            for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
-                String key = gradientPair.getKey();
-                int idx = key.indexOf('_');
-                if (idx == -1)
-                    throw new IllegalStateException(
-                            "Invalid key: MuliLayerNetwork Gradient key does not have layer separator: \"" + key
-                                    + "\"");
-                int layerIdx = Integer.parseInt(key.substring(0, idx));
+        for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
+            String key = gradientPair.getKey();
+            int idx = key.indexOf('_');
 
-                String newKey = key.substring(idx + 1);
-                layerGradients[layerIdx].gradientForVariable().put(newKey, gradientPair.getValue());
-            }
+            if (idx == -1)
+                throw new IllegalStateException("Invalid key: MuliLayerNetwork Gradient key does not have layer separator: \"" + key + "\"");
+            int layerIdx = Integer.parseInt(key.substring(0, idx));
 
-        //try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-            for (int i = 0; i < layerUpdaters.length; i++) {
+            String newKey = key.substring(idx + 1);
+            layerGradients[layerIdx].gradientForVariable().put(newKey, gradientPair.getValue());
+        }
+
+        for (int i = 0; i < layerUpdaters.length; i++) {
+            //if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceFeedForward)) {
+            //    try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(ComputationGraph.workspaceFeedForward)) {
+            //        layerUpdaters[i].update(mln.getLayer(i), layerGradients[i], iteration, batchSize);
+            //    }
+            //} else
                 layerUpdaters[i].update(mln.getLayer(i), layerGradients[i], iteration, batchSize);
-            }
-        //}
+        }
     }
 
     @Override

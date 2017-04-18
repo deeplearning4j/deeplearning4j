@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.updater;
 
 import com.google.common.base.Preconditions;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
@@ -28,6 +29,7 @@ import java.util.Map;
 /**
  * @author Adam Gibson
  */
+@Slf4j
 public class LayerUpdater implements Updater {
     protected Map<String, GradientUpdater> updaterForVariable = new LinkedHashMap<>();
     protected INDArray viewArray;
@@ -263,6 +265,7 @@ public class LayerUpdater implements Updater {
     public GradientUpdater init(String variable, Layer layer) {
         GradientUpdater updater = updaterForVariable.get(variable);
         if (updater == null) {
+            log.info("Creating updater now... {}", Nd4j.getMemoryManager().getCurrentWorkspace());
             org.deeplearning4j.nn.conf.Updater u = layer.conf().getLayer().getUpdaterByParam(variable);
             switch (u) {
                 case SGD:
