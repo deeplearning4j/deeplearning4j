@@ -5,6 +5,7 @@ import lombok.Data;
 import org.nd4j.autodiff.ArrayField;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  * Created by agibsonccc on 4/6/17.
@@ -16,5 +17,11 @@ public class NDArrayInformation implements Serializable {
     private String id;
     private OpState owner;
 
-
+    @Override
+    public String toString() {
+        return "NDArrayInformation{" +
+                "shape=" + Arrays.toString(shape) +
+                ", id='" + id + '\'' +
+                '}';
+    }
 }

@@ -13,7 +13,8 @@ public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X>
     protected int m_exponent;
 
     public PolynomialTerm(Graph<NDArrayInformation,OpState> graph,
-                          double i_scale, DifferentialFunction<X> i_v,
+                          double i_scale,
+                          DifferentialFunction<X> i_v,
                           int i_exponent) {
         // scale v^{exponent}
         super(graph,i_v);

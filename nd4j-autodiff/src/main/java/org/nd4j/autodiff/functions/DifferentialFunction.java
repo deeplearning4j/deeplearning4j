@@ -82,9 +82,6 @@ public abstract class DifferentialFunction<X extends Field<X>>
     @Override
     public abstract String toString();
 
-    public boolean isPrecisionOK(int precision) {
-        return (13 - precision) > Math.log10(getReal()) + 1;
-    }
 
 
     public boolean isConstant() {

@@ -6,12 +6,17 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
 
+import java.util.List;
+
 public interface AbstractFactory<X extends Field<X>>
         extends AbstractIdentityFactory<X> {
 
 
     Graph<NDArrayInformation,OpState> graph();
 
+    List<String> methodNames();
+
+    X invoke(String name,Object[] args);
 
 
     X eq(X i_x, X i_y);

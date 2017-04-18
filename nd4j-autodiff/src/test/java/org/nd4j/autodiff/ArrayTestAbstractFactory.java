@@ -59,6 +59,23 @@ public class ArrayTestAbstractFactory
 
     }
 
+    @Test
+    public void testVariables() {
+        Graph<NDArrayInformation,OpState> graph = new Graph<>();
+        ArrayFactory arrayFactory = new ArrayFactory(graph);
+        DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
+        NDArrayInformation xInfo = NDArrayInformation.
+                builder().
+                shape(new int[]{1,1}).
+                id("x").
+                build();
+        NDArrayVertex xVertex = new NDArrayVertex(0,xInfo);
+        Variable<ArrayField> x = arrayFieldDifferentialFunctionFactory.var("x",new ArrayField(xVertex, graph));
+        DifferentialFunction<ArrayField> h = x.mul(x);
+        System.out.println(h.diff(x).getValue(false).getClass());
+
+    }
+
 
     @Test
     public void testPairWiseOp() throws Exception {
@@ -89,11 +106,16 @@ public class ArrayTestAbstractFactory
 
 
     @Test
-    public void testGrad() {
+    public void testGrad() throws Exception {
         TensorGrad tensorGrad = TensorGrad.create();
         TensorGradVariable var = tensorGrad.var("x", Nd4j.create(1));
-        TensorGradVariable grad = tensorGrad.grad(var,null);
-        TensorGradVariable plus = grad.add(var);
+        TensorGradVariable var2 = tensorGrad.var("y", Nd4j.create(1));
+
+        TensorGradVariable xTimesX = var.mul(var2);
+        TensorGradVariable grad = tensorGrad.grad(xTimesX,var);
+        System.out.println(tensorGrad.graph());
+        System.out.println(grad.getFormula());
+        tensorGrad.graph().print(new File("/tmp/graph.png"));
 
     }
 

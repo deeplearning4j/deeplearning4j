@@ -128,7 +128,8 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
 
         }
 
-        throw new UnsupportedOperationException("Only supporting array fields");
+        else
+            throw new UnsupportedOperationException("Only supporting array fields");
     }
 
 

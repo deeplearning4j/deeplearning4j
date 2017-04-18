@@ -6,6 +6,11 @@ import org.nd4j.autodiff.Field;
  * Created by agibsonccc on 4/9/17.
  */
 public interface FunctionFactory<X extends Field<X>> {
+
+
+
+    DifferentialFunction<X> invoke(String name, Object[] args);
+
     Constant<X> val(X iX);
 
 
@@ -18,8 +23,6 @@ public interface FunctionFactory<X extends Field<X>> {
     Zero<X> zero();
 
     One<X> one();
-
-
 
 
     DifferentialFunction<X> tile(DifferentialFunction<X> iX, int[] repeat);

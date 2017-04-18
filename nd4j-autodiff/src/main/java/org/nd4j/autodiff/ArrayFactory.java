@@ -7,12 +7,29 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.linalg.util.ReflectionUtil;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @AllArgsConstructor
 @Data
 public class ArrayFactory implements AbstractFactory<ArrayField> {
 
     private Graph<NDArrayInformation,OpState> graph;
+    private Map<String,Method> methodNames;
+
+    public ArrayFactory(Graph<NDArrayInformation, OpState> graph) {
+        this.graph = graph;
+        methodNames = new HashMap<>();
+        Method[] methods = getClass().getDeclaredMethods();
+        for(Method method : methods)
+            methodNames.put(method.getName(),method);
+    }
 
     public ArrayFactory() {
         this(new Graph<>());
@@ -22,6 +39,20 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     @Override
     public Graph<NDArrayInformation, OpState> graph() {
         return graph;
+    }
+
+    @Override
+    public List<String> methodNames() {
+        return new ArrayList<>(methodNames.keySet());
+    }
+
+    @Override
+    public ArrayField invoke(String name, Object[] args) {
+        try {
+            return (ArrayField) methodNames.get(name).invoke(this,args);
+        } catch (Exception e) {
+           throw new RuntimeException(e);
+        }
     }
 
     @Override

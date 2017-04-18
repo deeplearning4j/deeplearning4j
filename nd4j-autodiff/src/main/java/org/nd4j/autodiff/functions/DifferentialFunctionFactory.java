@@ -1,6 +1,9 @@
 package org.nd4j.autodiff.functions;
 
+import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.nd4j.autodiff.AbstractFactory;
 import org.nd4j.autodiff.ArrayField;
@@ -23,13 +26,29 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
     protected AbstractFactory<X> mFactory;
     protected Graph<NDArrayInformation,OpState> graph;
+    private Map<String,Method> methodNames;
 
     public DifferentialFunctionFactory(Graph<NDArrayInformation,OpState> graph,AbstractFactory<X> mFactory) {
         if (mFactory != null) {
             this.mFactory = mFactory;
             this.graph = graph;
+            methodNames = new HashMap<>();
+            Method[] methods = getClass().getDeclaredMethods();
+            for(Method method : methods)
+                methodNames.put(method.getName(),method);
         } else {
             throw new IllegalArgumentException("Input not null value.");
+        }
+
+
+    }
+
+    @Override
+    public DifferentialFunction<X> invoke(String name, Object[] args) {
+        try {
+            return (DifferentialFunction<X>) methodNames.get(name).invoke(this,args);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

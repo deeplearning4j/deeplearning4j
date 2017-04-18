@@ -83,7 +83,9 @@ public class TensorGrad {
 
 
     public TensorGradVariable grad(TensorGradVariable iX,TensorGradVariable wrt) {
-        DifferentialFunction<ArrayField> arrField = iX.getArrayField().diff(wrt.getArrayField());
+        DifferentialFunction<ArrayField> arrField = iX .getArrayField() != null ?
+                iX.getArrayField().diff(wrt.getArrayField()) :
+                iX.getDifferentialFunction().diff(wrt.getArrayField());
         TensorGradVariable ret = TensorGradVariable.builder()
                 .arr(null)
                 .differentialFunction(arrField)

@@ -11,18 +11,42 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by agibsonccc on 4/9/17.
  */
 @Data
-@Builder
-public class TensorGradVariable {
+public class TensorGradVariable extends TensorGradFunction implements Serializable {
     private INDArray arr;
     private Variable<ArrayField> arrayField;
-    private DifferentialFunction<ArrayField> differentialFunction;
     private String varName;
     private TensorGrad tensorGrad;
 
+    @Builder
+    private TensorGradVariable(DifferentialFunction<ArrayField> differentialFunction,
+                               String varName,
+                               INDArray arr,
+                               TensorGrad tensorGrad,
+                               Variable<ArrayField> arrayField) {
+        super(differentialFunction);
+        this.differentialFunction = differentialFunction;
+        this.varName = varName;
+        this.arr = arr;
+        this.arrayField = arrayField;
+        this.tensorGrad = tensorGrad;
+    }
+
+    public String getFormula() {
+        List<Variable<ArrayField>> ret = new ArrayList<>();
+        if(arrayField != null)
+            return arrayField.getFormula(ret);
+        else {
+            return this.differentialFunction.getFormula(ret);
+        }
+    }
 
     public int[] getShape() {
         if(arrayField != null)
@@ -85,4 +109,10 @@ public class TensorGradVariable {
                 "varName='" + varName + '\'' +
                 '}';
     }
+
+
+    public static class TensorGradVariableBuilder extends TensorGradFunction.TensorGradFunctionBuilder {
+
+    }
+
 }
