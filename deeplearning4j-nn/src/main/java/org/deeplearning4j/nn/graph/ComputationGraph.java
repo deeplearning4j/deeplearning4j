@@ -767,7 +767,7 @@ public class ComputationGraph implements Serializable, Model {
                     break;
 
                 try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                    migrate(next);
+                    //migrate(next);
 
                     boolean hasMaskArrays = next.hasMaskArrays();
                     if (hasMaskArrays) {
@@ -859,7 +859,7 @@ public class ComputationGraph implements Serializable, Model {
                     break;
 
                 try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                    migrate(next);
+                    //migrate(next);
 
                     if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
                         doTruncatedBPTT(next.getFeatures(), next.getLabels(), next.getFeaturesMaskArrays(),
