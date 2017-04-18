@@ -139,11 +139,11 @@ public class MultiLayerUpdater implements Updater {
         }
 
         for (int i = 0; i < layerUpdaters.length; i++) {
-            //if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceFeedForward)) {
-            //    try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(ComputationGraph.workspaceFeedForward)) {
-            //        layerUpdaters[i].update(mln.getLayer(i), layerGradients[i], iteration, batchSize);
-            //    }
-            //} else
+            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceFeedForward)) {
+                try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(ComputationGraph.workspaceFeedForward)) {
+                    layerUpdaters[i].update(mln.getLayer(i), layerGradients[i], iteration, batchSize);
+                }
+            } else
                 layerUpdaters[i].update(mln.getLayer(i), layerGradients[i], iteration, batchSize);
         }
     }

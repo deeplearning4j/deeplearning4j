@@ -128,7 +128,7 @@ public class ComputationGraphUpdater implements Serializable {
         }
 
         for (Map.Entry<String, Gradient> entry : layerGradients.entrySet()) {
-            /*if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceFeedForward)) {
+            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceFeedForward)) {
                 try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(ComputationGraph.workspaceFeedForward)) {
                     String layerName = entry.getKey();
                     int updaterIdx = layerUpdatersMap.get(layerName);
@@ -140,7 +140,7 @@ public class ComputationGraphUpdater implements Serializable {
                         gradient.setGradientFor(entry.getKey() + "_" + entry2.getKey(), entry2.getValue());
                     }
                 }
-            } else {*/
+            } else {
                 String layerName = entry.getKey();
                 int updaterIdx = layerUpdatersMap.get(layerName);
                 layerUpdaters[updaterIdx].update(graph.getLayer(layerName), entry.getValue(), iteration, batchSize);
@@ -150,7 +150,7 @@ public class ComputationGraphUpdater implements Serializable {
                 for (Map.Entry<String, INDArray> entry2 : layerGradients.get(layerName).gradientForVariable().entrySet()) {
                     gradient.setGradientFor(entry.getKey() + "_" + entry2.getKey(), entry2.getValue());
                 }
-            //}
+            }
         }
     }
 
