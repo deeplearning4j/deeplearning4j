@@ -199,12 +199,16 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
 
     @Override
     public ArrayField zero() {
-        return new ArrayField(new NDArrayVertex(graph.numVertices(),new int[]{1,1}),graph);
+        NDArrayInformation information = NDArrayInformation.builder()
+                .id("zero").owner(null).shape(new int[]{1,2}).build();
+        return new ArrayField(new NDArrayVertex(graph.numVertices(),information),graph);
     }
 
     @Override
     public ArrayField one() {
-        return new ArrayField(new NDArrayVertex(graph.numVertices(),new int[]{1,1}),graph);
+        NDArrayInformation information = NDArrayInformation.builder()
+                .id("one").owner(null).shape(new int[]{1,2}).build();
+        return new ArrayField(new NDArrayVertex(graph.numVertices(),information),graph);
     }
 
     @Override
