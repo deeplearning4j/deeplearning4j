@@ -28,6 +28,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
         if(X instanceof BaseSparseNDArray) {
             BaseSparseNDArray sparseX = (BaseSparseNDArray) X;
             DataBuffer pointers = sparseX.getMinorPointer();
+
             switch(X.data().dataType()){
                 case DOUBLE:
                     DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, X, Y);

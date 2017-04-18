@@ -29,7 +29,9 @@ public class SparseLevel1Test extends BaseNd4jTest{
     @Test
     public void shouldComputeDot() {
         INDArray sparseVec = Nd4j.createSparseCSR(data, col, pointerB, pointerE, shape);
-        INDArray vec = Nd4j.create( new double[] {1 ,2, 3, 4});
+        //INDArray vec = Nd4j.create( new double[] {1 ,2, 3, 4});
+        INDArray matrix = Nd4j.linspace(1, 4, 4).reshape(1, 4);
+        INDArray vec = matrix.getRow(0);
         assertEquals(21, Nd4j.getBlasWrapper().dot(sparseVec, vec), 1e-1);
     }
 
@@ -71,5 +73,9 @@ public class SparseLevel1Test extends BaseNd4jTest{
         INDArray sparseVec = Nd4j.createSparseCSR(data, col, pointerB, pointerE, shape);
         INDArray vec = Nd4j.create( new double[] {1 ,2, 3, 4});
         // TODO
+    }
+    @Override
+    public char ordering() {
+        return 'c';
     }
 }

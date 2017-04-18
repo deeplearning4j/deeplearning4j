@@ -3,6 +3,7 @@ package org.nd4j.linalg;
 import org.junit.Test;
 
 import org.nd4j.linalg.api.ndarray.BaseSparseNDArrayCSR;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.ISparseNDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -32,7 +33,7 @@ public class SparseNDArrayTest {
 
     @Test
     public void shouldCreateSparseMatrix() {
-        ISparseNDArray matrix = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
+        INDArray matrix = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
         //TODO
     }
 
@@ -45,7 +46,7 @@ public class SparseNDArrayTest {
         *  [-4 0 2 7 0 ]
         *  [ 0 8 0 0 -5]]
         * */
-        ISparseNDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
+        INDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
         if(sparseNDArray instanceof BaseSparseNDArrayCSR) {
             BaseSparseNDArrayCSR sparseCSRArray = (BaseSparseNDArrayCSR) sparseNDArray;
             sparseCSRArray.putScalar(2, 1, 3);
@@ -67,7 +68,7 @@ public class SparseNDArrayTest {
 
     @Test
     public void shouldReallocate(){
-        ISparseNDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
+        INDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
         if(sparseNDArray instanceof BaseSparseNDArrayCSR) {
             BaseSparseNDArrayCSR sparseCSRArray = (BaseSparseNDArrayCSR) sparseNDArray;
             int initialSize = sparseCSRArray.getDoubleValues().length;
@@ -92,7 +93,7 @@ public class SparseNDArrayTest {
         *  [-4 0 2 7 0 ]
         *  [ 0 8 0 0 -5]]
         * */
-        ISparseNDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
+        INDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
         if(sparseNDArray instanceof BaseSparseNDArrayCSR) {
             BaseSparseNDArrayCSR sparseCSRArray = (BaseSparseNDArrayCSR) sparseNDArray;
             sparseCSRArray.putScalar(2, 2, 10);

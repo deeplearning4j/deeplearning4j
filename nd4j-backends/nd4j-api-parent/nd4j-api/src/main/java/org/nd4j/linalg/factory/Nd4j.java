@@ -5120,7 +5120,7 @@ public class Nd4j {
         return ret;
     }
     // TODO change to INDArray
-    public static ISparseNDArray /*INDArray*/ createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public static INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
         ISparseNDArray matrix = SPARSE_INSTANCE.createSparse(data, columns, pointerB, pointerE, shape);
 
         return matrix;

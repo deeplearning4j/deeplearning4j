@@ -48,17 +48,17 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         }
 
         int valuesSpace = (int) (data.length * THRESHOLD_MEMORY_ALLOCATION) + data.length;
-        this.values = Nd4j.createBuffer(valuesSpace);
+        this.values = Nd4j.createBuffer(data);
         this.values.setData(data);
-        this.columns = Nd4j.createBuffer(valuesSpace);
+        this.columns = Nd4j.getDataBufferFactory().createInt(valuesSpace);
         this.columns.setData(columns);
         nnz = data.length;
 
         // The size of these pointers are constant
         int pointersSpace = nbRows;
-        this.pointerB = Nd4j.createBuffer(pointersSpace);
+        this.pointerB = Nd4j.getDataBufferFactory().createInt(pointersSpace);
         this.pointerB.setData(pointerB);
-        this.pointerE = Nd4j.createBuffer(pointersSpace);
+        this.pointerE = Nd4j.getDataBufferFactory().createInt(pointersSpace);
         this.pointerE.setData(pointerE);
     }
 
@@ -156,4 +156,9 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         }
         return buffer;
     }
+
+    @Override
+    public DataBuffer data(){return values;}
+
+
 }

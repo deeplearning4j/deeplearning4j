@@ -1334,10 +1334,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return null;
     }
 
-    @Override
-    public DataBuffer data() {
-        return null;
-    }
 
     @Override
     public IComplexNDArray rdiv(IComplexNumber n) {

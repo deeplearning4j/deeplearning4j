@@ -1,9 +1,22 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
+import org.bytedeco.javacpp.Pointer;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.complex.IComplexDouble;
+import org.nd4j.linalg.api.complex.IComplexFloat;
+import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.ISparseNDArray;
 import org.nd4j.linalg.cpu.nativecpu.blas.*;
+import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.BaseSparseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.io.File;
+import java.util.Collection;
+import java.util.List;
+import java.util.Random;
 
 /**
  * @author Audrey Loeffel
@@ -42,5 +55,7 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     public ISparseNDArray createSparse(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape){
         return new SparseNDArrayCSR(data, columns, pointerB, pointerE, shape);
     }
+
+
 
 }
