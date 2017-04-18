@@ -52,7 +52,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
             Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, null, 0);
 
             if (ptr == null)
-                throw new RuntimeException("Failed to allocate " + bytes + " bytes from DEVICE memory");
+                throw new RuntimeException("Failed to allocate " + bytes + " bytes from DEVICE [" + Nd4j.getAffinityManager().getDeviceForCurrentThread() + "] memory");
 
             if (initialize) {
                 CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
