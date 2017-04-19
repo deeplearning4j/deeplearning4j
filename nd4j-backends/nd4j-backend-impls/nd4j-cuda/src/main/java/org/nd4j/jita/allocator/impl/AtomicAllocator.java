@@ -438,8 +438,8 @@ public class AtomicAllocator implements Allocator {
             point.setAllocationStatus(AllocationStatus.DEVICE);
 
 
-            if (!ptrDev.isLeaked())
-                point.setAttached(true);
+            //if (!ptrDev.isLeaked())
+            point.setAttached(true);
 
             point.setPointers(pair);
         } else {

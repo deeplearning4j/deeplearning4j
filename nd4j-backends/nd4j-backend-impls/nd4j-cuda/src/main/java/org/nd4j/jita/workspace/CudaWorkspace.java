@@ -101,7 +101,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 long prevOffset = deviceOffset.getAndAdd(requiredMemory);
 
                 if (isDebug.get())
-                    log.info("Workspace [{}] device_{}: alloc array of {} bytes, capacity of {} elements", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory, numElements);
+                    log.info("Workspace [{}] device_{}: alloc array of {} bytes, capacity of {} elements; offset: {}; size: {};", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory, numElements, deviceOffset.get(), currentSize.get());
 
                 PagedPointer ptr = workspace.getDevicePointer().withOffset(prevOffset, numElements);
 
@@ -142,6 +142,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                         //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
                         PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, initialize), numElements);
                         //pointer.setLeaked(true);
+                        pointer.isLeaked();
 
                         externalAllocations.add(new PointersPair(null, pointer));
 
@@ -200,6 +201,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
     @Override
     protected void clearExternalAllocations() {
+        //log.info("Workspace [{}] device_{}: clearing external allocations...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
         for (PointersPair pair : externalAllocations) {
             if (pair.getHostPointer() != null)
                 NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pair.getHostPointer());
