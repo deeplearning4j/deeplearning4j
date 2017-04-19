@@ -192,38 +192,39 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                         writeables.add(recordReader.next());
                     }
                 }
+            } else {
+                break;
             }
         }
 
-
-        final DataSet[] dataSetArray = new DataSet[num];
-        final RecordMetaData[] metaArray = new RecordMetaData[num];
+        final int numLoops = collectMetaData ? records.size() : writeables.size();
+        final DataSet[] dataSetArray = new DataSet[numLoops];
+        final RecordMetaData[] metaArray = new RecordMetaData[numLoops];
 
         // here we parallelize our for loop to speed up underlying bottlenecks in array conversion
         // num is passed to specify how many loops will be run
         Parallel.For(
-            num,
+            numLoops,
             taskExecutor,
             new Parallel.Operation() {
                 public void perform(int i) {
                     if (recordReader instanceof SequenceRecordReader) {
-                        dataSetArray[i] = getDataSet(writeables.get(i));
+                        DataSet d = getDataSet(writeables.get(i));
+                        if(d != null)
+                            dataSetArray[i] = d;
                     } else {
                         if (collectMetaData) {
-                            DataSet d = getDataSet(records.get(i));
+                            Record record = records.get(i);
+                            DataSet d = getDataSet(record.getRecord());
                             if (d != null) {
                                 dataSetArray[i] = d;
                                 metaArray[i] = record.getMetaData();
-//                                    dataSets.add(i, d);
-//                                    meta.add(i, record.getMetaData());
                             }
                         } else {
                             try {
-                                List<Writable> record = recordReader.next();
-                                DataSet d = getDataSet(record);
+                                DataSet d = getDataSet(writeables.get(i));
                                 if (d != null)
                                     dataSetArray[i] = d;
-//                                        dataSets.add(i, d);
                             } catch (Exception e) {
                                 log.warn("Unable to get dataset ...skipping", e);
                             }

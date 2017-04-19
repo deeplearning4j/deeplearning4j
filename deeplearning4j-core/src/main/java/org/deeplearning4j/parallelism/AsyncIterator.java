@@ -45,10 +45,11 @@ public class AsyncIterator<T extends Object> implements Iterator<T> {
             if (nextElement != null && nextElement != terminator) {
                 return true;
             }
-            nextElement = buffer.take();
-            if (nextElement == terminator)
-                return false;
-            return true;
+            if(nextElement == terminator) return false;
+            else {
+                nextElement = buffer.take();
+                return true;
+            }
         } catch (Exception e) {
             log.error("Premature end of loop!");
             return false;
