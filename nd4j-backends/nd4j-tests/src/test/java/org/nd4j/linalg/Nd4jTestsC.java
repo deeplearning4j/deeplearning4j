@@ -4023,6 +4023,17 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp2, copy);
     }
 
+    @Test
+    public void testReductionAgreement1() throws Exception {
+        INDArray row = Nd4j.linspace(1,3,3);
+        INDArray mean0 = row.mean(0);
+        assertFalse(mean0 == row);       //True: same object (should be a copy)
+
+        INDArray col = Nd4j.linspace(1,3,3).transpose();
+        INDArray mean1 = col.mean(1);
+        assertFalse(mean1 == col);
+    }
+
     @Override
     public char ordering() {
         return 'c';
