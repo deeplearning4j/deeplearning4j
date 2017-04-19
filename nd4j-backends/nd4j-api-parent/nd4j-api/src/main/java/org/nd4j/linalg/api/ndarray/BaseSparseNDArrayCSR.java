@@ -213,16 +213,19 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
 
     @Override
     public boolean isScalar() {
-        return super.isScalar();
+        return false;
+        //todo
     }
 
     @Override
     public int[] shape() {
+        //TODO
         return super.shape();
     }
 
     @Override
     public int[] stride() {
+        // Sparse matrix hasn't any stride. return .. ?
         return super.stride();
     }
 }

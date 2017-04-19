@@ -25,6 +25,63 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
 
     public CpuSparseNDArrayFactory(){}
 
+    @Override
+    public INDArray createSparse(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape){
+        return new SparseNDArrayCSR(data, columns, pointerB, pointerE, shape);
+    }
+
+    //  TODO ->
+
+    @Override
+    public IComplexFloat createFloat(float real, float imag) {
+        return null;
+    }
+
+    @Override
+    public IComplexDouble createDouble(double real, double imag) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(INDArray arr) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(List<IComplexNDArray> arrs, int[] shape) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(float[] data, int[] shape, int[] stride, int offset) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, int offset) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(double[] data, int[] shape, int[] stride, int offset) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(List<INDArray> list, int[] shape) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(double[] data, int[] shape, int[] stride, int offset, char ordering) {
+        return null;
+    }
+
     static{
         Nd4j.getBlasWrapper();
     }
@@ -52,10 +109,272 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
-    public ISparseNDArray createSparse(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape){
-        return new SparseNDArrayCSR(data, columns, pointerB, pointerE, shape);
+    public INDArray create(int[] shape, DataBuffer buffer) {
+        return null;
     }
 
+    @Override
+    public INDArray toFlattened(char order, Collection<INDArray> matrices) {
+        return null;
+    }
 
+    @Override
+    public INDArray create(double[][] data) {
+        return null;
+    }
 
+    @Override
+    public INDArray create(double[][] data, char ordering) {
+        return null;
+    }
+
+    @Override
+    public void shuffle(INDArray array, Random rnd, int... dimension) {
+
+    }
+
+    @Override
+    public void shuffle(Collection<INDArray> array, Random rnd, int... dimension) {
+
+    }
+
+    @Override
+    public void shuffle(List<INDArray> array, Random rnd, List<int[]> dimensions) {
+
+    }
+
+    @Override
+    public INDArray average(INDArray target, INDArray[] arrays) {
+        return null;
+    }
+
+    @Override
+    public INDArray average(INDArray[] arrays) {
+        return null;
+    }
+
+    @Override
+    public INDArray average(Collection<INDArray> arrays) {
+        return null;
+    }
+
+    @Override
+    public INDArray average(INDArray target, Collection<INDArray> arrays) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(DataBuffer data) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(DataBuffer data) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(DataBuffer data, int rows, int columns, int[] stride, int offset) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(DataBuffer data, int rows, int columns, int[] stride, int offset) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(DataBuffer data, int[] shape, int[] stride, int offset) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int[] stride, int offset) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int[] stride, int offset, char ordering) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int[] stride, char ordering) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, int offset, char ordering) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(IComplexNumber[] data, int[] shape, char ordering) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(DataBuffer data, int[] shape) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(DataBuffer data, int[] shape) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(DataBuffer data, int[] shape, int[] stride) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(DataBuffer data, int[] shape, int[] stride, int offset) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(DataBuffer buffer, int[] shape, int offset, char ordering) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(DataBuffer buffer, int[] shape, int offset) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(float[] data, int[] shape, int offset, char ordering) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(float[] data, int[] shape, int offset) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(float[] data, int[] shape, int[] stride, int offset, char ordering) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(float[][] floats) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(float[][] data, char ordering) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(float[] dim) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(float[] data, int[] shape, int[] stride, int offset, char ordering) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(DataBuffer buffer, int[] shape, int offset) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(int[] shape, char ordering) {
+        return null;
+    }
+
+    @Override
+    public INDArray createUninitialized(int[] shape, char ordering) {
+        return null;
+    }
+
+    @Override
+    public INDArray createUninitializedDetached(int[] shape, char ordering) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(DataBuffer data, int[] newShape, int[] newStride, int offset, char ordering) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(DataBuffer data, int[] newDims, int[] newStrides, int offset, char ordering) {
+        return null;
+    }
+
+    @Override
+    public IComplexNDArray createComplex(float[] data, Character order) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(float[] data, int[] shape, int offset, Character order) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(float[] data, int rows, int columns, int[] stride, int offset, char ordering) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(double[] data, int[] shape, char ordering) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(List<INDArray> list, int[] shape, char ordering) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(double[] data, int[] shape, int offset) {
+        return null;
+    }
+
+    @Override
+    public INDArray create(double[] data, int[] shape, int[] stride, int offset, char ordering) {
+        return null;
+    }
+
+    @Override
+    public INDArray convertDataEx(DataBuffer.TypeEx typeSrc, INDArray source, DataBuffer.TypeEx typeDst) {
+        return null;
+    }
+
+    @Override
+    public DataBuffer convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst) {
+        return null;
+    }
+
+    @Override
+    public void convertDataEx(DataBuffer.TypeEx typeSrc, DataBuffer source, DataBuffer.TypeEx typeDst, DataBuffer target) {
+
+    }
+
+    @Override
+    public void convertDataEx(DataBuffer.TypeEx typeSrc, Pointer source, DataBuffer.TypeEx typeDst, Pointer target, long length) {
+
+    }
+
+    @Override
+    public INDArray createFromNpyPointer(Pointer pointer) {
+        return null;
+    }
+
+    @Override
+    public INDArray createFromNpyFile(File file) {
+        return null;
+    }
+
+    @Override
+    public INDArray[] tear(INDArray tensor, int... dimensions) {
+        return new INDArray[0];
+    }
 }

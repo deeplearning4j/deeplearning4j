@@ -1818,4 +1818,9 @@ public interface NDArrayFactory {
 
 
     INDArray[] tear(INDArray tensor, int... dimensions);
+
+    // =========== Sparse methods ===========
+
+    INDArray createSparse(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape);
+
 }
