@@ -746,7 +746,7 @@ public class ComputationGraph implements Serializable, Model {
 
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 //.initialSize(100 * 1024L * 1024L)
-                .overallocationLimit(0.3)
+                .overallocationLimit(0.15)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .cyclesBeforeInitialization(3)
                 .policyLearning(LearningPolicy.OVER_TIME)
@@ -839,7 +839,7 @@ public class ComputationGraph implements Serializable, Model {
 
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
-                .overallocationLimit(0.15)
+                .overallocationLimit(0.3)
                 .policyLearning(LearningPolicy.OVER_TIME)
                 .cyclesBeforeInitialization(3)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
@@ -1205,7 +1205,7 @@ public class ComputationGraph implements Serializable, Model {
 
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
-                .overallocationLimit(0.5)
+                .overallocationLimit(0.15)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 //.cyclesBeforeInitialization(topologicalOrder.length)
                 .policyAllocation(AllocationPolicy.OVERALLOCATE)
@@ -1281,8 +1281,9 @@ public class ComputationGraph implements Serializable, Model {
             }
         }
 
-        if (configuration.getWorkspaceMode() == WorkspaceMode.SEPARATE)
-            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
+        if (!train)
+            if (configuration.getWorkspaceMode() == WorkspaceMode.SEPARATE)
+                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
 
         return layerActivations;
     }
@@ -1392,7 +1393,7 @@ public class ComputationGraph implements Serializable, Model {
         }
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
-                .overallocationLimit(0.5)
+                .overallocationLimit(0.15)
                 //.cyclesBeforeInitialization(topologicalOrder.length)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .policyLearning(LearningPolicy.OVER_TIME)
@@ -1400,7 +1401,8 @@ public class ComputationGraph implements Serializable, Model {
 
         MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy :
                 configuration.getWorkspaceMode() == WorkspaceMode.SINGLE ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceBackProp);
+                         //: Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceBackProp);
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceFeedForward);
 
 
         LinkedList<Triple<String, INDArray, Character>> gradients = new LinkedList<>();
@@ -1494,7 +1496,7 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         if (configuration.getWorkspaceMode() == WorkspaceMode.SEPARATE)
-            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceBackProp).initializeWorkspace();
+            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
 
         this.gradient = gradient;
     }
