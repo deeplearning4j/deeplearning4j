@@ -55,6 +55,26 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             .policyAllocation(AllocationPolicy.STRICT)
             .build();
 
+    private static final WorkspaceConfiguration reallocateConfiguration = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.1)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyLearning(LearningPolicy.OVER_TIME)
+            .policyMirroring(MirroringPolicy.FULL)
+            .policyAllocation(AllocationPolicy.STRICT)
+            .build();
+
+    private static final WorkspaceConfiguration reallocateDelayedConfiguration = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.1)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .cyclesBeforeInitialization(3)
+            .policyLearning(LearningPolicy.OVER_TIME)
+            .policyMirroring(MirroringPolicy.FULL)
+            .policyAllocation(AllocationPolicy.STRICT)
+            .build();
+
+
 
     private static final WorkspaceConfiguration firstConfiguration = WorkspaceConfiguration.builder()
             .initialSize(0)
@@ -103,7 +123,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             }
 
             // only checking after workspace is initialized
-            if (x > 5) {
+            if (x > 4) {
                 assertEquals(5 * 100 * Nd4j.sizeOfDataType(), ws1.getCurrentSize());
 
                 // if we've passed 5 iterations - workspace is initialized, and now offset mechanics works
@@ -111,9 +131,9 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 //                    assertEquals(2000, ws1.getHostOffset());
   //              else
 //                    assertEquals((x % 5) * 100 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
-            } else if (x < 5) {
+            } else if (x < 4) {
                 // we're making sure we're not initialize early
-                assertEquals(0, ws1.getCurrentSize());
+                assertEquals("Failed on iteration " + x,0, ws1.getCurrentSize());
             }
         }
 
@@ -258,6 +278,53 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         }
 
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
+
+    @Test
+    public void testReallocate2() throws Exception {
+        MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(reallocateDelayedConfiguration, "WS_1");
+
+        for (int i = 1; i <= 10; i++) {
+            try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(reallocateDelayedConfiguration, "WS_1")) {
+                INDArray array = Nd4j.create(100 * i);
+            }
+
+            if (i >= 3)
+                assertEquals("Failed on iteration " + i,100 * i * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+            else
+                assertEquals(0, workspace.getCurrentSize());
+        }
+    }
+
+    @Test
+    public void testReallocate1() throws Exception {
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(reallocateConfiguration, "WS_1")) {
+            INDArray array = Nd4j.create(100);
+        }
+
+
+
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(reallocateConfiguration, "WS_1");
+        workspace.initializeWorkspace();
+
+        assertEquals(100 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(reallocateConfiguration, "WS_1")) {
+            INDArray array = Nd4j.create(1000);
+        }
+
+        assertEquals(1000 * Nd4j.sizeOfDataType(), workspace.getMaxCycleAllocations());
+
+        workspace.initializeWorkspace();
+
+        assertEquals(1000 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+
+        // now we're working on reallocated array, that should be able to hold >100 elements
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(reallocateConfiguration, "WS_1")) {
+            INDArray array = Nd4j.create(500).assign(1.0);
+
+            assertEquals(1.0, array.meanNumber().doubleValue(), 0.01);
+        }
     }
 
     @Test

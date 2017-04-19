@@ -48,6 +48,20 @@ public class CpuWorkspace extends Nd4jWorkspace {
     }
 
     @Override
+    public void destroyWorkspace() {
+        currentSize.set(0);
+        hostOffset.set(0);
+        deviceOffset.set(0);
+
+        clearExternalAllocations();
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
+
+        workspace.setDevicePointer(null);
+        workspace.setHostPointer(null);
+    }
+
+    @Override
     protected void resetWorkspace() {
         //Pointer.memset(workspace.getHostPointer(), 0, currentSize.get() + SAFETY_OFFSET);
     }

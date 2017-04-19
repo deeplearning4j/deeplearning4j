@@ -68,6 +68,24 @@ public class CudaWorkspace extends Nd4jWorkspace {
         return this.alloc(requiredMemory, MemoryKind.DEVICE, type, initialize);
     }
 
+
+    @Override
+    public void destroyWorkspace() {
+        currentSize.set(0);
+        hostOffset.set(0);
+        deviceOffset.set(0);
+
+        clearExternalAllocations();
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(workspace.getDevicePointer(), null);
+
+        workspace.setDevicePointer(null);
+        workspace.setHostPointer(null);
+    }
+
+
     @Override
     public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type type, boolean initialize) {
         long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
@@ -136,6 +154,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 AllocationShape shape = new AllocationShape(requiredMemory / Nd4j.sizeOfDataType(type), Nd4j.sizeOfDataType(type), type);
 
                 switch (workspaceConfiguration.getPolicySpill()) {
+                    case REALLOCATE:
                     case EXTERNAL:
                         cycleAllocations.addAndGet(requiredMemory);
                         //
@@ -147,10 +166,6 @@ public class CudaWorkspace extends Nd4jWorkspace {
                         externalAllocations.add(new PointersPair(null, pointer));
 
                         return pointer;
-                    case REALLOCATE: {
-                        // TODO: basically reallocate (if possible), and call for alloc once again
-                        throw new UnsupportedOperationException("Not implemented yet");
-                    }
                     case FAIL:
                     default: {
                         throw new ND4JIllegalStateException("Can't allocate memory: Workspace is full");
@@ -174,6 +189,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 AllocationShape shape = new AllocationShape(requiredMemory / Nd4j.sizeOfDataType(type), Nd4j.sizeOfDataType(type), type);
 
                 switch (workspaceConfiguration.getPolicySpill()) {
+                    case REALLOCATE:
                     case EXTERNAL:
 
                         //memoryManager.allocate(requiredMemory, MemoryKind.HOST, true)
@@ -184,10 +200,6 @@ public class CudaWorkspace extends Nd4jWorkspace {
                         externalAllocations.add(new PointersPair(pointer, null));
 
                         return pointer;
-                    case REALLOCATE: {
-                        // TODO: basically reallocate (if possible), and call for alloc once again
-                        throw new UnsupportedOperationException("Not implemented yet");
-                    }
                     case FAIL:
                     default: {
                         throw new ND4JIllegalStateException("Can't allocate memory: Workspace is full");
