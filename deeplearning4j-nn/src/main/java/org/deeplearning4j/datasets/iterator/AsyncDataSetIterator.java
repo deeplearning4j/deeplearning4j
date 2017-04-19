@@ -17,6 +17,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * Async prefetching iterator wrapper for MultiDataSetIterator implementations
+ *
  * @author raver119@gmail.com
  */
 @Slf4j
@@ -51,8 +53,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
     public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace) {
         if (queueSize <= 0)
             throw new IllegalArgumentException("Queue size must be > 0");
-        if (queueSize < 2)
-            queueSize = 2;
+        if (queueSize < 4)
+            queueSize = 4;
 
         if (iterator.resetSupported() && useWorkspace) {
             iterator.reset();
