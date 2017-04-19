@@ -129,6 +129,13 @@ public interface MemoryWorkspace extends AutoCloseable {
     long getMaxCycleAllocations();
 
     /**
+     * This methos returns current allocated size of this workspace
+     *
+     * @return
+     */
+    long getCurrentSize();
+
+    /**
      * This method is for compatibility with "try-with-resources" java blocks.
      * Internally it should be equal to notifyScopeLeft() method
      *

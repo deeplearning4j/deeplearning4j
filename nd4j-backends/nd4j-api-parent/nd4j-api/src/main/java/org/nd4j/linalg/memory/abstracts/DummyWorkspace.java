@@ -184,6 +184,16 @@ public class DummyWorkspace implements MemoryWorkspace {
         return 0;
     }
 
+    /**
+     * This methos returns current allocated size of this workspace
+     *
+     * @return
+     */
+    @Override
+    public long getCurrentSize() {
+        return 0;
+    }
+
     @Override
     public void close() {
         Nd4j.getMemoryManager().setCurrentWorkspace(parentWorkspace);
