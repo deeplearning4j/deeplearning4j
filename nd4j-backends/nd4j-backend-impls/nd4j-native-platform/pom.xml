@@ -22,12 +22,6 @@
             <version>${openblas.version}-${javacpp-presets.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>mkl-platform</artifactId>
-            <version>${mkl.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>${nd4j.backend}</artifactId>
             <version>${project.version}</version>

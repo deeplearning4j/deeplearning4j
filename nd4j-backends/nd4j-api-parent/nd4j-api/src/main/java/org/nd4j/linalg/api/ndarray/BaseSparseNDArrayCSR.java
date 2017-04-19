@@ -1,7 +1,6 @@
 package org.nd4j.linalg.api.ndarray;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.buffer.IntBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -12,7 +11,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     protected static final SparseFormat format = SparseFormat.CSR;
     protected transient volatile DataBuffer values;
-    protected transient volatile DataBuffer columns;
+    protected transient volatile DataBuffer columnsPointers;
     protected transient volatile DataBuffer pointerB;
     protected transient volatile DataBuffer pointerE;
 
@@ -23,7 +22,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
      * The length of the values and columns arrays is equal to the number of non-zero elements in A.
      * The length of the pointerB and pointerE arrays is equal to the number of rows in A.
      * @param data a double array that contains the non-zero element of the sparse matrix A
-     * @param columns Element i of the integer array columns is the number of the column in A that contains the i-th value
+     * @param columnsPointers Element i of the integer array columns is the number of the column in A that contains the i-th value
      *                in the values array.
      * @param pointerB Element j of this integer array gives the index of the element in the values array that is first
      *                 non-zero element in a row j of A. Note that this index is equal to pointerB(j) - pointerB(1)+1 .
@@ -31,31 +30,34 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
      *                 element in the values array that is last non-zero element in a row j of A.
      * @param shape Shape of the matrix A
      */
-    public BaseSparseNDArrayCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public BaseSparseNDArrayCSR(double[] data, int[] columnsPointers, int[] pointerB, int[] pointerE, int[] shape) {
 
-        checkArgument(data.length == columns.length);
+        checkArgument(data.length == columnsPointers.length);
         checkArgument(pointerB.length == pointerE.length);
 
         // TODO
         if (shape.length == 2) {
-            nbRows = shape[0];
-            nbColumns = shape[1];
+            rows = shape[0];
+            columns = shape[1];
+            rank = shape.length;
         } else if (shape.length == 1) {
-            nbRows = 1;
-            nbColumns = shape[0];
+            rows = 1;
+            this.columns = shape[0];
+            rank = 2;
         } else {
             // ??
+            rank = shape.length;
         }
 
         int valuesSpace = (int) (data.length * THRESHOLD_MEMORY_ALLOCATION) + data.length;
         this.values = Nd4j.createBuffer(data);
         this.values.setData(data);
-        this.columns = Nd4j.getDataBufferFactory().createInt(valuesSpace);
-        this.columns.setData(columns);
+        this.columnsPointers = Nd4j.getDataBufferFactory().createInt(valuesSpace);
+        this.columnsPointers.setData(columnsPointers);
         nnz = data.length;
 
         // The size of these pointers are constant
-        int pointersSpace = nbRows;
+        int pointersSpace = rows;
         this.pointerB = Nd4j.getDataBufferFactory().createInt(pointersSpace);
         this.pointerB.setData(pointerB);
         this.pointerE = Nd4j.getDataBufferFactory().createInt(pointersSpace);
@@ -65,26 +67,26 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     public ISparseNDArray putScalar(int row, int col, double value){
         // TODO use shape information to get the corresponding index ?
 
-        checkArgument(row < nbRows);
-        checkArgument(col < nbColumns);
+        checkArgument(row < rows);
+        checkArgument(col < columns);
 
         int idx = pointerB.getInt(row);
         int idxNextRow = pointerE.getInt(row    );
 
-        while(columns.getInt(idx) < col && columns.getInt(idx) < idxNextRow) {
+        while(columnsPointers.getInt(idx) < col && columnsPointers.getInt(idx) < idxNextRow) {
             idx ++;
         }
-        if (columns.getInt(idx) == col) {
+        if (columnsPointers.getInt(idx) == col) {
             values.put(idx, value);
         } else {
             //Add a new entry in both buffers at a given position
             values = addAtPosition(values, nnz, idx, value);
-            columns = addAtPosition(columns, nnz, idx, col);
+            columnsPointers = addAtPosition(columnsPointers, nnz, idx, col);
             nnz ++;
 
             // shift the indices of the next rows
             pointerE.put(row, pointerE.getInt(row) + 1);
-            for(int i = row + 1; i < nbRows; i ++){
+            for(int i = row + 1; i < rows; i ++){
                 pointerB.put(i, pointerB.getInt(i) + 1);
                 pointerE.put(i, pointerE.getInt(i) + 1);
             }
@@ -110,7 +112,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
      * Return the minor pointers. (columns for CSR, rows for CSC,...)
      * */
     public DataBuffer getMinorPointer(){
-        return columns;
+        return columnsPointers;
     }
 
     public double[] getDoubleValues(){
@@ -118,7 +120,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     }
 
     public double[] getColumns(){
-        return columns.getDoublesAt(0, (int) nnz);
+        return columnsPointers.getDoublesAt(0, (int) nnz);
     }
 
     public int[] getPointerBArray(){
@@ -160,5 +162,67 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     @Override
     public DataBuffer data(){return values;}
 
+    @Override
+    public int columns() {
+        return super.columns();
+    }
 
+    @Override
+    public int rows() {
+        return super.rows();
+    }
+
+    /**
+     * Checks whether the matrix is a vector.
+     */
+    @Override
+    public boolean isVector() {
+        return isRowVector() || isColumnVector();
+    }
+
+    @Override
+    public boolean isSquare() {
+
+        return isMatrix() && rows() == columns();
+    }
+
+    /**
+     * Checks whether the matrix is a row vector.
+     */
+    @Override
+    public boolean isRowVector() {
+        return rank == 2 && rows == 1;
+    }
+
+    /**
+     * Checks whether the matrix is a column vector.
+     */
+    @Override
+    public boolean isColumnVector() {
+        return rank == 2 && columns == 1;
+    }
+
+
+    @Override
+    public boolean isMatrix() {
+        if (isMatrix != null)
+            return isMatrix;
+        isMatrix = (rank == 2 && (size(0) != 1 && size(1) != 1));
+        return isMatrix;
+    }
+
+    @Override
+    public boolean isScalar() {
+        return super.isScalar();
+    }
+
+    @Override
+    public int[] shape() {
+        return super.shape();
+    }
+
+    @Override
+    public int[] stride() {
+        return super.stride();
+    }
 }

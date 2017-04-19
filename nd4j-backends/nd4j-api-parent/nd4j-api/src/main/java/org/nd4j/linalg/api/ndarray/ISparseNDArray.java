@@ -12,5 +12,10 @@ public interface ISparseNDArray extends INDArray {
  *
  * */
 
+ /**
+  * Return a array of non-major pointers
+  * i.e. return the column indexes in case of row-major ndarray
+  * @return a DataBuffer of indexes
+  * */
  DataBuffer getMinorPointer();
 }

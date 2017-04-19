@@ -20,7 +20,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     protected static final double THRESHOLD_MEMORY_ALLOCATION = 0.5;
     protected transient volatile long nnz = -1;
-    protected int nbRows, nbColumns;
+    protected int rows, columns, rank;
     protected Boolean isVector = null;
     protected Boolean isMatrix = null;
     protected Boolean isScalar = null;

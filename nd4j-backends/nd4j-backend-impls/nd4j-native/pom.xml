@@ -23,7 +23,6 @@
             <type>${dependency.packaging}</type>
             <classifier>${dependency.classifier}</classifier>
         </dependency>
-
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacpp</artifactId>
@@ -44,12 +43,12 @@
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>mkl</artifactId>
             <version>${mkl.version}</version>
+            <classifier>linux-x86_64</classifier>
         </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>mkl</artifactId>
             <version>${mkl.version}</version>
-            <classifier>${dependency.platform}</classifier>
         </dependency>
 
         <dependency>
