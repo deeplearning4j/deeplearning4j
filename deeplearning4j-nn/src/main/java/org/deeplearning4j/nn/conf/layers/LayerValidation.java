@@ -95,8 +95,13 @@ public class LayerValidation {
                 }
                 break;
             case ADADELTA:
-                if (Double.isNaN(layer.getRho()))
+                if(Double.isNaN(rho) && Double.isNaN(layer.getRho())){
+                    layer.setRho(AdaDelta.DEFAULT_ADADELTA_RHO);
+                    log.warn("Layer \"" + layerName + "\" AdaDelta rho is automatically set to "
+                            + AdaDelta.DEFAULT_ADADELTA_RHO + ". Add rho to configuration to change the value.");
+                } else if (Double.isNaN(layer.getRho())) {
                     layer.setRho(rho);
+                }
 
                 if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())) {
                     layer.setEpsilon(AdaDelta.DEFAULT_ADADELTA_EPSILON);
