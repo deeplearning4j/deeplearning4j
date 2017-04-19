@@ -104,7 +104,7 @@ Rather than focus on one pixel at a time, a convolutional net takes in square pa
 <iframe src="https://cs231n.github.io/assets/conv-demo/index.html" width="100%" height="700px;" style="border:none;"></iframe>
 *Credit for this excellent animation goes to [Andrej Karpathy](https://cs231n.github.io/).*
 
-Imagine two matrices. One is 30x30, and another is 3x3. That is, the filter covers one-tenth of one image channel's surface area. 
+Imagine two matrices. One is 30x30, and another is 3x3. That is, the filter covers one-hundredth of one image channel's surface area. 
 
 We are going to take the dot product of the filter with this patch of the image channel. If the two matrices have high values in the same positions, the dot product's output will be high. If they don't, it will be low. In this way, a single value -- the output of the dot product -- can tell us whether the pixel pattern in the underlying image matches the pixel pattern expressed by our filter. 
 
