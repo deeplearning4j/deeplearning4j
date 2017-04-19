@@ -503,28 +503,39 @@ public class JCublasNDArray extends BaseNDArray {
 
     @Override
     public INDArray leverageTo(String id) {
-        if (!isAttached())
+        if (!isAttached()) {
+//            log.info("Skipping detached");
             return this;
+        }
 
-        if (!Nd4j.getWorkspaceManager().checkIfWorkspaceExists(id))
+        if (!Nd4j.getWorkspaceManager().checkIfWorkspaceExists(id)) {
+//            log.info("Skipping non-existent");
             return this;
+        }
 
         MemoryWorkspace current = Nd4j.getMemoryManager().getCurrentWorkspace();
 
         MemoryWorkspace target = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(id);
 
-        if (current == target)
+        if (current == target) {
+//            log.info("Skipping equals A");
             return this;
+        }
 
         if (this.data.getParentWorkspace() == target) {
+//            log.info("Skipping equals B");
             return this;
         }
 
         Nd4j.getMemoryManager().setCurrentWorkspace(target);
+
+//        log.info("Leveraging...");
+
         INDArray copy = null;
         if (!this.isView()) {
+        //if (1 < 0) {
             if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
             DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
 
@@ -532,7 +543,17 @@ public class JCublasNDArray extends BaseNDArray {
             AllocationPoint pointSrc = AtomicAllocator.getInstance().getAllocationPoint(this.data);
 
             CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(pointDst, pointSrc);
+/*
+            if (NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(pointDst.getDevicePointer(), 0, 1, 0, context.getOldStream()) == 0)
+                throw new ND4JIllegalStateException("memsetAsync 1 failed");
 
+            context.syncOldStream();
+
+            if (NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(pointSrc.getDevicePointer(), 0, 1, 0, context.getOldStream()) == 0)
+                throw new ND4JIllegalStateException("memsetAsync 2 failed");
+
+            context.syncOldStream();
+*/
             if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getDevicePointer(), this.lengthLong() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream()) == 0)
                 throw new ND4JIllegalStateException("memcpyAsync failed");
 
@@ -547,6 +568,9 @@ public class JCublasNDArray extends BaseNDArray {
             AtomicAllocator.getInstance().getFlowController().registerAction(context, pointDst, pointSrc);
         } else {
             copy = this.dup(this.ordering());
+
+            if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
         }
 
         Nd4j.getMemoryManager().setCurrentWorkspace(current);

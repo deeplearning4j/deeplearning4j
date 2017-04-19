@@ -45,6 +45,17 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             .build();
 
 
+    private static final WorkspaceConfiguration delayedConfiguration = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.1)
+            .policySpill(SpillPolicy.EXTERNAL)
+            .policyLearning(LearningPolicy.OVER_TIME)
+            .policyMirroring(MirroringPolicy.FULL)
+            .cyclesBeforeInitialization(3)
+            .policyAllocation(AllocationPolicy.STRICT)
+            .build();
+
+
     private static final WorkspaceConfiguration firstConfiguration = WorkspaceConfiguration.builder()
             .initialSize(0)
             .overallocationLimit(0.1)
@@ -250,22 +261,105 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testNestedWorkspaces9() throws Exception {
+        for(int x = 1; x < 10; x++) {
+            try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(delayedConfiguration, "WS_1")) {
+                INDArray array = Nd4j.create(100 * x);
+            }
+        }
+
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(delayedConfiguration, "WS_1");
+        workspace.initializeWorkspace();
+
+        assertEquals(300 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+    }
+
+
+    @Test
+    public void testNestedWorkspaces8() throws Exception {
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopConfiguration, "WS_1")) {
+            INDArray array = Nd4j.create(100);
+        }
+
+
+
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(loopConfiguration, "WS_1");
+        workspace.initializeWorkspace();
+
+        assertEquals(100 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopConfiguration, "WS_1")) {
+            INDArray array = Nd4j.create(1000);
+        }
+
+        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(loopConfiguration, "WS_1").initializeWorkspace();
+
+        assertEquals(100 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+    }
+
+    @Test
+    public void testNestedWorkspaces7() throws Exception {
+        try(Nd4jWorkspace wsExternal = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration,"External")) {
+            INDArray array1 = Nd4j.create(10);
+            INDArray array2 = null;
+            INDArray array3 = null;
+            INDArray array4 = null;
+            INDArray array5 = null;
+
+
+            try(Nd4jWorkspace wsFeedForward = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration,"FeedForward")) {
+                array2 = Nd4j.create(10);
+                assertEquals(true, array2.isAttached());
+
+                try (Nd4jWorkspace borrowed = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("External").notifyScopeBorrowed()) {
+                    array3 = Nd4j.create(10);
+
+                    assertTrue(wsExternal == array3.data().getParentWorkspace());
+
+                    try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        array4 = Nd4j.create(10);
+                    }
+
+                    array5 = Nd4j.create(10);
+                    log.info("Workspace5: {}", array5.data().getParentWorkspace());
+                    assertTrue(null == array4.data().getParentWorkspace());
+                    assertTrue(wsExternal == array5.data().getParentWorkspace());
+                }
+
+                assertEquals(true, array3.isAttached());
+                assertEquals(false, array4.isAttached());
+                assertEquals(true, array5.isAttached());
+            }
+        }
+    }
+
+    @Test
     public void testNestedWorkspaces6() throws Exception {
 
         try(Nd4jWorkspace wsExternal = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(firstConfiguration,"External")) {
-            Nd4j.create(10);
+            INDArray array1 = Nd4j.create(10);
+            INDArray array2 = null;
+            INDArray array3 = null;
+            INDArray array4 = null;
+
 
             try(Nd4jWorkspace wsFeedForward = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(firstConfiguration,"FeedForward")) {
-                Nd4j.create(10);
-
+                array2 = Nd4j.create(10);
+                assertEquals(true, array2.isAttached());
 
                 try (Nd4jWorkspace borrowed = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("External").notifyScopeBorrowed()) {
-                    Nd4j.create(10);
+                    array3 = Nd4j.create(10);
+
+                    assertTrue(wsExternal == array3.data().getParentWorkspace());
                 }
 
+                assertEquals(true, array3.isAttached());
+
                 try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    Nd4j.create(10);
+                    array4 = Nd4j.create(10);
                 }
+
+                assertEquals(false, array4.isAttached());
             }
 
 

@@ -232,31 +232,32 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public void initializeWorkspace() {
-        if (workspaceConfiguration.getPolicyLearning() != LearningPolicy.NONE) {
-            if (workspaceConfiguration.getMaxSize() > 0)
+        if (!isInit.get())
+            if (workspaceConfiguration.getPolicyLearning() != LearningPolicy.NONE) {
+                if (workspaceConfiguration.getMaxSize() > 0)
                 currentSize.set(Math.min(maxCycle.get(), workspaceConfiguration.getMaxSize()));
-            else
-                currentSize.set(maxCycle.get());
+                else
+                    currentSize.set(maxCycle.get());
 
-            if (!isOver.get()) {
-                if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE && workspaceConfiguration.getOverallocationLimit() > 0 && currentSize.get() > 0) {
-                    currentSize.set(currentSize.get() + (long) (currentSize.get() * workspaceConfiguration.getOverallocationLimit()));
-                    isOver.set(true);
+                if (!isOver.get()) {
+                    if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE && workspaceConfiguration.getOverallocationLimit() > 0 && currentSize.get() > 0) {
+                        currentSize.set(currentSize.get() + (long) (currentSize.get() * workspaceConfiguration.getOverallocationLimit()));
+                        isOver.set(true);
+                    }
                 }
-            }
 
-            if (workspaceConfiguration.getMinSize() > 0 && currentSize.get() < workspaceConfiguration.getMinSize())
-                currentSize.set(workspaceConfiguration.getMinSize());
+                if (workspaceConfiguration.getMinSize() > 0 && currentSize.get() < workspaceConfiguration.getMinSize())
+                    currentSize.set(workspaceConfiguration.getMinSize());
 
-            if (externalAllocations.size() > 0) {
-                clearExternalAllocations();
-                externalAllocations.clear();
-                spilledAllocations.set(0);
-            }
+                if (externalAllocations.size() > 0) {
+                    clearExternalAllocations();
+                    externalAllocations.clear();
+                    spilledAllocations.set(0);
+                }
 
-            if (!isInit.get())
+
                 init();
-        }
+            }
     }
 
     @Override
@@ -294,18 +295,19 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public void close() {
-        if (isBorrowed.get()) {
-            isBorrowed.set(false);
-            Nd4j.getMemoryManager().setCurrentWorkspace(borrowingWorkspace);
-            return;
-        }
-
         if (tagScope.get() > 0) {
             if (tagScope.decrementAndGet() == 0){
                 Nd4j.getMemoryManager().setCurrentWorkspace(this);
             }
             return;
         }
+
+        if (isBorrowed.get()) {
+            isBorrowed.set(false);
+            Nd4j.getMemoryManager().setCurrentWorkspace(borrowingWorkspace);
+            return;
+        }
+
 
 //        if (Nd4j.getExecutioner() instanceof GridExecutioner)
 //            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
