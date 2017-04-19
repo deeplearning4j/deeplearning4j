@@ -55,6 +55,15 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             .policyAllocation(AllocationPolicy.STRICT)
             .build();
 
+    private static final WorkspaceConfiguration reallocateConfiguration = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.1)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyLearning(LearningPolicy.OVER_TIME)
+            .policyMirroring(MirroringPolicy.FULL)
+            .policyAllocation(AllocationPolicy.STRICT)
+            .build();
+
 
     private static final WorkspaceConfiguration firstConfiguration = WorkspaceConfiguration.builder()
             .initialSize(0)
@@ -258,6 +267,37 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         }
 
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
+
+    @Test
+    public void testReallocate1() throws Exception {
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(reallocateConfiguration, "WS_1")) {
+            INDArray array = Nd4j.create(100);
+        }
+
+
+
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(reallocateConfiguration, "WS_1");
+        workspace.initializeWorkspace();
+
+        assertEquals(100 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(reallocateConfiguration, "WS_1")) {
+            INDArray array = Nd4j.create(1000);
+        }
+
+        assertEquals(1000 * Nd4j.sizeOfDataType(), workspace.getMaxCycleAllocations());
+
+        workspace.initializeWorkspace();
+
+        assertEquals(1000 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+
+        // now we're working on reallocated array, that should be able to hold >100 elements
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(reallocateConfiguration, "WS_1")) {
+            INDArray array = Nd4j.create(500).assign(1.0);
+
+            assertEquals(1.0, array.meanNumber().doubleValue(), 0.01);
+        }
     }
 
     @Test
