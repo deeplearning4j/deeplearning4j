@@ -389,7 +389,7 @@ public class ParallelWrapper implements AutoCloseable {
             /*
                 if all workers are dispatched now, join till all are finished
             */
-            if (pos + 1 == workers || !iterator.hasNext()) {
+            if (pos + 1 == workers ) {
                 iterationsCounter.incrementAndGet();
 
                 for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {

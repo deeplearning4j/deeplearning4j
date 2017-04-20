@@ -33,7 +33,7 @@ public class ParameterServerTrainer extends DefaultTrainer {
     private ParameterServerClient parameterServerClient;
 
     @Override
-    public void feedMultiDataSet(@NonNull MultiDataSet dataSet) {
+    public void feedMultiDataSet(@NonNull MultiDataSet dataSet, long time) {
         if (getModel() instanceof ComputationGraph) {
             ComputationGraph computationGraph = (ComputationGraph) getModel();
             computationGraph.fit(dataSet);
@@ -47,7 +47,7 @@ public class ParameterServerTrainer extends DefaultTrainer {
     }
 
     @Override
-    public void feedDataSet(@NonNull DataSet dataSet) {
+    public void feedDataSet(@NonNull DataSet dataSet, long time) {
         if (getModel() instanceof ComputationGraph) {
             ComputationGraph computationGraph = (ComputationGraph) getModel();
             computationGraph.fit(dataSet);
