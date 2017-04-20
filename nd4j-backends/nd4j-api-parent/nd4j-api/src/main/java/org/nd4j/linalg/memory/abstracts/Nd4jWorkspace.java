@@ -341,7 +341,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
 
         if (workspaceConfiguration.getPolicyLearning() != LearningPolicy.NONE && maxCycle.get() > 0) {
-            log.info("Delayed workspace {}, device_{} initialization starts...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+            //log.info("Delayed workspace {}, device_{} initialization starts...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
             if (externalAllocations.size() > 0) {
                 clearExternalAllocations();
@@ -349,10 +349,10 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             }
 
             if ((workspaceConfiguration.getPolicyLearning() == LearningPolicy.OVER_TIME && workspaceConfiguration.getCyclesBeforeInitialization() == cyclesCount.intValue()) || (workspaceConfiguration.getPolicyLearning() == LearningPolicy.FIRST_LOOP && currentSize.get() == 0)) {
-                log.info("Initializing on cycle {}", cyclesCount.get());
+                //log.info("Initializing on cycle {}", cyclesCount.get());
                 initializeWorkspace();
             } else if (currentSize.get() > 0 && cycleAllocations.get() > 0 && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE) {
-                log.info("Reinit on cycle {}", cyclesCount.get());
+                //log.info("Reinit on cycle {}", cyclesCount.get());
                 initializeWorkspace();
             }
 
