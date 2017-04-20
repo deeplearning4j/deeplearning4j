@@ -1155,7 +1155,6 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         System.out.println(otherBytes);
         ByteBuffer directBuffer = ByteBuffer.allocateDirect(pathBytes.length).order(ByteOrder.nativeOrder());
         directBuffer.put(pathBytes);
-        directBuffer.put(pathBytes);
         directBuffer.rewind();
         directBuffer.position(0);
         Pointer pointer = nativeOps.numpyFromFile(new BytePointer(directBuffer));
