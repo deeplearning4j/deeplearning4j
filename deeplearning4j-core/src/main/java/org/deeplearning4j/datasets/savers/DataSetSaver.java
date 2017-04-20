@@ -13,13 +13,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.io.File;
 
 /**
+ * This class can be helpful when users try to save datasets in parallel manner
+ *
+ * the default number of threads is cores * 2
+ * (but you can set it manually using setNumThreads())
+ *
  * Created by kepricon on 17. 4. 19.
  */
 @Slf4j
 public class DataSetSaver {
-    private static final int NUM_CORES = Runtime.getRuntime().availableProcessors();
-    private static final int numThreads = NUM_CORES * 2;
-    private static final ExecutorService taskExecutor = Executors.newFixedThreadPool(numThreads);
+    private static int NUM_CORES = Runtime.getRuntime().availableProcessors();
+    private static int numThreads = NUM_CORES * 2;
+    private static ExecutorService taskExecutor = Executors.newFixedThreadPool(numThreads);
+
+    public static void setNumThreads(int numThreads) {
+        if (DataSetSaver.numThreads != numThreads) {
+            DataSetSaver.numThreads = numThreads;
+            taskExecutor = Executors.newFixedThreadPool(numThreads);
+        }
+    }
 
     public static void saveDataSets(DataSetIterator iter, String savePath) {
 

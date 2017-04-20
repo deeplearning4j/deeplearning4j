@@ -24,6 +24,11 @@ public class DataSetSaverTest {
         DataSetIterator iter = new CifarDataSetIterator(batchSize, totalExamples, new int[] {height, width, channels});
         iter = new MultipleEpochsIterator(iter, 500);
 
+        // if you want to set manually the number of threads
+        // call .setNumThreads like below
+        // unless it DataSetSaver uses default number of thread pool(cores *2)
+        // DataSetSaver.setNumThreads(20);
+
         String savePath = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),  "dl4j-cifar10");
         DataSetSaver.saveDataSets(iter, savePath);
     }
