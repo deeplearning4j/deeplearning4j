@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.ml.impl;
 
 
+import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.ml.Pipeline;
@@ -21,6 +22,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
@@ -69,6 +71,11 @@ public class AutoEncoderNetworkTest  {
         AutoEncoderModel spdm = AutoEncoderModel.load(fileName);
         Assert.assertNotNull(spdm);
         Assert.assertNotNull(spdm.transform(part2.get()));
+
+        File file = new File(fileName);
+        File file2 = new File(fileName + "_metadata");
+        FileUtils.deleteDirectory(file);
+        FileUtils.deleteDirectory(file2);
     }
 
     @After
