@@ -34,7 +34,6 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
 
         checkArgument(data.length == columnsPointers.length);
         checkArgument(pointerB.length == pointerE.length);
-
         // TODO
         if (shape.length == 2) {
             rows = shape[0];
@@ -55,6 +54,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         this.columnsPointers = Nd4j.getDataBufferFactory().createInt(valuesSpace);
         this.columnsPointers.setData(columnsPointers);
         nnz = data.length;
+        this.shape = shape;
 
         // The size of these pointers are constant
         int pointersSpace = rows;
@@ -112,7 +112,8 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
      * Return the minor pointers. (columns for CSR, rows for CSC,...)
      * */
     public DataBuffer getMinorPointer(){
-        return columnsPointers;
+        System.out.println(columnsPointers.length() + " nnz: " + length());
+        return Nd4j.getDataBufferFactory().create(columnsPointers, 0, length());
     }
 
     public double[] getDoubleValues(){
@@ -148,7 +149,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     }
 
     private DataBuffer addAtPosition(DataBuffer buf, long dataSize, int pos, double value){
-        // TODO add at the given position and shift the tail
+
         DataBuffer buffer = (buf.length() == dataSize) ? reallocate(buf) : buf;
         double[] tail = buffer.getDoublesAt(pos, (int) dataSize - pos);
 
@@ -164,12 +165,12 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
 
     @Override
     public int columns() {
-        return super.columns();
+        return columns;
     }
 
     @Override
     public int rows() {
-        return super.rows();
+        return rows;
     }
 
     /**
@@ -218,14 +219,24 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     }
 
     @Override
-    public int[] shape() {
-        //TODO
-        return super.shape();
-    }
-
-    @Override
     public int[] stride() {
         // Sparse matrix hasn't any stride. return .. ?
         return super.stride();
+    }
+
+    @Override
+    public INDArray toDense() {
+        // Dummy way - going to use the conversion routines in level2
+        INDArray result = Nd4j.zeros(shape());
+
+        int[] pointersB = pointerB.asInt();
+        int[] pointersE = pointerE.asInt();
+
+        for(int row = 0; row < rows(); row++){
+            for(int idx = pointersB[row]; idx < pointersE[row]; idx++){
+                result.put(row, columnsPointers.getInt(idx), values.getNumber(idx));
+            }
+        }
+        return result;
     }
 }

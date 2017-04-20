@@ -265,7 +265,11 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
      */
     @Override
     public int iamin(INDArray arr) {
-        throw new UnsupportedOperationException();
+        if (arr.isSparse()){
+            return Nd4j.getSparseBlasWrapper().level1().iamin(arr);
+        }else {
+            throw new UnsupportedOperationException();
+        }
     }
 
     /**

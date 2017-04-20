@@ -242,8 +242,8 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
                 haxpyi(n, alpha, x, pointers, y);
                 break;
             default:
+                throw new UnsupportedOperationException();
         }
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -281,10 +281,10 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
                 case DOUBLE:
                     droti(N, X, sparseX.getMinorPointer(), Y, c, s);
                     break;
-                case INT:
+                case FLOAT:
                     sroti(N, X, sparseX.getMinorPointer(), Y, c, s);
                     break;
-                case FLOAT:
+                case HALF:
                     hroti(N, X, sparseX.getMinorPointer(), Y, c, s);
                     break;
                 default: throw new UnsupportedOperationException();
@@ -325,7 +325,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
             case FLOAT:
                 sscal(N, alpha, X, 1);
                 break;
-            case INT:
+            case HALF:
                 hscal(N, alpha, X, 1);
                 break;
             default: throw new UnsupportedOperationException();

@@ -10,6 +10,7 @@ import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.indexing.conditions.Condition;
 
 import java.nio.IntBuffer;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -25,6 +26,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     protected Boolean isMatrix = null;
     protected Boolean isScalar = null;
     public static final boolean isSparse = true;
+    protected int[] shape; //todo: same as BaseNdArray
 
     protected DataBuffer reallocate(DataBuffer buffer) {
         int newSize = (int) buffer.length() * 2; // should be bound to max(nnz, size*2)
@@ -1306,7 +1308,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public int[] shape() {
-        return new int[0];
+        return shape;
     }
 
     @Override
@@ -1456,7 +1458,32 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
+    public boolean equals(Object o) {
+        return equalsWithEps(o, Nd4j.EPS_THRESHOLD);
+    }
+
+    @Override
     public boolean equalsWithEps(Object o, double eps) {
+        if (o == null)
+            return false;
+
+        if (!(o instanceof INDArray))
+            return false;
+
+        INDArray n = (INDArray) o;
+
+        if (this.lengthLong() != n.lengthLong())
+            return false;
+
+        if (isScalar() && n.isScalar()) {
+            // TODO
+        } else if (isVector && n.isVector()) {
+            // TODO
+        }
+        if (!Arrays.equals(this.shape(), n.shape()))
+            return false;
+
+        // TODO
         return false;
     }
 

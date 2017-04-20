@@ -18,4 +18,9 @@ public interface ISparseNDArray extends INDArray {
   * @return a DataBuffer of indexes
   * */
  DataBuffer getMinorPointer();
+
+ /**
+  * Return a dense representation of the sparse ndarray
+  * */
+ INDArray toDense();
 }
