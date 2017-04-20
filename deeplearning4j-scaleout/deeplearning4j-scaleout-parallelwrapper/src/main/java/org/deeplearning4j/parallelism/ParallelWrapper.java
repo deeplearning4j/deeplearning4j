@@ -641,6 +641,7 @@ public class ParallelWrapper implements AutoCloseable {
             wrapper.legacyAveraging = this.legacyAveraging;
             wrapper.isMQ = this.isMQ;
             wrapper.workspaceMode = this.workspaceMode;
+            wrapper.trainerContext = this.trainerContext;
 
             return wrapper;
         }
