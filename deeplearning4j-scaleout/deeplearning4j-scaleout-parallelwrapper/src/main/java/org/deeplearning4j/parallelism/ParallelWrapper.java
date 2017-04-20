@@ -453,7 +453,7 @@ public class ParallelWrapper implements AutoCloseable {
                 locker.set(0);
             }
 
-            time1 = System.nanoTime();
+            time1 = System.currentTimeMillis();
         }
 
         Collections.sort(nanos);
