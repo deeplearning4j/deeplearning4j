@@ -756,8 +756,9 @@ public class ComputationGraph implements Serializable, Model {
 
         if (configuration.isBackprop()) {
             update(TaskUtils.buildTask(dataSetIterator));
+
+            long time1 = System.currentTimeMillis();
             while (dataSetIterator.hasNext()) {
-                long time1 = System.currentTimeMillis();
                 DataSet next = dataSetIterator.next();
                 long time2 = System.currentTimeMillis();
 
@@ -798,6 +799,8 @@ public class ComputationGraph implements Serializable, Model {
                 }
 
                 Nd4j.getMemoryManager().invokeGcOccasionally();
+
+                time1 = System.currentTimeMillis();
             }
         }
 
@@ -848,8 +851,9 @@ public class ComputationGraph implements Serializable, Model {
         MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf,workspaceExternal);
 
         if (configuration.isBackprop()) {
+
+            long time1 = System.currentTimeMillis();
             while (multiDataSetIterator.hasNext()) {
-                long time1 = System.currentTimeMillis();
                 MultiDataSet next = multiDataSetIterator.next();
                 long time2 = System.currentTimeMillis();
 
@@ -885,6 +889,8 @@ public class ComputationGraph implements Serializable, Model {
 
                     Nd4j.getMemoryManager().invokeGcOccasionally();
                 }
+
+                time1 = System.currentTimeMillis();
             }
         }
 

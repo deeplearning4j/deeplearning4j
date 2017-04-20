@@ -1033,8 +1033,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             if (!iter.hasNext() && iter.resetSupported()) {
                 iter.reset();
             }
+            long time1 = System.currentTimeMillis();
             while (iter.hasNext()) {
-                long time1 = System.currentTimeMillis();
+
                 DataSet next = iter.next();
                 long time2 = System.currentTimeMillis();
 
@@ -1069,6 +1070,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
+
+                time1 = System.currentTimeMillis();
             }
         } else if (layerWiseConfigurations.isPretrain()) {
             log.warn("Warning: finetune is not applied.");
