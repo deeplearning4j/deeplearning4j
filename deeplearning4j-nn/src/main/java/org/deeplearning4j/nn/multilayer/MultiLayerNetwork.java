@@ -122,6 +122,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         this.defaultConfiguration = conf.getConf(0).clone();
     }
 
+    public void setLastEtlTime(long time) {
+        lastEtlTime.set(time);
+    }
+
     public long getLastEtlTime() {
         Long time = lastEtlTime.get();
         return time == null ? 0L : time;

@@ -16,14 +16,14 @@ public interface Trainer extends Runnable {
      * Train on a {@link MultiDataSet}
      * @param dataSet the data set to train on
      */
-     void feedMultiDataSet(@NonNull MultiDataSet dataSet);
+     void feedMultiDataSet(@NonNull MultiDataSet dataSet, long etlTime);
 
 
     /**
      * Train on a {@link DataSet}
      * @param dataSet the data set to train on
      */
-    void feedDataSet(@NonNull DataSet dataSet);
+    void feedDataSet(@NonNull DataSet dataSet, long etlTime);
 
     /**
      * THe current model for the trainer

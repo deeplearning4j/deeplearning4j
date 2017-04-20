@@ -27,10 +27,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -144,8 +141,10 @@ public class ParallelWrapper implements AutoCloseable {
 
         AtomicInteger locker = new AtomicInteger(0);
 
+        long time1 = System.currentTimeMillis();
         while (iterator.hasNext() && !stopFit.get()) {
             MultiDataSet dataSet = iterator.next();
+            long time2 = System.currentTimeMillis();
 
             if (dataSet == null)
                 throw new ND4JIllegalStateException("You can't have NULL as MultiDataSet");
@@ -154,7 +153,7 @@ public class ParallelWrapper implements AutoCloseable {
              now dataSet should be dispatched to next free workers, until all workers are busy. And then we should block till all finished.
             */
             int pos = locker.getAndIncrement();
-            zoo[pos].feedMultiDataSet(dataSet);
+            zoo[pos].feedMultiDataSet(dataSet, time2 - time1);
 
             /*
                 if all workers are dispatched now, join till all are finished
@@ -192,6 +191,8 @@ public class ParallelWrapper implements AutoCloseable {
                 }
                 locker.set(0);
             }
+
+            time1 = System.currentTimeMillis();
         }
 
         // sanity checks, or the dataset may never average
@@ -364,10 +365,14 @@ public class ParallelWrapper implements AutoCloseable {
                 iterator = new AsyncDataSetIterator(source, prefetchSize * workers);
         } else
             iterator = source;
-
+        List<Long> nanos = new ArrayList<>();
         AtomicInteger locker = new AtomicInteger(0);
+        long time1 = System.currentTimeMillis();
         while (iterator.hasNext() && !stopFit.get()) {
             DataSet dataSet = iterator.next();
+            long time2 = System.currentTimeMillis();
+            long lastEtlTime = time2 - time1;
+            nanos.add((time2 - time1));
 
             if (dataSet == null)
                 throw new ND4JIllegalStateException("You can't have NULL as DataSet");
@@ -379,7 +384,7 @@ public class ParallelWrapper implements AutoCloseable {
             if (zoo == null)
                 throw new IllegalStateException(
                         "ParallelWrapper.shutdown() has been called too early and will fail from this point forward.");
-            zoo[pos].feedDataSet(dataSet);
+            zoo[pos].feedDataSet(dataSet, lastEtlTime );
 
             /*
                 if all workers are dispatched now, join till all are finished
@@ -447,7 +452,14 @@ public class ParallelWrapper implements AutoCloseable {
                 }
                 locker.set(0);
             }
+
+            time1 = System.nanoTime();
         }
+
+        Collections.sort(nanos);
+        int pos = (int) (nanos.size() * 0.85);
+        log.info("p85 ETL time: {} ms; p50 ETL time: {} ms", nanos.get(pos), nanos.get(nanos.size() / 2));
+
 
         // sanity checks, or the dataset may never average
         if (!wasAveraged)

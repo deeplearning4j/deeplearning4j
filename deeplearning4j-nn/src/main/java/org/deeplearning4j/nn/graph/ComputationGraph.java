@@ -155,6 +155,10 @@ public class ComputationGraph implements Serializable, Model {
         this.defaultConfiguration = configuration.getDefaultConfiguration();
     }
 
+    public void setLastEtlTime(long time) {
+        lastEtlTime.set(time);
+    }
+
     public long getLastEtlTime() {
         Long time = lastEtlTime.get();
         return time == null ? 0L : time;
