@@ -8,20 +8,20 @@ import org.apache.spark.ml.util._
 import org.apache.spark.mllib.linalg.{Vector, Vectors}
 import org.apache.spark.mllib.regression.LabeledPoint
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{Row, RowFactory}
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer
-import org.deeplearning4j.spark.ml.utils.{DatasetFacade, ParamSerializer}
+import org.deeplearning4j.spark.ml.utils.{DatasetFacade, ParamSerializer, SparkDl4jUtil}
 import org.deeplearning4j.spark.util.MLLibUtil
-import org.deeplearning4j.util.ModelSerializer
 import org.nd4j.linalg.dataset.DataSet
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.util.FeatureUtil
 import org.nd4j.linalg.api.ndarray.INDArray
 
+import scala.collection.JavaConverters._
 
 abstract class SparkDl4jNetworkWrapper[T, E <: SparkDl4jNetworkWrapper[T, E, M], M <: SparkDl4jModelWrapper[T, M]]
 (override val uid: String,
@@ -72,7 +72,9 @@ abstract class SparkDl4jNetworkWrapper[T, E <: SparkDl4jNetworkWrapper[T, E, M],
 }
 
 
-abstract class SparkDl4jModelWrapper[T, E <: SparkDl4jModelWrapper[T, E]](override val uid: String, network: MultiLayerNetwork)
+abstract class SparkDl4jModelWrapper[T, E <: SparkDl4jModelWrapper[T, E]](override val uid: String,
+                                                                          network: MultiLayerNetwork,
+                                                                          multiLayerConfiguration: MultiLayerConfiguration)
     extends PredictionModel[T, E] with Serializable with MLWritable {
 
     private var trainingStats : SparkTrainingStats = null.asInstanceOf[SparkTrainingStats]
@@ -106,7 +108,11 @@ abstract class SparkDl4jModelWrapper[T, E <: SparkDl4jModelWrapper[T, E]](overri
 
     protected[SparkDl4jModelWrapper] class SparkDl4jModelWriter(instance: SparkDl4jModelWrapper[T,E]) extends MLWriter {
         override protected def saveImpl(path: String): Unit = {
-            ModelSerializer.writeModel(network, path, true)
+            val mlnJson = multiLayerConfiguration.toJson
+            val params = network.params().data().asDouble()
+            val parallelized = List(RowFactory.create(mlnJson, params)).asJava
+            val dataset = sqlContext.createDataFrame(parallelized, SparkDl4jUtil.createScheme())
+            dataset.write.parquet(path)
         }
     }
 
@@ -124,8 +130,13 @@ trait SparkDl4jModelWrap extends MLReadable[SparkDl4jModel] {
     private class SparkDl4jReader extends MLReader[SparkDl4jModel] {
 
         override def load(path: String) : SparkDl4jModel = {
-            val mln = ModelSerializer.restoreMultiLayerNetwork(path)
-            new SparkDl4jModel(Identifiable.randomUID("dl4j"), mln)
+            val results = sqlContext.read.schema(SparkDl4jUtil.createScheme()).parquet(path)
+            val row = results.first()
+            val mlcJson = row.getAs[String]("mlc")
+            val params = row.getAs[Seq[Double]]("params")
+            val mlc = MultiLayerConfiguration.fromJson(mlcJson)
+            val mln = new MultiLayerNetwork(mlc, Nd4j.create(params.toArray))
+            new SparkDl4jModel(Identifiable.randomUID("dl4j"), mln, mlc)
         }
 
     }

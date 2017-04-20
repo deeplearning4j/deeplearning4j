@@ -50,17 +50,17 @@ final class SparkDl4jNetwork(
     }
 
     private def handleTrainedData(spn: SparkDl4jMultiLayer) : SparkDl4jModel = {
-        val model = new SparkDl4jModel(uid, spn.getNetwork)
+        val model = new SparkDl4jModel(uid, spn.getNetwork, multiLayerConfiguration)
         if (collectStats) model.setTrainingStats(spn.getSparkTrainingStats)
         else model
     }
 }
 
-class SparkDl4jModel(override val uid: String, network: MultiLayerNetwork)
-    extends SparkDl4jModelWrapper[Vector, SparkDl4jModel](uid, network) {
+class SparkDl4jModel(override val uid: String, network: MultiLayerNetwork, multiLayerConfiguration: MultiLayerConfiguration)
+    extends SparkDl4jModelWrapper[Vector, SparkDl4jModel](uid, network, multiLayerConfiguration) {
 
     override def copy(extra: ParamMap) : SparkDl4jModel = {
-        copyValues(new SparkDl4jModel(uid, network)).setParent(parent)
+        copyValues(new SparkDl4jModel(uid, network, multiLayerConfiguration)).setParent(parent)
     }
 
     /**
