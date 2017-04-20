@@ -14,6 +14,8 @@ import org.deeplearning4j.util.ModelSerializer
 import org.nd4j.linalg.dataset.DataSet
 import org.nd4j.linalg.factory.Nd4j
 
+import scala.collection.JavaConverters._
+
 
 trait AutoEncoderParams extends Params {
 
@@ -28,8 +30,8 @@ trait AutoEncoderParams extends Params {
 }
 
 abstract class AutoEncoderWrapper[E <: AutoEncoderWrapper[E, M], M <: AutoEncoderModelWrapper[M]](override val uid: String) extends Estimator[M] with AutoEncoderParams {
-    private var _multiLayerConfiguration : MultiLayerConfiguration = _
-    private var _trainingMaster : ParamSerializer = _
+    protected var _multiLayerConfiguration : MultiLayerConfiguration = _
+    protected var _trainingMaster : ParamSerializer = _
 
     def this() = this(Identifiable.randomUID("dl4j_autoencoder"))
 
@@ -112,7 +114,9 @@ abstract class AutoEncoderWrapper[E <: AutoEncoderWrapper[E, M], M <: AutoEncode
 }
 
 abstract class AutoEncoderModelWrapper[E <: AutoEncoderModelWrapper[E]](override val uid : String,
-                                                                        multiLayerNetwork: MultiLayerNetwork) extends Model[E] with MLWritable with AutoEncoderParams {
+                                                                        multiLayerNetwork: MultiLayerNetwork,
+                                                                        multiLayerConfiguration: MultiLayerConfiguration)
+    extends Model[E] with MLWritable with AutoEncoderParams {
 
     protected def udfTransformer : UserDefinedFunction
 
@@ -157,7 +161,11 @@ abstract class AutoEncoderModelWrapper[E <: AutoEncoderModelWrapper[E]](override
     protected[AutoEncoderModelWrapper] class AutoEncoderWriter(instance: AutoEncoderModelWrapper[E]) extends MLWriter {
         override protected def saveImpl(path: String) : Unit = {
             SparkDl4jUtil.saveMetadata(instance, path, sc)
-            ModelSerializer.writeModel(instance.getNetwork, path, true)
+            val mlnJson = multiLayerConfiguration.toJson
+            val params = multiLayerNetwork.params().data().asDouble()
+            val parallelized = List(RowFactory.create(mlnJson, params)).asJava
+            val dataset = sqlContext.createDataFrame(parallelized, SparkDl4jUtil.createScheme())
+            dataset.write.parquet(path)
         }
     }
 
@@ -180,11 +188,13 @@ trait AutoEncoderModelLoader extends MLReadable[AutoEncoderModel] {
 
         override def load(path: String) : AutoEncoderModel = {
             val metaData = SparkDl4jUtil.loadMetadata(path, sc, className)
-            val mln = ModelSerializer.restoreMultiLayerNetwork(path)
-            val model = new AutoEncoderModel(
-                Identifiable.randomUID("dl4j_autoencoder"),
-                mln
-            )
+            val results = sqlContext.read.schema(SparkDl4jUtil.createScheme()).parquet(path)
+            val row = results.first()
+            val mlcJson = row.getAs[String]("mlc")
+            val params = row.getAs[Seq[Double]]("params")
+            val mlc = MultiLayerConfiguration.fromJson(mlcJson)
+            val mln = new MultiLayerNetwork(mlc, Nd4j.create(params.toArray))
+            val model = new AutoEncoderModel(Identifiable.randomUID("dl4j"), mln, mlc)
             SparkDl4jUtil.getAndSetParams(model, metaData)
             model
         }

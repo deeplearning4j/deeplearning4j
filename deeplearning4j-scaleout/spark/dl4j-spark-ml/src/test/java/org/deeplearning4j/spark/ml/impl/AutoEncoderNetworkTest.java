@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.ml.impl;
 
 
+import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.ml.Pipeline;
@@ -16,12 +17,17 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.deeplearning4j.spark.ml.utils.DatasetFacade;
 import org.deeplearning4j.spark.ml.utils.ParamSerializer;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.UUID;
 
-public class AutoEncoderNetworkTest {
+
+public class AutoEncoderNetworkTest  {
 
     private SparkConf sparkConf = new SparkConf().setAppName("testing").setMaster("local[4]");
     private JavaSparkContext sparkContext = new JavaSparkContext(sparkConf);
@@ -43,6 +49,38 @@ public class AutoEncoderNetworkTest {
         AutoEncoderModel sm = sparkDl4jNetwork.fit(part2.get());
         MultiLayerNetwork mln = sm.getNetwork();
         Assert.assertNotNull(mln);
+    }
+
+    @Test
+    public void testAutoencoderSave() throws IOException {
+        DatasetFacade df = DatasetFacade.dataRows(sqlContext.read().json("src/test/resources/autoencoders"));
+        Pipeline p = new Pipeline().setStages(new PipelineStage[]{getAssembler(new String[]{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}, "features")});
+        DatasetFacade part2 = DatasetFacade.dataRows(p.fit(df.get()).transform(df.get()).select("features"));
+
+        AutoEncoder sparkDl4jNetwork = new AutoEncoder()
+                .setInputCol("features")
+                .setOutputCol("auto_encoded")
+                .setCompressedLayer(2)
+                .setTrainingMaster(new ParamHelper())
+                .setMultiLayerConfiguration(getNNConfiguration());
+
+        AutoEncoderModel sm = sparkDl4jNetwork.fit(part2.get());
+
+        String fileName = UUID.randomUUID().toString();
+        sm.write().save(fileName);
+        AutoEncoderModel spdm = AutoEncoderModel.load(fileName);
+        Assert.assertNotNull(spdm);
+        Assert.assertNotNull(spdm.transform(part2.get()));
+
+        File file = new File(fileName);
+        File file2 = new File(fileName + "_metadata");
+        FileUtils.deleteDirectory(file);
+        FileUtils.deleteDirectory(file2);
+    }
+
+    @After
+    public void closeIt() {
+        sparkContext.close();
     }
 
     private MultiLayerConfiguration getNNConfiguration(){
