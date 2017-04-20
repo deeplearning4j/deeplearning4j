@@ -67,6 +67,18 @@ public class UpdaterBlock {
         this.layersAndVariablesInBlock = layersAndVariablesInBlock;
     }
 
+    public void init(){
+        if (gradientUpdater == null) {
+            VarState varState = layersAndVariablesInBlock.get(0);
+            gradientUpdater = UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getVarName());
+            if (updaterView != null) {
+                //May be null for SGD and no-op updaters
+                int[] gradientViewShape = gradientView.shape();
+                gradientUpdater.setStateViewArray(updaterView, gradientViewShape, 'c', updaterViewRequiresInitialization);
+            }
+        }
+    }
+
     /**
      * Update the gradient for this block
      *
@@ -75,14 +87,7 @@ public class UpdaterBlock {
     public void update(int iteration) {
         //Initialize the updater, if necessary
         if (gradientUpdater == null) {
-            VarState varState = layersAndVariablesInBlock.get(0);
-            gradientUpdater = UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getVarName());
-            if (updaterView != null) {
-                //May be null for SGD and no-op updaters
-                int[] gradientViewShape = gradientView.shape();
-                System.out.println(Arrays.toString(gradientViewShape));
-                gradientUpdater.setStateViewArray(updaterView, gradientViewShape, 'c', updaterViewRequiresInitialization);
-            }
+            init();
         }
 
         //First: Pre-apply gradient clipping etc: some are done on a per-layer basis
@@ -176,6 +181,9 @@ public class UpdaterBlock {
                 } else {
                     newLr = lr;
                 }
+                break;
+            case None:
+                newLr = lr;
                 break;
             default:
                 throw new RuntimeException("Unknown Learning rate decay value: " + decay);

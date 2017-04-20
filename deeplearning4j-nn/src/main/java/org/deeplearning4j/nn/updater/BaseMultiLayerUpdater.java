@@ -140,6 +140,8 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 ub.setGradientView(gradientViewSubset);
             }
 
+            ub.init();
+
             updaterViewSoFar += viewStateSize;
             paramsViewSoFar += gradSize;
         }
@@ -186,9 +188,6 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
 
     @Override
     public int stateSizeForLayer(Layer layer) {
-        if (!(layer instanceof MultiLayerNetwork))
-            throw new IllegalArgumentException("Expected MultiLayerNetwork");
-
         return updaterStateViewArray.length();
     }
 
@@ -212,22 +211,28 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
 
         //Split up the gradients on a per-layer basis, for pre-apply
         Map<String, Gradient> layerGradients = new HashMap<>();
-        for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
-            String key = gradientPair.getKey();
-            int idx = key.lastIndexOf('_');
-            if (idx == -1)
-                throw new IllegalStateException(
-                        "Invalid key: Gradient key does not have layer separator: \"" + key+ "\"");
-            String layerName = key.substring(0, idx);
 
-            Gradient g = layerGradients.get(layerName);
-            if (g == null) {
-                g = new DefaultGradient();
-                layerGradients.put(layerName, g);
+        Layer[] layers = getOrderedLayers();
+        if(layers.length == 1){
+            layerGradients.put(layers[0].conf().getLayer().getLayerName(), gradient);
+        } else {
+            for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
+                String key = gradientPair.getKey();
+                int idx = key.lastIndexOf('_');
+                if (idx == -1)
+                    throw new IllegalStateException(
+                            "Invalid key: Gradient key does not have layer separator: \"" + key + "\"");
+                String layerName = key.substring(0, idx);
+
+                Gradient g = layerGradients.get(layerName);
+                if (g == null) {
+                    g = new DefaultGradient();
+                    layerGradients.put(layerName, g);
+                }
+
+                String newKey = key.substring(idx + 1);
+                g.setGradientFor(newKey, gradientPair.getValue());
             }
-
-            String newKey = key.substring(idx + 1);
-            g.setGradientFor(newKey, gradientPair.getValue());
         }
 
         //PRE apply (gradient clipping, etc): done on a per-layer basis
