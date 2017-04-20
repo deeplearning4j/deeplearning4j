@@ -21,6 +21,9 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.io.IOException;
+import java.util.UUID;
+
 
 public class AutoEncoderNetworkTest  {
 
@@ -44,6 +47,28 @@ public class AutoEncoderNetworkTest  {
         AutoEncoderModel sm = sparkDl4jNetwork.fit(part2.get());
         MultiLayerNetwork mln = sm.getNetwork();
         Assert.assertNotNull(mln);
+    }
+
+    @Test
+    public void testAutoencoderSave() throws IOException {
+        DatasetFacade df = DatasetFacade.dataRows(sqlContext.read().json("src/test/resources/autoencoders"));
+        Pipeline p = new Pipeline().setStages(new PipelineStage[]{getAssembler(new String[]{"a", "b", "c", "d", "e", "f", "g", "h", "i", "j"}, "features")});
+        DatasetFacade part2 = DatasetFacade.dataRows(p.fit(df.get()).transform(df.get()).select("features"));
+
+        AutoEncoder sparkDl4jNetwork = new AutoEncoder()
+                .setInputCol("features")
+                .setOutputCol("auto_encoded")
+                .setCompressedLayer(2)
+                .setTrainingMaster(new ParamHelper())
+                .setMultiLayerConfiguration(getNNConfiguration());
+
+        AutoEncoderModel sm = sparkDl4jNetwork.fit(part2.get());
+
+        String fileName = UUID.randomUUID().toString();
+        sm.write().save(fileName);
+        AutoEncoderModel spdm = AutoEncoderModel.load(fileName);
+        Assert.assertNotNull(spdm);
+        Assert.assertNotNull(spdm.transform(part2.get()));
     }
 
     @After
