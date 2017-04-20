@@ -198,7 +198,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
             if (thread != null)
                 thread.join();
         } catch (InterruptedException e) {
-
+            throw new RuntimeException(e);
         }
         buffer.clear();
     }
@@ -288,7 +288,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
             return true;
         } catch (Exception e) {
             log.error("Premature end of loop!");
-            return false;
+            throw new RuntimeException(e);
         }
     }
 

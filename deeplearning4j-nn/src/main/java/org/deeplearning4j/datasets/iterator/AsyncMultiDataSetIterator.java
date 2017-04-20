@@ -181,7 +181,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             if (thread != null)
                 thread.join();
         } catch (InterruptedException e) {
-
+            throw new RuntimeException(e);
         }
         buffer.clear();
     }
@@ -214,7 +214,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             return true;
         } catch (Exception e) {
             log.error("Premature end of loop!");
-            return false;
+            throw new RuntimeException(e);
         }
     }
 
