@@ -105,7 +105,7 @@ public class HistoryProcessor implements IHistoryProcessor {
         ocvmat.convertTo(cvmat, CV_8UC(3));
         cvtColor(cvmat, cvmat, COLOR_RGB2GRAY);
         Mat resized = new Mat(conf.getRescaledHeight(), conf.getRescaledWidth(), CV_8UC(1));
-        resize(cvmat, resized, new Size(conf.getRescaledHeight(), conf.getRescaledWidth()));
+        resize(cvmat, resized, new Size(conf.getRescaledWidth(), conf.getRescaledHeight()));
         //   show(resized);
         //   waitKP();
         //Crop by croppingHeight, croppingHeight
