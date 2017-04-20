@@ -91,10 +91,12 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
      */
     public String toYaml() {
         ObjectMapper mapper = NeuralNetConfiguration.mapperYaml();
-        try {
-            return mapper.writeValueAsString(this);
-        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
-            throw new RuntimeException(e);
+        synchronized (mapper) {
+            try {
+                return mapper.writeValueAsString(this);
+            } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -119,10 +121,14 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     public String toJson() {
         //As per MultiLayerConfiguration.toJson()
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
-        try {
-            return mapper.writeValueAsString(this);
-        } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
-            throw new RuntimeException(e);
+        synchronized (mapper) {
+            //JSON mappers are supposed to be thread safe: however, in practice they seem to miss fields occasionally
+            //when writeValueAsString is used by multiple threads. This results in invalid JSON. See issue #3243
+            try {
+                return mapper.writeValueAsString(this);
+            } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
