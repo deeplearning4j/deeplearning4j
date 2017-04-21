@@ -355,9 +355,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 //log.info("Reinit on cycle {}", cyclesCount.get());
                 initializeWorkspace();
             }
-
-            hostOffset.set(0);
-            deviceOffset.set(0);
         }
 
         lastCycleAllocations.set(cycleAllocations.get());

@@ -85,6 +85,17 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             .policyAllocation(AllocationPolicy.STRICT)
             .build();
 
+
+    private static final WorkspaceConfiguration circularConfiguration = WorkspaceConfiguration.builder()
+            .minSize(10 * 1024L * 1024L)
+            .overallocationLimit(1.0)
+            .policySpill(SpillPolicy.EXTERNAL)
+            .policyLearning(LearningPolicy.FIRST_LOOP)
+            .policyMirroring(MirroringPolicy.FULL)
+            .policyAllocation(AllocationPolicy.STRICT)
+            .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+            .build();
+
     DataBuffer.Type initialType;
 
     public WorkspaceProviderTests(Nd4jBackend backend) {
@@ -294,6 +305,25 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             else
                 assertEquals(0, workspace.getCurrentSize());
         }
+    }
+
+    @Test
+    public void testCircularLearning1() throws Exception {
+        INDArray array1;
+        INDArray array2;
+        for (int i = 0; i < 2; i++) {
+            try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(circularConfiguration, "WSX")) {
+                array1 = Nd4j.create(10).assign(1);
+            }
+
+            Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(circularConfiguration, "WSX");
+            assertEquals(10 * 1024 * 1024L, workspace.getCurrentSize());
+            if (i == 0)
+                assertEquals(0, workspace.getHostOffset());
+            else if (i == 1)
+                assertEquals(10 * Nd4j.sizeOfDataType(), workspace.getHostOffset());
+        }
+
     }
 
     @Test
