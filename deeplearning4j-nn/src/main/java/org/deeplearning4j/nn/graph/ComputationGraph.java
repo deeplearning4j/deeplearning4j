@@ -1330,25 +1330,11 @@ public class ComputationGraph implements Serializable, Model {
      * @return Output activations (order: same as defined in network configuration)
      */
     public INDArray[] output(boolean train, INDArray... input) {
-        WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
-                .initialSize(0)
-                .overallocationLimit(1.0)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .policyReset(ResetPolicy.BLOCK_LEFT)
-                .build();
+        INDArray[] tmp = silentOutput(train, input);
+        for (int x = 0; x < tmp.length; x++)
+            tmp[x] = tmp[x].detach();
 
-        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf,workspaceExternal);
-
-        try(MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-            setInputs(input);
-            Map<String, INDArray> activations = feedForward(train);
-            INDArray[] outputs = new INDArray[numOutputArrays];
-            int i = 0;
-            for (String s : configuration.getNetworkOutputs()) {
-                outputs[i++] = activations.get(s).detach();
-            }
-            return outputs;
-        }
+        return tmp;
     }
 
     protected INDArray[] silentOutput(boolean train, INDArray... input) {

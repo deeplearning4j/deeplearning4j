@@ -1679,20 +1679,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray input, boolean train) {
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .initialSize(0)
-                .overallocationLimit(1.0)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .policyReset(ResetPolicy.BLOCK_LEFT)
-                .build();
-
-        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration,workspaceExternal);
-
-        try(MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-            List<INDArray> activations = feedForward(input, train);
-            //last activation is output
-            return activations.get(activations.size() - 1).detach();
-        }
+        return silentOutput(input, train).detach();
     }
 
 
@@ -1718,10 +1705,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * of varying lengths within the same minibatch.
      */
     public INDArray output(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask) {
-        setLayerMaskArrays(featuresMask, labelsMask);
-        INDArray out = output(input, train);
-        clearLayerMaskArrays();
-        return out;
+        return silentOutput(input, train, featuresMask, labelsMask).detach();
     }
 
     protected INDArray silentOutput(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask) {
