@@ -620,12 +620,14 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                     buffer.put(terminator);
                 } catch (InterruptedException e) {
                     shouldWork.set(false);
+                    isShutdown.set(true);
                 } catch (RuntimeException e) {
                     this.exception = e;
+                    isShutdown.set(true);
                     shouldWork.set(false);
                 }
             }
-            isShutdown.set(false);
+            isShutdown.set(true);
         }
 
 
