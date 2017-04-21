@@ -75,9 +75,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     @Getter
     protected DataSetPreProcessor preProcessor;
 
-    @Getter
-    @Setter
-    private volatile boolean collectMetaData = false;
+    private AtomicBoolean collectMetaData = new AtomicBoolean(false);
 
     // TODO: make queue configurable
     private volatile int prefetchSize = 8;
@@ -172,7 +170,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         this.numPossibleLabels = numPossibleLabels;
         this.regression = regression;
 
-        this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(4, new ThreadFactory() {
+        this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2, new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
                 Thread t = Executors.defaultThreadFactory().newThread(r);
@@ -187,7 +185,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         });
 
         // FIXME: fix collectMetaData
-        this.thread = new AsyncPrefetchThread(buffer, recordReader, terminator, collectMetaData);
+        this.thread = new AsyncPrefetchThread(buffer, recordReader, terminator);
         this.thread.start();
     }
 
@@ -356,8 +354,16 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         buffer.clear();
         // TODO: maybe worth shutting down executor as well? or recreate new buffer... or we don't care, Future is gone anyway
 
-        this.thread = new AsyncPrefetchThread(buffer, recordReader, terminator, collectMetaData);
+        this.thread = new AsyncPrefetchThread(buffer, recordReader, terminator);
         this.thread.start();
+    }
+
+    public void setCollectMetaData(boolean reallyCollect) {
+        collectMetaData.set(true);
+    }
+
+    public boolean getCollectMetaData() {
+        return getCollectMetaData();
     }
 
     @Override
@@ -418,6 +424,18 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
             if (Nd4j.getMemoryManager().getCurrentWorkspace() != null) {
                 ds.migrate();
+            } else {
+                if (ds.getFeatures() != null)
+                    ds.setFeatures(ds.getFeatures().detach());
+
+                if (ds.getLabels() != null)
+                    ds.setLabels(ds.getLabels().detach());
+
+                if (ds.getFeaturesMaskArray() != null)
+                    ds.setFeaturesMaskArray(ds.getFeaturesMaskArray().detach());
+
+                if (ds.getLabelsMaskArray() != null)
+                    ds.setLabelsMaskArray(ds.getLabelsMaskArray().detach());
             }
 
             return ds;
@@ -558,11 +576,10 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         protected RuntimeException exception;
 
 
-        public AsyncPrefetchThread(@NonNull BlockingQueue<Future<DataSet>> buffer, @NonNull RecordReader reader, @NonNull Future<DataSet> terminator, boolean meta) {
+        public AsyncPrefetchThread(@NonNull BlockingQueue<Future<DataSet>> buffer, @NonNull RecordReader reader, @NonNull Future<DataSet> terminator) {
             this.buffer = buffer;
             this.terminator = terminator;
             this.reader = reader;
-            this.getMeta = meta;
 
             this.setName("RRDSI prefetch thread");
             this.setDaemon(true);
@@ -575,8 +592,10 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 try {
 
                     AtomicLong counterOrder = new AtomicLong(0);
+                    getMeta = collectMetaData.get();
+                    boolean limitHit = maxNumBatches > 0 && maxNumBatches < counterOrder.get();
                     OrderedBatch currentBatch = new OrderedBatch(counterOrder.getAndIncrement());
-                    while (reader.hasNext()) {
+                    while (!limitHit && reader.hasNext()) {
                         if (!getMeta)
                             currentBatch.addWritable(reader.next());
                         else
@@ -586,11 +605,13 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                         if (currentBatch.size() == batchSize) {
                             // we should put callable here
                             Future<DataSet> future = executor.submit(new DataSetCallable(currentBatch));
-                            currentBatch = new OrderedBatch(counterOrder.getAndIncrement());
+                            getMeta = collectMetaData.get();
                             buffer.put(future);
+                            currentBatch = new OrderedBatch(counterOrder.getAndIncrement());
+                            limitHit = maxNumBatches > 0 && maxNumBatches < counterOrder.get();
                         }
                     }
-                    if (currentBatch.size() > 0) {
+                    if (currentBatch.size() > 0 && !limitHit) {
                         // process last batch
                         Future<DataSet> future = executor.submit(new DataSetCallable(currentBatch));
                         buffer.put(future);
@@ -620,7 +641,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     protected static class OrderedBatch {
         protected long order;
         @Getter protected List<List<Writable>> writables = new ArrayList<>();
-        @Getter protected List<Record> records;
+        @Getter protected List<Record> records = new ArrayList<>();
         @Getter protected volatile boolean isRecord = false;
         protected AtomicInteger counter = new AtomicInteger(0);
 
@@ -656,11 +677,11 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
             configuration = WorkspaceConfiguration.builder()
                     // FIXME: overalloc limit is wrong here obviously. We should do (divide prefetch size by number of threads) + 1 probably
-                    .overallocationLimit(prefetchSize + 1)
-                    .minSize(2 * 1024L * 1024L)
+                    .overallocationLimit(prefetchSize + 5)
+                    .minSize(200 * 1024L * 1024L)
                     .policyMirroring(MirroringPolicy.FULL)
                     .policySpill(SpillPolicy.EXTERNAL)
-                    .policyLearning(LearningPolicy.FIRST_LOOP)
+                    .policyLearning(LearningPolicy.OVER_TIME)
                     .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
                     .policyAllocation(AllocationPolicy.OVERALLOCATE)
                     .build();
@@ -686,14 +707,14 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceId)) {
                     // here we create our DataSet
                     List<DataSet> dataSets = new ArrayList<>();
-                    List<RecordMetaData> meta = (collectMetaData ? new ArrayList<RecordMetaData>() : null);
+                    List<RecordMetaData> meta = (batch.isRecord() ? new ArrayList<RecordMetaData>() : null);
 
                     if (batch.isRecord()) {
                         List<Record> records = batch.getRecords();
                         for (int i = 0; i < records.size(); i++) {
                             DataSet d = getDataSet(records.get(i).getRecord());
-                            meta.add(records.get(i).getMetaData());
                             dataSets.add(d);
+                            meta.add(records.get(i).getMetaData());
                         }
                     } else {
                         List<List<Writable>> writables = batch.getWritables();
@@ -710,7 +731,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
                     ret = DataSet.merge(dataSets);
 
-                    if (collectMetaData) {
+                    if (batch.isRecord()) {
                         ret.setExampleMetaData(meta);
                     }
 
@@ -720,8 +741,11 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                     //Add label name values to dataset
                     if (recordReader.getLabels() != null)
                         ret.setLabelNames(recordReader.getLabels());
+                }
 
-                    firstLoop.compareAndSet(true, false);
+                if (firstLoop.get()) {
+                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).initializeWorkspace();
+                    firstLoop.set(false);
                 }
             }
 
