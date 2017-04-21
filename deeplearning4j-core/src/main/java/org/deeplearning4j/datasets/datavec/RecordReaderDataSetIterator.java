@@ -170,7 +170,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         this.numPossibleLabels = numPossibleLabels;
         this.regression = regression;
 
-        this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2, new ThreadFactory() {
+        this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(4, new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
                 Thread t = Executors.defaultThreadFactory().newThread(r);
