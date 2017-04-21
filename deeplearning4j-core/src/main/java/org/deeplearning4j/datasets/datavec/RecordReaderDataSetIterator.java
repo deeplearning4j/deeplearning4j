@@ -680,7 +680,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             configuration = WorkspaceConfiguration.builder()
                     // FIXME: overalloc limit is wrong here obviously. We should do (divide prefetch size by number of threads) + 1 probably
                     .overallocationLimit(prefetchSize + 5)
-                    .minSize(200 * 1024L * 1024L)
+                    .minSize(10 * 1024L * 1024L)
                     .policyMirroring(MirroringPolicy.FULL)
                     .policySpill(SpillPolicy.EXTERNAL)
                     .policyLearning(LearningPolicy.OVER_TIME)
