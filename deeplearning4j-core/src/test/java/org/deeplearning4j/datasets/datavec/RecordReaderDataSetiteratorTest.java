@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.datasets.datavec;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
@@ -50,6 +51,7 @@ import static org.junit.Assert.*;
 /**
  * Created by agibsonccc on 3/6/15.
  */
+@Slf4j
 public class RecordReaderDataSetiteratorTest {
 
     @Test
@@ -69,7 +71,10 @@ public class RecordReaderDataSetiteratorTest {
         FileSplit csv = new FileSplit(new ClassPathResource("csv-example.csv").getTempFileFromArchive());
         recordReader.initialize(csv);
         DataSetIterator iter = new RecordReaderDataSetIterator(recordReader, 10, -1, -1, 2);
-        iter.next();
+        DataSet ds = iter.next();
+        assertFalse(ds == null);
+        assertEquals(10, ds.numExamples());
+        iter.hasNext();
         iter.next();
         assertEquals(false, iter.hasNext());
     }
@@ -896,6 +901,7 @@ public class RecordReaderDataSetiteratorTest {
 
         while (rrdsi.hasNext()) {
             DataSet ds = rrdsi.next();
+            assertEquals(false, ds.getFeatureMatrix().isAttached());
             List<RecordMetaData> meta = ds.getExampleMetaData(RecordMetaData.class);
             int i = 0;
             for (RecordMetaData m : meta) {
@@ -906,7 +912,7 @@ public class RecordReaderDataSetiteratorTest {
                 for (int j = 0; j < 4; j++) {
                     double exp = r.getRecord().get(j).toDouble();
                     double act = row.getDouble(j);
-                    assertEquals(exp, act, 1e-6);
+                    assertEquals("Failed on idx: " + j, exp, act, 1e-6);
                 }
                 i++;
             }

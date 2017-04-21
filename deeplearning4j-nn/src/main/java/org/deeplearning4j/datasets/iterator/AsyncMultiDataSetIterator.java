@@ -73,7 +73,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                     .policyAllocation(AllocationPolicy.OVERALLOCATE)
                     .build();
 
-            MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "AMDSI_ITER");
+            MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "AMDSI_ITER-" + java.util.UUID.randomUUID().toString());
             this.workspace = workspace;
         } else workspace = null;
 

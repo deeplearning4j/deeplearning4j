@@ -1679,6 +1679,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray input, boolean train) {
+        return silentOutput(input, train).detach();
+    }
+
+
+    protected INDArray silentOutput(INDArray input, boolean train) {
         WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
                 .initialSize(0)
                 .overallocationLimit(1.0)
@@ -1691,7 +1696,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         try(MemoryWorkspace ws = workspace.notifyScopeEntered()) {
             List<INDArray> activations = feedForward(input, train);
             //last activation is output
-            return activations.get(activations.size() - 1).detach();
+            return activations.get(activations.size() - 1);
         }
     }
 
@@ -1700,8 +1705,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * of varying lengths within the same minibatch.
      */
     public INDArray output(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask) {
+        return silentOutput(input, train, featuresMask, labelsMask).detach();
+    }
+
+    protected INDArray silentOutput(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask) {
         setLayerMaskArrays(featuresMask, labelsMask);
-        INDArray out = output(input, train);
+        INDArray out = silentOutput(input, train);
         clearLayerMaskArrays();
         return out;
     }
@@ -2639,9 +2648,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             INDArray out;
             if (next.hasMaskArrays()) {
                 INDArray fMask = next.getFeaturesMaskArray();
-                out = this.output(features, false, fMask, lMask);
+                out = this.silentOutput(features, false, fMask, lMask);
             } else {
-                out = this.output(features, false);
+                out = this.silentOutput(features, false);
             }
 
             evaluation.eval(labels, out, lMask);

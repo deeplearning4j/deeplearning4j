@@ -1330,6 +1330,14 @@ public class ComputationGraph implements Serializable, Model {
      * @return Output activations (order: same as defined in network configuration)
      */
     public INDArray[] output(boolean train, INDArray... input) {
+        INDArray[] tmp = silentOutput(train, input);
+        for (int x = 0; x < tmp.length; x++)
+            tmp[x] = tmp[x].detach();
+
+        return tmp;
+    }
+
+    protected INDArray[] silentOutput(boolean train, INDArray... input) {
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
                 .overallocationLimit(1.0)
@@ -1345,7 +1353,7 @@ public class ComputationGraph implements Serializable, Model {
             INDArray[] outputs = new INDArray[numOutputArrays];
             int i = 0;
             for (String s : configuration.getNetworkOutputs()) {
-                outputs[i++] = activations.get(s).detach();
+                outputs[i++] = activations.get(s);
             }
             return outputs;
         }
@@ -2728,7 +2736,7 @@ public class ComputationGraph implements Serializable, Model {
             setLayerMaskArrays(
                     featuresMask == null ? null : new INDArray[]{featuresMask},
                     labelMask == null ? null : new INDArray[]{labelMask});
-            INDArray[] out = output(false, features);
+            INDArray[] out = silentOutput(false, features);
             evaluation.eval(labels, out[0], labelMask);
 
             clearLayerMaskArrays();
@@ -2772,7 +2780,7 @@ public class ComputationGraph implements Serializable, Model {
             INDArray labelMask = next.getLabelsMaskArray(0);
 
             setLayerMaskArrays(featuresMasks, labelMasks);
-            INDArray[] out = output(false, features);
+            INDArray[] out = silentOutput(false, features);
             evaluation.eval(labels, out[0], labelMask);
 
             clearLayerMaskArrays();

@@ -18,7 +18,9 @@
 
 package org.deeplearning4j.datasets.datavec;
 
+import lombok.Data;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.io.WritableConverter;
@@ -31,6 +33,9 @@ import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -39,16 +44,19 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 
 
 /**
  * Record reader dataset iterator
  *
  * @author Adam Gibson
+ * @author raver119@gmail.com
  */
 @Slf4j
 public class RecordReaderDataSetIterator implements DataSetIterator {
@@ -67,9 +75,17 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     @Getter
     protected DataSetPreProcessor preProcessor;
 
-    @Getter
-    @Setter
-    private boolean collectMetaData = false;
+    private AtomicBoolean collectMetaData = new AtomicBoolean(false);
+
+    // TODO: make queue configurable
+    private volatile int prefetchSize = 8;
+    private BlockingQueue<Future<DataSet>> buffer = new LinkedBlockingQueue<>(prefetchSize);
+    private Future<DataSet> nextElement = null;
+    private Future<DataSet> terminator = new DummyFuture();
+    private ThreadPoolExecutor executor;
+    private AsyncPrefetchThread thread;
+    private String guid = java.util.UUID.randomUUID().toString();
+    private AtomicBoolean wasTriggered = new AtomicBoolean(false);
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize) {
         this(recordReader, converter, batchSize, -1,
@@ -153,75 +169,30 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         this.labelIndexTo = labelIndexTo;
         this.numPossibleLabels = numPossibleLabels;
         this.regression = regression;
+
+        this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(4, new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread t = Executors.defaultThreadFactory().newThread(r);
+
+                // we enforce the same device probably?
+                // TODO: investigate what would be better for perf here
+                Nd4j.getAffinityManager().attachThreadToDevice(t, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+                t.setDaemon(true);
+                t.setName("RRDSI thread");
+                return t;
+            }
+        });
+
+        // FIXME: fix collectMetaData
+        this.thread = new AsyncPrefetchThread(buffer, recordReader, terminator);
+        this.thread.start();
     }
 
 
     @Override
     public DataSet next(int num) {
-        if (useCurrent) {
-            useCurrent = false;
-            if (preProcessor != null)
-                preProcessor.preProcess(last);
-            return last;
-        }
-
-        List<DataSet> dataSets = new ArrayList<>();
-        List<RecordMetaData> meta = (collectMetaData ? new ArrayList<RecordMetaData>() : null);
-        for (int i = 0; i < num; i++) {
-            if (!hasNext())
-                break;
-            if (recordReader instanceof SequenceRecordReader) {
-                if (sequenceIter == null || !sequenceIter.hasNext()) {
-                    List<List<Writable>> sequenceRecord = ((SequenceRecordReader) recordReader).sequenceRecord();
-                    sequenceIter = sequenceRecord.iterator();
-                }
-
-                try {
-                    List<Writable> record = sequenceIter.next();
-                    DataSet d = getDataSet(record);
-                    //account for transform process
-                    if (d != null)
-                        dataSets.add(d);
-                }catch(Exception e) {
-                    log.warn("Unable to get dataset ...skipping",e);
-                }
-            } else {
-                if (collectMetaData) {
-                    Record record = recordReader.nextRecord();
-                    DataSet d = getDataSet(record.getRecord());
-                    if(d != null) {
-                        dataSets.add(d);
-                        meta.add(record.getMetaData());
-                    }
-                } else {
-                   try {
-                       List<Writable> record = recordReader.next();
-                       DataSet d = getDataSet(record);
-                       if (d != null)
-                           dataSets.add(d);
-                   }catch(Exception e) {
-                       log.warn("Unable to get dataset ...skipping",e);
-                   }
-                }
-            }
-        }
-        batchNum++;
-
-        if (dataSets.isEmpty()) {
-            return null;
-        }
-
-        DataSet ret = DataSet.merge(dataSets);
-        if (collectMetaData) {
-            ret.setExampleMetaData(meta);
-        }
-        last = ret;
-        if (preProcessor != null)
-            preProcessor.preProcess(ret);
-        //Add label name values to dataset
-        if (recordReader.getLabels() != null)
-            ret.setLabelNames(recordReader.getLabels());
-        return ret;
+        throw new UnsupportedOperationException();
     }
 
 
@@ -377,7 +348,22 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     @Override
     public void reset() {
         batchNum = 0;
+        thread.shutdown();
+        nextElement = null;
         recordReader.reset();
+        buffer.clear();
+        // TODO: maybe worth shutting down executor as well? or recreate new buffer... or we don't care, Future is gone anyway
+
+        this.thread = new AsyncPrefetchThread(buffer, recordReader, terminator);
+        this.thread.start();
+    }
+
+    public void setCollectMetaData(boolean reallyCollect) {
+        collectMetaData.set(true);
+    }
+
+    public boolean getCollectMetaData() {
+        return getCollectMetaData();
     }
 
     @Override
@@ -403,12 +389,127 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
     @Override
     public boolean hasNext() {
-        return (recordReader.hasNext() && (maxNumBatches < 0 || batchNum < maxNumBatches));
+        wasTriggered.compareAndSet(false, true);
+        try {
+            if (nextElement != null && nextElement != terminator) {
+                return true;
+            } else if (nextElement == terminator)
+                return false;
+
+            nextElement = buffer.take();
+
+            if (nextElement == terminator)
+                return false;
+
+            return true;
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        //return (recordReader.hasNext() && (maxNumBatches < 0 || batchNum < maxNumBatches));
     }
 
     @Override
     public DataSet next() {
-        return next(batchSize);
+        if (!wasTriggered.get() && nextElement == null)
+            if (!hasNext())
+                throw new NoSuchElementException("No more records below this line");
+
+
+
+        Future<DataSet> tmp = nextElement;
+        nextElement = null;
+        try {
+            // yes, we're blocking here, but there are chances Future is complete at this moment after first call
+            DataSet ds = tmp.get();
+
+            if (Nd4j.getMemoryManager().getCurrentWorkspace() != null) {
+                ds.migrate();
+            } else {
+                if (ds.getFeatures() != null)
+                    ds.setFeatures(ds.getFeatures().detach());
+
+                if (ds.getLabels() != null)
+                    ds.setLabels(ds.getLabels().detach());
+
+                if (ds.getFeaturesMaskArray() != null)
+                    ds.setFeaturesMaskArray(ds.getFeaturesMaskArray().detach());
+
+                if (ds.getLabelsMaskArray() != null)
+                    ds.setLabelsMaskArray(ds.getLabelsMaskArray().detach());
+            }
+
+            return ds;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+
+        /*
+        if (useCurrent) {
+            useCurrent = false;
+            if (preProcessor != null)
+                preProcessor.preProcess(last);
+            return last;
+        }
+
+        List<DataSet> dataSets = new ArrayList<>();
+        List<RecordMetaData> meta = (collectMetaData ? new ArrayList<RecordMetaData>() : null);
+        for (int i = 0; i < batchSize; i++) {
+            if (!hasNext())
+                break;
+            if (recordReader instanceof SequenceRecordReader) {
+                if (sequenceIter == null || !sequenceIter.hasNext()) {
+                    List<List<Writable>> sequenceRecord = ((SequenceRecordReader) recordReader).sequenceRecord();
+                    sequenceIter = sequenceRecord.iterator();
+                }
+
+                try {
+                    List<Writable> record = sequenceIter.next();
+                    DataSet d = getDataSet(record);
+                    //account for transform process
+                    if (d != null)
+                        dataSets.add(d);
+                }catch(Exception e) {
+                    log.warn("Unable to get dataset ...skipping",e);
+                }
+            } else {
+                if (collectMetaData) {
+                    Record record = recordReader.nextRecord();
+                    DataSet d = getDataSet(record.getRecord());
+                    if(d != null) {
+                        dataSets.add(d);
+                        meta.add(record.getMetaData());
+                    }
+                } else {
+                    try {
+                        List<Writable> record = recordReader.next();
+                        DataSet d = getDataSet(record);
+                        if (d != null)
+                            dataSets.add(d);
+                    }catch(Exception e) {
+                        log.warn("Unable to get dataset ...skipping",e);
+                    }
+                }
+            }
+        }
+        batchNum++;
+
+        if (dataSets.isEmpty()) {
+            return null;
+        }
+
+        DataSet ret = DataSet.merge(dataSets);
+        if (collectMetaData) {
+            ret.setExampleMetaData(meta);
+        }
+        last = ret;
+        if (preProcessor != null)
+            preProcessor.preProcess(ret);
+        //Add label name values to dataset
+        if (recordReader.getLabels() != null)
+            ret.setLabelNames(recordReader.getLabels());
+        return ret;
+        */
     }
 
     @Override
@@ -462,5 +563,222 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         if (recordReader.getLabels() != null)
             ret.setLabelNames(recordReader.getLabels());
         return ret;
+    }
+
+
+    protected class AsyncPrefetchThread extends Thread implements Runnable {
+        private BlockingQueue<Future<DataSet>> buffer;
+        private Future<DataSet> terminator;
+        private RecordReader reader;
+        private boolean getMeta;
+        private AtomicBoolean isShutdown = new AtomicBoolean(false);
+        private AtomicBoolean shouldWork = new AtomicBoolean(true);
+        protected RuntimeException exception;
+
+
+        public AsyncPrefetchThread(@NonNull BlockingQueue<Future<DataSet>> buffer, @NonNull RecordReader reader, @NonNull Future<DataSet> terminator) {
+            this.buffer = buffer;
+            this.terminator = terminator;
+            this.reader = reader;
+
+            this.setName("RRDSI prefetch thread");
+            this.setDaemon(true);
+        }
+
+
+        @Override
+        public void run() {
+            while (shouldWork.get()) {
+                try {
+
+                    AtomicLong counterOrder = new AtomicLong(0);
+                    getMeta = collectMetaData.get();
+                    boolean limitHit = maxNumBatches > 0 && maxNumBatches < counterOrder.get();
+                    OrderedBatch currentBatch = new OrderedBatch(counterOrder.getAndIncrement());
+                    while (!limitHit && reader.hasNext()) {
+                        if (!getMeta)
+                            currentBatch.addWritable(reader.next());
+                        else
+                            currentBatch.addRecord(reader.nextRecord());
+
+                        // if we've built our batch size - we send it to processing
+                        if (currentBatch.size() == batchSize) {
+                            // we should put callable here
+                            Future<DataSet> future = executor.submit(new DataSetCallable(currentBatch));
+                            getMeta = collectMetaData.get();
+                            buffer.put(future);
+                            currentBatch = new OrderedBatch(counterOrder.getAndIncrement());
+                            limitHit = maxNumBatches > 0 && maxNumBatches < counterOrder.get();
+                        }
+                    }
+                    if (currentBatch.size() > 0 && !limitHit) {
+                        // process last batch
+                        Future<DataSet> future = executor.submit(new DataSetCallable(currentBatch));
+                        buffer.put(future);
+                    }
+
+                    buffer.put(terminator);
+                } catch (InterruptedException e) {
+                    shouldWork.set(false);
+                } catch (RuntimeException e) {
+                    this.exception = e;
+                    shouldWork.set(false);
+                }
+            }
+            isShutdown.set(false);
+        }
+
+
+        protected void shutdown() {
+            shouldWork.set(false);
+            thread.interrupt();
+            while (!isShutdown.get())
+                LockSupport.parkNanos(100);
+        }
+    }
+
+
+    protected static class OrderedBatch {
+        protected long order;
+        @Getter protected List<List<Writable>> writables = new ArrayList<>();
+        @Getter protected List<Record> records = new ArrayList<>();
+        @Getter protected volatile boolean isRecord = false;
+        protected AtomicInteger counter = new AtomicInteger(0);
+
+        protected OrderedBatch(long order) {
+            this.order = order;
+        }
+
+        protected void addWritable(List<Writable> writables) {
+            this.writables.add(writables);
+            counter.incrementAndGet();
+        }
+
+        protected void addRecord(Record record) {
+            this.records.add(record);
+            counter.incrementAndGet();
+            isRecord = true;
+        }
+
+        protected int size() {
+            return counter.get();
+        }
+    }
+
+
+    protected class DataSetCallable implements Callable<DataSet> {
+        private OrderedBatch batch;
+        private WorkspaceConfiguration configuration;
+        private String workspaceId;
+        protected AtomicBoolean firstLoop = new AtomicBoolean(true);
+
+        public DataSetCallable(OrderedBatch batch) {
+            this.batch = batch;
+
+            configuration = WorkspaceConfiguration.builder()
+                    // FIXME: overalloc limit is wrong here obviously. We should do (divide prefetch size by number of threads) + 1 probably
+                    .overallocationLimit(prefetchSize + 5)
+                    .minSize(200 * 1024L * 1024L)
+                    .policyMirroring(MirroringPolicy.FULL)
+                    .policySpill(SpillPolicy.EXTERNAL)
+                    .policyLearning(LearningPolicy.OVER_TIME)
+                    .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                    .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                    .build();
+
+            this.workspaceId = "RRDSI_LOOP-" + guid;
+        }
+
+        /**
+         * This method does OrderedBatch -> DataSet conversion
+         * @return
+         * @throws Exception
+         */
+        @Override
+        public DataSet call() throws Exception {
+
+            DataSet ret = null;
+
+            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceId))
+                firstLoop.set(false);
+
+            // we need to initialize workspace first. so we'll do 2 loops for
+            for (int l = firstLoop.get() ? 0 : 1; l < 2; l++) {
+                try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceId)) {
+                    // here we create our DataSet
+                    List<DataSet> dataSets = new ArrayList<>();
+                    List<RecordMetaData> meta = (batch.isRecord() ? new ArrayList<RecordMetaData>() : null);
+
+                    if (batch.isRecord()) {
+                        List<Record> records = batch.getRecords();
+                        for (int i = 0; i < records.size(); i++) {
+                            DataSet d = getDataSet(records.get(i).getRecord());
+                            dataSets.add(d);
+                            meta.add(records.get(i).getMetaData());
+                        }
+                    } else {
+                        List<List<Writable>> writables = batch.getWritables();
+                        for (int i = 0; i < writables.size(); i++) {
+                            DataSet d = getDataSet(writables.get(i));
+                            dataSets.add(d);
+                        }
+                    }
+
+                    // should NOT ever happen
+                    if (dataSets.isEmpty()) {
+                        return null;
+                    }
+
+                    ret = DataSet.merge(dataSets);
+
+                    if (batch.isRecord()) {
+                        ret.setExampleMetaData(meta);
+                    }
+
+                    if (preProcessor != null)
+                        preProcessor.preProcess(ret);
+
+                    //Add label name values to dataset
+                    if (recordReader.getLabels() != null)
+                        ret.setLabelNames(recordReader.getLabels());
+                }
+
+                if (firstLoop.get()) {
+                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).initializeWorkspace();
+                    firstLoop.set(false);
+                }
+            }
+
+            return ret;
+        }
+    }
+
+
+    protected static class DummyFuture implements Future<DataSet> {
+
+        @Override
+        public boolean cancel(boolean mayInterruptIfRunning) {
+            return false;
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return false;
+        }
+
+        @Override
+        public boolean isDone() {
+            return true;
+        }
+
+        @Override
+        public DataSet get() throws InterruptedException, ExecutionException {
+            return null;
+        }
+
+        @Override
+        public DataSet get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+            return null;
+        }
     }
 }
