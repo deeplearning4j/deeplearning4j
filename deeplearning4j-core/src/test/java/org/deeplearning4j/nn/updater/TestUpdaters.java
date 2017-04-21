@@ -34,11 +34,10 @@ public class TestUpdaters {
 
     protected int nIn = 3;
     protected int nOut = 2;
-    protected double epsilon = 1e-8;
-    protected INDArray gradients;// = Nd4j.ones(nIn*nOut + nOut);
-    protected INDArray weightGradient;// = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-    protected INDArray biasGradient;// = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
-    protected INDArray vbiasGradient = Nd4j.ones(1, nIn);
+//    protected double epsilon = 1e-8;
+    protected INDArray gradients;
+    protected INDArray weightGradient;
+    protected INDArray biasGradient;
     protected Gradient gradient = new DefaultGradient();
     protected INDArray val, gradExpected;
     protected String key;
@@ -49,13 +48,13 @@ public class TestUpdaters {
         gradients = Nd4j.ones(nIn*nOut + nOut);
         weightGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
         biasGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
-        vbiasGradient = Nd4j.ones(1, nIn);
         gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
         gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
     }
 
     @Test
     public void testAdaDeltaUpdate() {
+        //Here: test updaters manually vs. using updater
         INDArray dxSquared;
         Map<String, INDArray> msg = new HashMap<>();
         Map<String, INDArray> msdx = new HashMap<>();
@@ -71,25 +70,26 @@ public class TestUpdaters {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
-        INDArray g = gradients.dup();
-        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
-        layer.setBackpropGradientsViewArray(g);
+        layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
         int updaterStateSize = updater.stateSizeForLayer(layer);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
-        Gradient gradientDup = new DefaultGradient();
-        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
-        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
+        Gradient gradientCopyPreUpdate = new DefaultGradient();
+        INDArray g = gradients.dup();
+        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
+        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
 
+        int count = 0;
         for (int i = 0; i < 2; i++) {
             updater.update(layer, gradient, i, 1);
 
             // calculations for one iteration / update
 
-            for (Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
+            for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
                 key = entry.getKey();
                 val = entry.getValue();
                 INDArray msgTmp = msg.get(key);
@@ -105,8 +105,9 @@ public class TestUpdaters {
 
                 gradExpected = Transforms.sqrt(msdxTmp.add(Nd4j.EPS_THRESHOLD))
                         .divi(Transforms.sqrt(msgTmp.add(Nd4j.EPS_THRESHOLD))).muli(val);
-                gradientDup.setGradientFor(key, gradExpected);
-                assertEquals(gradExpected, gradientDup.getGradientFor(entry.getKey()));
+                gradientCopyPreUpdate.setGradientFor(key, gradExpected);
+
+                assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
 
                 msdxTmp.muli(rho);
                 dxSquared = gradExpected.mul(gradExpected);
@@ -114,15 +115,18 @@ public class TestUpdaters {
 
                 msg.put(key, msgTmp);
                 msdx.put(key, msdxTmp);
+                count++;
             }
             assertEquals(rho, layer.conf().getLayer().getRho(), 1e-4);
         }
 
+        assertEquals(4, count);
     }
 
     @Test
     public void testAdaGradUpdater() {
         double lr = 1e-2;
+        double epsilon = AdaGrad.DEFAULT_ADAGRAD_EPSILON;
 
         NeuralNetConfiguration conf =
                 new NeuralNetConfiguration.Builder().learningRate(lr)
@@ -133,27 +137,30 @@ public class TestUpdaters {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
-        INDArray g = gradients.dup();
-        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
-        layer.setBackpropGradientsViewArray(g);
+        layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
         int updaterStateSize = updater.stateSizeForLayer(layer);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
+        Gradient gradientCopyPreUpdate = new DefaultGradient();
+        INDArray g = gradients.dup();
+        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
+        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
+
         updater.update(layer, gradient, -1, 1);
 
-        Gradient gradientDup = new DefaultGradient();
-        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
-        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
-
-        for (Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
+        int count = 0;
+        for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
             val = entry.getValue();
             gradExpected = Transforms.sqrt(val.mul(val).add(epsilon)).rdiv(lr).mul(val);
-            assertEquals(gradExpected, gradientDup.getGradientFor(entry.getKey()));
+            assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
+            count++;
         }
         assertEquals(lr, layer.conf().getLayer().getLearningRate(), 1e-4);
+        assertEquals(2, count);
     }
 
 
@@ -164,6 +171,7 @@ public class TestUpdaters {
         int iteration = 0;
         double beta1 = 0.8;
         double beta2 = 0.888;
+        double epsilon = Adam.DEFAULT_ADAM_EPSILON;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr)
                 .iterations(iteration).adamMeanDecay(beta1).adamVarDecay(beta2).layer(new DenseLayer.Builder()
@@ -173,10 +181,7 @@ public class TestUpdaters {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
-        INDArray g = gradients.dup();
-        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
-        layer.setBackpropGradientsViewArray(g);
+        layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
         int updaterStateSize = updater.stateSizeForLayer(layer);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
@@ -190,11 +195,15 @@ public class TestUpdaters {
         if (Double.isNaN(alphat) || alphat == 0.0)
             alphat = epsilon;
 
-        Gradient gradientDup = new DefaultGradient();
-        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
-        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
+        Gradient gradientCopyPreUpdate = new DefaultGradient();
+        INDArray g = gradients.dup();
+        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
+        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
 
-        for (Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
+        int count = 0;
+        for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
             val = entry.getValue();
             m = Nd4j.zeros(val.shape());
             v = Nd4j.zeros(val.shape());
@@ -206,19 +215,19 @@ public class TestUpdaters {
                 System.out.println(Arrays.toString(gradExpected.dup().data().asFloat()));
                 System.out.println(Arrays.toString(gradient.getGradientFor(entry.getKey()).dup().data().asFloat()));
             }
-            assertEquals(gradExpected, gradientDup.getGradientFor(entry.getKey()));
+            assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
+            count++;
         }
 
         assertEquals(beta1, layer.conf().getLayer().getAdamMeanDecay(), 1e-4);
         assertEquals(beta2, layer.conf().getLayer().getAdamVarDecay(), 1e-4);
-
+        assertEquals(2, count);
     }
 
     @Test
     public void testNestorovsUpdater() {
         double lr = 1e-2;
         double mu = 0.6;
-        INDArray v, vPrev;
 
         NeuralNetConfiguration conf =
                 new NeuralNetConfiguration.Builder().learningRate(lr).momentum(mu)
@@ -229,32 +238,35 @@ public class TestUpdaters {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
-        INDArray g = gradients.dup();
-        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
-        layer.setBackpropGradientsViewArray(g);
+        layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
         int updaterStateSize = updater.stateSizeForLayer(layer);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
+        Gradient gradientCopyPreUpdate = new DefaultGradient();
+        INDArray g = gradients.dup();
+        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
+        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
+
         updater.update(layer, gradient, -1, 1);
 
-        Gradient gradientDup = new DefaultGradient();
-        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
-        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
-
-        for (Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
-            val = entry.getValue();
-            v = Nd4j.zeros(val.shape());
-            vPrev = v;
-            v = vPrev.mul(mu).subi(val.mul(lr));
+        int count = 0;
+        for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
+            INDArray val = entry.getValue();
+            INDArray v = Nd4j.create(val.shape());
+            INDArray vPrev = v.dup();
+            v = v.mul(mu).subi(val.mul(lr));
             gradExpected = vPrev.muli(mu).addi(v.mul(-mu - 1));
 
-            assertEquals(gradExpected, gradientDup.getGradientFor(entry.getKey()));
+            assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
+            count++;
         }
 
         assertEquals(mu, layer.conf().getLayer().getMomentum(), 1e-4);
+        assertEquals(2, count);
     }
 
 
@@ -274,25 +286,25 @@ public class TestUpdaters {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
-        INDArray g = gradients.dup();
-        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
-        layer.setBackpropGradientsViewArray(g);
+        layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
         int updaterStateSize = updater.stateSizeForLayer(layer);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
 
-        Gradient gradientDup = new DefaultGradient();
-        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
-        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
+        Gradient gradientCopyPreUpdate = new DefaultGradient();
+        INDArray g = gradients.dup();
+        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
+        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
 
-        updater.update(layer, gradientDup, -1, 1);
+        updater.update(layer, gradient, -1, 1);
 
         double epsilon = 1e-8;
 
-        for (Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
+        for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
             key = entry.getKey();
             val = entry.getValue();
             INDArray lastGTmp = lastG.get(key);
@@ -303,7 +315,7 @@ public class TestUpdaters {
             lastGTmp.muli(rmsDecay).addi(val.mul(val).muli(1 - rmsDecay));
             gradExpected = val.mul(lr).div(Transforms.sqrt(lastGTmp.add(epsilon)));
 
-            assertEquals(gradExpected, gradientDup.getGradientFor(entry.getKey()));
+            assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
             lastG.put(key, lastGTmp);
         }
         assertEquals(rmsDecay, layer.conf().getLayer().getRmsDecay(), 1e-4);
@@ -322,22 +334,22 @@ public class TestUpdaters {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer.setBackpropGradientsViewArray(gradients);
+        Updater updater = UpdaterCreator.getUpdater(layer);
+
+        Gradient gradientCopyPreUpdate = new DefaultGradient();
         INDArray g = gradients.dup();
         INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
         INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
-        layer.setBackpropGradientsViewArray(g);
-        Updater updater = UpdaterCreator.getUpdater(layer);
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
 
-        Gradient gradientDup = new DefaultGradient();
-        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
-        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
+        updater.update(layer, gradient, -1, 1);
 
-        updater.update(layer, gradientDup, -1, 1);
-
-        for (Map.Entry<String, INDArray> entry : gradient.gradientForVariable().entrySet()) {
+        for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
             val = entry.getValue();
             gradExpected = val.mul(lr);
-            assertEquals(gradExpected, gradientDup.getGradientFor(entry.getKey()));
+            assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
         }
         assertEquals(lr, layer.conf().getLayer().getLearningRate(), 1e-4);
     }
@@ -357,10 +369,7 @@ public class TestUpdaters {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
-        INDArray g = gradients.dup();
-        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
-        layer.setBackpropGradientsViewArray(g);
+        layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         for (int i = 0; i < weightGradient.length(); i++)
@@ -368,6 +377,9 @@ public class TestUpdaters {
         for (int i = 0; i < biasGradient.length(); i++)
             biasGradient.putScalar(i, r.nextDouble());
 
+        INDArray g = gradients.dup();
+        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
+        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
         gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, bg);
 
@@ -595,55 +607,90 @@ public class TestUpdaters {
 
     @Test
     public void testPretrain() {
+
+        gradients = Nd4j.ones(nIn*nOut + nOut + nIn);
+        weightGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
+        biasGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
+        INDArray vbiasGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut+nOut, nIn*nOut+nOut+nIn));
+
+
+        //Test with pretrain = true
         double lr = 0.05;
-        gradient.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbiasGradient.dup());
+        gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
+        gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+        gradient.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbiasGradient);
 
-        Gradient gradientDup = new DefaultGradient();
-        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
-        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
-        gradientDup.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbiasGradient.dup());
-
-        Gradient gradientDup2 = new DefaultGradient();
-        gradientDup.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
-        gradientDup.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
-        gradientDup.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbiasGradient.dup());
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr).seed(42)
+                .updater(org.deeplearning4j.nn.conf.Updater.SGD)
                 .layer(new org.deeplearning4j.nn.conf.layers.RBM.Builder()
                         .lossFunction(LossFunctions.LossFunction.COSINE_PROXIMITY)
-                        .activation(Activation.IDENTITY).updater(org.deeplearning4j.nn.conf.Updater.SGD)
+                        .activation(Activation.IDENTITY)
                         .nIn(nIn).nOut(nOut).build())
                 .build();
         int numParams = conf.getLayer().initializer().numParams(conf);
-
-        boolean preTrain = true;
-        conf.setPretrain(preTrain);
+        conf.setPretrain(true);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
-        layer.setBackpropGradientsViewArray(params.dup());
+        layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
+        Gradient gradientCopyPreUpdate = new DefaultGradient();
+        INDArray g = gradients.dup();
+        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
+        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
+        INDArray vbg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut+nOut, nIn*nOut+nOut+nIn));
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
+        gradientCopyPreUpdate.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbg);
+
         updater.update(layer, gradient, -1, 1);
-        for (Map.Entry<String, INDArray> entry : gradientDup.gradientForVariable().entrySet()) {
+
+        for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
             val = entry.getValue();
             gradExpected = val.mul(lr);
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
         }
         assertEquals(lr, layer.conf().getLayer().getLearningRate(), 1e-4);
 
-        preTrain = false;
-        conf.setPretrain(preTrain);
-        gradient = gradientDup;
+
+
+        //Test with pretrain == false
+        gradients = Nd4j.ones(nIn*nOut + nOut + nIn);
+        weightGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
+        biasGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
+        vbiasGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut+nOut, nIn*nOut+nOut+nIn));
+        gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
+        gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+        gradient.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbiasGradient);
+
+        gradientCopyPreUpdate = new DefaultGradient();
+        g = gradients.dup();
+        wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
+        bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
+        vbg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut+nOut, nIn*nOut+nOut+nIn));
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
+        gradientCopyPreUpdate.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbg);
+
+        conf.setPretrain(false);
         params = Nd4j.create(1, numParams);
         layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer.setBackpropGradientsViewArray(gradients);
+        updater = UpdaterCreator.getUpdater(layer);
+
         updater.update(layer, gradient, -1, 1);
 
-        for (Map.Entry<String, INDArray> entry : gradientDup2.gradientForVariable().entrySet()) {
+        for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
+            System.out.println(entry.getKey());
             val = entry.getValue();
-            if (entry.getKey() != "vb")
+            if (!entry.getKey().equals("vb")) {
                 gradExpected = val.mul(lr);
-            else
+            } else {
+                //With pretrain == false, we shouldn't be updating the pretrain params (vb)
                 gradExpected = val;
+            }
+            System.out.println(gradExpected + "\t" + gradient.getGradientFor(entry.getKey()));
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
         }
         assertEquals(lr, layer.conf().getLayer().getLearningRate(), 1e-4);
