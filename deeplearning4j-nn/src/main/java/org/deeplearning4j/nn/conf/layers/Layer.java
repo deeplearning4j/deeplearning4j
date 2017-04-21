@@ -238,6 +238,17 @@ public abstract class Layer implements Serializable, Cloneable {
     public abstract double getLearningRateByParam(String paramName);
 
     /**
+     * Is the specified parameter a layerwise pretraining only parameter?<br>
+     * For example, visible bias params in an autoencoder (or, decoder params in a variational autoencoder) aren't
+     * used during supervised backprop.<br>
+     * Layers (like DenseLayer, etc) with no pretrainable parameters will return false for all (valid) inputs.
+     *
+     * @param paramName Parameter name/key
+     * @return True if the parameter is for layerwise pretraining only, false otherwise
+     */
+    public abstract boolean isPretrainParam(String paramName);
+
+    /**
      * Get the updater for the given parameter. Typically the same updater will be used for all updaters, but this
      * is not necessarily the case
      *

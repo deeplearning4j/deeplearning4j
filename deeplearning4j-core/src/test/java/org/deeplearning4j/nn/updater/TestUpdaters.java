@@ -4,16 +4,20 @@ package org.deeplearning4j.nn.updater;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
+import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,7 +38,7 @@ public class TestUpdaters {
 
     protected int nIn = 3;
     protected int nOut = 2;
-//    protected double epsilon = 1e-8;
+    //    protected double epsilon = 1e-8;
     protected INDArray gradients;
     protected INDArray weightGradient;
     protected INDArray biasGradient;
@@ -45,9 +49,9 @@ public class TestUpdaters {
 
     @Before
     public void beforeDo() {
-        gradients = Nd4j.ones(nIn*nOut + nOut);
-        weightGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        biasGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
+        gradients = Nd4j.ones(nIn * nOut + nOut);
+        weightGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
+        biasGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
         gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
         gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
     }
@@ -78,8 +82,8 @@ public class TestUpdaters {
 
         Gradient gradientCopyPreUpdate = new DefaultGradient();
         INDArray g = gradients.dup();
-        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
+        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
+        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
 
@@ -145,8 +149,8 @@ public class TestUpdaters {
 
         Gradient gradientCopyPreUpdate = new DefaultGradient();
         INDArray g = gradients.dup();
-        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
+        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
+        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
 
@@ -197,8 +201,8 @@ public class TestUpdaters {
 
         Gradient gradientCopyPreUpdate = new DefaultGradient();
         INDArray g = gradients.dup();
-        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
+        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
+        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
 
@@ -246,8 +250,8 @@ public class TestUpdaters {
 
         Gradient gradientCopyPreUpdate = new DefaultGradient();
         INDArray g = gradients.dup();
-        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
+        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
+        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
 
@@ -295,8 +299,8 @@ public class TestUpdaters {
 
         Gradient gradientCopyPreUpdate = new DefaultGradient();
         INDArray g = gradients.dup();
-        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
+        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
+        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
 
@@ -339,8 +343,8 @@ public class TestUpdaters {
 
         Gradient gradientCopyPreUpdate = new DefaultGradient();
         INDArray g = gradients.dup();
-        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
+        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
+        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
 
@@ -378,8 +382,8 @@ public class TestUpdaters {
             biasGradient.putScalar(i, r.nextDouble());
 
         INDArray g = gradients.dup();
-        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
+        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
+        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
         gradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradient.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, bg);
 
@@ -413,7 +417,7 @@ public class TestUpdaters {
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
-        net.fit(Nd4j.create(1,4), Nd4j.create(1,8));
+        net.fit(Nd4j.create(1, 4), Nd4j.create(1, 8));
 
         Updater updater = net.getUpdater();
         assertNotNull(updater);
@@ -449,12 +453,12 @@ public class TestUpdaters {
         uArr[1] = new NoOpUpdater();
         uArr[2] = new AdaGrad(lr);
         INDArray updaterState = Nd4j.create(1, 6 * 7 + 7, 'f');
-        uArr[2].setStateViewArray(updaterState, new int[]{1,6*7+7}, 'f', true);
+        uArr[2].setStateViewArray(updaterState, new int[]{1, 6 * 7 + 7}, 'f', true);
 
-        uArr[3] = new Nesterovs(0.6,lr);
+        uArr[3] = new Nesterovs(0.6, lr);
         //        updaterStateSize = uArr[3].stateSizeForLayer(net.getLayer(3));
         updaterState = Nd4j.create(1, 7 * 8 + 8, 'f');
-        uArr[3].setStateViewArray(updaterState, new int[]{1,7*8+8}, 'f', true);
+        uArr[3].setStateViewArray(updaterState, new int[]{1, 7 * 8 + 8}, 'f', true);
 
         int[] nIns = {4, 5, 6, 7};
         int[] nOuts = {5, 6, 7, 8};
@@ -608,10 +612,10 @@ public class TestUpdaters {
     @Test
     public void testPretrain() {
 
-        gradients = Nd4j.ones(nIn*nOut + nOut + nIn);
-        weightGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        biasGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
-        INDArray vbiasGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut+nOut, nIn*nOut+nOut+nIn));
+        gradients = Nd4j.ones(nIn * nOut + nOut + nIn);
+        weightGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
+        biasGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
+        INDArray vbiasGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut + nOut, nIn * nOut + nOut + nIn));
 
 
         //Test with pretrain = true
@@ -637,9 +641,9 @@ public class TestUpdaters {
 
         Gradient gradientCopyPreUpdate = new DefaultGradient();
         INDArray g = gradients.dup();
-        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
-        INDArray vbg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut+nOut, nIn*nOut+nOut+nIn));
+        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
+        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
+        INDArray vbg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut + nOut, nIn * nOut + nOut + nIn));
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
         gradientCopyPreUpdate.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbg);
@@ -654,21 +658,20 @@ public class TestUpdaters {
         assertEquals(lr, layer.conf().getLayer().getLearningRate(), 1e-4);
 
 
-
         //Test with pretrain == false
-        gradients = Nd4j.ones(nIn*nOut + nOut + nIn);
-        weightGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        biasGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
-        vbiasGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut+nOut, nIn*nOut+nOut+nIn));
+        gradients = Nd4j.ones(nIn * nOut + nOut + nIn);
+        weightGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
+        biasGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
+        vbiasGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut + nOut, nIn * nOut + nOut + nIn));
         gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
         gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
         gradient.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbiasGradient);
 
         gradientCopyPreUpdate = new DefaultGradient();
         g = gradients.dup();
-        wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
-        vbg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut+nOut, nIn*nOut+nOut+nIn));
+        wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
+        bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
+        vbg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut + nOut, nIn * nOut + nOut + nIn));
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
         gradientCopyPreUpdate.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbg);
@@ -734,94 +737,181 @@ public class TestUpdaters {
     }
 
     @Test
-    public void testUpdaterBlockMln() {
+    public void testUpdaterBlockMlnAndCG() {
+        for (int i = 0; i < 2; i++) {
 
+            List<UpdaterBlock> blocks;
+            if (i == 0) {
+                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .learningRate(0.5)
+                        .list()
+                        .layer(0, new DenseLayer.Builder().nIn(10).nOut(10)
+                                .name("l0")
+                                .updater(org.deeplearning4j.nn.conf.Updater.ADAM).build())
+                        .layer(1, new DenseLayer.Builder().nIn(10).nOut(10)
+                                .name("l1")
+                                .updater(org.deeplearning4j.nn.conf.Updater.ADAM)
+                                .biasLearningRate(0.25).build())
+                        .layer(2, new DenseLayer.Builder().nIn(10).nOut(10)
+                                .name("l2")
+                                .updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
+                        .layer(3, new OutputLayer.Builder().nIn(10).nOut(10)
+                                .name("l3")
+                                .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
+                        .build();
+
+                MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                net.init();
+
+                MultiLayerUpdater u = (MultiLayerUpdater) net.getUpdater();
+                blocks = u.getUpdaterBlocks();
+            } else {
+                ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .learningRate(0.5)
+                        .graphBuilder()
+                        .addInputs("in")
+                        .addLayer("l0", new DenseLayer.Builder().nIn(10).nOut(10)
+                                .updater(org.deeplearning4j.nn.conf.Updater.ADAM).build(), "in")
+                        .addLayer("l1", new DenseLayer.Builder().nIn(10).nOut(10)
+                                .updater(org.deeplearning4j.nn.conf.Updater.ADAM)
+                                .biasLearningRate(0.25).build(), "l0")
+                        .addLayer("l2", new DenseLayer.Builder().nIn(10).nOut(10)
+                                .updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build(), "l1")
+                        .addLayer("l3", new OutputLayer.Builder().nIn(10).nOut(10)
+                                .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build(), "l2")
+                        .setOutputs("l3")
+                        .build();
+
+                ComputationGraph net = new ComputationGraph(conf);
+                net.init();
+
+                ComputationGraphUpdater u = net.getUpdater();
+                blocks = u.getUpdaterBlocks();
+            }
+
+
+            //Expect 4 blocks: (layer0 W, layer0 B, layer 1 W], [layer 1 B], [layer 2 W, layer 2 B], [layer 3 W, layer 3 B]
+            assertEquals(4, blocks.size());
+
+
+            //Check first updater block:
+            UpdaterBlock ub0 = blocks.get(0);
+            assertEquals(3, ub0.getLayersAndVariablesInBlock().size());
+            assertEquals("l0", ub0.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
+            assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub0.getLayersAndVariablesInBlock().get(0).getVarName());
+            assertEquals("l0", ub0.getLayersAndVariablesInBlock().get(1).getLayer().conf().getLayer().getLayerName());
+            assertEquals(DefaultParamInitializer.BIAS_KEY, ub0.getLayersAndVariablesInBlock().get(1).getVarName());
+            assertEquals("l1", ub0.getLayersAndVariablesInBlock().get(2).getLayer().conf().getLayer().getLayerName());
+            assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub0.getLayersAndVariablesInBlock().get(2).getVarName());
+
+            int nParams0 = 10 * 10 + 10 + 10 * 10;
+            assertEquals(0, ub0.getParamOffsetStart());
+            assertEquals(nParams0, ub0.getParamOffsetEnd());
+            int nUpdaterVals0 = 2 * nParams0;   //2x for Adam
+            assertEquals(0, ub0.getUpdaterViewOffsetStart());
+            assertEquals(nUpdaterVals0, ub0.getUpdaterViewOffsetEnd());
+
+            //Check second updater block:
+            UpdaterBlock ub1 = blocks.get(1);
+            assertEquals(1, ub1.getLayersAndVariablesInBlock().size());
+            assertEquals("l1", ub1.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
+            assertEquals(DefaultParamInitializer.BIAS_KEY, ub1.getLayersAndVariablesInBlock().get(0).getVarName());
+
+            int nParams1 = 10;
+            assertEquals(nParams0, ub1.getParamOffsetStart());
+            assertEquals(nParams0 + nParams1, ub1.getParamOffsetEnd());
+            int nUpdaterVals1 = 2 * nParams1;   //2x for Adam
+            assertEquals(nUpdaterVals0, ub1.getUpdaterViewOffsetStart());
+            assertEquals(nUpdaterVals0 + nUpdaterVals1, ub1.getUpdaterViewOffsetEnd());
+
+            //Check third updater block:
+            UpdaterBlock ub2 = blocks.get(2);
+            assertEquals(2, ub2.getLayersAndVariablesInBlock().size());
+            assertEquals("l2", ub2.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
+            assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub2.getLayersAndVariablesInBlock().get(0).getVarName());
+            assertEquals("l2", ub2.getLayersAndVariablesInBlock().get(1).getLayer().conf().getLayer().getLayerName());
+            assertEquals(DefaultParamInitializer.BIAS_KEY, ub2.getLayersAndVariablesInBlock().get(1).getVarName());
+
+            int nParams2 = 10 * 10 + 10;
+            assertEquals(nParams0 + nParams1, ub2.getParamOffsetStart());
+            assertEquals(nParams0 + nParams1 + nParams2, ub2.getParamOffsetEnd());
+            int nUpdaterVals2 = 2 * nParams2;   //2x for Adadelta
+            assertEquals(nUpdaterVals0 + nUpdaterVals1, ub2.getUpdaterViewOffsetStart());
+            assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2, ub2.getUpdaterViewOffsetEnd());
+
+            //Check fourth updater block:
+            UpdaterBlock ub3 = blocks.get(3);
+            assertEquals(2, ub3.getLayersAndVariablesInBlock().size());
+            assertEquals("l3", ub3.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
+            assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub3.getLayersAndVariablesInBlock().get(0).getVarName());
+            assertEquals("l3", ub3.getLayersAndVariablesInBlock().get(1).getLayer().conf().getLayer().getLayerName());
+            assertEquals(DefaultParamInitializer.BIAS_KEY, ub3.getLayersAndVariablesInBlock().get(1).getVarName());
+
+            int nParams3 = 10 * 10 + 10;
+            assertEquals(nParams0 + nParams1 + nParams2, ub3.getParamOffsetStart());
+            assertEquals(nParams0 + nParams1 + nParams2 + nParams3, ub3.getParamOffsetEnd());
+            int nUpdaterVals3 = nParams3;   //1x for AdaGrad
+            assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2, ub3.getUpdaterViewOffsetStart());
+            assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2 + nUpdaterVals3, ub3.getUpdaterViewOffsetEnd());
+        }
+    }
+
+
+    @Test
+    public void testUpdaterBlockMlnVae() {
+
+        List<UpdaterBlock> blocks;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                 .learningRate(0.5)
+                .updater(org.deeplearning4j.nn.conf.Updater.ADAM)
                 .list()
-                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10)
-                        .name("l0")
-                        .updater(org.deeplearning4j.nn.conf.Updater.ADAM).build())
-                .layer(1, new DenseLayer.Builder().nIn(10).nOut(10)
-                        .name("l1")
-                        .updater(org.deeplearning4j.nn.conf.Updater.ADAM)
-                        .biasLearningRate(0.25).build())
-                .layer(2, new DenseLayer.Builder().nIn(10).nOut(10)
-                        .name("l2")
-                        .updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
-                .layer(3, new OutputLayer.Builder().nIn(10).nOut(10)
-                        .name("l3")
-                        .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
+                .layer(0, new VariationalAutoencoder.Builder()
+                        .nIn(8).nOut(12)
+                        .encoderLayerSizes(10, 11)
+                        .decoderLayerSizes(13, 14)
+                        .build())
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
         MultiLayerUpdater u = (MultiLayerUpdater) net.getUpdater();
-        List<UpdaterBlock> blocks = u.getUpdaterBlocks();
-
-        //Expect 4 blocks: (layer0 W, layer0 B, layer 1 W], [layer 1 B], [layer 2 W, layer 2 B], [layer 3 W, layer 3 B]
-        assertEquals(4, blocks.size());
+        blocks = u.getUpdaterBlocks();
 
 
-        //Check first updater block:
-        UpdaterBlock ub0 = blocks.get(0);
-        assertEquals(3, ub0.getLayersAndVariablesInBlock().size());
-        assertEquals("l0", ub0.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
-        assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub0.getLayersAndVariablesInBlock().get(0).getVarName());
-        assertEquals("l0", ub0.getLayersAndVariablesInBlock().get(1).getLayer().conf().getLayer().getLayerName());
-        assertEquals(DefaultParamInitializer.BIAS_KEY, ub0.getLayersAndVariablesInBlock().get(1).getVarName());
-        assertEquals("l1", ub0.getLayersAndVariablesInBlock().get(2).getLayer().conf().getLayer().getLayerName());
-        assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub0.getLayersAndVariablesInBlock().get(2).getVarName());
+        //Expect 2 blocks: Standard, and pretrain-only params
+        assertEquals(2, blocks.size());
 
-        int nParams0 = 10 * 10 + 10 + 10 * 10;
-        assertEquals(0, ub0.getParamOffsetStart());
-        assertEquals(nParams0, ub0.getParamOffsetEnd());
-        int nUpdaterVals0 = 2 * nParams0;   //2x for Adam
-        assertEquals(0, ub0.getUpdaterViewOffsetStart());
-        assertEquals(nUpdaterVals0, ub0.getUpdaterViewOffsetEnd());
 
-        //Check second updater block:
-        UpdaterBlock ub1 = blocks.get(1);
-        assertEquals(1, ub1.getLayersAndVariablesInBlock().size());
-        assertEquals("l1", ub1.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
-        assertEquals(DefaultParamInitializer.BIAS_KEY, ub1.getLayersAndVariablesInBlock().get(0).getVarName());
-
-        int nParams1 = 10;
-        assertEquals(nParams0, ub1.getParamOffsetStart());
-        assertEquals(nParams0 + nParams1, ub1.getParamOffsetEnd());
-        int nUpdaterVals1 = 2 * nParams1;   //2x for Adam
-        assertEquals(nUpdaterVals0, ub1.getUpdaterViewOffsetStart());
-        assertEquals(nUpdaterVals0 + nUpdaterVals1, ub1.getUpdaterViewOffsetEnd());
-
-        //Check third updater block:
-        UpdaterBlock ub2 = blocks.get(2);
-        assertEquals(2, ub2.getLayersAndVariablesInBlock().size());
-        assertEquals("l2", ub2.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
-        assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub2.getLayersAndVariablesInBlock().get(0).getVarName());
-        assertEquals("l2", ub2.getLayersAndVariablesInBlock().get(1).getLayer().conf().getLayer().getLayerName());
-        assertEquals(DefaultParamInitializer.BIAS_KEY, ub2.getLayersAndVariablesInBlock().get(1).getVarName());
-
-        int nParams2 = 10 * 10 + 10;
-        assertEquals(nParams0 + nParams1, ub2.getParamOffsetStart());
-        assertEquals(nParams0 + nParams1 + nParams2, ub2.getParamOffsetEnd());
-        int nUpdaterVals2 = 2 * nParams2;   //2x for Adadelta
-        assertEquals(nUpdaterVals0 + nUpdaterVals1, ub2.getUpdaterViewOffsetStart());
-        assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2, ub2.getUpdaterViewOffsetEnd());
-
-        //Check fourth updater block:
-        UpdaterBlock ub3 = blocks.get(3);
-        assertEquals(2, ub3.getLayersAndVariablesInBlock().size());
-        assertEquals("l3", ub3.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
-        assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub3.getLayersAndVariablesInBlock().get(0).getVarName());
-        assertEquals("l3", ub3.getLayersAndVariablesInBlock().get(1).getLayer().conf().getLayer().getLayerName());
-        assertEquals(DefaultParamInitializer.BIAS_KEY, ub3.getLayersAndVariablesInBlock().get(1).getVarName());
-
-        int nParams3 = 10 * 10 + 10;
-        assertEquals(nParams0 + nParams1 + nParams2, ub3.getParamOffsetStart());
-        assertEquals(nParams0 + nParams1 + nParams2 + nParams3, ub3.getParamOffsetEnd());
-        int nUpdaterVals3 = nParams3;   //1x for AdaGrad
-        assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2, ub3.getUpdaterViewOffsetStart());
-        assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2 + nUpdaterVals3, ub3.getUpdaterViewOffsetEnd());
+        fail();
+//            //Check first updater block:
+//            UpdaterBlock ub0 = blocks.get(0);
+//            assertEquals(3, ub0.getLayersAndVariablesInBlock().size());
+//            assertEquals("l0", ub0.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
+//            assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub0.getLayersAndVariablesInBlock().get(0).getVarName());
+//            assertEquals("l0", ub0.getLayersAndVariablesInBlock().get(1).getLayer().conf().getLayer().getLayerName());
+//            assertEquals(DefaultParamInitializer.BIAS_KEY, ub0.getLayersAndVariablesInBlock().get(1).getVarName());
+//            assertEquals("l1", ub0.getLayersAndVariablesInBlock().get(2).getLayer().conf().getLayer().getLayerName());
+//            assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub0.getLayersAndVariablesInBlock().get(2).getVarName());
+//
+//            int nParams0 = 10 * 10 + 10 + 10 * 10;
+//            assertEquals(0, ub0.getParamOffsetStart());
+//            assertEquals(nParams0, ub0.getParamOffsetEnd());
+//            int nUpdaterVals0 = 2 * nParams0;   //2x for Adam
+//            assertEquals(0, ub0.getUpdaterViewOffsetStart());
+//            assertEquals(nUpdaterVals0, ub0.getUpdaterViewOffsetEnd());
+//
+//            //Check second updater block:
+//            UpdaterBlock ub1 = blocks.get(1);
+//            assertEquals(1, ub1.getLayersAndVariablesInBlock().size());
+//            assertEquals("l1", ub1.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
+//            assertEquals(DefaultParamInitializer.BIAS_KEY, ub1.getLayersAndVariablesInBlock().get(0).getVarName());
+//
+//            int nParams1 = 10;
+//            assertEquals(nParams0, ub1.getParamOffsetStart());
+//            assertEquals(nParams0 + nParams1, ub1.getParamOffsetEnd());
+//            int nUpdaterVals1 = 2 * nParams1;   //2x for Adam
+//            assertEquals(nUpdaterVals0, ub1.getUpdaterViewOffsetStart());
+//            assertEquals(nUpdaterVals0 + nUpdaterVals1, ub1.getUpdaterViewOffsetEnd());
     }
 }

@@ -155,6 +155,11 @@ public class GlobalPoolingLayer extends Layer {
         return 0;
     }
 
+    @Override
+    public boolean isPretrainParam(String paramName){
+        throw new UnsupportedOperationException("Global pooling layer does not contain parameters");
+    }
+
     public static class Builder extends Layer.Builder<Builder> {
 
         private PoolingType poolingType = PoolingType.MAX;

@@ -107,6 +107,11 @@ public class ZeroPaddingLayer extends Layer {
         return learningRate;
     }
 
+    @Override
+    public boolean isPretrainParam(String paramName){
+        throw new UnsupportedOperationException("ZeroPaddingLayer does not contain parameters");
+    }
+
     public static class Builder extends Layer.Builder<Builder> {
 
         private int[] padding = new int[] {0, 0, 0, 0}; //Padding: top, bottom, left, right
