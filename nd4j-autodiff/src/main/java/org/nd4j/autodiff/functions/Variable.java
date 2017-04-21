@@ -92,9 +92,13 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     public Constant<X> diff(Variable<X> i_v) {
         Constant<X> ret =  (this == i_v) ? new One<>(graph, m_factory) : new Zero<>(graph, m_factory);
         if(m_x instanceof ArrayField) {
+            //add a connection acknowledging where the shape came from for the op
             ArrayField arrayField = (ArrayField) ret.getM_x();
             addEdge("diff",arrayField.getVertex());
             ret.setOpState(opState);
+            //ensure the shape is the same
+            arrayField.getInput().setOwner(opState);
+            arrayField.getInput().setShape(arrayField.getInput().getShape());
 
         }
 

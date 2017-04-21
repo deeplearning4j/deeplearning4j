@@ -21,7 +21,7 @@ public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X>
         m_scale = i_scale;
         m_exponent = i_exponent;
         //add nodes to the graph from value
-        getValue(false);
+        //getValue(false);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X>
 
     @Override
     public String functionName() {
-        return "polynomial";
+        return "pow";
     }
 
     @Override

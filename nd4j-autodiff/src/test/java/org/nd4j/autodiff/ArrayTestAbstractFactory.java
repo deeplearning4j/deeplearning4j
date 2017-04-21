@@ -1,6 +1,7 @@
 package org.nd4j.autodiff;
 
 import org.junit.Test;
+import org.nd4j.autodiff.functions.Constant;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.functions.Variable;
@@ -104,6 +105,25 @@ public class ArrayTestAbstractFactory
 
     }
 
+    @Test
+    public void testConstant() {
+        Graph<NDArrayInformation,OpState> graph = new Graph<>();
+        ArrayFactory arrayFactory = new ArrayFactory(graph);
+
+        DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
+        Constant<ArrayField> constant  = arrayFieldDifferentialFunctionFactory.zero();
+        Constant<ArrayField> one = arrayFieldDifferentialFunctionFactory.one();
+        assertEquals(2,graph.numVertices());
+        DifferentialFunction<ArrayField> mul = one.mul(constant);
+        assertEquals(1,graph.getEdges().size());
+        assertEquals(1,graph.getVertexInDegree(2));
+
+        Variable<ArrayField> variable = arrayFieldDifferentialFunctionFactory.var("x",constant.getValue());
+        assertEquals(3,graph.numVertices());
+        System.out.println(mul.diff(variable).getFormula(new ArrayList<>()));
+
+    }
+
 
     @Test
     public void testGrad() throws Exception {
@@ -111,7 +131,7 @@ public class ArrayTestAbstractFactory
         TensorGradVariable var = tensorGrad.var("x", Nd4j.create(1));
         TensorGradVariable var2 = tensorGrad.var("y", Nd4j.create(1));
 
-        TensorGradVariable xTimesX = var.mul(var2);
+        TensorGradVariable xTimesX = var.mul(var);
         TensorGradVariable grad = tensorGrad.grad(xTimesX,var);
         System.out.println(tensorGrad.graph());
         System.out.println(grad.getFormula());

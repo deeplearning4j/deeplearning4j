@@ -102,7 +102,7 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
                             .id(opName + "(" + arrayField.getInput().getId() + ")")
                             .shape(arrayField.getInput().getShape()).build());
             graph.addVertex(newVertex);
-            graph.addEdge(arrayField.getVertex().getIdx(),
+            graph.addEdge(arrayField.getVertex().vertexID(),
                     newVertex.vertexID(),OpState.builder()
                             .n(ArrayUtil.prod(arrayField.getInput().getShape()))
                             .opName(opName)
