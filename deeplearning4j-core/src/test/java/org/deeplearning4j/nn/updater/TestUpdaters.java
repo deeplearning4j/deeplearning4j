@@ -7,7 +7,6 @@ import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
@@ -18,7 +17,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -29,7 +27,6 @@ import org.nd4j.linalg.learning.*;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-import java.lang.reflect.Field;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -798,11 +795,11 @@ public class TestUpdaters {
             UpdaterBlock ub0 = blocks.get(0);
             assertEquals(3, ub0.getLayersAndVariablesInBlock().size());
             assertEquals("l0", ub0.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
-            assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub0.getLayersAndVariablesInBlock().get(0).getVarName());
+            assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub0.getLayersAndVariablesInBlock().get(0).getParamName());
             assertEquals("l0", ub0.getLayersAndVariablesInBlock().get(1).getLayer().conf().getLayer().getLayerName());
-            assertEquals(DefaultParamInitializer.BIAS_KEY, ub0.getLayersAndVariablesInBlock().get(1).getVarName());
+            assertEquals(DefaultParamInitializer.BIAS_KEY, ub0.getLayersAndVariablesInBlock().get(1).getParamName());
             assertEquals("l1", ub0.getLayersAndVariablesInBlock().get(2).getLayer().conf().getLayer().getLayerName());
-            assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub0.getLayersAndVariablesInBlock().get(2).getVarName());
+            assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub0.getLayersAndVariablesInBlock().get(2).getParamName());
 
             int nParams0 = 10 * 10 + 10 + 10 * 10;
             assertEquals(0, ub0.getParamOffsetStart());
@@ -815,7 +812,7 @@ public class TestUpdaters {
             UpdaterBlock ub1 = blocks.get(1);
             assertEquals(1, ub1.getLayersAndVariablesInBlock().size());
             assertEquals("l1", ub1.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
-            assertEquals(DefaultParamInitializer.BIAS_KEY, ub1.getLayersAndVariablesInBlock().get(0).getVarName());
+            assertEquals(DefaultParamInitializer.BIAS_KEY, ub1.getLayersAndVariablesInBlock().get(0).getParamName());
 
             int nParams1 = 10;
             assertEquals(nParams0, ub1.getParamOffsetStart());
@@ -828,9 +825,9 @@ public class TestUpdaters {
             UpdaterBlock ub2 = blocks.get(2);
             assertEquals(2, ub2.getLayersAndVariablesInBlock().size());
             assertEquals("l2", ub2.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
-            assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub2.getLayersAndVariablesInBlock().get(0).getVarName());
+            assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub2.getLayersAndVariablesInBlock().get(0).getParamName());
             assertEquals("l2", ub2.getLayersAndVariablesInBlock().get(1).getLayer().conf().getLayer().getLayerName());
-            assertEquals(DefaultParamInitializer.BIAS_KEY, ub2.getLayersAndVariablesInBlock().get(1).getVarName());
+            assertEquals(DefaultParamInitializer.BIAS_KEY, ub2.getLayersAndVariablesInBlock().get(1).getParamName());
 
             int nParams2 = 10 * 10 + 10;
             assertEquals(nParams0 + nParams1, ub2.getParamOffsetStart());
@@ -843,9 +840,9 @@ public class TestUpdaters {
             UpdaterBlock ub3 = blocks.get(3);
             assertEquals(2, ub3.getLayersAndVariablesInBlock().size());
             assertEquals("l3", ub3.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
-            assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub3.getLayersAndVariablesInBlock().get(0).getVarName());
+            assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub3.getLayersAndVariablesInBlock().get(0).getParamName());
             assertEquals("l3", ub3.getLayersAndVariablesInBlock().get(1).getLayer().conf().getLayer().getLayerName());
-            assertEquals(DefaultParamInitializer.BIAS_KEY, ub3.getLayersAndVariablesInBlock().get(1).getVarName());
+            assertEquals(DefaultParamInitializer.BIAS_KEY, ub3.getLayersAndVariablesInBlock().get(1).getParamName());
 
             int nParams3 = 10 * 10 + 10;
             assertEquals(nParams0 + nParams1 + nParams2, ub3.getParamOffsetStart());
@@ -887,8 +884,8 @@ public class TestUpdaters {
         UpdaterBlock ub0 = blocks.get(0);
         List<String> expParams = Arrays.asList("e0W", "e0b", "e1W", "e1b", "pZXMeanW", "pZXMeanb");
         List<String> actParams = new ArrayList<>();
-        for (UpdaterBlock.VarState vs : ub0.getLayersAndVariablesInBlock()) {
-            actParams.add(vs.getVarName());
+        for (UpdaterBlock.ParamState vs : ub0.getLayersAndVariablesInBlock()) {
+            actParams.add(vs.getParamName());
         }
         assertEquals(expParams, actParams);
 
@@ -896,8 +893,8 @@ public class TestUpdaters {
         UpdaterBlock ub1 = blocks.get(1);
         expParams = Arrays.asList("pZXLogStd2W", "pZXLogStd2b", "d0W", "d0b", "d1W", "d1b", "pXZW", "pXZb");
         actParams = new ArrayList<>();
-        for (UpdaterBlock.VarState vs : ub1.getLayersAndVariablesInBlock()) {
-            actParams.add(vs.getVarName());
+        for (UpdaterBlock.ParamState vs : ub1.getLayersAndVariablesInBlock()) {
+            actParams.add(vs.getParamName());
         }
         assertEquals(expParams, actParams);
     }

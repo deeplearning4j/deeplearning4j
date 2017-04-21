@@ -87,8 +87,8 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 //First: decide whether to add to the existing updater block, or create a new one
                 if(currentBlock == null || !UpdaterUtils.updaterConfigurationsEquals(lastLayer, lastVariable, layers[i], var)){
                     //Create a new block
-                    List<UpdaterBlock.VarState> list = new ArrayList<>();
-                    list.add(new UpdaterBlock.VarState(layers[i], var, paramsViewSubset, gradientViewSubset));
+                    List<UpdaterBlock.ParamState> list = new ArrayList<>();
+                    list.add(new UpdaterBlock.ParamState(layers[i], var, paramsViewSubset, gradientViewSubset));
                     currentBlock = new UpdaterBlock(paramsViewSoFar, paramsViewSoFar+paramSizeThisVariable,
                             currentUpdaterOffset, currentUpdaterOffset+updaterStateSizeThisVariable, list);
 
@@ -98,7 +98,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                     currentBlock.setParamOffsetEnd( currentBlock.getParamOffsetEnd() + paramSizeThisVariable);
                     currentBlock.setUpdaterViewOffsetEnd( currentBlock.getUpdaterViewOffsetEnd() + updaterStateSizeThisVariable);
                     currentBlock.getLayersAndVariablesInBlock().add(
-                            new UpdaterBlock.VarState(layers[i], var, paramsViewSubset, gradientViewSubset));
+                            new UpdaterBlock.ParamState(layers[i], var, paramsViewSubset, gradientViewSubset));
                 }
 
                 lastLayer = layers[i];

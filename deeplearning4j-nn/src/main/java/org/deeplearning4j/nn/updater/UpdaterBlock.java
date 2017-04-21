@@ -2,8 +2,6 @@ package org.deeplearning4j.nn.updater;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -13,7 +11,6 @@ import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -28,7 +25,7 @@ public class UpdaterBlock {
     private int paramOffsetEnd;
     private int updaterViewOffsetStart;
     private int updaterViewOffsetEnd;
-    private List<VarState> layersAndVariablesInBlock = new ArrayList<>();
+    private List<ParamState> layersAndVariablesInBlock = new ArrayList<>();
 
     private INDArray updaterView;
     private INDArray gradientView;
@@ -39,9 +36,9 @@ public class UpdaterBlock {
 
     @AllArgsConstructor
     @Data
-    public static class VarState {
+    public static class ParamState {
         private final Layer layer;
-        private final String varName;
+        private final String paramName;
         private final INDArray paramView;
         private final INDArray gradView;
     }
@@ -59,7 +56,7 @@ public class UpdaterBlock {
      *                                  and variables in this list <i>must</i> have an identical updater configuration.
      */
     public UpdaterBlock(int paramOffsetStart, int paramOffsetEnd, int updaterViewOffsetStart, int updaterViewOffsetEnd,
-                        List<VarState> layersAndVariablesInBlock) {
+                        List<ParamState> layersAndVariablesInBlock) {
         this.paramOffsetStart = paramOffsetStart;
         this.paramOffsetEnd = paramOffsetEnd;
         this.updaterViewOffsetStart = updaterViewOffsetStart;
@@ -69,8 +66,8 @@ public class UpdaterBlock {
 
     public void init(){
         if (gradientUpdater == null) {
-            VarState varState = layersAndVariablesInBlock.get(0);
-            gradientUpdater = UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getVarName());
+            ParamState varState = layersAndVariablesInBlock.get(0);
+            gradientUpdater = UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getParamName());
             if (updaterView != null) {
                 //May be null for SGD and no-op updaters
                 int[] gradientViewShape = gradientView.shape();
@@ -81,13 +78,13 @@ public class UpdaterBlock {
 
     public boolean isPretrainUpdaterBlock(){
         //All in block should be the same layer, and all be pretrain params
-        VarState vs = layersAndVariablesInBlock.get(0);
-        return vs.getLayer().conf().getLayer().isPretrainParam(vs.getVarName());
+        ParamState vs = layersAndVariablesInBlock.get(0);
+        return vs.getLayer().conf().getLayer().isPretrainParam(vs.getParamName());
     }
 
     public boolean skipDueToPretrainConfig(){
         if(!isPretrainUpdaterBlock()) return false;
-        VarState vs = layersAndVariablesInBlock.get(0);
+        ParamState vs = layersAndVariablesInBlock.get(0);
         return !vs.getLayer().conf().isPretrain();  //Skip if not pretrain
     }
 
@@ -118,8 +115,8 @@ public class UpdaterBlock {
         gradientUpdater.getGradient(gradientView, iteration);
 
         //Post apply: l1 and l2 by params
-        for (VarState p : layersAndVariablesInBlock) {
-            postApply(p.getLayer(), p.getVarName(), p.getGradView(), p.getParamView());
+        for (ParamState p : layersAndVariablesInBlock) {
+            postApply(p.getLayer(), p.getParamName(), p.getGradView(), p.getParamView());
         }
     }
 
@@ -157,7 +154,7 @@ public class UpdaterBlock {
      */
     public void applyLrDecayPolicy(LearningRatePolicy decay, int iteration) {
         Layer layer = layersAndVariablesInBlock.get(0).getLayer();
-        String variable = layersAndVariablesInBlock.get(0).getVarName();
+        String variable = layersAndVariablesInBlock.get(0).getParamName();
 
         NeuralNetConfiguration conf = layer.conf();
         double decayRate = layer.conf().getLrPolicyDecayRate();
@@ -214,8 +211,8 @@ public class UpdaterBlock {
 
         //Need to set the LR for *all* variables in the Updater block. All variables (by definition of being in the
         // same block) share the same LR schedule
-        for (VarState vs : layersAndVariablesInBlock) {
-            vs.getLayer().conf().setLearningRateByParam(vs.getVarName(), newLr);
+        for (ParamState vs : layersAndVariablesInBlock) {
+            vs.getLayer().conf().setLearningRateByParam(vs.getParamName(), newLr);
             if (layer.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS) {
                 vs.getLayer().conf().getLayer().setMomentum(newMomentum);
             }

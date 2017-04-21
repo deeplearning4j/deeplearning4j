@@ -78,6 +78,7 @@ public class AutoEncoderTest {
         assertEquals(da.params(), da.params());
         assertEquals(471784, da.params().length());
         da.setParams(da.params());
+        da.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
         da.fit(input);
     }
 
