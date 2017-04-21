@@ -161,6 +161,17 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
                                        int labelIndexFrom, int labelIndexTo, int numPossibleLabels, int maxNumBatches,
                                        boolean regression) {
+        this(recordReader, converter, batchSize, labelIndexFrom, labelIndexTo, numPossibleLabels, maxNumBatches, regression, 1);
+
+    }
+
+    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
+                                       int labelIndexFrom, int labelIndexTo, int numPossibleLabels, int maxNumBatches,
+                                       boolean regression, int numThreads) {
+
+        if (numThreads < 1)
+            numThreads = 1;
+
         this.recordReader = recordReader;
         this.converter = converter;
         this.batchSize = batchSize;
@@ -170,14 +181,14 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         this.numPossibleLabels = numPossibleLabels;
         this.regression = regression;
 
-        this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(4, new ThreadFactory() {
+        this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(numThreads, new ThreadFactory() {
             @Override
             public Thread newThread(Runnable r) {
                 Thread t = Executors.defaultThreadFactory().newThread(r);
 
                 // we enforce the same device probably?
                 // TODO: investigate what would be better for perf here
-                Nd4j.getAffinityManager().attachThreadToDevice(t, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+                //Nd4j.getAffinityManager().attachThreadToDevice(t, Nd4j.getAffinityManager().getDeviceForCurrentThread());
                 t.setDaemon(true);
                 t.setName("RRDSI thread");
                 return t;
