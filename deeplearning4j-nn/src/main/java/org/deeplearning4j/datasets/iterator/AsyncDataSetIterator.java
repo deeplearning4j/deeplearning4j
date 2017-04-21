@@ -70,7 +70,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
                     .policyAllocation(AllocationPolicy.OVERALLOCATE)
                     .build();
 
-            MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ADSI_ITER");
+            MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ADSI_ITER-" + java.util.UUID.randomUUID().toString());
             this.workspace = workspace;
         } else workspace = null;
 
