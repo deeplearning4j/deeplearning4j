@@ -669,6 +669,10 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         public DataSet call() throws Exception {
 
             DataSet ret = null;
+
+            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceId))
+                firstLoop.set(false);
+
             // we need to initialize workspace first. so we'll do 2 loops for
             for (int l = firstLoop.get() ? 0 : 1; l < 2; l++) {
                 try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceId)) {
