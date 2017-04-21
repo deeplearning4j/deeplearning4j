@@ -35,6 +35,7 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException;
+import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -921,6 +922,24 @@ public class RecordReaderDataSetiteratorTest {
             DataSet fromMeta = rrdsi.loadFromMetaData(meta);
             assertEquals(ds, fromMeta);
         }
+    }
+
+    @Test
+    public void testRRDSIwithAsync() throws Exception{
+        RecordReader csv = new CSVRecordReader();
+        csv.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
+
+        int batchSize = 10;
+        int labelIdx = 4;
+        int numClasses = 3;
+
+        RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(csv, batchSize, labelIdx, numClasses);
+        AsyncDataSetIterator adsi = new AsyncDataSetIterator(rrdsi, 8, true);
+        while (adsi.hasNext()) {
+            DataSet ds = adsi.next();
+
+        }
+
     }
 
 
