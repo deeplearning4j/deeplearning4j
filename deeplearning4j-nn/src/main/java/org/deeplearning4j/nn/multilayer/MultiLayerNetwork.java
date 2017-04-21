@@ -1695,6 +1695,24 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
     }
 
+
+    protected INDArray silentOutput(INDArray input, boolean train) {
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(1.0)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .build();
+
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration,workspaceExternal);
+
+        try(MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+            List<INDArray> activations = feedForward(input, train);
+            //last activation is output
+            return activations.get(activations.size() - 1);
+        }
+    }
+
     /** Calculate the output of the network, with masking arrays. The masking arrays are used in situations such
      * as one-to-many and many-to-one recurrent neural network (RNN) designs, as well as for supporting time series
      * of varying lengths within the same minibatch.
@@ -1702,6 +1720,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public INDArray output(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask) {
         setLayerMaskArrays(featuresMask, labelsMask);
         INDArray out = output(input, train);
+        clearLayerMaskArrays();
+        return out;
+    }
+
+    protected INDArray silentOutput(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask) {
+        setLayerMaskArrays(featuresMask, labelsMask);
+        INDArray out = silentOutput(input, train);
         clearLayerMaskArrays();
         return out;
     }
@@ -2639,9 +2664,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             INDArray out;
             if (next.hasMaskArrays()) {
                 INDArray fMask = next.getFeaturesMaskArray();
-                out = this.output(features, false, fMask, lMask);
+                out = this.silentOutput(features, false, fMask, lMask);
             } else {
-                out = this.output(features, false);
+                out = this.silentOutput(features, false);
             }
 
             evaluation.eval(labels, out, lMask);

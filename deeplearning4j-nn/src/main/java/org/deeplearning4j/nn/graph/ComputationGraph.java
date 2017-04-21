@@ -1351,6 +1351,28 @@ public class ComputationGraph implements Serializable, Model {
         }
     }
 
+    protected INDArray[] silentOutput(boolean train, INDArray... input) {
+        WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(1.0)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .build();
+
+        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf,workspaceExternal);
+
+        try(MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+            setInputs(input);
+            Map<String, INDArray> activations = feedForward(train);
+            INDArray[] outputs = new INDArray[numOutputArrays];
+            int i = 0;
+            for (String s : configuration.getNetworkOutputs()) {
+                outputs[i++] = activations.get(s);
+            }
+            return outputs;
+        }
+    }
+
     /**
      * A convenience method that returns a single INDArray, instead of an INDArray[].
      * Useful for ComputationGraphs that have only a single output.
@@ -2728,7 +2750,7 @@ public class ComputationGraph implements Serializable, Model {
             setLayerMaskArrays(
                     featuresMask == null ? null : new INDArray[]{featuresMask},
                     labelMask == null ? null : new INDArray[]{labelMask});
-            INDArray[] out = output(false, features);
+            INDArray[] out = silentOutput(false, features);
             evaluation.eval(labels, out[0], labelMask);
 
             clearLayerMaskArrays();
@@ -2772,7 +2794,7 @@ public class ComputationGraph implements Serializable, Model {
             INDArray labelMask = next.getLabelsMaskArray(0);
 
             setLayerMaskArrays(featuresMasks, labelMasks);
-            INDArray[] out = output(false, features);
+            INDArray[] out = silentOutput(false, features);
             evaluation.eval(labels, out[0], labelMask);
 
             clearLayerMaskArrays();
