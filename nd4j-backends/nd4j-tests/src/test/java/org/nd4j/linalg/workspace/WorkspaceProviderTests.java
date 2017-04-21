@@ -75,6 +75,17 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             .build();
 
 
+    private static final WorkspaceConfiguration reallocateUnspecifiedConfiguration = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.0)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyLearning(LearningPolicy.OVER_TIME)
+            .policyMirroring(MirroringPolicy.FULL)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .policyReset(ResetPolicy.BLOCK_LEFT)
+            .build();
+
+
 
     private static final WorkspaceConfiguration firstConfiguration = WorkspaceConfiguration.builder()
             .initialSize(0)
@@ -289,6 +300,34 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         }
 
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
+
+
+    @Test
+    public void testReallocate3() throws Exception {
+        MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(reallocateUnspecifiedConfiguration, "WS_1");
+
+        for (int i = 1; i <= 10; i++) {
+            try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(reallocateUnspecifiedConfiguration, "WS_1")) {
+                INDArray array = Nd4j.create(100 * i);
+            }
+
+            if (i == 3) {
+                workspace.initializeWorkspace();
+                assertEquals("Failed on iteration " + i, 100 * i * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+            }
+        }
+
+        log.info("-----------------------------");
+
+        for (int i = 10; i > 0; i--) {
+            try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(reallocateUnspecifiedConfiguration, "WS_1")) {
+                INDArray array = Nd4j.create(100 * i);
+            }
+        }
+
+        workspace.initializeWorkspace();
+        assertEquals("Failed on final", 100 * 10 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
     }
 
     @Test
