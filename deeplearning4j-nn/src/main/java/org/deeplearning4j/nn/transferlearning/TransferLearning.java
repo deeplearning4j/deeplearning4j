@@ -694,7 +694,7 @@ public class TransferLearning {
          * @param inputs String names of each graph input.
          * @return {@code GraphBuilder} instance.
          */
-        protected GraphBuilder setInputs(String... inputs) {
+        public GraphBuilder setInputs(String... inputs) {
             editedConfigBuilder.setNetworkInputs(Arrays.asList(inputs));
             return this;
         }
@@ -704,7 +704,7 @@ public class TransferLearning {
          * @param inputTypes The type of input (such as convolutional).
          * @return {@code GraphBuilder} instance.
          */
-        protected GraphBuilder setInputTypes(InputType... inputTypes) {
+        public GraphBuilder setInputTypes(InputType... inputTypes) {
             editedConfigBuilder.setInputTypes(inputTypes);
             return this;
         }
