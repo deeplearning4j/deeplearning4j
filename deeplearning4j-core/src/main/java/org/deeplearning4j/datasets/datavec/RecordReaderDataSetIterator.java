@@ -33,6 +33,9 @@ import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
@@ -85,6 +88,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     private Future<DataSet> terminator = new DummyFuture();
     private ThreadPoolExecutor executor;
     private AsyncPrefetchThread thread;
+    private String guid = java.util.UUID.randomUUID().toString();
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize) {
         this(recordReader, converter, batchSize, -1,
@@ -629,11 +633,24 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     }
 
 
-    protected static class DataSetCallable implements Callable<DataSet> {
+    protected class DataSetCallable implements Callable<DataSet> {
         private OrderedBatch batch;
+        private WorkspaceConfiguration configuration;
+        private String workspaceId;
 
         public DataSetCallable(OrderedBatch batch) {
             this.batch = batch;
+
+            configuration = WorkspaceConfiguration.builder()
+                    .overallocationLimit(2.0)
+                    .policyMirroring(MirroringPolicy.FULL)
+                    .policySpill(SpillPolicy.FAIL)
+                    .policyLearning(LearningPolicy.FIRST_LOOP)
+                    .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                    .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                    .build();
+
+            this.workspaceId = "RRDSI_LOOP-" + guid;
         }
 
         /**
@@ -643,7 +660,47 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
          */
         @Override
         public DataSet call() throws Exception {
-            return null;
+
+            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceId)) {
+                // here we create our DataSet
+                List<DataSet> dataSets = new ArrayList<>();
+                List<RecordMetaData> meta = (collectMetaData ? new ArrayList<RecordMetaData>() : null);
+
+                if (batch.isRecord()) {
+                    List<Record> records = batch.getRecords();
+                    for (int i = 0; i < records.size(); i++) {
+                        DataSet d = getDataSet(records.get(i).getRecord());
+                        meta.add(records.get(i).getMetaData());
+                        dataSets.add(d);
+                    }
+                } else {
+                    List<List<Writable>> writables = batch.getWritables();
+                    for (int i = 0; i < writables.size(); i++) {
+                        DataSet d = getDataSet(writables.get(i));
+                        dataSets.add(d);
+                    }
+                }
+
+                // should NOT ever happen
+                if (dataSets.isEmpty()) {
+                    return null;
+                }
+
+                DataSet ret = DataSet.merge(dataSets);
+
+                if (collectMetaData) {
+                    ret.setExampleMetaData(meta);
+                }
+
+                if (preProcessor != null)
+                    preProcessor.preProcess(ret);
+
+                //Add label name values to dataset
+                if (recordReader.getLabels() != null)
+                    ret.setLabelNames(recordReader.getLabels());
+
+                return ret;
+            }
         }
     }
 
