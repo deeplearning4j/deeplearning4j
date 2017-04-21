@@ -83,7 +83,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     private volatile boolean collectMetaData = false;
 
     // TODO: make queue configurable
-    private BlockingQueue<Future<DataSet>> buffer = new LinkedBlockingQueue<>(8);
+    private volatile int prefetchSize = 8;
+    private BlockingQueue<Future<DataSet>> buffer = new LinkedBlockingQueue<>(prefetchSize);
     private Future<DataSet> nextElement = null;
     private Future<DataSet> terminator = new DummyFuture();
     private ThreadPoolExecutor executor;
@@ -177,6 +178,10 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             @Override
             public Thread newThread(Runnable r) {
                 Thread t = Executors.defaultThreadFactory().newThread(r);
+
+                // we enforce the same device probably?
+                // TODO: investigate what would be better for perf here
+                Nd4j.getAffinityManager().attachThreadToDevice(t, Nd4j.getAffinityManager().getDeviceForCurrentThread());
                 t.setDaemon(true);
                 t.setName("RRDSI thread");
                 return t;
@@ -637,12 +642,14 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         private OrderedBatch batch;
         private WorkspaceConfiguration configuration;
         private String workspaceId;
+        protected AtomicBoolean firstLoop = new AtomicBoolean(true);
 
         public DataSetCallable(OrderedBatch batch) {
             this.batch = batch;
 
             configuration = WorkspaceConfiguration.builder()
-                    .overallocationLimit(2.0)
+                    // FIXME: overalloc limit is wrong here obviously. We should do (divide prefetch size by number of threads) + 1 probably
+                    .overallocationLimit(prefetchSize + 1)
                     .policyMirroring(MirroringPolicy.FULL)
                     .policySpill(SpillPolicy.FAIL)
                     .policyLearning(LearningPolicy.FIRST_LOOP)
@@ -661,46 +668,52 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         @Override
         public DataSet call() throws Exception {
 
-            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceId)) {
-                // here we create our DataSet
-                List<DataSet> dataSets = new ArrayList<>();
-                List<RecordMetaData> meta = (collectMetaData ? new ArrayList<RecordMetaData>() : null);
+            DataSet ret = null;
+            // we need to initialize workspace first. so we'll do 2 loops for
+            for (int l = firstLoop.get() ? 0 : 1; l < 2; l++) {
+                try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceId)) {
+                    // here we create our DataSet
+                    List<DataSet> dataSets = new ArrayList<>();
+                    List<RecordMetaData> meta = (collectMetaData ? new ArrayList<RecordMetaData>() : null);
 
-                if (batch.isRecord()) {
-                    List<Record> records = batch.getRecords();
-                    for (int i = 0; i < records.size(); i++) {
-                        DataSet d = getDataSet(records.get(i).getRecord());
-                        meta.add(records.get(i).getMetaData());
-                        dataSets.add(d);
+                    if (batch.isRecord()) {
+                        List<Record> records = batch.getRecords();
+                        for (int i = 0; i < records.size(); i++) {
+                            DataSet d = getDataSet(records.get(i).getRecord());
+                            meta.add(records.get(i).getMetaData());
+                            dataSets.add(d);
+                        }
+                    } else {
+                        List<List<Writable>> writables = batch.getWritables();
+                        for (int i = 0; i < writables.size(); i++) {
+                            DataSet d = getDataSet(writables.get(i));
+                            dataSets.add(d);
+                        }
                     }
-                } else {
-                    List<List<Writable>> writables = batch.getWritables();
-                    for (int i = 0; i < writables.size(); i++) {
-                        DataSet d = getDataSet(writables.get(i));
-                        dataSets.add(d);
+
+                    // should NOT ever happen
+                    if (dataSets.isEmpty()) {
+                        return null;
                     }
+
+                    ret = DataSet.merge(dataSets);
+
+                    if (collectMetaData) {
+                        ret.setExampleMetaData(meta);
+                    }
+
+                    if (preProcessor != null)
+                        preProcessor.preProcess(ret);
+
+                    //Add label name values to dataset
+                    if (recordReader.getLabels() != null)
+                        ret.setLabelNames(recordReader.getLabels());
+
+                    firstLoop.compareAndSet(true, false);
                 }
-
-                // should NOT ever happen
-                if (dataSets.isEmpty()) {
-                    return null;
-                }
-
-                DataSet ret = DataSet.merge(dataSets);
-
-                if (collectMetaData) {
-                    ret.setExampleMetaData(meta);
-                }
-
-                if (preProcessor != null)
-                    preProcessor.preProcess(ret);
-
-                //Add label name values to dataset
-                if (recordReader.getLabels() != null)
-                    ret.setLabelNames(recordReader.getLabels());
-
-                return ret;
             }
+
+            return ret;
         }
     }
 
