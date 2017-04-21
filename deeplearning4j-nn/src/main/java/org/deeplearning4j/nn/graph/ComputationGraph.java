@@ -57,6 +57,7 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -753,6 +754,7 @@ public class ComputationGraph implements Serializable, Model {
                 .overallocationLimit(0.15)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .cyclesBeforeInitialization(3)
+                .policySpill(SpillPolicy.REALLOCATE)
                 .policyLearning(LearningPolicy.OVER_TIME)
                 .build();
 
@@ -849,6 +851,7 @@ public class ComputationGraph implements Serializable, Model {
                 .overallocationLimit(0.3)
                 .policyLearning(LearningPolicy.OVER_TIME)
                 .cyclesBeforeInitialization(3)
+                .policySpill(SpillPolicy.REALLOCATE)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .build();
 
@@ -1219,6 +1222,7 @@ public class ComputationGraph implements Serializable, Model {
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 //.cyclesBeforeInitialization(topologicalOrder.length)
                 .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .policySpill(SpillPolicy.REALLOCATE)
                 .policyLearning(LearningPolicy.OVER_TIME)
                 .build();
 

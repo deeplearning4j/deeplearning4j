@@ -140,6 +140,8 @@ public class ComputationGraphUpdater implements Serializable {
                         gradient.setGradientFor(entry.getKey() + "_" + entry2.getKey(), entry2.getValue());
                     }
                 }
+
+                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceFeedForward).initializeWorkspace();
             } else {
                 String layerName = entry.getKey();
                 int updaterIdx = layerUpdatersMap.get(layerName);

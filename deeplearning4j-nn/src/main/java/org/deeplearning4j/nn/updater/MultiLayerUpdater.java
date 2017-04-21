@@ -143,6 +143,8 @@ public class MultiLayerUpdater implements Updater {
                 try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(ComputationGraph.workspaceFeedForward)) {
                     layerUpdaters[i].update(mln.getLayer(i), layerGradients[i], iteration, batchSize);
                 }
+
+                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceFeedForward).initializeWorkspace();
             } else
                 layerUpdaters[i].update(mln.getLayer(i), layerGradients[i], iteration, batchSize);
         }

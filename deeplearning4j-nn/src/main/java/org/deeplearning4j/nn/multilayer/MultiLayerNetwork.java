@@ -48,6 +48,7 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -761,6 +762,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 //.cyclesBeforeInitialization(layerNum)
                 .policyLearning(LearningPolicy.OVER_TIME)
+                .policySpill(SpillPolicy.REALLOCATE)
                 //.policyAllocation(AllocationPolicy.STRICT)
                 .build();
 
@@ -1027,6 +1029,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 .overallocationLimit(0.3)
                 .policyLearning(LearningPolicy.FIRST_LOOP)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
+                .policySpill(SpillPolicy.REALLOCATE)
                 //.policyAllocation(AllocationPolicy.STRICT)
                 .build();
 
