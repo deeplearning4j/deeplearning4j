@@ -287,6 +287,8 @@ public class TransferLearningCompGraphTest {
                         new TransferLearning.GraphBuilder(modelToFineTune).fineTuneConfiguration(fineTuneConfiguration)
                                         .setFeatureExtractor("layer1").nOutReplace("layer4", 600, WeightInit.XAVIER)
                                         .removeVertexAndConnections("layer5").removeVertexAndConnections("layer6")
+                                        .setInputs("layer0In")
+                                        .setInputTypes(InputType.convolutionalFlat(28, 28,3))
                                         .addLayer("layer5",
                                                         new DenseLayer.Builder().activation(Activation.RELU).nIn(600)
                                                                         .nOut(300).build(),
