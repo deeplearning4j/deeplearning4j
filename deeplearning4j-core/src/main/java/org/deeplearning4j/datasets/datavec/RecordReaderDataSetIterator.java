@@ -44,10 +44,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -90,6 +87,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     private ThreadPoolExecutor executor;
     private AsyncPrefetchThread thread;
     private String guid = java.util.UUID.randomUUID().toString();
+    private AtomicBoolean wasTriggered = new AtomicBoolean(false);
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize) {
         this(recordReader, converter, batchSize, -1,
@@ -385,6 +383,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
     @Override
     public boolean hasNext() {
+        wasTriggered.compareAndSet(false, true);
         try {
             if (nextElement != null && nextElement != terminator) {
                 return true;
@@ -405,6 +404,12 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
     @Override
     public DataSet next() {
+        if (!wasTriggered.get() && nextElement == null)
+            if (!hasNext())
+                throw new NoSuchElementException("No more records below this line");
+
+
+
         Future<DataSet> tmp = nextElement;
         nextElement = null;
         try {
@@ -587,6 +592,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                     }
                     if (currentBatch.size() > 0) {
                         // process last batch
+                        Future<DataSet> future = executor.submit(new DataSetCallable(currentBatch));
+                        buffer.put(future);
                     }
 
                     buffer.put(terminator);
@@ -650,8 +657,9 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             configuration = WorkspaceConfiguration.builder()
                     // FIXME: overalloc limit is wrong here obviously. We should do (divide prefetch size by number of threads) + 1 probably
                     .overallocationLimit(prefetchSize + 1)
+                    .minSize(2 * 1024L * 1024L)
                     .policyMirroring(MirroringPolicy.FULL)
-                    .policySpill(SpillPolicy.FAIL)
+                    .policySpill(SpillPolicy.EXTERNAL)
                     .policyLearning(LearningPolicy.FIRST_LOOP)
                     .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
                     .policyAllocation(AllocationPolicy.OVERALLOCATE)

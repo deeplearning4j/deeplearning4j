@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.datasets.datavec;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
@@ -50,6 +51,7 @@ import static org.junit.Assert.*;
 /**
  * Created by agibsonccc on 3/6/15.
  */
+@Slf4j
 public class RecordReaderDataSetiteratorTest {
 
     @Test
@@ -70,6 +72,7 @@ public class RecordReaderDataSetiteratorTest {
         recordReader.initialize(csv);
         DataSetIterator iter = new RecordReaderDataSetIterator(recordReader, 10, -1, -1, 2);
         iter.next();
+        iter.hasNext();
         iter.next();
         assertEquals(false, iter.hasNext());
     }
