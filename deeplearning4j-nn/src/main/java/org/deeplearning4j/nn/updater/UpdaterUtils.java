@@ -75,6 +75,9 @@ public class UpdaterUtils {
         //(a) The learning rates are equal
         //(b) The learning rate *schedules* are equal
         //(c) The updater-specific configurations are equal
+        //(d) If one or more of the params are pretrainable params, they are in the same layer
+        //    This last point is necessary as we don't want to modify the pretrain gradient/updater state during
+        //    backprop, or modify the pretrain gradient/updater state of one layer while training another
 
         double lr1 = layer1.conf().getLearningRateByParam(param1);
         double lr2 = layer2.conf().getLearningRateByParam(param2);
@@ -117,13 +120,23 @@ public class UpdaterUtils {
                 throw new UnsupportedOperationException("Unknown updater: " + u1);
         }
 
-        return updaterConfigEqual;
+        boolean isPretrainParam1 = layer1.conf().getLayer().isPretrainParam(param1);
+        boolean isPretrainParam2 = layer2.conf().getLayer().isPretrainParam(param2);
+        if(isPretrainParam1 || isPretrainParam2){
+            //One or both of params are pretrainable.
+            if(layer1 == layer2 && isPretrainParam1 && isPretrainParam2){
+                return updaterConfigEqual;
+            } else {
+                //Either layers differ -> don't want to combine a pretrain updaters across layers
+                //Or one is pretrain and the other isn't -> don't want to combine pretrain updaters within a layer
+                return false;
+            }
+        }
 
+        return updaterConfigEqual;
     }
 
     public static boolean lrSchedulesEqual(Layer layer1, String param1, Layer layer2, String param2){
-        org.deeplearning4j.nn.conf.layers.Layer l1 = layer1.conf().getLayer();
-        org.deeplearning4j.nn.conf.layers.Layer l2 = layer2.conf().getLayer();
 
         LearningRatePolicy lp1 = layer1.conf().getLearningRatePolicy();
         LearningRatePolicy lp2 = layer2.conf().getLearningRatePolicy();

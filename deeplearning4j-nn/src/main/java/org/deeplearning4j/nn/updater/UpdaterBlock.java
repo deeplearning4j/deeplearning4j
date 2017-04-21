@@ -79,6 +79,18 @@ public class UpdaterBlock {
         }
     }
 
+    public boolean isPretrainUpdaterBlock(){
+        //All in block should be the same layer, and all be pretrain params
+        VarState vs = layersAndVariablesInBlock.get(0);
+        return vs.getLayer().conf().getLayer().isPretrainParam(vs.getVarName());
+    }
+
+    public boolean skipDueToPretrainConfig(){
+        if(!isPretrainUpdaterBlock()) return false;
+        VarState vs = layersAndVariablesInBlock.get(0);
+        return !vs.getLayer().conf().isPretrain();  //Skip if not pretrain
+    }
+
     /**
      * Update the gradient for this block
      *

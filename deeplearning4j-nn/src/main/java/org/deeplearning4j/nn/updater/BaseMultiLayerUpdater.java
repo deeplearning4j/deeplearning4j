@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.updater;
 
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.nn.api.Layer;
@@ -9,7 +8,6 @@ import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
@@ -246,11 +244,18 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
 
         //Apply the updaters in blocks. This also applies LR and momentum schedules, L1 and L2
         for(UpdaterBlock ub : updaterBlocks){
+            if(ub.skipDueToPretrainConfig()){
+                //Should skip some updater blocks sometimes
+                //For example, VAE decoder params while doing supervised backprop
+                continue;
+            }
+
             ub.update(iteration);
         }
 
         //Divide by minibatch size if necessary
         if(isMiniBatch()){
+            //OK even with pretrain layers: their gradients will get modified during next backprop iteration
             getFlattenedGradientsView().divi(batchSize);
         }
     }

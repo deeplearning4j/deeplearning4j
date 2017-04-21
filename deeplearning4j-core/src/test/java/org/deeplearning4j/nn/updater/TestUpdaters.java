@@ -685,7 +685,7 @@ public class TestUpdaters {
         updater.update(layer, gradient, -1, 1);
 
         for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
-            System.out.println(entry.getKey());
+//            System.out.println(entry.getKey());
             val = entry.getValue();
             if (!entry.getKey().equals("vb")) {
                 gradExpected = val.mul(lr);
@@ -693,7 +693,7 @@ public class TestUpdaters {
                 //With pretrain == false, we shouldn't be updating the pretrain params (vb)
                 gradExpected = val;
             }
-            System.out.println(gradExpected + "\t" + gradient.getGradientFor(entry.getKey()));
+//            System.out.println(gradExpected + "\t" + gradient.getGradientFor(entry.getKey()));
             assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
         }
         assertEquals(lr, layer.conf().getLayer().getLearningRate(), 1e-4);
@@ -858,7 +858,7 @@ public class TestUpdaters {
 
 
     @Test
-    public void testUpdaterBlockMlnVae() {
+    public void testUpdaterBlockVae() {
 
         List<UpdaterBlock> blocks;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -883,35 +883,22 @@ public class TestUpdaters {
         assertEquals(2, blocks.size());
 
 
-        fail();
-//            //Check first updater block:
-//            UpdaterBlock ub0 = blocks.get(0);
-//            assertEquals(3, ub0.getLayersAndVariablesInBlock().size());
-//            assertEquals("l0", ub0.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
-//            assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub0.getLayersAndVariablesInBlock().get(0).getVarName());
-//            assertEquals("l0", ub0.getLayersAndVariablesInBlock().get(1).getLayer().conf().getLayer().getLayerName());
-//            assertEquals(DefaultParamInitializer.BIAS_KEY, ub0.getLayersAndVariablesInBlock().get(1).getVarName());
-//            assertEquals("l1", ub0.getLayersAndVariablesInBlock().get(2).getLayer().conf().getLayer().getLayerName());
-//            assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub0.getLayersAndVariablesInBlock().get(2).getVarName());
-//
-//            int nParams0 = 10 * 10 + 10 + 10 * 10;
-//            assertEquals(0, ub0.getParamOffsetStart());
-//            assertEquals(nParams0, ub0.getParamOffsetEnd());
-//            int nUpdaterVals0 = 2 * nParams0;   //2x for Adam
-//            assertEquals(0, ub0.getUpdaterViewOffsetStart());
-//            assertEquals(nUpdaterVals0, ub0.getUpdaterViewOffsetEnd());
-//
-//            //Check second updater block:
-//            UpdaterBlock ub1 = blocks.get(1);
-//            assertEquals(1, ub1.getLayersAndVariablesInBlock().size());
-//            assertEquals("l1", ub1.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
-//            assertEquals(DefaultParamInitializer.BIAS_KEY, ub1.getLayersAndVariablesInBlock().get(0).getVarName());
-//
-//            int nParams1 = 10;
-//            assertEquals(nParams0, ub1.getParamOffsetStart());
-//            assertEquals(nParams0 + nParams1, ub1.getParamOffsetEnd());
-//            int nUpdaterVals1 = 2 * nParams1;   //2x for Adam
-//            assertEquals(nUpdaterVals0, ub1.getUpdaterViewOffsetStart());
-//            assertEquals(nUpdaterVals0 + nUpdaterVals1, ub1.getUpdaterViewOffsetEnd());
+        //Check first updater block (all backprop-only params)
+        UpdaterBlock ub0 = blocks.get(0);
+        List<String> expParams = Arrays.asList("e0W", "e0b", "e1W", "e1b", "pZXMeanW", "pZXMeanb");
+        List<String> actParams = new ArrayList<>();
+        for (UpdaterBlock.VarState vs : ub0.getLayersAndVariablesInBlock()) {
+            actParams.add(vs.getVarName());
+        }
+        assertEquals(expParams, actParams);
+
+        //Check second updater block
+        UpdaterBlock ub1 = blocks.get(1);
+        expParams = Arrays.asList("pZXLogStd2W", "pZXLogStd2b", "d0W", "d0b", "d1W", "d1b", "pXZW", "pXZb");
+        actParams = new ArrayList<>();
+        for (UpdaterBlock.VarState vs : ub1.getLayersAndVariablesInBlock()) {
+            actParams.add(vs.getVarName());
+        }
+        assertEquals(expParams, actParams);
     }
 }

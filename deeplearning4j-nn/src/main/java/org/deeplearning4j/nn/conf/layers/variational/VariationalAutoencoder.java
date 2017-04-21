@@ -112,6 +112,9 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         if(paramName.startsWith(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_PREFIX)){
             return true;
         }
+        if(paramName.startsWith(VariationalAutoencoderParamInitializer.PXZ_PREFIX)){
+            return true;
+        }
         return false;
     }
 
