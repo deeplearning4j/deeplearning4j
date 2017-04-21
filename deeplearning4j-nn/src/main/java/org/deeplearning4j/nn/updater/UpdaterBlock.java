@@ -195,6 +195,7 @@ public class UpdaterBlock {
                 }
                 break;
             case None:
+            case Score:
                 newLr = lr;
                 break;
             default:
