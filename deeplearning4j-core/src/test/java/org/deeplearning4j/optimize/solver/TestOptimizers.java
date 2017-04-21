@@ -1063,7 +1063,7 @@ public class TestOptimizers {
 
         @Override
         public INDArray getGradientsViewArray() {
-            throw new UnsupportedOperationException();
+            return null;
         }
     }
 }

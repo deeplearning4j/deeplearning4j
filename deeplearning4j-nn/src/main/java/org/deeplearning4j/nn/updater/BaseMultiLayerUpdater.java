@@ -8,6 +8,8 @@ import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.factory.Nd4j;
@@ -221,8 +223,9 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
         Map<String, Gradient> layerGradients = new HashMap<>();
 
         Layer[] layers = getOrderedLayers();
-        if(layers.length == 1){
+        if(layers.length == 1 && isSingleLayerUpdater()){
             layerGradients.put(layers[0].conf().getLayer().getLayerName(), gradient);
+//            layerGradients.put("0", gradient);
         } else {
             for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
                 String key = gradientPair.getKey();
@@ -253,14 +256,20 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
 
 
         //Apply the updaters in blocks. This also applies LR and momentum schedules, L1 and L2
-        for(UpdaterBlock ub : updaterBlocks){
-            if(ub.skipDueToPretrainConfig()){
+        //
+        for (UpdaterBlock ub : updaterBlocks) {
+            if (ub.skipDueToPretrainConfig()) {
                 //Should skip some updater blocks sometimes
                 //For example, VAE decoder params while doing supervised backprop
                 continue;
             }
-
-            ub.update(iteration);
+            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceFeedForward)) {
+                try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(ComputationGraph.workspaceFeedForward)) {
+                    ub.update(iteration);
+                }
+            } else {
+                ub.update(iteration);
+            }
         }
 
         //Divide by minibatch size if necessary
@@ -268,6 +277,10 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             //OK even with pretrain layers: their gradients will get modified during next backprop iteration
             getFlattenedGradientsView().divi(batchSize);
         }
+    }
+
+    protected boolean isSingleLayerUpdater(){
+        return false;
     }
 
     /**
