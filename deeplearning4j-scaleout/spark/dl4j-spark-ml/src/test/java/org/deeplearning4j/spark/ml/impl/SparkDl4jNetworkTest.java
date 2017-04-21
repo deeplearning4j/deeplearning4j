@@ -1,6 +1,8 @@
 package org.deeplearning4j.spark.ml.impl;
 
 
+import com.google.common.collect.Lists;
+import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.ml.Pipeline;
@@ -20,11 +22,13 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.deeplearning4j.spark.ml.utils.DatasetFacade;
 import org.deeplearning4j.spark.ml.utils.ParamSerializer;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.io.File;
+import java.util.*;
+
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 public class SparkDl4jNetworkTest  {
@@ -44,13 +48,49 @@ public class SparkDl4jNetworkTest  {
         Collection<IterationListener> il = new ArrayList<>();
         il.add(new ScoreIterationListener(1));
 
-        SparkDl4jNetwork sparkDl4jNetwork = new SparkDl4jNetwork(mc, 2, ps, 1, il)
+        SparkDl4jNetwork sparkDl4jNetwork = new SparkDl4jNetwork(mc, 2, ps, 1, il, true)
                 .setFeaturesCol("features")
                 .setLabelCol("label");
 
         SparkDl4jModel sm = sparkDl4jNetwork.fit(part2.get());
         MultiLayerNetwork mln = sm.getMultiLayerNetwork();
         Assert.assertNotNull(mln);
+        DatasetFacade transformed = DatasetFacade.dataRows(sm.transform(part2.get()));
+        List<?> rows = transformed.get().collectAsList();
+        Assert.assertNotNull(sm.getTrainingStats());
+        Assert.assertNotNull(rows);
+    }
+
+    @Test
+    public void testNetworkLoader() throws Exception {
+        DatasetFacade df = DatasetFacade.dataRows(sqlContext.read().json("src/test/resources/dl4jnetwork"));
+        Pipeline p = new Pipeline().setStages(new PipelineStage[]{getAssembler(new String[]{"x", "y"}, "features")});
+        DatasetFacade part2 = DatasetFacade.dataRows(p.fit(df.get()).transform(df.get()).select("features", "label"));
+
+        ParamSerializer ps = new ParamHelper();
+        MultiLayerConfiguration mc = getNNConfiguration();
+        Collection<IterationListener> il = new ArrayList<>();
+        il.add(new ScoreIterationListener(1));
+
+        SparkDl4jNetwork sparkDl4jNetwork = new SparkDl4jNetwork(mc, 2, ps, 1, il, true)
+                .setFeaturesCol("features")
+                .setLabelCol("label");
+
+        String fileName = UUID.randomUUID().toString();
+        SparkDl4jModel sm = sparkDl4jNetwork.fit(part2.get());
+        sm.write().overwrite().save(fileName);
+        SparkDl4jModel spdm = SparkDl4jModel.load(fileName);
+        Assert.assertNotNull(spdm);
+
+        File file1 = new File(fileName);
+        File file2 = new File(fileName + "_metadata");
+        FileUtils.deleteDirectory(file1);
+        FileUtils.deleteDirectory(file2);
+    }
+
+    @After
+    public void closeIt() {
+        sparkContext.close();
     }
 
     private MultiLayerConfiguration getNNConfiguration(){

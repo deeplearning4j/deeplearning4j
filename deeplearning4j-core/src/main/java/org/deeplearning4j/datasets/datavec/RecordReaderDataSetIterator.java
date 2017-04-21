@@ -18,10 +18,7 @@
 
 package org.deeplearning4j.datasets.datavec;
 
-import lombok.Data;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.io.WritableConverter;
 import org.datavec.api.io.converters.SelfWritableConverter;
@@ -97,6 +94,11 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 recordReader.getLabels() == null ? -1 : recordReader.getLabels().size());
     }
 
+    public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int numThreads) {
+        this(recordReader, new SelfWritableConverter(), batchSize, -1,
+                recordReader.getLabels() == null ? -1 : recordReader.getLabels().size(), numThreads);
+    }
+
     /**
      * Main constructor for classification. This will convert the input class index (at position labelIndex, with integer
      * values 0 to numPossibleLabels-1 inclusive) to the appropriate one-hot output/labels representation.
@@ -118,6 +120,11 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
                                        int labelIndex, int numPossibleLabels) {
+        this(recordReader, converter, batchSize, labelIndex, numPossibleLabels, -1, false);
+    }
+
+    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
+                                       int labelIndex, int numPossibleLabels, int numThreads) {
         this(recordReader, converter, batchSize, labelIndex, numPossibleLabels, -1, false);
     }
 
@@ -144,6 +151,11 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
                                        int labelIndex, int numPossibleLabels, int maxNumBatches, boolean regression) {
         this(recordReader, converter, batchSize, labelIndex, labelIndex, numPossibleLabels, maxNumBatches, regression);
+    }
+
+    public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
+                                       int labelIndex, int numPossibleLabels, int maxNumBatches, boolean regression, int numThreads) {
+        this(recordReader, converter, batchSize, labelIndex, labelIndex, numPossibleLabels, maxNumBatches, regression, numThreads);
     }
 
 
