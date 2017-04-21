@@ -1316,4 +1316,21 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
         return reqMem;
     }
+
+    /**
+     * This method migrates this DataSet into current Workspace (if any)
+     */
+    public void migrate() {
+        if (features != null)
+            features = features.migrate();
+
+        if (labels != null)
+            labels = labels.migrate();
+
+        if (featuresMask != null)
+            featuresMask = featuresMask.migrate();
+
+        if (labelsMask != null)
+            labelsMask = labelsMask.migrate();
+    }
 }

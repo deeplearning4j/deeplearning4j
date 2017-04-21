@@ -324,4 +324,9 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
      * @return
      */
     long getMemoryFootprint();
+
+    /**
+     * This method migrates this DataSet into current Workspace (if any)
+     */
+    void migrate();
 }
