@@ -148,6 +148,7 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
         buffer.clear();
         nextElement = null;
         currIdx.set(0);
+        wasTriggered.set(false);
         shouldWork.set(true);
         this.thread = new AsyncDispatcherThread();
         this.thread.start();
@@ -230,6 +231,8 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
                     ds.migrate();
                 }
             }
+
+            wasTriggered.set(false);
 
             return ds;
         } catch (Exception e) {

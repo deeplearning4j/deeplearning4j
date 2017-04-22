@@ -998,8 +998,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void fit(DataSetIterator iterator) {
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch - where appropriate
         DataSetIterator iter;
+        boolean destructable = false;
         if (iterator.asyncSupported()) {
             iter = new AsyncDataSetIterator(iterator, Math.min(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 4), layerWiseConfigurations.getWorkspaceMode() != WorkspaceMode.NONE);
+            destructable = true;
         } else {
             iter = iterator;
         }
@@ -1091,6 +1093,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         clearLayersStates();
+
+        if (destructable)
+            ((AsyncDataSetIterator) iter).shutdown();
     }
 
     /** Calculate and set gradients for MultiLayerNetwork, based on OutputLayer and labels*/
@@ -2592,7 +2597,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
 
-        return doEvaluation(adsi, new RegressionEvaluation(iterator.totalOutcomes()));
+        RegressionEvaluation evaluation = doEvaluation(adsi, new RegressionEvaluation(iterator.totalOutcomes()));
+
+        if (iterator.asyncSupported())
+            ((AsyncDataSetIterator) adsi).shutdown();
+
+        return evaluation;
     }
 
     /**
@@ -2605,7 +2615,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public ROC evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
         DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
 
-        return doEvaluation(adsi, new ROC(rocThresholdSteps));
+        ROC evaluation = doEvaluation(adsi, new ROC(rocThresholdSteps));
+
+        if (iterator.asyncSupported())
+            ((AsyncDataSetIterator) adsi).shutdown();
+
+        return evaluation;
     }
 
     /**
@@ -2618,7 +2633,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
         DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
 
-        return doEvaluation(adsi, new ROCMultiClass(rocThresholdSteps));
+        ROCMultiClass evaluation = doEvaluation(adsi, new ROCMultiClass(rocThresholdSteps));
+
+        if (iterator.asyncSupported())
+            ((AsyncDataSetIterator) adsi).shutdown();
+
+        return evaluation;
     }
 
     /**
@@ -2686,6 +2706,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         Evaluation e = new Evaluation(labelsList, topN);
         doEvaluation(adsi, e);
+
+        if (iterator.asyncSupported())
+            ((AsyncDataSetIterator) adsi).shutdown();
 
         return e;
     }

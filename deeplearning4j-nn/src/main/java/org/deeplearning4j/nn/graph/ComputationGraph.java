@@ -732,10 +732,13 @@ public class ComputationGraph implements Serializable, Model {
             throw new UnsupportedOperationException("Cannot train ComputationGraph network with "
                             + " multiple inputs or outputs using a DataSetIterator");
 
+        boolean destructable = false;
+
         DataSetIterator dataSetIterator;
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch - where appropriate
         if (iterator.asyncSupported()) {
             dataSetIterator = new AsyncDataSetIterator(iterator, Math.min(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 4), configuration.getWorkspaceMode() != WorkspaceMode.NONE);
+            destructable = true;
         } else
             dataSetIterator = iterator;
 
@@ -817,6 +820,9 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         clearLayersStates();
+
+        if (destructable)
+            ((AsyncDataSetIterator) dataSetIterator).shutdown();
     }
 
     /**
@@ -836,9 +842,12 @@ public class ComputationGraph implements Serializable, Model {
         if (flattenedGradients == null)
             initGradientsView();
 
+        boolean destructable = false;
+
         MultiDataSetIterator multiDataSetIterator;
         if (multi.asyncSupported()) {
             multiDataSetIterator = new AsyncMultiDataSetIterator(multi, Math.max(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 4), configuration.getWorkspaceMode() != WorkspaceMode.NONE);
+            destructable = true;
         } else
             multiDataSetIterator = multi;
 
@@ -902,6 +911,9 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         clearLayersStates();
+
+        if (destructable)
+            ((AsyncMultiDataSetIterator) multiDataSetIterator).shutdown();
     }
 
     protected void migrate(MultiDataSet ds) {
@@ -2596,7 +2608,12 @@ public class ComputationGraph implements Serializable, Model {
 
         DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
 
-        return doEvaluation(adsi, new Evaluation(labelsList, topN));
+        Evaluation evaluation = doEvaluation(adsi, new Evaluation(labelsList, topN));
+
+        if (iterator.asyncSupported())
+            ((AsyncDataSetIterator) adsi).shutdown();
+
+        return evaluation;
     }
 
     /**
@@ -2611,7 +2628,12 @@ public class ComputationGraph implements Serializable, Model {
     public Evaluation evaluate(MultiDataSetIterator iterator, List<String> labelsList, int topN) {
         MultiDataSetIterator amdsi = iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 8, true) : iterator;
 
-        return doEvaluation(amdsi, new Evaluation(labelsList, topN));
+        Evaluation evaluation = doEvaluation(amdsi, new Evaluation(labelsList, topN));
+
+        if (iterator.asyncSupported())
+            ((AsyncMultiDataSetIterator) amdsi).shutdown();
+
+        return evaluation;
     }
 
     /**
@@ -2640,6 +2662,9 @@ public class ComputationGraph implements Serializable, Model {
     public RegressionEvaluation evaluateRegression(DataSetIterator iterator, List<String> columnNames) {
         DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
 
+        if (iterator.asyncSupported())
+            ((AsyncDataSetIterator) adsi).shutdown();
+
         return doEvaluation(adsi, new RegressionEvaluation(columnNames));
     }
 
@@ -2651,7 +2676,12 @@ public class ComputationGraph implements Serializable, Model {
     public RegressionEvaluation evaluateRegression(MultiDataSetIterator iterator, List<String> columnNames) {
         MultiDataSetIterator amdsi = iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 8, true) : iterator;
 
-        return doEvaluation(amdsi, new RegressionEvaluation(columnNames));
+        RegressionEvaluation evaluation = doEvaluation(amdsi, new RegressionEvaluation(columnNames));;
+
+        if (iterator.asyncSupported())
+            ((AsyncMultiDataSetIterator) amdsi).shutdown();
+
+        return evaluation;
     }
 
     /**
@@ -2663,7 +2693,13 @@ public class ComputationGraph implements Serializable, Model {
      */
     public ROC evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
         DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
-        return doEvaluation(adsi, new ROC(rocThresholdSteps));
+
+        ROC evaluation = doEvaluation(adsi, new ROC(rocThresholdSteps));
+
+        if (iterator.asyncSupported())
+            ((AsyncDataSetIterator) adsi).shutdown();
+
+        return evaluation;
     }
 
     /**
@@ -2676,7 +2712,12 @@ public class ComputationGraph implements Serializable, Model {
     public ROC evaluateROC(MultiDataSetIterator iterator, int rocThresholdSteps) {
         MultiDataSetIterator amdsi = iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 8, true) : iterator;
 
-        return doEvaluation(amdsi, new ROC(rocThresholdSteps));
+        ROC evaluation = doEvaluation(amdsi, new ROC(rocThresholdSteps));
+
+        if (iterator.asyncSupported())
+            ((AsyncMultiDataSetIterator) amdsi).shutdown();
+
+        return evaluation;
     }
 
     /**
@@ -2688,7 +2729,13 @@ public class ComputationGraph implements Serializable, Model {
      */
     public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
         DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
-        return doEvaluation(adsi, new ROCMultiClass(rocThresholdSteps));
+
+        ROCMultiClass evaluation = doEvaluation(adsi, new ROCMultiClass(rocThresholdSteps));
+
+        if (iterator.asyncSupported())
+            ((AsyncDataSetIterator) adsi).shutdown();
+
+        return evaluation;
     }
 
     /**
@@ -2701,7 +2748,12 @@ public class ComputationGraph implements Serializable, Model {
     public ROCMultiClass evaluateROCMultiClass(MultiDataSetIterator iterator, int rocThresholdSteps) {
         MultiDataSetIterator amdsi = iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 8, true) : iterator;
 
-        return doEvaluation(amdsi, new ROCMultiClass(rocThresholdSteps));
+        ROCMultiClass evaluation = doEvaluation(amdsi, new ROCMultiClass(rocThresholdSteps));
+
+        if (iterator.asyncSupported())
+            ((AsyncMultiDataSetIterator) amdsi).shutdown();
+
+        return evaluation;
     }
 
     /**

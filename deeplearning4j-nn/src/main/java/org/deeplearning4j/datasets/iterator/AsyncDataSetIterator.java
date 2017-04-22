@@ -168,7 +168,23 @@ public class AsyncDataSetIterator implements DataSetIterator {
      */
     @Override
     public void reset() {
-        shutdown();
+        buffer.clear();
+
+        if (workspace!= null)
+            workspace.destroyWorkspace();
+
+        if (thread != null)
+            thread.interrupt();
+        try {
+            // Shutdown() should be a synchronous operation since the iterator is reset after shutdown() is
+            // called in AsyncLabelAwareIterator.reset().
+            if (thread != null)
+                thread.join();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        buffer.clear();
+
         backedIterator.reset();
         shouldWork.set(true);
         this.thread = new AsyncPrefetchThread(buffer, backedIterator, terminator, workspace);
@@ -189,7 +205,6 @@ public class AsyncDataSetIterator implements DataSetIterator {
     public void shutdown(){
         buffer.clear();
 
-
         if (thread != null)
             thread.interrupt();
         try {
@@ -201,6 +216,10 @@ public class AsyncDataSetIterator implements DataSetIterator {
             throw new RuntimeException(e);
         }
         buffer.clear();
+
+
+        if (this.workspace != null)
+            Nd4j.getWorkspaceManager().destroyWorkspace(workspace);
     }
 
     /**
