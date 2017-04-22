@@ -29,6 +29,7 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
+import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -71,12 +72,10 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     protected boolean regression = false;
     @Getter
     protected DataSetPreProcessor preProcessor;
-
     private AtomicBoolean collectMetaData = new AtomicBoolean(false);
-
-    // TODO: make queue configurable
     private volatile int prefetchSize = 8;
-    private BlockingQueue<Future<DataSet>> buffer = new LinkedBlockingQueue<>(prefetchSize);
+
+    private BlockingQueue<Future<DataSet>> buffer;
     private Future<DataSet> nextElement = null;
     private Future<DataSet> terminator = new DummyFuture();
     private ThreadPoolExecutor executor;
@@ -125,7 +124,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
                                        int labelIndex, int numPossibleLabels, int numThreads) {
-        this(recordReader, converter, batchSize, labelIndex, numPossibleLabels, -1, false);
+        this(recordReader, converter, batchSize, labelIndex, numPossibleLabels, -1, false, numThreads);
     }
 
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndex, int numPossibleLabels,
@@ -155,7 +154,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
                                        int labelIndex, int numPossibleLabels, int maxNumBatches, boolean regression, int numThreads) {
-        this(recordReader, converter, batchSize, labelIndex, labelIndex, numPossibleLabels, maxNumBatches, regression, numThreads);
+        this(recordReader, converter, batchSize, labelIndex, labelIndex, numPossibleLabels, maxNumBatches, regression, numThreads, 8, false);
     }
 
 
@@ -173,17 +172,22 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
                                        int labelIndexFrom, int labelIndexTo, int numPossibleLabels, int maxNumBatches,
                                        boolean regression) {
-        this(recordReader, converter, batchSize, labelIndexFrom, labelIndexTo, numPossibleLabels, maxNumBatches, regression, 1);
+        this(recordReader, converter, batchSize, labelIndexFrom, labelIndexTo, numPossibleLabels, maxNumBatches, regression, 1, 8, false);
 
     }
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
                                        int labelIndexFrom, int labelIndexTo, int numPossibleLabels, int maxNumBatches,
-                                       boolean regression, int numThreads) {
+                                       boolean regression, int numThreads, int prefetchSize, boolean collectMetaData) {
 
-        if (numThreads < 2)
-            numThreads = 2;
 
+        if (numThreads < 1)
+            numThreads = 1;
+
+        this.collectMetaData.set(collectMetaData);
+
+        this.prefetchSize = prefetchSize;
+        this.buffer = new LinkedBlockingQueue<>(prefetchSize);
         this.recordReader = recordReader;
         this.converter = converter;
         this.batchSize = batchSize;
@@ -797,6 +801,80 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
         @Override
         public DataSet get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+            return null;
+        }
+    }
+
+    public static class Builder {
+        protected RecordReader recordReader;
+        protected WritableConverter converter = new SelfWritableConverter();
+        protected int batchSize = 10;
+        protected int maxNumBatches = -1;
+        protected int labelIndex = -1;
+        protected int labelIndexTo = -1;
+        protected int numPossibleLabels = -1;
+        protected boolean regression = false;
+        protected DataSetPreProcessor preProcessor;
+        private boolean collectMetaData = false;
+        private int prefetchSize = 2;
+        private int workers = 1;
+
+        public Builder(@NonNull RecordReader reader) {
+            this.recordReader = reader;
+        }
+
+        public Builder setWritableConverter(@NonNull WritableConverter converter) {
+            this.converter = converter;
+            return this;
+        }
+
+        public Builder setBatchSize(int batchSize) {
+            if (batchSize < 1)
+                throw new DL4JInvalidConfigException("batchSize can't be negative value");
+
+            this.batchSize = batchSize;
+            return this;
+        }
+
+        public Builder setMaxNumberOfDataSets(int size) {
+            this.maxNumBatches = size;
+            return this;
+        }
+
+        public Builder setRegressionMode(boolean reallySet) {
+            this.regression = reallySet;
+            return this;
+        }
+
+        public Builder setLabelIndex(int idx) {
+            this.labelIndex = idx;
+            return this;
+        }
+
+        public Builder setLabelIndexTo(int idx) {
+            this.labelIndexTo = idx;
+            return this;
+        }
+
+
+        public Builder setNumberOfPossibleLabels(int number) {
+            this.numPossibleLabels = number;
+            return this;
+        }
+
+        public Builder collectMetaData(boolean reallyCollect) {
+            this.collectMetaData = reallyCollect;
+            return this;
+        }
+
+        public Builder setDataSetPreProcessor(DataSetPreProcessor preProcessor) {
+            this.preProcessor = preProcessor;
+            return this;
+        }
+
+
+        public RecordReaderDataSetIterator build() {
+            RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(recordReader, converter, batchSize, labelIndex, labelIndexTo, numPossibleLabels, maxNumBatches, regression, workers, prefetchSize, collectMetaData);
             return null;
         }
     }
