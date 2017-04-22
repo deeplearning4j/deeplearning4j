@@ -12,7 +12,9 @@ import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 
 import java.lang.ref.ReferenceQueue;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -89,7 +91,11 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     }
 
     @Override
-    public void destroyWorkspace(@NonNull MemoryWorkspace workspace) {
+    public void destroyWorkspace(MemoryWorkspace workspace) {
+        if (workspace == null || workspace instanceof DummyWorkspace)
+            return;
+
+        backingMap.get().remove(workspace.getId());
         workspace.destroyWorkspace();
     }
 
@@ -108,8 +114,11 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     public void destroyAllWorkspacesForCurrentThread() {
         ensureThreadExistense();
 
-        for (String key : backingMap.get().keySet()) {
-            backingMap.get().get(key).destroyWorkspace();
+        List<MemoryWorkspace> workspaces = new ArrayList<>();
+        workspaces.addAll(backingMap.get().values());
+
+        for (MemoryWorkspace workspace: workspaces) {
+            destroyWorkspace(workspace);
         }
     }
 
