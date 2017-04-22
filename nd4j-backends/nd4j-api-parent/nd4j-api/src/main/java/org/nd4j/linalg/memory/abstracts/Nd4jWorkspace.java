@@ -180,6 +180,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         if (hostOffset.get() + requiredMemory <= currentSize.get()) {
             // just alignment to 8 bytes
 
+            cycleAllocations.addAndGet(requiredMemory);
             long prevOffset = hostOffset.getAndAdd(requiredMemory);
 
             if (isDebug.get())
@@ -226,7 +227,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public void initializeWorkspace() {
-        if ((currentSize.get() < lastCycleAllocations.get() || currentSize.get() < cycleAllocations.get()) && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE && (workspaceConfiguration.getMaxSize() == 0 || (lastCycleAllocations.get() < workspaceConfiguration.getMaxSize()))) {
+        if ((currentSize.get() < maxCycle.get() || currentSize.get() < cycleAllocations.get()) && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE && (workspaceConfiguration.getMaxSize() == 0 || (maxCycle.get() < workspaceConfiguration.getMaxSize()))) {
             destroyWorkspace();
             isInit.set(false);
         }
@@ -294,16 +295,16 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public void close() {
+        if (isBorrowed.get()) {
+            isBorrowed.set(false);
+            Nd4j.getMemoryManager().setCurrentWorkspace(borrowingWorkspace);
+            return;
+        }
+
         if (tagScope.get() > 0) {
             if (tagScope.decrementAndGet() == 0){
                 Nd4j.getMemoryManager().setCurrentWorkspace(this);
             }
-            return;
-        }
-
-        if (isBorrowed.get()) {
-            isBorrowed.set(false);
-            Nd4j.getMemoryManager().setCurrentWorkspace(borrowingWorkspace);
             return;
         }
 

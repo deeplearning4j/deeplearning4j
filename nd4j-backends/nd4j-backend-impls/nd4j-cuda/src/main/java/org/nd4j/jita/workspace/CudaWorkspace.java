@@ -90,6 +90,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
     public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type type, boolean initialize) {
         long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
 
+
         if (!isUsed.get()) {
             if (disabledCounter.incrementAndGet() % 10 == 0)
                 log.warn("Worskpace was turned off, and wasn't enabled after {} allocations", disabledCounter.get());
@@ -115,7 +116,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
         if (kind == MemoryKind.DEVICE) {
             if (deviceOffset.get() + requiredMemory <= currentSize.get()) {
-
+                cycleAllocations.addAndGet(requiredMemory);
                 long prevOffset = deviceOffset.getAndAdd(requiredMemory);
 
                 if (isDebug.get())
@@ -150,6 +151,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                     log.info("Workspace [{}] device_{}: spilled DEVICE array of {} bytes, capacity of {} elements", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory, numElements);
                 }
                 //Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
+
 
                 AllocationShape shape = new AllocationShape(requiredMemory / Nd4j.sizeOfDataType(type), Nd4j.sizeOfDataType(type), type);
 

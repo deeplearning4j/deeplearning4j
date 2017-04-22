@@ -75,6 +75,17 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             .build();
 
 
+    private static final WorkspaceConfiguration reallocateUnspecifiedConfiguration = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.0)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyLearning(LearningPolicy.OVER_TIME)
+            .policyMirroring(MirroringPolicy.FULL)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .policyReset(ResetPolicy.BLOCK_LEFT)
+            .build();
+
+
 
     private static final WorkspaceConfiguration firstConfiguration = WorkspaceConfiguration.builder()
             .initialSize(0)
@@ -291,6 +302,34 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+
+    @Test
+    public void testReallocate3() throws Exception {
+        MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(reallocateUnspecifiedConfiguration, "WS_1");
+
+        for (int i = 1; i <= 10; i++) {
+            try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(reallocateUnspecifiedConfiguration, "WS_1")) {
+                INDArray array = Nd4j.create(100 * i);
+            }
+
+            if (i == 3) {
+                workspace.initializeWorkspace();
+                assertEquals("Failed on iteration " + i, 100 * i * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+            }
+        }
+
+        log.info("-----------------------------");
+
+        for (int i = 10; i > 0; i--) {
+            try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(reallocateUnspecifiedConfiguration, "WS_1")) {
+                INDArray array = Nd4j.create(100 * i);
+            }
+        }
+
+        workspace.initializeWorkspace();
+        assertEquals("Failed on final", 100 * 10 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+    }
+
     @Test
     public void testReallocate2() throws Exception {
         MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(reallocateDelayedConfiguration, "WS_1");
@@ -358,6 +397,44 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testNestedWorkspaces11() throws Exception {
+        for(int x = 1; x < 10; x++) {
+            try (MemoryWorkspace ws1 = Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration, "WS_1")) {
+                INDArray array1 = Nd4j.create(100 * x);
+
+                for (int i = 1; i < 10; i ++) {
+                    try (MemoryWorkspace ws2 = Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration, "WS_1")) {
+                        INDArray array2 = Nd4j.create(100 * x);
+                        for (int e = 1; e < 10; e++) {
+                            try (MemoryWorkspace ws3 = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfiguration, "WS_1").notifyScopeBorrowed()) {
+                                INDArray array3 = Nd4j.create(100 * x);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testNestedWorkspaces10() throws Exception {
+        for(int x = 1; x < 10; x++) {
+            try (MemoryWorkspace ws1 = Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration, "WS_1")) {
+                INDArray array1 = Nd4j.create(100 * x);
+                try (MemoryWorkspace ws2 = Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration, "WS_1")) {
+                    INDArray array2 = Nd4j.create(100 * x);
+                    try (MemoryWorkspace ws3 = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfiguration, "WS_1").notifyScopeBorrowed()) {
+                        INDArray array3 = Nd4j.create(100 * x);
+                    }
+
+                }
+            }
+        }
+    }
+
+
+    @Test
     public void testNestedWorkspaces9() throws Exception {
         for(int x = 1; x < 10; x++) {
             try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(delayedConfiguration, "WS_1")) {
@@ -420,6 +497,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
                     array5 = Nd4j.create(10);
                     log.info("Workspace5: {}", array5.data().getParentWorkspace());
                     assertTrue(null == array4.data().getParentWorkspace());
+                    assertFalse(array4.isAttached());
                     assertTrue(wsExternal == array5.data().getParentWorkspace());
                 }
 
