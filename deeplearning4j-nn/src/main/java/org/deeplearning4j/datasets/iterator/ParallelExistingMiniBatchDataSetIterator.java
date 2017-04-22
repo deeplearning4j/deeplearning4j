@@ -41,6 +41,7 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
     private BlockingQueue<Future<DataSet>> buffer;
     private AtomicBoolean shouldWork = new AtomicBoolean(true);
     private AsyncDispatcherThread thread;
+    private int bufferSize;
 
     /**
      * Create with the given root directory, using the default filename pattern {@link #DEFAULT_PATTERN}
@@ -65,6 +66,10 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
     }
 
     public ParallelExistingMiniBatchDataSetIterator(File rootDir, String pattern, int numThreads) {
+        this(rootDir, pattern, numThreads, 8);
+    }
+
+    public ParallelExistingMiniBatchDataSetIterator(File rootDir, String pattern, int numThreads, int bufferSize) {
         if (numThreads < 2)
             numThreads = 2;
 
@@ -72,8 +77,9 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
         this.rootDir = rootDir;
         totalBatches = rootDir.list().length;
         this.pattern = pattern;
+        this.bufferSize = bufferSize;
 
-        this.buffer = new LinkedBlockingQueue<>(16);
+        this.buffer = new LinkedBlockingQueue<>(this.bufferSize);
 
         this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(numThreads, new ThreadFactory() {
             @Override
