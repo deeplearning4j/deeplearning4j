@@ -872,6 +872,22 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             return this;
         }
 
+        public Builder prefetchBufferSize(int size) {
+            if (size < 2)
+                size = 2;
+
+            this.prefetchSize = size;
+            return this;
+        }
+
+        public Builder numberOfWorkers(int workers) {
+            if (workers < 1)
+                workers = 1;
+
+            this.workers = workers;
+            return this;
+        }
+
 
         public RecordReaderDataSetIterator build() {
             RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(recordReader, converter, batchSize, labelIndex, labelIndexTo, numPossibleLabels, maxNumBatches, regression, workers, prefetchSize, collectMetaData);
