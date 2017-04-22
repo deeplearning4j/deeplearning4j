@@ -14,6 +14,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,6 +47,7 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
     private AsyncDispatcherThread thread;
     private int bufferSize;
     private boolean useWorkspaces = true;
+    private AtomicBoolean wasTriggered = new AtomicBoolean(false);
 
     private final String guid = java.util.UUID.randomUUID().toString();
 
@@ -192,6 +194,8 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
 
             nextElement = buffer.take();
 
+            wasTriggered.set(true);
+
             if (nextElement == terminator)
                 return false;
 
@@ -206,6 +210,10 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
 
     @Override
     public DataSet next() {
+        if (!wasTriggered.get() && nextElement == null)
+            if (!hasNext())
+                throw new NoSuchElementException("No more records below this line");
+
         Future<DataSet> tmp = nextElement;
         nextElement = null;
 

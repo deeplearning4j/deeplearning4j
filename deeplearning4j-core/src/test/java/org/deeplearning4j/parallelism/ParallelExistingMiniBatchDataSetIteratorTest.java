@@ -3,6 +3,7 @@ package org.deeplearning4j.parallelism;
 import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.ParallelExistingMiniBatchDataSetIterator;
 import org.junit.Before;
@@ -92,6 +93,28 @@ public class ParallelExistingMiniBatchDataSetIteratorTest {
 
             if (cnt == 10)
                 iterator.reset();
+
+            time1 = System.nanoTime();
+        }
+        assertEquals(36, cnt);
+    }
+
+    @Test
+    public void testWithAdsi1() throws Exception {
+        ParallelExistingMiniBatchDataSetIterator iterator = new ParallelExistingMiniBatchDataSetIterator(rootFolder,"mnist-train-%d.bin", 8);
+        AsyncDataSetIterator adsi = new AsyncDataSetIterator(iterator, 8, true);
+
+        int cnt = 0;
+        long time1 = System.nanoTime();
+        while (adsi.hasNext()) {
+            DataSet ds = adsi.next();
+            long time2 = System.nanoTime();
+            assertNotNull(ds);
+            assertEquals(64, ds.numExamples());
+            cnt++;
+
+            if (cnt == 10)
+                adsi.reset();
 
             time1 = System.nanoTime();
         }
