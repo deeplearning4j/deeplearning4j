@@ -80,7 +80,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     private Future<DataSet> terminator = new DummyFuture();
     private ThreadPoolExecutor executor;
     private AsyncPrefetchThread thread;
-    private String guid = java.util.UUID.randomUUID().toString();
+    private final String guid = java.util.UUID.randomUUID().toString();
     private AtomicBoolean wasTriggered = new AtomicBoolean(false);
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize) {

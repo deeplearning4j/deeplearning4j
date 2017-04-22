@@ -3,6 +3,9 @@ package org.deeplearning4j.datasets.iterator;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -42,6 +45,9 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
     private AtomicBoolean shouldWork = new AtomicBoolean(true);
     private AsyncDispatcherThread thread;
     private int bufferSize;
+    private boolean useWorkspaces = true;
+
+    private final String guid = java.util.UUID.randomUUID().toString();
 
     /**
      * Create with the given root directory, using the default filename pattern {@link #DEFAULT_PATTERN}
@@ -70,6 +76,10 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
     }
 
     public ParallelExistingMiniBatchDataSetIterator(File rootDir, String pattern, int numThreads, int bufferSize) {
+        this(rootDir, pattern, numThreads, bufferSize, true);
+    }
+
+    public ParallelExistingMiniBatchDataSetIterator(File rootDir, String pattern, int numThreads, int bufferSize, boolean useWorkspaces) {
         if (numThreads < 2)
             numThreads = 2;
 
@@ -78,6 +88,7 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
         totalBatches = rootDir.list().length;
         this.pattern = pattern;
         this.bufferSize = bufferSize;
+        this.useWorkspaces = useWorkspaces;
 
         this.buffer = new LinkedBlockingQueue<>(this.bufferSize);
 
@@ -204,7 +215,7 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
             if (dataSetPreProcessor != null)
                 dataSetPreProcessor.preProcess(ds);
 
-            if (ds.getFeatures().isAttached()) {
+            if (ds != null && ds.getFeatures() != null && ds.getFeatures().isAttached()) {
                 if (Nd4j.getMemoryManager().getCurrentWorkspace() == null) {
                     ds.detach();
                 } else {
@@ -278,20 +289,56 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
 
     private class ReadCallable implements Callable<DataSet> {
         private File file;
+        private String workspaceId;
+        private WorkspaceConfiguration configuration;
+        private AtomicBoolean firstLoop = new AtomicBoolean(true);
 
         public ReadCallable(@NonNull File file) {
             this.file = file;
+
+            configuration = WorkspaceConfiguration.builder()
+                    // FIXME: overalloc limit is wrong here obviously. We should do (divide prefetch size by number of threads) + 1 probably
+                    .overallocationLimit(bufferSize + 1)
+                    .minSize(10 * 1024L * 1024L)
+                    .policyMirroring(MirroringPolicy.FULL)
+                    .policySpill(SpillPolicy.EXTERNAL)
+                    .policyLearning(LearningPolicy.OVER_TIME)
+                    .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                    .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                    .build();
+
+            this.workspaceId = "PEMBDSI_LOOP-" + guid;
         }
 
         @Override
         public DataSet call() throws Exception {
-            // TODO: workspaces? huh...
             DataSet ds = null;
-            try {
-                ds = read(file);
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
+            if (useWorkspaces) {
+                if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceId))
+                    firstLoop.set(false);
+
+                for (int l = firstLoop.get() ? 0 : 1; l < 2; l++) {
+                    try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceId)) {
+                        try {
+                            ds = read(file);
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                    if (firstLoop.get()) {
+                        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).initializeWorkspace();
+                        firstLoop.set(false);
+                    }
+                }
+            } else {
+                try {
+                    ds = read(file);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    throw new RuntimeException(e);
+                }
             }
 
             return ds;
