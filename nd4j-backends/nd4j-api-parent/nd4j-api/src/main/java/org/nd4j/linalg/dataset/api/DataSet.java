@@ -329,4 +329,9 @@ public interface DataSet extends Iterable<org.nd4j.linalg.dataset.DataSet>, Seri
      * This method migrates this DataSet into current Workspace (if any)
      */
     void migrate();
+
+    /**
+     * This method detaches this DataSet from current Workspace (if any)
+     */
+    void detach();
 }
