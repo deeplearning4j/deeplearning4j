@@ -98,50 +98,60 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> plus(DifferentialFunction<X> i_v) {
-        return i_v.plused(this);
+        DifferentialFunction<X> ret = i_v.plused(this);
+        return ret;
     }
 
     protected DifferentialFunction<X> plused(DifferentialFunction<X> i_v) {
-        return new Sum<>(graph,i_v, this);
+        DifferentialFunction<X> ret = new Sum<>(graph,i_v, this);
+        return ret;
     }
 
     @Override
     public DifferentialFunction<X> minus(DifferentialFunction<X> i_v) {
-        return plus(i_v.negate());
+        DifferentialFunction<X> ret = plus(i_v.negate());
+        return ret;
     }
 
     @Override
     public DifferentialFunction<X> mul(DifferentialFunction<X> i_v) {
-        return i_v.muled(this);
+        DifferentialFunction<X> ret = i_v.muled(this);
+        return ret;
     }
 
     protected DifferentialFunction<X> muled(DifferentialFunction<X> i_v) {
-        return new Product<>(graph,i_v, this);
+        DifferentialFunction<X> ret = new Product<>(graph,i_v, this);
+        return ret;
     }
 
     @Override
     public DifferentialFunction<X> div(DifferentialFunction<X> i_v) {
-        return mul(i_v.inverse());
+        DifferentialFunction<X> ret = mul(i_v.inverse());
+        return ret;
     }
 
     @Override
     public DifferentialFunction<X> inverse() {
-        return new Inverse<>(graph,this);
+        DifferentialFunction<X> ret = new Inverse<>(graph,this);
+        return ret;
     }
 
     @Override
     public DifferentialFunction<X> negate() {
-        return new Negative<>(graph,this);
+        DifferentialFunction<X> ret = new Negative<>(graph,this);
+        return ret;
     }
 
     @Override
     public DifferentialFunction<X> mul(double i_n) {
-        return new PolynomialTerm<X>(graph,i_n, this, 1);
+        PolynomialTerm<X> ret =  new PolynomialTerm<>(graph,i_n, this, 1);
+        return ret;
     }
 
     @Override
     public DifferentialFunction<X> pow(int i_n) {
-        return new PolynomialTerm<>(graph,1L, this, i_n);
+        PolynomialTerm<X> ret = new PolynomialTerm<>(graph,1L, this, i_n);
+        return ret;
     }
 
 

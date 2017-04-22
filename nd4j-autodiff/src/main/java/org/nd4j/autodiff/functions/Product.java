@@ -30,14 +30,16 @@ public class Product<X extends Field<X>> extends AbstractBinaryFunction<X> {
 
     @Override
     public DifferentialFunction<X> diff(Variable<X> i_v1) {
-        return (larg().equals(rarg())) ? larg().diff(i_v1).mul(rarg()).mul(2L) // Field
-                // is
-                // commutative
-                // with
-                // respect
-                // to
-                // multiplication.
-                : (larg().diff(i_v1).mul(rarg())).plus(larg().mul(rarg().diff(i_v1)));
+        if(larg().equals(rarg()))
+            return  larg().diff(i_v1).mul(rarg()).mul(2L); // Field
+            // is
+            // commutative
+            // with
+            // respect
+            // to
+            // multiplication.
+        else
+            return (larg().diff(i_v1).mul(rarg())).plus(larg().mul(rarg().diff(i_v1)));
     }
 
     @Override
