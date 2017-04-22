@@ -1111,10 +1111,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     protected Pair<Gradient, INDArray> calcBackpropGradients(INDArray epsilon, boolean withOutputLayer) {
         if (flattenedGradients == null) {
-            MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
-            Nd4j.getMemoryManager().setCurrentWorkspace(null);
-            initGradientsView();
-            Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                initGradientsView();
+            }
         }
         String multiGradientKey;
         Gradient gradient = new DefaultGradient(flattenedGradients);
@@ -1183,11 +1182,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         // Calculate gradients for previous layers & drops output layer in count
         for (int j = layerFrom; j >= 0; j--) {
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                if (j == 1)
-                    ws.enableDebug(false);
-                else
-                    ws.enableDebug(false);
-
                 currLayer = getLayer(j);
                 if (currLayer instanceof FrozenLayer) {
                     break;

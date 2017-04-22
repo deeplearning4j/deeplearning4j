@@ -181,8 +181,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                                        int labelIndexFrom, int labelIndexTo, int numPossibleLabels, int maxNumBatches,
                                        boolean regression, int numThreads) {
 
-        if (numThreads < 1)
-            numThreads = 1;
+        if (numThreads < 2)
+            numThreads = 2;
 
         this.recordReader = recordReader;
         this.converter = converter;
@@ -192,6 +192,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         this.labelIndexTo = labelIndexTo;
         this.numPossibleLabels = numPossibleLabels;
         this.regression = regression;
+
+        log.info("Starting num threads: {}", numThreads);
 
         this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(numThreads, new ThreadFactory() {
             @Override
@@ -445,20 +447,12 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             // yes, we're blocking here, but there are chances Future is complete at this moment after first call
             DataSet ds = tmp.get();
 
-            if (Nd4j.getMemoryManager().getCurrentWorkspace() != null) {
-                ds.migrate();
-            } else {
-                if (ds.getFeatures() != null)
-                    ds.setFeatures(ds.getFeatures().detach());
-
-                if (ds.getLabels() != null)
-                    ds.setLabels(ds.getLabels().detach());
-
-                if (ds.getFeaturesMaskArray() != null)
-                    ds.setFeaturesMaskArray(ds.getFeaturesMaskArray().detach());
-
-                if (ds.getLabelsMaskArray() != null)
-                    ds.setLabelsMaskArray(ds.getLabelsMaskArray().detach());
+            if (ds.getFeatures().isAttached()) {
+                if (Nd4j.getMemoryManager().getCurrentWorkspace() == null) {
+                    ds.detach();
+                } else {
+                    ds.migrate();
+                }
             }
 
             return ds;

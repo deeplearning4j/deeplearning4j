@@ -68,6 +68,10 @@ public class DefaultTrainer extends Thread implements Trainer {
         setupIfNeccessary();
         running.incrementAndGet();
         queueMDS.add(dataSet);
+
+        if (lastEtlTime == null)
+            lastEtlTime = new AtomicLong(0);
+
         lastEtlTime.set(etlTime);
     }
 
@@ -76,6 +80,10 @@ public class DefaultTrainer extends Thread implements Trainer {
         setupIfNeccessary();
         running.incrementAndGet();
         queue.add(dataSet);
+
+        if (lastEtlTime == null)
+            lastEtlTime = new AtomicLong(0);
+
         lastEtlTime.set(etlTime);
     }
 
