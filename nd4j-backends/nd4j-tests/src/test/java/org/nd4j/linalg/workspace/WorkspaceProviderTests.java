@@ -15,6 +15,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -28,6 +32,15 @@ import static org.junit.Assert.*;
 public class WorkspaceProviderTests extends BaseNd4jTest {
     private static final WorkspaceConfiguration basicConfiguration = WorkspaceConfiguration.builder()
             .initialSize(81920)
+            .overallocationLimit(0.1)
+            .policySpill(SpillPolicy.EXTERNAL)
+            .policyLearning(LearningPolicy.NONE)
+            .policyMirroring(MirroringPolicy.FULL)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .build();
+
+    private static final WorkspaceConfiguration bigConfiguration = WorkspaceConfiguration.builder()
+            .initialSize(20 * 1024 * 1024L)
             .overallocationLimit(0.1)
             .policySpill(SpillPolicy.EXTERNAL)
             .policyLearning(LearningPolicy.NONE)
@@ -302,6 +315,88 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    @Test
+    public void testWorkspacesSerde3() throws Exception {
+        INDArray array = Nd4j.create(10).assign(1.0);
+        INDArray restored = null;
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        Nd4j.write(array, dos);
+
+        try(Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration, "WS_1")) {
+
+            try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                workspace.enableDebug(true);
+
+                ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+                DataInputStream dis = new DataInputStream(bis);
+                restored = Nd4j.read(dis);
+
+                assertEquals(0, workspace.getHostOffset());
+
+                assertEquals(array.length(), restored.length());
+                assertEquals(1.0f, restored.meanNumber().floatValue(), 1.0f);
+
+                // we want to ensure it's the same cached shapeInfo used here
+                assertTrue(array.shapeInfoDataBuffer() == restored.shapeInfoDataBuffer());
+            }
+        }
+    }
+
+
+
+    @Test
+    public void testWorkspacesSerde2() throws Exception {
+        INDArray array = Nd4j.create(10).assign(1.0);
+        INDArray restored = null;
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        Nd4j.write(array, dos);
+
+        try(Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration, "WS_1")) {
+            workspace.enableDebug(true);
+
+            ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+            DataInputStream dis = new DataInputStream(bis);
+            restored = Nd4j.read(dis);
+
+            long requiredMemory = 10 * Nd4j.sizeOfDataType();
+            assertEquals(requiredMemory + requiredMemory % 8, workspace.getHostOffset());
+
+            assertEquals(array.length(), restored.length());
+            assertEquals(1.0f, restored.meanNumber().floatValue(), 1.0f);
+
+            // we want to ensure it's the same cached shapeInfo used here
+            assertTrue(array.shapeInfoDataBuffer() == restored.shapeInfoDataBuffer());
+        }
+    }
+
+    @Test
+    public void testWorkspacesSerde1() throws Exception {
+        int[] shape = new int[]{17, 57, 79};
+        INDArray array = Nd4j.create(shape).assign(1.0);
+        INDArray restored = null;
+
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        DataOutputStream dos = new DataOutputStream(bos);
+        Nd4j.write(array, dos);
+
+        try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(bigConfiguration, "WS_1")) {
+            ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+            DataInputStream dis = new DataInputStream(bis);
+            restored = Nd4j.read(dis);
+
+            assertEquals(array.length(), restored.length());
+            assertEquals(1.0f, restored.meanNumber().floatValue(), 1.0f);
+
+            // we want to ensure it's the same cached shapeInfo used here
+            assertTrue(array.shapeInfoDataBuffer() == restored.shapeInfoDataBuffer());
+        }
+
+
+    }
 
     @Test
     public void testReallocate3() throws Exception {
