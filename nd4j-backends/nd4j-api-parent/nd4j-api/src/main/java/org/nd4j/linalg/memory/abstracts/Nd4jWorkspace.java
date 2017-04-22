@@ -295,16 +295,16 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public void close() {
+        if (isBorrowed.get()) {
+            isBorrowed.set(false);
+            Nd4j.getMemoryManager().setCurrentWorkspace(borrowingWorkspace);
+            return;
+        }
+
         if (tagScope.get() > 0) {
             if (tagScope.decrementAndGet() == 0){
                 Nd4j.getMemoryManager().setCurrentWorkspace(this);
             }
-            return;
-        }
-
-        if (isBorrowed.get()) {
-            isBorrowed.set(false);
-            Nd4j.getMemoryManager().setCurrentWorkspace(borrowingWorkspace);
             return;
         }
 

@@ -397,6 +397,44 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testNestedWorkspaces11() throws Exception {
+        for(int x = 1; x < 10; x++) {
+            try (MemoryWorkspace ws1 = Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration, "WS_1")) {
+                INDArray array1 = Nd4j.create(100 * x);
+
+                for (int i = 1; i < 10; i ++) {
+                    try (MemoryWorkspace ws2 = Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration, "WS_1")) {
+                        INDArray array2 = Nd4j.create(100 * x);
+                        for (int e = 1; e < 10; e++) {
+                            try (MemoryWorkspace ws3 = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfiguration, "WS_1").notifyScopeBorrowed()) {
+                                INDArray array3 = Nd4j.create(100 * x);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
+    @Test
+    public void testNestedWorkspaces10() throws Exception {
+        for(int x = 1; x < 10; x++) {
+            try (MemoryWorkspace ws1 = Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration, "WS_1")) {
+                INDArray array1 = Nd4j.create(100 * x);
+                try (MemoryWorkspace ws2 = Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfiguration, "WS_1")) {
+                    INDArray array2 = Nd4j.create(100 * x);
+                    try (MemoryWorkspace ws3 = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfiguration, "WS_1").notifyScopeBorrowed()) {
+                        INDArray array3 = Nd4j.create(100 * x);
+                    }
+
+                }
+            }
+        }
+    }
+
+
+    @Test
     public void testNestedWorkspaces9() throws Exception {
         for(int x = 1; x < 10; x++) {
             try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(delayedConfiguration, "WS_1")) {
@@ -459,6 +497,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
                     array5 = Nd4j.create(10);
                     log.info("Workspace5: {}", array5.data().getParentWorkspace());
                     assertTrue(null == array4.data().getParentWorkspace());
+                    assertFalse(array4.isAttached());
                     assertTrue(wsExternal == array5.data().getParentWorkspace());
                 }
 
