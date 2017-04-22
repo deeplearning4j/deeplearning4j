@@ -69,7 +69,7 @@ public class ArchiveUtils {
                     continue;
                 }
 
-                log.info("file unzip : " + newFile.getAbsoluteFile());
+                log.debug("file unzip : " + newFile.getAbsoluteFile());
 
                 //create all non exists folders
                 //else you will hit FileNotFoundException for compressed folder
@@ -133,7 +133,7 @@ public class ArchiveUtils {
 
         while ((entry = (TarArchiveEntry) tarIn.getNextEntry()) != null) {
 
-            log.info("Extracting: " + entry.getName());
+            log.debug("Extracting: " + entry.getName());
 
             /** If the entry is a directory, createComplex the directory. **/
 
