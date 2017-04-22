@@ -127,7 +127,9 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
         thread.interrupt();
         thread.shutdown();
         buffer.clear();
+        nextElement = null;
         currIdx.set(0);
+        shouldWork.set(true);
         this.thread = new AsyncDispatcherThread();
         this.thread.start();
     }

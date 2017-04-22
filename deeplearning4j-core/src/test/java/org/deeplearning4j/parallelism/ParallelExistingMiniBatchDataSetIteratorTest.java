@@ -76,4 +76,25 @@ public class ParallelExistingMiniBatchDataSetIteratorTest {
             log.info("Parallel: {} ns; Simple: {} ns", times.getFirst(), times.getSecond());
         }
     }
+
+    @Test
+    public void testReset1() throws Exception {
+        ParallelExistingMiniBatchDataSetIterator iterator = new ParallelExistingMiniBatchDataSetIterator(rootFolder,"mnist-train-%d.bin", 8);
+
+        int cnt = 0;
+        long time1 = System.nanoTime();
+        while (iterator.hasNext()) {
+            DataSet ds = iterator.next();
+            long time2 = System.nanoTime();
+            assertNotNull(ds);
+            assertEquals(64, ds.numExamples());
+            cnt++;
+
+            if (cnt == 10)
+                iterator.reset();
+
+            time1 = System.nanoTime();
+        }
+        assertEquals(36, cnt);
+    }
 }
