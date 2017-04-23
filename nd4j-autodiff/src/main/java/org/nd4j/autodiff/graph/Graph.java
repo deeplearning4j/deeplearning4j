@@ -129,6 +129,9 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         if(frozen)
             return;
 
+        if(edge.getFrom() == edge.getTo())
+            throw new IllegalArgumentException("No cycles allowed");
+
         if (edge.getFrom() < 0)
             throw new IllegalArgumentException("Invalid edge: " + edge + ", from/to indexes out of range");
 

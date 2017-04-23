@@ -33,7 +33,7 @@ public interface IGraph<V, E> {
      * @param indexes the indexes of the vertices to retrieve
      * @return list of vertices
      */
-    public List<Vertex<V>> getVertices(int[] indexes);
+     List<Vertex<V>> getVertices(int[] indexes);
 
     /** Get multiple vertices in the graph, with secified indices
      * @param from first vertex to get, inclusive

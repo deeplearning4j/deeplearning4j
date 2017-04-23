@@ -61,6 +61,7 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
                     .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
                     .shape(v1.getInput().getShape()).build();
             NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size(),information);
+            this.vertexId = newVertex.vertexID();
             graph.addVertex(newVertex);
             OpState opState =   OpState.builder()
                     .opType(OpState.OpType.ACCUMULATION)
@@ -86,5 +87,15 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
 
     public DifferentialFunction<X> arg() {
         return m_x;
+    }
+
+
+    @Override
+    public DifferentialFunction<X> dup() {
+        try {
+            return getClass().getConstructor(graph.getClass(),arg().getClass(),int[].class).newInstance(graph,arg(),dimensions);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

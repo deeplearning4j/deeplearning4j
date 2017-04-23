@@ -63,6 +63,8 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
                     .shape(shape).build();
             //result
             NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size(),information);
+            this.vertexId = newVertex.vertexID();
+
             graph.addVertex(newVertex);
             OpState owner =  OpState.builder()
                     .opType(OpState.OpType.TRANSFORM)
@@ -103,4 +105,15 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
     public DifferentialFunction<X> arg() {
         return m_x;
     }
+
+
+    @Override
+    public DifferentialFunction<X> dup() {
+        try {
+            return getClass().getConstructor(graph.getClass(),arg().getClass(),int[].class).newInstance(graph,arg(),shape);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
+

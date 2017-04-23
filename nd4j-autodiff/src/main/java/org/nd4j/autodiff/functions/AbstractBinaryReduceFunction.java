@@ -62,4 +62,14 @@ public abstract class AbstractBinaryReduceFunction<X extends  Field<X>> extends 
     public String toString() {
         return functionName() + "(" + larg() + "," + rarg() + ")";
     }
+
+
+    @Override
+    public DifferentialFunction<X> dup() {
+        try {
+            return getClass().getConstructor(graph.getClass(),larg().getClass(),rarg().getClass()).newInstance(graph,larg(),rarg());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

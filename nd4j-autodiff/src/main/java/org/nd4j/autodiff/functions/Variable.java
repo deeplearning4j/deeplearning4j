@@ -2,6 +2,7 @@ package org.nd4j.autodiff.functions;
 
 import java.util.List;
 
+import lombok.Data;
 import org.nd4j.autodiff.AbstractIdentityFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
@@ -11,7 +12,7 @@ import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.linalg.util.ArrayUtil;
 
-
+@Data
 public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
 
     private X m_x;
@@ -30,7 +31,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
                        String i_name, X i_v,
                        AbstractIdentityFactory<X> i_factory,
                        PreEvaluator<X> preEvaluator) {
-       super(graph);
+        super(graph);
         this.preEvaluator = preEvaluator;
         setName(i_name);
         if (i_v != null && i_factory != null) {
@@ -38,6 +39,11 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
             m_factory = i_factory;
         } else {
             throw new IllegalArgumentException("Input not null value.");
+        }
+
+        if(i_v instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) i_v;
+            this.vertexId = arrayField.getVertex().vertexID();
         }
     }
 
@@ -90,40 +96,21 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
 
     @Override
     public Constant<X> diff(Variable<X> i_v) {
-        Constant<X> ret =  (this == i_v) ? new One<>(graph, m_factory) : new Zero<>(graph, m_factory);
+        Constant<X> ret =  (this.equals(i_v) ? new One<>(graph, m_factory) : new Zero<>(graph, m_factory));
         if(m_x instanceof ArrayField) {
-            //add a connection acknowledging where the shape came from for the op
-            ArrayField arrayField = (ArrayField) ret.getM_x();
-            addEdge("diff",arrayField.getVertex());
-            ret.setOpState(opState);
-            //ensure the shape is the same
-            arrayField.getInput().setOwner(opState);
-            arrayField.getInput().setShape(arrayField.getInput().getShape());
+            ArrayField arrayField = (ArrayField) m_x;
+            addEdges(graph,
+                    this,ret,
+                    "diff",
+                    OpState.OpType.TRANSFORM,
+                    arrayField.getInput().getShape());
 
         }
-
         return ret;
     }
 
 
 
-    protected void addEdge(String opName,NDArrayVertex newVertex) {
-        if(m_x instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) m_x;
-            graph.addVertex(newVertex);
-            OpState opState = OpState.builder()
-                    .n(ArrayUtil.prod(arrayField.getInput().getShape()))
-                    .opName(opName).result(arrayField.getInput())
-                    .id(arrayField.getVertex().getValue().getId() +  "->  " + functionName() + " " +  newVertex.getValue().getId())
-                    .vertexIds(new String[]{String.valueOf(arrayField.getVertex().vertexID()),
-                            String.valueOf(newVertex.vertexID())})
-                    .opType(OpState.OpType.TRANSFORM).build();
-            setOpState(opState);
-            graph.addEdge(arrayField.getVertex().vertexID(),
-                    newVertex.vertexID(),opState,true);
-
-        }
-    }
 
     @Override
     public String toString() {
@@ -144,6 +131,11 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     @Override
     public DifferentialFunction<X> div(DifferentialFunction<X> i_v) {
         return (i_v == this) ? new One<>(graph, m_factory) : super.mul(i_v.inverse());
+    }
+
+    @Override
+    public DifferentialFunction<X> dup() {
+        return new Variable<>(graph, getName(), m_x, m_factory);
     }
 
 }

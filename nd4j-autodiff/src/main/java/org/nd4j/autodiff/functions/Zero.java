@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.functions;
 
 import org.nd4j.autodiff.AbstractIdentityFactory;
+import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
@@ -18,43 +19,59 @@ public class Zero<X extends Field<X>> extends Constant<X> {
 
     @Override
     public DifferentialFunction<X> plus(DifferentialFunction<X> i_v) {
-        addEdge(new AddOp().name());
+       addEdge(new AddOp().name(),i_v);
         return i_v;
     }
 
     @Override
     protected DifferentialFunction<X> plused(DifferentialFunction<X> i_v) {
-        addEdge(new AddOp().name());
+        addEdge(new AddOp().name(),i_v);
         return i_v;
     }
 
     @Override
     // public DifferentialFunction<X> mul(DifferentialFunction<X> i_v) {
     public Zero<X> mul(DifferentialFunction<X> i_v) {
-        addEdge(new MulOp().name());
+        addEdge(new MulOp().name(),i_v);
         return this;
     }
 
     @Override
-    // protected DifferentialFunction<X> muled(DifferentialFunction<X> i_v) {
     protected Zero<X> muled(DifferentialFunction<X> i_v) {
-        addEdge(new MulOp().name());
+        addEdge(new MulOp().name(),i_v);
         return this;
     }
 
     @Override
-    // public DifferentialFunction<X> inverse() {
     public Constant<X> inverse() {
         // TODO
         throw new UnsupportedOperationException();
     }
 
     @Override
-    // public DifferentialFunction<X> negate() {
-    // public Constant<X> negate() {
     public Zero<X> negate() {
-        addEdge(new org.nd4j.linalg.api.ops.impl.transforms.Negative().name());
+        addEdge(new org.nd4j.linalg.api.ops.impl.transforms.Negative().name(),this);
         return this;
     }
 
+
+    private void addEdge(String opName,DifferentialFunction<X> i_v) {
+        if(i_v.getValue() instanceof ArrayField) {
+            ArrayField x = (ArrayField) i_v.getValue();
+            addEdges(graph,
+                    this,
+                    i_v,
+                    opName,
+                    OpState.OpType.TRANSFORM,
+                    x.getInput().getShape(),
+                    null);
+
+        }
+    }
+
+
+    @Override
+    public DifferentialFunction<X> dup() {
+        return new Zero<>(graph, getM_factory());
+    }
 }

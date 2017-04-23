@@ -110,7 +110,8 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
                 '}';
     }
 
-
+    //lombok for inheritance purposes, do not remove
+    @SuppressWarnings("unused")
     public static class TensorGradVariableBuilder extends TensorGradFunction.TensorGradFunctionBuilder {
 
     }

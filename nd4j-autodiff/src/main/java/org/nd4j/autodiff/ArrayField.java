@@ -571,7 +571,7 @@ public class ArrayField implements Field<ArrayField> {
         this.getOps().addVertex(newVertex);
 
         //map x -> z
-        this.ops.addEdge(vertex.getIdx(),
+        this.ops.addEdge(vertex.vertexID(),
                 newVertex.vertexID(),
                 OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))

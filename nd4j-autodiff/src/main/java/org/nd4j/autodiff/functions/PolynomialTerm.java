@@ -17,11 +17,10 @@ public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X>
                           DifferentialFunction<X> i_v,
                           int i_exponent) {
         // scale v^{exponent}
+        //note that super handles addEdges
         super(graph,i_v);
         m_scale = i_scale;
         m_exponent = i_exponent;
-        //add nodes to the graph from value
-        //getValue(false);
     }
 
     @Override
@@ -53,7 +52,7 @@ public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X>
 
     @Override
     public String functionName() {
-        return "pow";
+        return "pow(" + m_exponent + ")";
     }
 
     @Override

@@ -129,8 +129,6 @@ public class ArrayTestAbstractFactory
     public void testGrad() throws Exception {
         TensorGrad tensorGrad = TensorGrad.create();
         TensorGradVariable var = tensorGrad.var("x", Nd4j.create(1));
-        TensorGradVariable var2 = tensorGrad.var("y", Nd4j.create(1));
-
         TensorGradVariable xTimesX = var.mul(var);
         TensorGradVariable grad = tensorGrad.grad(xTimesX,var);
         System.out.println(tensorGrad.graph());

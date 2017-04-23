@@ -27,6 +27,11 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
         } else {
             throw new IllegalArgumentException("Input not null value.");
         }
+
+        if(i_v instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) i_v;
+            this.vertexId = arrayField.getVertex().vertexID();
+        }
     }
 
 
@@ -82,47 +87,22 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
                 : super.muled(i_v);
     }
 
-    protected void addNode(Graph<NDArrayInformation,OpState> graph) {
-        if(m_x instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) m_x;
-            NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size() ,
-                    NDArrayInformation.builder()
-                            .id("constant(" + arrayField.getInput().getId() + ")")
-                            .shape(arrayField.getInput().getShape()).build());
-            graph.addVertex(newVertex);
 
-        }
-    }
-
-    protected void addEdge(String opName) {
-        if(m_x instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) m_x;
-            NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size() ,
-                    NDArrayInformation.builder()
-                            .id(opName + "(" + arrayField.getInput().getId() + ")")
-                            .shape(arrayField.getInput().getShape()).build());
-            graph.addVertex(newVertex);
-            graph.addEdge(arrayField.getVertex().vertexID(),
-                    newVertex.vertexID(),OpState.builder()
-                            .n(ArrayUtil.prod(arrayField.getInput().getShape()))
-                            .opName(opName)
-                            .id(arrayField.getInput().getId() +  "->  " + functionName() + " " +  newVertex.getValue().getId())
-                            .vertexIds(new String[]{String.valueOf(arrayField.getVertex().vertexID()),
-                                    String.valueOf(newVertex.vertexID())})
-                            .opType(OpState.OpType.TRANSFORM).build(),true);
-
-        }
-    }
-    // public DifferentialFunction<X> inverse() {
     @Override
     public Constant<X> inverse() {
-        return new Constant<>(graph, m_x.inverse(), m_factory);
+        Constant<X> ret = new Constant<>(graph, m_x.inverse(), m_factory);
+        return ret;
     }
 
-    // public DifferentialFunction<X> negate() {
     @Override
     public Constant<X> negate() {
-        return new Constant<>(graph, m_x.negate(), m_factory);
+        Constant<X> ret =  new Constant<>(graph, m_x.negate(), m_factory);
+        return ret;
+    }
+
+    @Override
+    public DifferentialFunction<X> dup() {
+        return new Constant<>(graph,m_x,getM_factory());
     }
 
     // This class must be immutable.

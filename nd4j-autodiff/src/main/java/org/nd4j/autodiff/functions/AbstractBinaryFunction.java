@@ -9,6 +9,8 @@ import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.lang.reflect.InvocationTargetException;
+
 @NoArgsConstructor
 public abstract class AbstractBinaryFunction<X extends Field<X>> extends DifferentialFunction<X> {
 
@@ -33,104 +35,6 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
 
 
 
-    protected void addEdges(Graph<NDArrayInformation,OpState> graph,
-                            DifferentialFunction<X> i_v1,
-                            DifferentialFunction<X> i_v2,
-                            String opName,
-                            OpState.OpType opType,
-                            int[] shape) {
-        addEdges(graph, i_v1, i_v2, opName, opType, shape,null);
-
-    }
-
-
-    protected void addEdges(Graph<NDArrayInformation,OpState> graph,
-                            DifferentialFunction<X> i_v1,
-                            DifferentialFunction<X> i_v2,
-                            String opName,
-                            OpState.OpType opType,
-                            int[] shape,Object[] extraArgs) {
-        if(i_v1.getValue() instanceof ArrayField) {
-            ArrayField v1 = (ArrayField) i_v1.getValue();
-            ArrayField v2 = (ArrayField) i_v2.getValue();
-            NDArrayInformation arrInfo = NDArrayInformation.builder()
-                    .id(opName +"(" + v1.getInput().getId() + "," + v2.getInput().getId() + ")")
-                    .shape(shape).build();
-            //result
-            NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size(),arrInfo);
-            //add the result vertex
-            graph.addVertex(newVertex);
-            OpState opState;
-
-            //ensure there's 2 vertices for when the 2 inputs are the same
-            if(v1.equals(v2)) {
-                NDArrayVertex dupVertex = new NDArrayVertex(graph.getVertices().size(),
-                        NDArrayInformation.builder()
-                                .shape(v1.getInput().getShape())
-                                .id(v1.getInput().getId()).build());
-
-                graph.addVertex(dupVertex);
-                opState =    OpState.builder()
-                        .opType(opType)
-                        .opName(opName)
-                        .id(opName + "(" + dupVertex.getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
-                        .vertexIds(new String[]{String.valueOf(dupVertex.vertexID()),String.valueOf(newVertex.vertexID())})
-                        .n(ArrayUtil.prod(shape)).extraArgs(extraArgs)
-                        .build();
-                graph.addEdge(
-                        dupVertex.vertexID(),
-                        newVertex.vertexID(),opState,
-                        true);
-            }
-            else {
-                opState =  OpState.builder()
-                        .opType(opType)
-                        .opName(opName)
-                        .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
-                        .vertexIds(new String[]{String.valueOf(v2.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
-                        .n(ArrayUtil.prod(shape)).extraArgs(extraArgs)
-                        .build();
-                graph.addEdge(v2.getVertex().vertexID(),
-                        newVertex.vertexID(),
-                        opState
-                        ,true);
-            }
-
-            opState = OpState.builder()
-                    .opType(opType)
-                    .opName(opName).result(arrInfo)
-                    .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
-                    .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
-                    .n(ArrayUtil.prod(shape)).extraArgs(extraArgs)
-                    .build();
-            //add the first vertex no matter what as normal
-            graph.addEdge(v1.getVertex().vertexID(),
-                    newVertex.vertexID(),
-                    opState,true);
-            newVertex.setOpState(opState);
-            arrInfo.setOwner(opState);
-            this.opState = opState;
-
-        }
-
-
-    }
-
-
-
-    protected void addEdges(Graph<NDArrayInformation,OpState> graph,
-                            DifferentialFunction<X> i_v1,
-                            DifferentialFunction<X> i_v2,
-                            String opName) {
-        if(i_v1.getValue() instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) i_v1.getValue();
-            addEdges(graph,i_v1,i_v2,opName, OpState.OpType.TRANSFORM,arrayField.getInput().getShape());
-
-        }
-
-        else
-            throw new UnsupportedOperationException("Only supporting array fields");
-    }
 
 
 
@@ -146,5 +50,14 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
 
     public DifferentialFunction<X> rarg() {
         return m_x2;
+    }
+
+    @Override
+    public DifferentialFunction<X> dup() {
+        try {
+            return getClass().getConstructor(graph.getClass(),larg().getClass(),rarg().getClass()).newInstance(graph,larg(),rarg());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }
