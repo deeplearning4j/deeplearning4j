@@ -130,4 +130,7 @@ public interface MemoryWorkspaceManager {
      * @return
      */
     MemoryWorkspace scopeOutOfWorkspaces();
+
+
+    void printAllocationStatisticsForCurrentThread();
 }

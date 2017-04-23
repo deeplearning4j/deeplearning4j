@@ -3992,6 +3992,48 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, result);
     }
 
+    @Test
+    public void testStrangeDups1() throws Exception {
+        INDArray array = Nd4j.create(10).assign(0);
+        INDArray exp = Nd4j.create(10).assign(1.0f);
+        INDArray copy = null;
+
+        for (int x = 0; x < array.length(); x++) {
+            array.putScalar(x, 1f);
+            copy = array.dup();
+        }
+
+        assertEquals(exp, array);
+        assertEquals(exp, copy);
+    }
+
+    @Test
+    public void testStrangeDups2() throws Exception {
+        INDArray array = Nd4j.create(10).assign(0);
+        INDArray exp1 = Nd4j.create(10).assign(1.0f);
+        INDArray exp2 = Nd4j.create(10).assign(1.0f).putScalar(9, 0f);
+        INDArray copy = null;
+
+        for (int x = 0; x < array.length(); x++) {
+            copy = array.dup();
+            array.putScalar(x, 1f);
+        }
+
+        assertEquals(exp1, array);
+        assertEquals(exp2, copy);
+    }
+
+    @Test
+    public void testReductionAgreement1() throws Exception {
+        INDArray row = Nd4j.linspace(1,3,3);
+        INDArray mean0 = row.mean(0);
+        assertFalse(mean0 == row);       //True: same object (should be a copy)
+
+        INDArray col = Nd4j.linspace(1,3,3).transpose();
+        INDArray mean1 = col.mean(1);
+        assertFalse(mean1 == col);
+    }
+
     @Override
     public char ordering() {
         return 'c';

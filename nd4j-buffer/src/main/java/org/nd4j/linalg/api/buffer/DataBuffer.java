@@ -24,6 +24,7 @@ import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -624,4 +625,10 @@ public interface DataBuffer extends Serializable {
      * @return
      */
     boolean isInScope();
+
+    /**
+     * This method returns Workspace this DataBuffer is attached to
+     * @return
+     */
+    MemoryWorkspace getParentWorkspace();
 }

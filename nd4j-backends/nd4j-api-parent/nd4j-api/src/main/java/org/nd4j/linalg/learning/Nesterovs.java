@@ -2,6 +2,7 @@ package org.nd4j.linalg.learning;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.shape.Shape;
@@ -18,6 +19,7 @@ import java.io.Serializable;
  */
 @Data
 @NoArgsConstructor
+@Slf4j
 public class Nesterovs implements Serializable, GradientUpdater {
     public static final double DEFAULT_NESTEROV_MOMENTUM = 0.9;
 
@@ -38,6 +40,7 @@ public class Nesterovs implements Serializable, GradientUpdater {
             throw new IllegalArgumentException("Invalid input: expect row vector input");
         if (initialize)
             viewArray.assign(0);
+
         this.v = viewArray;
 
         //Reshape to match the expected shape of the input gradient arrays

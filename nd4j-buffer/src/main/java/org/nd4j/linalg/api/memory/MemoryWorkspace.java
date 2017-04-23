@@ -102,6 +102,20 @@ public interface MemoryWorkspace extends AutoCloseable {
     void toggleWorkspaceUse(boolean isEnabled);
 
     /**
+     * This method returns amount of memory consumed in current cycle, in bytes
+     *
+     * @return
+     */
+    long getThisCycleAllocations();
+
+    /**
+     * This method enabled debugging mode for this workspace
+     *
+     * @param reallyEnable
+     */
+    void enableDebug(boolean reallyEnable);
+
+    /**
      * This method returns amount of memory consumed in last successful cycle, in bytes
      *
      * @return
@@ -113,6 +127,13 @@ public interface MemoryWorkspace extends AutoCloseable {
      * @return
      */
     long getMaxCycleAllocations();
+
+    /**
+     * This methos returns current allocated size of this workspace
+     *
+     * @return
+     */
+    long getCurrentSize();
 
     /**
      * This method is for compatibility with "try-with-resources" java blocks.

@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -171,6 +172,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.trackingPoint = allocationPoint.getObjectId();
         this.offset = 0;
         this.originalOffset = 0;
+
+        //  if (Nd4j.getAffinityManager().getDeviceForCurrentThread() == 0)
+        //log.info("Allocating {} bytes on device_{}", length, Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
         if (dataType() == Type.DOUBLE) {
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asDoublePointer();
@@ -759,7 +763,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             // skip allocationMode
             s.readUTF();
             allocationMode = AllocationMode.JAVACPP;
-            length = s.readInt();
+            int locLength = s.readInt();
+            boolean reallocate = locLength != length;
+            length = locLength;
+
             Type t = Type.valueOf(s.readUTF());
             //                  log.info("Restoring buffer ["+t+"] of length ["+ length+"]");
             if (globalType == null && Nd4j.dataType() != null) {
@@ -801,14 +808,23 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 setData(array);
             } else if (globalType == Type.DOUBLE) {
                 this.elementSize = 8;
-                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
-                                new AllocationShape(length, elementSize, globalType), false);
-                //allocationPoint.attachBuffer(this);
-                this.trackingPoint = allocationPoint.getObjectId();
 
-                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length)
-                                .asDoublePointer();
-                indexer = DoubleIndexer.create((DoublePointer) pointer);
+                if (reallocate) {
+                    MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+                    if (workspace != null && (workspace instanceof DummyWorkspace)) {
+                        this.attached = true;
+                        this.parentWorkspace = workspace;
+                    }
+
+                    this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
+                            new AllocationShape(length, elementSize, globalType), false);
+                    //allocationPoint.attachBuffer(this);
+                    this.trackingPoint = allocationPoint.getObjectId();
+
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length)
+                            .asDoublePointer();
+                    indexer = DoubleIndexer.create((DoublePointer) pointer);
+                }
 
                 double[] array = new double[(int) length];
 
@@ -827,12 +843,14 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
             } else if (globalType == Type.FLOAT) {
                 this.elementSize = 4;
-                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
-                                new AllocationShape(length, elementSize, dataType()), false);
-                this.trackingPoint = allocationPoint.getObjectId();
+                if (reallocate) {
+                    this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
+                            new AllocationShape(length, elementSize, dataType()), false);
+                    this.trackingPoint = allocationPoint.getObjectId();
 
-                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asFloatPointer();
-                indexer = FloatIndexer.create((FloatPointer) pointer);
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asFloatPointer();
+                    indexer = FloatIndexer.create((FloatPointer) pointer);
+                }
 
                 float[] array = new float[(int) length];
 
@@ -851,12 +869,15 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 setData(array);
             } else if (globalType == Type.HALF) {
                 this.elementSize = 2;
-                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
-                                new AllocationShape(length, elementSize, dataType()), false);
-                this.trackingPoint = allocationPoint.getObjectId();
+                if (reallocate) {
+                    this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
+                            new AllocationShape(length, elementSize, dataType()), false);
+                    this.trackingPoint = allocationPoint.getObjectId();
 
-                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asShortPointer();
-                indexer = HalfIndexer.create((ShortPointer) this.pointer);
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asShortPointer();
+                    indexer = HalfIndexer.create((ShortPointer) this.pointer);
+
+                }
 
                 for (int i = 0; i < length; i++) {
 

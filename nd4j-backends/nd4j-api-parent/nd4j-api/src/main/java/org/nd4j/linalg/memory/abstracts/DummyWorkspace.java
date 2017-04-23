@@ -149,6 +149,27 @@ public class DummyWorkspace implements MemoryWorkspace {
      * @return
      */
     @Override
+    public long getThisCycleAllocations() {
+        return 0;
+    }
+
+    /**
+     * This method enabled debugging mode for this workspace
+     *
+     * @param reallyEnable
+     */
+    @Override
+    public void enableDebug(boolean reallyEnable) {
+
+    }
+
+
+    /**
+     * This method returns amount of memory consumed in last successful cycle, in bytes
+     *
+     * @return
+     */
+    @Override
     public long getLastCycleAllocations() {
         return 0;
     }
@@ -160,6 +181,16 @@ public class DummyWorkspace implements MemoryWorkspace {
      */
     @Override
     public long getMaxCycleAllocations() {
+        return 0;
+    }
+
+    /**
+     * This methos returns current allocated size of this workspace
+     *
+     * @return
+     */
+    @Override
+    public long getCurrentSize() {
         return 0;
     }
 

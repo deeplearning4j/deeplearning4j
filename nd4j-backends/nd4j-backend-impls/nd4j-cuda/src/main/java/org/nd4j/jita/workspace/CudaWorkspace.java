@@ -47,7 +47,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
             //log.info("Allocating {} bytes at DEVICE & HOST space...", currentSize.get());
             isInit.set(true);
 
-            log.info("Allocating [{}] workspace of {} bytes...", id, currentSize.get());
+            log.info("Allocating [{}] workspace on device_{}, {} bytes...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), currentSize.get());
+            Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
+
             Pointer ptr = memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, false);
             if (ptr == null)
                 throw new ND4JIllegalStateException("Can't allocate memory for workspace");
@@ -56,6 +58,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
 
             workspace.setDevicePointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.DEVICE, false)));
+
+            log.info("Workspace [{}] initialized successfully", id);
         }
     }
 
@@ -64,9 +68,28 @@ public class CudaWorkspace extends Nd4jWorkspace {
         return this.alloc(requiredMemory, MemoryKind.DEVICE, type, initialize);
     }
 
+
+    @Override
+    public void destroyWorkspace() {
+        currentSize.set(0);
+        hostOffset.set(0);
+        deviceOffset.set(0);
+
+        clearExternalAllocations();
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(workspace.getDevicePointer(), null);
+
+        workspace.setDevicePointer(null);
+        workspace.setHostPointer(null);
+    }
+
+
     @Override
     public PagedPointer alloc(long requiredMemory, MemoryKind kind, DataBuffer.Type type, boolean initialize) {
         long numElements = requiredMemory / Nd4j.sizeOfDataType(type);
+
 
         if (!isUsed.get()) {
             if (disabledCounter.incrementAndGet() % 10 == 0)
@@ -90,12 +113,14 @@ public class CudaWorkspace extends Nd4jWorkspace {
         if (div!= 0)
             requiredMemory += div;
 
-//        log.info("Allocating {} memory from Workspace... reqMem: {} bytes; Type: {}", kind, requiredMemory, type);
 
         if (kind == MemoryKind.DEVICE) {
             if (deviceOffset.get() + requiredMemory <= currentSize.get()) {
-
+                cycleAllocations.addAndGet(requiredMemory);
                 long prevOffset = deviceOffset.getAndAdd(requiredMemory);
+
+                if (isDebug.get())
+                    log.info("Workspace [{}] device_{}: alloc array of {} bytes, capacity of {} elements; offset: {}; size: {};", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory, numElements, deviceOffset.get(), currentSize.get());
 
                 PagedPointer ptr = workspace.getDevicePointer().withOffset(prevOffset, numElements);
 
@@ -114,33 +139,35 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 return ptr;
             } else {
                 // spill
-                spilledAllocations.addAndGet(requiredMemory);
-
                 if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0) {
                     hostOffset.set(0);
                     deviceOffset.set(0);
                     return alloc(requiredMemory, kind, type, initialize);
                 }
 
-                //log.info("Workspace [{}]: spilled DEVICE array of {} bytes, capacity of {} elements", id, requiredMemory, numElements);
+                spilledAllocations.addAndGet(requiredMemory);
+
+                if (isDebug.get()) {
+                    log.info("Workspace [{}] device_{}: spilled DEVICE array of {} bytes, capacity of {} elements", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory, numElements);
+                }
+                //Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
+
 
                 AllocationShape shape = new AllocationShape(requiredMemory / Nd4j.sizeOfDataType(type), Nd4j.sizeOfDataType(type), type);
 
                 switch (workspaceConfiguration.getPolicySpill()) {
+                    case REALLOCATE:
                     case EXTERNAL:
                         cycleAllocations.addAndGet(requiredMemory);
                         //
                         //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
                         PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, initialize), numElements);
                         //pointer.setLeaked(true);
+                        pointer.isLeaked();
 
                         externalAllocations.add(new PointersPair(null, pointer));
 
                         return pointer;
-                    case REALLOCATE: {
-                        // TODO: basically reallocate (if possible), and call for alloc once again
-                        throw new UnsupportedOperationException("Not implemented yet");
-                    }
                     case FAIL:
                     default: {
                         throw new ND4JIllegalStateException("Can't allocate memory: Workspace is full");
@@ -164,6 +191,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 AllocationShape shape = new AllocationShape(requiredMemory / Nd4j.sizeOfDataType(type), Nd4j.sizeOfDataType(type), type);
 
                 switch (workspaceConfiguration.getPolicySpill()) {
+                    case REALLOCATE:
                     case EXTERNAL:
 
                         //memoryManager.allocate(requiredMemory, MemoryKind.HOST, true)
@@ -174,10 +202,6 @@ public class CudaWorkspace extends Nd4jWorkspace {
                         externalAllocations.add(new PointersPair(pointer, null));
 
                         return pointer;
-                    case REALLOCATE: {
-                        // TODO: basically reallocate (if possible), and call for alloc once again
-                        throw new UnsupportedOperationException("Not implemented yet");
-                    }
                     case FAIL:
                     default: {
                         throw new ND4JIllegalStateException("Can't allocate memory: Workspace is full");
@@ -191,6 +215,11 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
     @Override
     protected void clearExternalAllocations() {
+        //log.info("Workspace [{}] device_{}: clearing external allocations...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
         for (PointersPair pair : externalAllocations) {
             if (pair.getHostPointer() != null)
                 NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pair.getHostPointer());
@@ -198,6 +227,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
             if (pair.getDevicePointer() != null)
                 NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getDevicePointer(), null);
         }
+
+        spilledAllocations.set(0);
     }
 
     @Override

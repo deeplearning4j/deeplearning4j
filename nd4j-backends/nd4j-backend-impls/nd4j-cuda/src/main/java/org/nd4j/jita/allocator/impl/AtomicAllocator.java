@@ -438,8 +438,8 @@ public class AtomicAllocator implements Allocator {
             point.setAllocationStatus(AllocationStatus.DEVICE);
 
 
-            if (!ptrDev.isLeaked())
-                point.setAttached(true);
+            //if (!ptrDev.isLeaked())
+            point.setAttached(true);
 
             point.setPointers(pair);
         } else {
@@ -682,6 +682,8 @@ public class AtomicAllocator implements Allocator {
 
                         if (threadId == 0)
                             stopper.set(System.currentTimeMillis());
+
+                        //log.info("Purging {} bytes...", AllocationUtils.getRequiredMemory(point.getShape()));
 
                         if (point.getAllocationStatus() == AllocationStatus.HOST) {
                             purgeZeroObject(point.getBucketId(), point.getObjectId(), point, false);
