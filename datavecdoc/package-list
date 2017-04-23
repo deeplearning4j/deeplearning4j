@@ -20,11 +20,9 @@ org.datavec.api.records.reader.factory
 org.datavec.api.records.reader.impl
 org.datavec.api.records.reader.impl.collection
 org.datavec.api.records.reader.impl.csv
-org.datavec.api.records.reader.impl.inmemory
 org.datavec.api.records.reader.impl.jackson
 org.datavec.api.records.reader.impl.misc
 org.datavec.api.records.reader.impl.regex
-org.datavec.api.records.reader.impl.transform
 org.datavec.api.records.writer
 org.datavec.api.records.writer.impl
 org.datavec.api.records.writer.impl.csv
@@ -163,7 +161,6 @@ org.datavec.spark.transform.misc
 org.datavec.spark.transform.misc.comparator
 org.datavec.spark.transform.model
 org.datavec.spark.transform.quality
-org.datavec.spark.transform.quality.bytes
 org.datavec.spark.transform.quality.categorical
 org.datavec.spark.transform.quality.integer
 org.datavec.spark.transform.quality.longq
