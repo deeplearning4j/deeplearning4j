@@ -159,6 +159,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                     case REALLOCATE:
                     case EXTERNAL:
                         cycleAllocations.addAndGet(requiredMemory);
+                        externalCount.set(0);
                         //
                         //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
                         PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, initialize), numElements);

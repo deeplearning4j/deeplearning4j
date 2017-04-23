@@ -238,8 +238,8 @@ public class JcublasLevel1 extends BaseLevel1 {
         float ret = asum.getFinalResult().floatValue();
 
         return ret;
-
-        /*      if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+/*
+        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT asum called");
         
         
@@ -254,7 +254,8 @@ public class JcublasLevel1 extends BaseLevel1 {
         
             FloatPointer resultPointer = new FloatPointer(0.0f);
             cublasSasum_v2(new cublasContext(handle),
-                    N, xCPointer.getDevicePointer(),
+                    N,
+                    (FloatPointer) xCPointer.getDevicePointer(),
                     incX, resultPointer);
             ret = resultPointer.get();
         }
@@ -262,7 +263,7 @@ public class JcublasLevel1 extends BaseLevel1 {
         allocator.registerAction(ctx, null, X);
         
         return ret;
-        */
+*/
     }
 
     @Override
