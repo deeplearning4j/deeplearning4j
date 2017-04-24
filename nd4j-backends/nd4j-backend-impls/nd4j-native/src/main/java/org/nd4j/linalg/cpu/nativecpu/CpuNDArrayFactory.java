@@ -676,6 +676,18 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     }
 
     /**
+     * For CPU backend this method is equal to concat()
+     *
+     * @param dimension the dimension to concatneate along
+     * @param toConcat  the ndarrays to concateneate
+     * @return
+     */
+    @Override
+    public INDArray specialConcat(int dimension, INDArray... toConcat) {
+        return concat(dimension, toConcat);
+    }
+
+    /**
      * This method produces concatenated array, that consist from tensors, fetched from source array, against some dimension and specified indexes
      *
      * @param source          source tensor

@@ -5514,6 +5514,21 @@ public class Nd4j {
     /**
      * Concatneate ndarrays along a dimension
      *
+     * PLEASE NOTE: This method is special for GPU backend, it works on HOST side only.
+     *
+     * @param dimension
+     * @param toConcat
+     * @return
+     */
+    public static INDArray specialConcat(int dimension, INDArray... toConcat) {
+        INDArray ret = INSTANCE.specialConcat(dimension, toConcat);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Concatneate ndarrays along a dimension
+     *
      * @param dimension the dimension to concatneate along
      * @param toConcat  the ndarrays to concat
      * @return the concatted ndarrays with an output shape of

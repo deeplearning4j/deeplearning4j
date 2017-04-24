@@ -678,6 +678,14 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         //return super.concat(dimension, toConcat);
     }
 
+
+    @Override
+    public INDArray specialConcat(int dimension, INDArray... toConcat) {
+        return null;
+    }
+
+
+
     /**
      * This method produces concatenated array, that consist from tensors, fetched from source array, against some dimension and specified indexes
      *

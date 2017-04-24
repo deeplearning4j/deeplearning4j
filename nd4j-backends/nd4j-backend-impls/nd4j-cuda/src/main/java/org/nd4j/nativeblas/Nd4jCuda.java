@@ -2692,6 +2692,109 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                 @Cast("Nd4jPointer*") PointerPointer tadPointers,
                 @Cast("Nd4jPointer*") PointerPointer offsetPointers);
 
+
+    public native void specialConcatFloat(
+                @Cast("Nd4jPointer*") PointerPointer extraPointers,
+                int dimension,
+                int numArrays,
+                @Cast("Nd4jPointer*") PointerPointer data,
+                @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
+                FloatPointer result,
+                IntPointer resultShapeInfo, @Cast("Nd4jPointer*") PointerPointer tadPointers, @Cast("Nd4jPointer*") PointerPointer offsetPointers);
+    public native void specialConcatFloat(
+                @Cast("Nd4jPointer*") PointerPointer extraPointers,
+                int dimension,
+                int numArrays,
+                @Cast("Nd4jPointer*") PointerPointer data,
+                @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
+                FloatBuffer result,
+                IntBuffer resultShapeInfo, @Cast("Nd4jPointer*") PointerPointer tadPointers, @Cast("Nd4jPointer*") PointerPointer offsetPointers);
+    public native void specialConcatFloat(
+                @Cast("Nd4jPointer*") PointerPointer extraPointers,
+                int dimension,
+                int numArrays,
+                @Cast("Nd4jPointer*") PointerPointer data,
+                @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
+                float[] result,
+                int[] resultShapeInfo, @Cast("Nd4jPointer*") PointerPointer tadPointers, @Cast("Nd4jPointer*") PointerPointer offsetPointers);
+/**
+    * Concatneate multi array of the same shape together
+    * along a particular dimension
+    */
+    public native void specialConcatDouble(
+                @Cast("Nd4jPointer*") PointerPointer extraPointers,
+                int dimension,
+                int numArrays,
+                @Cast("Nd4jPointer*") PointerPointer data,
+                @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
+                DoublePointer result,
+                IntPointer resultShapeInfo,
+                @Cast("Nd4jPointer*") PointerPointer tadPointers,
+                @Cast("Nd4jPointer*") PointerPointer offsetPointers);
+    public native void specialConcatDouble(
+                @Cast("Nd4jPointer*") PointerPointer extraPointers,
+                int dimension,
+                int numArrays,
+                @Cast("Nd4jPointer*") PointerPointer data,
+                @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
+                DoubleBuffer result,
+                IntBuffer resultShapeInfo,
+                @Cast("Nd4jPointer*") PointerPointer tadPointers,
+                @Cast("Nd4jPointer*") PointerPointer offsetPointers);
+    public native void specialConcatDouble(
+                @Cast("Nd4jPointer*") PointerPointer extraPointers,
+                int dimension,
+                int numArrays,
+                @Cast("Nd4jPointer*") PointerPointer data,
+                @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
+                double[] result,
+                int[] resultShapeInfo,
+                @Cast("Nd4jPointer*") PointerPointer tadPointers,
+                @Cast("Nd4jPointer*") PointerPointer offsetPointers);
+
+    /**
+     *
+     * @param extraPointers
+     * @param dimension
+     * @param numArrays
+     * @param data
+     * @param inputShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param tadPointers
+     * @param offsetPointers
+     */
+    public native void specialConcatHalf(
+                @Cast("Nd4jPointer*") PointerPointer extraPointers,
+                int dimension,
+                int numArrays,
+                @Cast("Nd4jPointer*") PointerPointer data,
+                @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
+                @Cast("float16*") ShortPointer result,
+                IntPointer resultShapeInfo,
+                @Cast("Nd4jPointer*") PointerPointer tadPointers,
+                @Cast("Nd4jPointer*") PointerPointer offsetPointers);
+    public native void specialConcatHalf(
+                @Cast("Nd4jPointer*") PointerPointer extraPointers,
+                int dimension,
+                int numArrays,
+                @Cast("Nd4jPointer*") PointerPointer data,
+                @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
+                @Cast("float16*") ShortBuffer result,
+                IntBuffer resultShapeInfo,
+                @Cast("Nd4jPointer*") PointerPointer tadPointers,
+                @Cast("Nd4jPointer*") PointerPointer offsetPointers);
+    public native void specialConcatHalf(
+                @Cast("Nd4jPointer*") PointerPointer extraPointers,
+                int dimension,
+                int numArrays,
+                @Cast("Nd4jPointer*") PointerPointer data,
+                @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
+                @Cast("float16*") short[] result,
+                int[] resultShapeInfo,
+                @Cast("Nd4jPointer*") PointerPointer tadPointers,
+                @Cast("Nd4jPointer*") PointerPointer offsetPointers);
+
     /**
      * This method implementation exists only for cuda.
      * The other backends should have dummy method for JNI compatibility reasons.
