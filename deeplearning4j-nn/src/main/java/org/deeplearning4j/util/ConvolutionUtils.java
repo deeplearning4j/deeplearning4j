@@ -156,6 +156,22 @@ public class ConvolutionUtils {
     }
 
     /**
+     * Get bottom and right padding for same mode only.
+     *
+     * @param outSize
+     * @param inSize
+     * @param kernel
+     * @param strides
+     * @return
+     */
+    public static int[] getSameModeBottomRightPadding(int[] outSize, int[] inSize, int[] kernel, int[] strides) {
+        int[] outPad = new int[2];
+        outPad[0] = ((outSize[0] - 1) * strides[0] + kernel[0] - inSize[0] + 1) / 2; //Note that padTop is 1 smaller than this if bracketed term is not divisible by 2
+        outPad[1] = ((outSize[1] - 1) * strides[1] + kernel[1] - inSize[1] + 1) / 2; //As above
+        return outPad;
+    }
+
+    /**
      * Get the height and width
      * from the configuration
      * @param conf the configuration to get height and width from
