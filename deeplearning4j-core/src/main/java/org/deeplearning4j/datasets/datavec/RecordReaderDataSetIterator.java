@@ -453,6 +453,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             // yes, we're blocking here, but there are chances Future is complete at this moment after first call
             DataSet ds = tmp.get();
 
+            /*
             if (ds.getFeatures().isAttached()) {
                 if (Nd4j.getMemoryManager().getCurrentWorkspace() == null) {
                     ds.detach();
@@ -460,6 +461,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                     ds.migrate();
                 }
             }
+            */
 
             return ds;
         } catch (Exception e) {
