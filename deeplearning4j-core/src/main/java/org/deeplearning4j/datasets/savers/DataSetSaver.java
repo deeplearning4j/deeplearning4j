@@ -5,12 +5,11 @@ import org.apache.commons.io.FilenameUtils;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.io.File;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import java.io.File;
 
 /**
  * This class can be helpful when users try to save datasets in parallel manner
@@ -24,16 +23,28 @@ import java.io.File;
 public class DataSetSaver {
     private static int NUM_CORES = Runtime.getRuntime().availableProcessors();
     private static int numThreads = NUM_CORES * 2;
-    private static ExecutorService taskExecutor = Executors.newFixedThreadPool(numThreads);
+    private static int QUEUE_CAPACITY = 50;
+    private static ThreadPoolExecutor taskExecutor = null;
 
     public static void setNumThreads(int numThreads) {
-        if (DataSetSaver.numThreads != numThreads) {
-            DataSetSaver.numThreads = numThreads;
-            taskExecutor = Executors.newFixedThreadPool(numThreads);
-        }
+        DataSetSaver.numThreads = numThreads;
     }
 
-    public static void saveDataSets(DataSetIterator iter, String savePath) {
+    public static void setQueueCapacity(int qCapacity) {
+        DataSetSaver.QUEUE_CAPACITY = qCapacity;
+    }
+
+    private static void initExecutors() {
+        taskExecutor = new ThreadPoolExecutor(numThreads, numThreads,
+                0L, TimeUnit.MILLISECONDS,
+                new LinkedBlockingQueue<Runnable>(QUEUE_CAPACITY));
+
+        taskExecutor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+    }
+
+    public static void saveDataSets(DataSetIterator iter, String savePath, String compressionAlgorithm) {
+
+        initExecutors();
 
         File dest = new File(savePath);
         if (dest.exists()) {
@@ -48,7 +59,7 @@ public class DataSetSaver {
 
             while (iter.hasNext()) {
                 String filePath = FilenameUtils.concat(savePath, "dataset-" + (counter.getAndIncrement()) + ".bin");
-                taskExecutor.execute(new Worker(counter.get() % numThreads, iter.next(), new File(filePath)));
+                taskExecutor.execute(new Worker(counter.get() % numThreads, iter.next(), new File(filePath), compressionAlgorithm));
 
                 if (counter.get() % 100 == 0) {
                     log.info("{} datasets queued so far...", counter.get());
@@ -58,26 +69,42 @@ public class DataSetSaver {
             taskExecutor.shutdown();
 
             try {
-                taskExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+                taskExecutor.awaitTermination(10, TimeUnit.MINUTES);
             } catch (InterruptedException e) {
                 log.warn("Unable to terminate executors", e);
             }
         }
     }
 
+    public static void saveDataSets(DataSetIterator iter, String savePath) {
+        saveDataSets(iter, savePath, Worker.DEFAULT_COMPRESSION);
+    }
+
     private static class Worker extends Thread {
+        static final String DEFAULT_COMPRESSION = "NOCOMPRESSION";
         int id;
         DataSet ds;
         File path;
+        String compressionAlgorithm = DEFAULT_COMPRESSION;
 
         public Worker(int id, DataSet ds, File path) {
+            this(id, ds, path, DEFAULT_COMPRESSION);
+        }
+
+        public Worker(int id, DataSet ds, File path, String compressionAlgorithm) {
             this.id = id;
             this.ds = ds;
             this.path = path;
+            this.compressionAlgorithm = compressionAlgorithm;
         }
 
         public void run() {
-            ds.save(path);
+            if (compressionAlgorithm.equals(DEFAULT_COMPRESSION) == false) {
+                ds.save(path, compressionAlgorithm);
+            }else {
+                ds.save(path);
+            }
+
             log.debug("[" + id + "] thread saved : " + path.getAbsolutePath());
         }
     }

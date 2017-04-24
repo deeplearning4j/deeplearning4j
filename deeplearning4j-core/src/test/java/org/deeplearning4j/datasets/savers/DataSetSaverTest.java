@@ -24,12 +24,39 @@ public class DataSetSaverTest {
         DataSetIterator iter = new CifarDataSetIterator(batchSize, totalExamples, new int[] {height, width, channels});
         iter = new MultipleEpochsIterator(iter, 500);
 
-        // if you want to set manually the number of threads
-        // call .setNumThreads like below
-        // unless it DataSetSaver uses default number of thread pool(cores *2)
-        // DataSetSaver.setNumThreads(20);
+        String savePath = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),  "dl4j-cifar10");
+        DataSetSaver.saveDataSets(iter, savePath);
+    }
+
+    @Ignore
+    @Test
+    public void testDataSetSaverCompression() {
+        int height = 250;
+        int width = 250;
+        int channels = 3;
+        int batchSize = 32;
+        int totalExamples = CifarLoader.NUM_TRAIN_IMAGES;
+        DataSetIterator iter = new CifarDataSetIterator(batchSize, totalExamples, new int[] {height, width, channels});
+        iter = new MultipleEpochsIterator(iter, 500);
 
         String savePath = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),  "dl4j-cifar10");
+        DataSetSaver.saveDataSets(iter, savePath, "FLOAT16");
+    }
+
+    @Ignore
+    @Test
+    public void testDataSetSaverCustomThreadPool() {
+        int height = 250;
+        int width = 250;
+        int channels = 3;
+        int batchSize = 32;
+        int totalExamples = CifarLoader.NUM_TRAIN_IMAGES;
+        DataSetIterator iter = new CifarDataSetIterator(batchSize, totalExamples, new int[] {height, width, channels});
+        iter = new MultipleEpochsIterator(iter, 500);
+
+        String savePath = FilenameUtils.concat(System.getProperty("java.io.tmpdir"),  "dl4j-cifar10");
+        DataSetSaver.setNumThreads(30);
+        DataSetSaver.setQueueCapacity(100);
         DataSetSaver.saveDataSets(iter, savePath);
     }
 }
