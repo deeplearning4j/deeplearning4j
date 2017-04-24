@@ -83,6 +83,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     private final String guid = java.util.UUID.randomUUID().toString();
     private AtomicBoolean wasTriggered = new AtomicBoolean(false);
 
+    // RecordReaderDataSetIterator(recordReader, AppConfig.batchSize, 1, AppConfig.numLabels);
+
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize) {
         this(recordReader, converter, batchSize, -1,
                 recordReader.getLabels() == null ? -1 : recordReader.getLabels().size());

@@ -118,6 +118,24 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected final static String workspaceBackProp = "LOOP_BP";
     protected final static MemoryWorkspace dummy = new DummyWorkspace();
 
+    protected final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.3)
+            .policyLearning(LearningPolicy.FIRST_LOOP)
+            .policyReset(ResetPolicy.BLOCK_LEFT)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .build();
+
+    protected WorkspaceConfiguration workspaceConfigurationFeedForward = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.2)
+            .policyReset(ResetPolicy.BLOCK_LEFT)
+            .policyLearning(LearningPolicy.OVER_TIME)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .build();
+
     public MultiLayerNetwork(MultiLayerConfiguration conf) {
         this.layerWiseConfigurations = conf;
         this.defaultConfiguration = conf.getConf(0).clone();
@@ -663,18 +681,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
 
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .initialSize(0)
-                .cyclesBeforeInitialization(layers.length)
-                .policyLearning(LearningPolicy.OVER_TIME)
-                .build();
-
         for (int i = 0; i < layers.length; i++) {
-            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "1")){
-                currInput = zFromPrevLayer(i, currInput, training).leverageTo(workspaceExternal);
+                currInput = zFromPrevLayer(i, currInput, training);
                 //applies drop connect to the activation
                 activations.add(currInput);
-            }
         }
         return activations;
     }
@@ -755,20 +765,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
 
-        //WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).cyclesBeforeInitialization(100).policyLearning(LearningPolicy.OVER_TIME).build();
-        WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
-                .initialSize(0)
-                .overallocationLimit(0.2)
-                .policyReset(ResetPolicy.BLOCK_LEFT)
-                //.cyclesBeforeInitialization(layerNum)
-                .policyLearning(LearningPolicy.OVER_TIME)
-                .policySpill(SpillPolicy.REALLOCATE)
-                //.policyAllocation(AllocationPolicy.STRICT)
-                .build();
 
         MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy :
                 layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.SINGLE ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceFeedForward);
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
 
         for (int i = 0; i <= layerNum; i++) {
            // log.info("Activating layer: {}", i);
@@ -1026,16 +1026,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             //            }
         }
 
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .initialSize(0)
-                .overallocationLimit(0.3)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .policyReset(ResetPolicy.BLOCK_LEFT)
-                .policySpill(SpillPolicy.REALLOCATE)
-                //.policyAllocation(AllocationPolicy.STRICT)
-                .build();
 
-        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration,workspaceExternal);
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
         if (layerWiseConfigurations.isBackprop()) {
             update(TaskUtils.buildTask(iter));
@@ -1171,18 +1163,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             layerFrom = numLayers - 1;
         }
 
-        WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
-                .initialSize(0)
-                .overallocationLimit(0.2)
-                .policyReset(ResetPolicy.BLOCK_LEFT)
-                //.cyclesBeforeInitialization(layerFrom)
-                .policyLearning(LearningPolicy.OVER_TIME)
-                .build();
-
         MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy :
                 layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.SINGLE ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
                         //: Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceBackProp);
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceFeedForward);
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
 
         // Calculate gradients for previous layers & drops output layer in count
         for (int j = layerFrom; j >= 0; j--) {
@@ -1883,26 +1867,33 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         boolean hasMaskArray = data.hasMaskArrays();
         if (hasMaskArray)
             setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
-        // activation for output layer is calculated in computeScore
-        List<INDArray> activations = feedForwardToLayer(layers.length - 2, data.getFeatureMatrix(), training);
-        int n = activations.size();
-        setLabels(data.getLabels());
-        if (getOutputLayer() instanceof IOutputLayer) {
-            IOutputLayer ol = (IOutputLayer) getOutputLayer();
-            INDArray olInput = activations.get(n - 1);
-            if (getLayerWiseConfigurations().getInputPreProcess(n - 1) != null) {
-                olInput = getLayerWiseConfigurations().getInputPreProcess(n - 1).preProcess(olInput, input.size(0));
+
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+            // activation for output layer is calculated in computeScore
+            List<INDArray> activations = feedForwardToLayer(layers.length - 2, data.getFeatureMatrix(), training);
+            int n = activations.size();
+            setLabels(data.getLabels());
+            if (getOutputLayer() instanceof IOutputLayer) {
+                IOutputLayer ol = (IOutputLayer) getOutputLayer();
+                INDArray olInput = activations.get(n - 1);
+                if (getLayerWiseConfigurations().getInputPreProcess(n - 1) != null) {
+                    olInput = getLayerWiseConfigurations().getInputPreProcess(n - 1).preProcess(olInput, input.size(0));
+                }
+                ol.setInput(olInput); //Feedforward doesn't include output layer for efficiency
+                ol.setLabels(data.getLabels());
+                ol.computeScore(calcL1(true), calcL2(true), training);
+                this.score = ol.score();
+            } else {
+                log.warn("Cannot calculate score wrt labels without an OutputLayer");
+                return 0.0;
             }
-            ol.setInput(olInput); //Feedforward doesn't include output layer for efficiency
-            ol.setLabels(data.getLabels());
-            ol.computeScore(calcL1(true), calcL2(true), training);
-            this.score = ol.score();
-        } else {
-            log.warn("Cannot calculate score wrt labels without an OutputLayer");
-            return 0.0;
         }
+
         if (hasMaskArray)
             clearLayerMaskArrays();
+
         return score();
     }
 
