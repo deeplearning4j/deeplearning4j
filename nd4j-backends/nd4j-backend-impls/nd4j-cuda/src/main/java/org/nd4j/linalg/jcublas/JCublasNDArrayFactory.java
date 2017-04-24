@@ -24,6 +24,7 @@ import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.DoubleRawIndexer;
 import org.bytedeco.javacpp.indexer.FloatRawIndexer;
 import org.bytedeco.javacpp.indexer.IntRawIndexer;
+import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
@@ -692,6 +693,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         PointerPointer dataPointers = new PointerPointer(toConcat.length);
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
+        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
 
         int sumAlongDim = 0;
@@ -741,7 +743,14 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             throw new ND4JIllegalStateException("Unknown dataType: " + ret.data().dataType());
         }
 
-        allocator.getAllocationPoint(ret).tickHostWrite();
+        AllocationPoint point = allocator.getAllocationPoint(ret);
+
+
+        nativeOps.memcpyAsync(point.getDevicePointer(), point.getHostPointer(), ret.lengthLong() * Nd4j.sizeOfDataType(ret.data().dataType()), CudaConstants.cudaMemcpyHostToDevice, context.getSpecialStream());
+        context.getSpecialStream().synchronize();
+
+        point.tickHostRead();
+        point.tickDeviceWrite();
 
         return ret;
     }

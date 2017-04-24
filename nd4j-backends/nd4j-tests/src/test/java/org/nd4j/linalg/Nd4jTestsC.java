@@ -4052,6 +4052,24 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+
+    @Test
+    public void testSpecialConcat2() throws Exception {
+        List<INDArray> arrays = new ArrayList<>();
+        for (int x = 0; x < 10; x++) {
+            arrays.add(Nd4j.create(new double[]{x, x, x, x, x, x}));
+        }
+
+        INDArray matrix = Nd4j.specialConcat(0, arrays.toArray(new INDArray[0]));
+        assertEquals(10, matrix.rows());
+        assertEquals(6, matrix.columns());
+
+        for (int x = 0; x < 10; x++) {
+            assertEquals((double)x, matrix.getRow(x).meanNumber().doubleValue(), 0.1);
+            assertEquals(arrays.get(x), matrix.getRow(x));
+        }
+    }
+
     @Override
     public char ordering() {
         return 'c';
