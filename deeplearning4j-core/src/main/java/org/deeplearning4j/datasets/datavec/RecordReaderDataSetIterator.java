@@ -199,7 +199,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         this.numPossibleLabels = numPossibleLabels;
         this.regression = regression;
 
-        log.info("Starting num threads: {}", numThreads);
+        log.info("Starting num threads: {}; prefetchBuffer: {}", numThreads, prefetchSize);
 
         this.executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(numThreads, new ThreadFactory() {
             @Override
@@ -702,7 +702,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
             configuration = WorkspaceConfiguration.builder()
                     // FIXME: overalloc limit is wrong here obviously. We should do (divide prefetch size by number of threads) + 1 probably
-                    .overallocationLimit(prefetchSize + 5)
+                    .overallocationLimit(prefetchSize * 2)
                     .minSize(10 * 1024L * 1024L)
                     .policyMirroring(MirroringPolicy.FULL)
                     .policySpill(SpillPolicy.EXTERNAL)
@@ -770,6 +770,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
                 if (firstLoop.get()) {
                     Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).initializeWorkspace();
+                    log.info("Workspace size on initialization: {}", Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).getCurrentSize());
                     firstLoop.set(false);
                 }
             }
@@ -893,7 +894,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
         public RecordReaderDataSetIterator build() {
             RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(recordReader, converter, batchSize, labelIndex, labelIndexTo, numPossibleLabels, maxNumBatches, regression, workers, prefetchSize, collectMetaData);
-            return null;
+            return rrdsi;
         }
     }
 }
