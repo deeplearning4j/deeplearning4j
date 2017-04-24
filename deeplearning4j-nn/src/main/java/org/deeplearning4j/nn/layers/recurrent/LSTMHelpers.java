@@ -12,6 +12,7 @@ import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.blas.Level1;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.TimesOneMinus;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
@@ -66,7 +67,8 @@ public class LSTMHelpers {
                     final boolean training, final INDArray originalPrevOutputActivations,
                     final INDArray originalPrevMemCellState, boolean forBackprop, boolean forwards,
                     final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                    final boolean hasPeepholeConnections            //True for GravesLSTM, false for LSTM
+                    final boolean hasPeepholeConnections,            //True for GravesLSTM, false for LSTM
+                    final LSTMHelper helper
     ) {
 
         //Mini-batch data format: for mini-batch size m, nIn inputs, and T time series length
@@ -166,6 +168,15 @@ public class LSTMHelpers {
         //initialize prevOutputActivations to zeroes
         if (prevOutputActivations == null) {
             prevOutputActivations = Nd4j.zeros(new int[] {miniBatchSize, hiddenLayerSize});
+        }
+
+        if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
+            FwdPassReturn ret = helper.activate(layer, conf, gateActivationFn, input, recurrentWeights, inputWeights,
+                    biases, training, prevOutputActivations, prevMemCellState, forBackprop, forwards, inputWeightKey,
+                    maskArray, hasPeepholeConnections);
+            if (ret != null) {
+                return ret;
+            }
         }
 
         for (int iTimeIndex = 0; iTimeIndex < timeSeriesLength; iTimeIndex++) {
@@ -294,7 +305,8 @@ public class LSTMHelpers {
                     final FwdPassReturn fwdPass, final boolean forwards, final String inputWeightKey,
                     final String recurrentWeightKey, final String biasWeightKey,
                     final Map<String, INDArray> gradientViews, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                    final boolean hasPeepholeConnections            //True for GravesLSTM, false for LSTM
+                    final boolean hasPeepholeConnections,            //True for GravesLSTM, false for LSTM
+                    final LSTMHelper helper
     ) {
 
 
@@ -355,6 +367,16 @@ public class LSTMHelpers {
             rwGradientsFF = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize));
             rwGradientsOO = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize + 1));
             rwGradientsGG = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize + 2));
+        }
+
+        if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
+            Pair<Gradient, INDArray> ret = helper.backpropGradient(conf, gateActivationFn, input,
+                    recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength,
+                    fwdPass, forwards, inputWeightKey, recurrentWeightKey, biasWeightKey, gradientViews,
+                    maskArray, hasPeepholeConnections);
+            if (ret != null) {
+                return ret;
+            }
         }
 
         boolean sigmoidGates = gateActivationFn instanceof ActivationSigmoid;

@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.layers.recurrent;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
@@ -38,16 +39,33 @@ import java.util.Map;
  * @author Alex Black
  * @see GravesLSTM GravesLSTM class, for the version with peephole connections
  */
+@Slf4j
 public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
     public static final String STATE_KEY_PREV_ACTIVATION = "prevAct";
     public static final String STATE_KEY_PREV_MEMCELL = "prevMem";
 
+    protected LSTMHelper helper = null;
+
     public LSTM(NeuralNetConfiguration conf) {
         super(conf);
+        initializeHelper();
     }
 
     public LSTM(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
+        initializeHelper();
+    }
+
+    void initializeHelper() {
+        try {
+            helper = Class.forName("org.deeplearning4j.nn.layers.recurrent.CudnnLSTMHelper")
+                    .asSubclass(LSTMHelper.class).newInstance();
+            log.debug("CudnnLSTMHelper successfully initialized");
+        } catch (Throwable t) {
+            if (!(t instanceof ClassNotFoundException)) {
+                log.warn("Could not initialize CudnnLSTMHelper", t);
+            }
+        }
     }
 
     @Override
@@ -94,7 +112,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         return LSTMHelpers.backpropGradientHelper(this.conf, this.layerConf().getGateActivationFn(), this.input,
                         recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         LSTMParamInitializer.INPUT_WEIGHT_KEY, LSTMParamInitializer.RECURRENT_WEIGHT_KEY,
-                        LSTMParamInitializer.BIAS_KEY, gradientViews, null, false);
+                        LSTMParamInitializer.BIAS_KEY, gradientViews, null, false, helper);
     }
 
 
@@ -141,7 +159,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
 
         return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
                         recurrentWeights, inputWeights, biases, training, prevOutputActivations, prevMemCellState,
-                        forBackprop, true, LSTMParamInitializer.INPUT_WEIGHT_KEY, null, false);
+                        forBackprop, true, LSTMParamInitializer.INPUT_WEIGHT_KEY, null, false, helper);
     }
 
     @Override
