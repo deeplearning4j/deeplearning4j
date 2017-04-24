@@ -169,9 +169,13 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
                         inferenceVector);
         nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
-        if (!isInference)
+        if (!isInference) {
             batches.get().add(cbow);
-        else
+            if (batches.get().size() > 4096) {
+                Nd4j.getExecutioner().exec(batches.get());
+                batches.get().clear();
+            }
+        } else
             Nd4j.getExecutioner().exec(cbow);
 
     }

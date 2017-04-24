@@ -273,9 +273,13 @@ public class SkipGram<T extends SequenceElement> implements ElementsLearningAlgo
                         nextRandom.get(), vocabCache.numWords(), inferenceVector);
         nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
-        if (!isInference)
+        if (!isInference) {
             batches.get().add(sg);
-        else
+            if (batches.get().size() > 4096) {
+                Nd4j.getExecutioner().exec(batches.get());
+                batches.get().clear();
+            }
+        } else
             Nd4j.getExecutioner().exec(sg);
 
         return score;
