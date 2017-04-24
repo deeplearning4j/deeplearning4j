@@ -1493,6 +1493,53 @@ public:
             Nd4jPointer *tadPointers,
             Nd4jPointer *offsetPointers);
 
+
+    void specialConcatFloat(
+            Nd4jPointer *extraPointers,
+            int dimension,
+            int numArrays,
+            Nd4jPointer *data,
+            Nd4jPointer *inputShapeInfo,
+            float *result,
+            int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers);
+/**
+    * Concatneate multi array of the same shape together
+    * along a particular dimension
+    */
+    void specialConcatDouble(
+            Nd4jPointer *extraPointers,
+            int dimension,
+            int numArrays,
+            Nd4jPointer *data,
+            Nd4jPointer *inputShapeInfo,
+            double *result,
+            int *resultShapeInfo,
+            Nd4jPointer *tadPointers,
+            Nd4jPointer *offsetPointers);
+
+    /**
+     *
+     * @param extraPointers
+     * @param dimension
+     * @param numArrays
+     * @param data
+     * @param inputShapeInfo
+     * @param result
+     * @param resultShapeInfo
+     * @param tadPointers
+     * @param offsetPointers
+     */
+    void specialConcatHalf(
+            Nd4jPointer *extraPointers,
+            int dimension,
+            int numArrays,
+            Nd4jPointer *data,
+            Nd4jPointer *inputShapeInfo,
+            float16 *result,
+            int *resultShapeInfo,
+            Nd4jPointer *tadPointers,
+            Nd4jPointer *offsetPointers);
+
     /**
      * This method implementation exists only for cuda.
      * The other backends should have dummy method for JNI compatibility reasons.

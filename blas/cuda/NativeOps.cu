@@ -6,6 +6,7 @@
 #include <buffer.h>
 #include <helpers/shape.h>
 
+#include <ops/concat.h>
 #include <loops/reduce3.h>
 #include <loops/reduce.h>
 #include <loops/indexreduce.h>
@@ -5088,6 +5089,64 @@ void NativeOps::concatHalf(
 
 
 	checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+
+void NativeOps::specialConcatFloat(
+        Nd4jPointer *extraPointers,
+        int dimension,
+        int numArrays,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        float *result,
+        int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+    concatCpuGeneric<float>(
+            dimension,
+            numArrays,
+            data,
+            inputShapeInfo,
+            result,
+            resultShapeInfo);
+
+}
+
+
+void NativeOps::specialConcatHalf(
+        Nd4jPointer *extraPointers,
+        int dimension,
+        int numArrays,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        float16 *result,
+        int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+    concatCpuGeneric<float16>(
+            dimension,
+            numArrays,
+            data,
+            inputShapeInfo,
+            result,
+            resultShapeInfo);
+}
+/**
+    * Concatneate multi array of the same shape together
+    * along a particular dimension
+    */
+void NativeOps::specialConcatDouble(
+        Nd4jPointer *extraPointers,
+        int dimension,
+        int numArrays,
+        Nd4jPointer *data,
+        Nd4jPointer *inputShapeInfo,
+        double *result,
+        int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
+    concatCpuGeneric<double>(
+            dimension,
+            numArrays,
+            data,
+            inputShapeInfo,
+            result,
+            resultShapeInfo);
+
 }
 
 
