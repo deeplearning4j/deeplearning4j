@@ -73,10 +73,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         try {
             helper = Class.forName("org.deeplearning4j.nn.layers.convolution.CudnnConvolutionHelper")
                     .asSubclass(ConvolutionHelper.class).newInstance();
-            log.debug("CudnnConvolutionHelper successfully loaded");
+            log.debug("CudnnConvolutionHelper successfully initialized");
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
-                log.warn("Could not load CudnnConvolutionHelper", t);
+                log.warn("Could not initialize CudnnConvolutionHelper", t);
             }
         }
     }

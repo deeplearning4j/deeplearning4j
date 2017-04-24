@@ -84,6 +84,7 @@
         </dependency>
     </dependencies>
 
+<!-- Uncomment to run the full test suite using cuDNN.
     <build>
         <testSourceDirectory>../deeplearning4j-core/src/test/java</testSourceDirectory>
         <pluginManagement>
@@ -98,6 +99,7 @@
             </plugins>
         </pluginManagement>
     </build>
+-->
 
     <profiles>
         <profile>

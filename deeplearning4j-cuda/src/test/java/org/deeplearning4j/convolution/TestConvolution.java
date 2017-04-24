@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -75,7 +76,7 @@ public class TestConvolution {
     @Test
     public void testCompareCudnnStandardOutputsVsMode() throws Exception {
 
-        ConvolutionMode[] cm = new ConvolutionMode[]{ConvolutionMode.Strict, ConvolutionMode.Same};
+        ConvolutionMode[] cm = new ConvolutionMode[]{ConvolutionMode.Strict, ConvolutionMode.Truncate, ConvolutionMode.Same};
 
         for(ConvolutionMode c : cm ) {
             for( boolean conv : new boolean[]{true,false}) {
@@ -144,10 +145,12 @@ public class TestConvolution {
 
                 assertTrue(epsOutStd.equalsWithEps(epsOutCudnn, 1e-4));
 
-                INDArray gradStd = pStd.getFirst().gradient();
-                INDArray gradCudnn = pCudnn.getFirst().gradient();
+                if (conv) {
+                    INDArray gradStd = pStd.getFirst().gradient();
+                    INDArray gradCudnn = pCudnn.getFirst().gradient();
 
-                assertTrue(gradStd.equalsWithEps(gradCudnn, 1e-4));
+                    assertTrue(gradStd.equalsWithEps(gradCudnn, 1e-4));
+                }
             }
         }
     }
