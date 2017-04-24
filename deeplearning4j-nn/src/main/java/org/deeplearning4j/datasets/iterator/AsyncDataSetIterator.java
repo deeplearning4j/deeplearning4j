@@ -201,7 +201,11 @@ public class AsyncDataSetIterator implements DataSetIterator {
         nextElement = null;
     }
 
-
+    /**
+     * This method will terminate background thread AND will destroy attached workspace (if any)
+     *
+     * PLEASE NOTE: After shutdown() call, this instance can't be used anymore
+     */
     public void shutdown(){
         buffer.clear();
 
