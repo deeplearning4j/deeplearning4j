@@ -394,7 +394,35 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             // we want to ensure it's the same cached shapeInfo used here
             assertTrue(array.shapeInfoDataBuffer() == restored.shapeInfoDataBuffer());
         }
+    }
 
+
+    @Test
+    public void testCircularBufferReset1() throws Exception {
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(circularConfiguration, "WSR_1");
+
+        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WSR_1")) {
+            Nd4j.create(10000);
+            assertEquals(0, workspace.getCurrentSize());
+            assertEquals(1, workspace.getNumberOfExternalAllocations());
+        }
+
+        assertEquals(10 * 1024L * 1024L, workspace.getCurrentSize());
+        assertEquals(0, workspace.getHostOffset());
+        assertEquals(1, workspace.getNumberOfExternalAllocations());
+
+        for (int i = 0; i < 11 * 1024 * 1024; i+= 10000 * Nd4j.sizeOfDataType()) {
+            try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WSR_1")) {
+                Nd4j.create(10000);
+            }
+
+            if (i < 10480000)
+                assertEquals("I: " + i,1, workspace.getNumberOfExternalAllocations());
+            else
+                assertEquals(0, workspace.getNumberOfExternalAllocations());
+        }
+
+        assertEquals(0, workspace.getNumberOfExternalAllocations());
 
     }
 

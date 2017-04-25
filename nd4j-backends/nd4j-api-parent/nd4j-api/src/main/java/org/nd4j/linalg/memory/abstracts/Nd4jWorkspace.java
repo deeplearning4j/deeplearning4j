@@ -251,16 +251,21 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 if (workspaceConfiguration.getMinSize() > 0 && currentSize.get() < workspaceConfiguration.getMinSize())
                     currentSize.set(workspaceConfiguration.getMinSize());
 
-                if (externalCount.get() > 0) {
+                if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT || resetPlanned.get())) {
                     clearExternalAllocations();
                     externalAllocations.clear();
                     spilledAllocations.set(0);
                     externalCount.set(0);
+                    resetPlanned.set(false);
                 }
 
 
                 init();
             }
+    }
+
+    public int getNumberOfExternalAllocations() {
+        return externalCount.get();
     }
 
     @Override
@@ -349,9 +354,11 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         if (workspaceConfiguration.getPolicyLearning() != LearningPolicy.NONE && maxCycle.get() > 0) {
             //log.info("Delayed workspace {}, device_{} initialization starts...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
-            if (externalCount.get() > 0) {
+            if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT || resetPlanned.get())) {
                 clearExternalAllocations();
                 externalAllocations.clear();
+                externalCount.set(0);
+                resetPlanned.set(false);
             }
 
             if ((workspaceConfiguration.getPolicyLearning() == LearningPolicy.OVER_TIME && workspaceConfiguration.getCyclesBeforeInitialization() == cyclesCount.intValue()) || (workspaceConfiguration.getPolicyLearning() == LearningPolicy.FIRST_LOOP && currentSize.get() == 0)) {
@@ -366,7 +373,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         lastCycleAllocations.set(cycleAllocations.get());
 
         disabledCounter.set(0);
-        externalCount.set(0);
 
         if (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT) {
             hostOffset.set(0);
@@ -396,19 +402,17 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         if (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT) {
             hostOffset.set(0);
             deviceOffset.set(0);
-
-
         }
 
-        if (externalCount.get() > 0) {
+        if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT || resetPlanned.get())) {
             clearExternalAllocations();
             externalAllocations.clear();
+            externalCount.set(0);
+            resetPlanned.set(false);
         }
 
         cycleAllocations.set(0);
         disabledCounter.set(0);
-
-        externalCount.set(0);
 
         return this;
     }

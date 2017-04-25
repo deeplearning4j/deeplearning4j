@@ -142,6 +142,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0) {
                     hostOffset.set(0);
                     deviceOffset.set(0);
+                    resetPlanned.set(true);
                     return alloc(requiredMemory, kind, type, initialize);
                 }
 
@@ -159,7 +160,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                     case REALLOCATE:
                     case EXTERNAL:
                         cycleAllocations.addAndGet(requiredMemory);
-                        externalCount.set(0);
+                        externalCount.incrementAndGet();
                         //
                         //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
                         PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, initialize), numElements);
