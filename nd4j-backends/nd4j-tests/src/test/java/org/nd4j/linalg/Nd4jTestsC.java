@@ -4037,18 +4037,20 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testSpecialConcat1() throws Exception {
-        List<INDArray> arrays = new ArrayList<>();
-        for (int x = 0; x < 10; x++) {
-            arrays.add(Nd4j.create(100).assign(x));
-        }
+        for (int i = 0; i < 10; i++) {
+            List<INDArray> arrays = new ArrayList<>();
+            for (int x = 0; x < 10; x++) {
+                arrays.add(Nd4j.create(100).assign(x));
+            }
 
-        INDArray matrix = Nd4j.specialConcat(0, arrays.toArray(new INDArray[0]));
-        assertEquals(10, matrix.rows());
-        assertEquals(100, matrix.columns());
+            INDArray matrix = Nd4j.specialConcat(0, arrays.toArray(new INDArray[0]));
+            assertEquals(10, matrix.rows());
+            assertEquals(100, matrix.columns());
 
-        for (int x = 0; x < 10; x++) {
-            assertEquals((double)x, matrix.getRow(x).meanNumber().doubleValue(), 0.1);
-            assertEquals(arrays.get(x), matrix.getRow(x));
+            for (int x = 0; x < 10; x++) {
+                assertEquals((double) x, matrix.getRow(x).meanNumber().doubleValue(), 0.1);
+                assertEquals(arrays.get(x), matrix.getRow(x));
+            }
         }
     }
 

@@ -169,6 +169,15 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     }
 
+    public BaseDataBuffer(float[] data, boolean copy, int offset, MemoryWorkspace workspace) {
+        this(data, copy, workspace);
+        this.offset = offset;
+        this.originalOffset = offset;
+        this.length = data.length - offset;
+        this.underlyingLength = data.length;
+
+    }
+
     /**
      *
      * @param data
@@ -226,6 +235,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     public BaseDataBuffer(double[] data, boolean copy, int offset) {
         this(data, copy);
+        this.offset = offset;
+        this.originalOffset = offset;
+        this.underlyingLength = data.length;
+        this.length = underlyingLength - offset;
+    }
+
+    public BaseDataBuffer(double[] data, boolean copy, int offset, MemoryWorkspace workspace) {
+        this(data, copy, workspace);
         this.offset = offset;
         this.originalOffset = offset;
         this.underlyingLength = data.length;

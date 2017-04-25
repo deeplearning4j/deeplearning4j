@@ -135,6 +135,10 @@ public class DoubleBuffer extends BaseDataBuffer {
         super(data, copy, offset);
     }
 
+    public DoubleBuffer(double[] data, boolean copy, int offset, MemoryWorkspace workspace) {
+        super(data, copy, offset, workspace);
+    }
+
 
 
     @Override

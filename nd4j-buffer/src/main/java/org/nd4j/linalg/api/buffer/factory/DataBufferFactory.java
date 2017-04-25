@@ -141,6 +141,8 @@ public interface DataBufferFactory {
      */
     DataBuffer createDouble(int offset, double[] data);
 
+    DataBuffer createDouble(int offset, double[] data, MemoryWorkspace workspace);
+
 
     /**
      * Create a double buffer buffer
@@ -189,6 +191,8 @@ public interface DataBufferFactory {
      * @return the new buffer
      */
     DataBuffer createFloat(int offset, float[] data);
+
+    DataBuffer createFloat(int offset, float[] data, MemoryWorkspace workspace);
 
     /**
      * Creates an int data buffer
@@ -657,6 +661,8 @@ public interface DataBufferFactory {
      * @return the new buffer
      */
     DataBuffer createHalf(int offset, float[] data);
+
+    DataBuffer createHalf(int offset, float[] data, MemoryWorkspace workspace);
 
     /**
      * Creates a half-precision data buffer

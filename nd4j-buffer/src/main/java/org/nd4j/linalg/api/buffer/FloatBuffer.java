@@ -150,6 +150,10 @@ public class FloatBuffer extends BaseDataBuffer {
         super(data, copy, offset);
     }
 
+    public FloatBuffer(float[] data, boolean copy, int offset, MemoryWorkspace workspace) {
+        super(data, copy, offset, workspace);
+    }
+
 
 
     @Override
