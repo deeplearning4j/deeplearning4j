@@ -59,7 +59,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
             workspace.setDevicePointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.DEVICE, false)));
 
-            log.info("Workspace [{}] initialized successfully", id);
+            //log.info("Workspace [{}] initialized successfully", id);
         }
     }
 
@@ -70,19 +70,22 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
 
     @Override
-    public void destroyWorkspace() {
+    public synchronized void destroyWorkspace() {
         currentSize.set(0);
         hostOffset.set(0);
         deviceOffset.set(0);
 
         clearExternalAllocations();
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
+        if (workspace.getHostPointer() != null)
+            NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(workspace.getDevicePointer(), null);
+        if (workspace.getDevicePointer() != null)
+            NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(workspace.getDevicePointer(), null);
 
         workspace.setDevicePointer(null);
         workspace.setHostPointer(null);
+
     }
 
 
@@ -217,7 +220,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
     @Override
     protected void clearExternalAllocations() {
-        //log.info("Workspace [{}] device_{}: clearing external allocations...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+        log.info("Workspace [{}] device_{}: clearing external allocations...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();

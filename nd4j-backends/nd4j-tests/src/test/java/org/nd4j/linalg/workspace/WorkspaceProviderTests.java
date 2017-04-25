@@ -245,9 +245,14 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+
     @Test
     public void testNestedWorkspacesOverlap2() throws Exception {
         Nd4j.getWorkspaceManager().setDefaultWorkspaceConfiguration(basicConfiguration);
+
+        assertFalse(Nd4j.getWorkspaceManager().checkIfWorkspaceExists("WS1"));
+        assertFalse(Nd4j.getWorkspaceManager().checkIfWorkspaceExists("WS2"));
+
         try(Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1").notifyScopeEntered()) {
             INDArray array = Nd4j.create(new float[]{6f, 3f, 1f, 9f, 21f});
             INDArray array3 = null;
@@ -267,7 +272,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
                     assertTrue(ws1 == Nd4j.getMemoryManager().getCurrentWorkspace());
 
                     array3 = array2.unsafeDuplication();
-
+                    assertTrue(ws1 == array3.data().getParentWorkspace());
                     assertEquals(reqMem + reqMem % 8, ws2.getHostOffset());
                     assertEquals((reqMem + reqMem % 8) * 2, ws1.getHostOffset());
                 }
@@ -281,6 +286,8 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
                 assertEquals(15f, array3.sumNumber().floatValue(), 0.01f);
             }
         }
+
+        log.info("------");
 
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
@@ -823,6 +830,8 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         }
 
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
+        log.info("---------------");
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
     }
 
     @Test
