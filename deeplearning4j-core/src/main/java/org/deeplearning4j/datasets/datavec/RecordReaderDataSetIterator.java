@@ -707,7 +707,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
         protected OrderedBatch(long order) {
             this.order = order;
-            timeCompilation = System.currentTimeMillis();
+            timeStart = System.currentTimeMillis();
         }
 
         protected void addWritable(List<Writable> writables) {
@@ -724,8 +724,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         protected int size() {
             return counter.get();
         }
-
-
 
 
         protected void commit(){
