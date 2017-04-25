@@ -82,6 +82,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     private AsyncPrefetchThread thread;
     private final String guid = java.util.UUID.randomUUID().toString();
     private AtomicBoolean wasTriggered = new AtomicBoolean(false);
+    private boolean useWorkspaces = true;
+    private int workers = 2;
 
     // RecordReaderDataSetIterator(recordReader, AppConfig.batchSize, 1, AppConfig.numLabels);
 
@@ -156,7 +158,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
                                        int labelIndex, int numPossibleLabels, int maxNumBatches, boolean regression, int numThreads) {
-        this(recordReader, converter, batchSize, labelIndex, labelIndex, numPossibleLabels, maxNumBatches, regression, numThreads, 8, false);
+        this(recordReader, converter, batchSize, labelIndex, labelIndex, numPossibleLabels, maxNumBatches, regression, numThreads, 8, false, true);
     }
 
 
@@ -174,20 +176,21 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
                                        int labelIndexFrom, int labelIndexTo, int numPossibleLabels, int maxNumBatches,
                                        boolean regression) {
-        this(recordReader, converter, batchSize, labelIndexFrom, labelIndexTo, numPossibleLabels, maxNumBatches, regression, 1, 8, false);
+        this(recordReader, converter, batchSize, labelIndexFrom, labelIndexTo, numPossibleLabels, maxNumBatches, regression, 1, 8, false, true);
 
     }
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize,
                                        int labelIndexFrom, int labelIndexTo, int numPossibleLabels, int maxNumBatches,
-                                       boolean regression, int numThreads, int prefetchSize, boolean collectMetaData) {
+                                       boolean regression, int numThreads, int prefetchSize, boolean collectMetaData, boolean useWorkspaces) {
 
 
         if (numThreads < 1)
             numThreads = 1;
 
+        this.workers = numThreads;
         this.collectMetaData.set(collectMetaData);
-
+        this.useWorkspaces = useWorkspaces;
         this.prefetchSize = prefetchSize;
         this.buffer = new LinkedBlockingQueue<>(prefetchSize);
         this.recordReader = recordReader;
@@ -599,12 +602,23 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         private AtomicBoolean isShutdown = new AtomicBoolean(false);
         private AtomicBoolean shouldWork = new AtomicBoolean(true);
         protected RuntimeException exception;
+        protected WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .overallocationLimit((batchSize * prefetchSize * workers) + 1)
+                .minSize(10 * 1024L * 1024L)
+                .policyMirroring(MirroringPolicy.FULL)
+                .policySpill(SpillPolicy.EXTERNAL)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .build();
+        private String workspaceId;
 
 
         public AsyncPrefetchThread(@NonNull BlockingQueue<Future<DataSet>> buffer, @NonNull RecordReader reader, @NonNull Future<DataSet> terminator) {
             this.buffer = buffer;
             this.terminator = terminator;
             this.reader = reader;
+            this.workspaceId = "APT_LOOP-" + guid;
 
             this.setName("RRDSI prefetch thread");
             this.setDaemon(true);
@@ -621,10 +635,19 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                     boolean limitHit = maxNumBatches > 0 && maxNumBatches < counterOrder.get();
                     OrderedBatch currentBatch = new OrderedBatch(counterOrder.getAndIncrement());
                     while (!limitHit && reader.hasNext()) {
-                        if (!getMeta)
-                            currentBatch.addWritable(reader.next());
-                        else
-                            currentBatch.addRecord(reader.nextRecord());
+                        if (useWorkspaces) {
+                            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceId)) {
+                                if (!getMeta)
+                                    currentBatch.addWritable(reader.next());
+                                else
+                                    currentBatch.addRecord(reader.nextRecord());
+                            }
+                        } else {
+                            if (!getMeta)
+                                currentBatch.addWritable(reader.next());
+                            else
+                                currentBatch.addRecord(reader.nextRecord());
+                        }
 
                         // if we've built our batch size - we send it to processing
                         if (currentBatch.size() == batchSize) {
@@ -704,7 +727,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
             configuration = WorkspaceConfiguration.builder()
                     // FIXME: overalloc limit is wrong here obviously. We should do (divide prefetch size by number of threads) + 1 probably
-                    .overallocationLimit(prefetchSize * 2)
+                    .overallocationLimit((prefetchSize * 2)+1)
                     .minSize(10 * 1024L * 1024L)
                     .policyMirroring(MirroringPolicy.FULL)
                     .policySpill(SpillPolicy.EXTERNAL)
@@ -726,56 +749,68 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
             DataSet ret = null;
 
-            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceId))
-                firstLoop.set(false);
-
-            // we need to initialize workspace first. so we'll do 2 loops for
-            for (int l = firstLoop.get() ? 0 : 1; l < 2; l++) {
-                try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceId)) {
-                    // here we create our DataSet
-                    List<DataSet> dataSets = new ArrayList<>();
-                    List<RecordMetaData> meta = (batch.isRecord() ? new ArrayList<RecordMetaData>() : null);
-
-                    if (batch.isRecord()) {
-                        List<Record> records = batch.getRecords();
-                        for (int i = 0; i < records.size(); i++) {
-                            DataSet d = getDataSet(records.get(i).getRecord());
-                            dataSets.add(d);
-                            meta.add(records.get(i).getMetaData());
-                        }
-                    } else {
-                        List<List<Writable>> writables = batch.getWritables();
-                        for (int i = 0; i < writables.size(); i++) {
-                            DataSet d = getDataSet(writables.get(i));
-                            dataSets.add(d);
-                        }
-                    }
-
-                    // should NOT ever happen
-                    if (dataSets.isEmpty()) {
-                        return null;
-                    }
-
-                    ret = DataSet.merge(dataSets);
-
-                    if (batch.isRecord()) {
-                        ret.setExampleMetaData(meta);
-                    }
-
-                    if (preProcessor != null)
-                        preProcessor.preProcess(ret);
-
-                    //Add label name values to dataset
-                    if (recordReader.getLabels() != null)
-                        ret.setLabelNames(recordReader.getLabels());
-                }
-
-                if (firstLoop.get()) {
-                    Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).initializeWorkspace();
-                    log.info("Workspace size on initialization: {}", Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).getCurrentSize());
+            if (useWorkspaces) {
+                if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceId))
                     firstLoop.set(false);
+
+                // we need to initialize workspace first. so we'll do 2 loops for
+                for (int l = firstLoop.get() ? 0 : 1; l < 2; l++) {
+                    try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceId)) {
+                        // here we create our DataSet
+                        ret = process(batch);
+                    }
+
+                    if (firstLoop.get()) {
+                        Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).initializeWorkspace();
+                        log.info("Workspace size on initialization: {}", Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).getCurrentSize());
+                        firstLoop.set(false);
+                    }
+                }
+            } else {
+                ret = process(batch);
+            }
+
+            return ret;
+        }
+
+
+        public DataSet process(OrderedBatch batch) {
+            DataSet ret = null;
+            List<DataSet> dataSets = new ArrayList<>();
+            List<RecordMetaData> meta = (batch.isRecord() ? new ArrayList<RecordMetaData>() : null);
+
+            if (batch.isRecord()) {
+                List<Record> records = batch.getRecords();
+                for (int i = 0; i < records.size(); i++) {
+                    DataSet d = getDataSet(records.get(i).getRecord());
+                    dataSets.add(d);
+                    meta.add(records.get(i).getMetaData());
+                }
+            } else {
+                List<List<Writable>> writables = batch.getWritables();
+                for (int i = 0; i < writables.size(); i++) {
+                    DataSet d = getDataSet(writables.get(i));
+                    dataSets.add(d);
                 }
             }
+
+            // should NOT ever happen
+            if (dataSets.isEmpty()) {
+                return null;
+            }
+
+            ret = DataSet.merge(dataSets);
+
+            if (batch.isRecord()) {
+                ret.setExampleMetaData(meta);
+            }
+
+            if (preProcessor != null)
+                preProcessor.preProcess(ret);
+
+            //Add label name values to dataset
+            if (recordReader.getLabels() != null)
+                ret.setLabelNames(recordReader.getLabels());
 
             return ret;
         }
@@ -823,6 +858,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         private boolean collectMetaData = false;
         private int prefetchSize = 2;
         private int workers = 1;
+        private boolean useWorkspaces = true;
 
         public Builder(@NonNull RecordReader reader) {
             this.recordReader = reader;
@@ -872,6 +908,11 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             return this;
         }
 
+        public Builder useWorkspaces(boolean reallyUse) {
+            this.useWorkspaces = reallyUse;
+            return this;
+        }
+
         public Builder setDataSetPreProcessor(DataSetPreProcessor preProcessor) {
             this.preProcessor = preProcessor;
             return this;
@@ -895,7 +936,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
 
         public RecordReaderDataSetIterator build() {
-            RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(recordReader, converter, batchSize, labelIndex, labelIndexTo, numPossibleLabels, maxNumBatches, regression, workers, prefetchSize, collectMetaData);
+            RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(recordReader, converter, batchSize, labelIndex, labelIndexTo, numPossibleLabels, maxNumBatches, regression, workers, prefetchSize, collectMetaData, useWorkspaces);
             return rrdsi;
         }
     }
