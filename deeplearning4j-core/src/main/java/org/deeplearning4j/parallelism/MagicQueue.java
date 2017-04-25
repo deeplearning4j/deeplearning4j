@@ -547,6 +547,8 @@ public class MagicQueue<T> implements BlockingQueue<T> {
 
                         try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, id)) {
                             // now we initialize dataset on target device (if applicable)
+                            ds.migrate();
+                            /*
                             if (ds.getFeaturesMaskArray() != null)
                                 ds.setFeaturesMaskArray(ds.getFeaturesMaskArray().migrate());
                                 //Nd4j.getAffinityManager().touch(ds.getFeaturesMaskArray());
@@ -557,6 +559,7 @@ public class MagicQueue<T> implements BlockingQueue<T> {
 
                             ds.setFeatures(ds.getFeatures().migrate());
                             ds.setLabels(ds.getLabels().migrate());
+                            */
                             //Nd4j.getAffinityManager().touch(ds.getFeatures());
                             //Nd4j.getAffinityManager().touch(ds.getLabels());
                         }

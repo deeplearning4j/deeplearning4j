@@ -83,6 +83,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     private final String guid = java.util.UUID.randomUUID().toString();
     private AtomicBoolean wasTriggered = new AtomicBoolean(false);
     private boolean useWorkspaces = true;
+    private AtomicLong counterGlobal = new AtomicLong(0);
     private int workers = 2;
 
     // RecordReaderDataSetIterator(recordReader, AppConfig.batchSize, 1, AppConfig.numLabels);
@@ -220,6 +221,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
         // FIXME: fix collectMetaData
         this.thread = new AsyncPrefetchThread(buffer, recordReader, terminator);
+        Nd4j.getAffinityManager().attachThreadToDevice(this.thread, Nd4j.getAffinityManager().getDeviceForCurrentThread());
         this.thread.start();
     }
 
@@ -603,7 +605,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         private AtomicBoolean shouldWork = new AtomicBoolean(true);
         protected RuntimeException exception;
         protected WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .overallocationLimit((batchSize * prefetchSize * workers) + 1)
+                .overallocationLimit(batchSize * prefetchSize * workers)
                 .minSize(10 * 1024L * 1024L)
                 .policyMirroring(MirroringPolicy.FULL)
                 .policySpill(SpillPolicy.EXTERNAL)
@@ -620,6 +622,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             this.reader = reader;
             this.workspaceId = "APT_LOOP-" + guid;
 
+            log.info("Workspace overallocation ratio: {}", configuration.getOverallocationLimit());
+
             this.setName("RRDSI prefetch thread");
             this.setDaemon(true);
         }
@@ -630,6 +634,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             while (shouldWork.get()) {
                 try {
 
+                    AtomicLong counterExampes = new AtomicLong(0);
                     AtomicLong counterOrder = new AtomicLong(0);
                     getMeta = collectMetaData.get();
                     boolean limitHit = maxNumBatches > 0 && maxNumBatches < counterOrder.get();
@@ -727,7 +732,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
             configuration = WorkspaceConfiguration.builder()
                     // FIXME: overalloc limit is wrong here obviously. We should do (divide prefetch size by number of threads) + 1 probably
-                    .overallocationLimit((prefetchSize * 2)+1)
+                    .overallocationLimit((prefetchSize *2)+1)
                     .minSize(10 * 1024L * 1024L)
                     .policyMirroring(MirroringPolicy.FULL)
                     .policySpill(SpillPolicy.EXTERNAL)
