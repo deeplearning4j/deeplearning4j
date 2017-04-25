@@ -35,6 +35,7 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException;
+import org.deeplearning4j.datasets.datavec.tools.SpecialImageRecordReader;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -902,7 +903,6 @@ public class RecordReaderDataSetiteratorTest {
 
         while (rrdsi.hasNext()) {
             DataSet ds = rrdsi.next();
-            assertEquals(false, ds.getFeatureMatrix().isAttached());
             List<RecordMetaData> meta = ds.getExampleMetaData(RecordMetaData.class);
             int i = 0;
             for (RecordMetaData m : meta) {
@@ -987,5 +987,55 @@ public class RecordReaderDataSetiteratorTest {
         ds = rrdsi.next();
         assertEquals(expFeatures, ds.getFeatures());
         assertEquals(expLabels, ds.getLabels());
+    }
+
+
+    @Test
+    public void specialRRTest1() throws Exception {
+        RecordReader rr = new SpecialImageRecordReader(250, 10,3, 224, 224);
+        DataSetIterator rrdsi = new RecordReaderDataSetIterator.Builder(rr)
+                .setBatchSize(10)
+                .numberOfWorkers(2)
+                .build();
+
+        int cnt = 0;
+        int examples = 0;
+        while (rrdsi.hasNext()) {
+            DataSet ds = rrdsi.next();
+            for (int i = 0; i < ds.numExamples(); i++) {
+                INDArray example = ds.getFeatureMatrix().tensorAlongDimension(i, 1, 2, 3).dup();
+                assertEquals("Failed on DataSet ["+ cnt + "], example ["+ i +"]",(double) examples, example.meanNumber().doubleValue(), 0.01);
+                examples++;
+            }
+            cnt++;
+        }
+
+        assertEquals(25, cnt);
+    }
+
+
+    @Test
+    public void specialRRTest2() throws Exception {
+        RecordReader rr = new SpecialImageRecordReader(250, 10,3, 224, 224);
+        DataSetIterator rrdsi = new RecordReaderDataSetIterator.Builder(rr)
+                .setBatchSize(10)
+                .numberOfWorkers(2)
+                .build();
+
+        rrdsi = new AsyncDataSetIterator(rrdsi);
+
+        int cnt = 0;
+        int examples = 0;
+        while (rrdsi.hasNext()) {
+            DataSet ds = rrdsi.next();
+            for (int i = 0; i < ds.numExamples(); i++) {
+                INDArray example = ds.getFeatureMatrix().tensorAlongDimension(i, 1, 2, 3).dup();
+                assertEquals("Failed on DataSet ["+ cnt + "], example ["+ i +"]",(double) examples, example.meanNumber().doubleValue(), 0.01);
+                examples++;
+            }
+            cnt++;
+        }
+
+        assertEquals(25, cnt);
     }
 }

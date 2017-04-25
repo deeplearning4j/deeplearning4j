@@ -862,6 +862,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
         public Builder(@NonNull RecordReader reader) {
             this.recordReader = reader;
+            if (reader.getLabels()!=null)
+                numPossibleLabels = reader.getLabels().size();
         }
 
         public Builder setWritableConverter(@NonNull WritableConverter converter) {
