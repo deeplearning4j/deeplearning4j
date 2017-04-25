@@ -657,6 +657,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                         // if we've built our batch size - we send it to processing
                         if (currentBatch.size() == batchSize) {
                             // we should put callable here
+                            currentBatch.commit();
                             Future<DataSet> future = executor.submit(new DataSetCallable(currentBatch));
                             getMeta = collectMetaData.get();
                             buffer.put(future);
@@ -666,6 +667,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                     }
                     if (currentBatch.size() > 0 && !limitHit) {
                         // process last batch
+                        currentBatch.commit();
                         Future<DataSet> future = executor.submit(new DataSetCallable(currentBatch));
                         buffer.put(future);
                     }
@@ -699,9 +701,13 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         @Getter protected List<Record> records = new ArrayList<>();
         @Getter protected volatile boolean isRecord = false;
         protected AtomicInteger counter = new AtomicInteger(0);
+        @Getter protected long timeStart;
+        @Getter protected long timeCommit;
+        @Getter protected long timeCompilation;
 
         protected OrderedBatch(long order) {
             this.order = order;
+            timeCompilation = System.currentTimeMillis();
         }
 
         protected void addWritable(List<Writable> writables) {
@@ -717,6 +723,14 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
         protected int size() {
             return counter.get();
+        }
+
+
+
+
+        protected void commit(){
+            timeCommit = System.currentTimeMillis();
+            timeCompilation = timeCommit - timeStart;
         }
     }
 
@@ -780,6 +794,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
 
         public DataSet process(OrderedBatch batch) {
+            long timeResume = System.currentTimeMillis();
             DataSet ret = null;
             List<DataSet> dataSets = new ArrayList<>();
             List<RecordMetaData> meta = (batch.isRecord() ? new ArrayList<RecordMetaData>() : null);
@@ -816,6 +831,10 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             //Add label name values to dataset
             if (recordReader.getLabels() != null)
                 ret.setLabelNames(recordReader.getLabels());
+
+            long timeMerge = System.currentTimeMillis();
+
+            log.info("Compilation: {} ms; Merge: {} ms; Travel: {} ms;", batch.getTimeCompilation(), timeMerge - timeResume, timeMerge - batch.getTimeStart());
 
             return ret;
         }
