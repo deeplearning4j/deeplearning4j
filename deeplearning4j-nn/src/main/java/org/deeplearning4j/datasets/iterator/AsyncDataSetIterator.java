@@ -5,7 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -28,10 +30,12 @@ public class AsyncDataSetIterator implements DataSetIterator {
     private DataSet terminator = new DataSet();
     private DataSet nextElement = null;
     private BlockingQueue<DataSet> buffer;
-    private MemoryWorkspace workspace;
     private AsyncPrefetchThread thread;
     private AtomicBoolean shouldWork = new AtomicBoolean(true);
     private volatile RuntimeException throwable = null;
+    private boolean useWorkspace = true;
+    private int prefetchSize;
+    private String workspaceId;
 
 
     public AsyncDataSetIterator(DataSetIterator baseIterator) {
@@ -55,7 +59,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
             throw new IllegalArgumentException("Queue size must be > 0");
         if (queueSize < 4)
             queueSize = 4;
-
+/*
         if (iterator.resetSupported() && useWorkspace) {
             iterator.reset();
 
@@ -63,24 +67,22 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
             long initSize = Math.max(ds.getMemoryFootprint() * queueSize, 10 * 1024L * 1024L);
 
-            WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                    .initialSize(initSize)
-                    .overallocationLimit(2.0)
-                    .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
-                    .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                    .build();
+
 
             MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ADSI_ITER-" + java.util.UUID.randomUUID().toString());
             this.workspace = workspace;
         } else workspace = null;
-
+*/
+        this.useWorkspace = useWorkspace;
         this.buffer = queue;
+        this.prefetchSize = queueSize;
         this.backedIterator = iterator;
+        this.workspaceId = "ADSI_ITER-" + java.util.UUID.randomUUID().toString();
 
         if (iterator.resetSupported())
             this.backedIterator.reset();
 
-        this.thread = new AsyncPrefetchThread(buffer, iterator, terminator, workspace);
+        this.thread = new AsyncPrefetchThread(buffer, iterator, terminator, null);
 
         /**
          * We want to ensure, that background thread will have the same thread->device affinity, as master thread
@@ -170,9 +172,6 @@ public class AsyncDataSetIterator implements DataSetIterator {
     public void reset() {
         buffer.clear();
 
-        if (workspace!= null)
-            workspace.destroyWorkspace();
-
         if (thread != null)
             thread.interrupt();
         try {
@@ -187,7 +186,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
         backedIterator.reset();
         shouldWork.set(true);
-        this.thread = new AsyncPrefetchThread(buffer, backedIterator, terminator, workspace);
+        this.thread = new AsyncPrefetchThread(buffer, backedIterator, terminator, null);
 
         /**
          * We want to ensure, that background thread will have the same thread->device affinity, as master thread
@@ -220,10 +219,6 @@ public class AsyncDataSetIterator implements DataSetIterator {
             throw new RuntimeException(e);
         }
         buffer.clear();
-
-
-        if (this.workspace != null)
-            Nd4j.getWorkspaceManager().destroyWorkspace(workspace);
     }
 
     /**
@@ -356,13 +351,20 @@ public class AsyncDataSetIterator implements DataSetIterator {
         private BlockingQueue<DataSet> queue;
         private DataSetIterator iterator;
         private DataSet terminator;
-        private MemoryWorkspace workspace;
+        private WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .minSize(10 * 1024L * 1024L)
+                .overallocationLimit(prefetchSize + 1)
+                .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .policySpill(SpillPolicy.EXTERNAL)
+                .build();
+
 
         protected AsyncPrefetchThread(@NonNull BlockingQueue<DataSet> queue, @NonNull DataSetIterator iterator, @NonNull DataSet terminator, MemoryWorkspace workspace) {
             this.queue = queue;
             this.iterator = iterator;
             this.terminator = terminator;
-            this.workspace = workspace;
 
             this.setDaemon(true);
             this.setName("ADSI prefetch thread");
@@ -374,8 +376,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
                 while (iterator.hasNext() && shouldWork.get()) {
                     DataSet smth = null;
 
-                    if (workspace != null) {
-                        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                    if (useWorkspace) {
+                        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceId)) {
                             smth = iterator.next();
                         }
                     } else smth = iterator.next();
