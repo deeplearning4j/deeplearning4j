@@ -15,7 +15,6 @@
  */
 package org.datavec.image.loader;
 
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.ByteOrder;
 import org.apache.commons.io.IOUtils;
@@ -28,7 +27,6 @@ import org.bytedeco.javacpp.indexer.Indexer;
 import org.bytedeco.javacpp.indexer.IntIndexer;
 import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacpp.indexer.UShortIndexer;
-import org.bytedeco.javacv.Java2DFrameConverter;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.ImageTransform;
@@ -113,6 +111,14 @@ public class NativeImageLoader extends BaseImageLoader {
         this.converter = new OpenCVFrameConverter.ToMat();
     }
 
+    protected NativeImageLoader(NativeImageLoader other) {
+        this.height = other.height;
+        this.width = other.width;
+        this.channels = other.channels;
+        this.centerCropIfNeeded = other.centerCropIfNeeded;
+        this.imageTransform = other.imageTransform;
+    }
+
     @Override
     public String[] getAllowedFormats() {
         return ALLOWED_FORMATS;
@@ -135,7 +141,11 @@ public class NativeImageLoader extends BaseImageLoader {
         return asMatrix(is).ravel();
     }
 
-    public INDArray asRowVector(BufferedImage image) throws IOException {
+    /**
+     * Returns {@code asMatrix(image).ravel()}.
+     * @see #asMatrix(Object)
+     */
+    public INDArray asRowVector(Object image) throws IOException {
         return asMatrix(image).ravel();
     }
 
@@ -203,12 +213,30 @@ public class NativeImageLoader extends BaseImageLoader {
         return asMatrix(image);
     }
 
-    public INDArray asMatrix(BufferedImage image) throws IOException {
-        Java2DFrameConverter c = new Java2DFrameConverter();
-        if (converter == null) {
-            converter = new OpenCVFrameConverter.ToMat();
+    /**
+     * Calls {@link AndroidNativeImageLoader#asMatrix(android.graphics.Bitmap)} or
+     * {@link Java2DNativeImageLoader#asMatrix(java.awt.image.BufferedImage)}.
+     * @param image as a {@link android.graphics.Bitmap} or {@link java.awt.image.BufferedImage}
+     * @return the matrix or null for unsupported object classes
+     * @throws IOException
+     */
+    public INDArray asMatrix(Object image) throws IOException {
+        INDArray array = null;
+        if (array == null) {
+            try {
+                array = new AndroidNativeImageLoader(this).asMatrix(image);
+            } catch (NoClassDefFoundError e) {
+                // ignore
+            }
         }
-        return asMatrix(converter.convert(c.convert(image)));
+        if (array == null) {
+            try {
+                array = new Java2DNativeImageLoader(this).asMatrix(image);
+            } catch (NoClassDefFoundError e) {
+                // ignore
+            }
+        }
+        return array;
     }
 
     public INDArray asMatrix(Mat image) throws IOException {
