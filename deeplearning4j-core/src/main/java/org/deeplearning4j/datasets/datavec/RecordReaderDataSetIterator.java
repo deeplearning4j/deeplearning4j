@@ -812,6 +812,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 }
             }
 
+            long timePull = System.currentTimeMillis();
+
             // should NOT ever happen
             if (dataSets.isEmpty()) {
                 return null;
@@ -832,7 +834,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
             long timeMerge = System.currentTimeMillis();
 
-            log.info("Compilation: {} ms; Merge: {} ms; Travel: {} ms;", batch.getTimeCompilation(), timeMerge - timeResume, timeMerge - batch.getTimeStart());
+            log.info("Compilation: {} ms; Pull: {} ms; Merge: {} ms; Travel: {} ms;", batch.getTimeCompilation(), timePull - timeResume, timeMerge - timePull, timeMerge - batch.getTimeStart());
 
             return ret;
         }
