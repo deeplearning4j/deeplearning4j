@@ -1051,6 +1051,8 @@ public class RecordReaderDataSetiteratorTest {
                 .prefetchBufferSize(2)
                 .build();
 
+        log.info("DataType: {}", Nd4j.dataType() );
+
        // rrdsi = new AsyncDataSetIterator(rrdsi);
 
         int cnt = 0;

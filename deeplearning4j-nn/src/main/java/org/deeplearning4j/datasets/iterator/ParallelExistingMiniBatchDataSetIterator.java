@@ -224,6 +224,7 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
             if (dataSetPreProcessor != null)
                 dataSetPreProcessor.preProcess(ds);
 
+            /*
             if (ds != null && ds.getFeatures() != null && ds.getFeatures().isAttached()) {
                 if (Nd4j.getMemoryManager().getCurrentWorkspace() == null) {
                     ds.detach();
@@ -231,6 +232,7 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
                     ds.migrate();
                 }
             }
+            */
 
             wasTriggered.set(false);
 
