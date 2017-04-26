@@ -184,7 +184,11 @@ There are some issues to be aware of when running Deeplearning4j with CUDA on Sp
 
 A workaround to this is to utilize node labels (which are available with YARN versions 2.6 or greater). Node labels provide a way to tag or group machines based on your own criteria - in this case, the presence or absence of GPUs. After enabling node labels in the YARN configuration, node labels can be created, and then can be assigned to machines in the cluster. Spark jobs can then be limited to using GPU-containing machines only, by specifying a node label.
 
-Some resources on node labels - and how to configure them - can be found [here](https://hadoop.apache.org/docs/r2.7.3/hadoop-yarn/hadoop-yarn-site/NodeLabel.html) and [here](https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.4.2/bk_yarn_resource_mgt/content/configuring_node_labels.html).
+Some resources on node labels - and how to configure them - can be found at the following links:
+
+- [https://hadoop.apache.org/docs/r2.7.3/hadoop-yarn/hadoop-yarn-site/NodeLabel.html](https://hadoop.apache.org/docs/r2.7.3/hadoop-yarn/hadoop-yarn-site/NodeLabel.html)
+- [https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.4.2/bk_yarn_resource_mgt/content/configuring_node_labels.html](https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.4.2/bk_yarn_resource_mgt/content/configuring_node_labels.html).
+- [https://developer.ibm.com/hadoop/2017/03/10/yarn-node-labels/](https://developer.ibm.com/hadoop/2017/03/10/yarn-node-labels/)
 
 To launch GPU jobs on YARN:
 
@@ -198,7 +202,7 @@ Note that multiple labels can be assigned to each node. Multiple labels can be u
 There are some issues to be aware of when using DL4J on Spark/YARN and GPUs.
 
 1. As with single-machine training in DL4J, CUDA must be installed and NVCC must be available on the path for executing tasks
-2. YARN may (incorrectly) schedule multiple GPU tasks on the same node, if sufficient CPU and memory resources are available (ever if sufficient GPU resources are not). This can result in job failure.
+2. Since YARN does not partition or contain GPU usage, you should make sure it can only schedule a single GPU task on any single-GPU node. This can be done by requiring enough CPU and memory in your GPU-using job that the executor has no capacity left over for another such job. Otherwise, YARN might schedule multiple GPU jobs on the same executor, even if it does not have enough GPU ressources to satisfy the demands of both jobs.
 
 Three workarounds are available to avoid failures due to scheduling:
 
@@ -206,7 +210,7 @@ First, use multiple labels to manually control scheduling, as discussed above.
 
 Second, allocate sufficient resources (cores, memory) to the containers to ensure no other GPU-utilizing tasks are scheduled on each node.
 
-Third, it is possible to utilize containers (specifically, the [Docker container executor](https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/DockerContainerExecutor.html)), where the GPU is declared as being used in the container, via the ```devices``` cgroup - this ensures that GPU is not allocated to multiple tasks. A simpler approach is to use [nvidia-docker containers](https://github.com/NVIDIA/nvidia-docker/wiki/GPU-isolation), which handle this declaration for you.
+Third, it is possible to utilize containers (specifically, the [Docker container executor](https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/DockerContainerExecutor.html)), where the GPU is declared as being used in the container, via the ```devices``` cgroup - this ensures that GPU is not allocated to multiple tasks. A simpler approach is to use [nvidia-docker containers](https://github.com/NVIDIA/nvidia-docker/wiki/GPU-isolation), which handles this declaration for you.
 
 Requirements for the Docker container executor:
 - Hadoop version 2.6.0 or later
