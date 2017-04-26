@@ -177,7 +177,10 @@ There are some issues to be aware of when running Deeplearning4j with CUDA on Sp
 
 ### <a name="yarngpus">YARN and GPUs</a>
 
-[YARN](https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/YARN.html) is a commonly used cluster resource management/scheduling tool for Hadoop clusters. Running Deeplearning4j with GPUs on Spark+YARN is possible, but (unlike memory and CPU resources) YARN does not track/handle GPUs as a resource. Consequently, some additional steps are typically required to run DL4J with GPUs on YARN. Note however that this is more of an issue with heterogeneous-hardware clusters (i.e., some machines with GPUs, others without), as YARN won't natively allocate your jobs only to machines that have GPUs.
+[YARN](https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/YARN.html) is a commonly used cluster resource management/scheduling tool for Hadoop clusters. Running Deeplearning4j with GPUs on Spark+YARN is possible, but (unlike memory and CPU resources) YARN does not track/handle GPUs as a resource. Consequently, some additional steps are typically required to run DL4J with GPUs on YARN. This is problematic for two reasons:
+
+1. On heterogeneous-hardware clusters (i.e., some machines with GPUs, others without), as YARN won't natively allocate your jobs only to machines that have GPUs
+2. YARN may try to schedule two or more GPU-utilizing jobs to a single machine/GPU
 
 A workaround to this is to utilize node labels (which are available with YARN versions 2.6 or greater). Node labels provide a way to tag or group machines based on your own criteria - in this case, the presence or absence of GPUs. After enabling node labels in the YARN configuration, node labels can be created, and then can be assigned to machines in the cluster. Spark jobs can then be limited to using GPU-containing machines only, by specifying a node label.
 
@@ -186,20 +189,24 @@ Some resources on node labels - and how to configure them - can be found [here](
 To launch GPU jobs on YARN:
 
 1. Ensure node labels are enabled in the YARN configuration
-2. Create a label for the GPU machines
+2. Create a label (or, multiple labels) for the GPU machines
 3. Assign each GPU machine you want to use for training to the previously-created node label
 4. Add ```--conf spark.yarn.executor.nodeLabelExpression=YOUR_NODE_LABEL``` to your Spark submit launch configuration
 
+Note that multiple labels can be assigned to each node. Multiple labels can be utilized to obtain more fine-grained (albeit manual) control over job/node scheduling, and is a possible workaround to avoid YARN over-allocating GPU resources.
 
 There are some issues to be aware of when using DL4J on Spark/YARN and GPUs.
 
 1. As with single-machine training in DL4J, CUDA must be installed and NVCC must be available on the path for executing tasks
 2. YARN may (incorrectly) schedule multiple GPU tasks on the same node, if sufficient CPU and memory resources are available (ever if sufficient GPU resources are not). This can result in job failure.
 
-Two workarounds are available to avoid failures due to scheduling:
+Three workarounds are available to avoid failures due to scheduling:
 
-First, allocate sufficient resources (cores, memory) to the containers to ensure no other GPU-utilizing tasks are scheduled on each node.
-Second, it is possible to utilize containers (specifically, the [Docker container executor](https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/DockerContainerExecutor.html)).
+First, use multiple labels to manually control scheduling, as discussed above.
+
+Second, allocate sufficient resources (cores, memory) to the containers to ensure no other GPU-utilizing tasks are scheduled on each node.
+
+Third, it is possible to utilize containers (specifically, the [Docker container executor](https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/DockerContainerExecutor.html)), where the GPU is declared as being used in the container, via the ```devices``` cgroup - this ensures that GPU is not allocated to multiple tasks. A simpler approach is to use [nvidia-docker containers](https://github.com/NVIDIA/nvidia-docker/wiki/GPU-isolation), which handle this declaration for you.
 
 Requirements for the Docker container executor:
 - Hadoop version 2.6.0 or later
