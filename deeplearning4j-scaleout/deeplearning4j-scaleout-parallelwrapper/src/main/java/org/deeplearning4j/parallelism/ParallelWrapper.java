@@ -368,11 +368,11 @@ public class ParallelWrapper implements AutoCloseable {
         List<Long> nanos = new ArrayList<>();
         AtomicInteger locker = new AtomicInteger(0);
         long time1 = System.currentTimeMillis();
-        //while (iterator.hasNext() && !stopFit.get()) {
-        int intcnt = 0;
-        while (intcnt < 100) {
-            intcnt++;
-            DataSet dataSet = null; //iterator.next();
+        while (iterator.hasNext() && !stopFit.get()) {
+        //int intcnt = 0;
+        //while (intcnt < 100) {
+            //intcnt++;
+            DataSet dataSet = iterator.next();
             long time2 = System.currentTimeMillis();
             long lastEtlTime = time2 - time1;
             nanos.add((time2 - time1));
