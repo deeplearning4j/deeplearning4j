@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
@@ -33,10 +34,12 @@ import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,10 +73,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         try {
             helper = Class.forName("org.deeplearning4j.nn.layers.convolution.CudnnConvolutionHelper")
                     .asSubclass(ConvolutionHelper.class).newInstance();
-            log.debug("CudnnConvolutionHelper successfully loaded");
+            log.debug("CudnnConvolutionHelper successfully initialized");
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
-                log.warn("Could not load CudnnConvolutionHelper", t);
+                log.warn("Could not initialize CudnnConvolutionHelper", t);
             }
         }
     }
@@ -197,7 +200,14 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //Current col2im implementation expects input with order: [miniBatch,depth,kH,kW,outH,outW]
         //currently have [kH,kW,inDepth,outW,outH,miniBatch] -> permute first
         eps6d = eps6d.permute(5,2,1,0,4,3);
-        INDArray epsNextOrig = Nd4j.create(new int[]{inDepth,miniBatch,inH,inW},'c');
+        INDArray epsNextOrig = null;
+        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal) && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)) {
+            try(MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
+                epsNextOrig = Nd4j.create(new int[]{inDepth,miniBatch,inH,inW},'c');
+            }
+        } else epsNextOrig = Nd4j.create(new int[]{inDepth,miniBatch,inH,inW},'c');
+
+
         //Note: we are execute col2im in a way that the output array should be used in a stride 1 muli in the layer below... (same strides as zs/activations)
         INDArray epsNext = epsNextOrig.permute(1,0,2,3);
         Convolution.col2im(eps6d, epsNext, strides[0], strides[1], pad[0], pad[1], inH, inW);
@@ -295,7 +305,12 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray reshapedW = permutedW.reshape('f',kW*kH*inDepth,outDepth);
 
         //Do the MMUL; c and f orders in, f order out. output shape: [miniBatch*outH*outW,depthOut]
-        INDArray z = reshapedCol.mmul(reshapedW);
+        INDArray z = null;
+        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal) && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)) {
+            try(MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
+                z =reshapedCol.mmul(reshapedW);
+            }
+        } else z = reshapedCol.mmul(reshapedW);
 
         //Add biases, before reshaping. Note that biases are [1,depthOut] and currently z is [miniBatch*outH*outW,depthOut] -> addiRowVector
         z.addiRowVector(bias);

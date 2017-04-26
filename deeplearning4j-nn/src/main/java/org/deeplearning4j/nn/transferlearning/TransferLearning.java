@@ -688,6 +688,27 @@ public class TransferLearning {
             }
         }
 
+        /**
+         * Sets new inputs for the computation graph. This method will remove any
+         * pre-existing inputs.
+         * @param inputs String names of each graph input.
+         * @return {@code GraphBuilder} instance.
+         */
+        public GraphBuilder setInputs(String... inputs) {
+            editedConfigBuilder.setNetworkInputs(Arrays.asList(inputs));
+            return this;
+        }
+
+        /**
+         * Sets the input type of corresponding inputs.
+         * @param inputTypes The type of input (such as convolutional).
+         * @return {@code GraphBuilder} instance.
+         */
+        public GraphBuilder setInputTypes(InputType... inputTypes) {
+            editedConfigBuilder.setInputTypes(inputTypes);
+            return this;
+        }
+
         protected GraphBuilder addInputs(String... inputNames) {
             editedConfigBuilder.addInputs(inputNames);
             return this;

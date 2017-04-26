@@ -1,11 +1,13 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
@@ -44,6 +46,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.point;
  * @author Alex Black (LSTM implementation)
  * @author Benjamin Joseph (refactoring for bidirectional LSTM)
  */
+@Slf4j
 public class LSTMHelpers {
 
     //    public static final String SIGMOID = "sigmoid";
@@ -169,7 +172,6 @@ public class LSTMHelpers {
             INDArray miniBatchData = (is2dInput ? input : input.tensorAlongDimension(time, 1, 0)); //[Expected shape: [m,nIn]. Also deals with edge case of T=1, with 'time series' data of shape [m,nIn], equiv. to [m,nIn,1]
             miniBatchData = Shape.toMmulCompatible(miniBatchData);
 
-
             //Calculate activations for: network input + forget, output, input modulation gates. Next 3 lines are first part of those
             INDArray ifogActivations = miniBatchData.mmul(inputWeights); //Shape: [miniBatch,4*layerSize]
             Nd4j.gemm(prevOutputActivations, recurrentWeightsIFOG, ifogActivations, false, false, 1.0, 1.0);
@@ -264,6 +266,10 @@ public class LSTMHelpers {
             toReturn.lastAct = currHiddenUnitActivations;
             toReturn.lastMemCell = currentMemoryCellState;
         }
+
+
+
+        //toReturn.leverageTo(ComputationGraph.workspaceExternal);
 
         return toReturn;
     }

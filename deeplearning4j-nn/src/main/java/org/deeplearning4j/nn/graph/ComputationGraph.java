@@ -746,7 +746,7 @@ public class ComputationGraph implements Serializable, Model {
 
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 //.initialSize(100 * 1024L * 1024L)
-                .overallocationLimit(0.3)
+                .overallocationLimit(0.15)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .cyclesBeforeInitialization(3)
                 .policyLearning(LearningPolicy.OVER_TIME)
@@ -767,6 +767,7 @@ public class ComputationGraph implements Serializable, Model {
                     break;
 
                 try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                    //migrate(next);
 
                     boolean hasMaskArrays = next.hasMaskArrays();
                     if (hasMaskArrays) {
@@ -838,7 +839,7 @@ public class ComputationGraph implements Serializable, Model {
 
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
-                .overallocationLimit(0.15)
+                .overallocationLimit(0.3)
                 .policyLearning(LearningPolicy.OVER_TIME)
                 .cyclesBeforeInitialization(3)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
@@ -858,6 +859,7 @@ public class ComputationGraph implements Serializable, Model {
                     break;
 
                 try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                    //migrate(next);
 
                     if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
                         doTruncatedBPTT(next.getFeatures(), next.getLabels(), next.getFeaturesMaskArrays(),
@@ -887,6 +889,43 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         clearLayersStates();
+    }
+
+    protected void migrate(MultiDataSet ds) {
+        if (ds.getFeatures() != null)
+            for (int i = 0; i < ds.getFeatures().length; i++)
+                if (ds.getFeatures()[i] != null && ds.getFeatures()[i].isAttached())
+                    ds.getFeatures()[i] = ds.getFeatures()[i].migrate();
+
+        if (ds.getFeaturesMaskArrays() != null)
+            for (int i = 0; i < ds.getFeaturesMaskArrays().length; i++)
+                if (ds.getFeaturesMaskArrays()[i] != null && ds.getFeaturesMaskArrays()[i].isAttached())
+                    ds.getFeaturesMaskArrays()[i] = ds.getFeaturesMaskArrays()[i].migrate();
+
+        if (ds.getLabels() != null)
+            for (int i = 0; i < ds.getLabels().length; i++)
+                if (ds.getLabels()[i] != null && ds.getLabels()[i].isAttached())
+                    ds.getLabels()[i] = ds.getLabels()[i].migrate();
+
+        if (ds.getLabelsMaskArrays() != null)
+            for (int i = 0; i < ds.getLabelsMaskArrays().length; i++)
+                if (ds.getLabelsMaskArrays()[i] != null && ds.getLabelsMaskArrays()[i].isAttached())
+                    ds.getLabelsMaskArrays()[i] = ds.getLabelsMaskArrays()[i].migrate();
+
+    }
+
+    protected void migrate(DataSet ds) {
+        if (ds.getFeatures() != null && ds.getFeatures().isAttached())
+            ds.setFeatures(ds.getFeatures().migrate());
+
+        if (ds.getLabels() != null && ds.getLabels().isAttached())
+            ds.setLabels(ds.getLabels().migrate());
+
+        if (ds.getFeaturesMaskArray() != null && ds.getFeaturesMaskArray().isAttached())
+            ds.setFeaturesMaskArray(ds.getFeaturesMaskArray().migrate());
+
+        if (ds.getLabelsMaskArray() != null && ds.getLabelsMaskArray().isAttached())
+            ds.setLabelsMaskArray(ds.getLabelsMaskArray().migrate());
     }
 
     /**
@@ -1078,7 +1117,7 @@ public class ComputationGraph implements Serializable, Model {
             }
             calcBackpropGradients(true);
         } else {
-            Map<String, INDArray> activations = feedForward(true, true);
+            Map<String, INDArray> activations = feedForward(true, true, false, false);
             if (trainingListeners.size() > 0) {
                 for (TrainingListener tl : trainingListeners) {
                     tl.onForwardPass(this, activations);
@@ -1158,15 +1197,38 @@ public class ComputationGraph implements Serializable, Model {
      * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
      */
     public Map<String, INDArray> feedForward(boolean train) {
-        return feedForward(train, false);
+        return feedForward(train, false, false, true);
     }
 
-    private Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers) {
+    /**
+     * Conduct forward pass using the set/stored inputs.
+     * This method allows non-Layer vertex activations to be included in the output map
+     *
+     * @param train                            If true: do forward pass at training time; false: do forward pass at test time
+     * @param includeNonLayerVertexActivations If true: included activations of all vertices, not just layer and input
+     *                                         vertices in the output.
+     * @return Map of activations
+     */
+    public Map<String,INDArray> feedForward(boolean train, boolean includeNonLayerVertexActivations){
+        return feedForward(train, false, includeNonLayerVertexActivations, true);
+    }
+
+    /**
+     *
+     * @param train                            Train/test mode
+     * @param excludeOutputLayers              If true: exclude output layers (not needed for backprop, for example)
+     * @param includeNonLayerVertexActivations If true: include activations for all vertices, not just layer vertices
+     * @param publicApi                        If true: activation arrays are detached from workspace before returning.
+     *                                         False: activations arrays may leak outside of workspace
+     * @return Map of activations, by vertex name
+     */
+    private Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers,
+                                              boolean includeNonLayerVertexActivations, boolean publicApi) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
-                .overallocationLimit(0.5)
+                .overallocationLimit(0.15)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 //.cyclesBeforeInitialization(topologicalOrder.length)
                 .policyAllocation(AllocationPolicy.OVERALLOCATE)
@@ -1196,7 +1258,7 @@ public class ComputationGraph implements Serializable, Model {
                         //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
                         // we're pushing input copies to outer workspace
                         // FIXME: do we REALLY need this dup()?
-                        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal)) {
+                        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal) && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)) {
                             try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
                                 // FIXME: we don't really want detach here
                                 vertices[vIdx].setInput(vIdxInputNum, input);
@@ -1215,9 +1277,14 @@ public class ComputationGraph implements Serializable, Model {
                         continue;
                     }
                     // once again, pushing stuff out of this workspace
-                    INDArray out = current.doForward(train).leverageTo(workspaceExternal);
+                    INDArray out;
+                    if(publicApi){
+                        out = current.doForward(train).detach();
+                    } else {
+                        out = current.doForward(train).leverageTo(workspaceExternal);
+                    }
 
-                    if (current.hasLayer()) {
+                    if(includeNonLayerVertexActivations || current.hasLayer()) {
                         layerActivations.put(current.getVertexName(), out);
                     }
 
@@ -1228,7 +1295,7 @@ public class ComputationGraph implements Serializable, Model {
                             int vIdx = v.getVertexIndex();
                             int inputNum = v.getVertexEdgeNumber();
                             //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-                            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal)) {
+                            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal) && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)) {
                                 try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
                                     // FIXME: we don't really want detach here.
                                     vertices[vIdx].setInput(inputNum, out);
@@ -1242,8 +1309,9 @@ public class ComputationGraph implements Serializable, Model {
             }
         }
 
-        if (configuration.getWorkspaceMode() == WorkspaceMode.SEPARATE)
-            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
+        if (!train)
+            if (configuration.getWorkspaceMode() == WorkspaceMode.SEPARATE)
+                Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
 
         return layerActivations;
     }
@@ -1353,7 +1421,7 @@ public class ComputationGraph implements Serializable, Model {
         }
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
                 .initialSize(0)
-                .overallocationLimit(0.5)
+                .overallocationLimit(0.15)
                 //.cyclesBeforeInitialization(topologicalOrder.length)
                 .policyReset(ResetPolicy.BLOCK_LEFT)
                 .policyLearning(LearningPolicy.OVER_TIME)
@@ -1361,7 +1429,8 @@ public class ComputationGraph implements Serializable, Model {
 
         MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy :
                 configuration.getWorkspaceMode() == WorkspaceMode.SINGLE ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceBackProp);
+                         //: Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceBackProp);
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceFeedForward);
 
 
         LinkedList<Triple<String, INDArray, Character>> gradients = new LinkedList<>();
@@ -1455,7 +1524,7 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         if (configuration.getWorkspaceMode() == WorkspaceMode.SEPARATE)
-            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceBackProp).initializeWorkspace();
+            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
 
         this.gradient = gradient;
     }

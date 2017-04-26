@@ -55,10 +55,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         try {
             helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnBatchNormalizationHelper")
                             .asSubclass(BatchNormalizationHelper.class).newInstance();
-            log.debug("CudnnBatchNormalizationHelper successfully loaded");
+            log.debug("CudnnBatchNormalizationHelper successfully initialized");
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
-                log.warn("Could not load CudnnBatchNormalizationHelper", t);
+                log.warn("Could not initialize CudnnBatchNormalizationHelper", t);
             }
         }
     }

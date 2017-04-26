@@ -297,22 +297,16 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         if (model instanceof ComputationGraph) {
             ComputationGraph graph = (ComputationGraph) model;
             if (computationGraphUpdater == null) {
-                MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
-                Nd4j.getMemoryManager().setCurrentWorkspace(null);
-
-                computationGraphUpdater = new ComputationGraphUpdater(graph);
-
-                Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+                try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    computationGraphUpdater = new ComputationGraphUpdater(graph);
+                }
             }
             computationGraphUpdater.update(graph, gradient, getIterationCount(model), batchSize);
         } else {
             if (updater == null) {
-                MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
-                Nd4j.getMemoryManager().setCurrentWorkspace(null);
-
-                updater = UpdaterCreator.getUpdater(model);
-
-                Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+                try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    updater = UpdaterCreator.getUpdater(model);
+                }
             }
             Layer layer = (Layer) model;
 
