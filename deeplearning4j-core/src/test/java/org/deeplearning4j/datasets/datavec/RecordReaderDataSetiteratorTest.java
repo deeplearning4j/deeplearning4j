@@ -1008,6 +1008,7 @@ public class RecordReaderDataSetiteratorTest {
                 examples++;
             }
             cnt++;
+            log.info("DataSet {} passed...", cnt);
         }
 
         assertEquals(25, cnt);
@@ -1043,14 +1044,14 @@ public class RecordReaderDataSetiteratorTest {
 
     @Test
     public void specialRRTest3() throws Exception {
-        RecordReader rr = new SpecialImageRecordReader(500, 10,3, 224, 224);
+        RecordReader rr = new SpecialImageRecordReader(5000, 10,3, 224, 224);
         DataSetIterator rrdsi = new RecordReaderDataSetIterator.Builder(rr)
-                .setBatchSize(32)
+                .setBatchSize(128)
                 .numberOfWorkers(2)
                 .prefetchBufferSize(2)
                 .build();
 
-        rrdsi = new AsyncDataSetIterator(rrdsi);
+       // rrdsi = new AsyncDataSetIterator(rrdsi);
 
         int cnt = 0;
         int examples = 0;

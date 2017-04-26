@@ -1,11 +1,10 @@
 package org.deeplearning4j.datasets.datavec.tools;
 
 import org.apache.commons.lang3.RandomUtils;
-import org.datavec.api.records.reader.RecordReader;
-import org.datavec.api.util.RecordUtils;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.RecordConverter;
+import org.datavec.common.data.NDArrayWritable;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -50,7 +49,7 @@ public class SpecialImageRecordReader extends ImageRecordReader {
 
     @Override
     public List<Writable> next() {
-        INDArray features = Nd4j.create(1, channels, width, height).assign(counter.getAndIncrement());
+        INDArray features = Nd4j.create(1, channels, height, width).assign(counter.getAndIncrement());
         List<Writable> ret = RecordConverter.toRecord(features);
         ret.add(new IntWritable(RandomUtils.nextInt(0, numClasses)));
         return ret;
@@ -58,5 +57,29 @@ public class SpecialImageRecordReader extends ImageRecordReader {
 
     public List<String> getLabels() {
         return labels;
+    }
+
+
+    @Override
+    public boolean batchesSupported() {
+        return true;
+    }
+
+    @Override
+    public List<Writable> next(int num) {
+        int numExamples = Math.min(num, limit - counter.get());
+        //counter.addAndGet(numExamples);
+
+        INDArray features = Nd4j.create(numExamples, channels, height, width);
+        for (int i = 0; i < numExamples; i++) {
+            features.tensorAlongDimension(i, 1, 2, 3).assign(counter.getAndIncrement());
+        }
+
+        INDArray labels = Nd4j.create(numExamples, numClasses);
+
+        List<Writable> ret = RecordConverter.toRecord(features);
+        ret.add(new NDArrayWritable(labels));
+
+        return ret;
     }
 }

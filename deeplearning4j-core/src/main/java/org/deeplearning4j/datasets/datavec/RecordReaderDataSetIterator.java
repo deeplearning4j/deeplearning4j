@@ -258,6 +258,13 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             NDArrayWritable writable = (NDArrayWritable) currList.get(0);
             return new DataSet(writable.get(), writable.get());
         }
+
+        if (currList.size() == 2 && currList.get(0) instanceof  NDArrayWritable && currList.get(1) instanceof NDArrayWritable) {
+            NDArrayWritable writableF = (NDArrayWritable) currList.get(0);
+            NDArrayWritable writableL = (NDArrayWritable) currList.get(1);
+            return new DataSet(writableF.get(), writableL.get());
+        }
+
         if (currList.size() == 2 && currList.get(0) instanceof NDArrayWritable) {
             if (!regression) {
                 label = FeatureUtil.toOutcomeVector((int) Double.parseDouble(currList.get(1).toString()),
@@ -604,15 +611,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         private AtomicBoolean isShutdown = new AtomicBoolean(false);
         private AtomicBoolean shouldWork = new AtomicBoolean(true);
         protected RuntimeException exception;
-        protected WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .overallocationLimit(batchSize * prefetchSize * workers)
-                .minSize(10 * 1024L * 1024L)
-                .policyMirroring(MirroringPolicy.FULL)
-                .policySpill(SpillPolicy.EXTERNAL)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
-                .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                .build();
+        protected WorkspaceConfiguration configuration;
         private String workspaceId;
 
 
@@ -622,10 +621,34 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             this.reader = reader;
             this.workspaceId = "APT_LOOP-" + guid;
 
-            log.info("Workspace overallocation ratio: {}", configuration.getOverallocationLimit());
+
 
             this.setName("RRDSI prefetch thread");
             this.setDaemon(true);
+
+            if (reader.batchesSupported()) {
+                configuration = WorkspaceConfiguration.builder()
+                        .overallocationLimit(prefetchSize * Math.max(2, workers))
+                        .minSize(10 * 1024L * 1024L)
+                        .policyMirroring(MirroringPolicy.FULL)
+                        .policySpill(SpillPolicy.EXTERNAL)
+                        .policyLearning(LearningPolicy.FIRST_LOOP)
+                        .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                        .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                        .build();
+            } else {
+                configuration = WorkspaceConfiguration.builder()
+                        .overallocationLimit(batchSize * prefetchSize * Math.max(2, workers))
+                        .minSize(10 * 1024L * 1024L)
+                        .policyMirroring(MirroringPolicy.FULL)
+                        .policySpill(SpillPolicy.EXTERNAL)
+                        .policyLearning(LearningPolicy.FIRST_LOOP)
+                        .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                        .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                        .build();
+            }
+
+            log.info("Workspace overallocation ratio: {}", configuration.getOverallocationLimit());
         }
 
 
@@ -633,50 +656,74 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         public void run() {
             while (shouldWork.get()) {
                 try {
-
                     AtomicLong counterExampes = new AtomicLong(0);
                     AtomicLong counterOrder = new AtomicLong(0);
                     getMeta = collectMetaData.get();
                     boolean limitHit = maxNumBatches > 0 && maxNumBatches < counterOrder.get();
-                    OrderedBatch currentBatch = new OrderedBatch(counterOrder.getAndIncrement());
-                    while (!limitHit && reader.hasNext()) {
-                        if (useWorkspaces) {
-                            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceId)) {
+                    if (!reader.batchesSupported() || getMeta) {
+                        OrderedBatch currentBatch = new OrderedBatch(counterOrder.getAndIncrement());
+                        while (!limitHit && reader.hasNext()) {
+                            if (useWorkspaces) {
+                                try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceId)) {
+                                    if (!getMeta)
+                                        currentBatch.addWritable(reader.next());
+                                    else
+                                        currentBatch.addRecord(reader.nextRecord());
+                                }
+                            } else {
                                 if (!getMeta)
                                     currentBatch.addWritable(reader.next());
                                 else
                                     currentBatch.addRecord(reader.nextRecord());
                             }
-                        } else {
-                            if (!getMeta)
-                                currentBatch.addWritable(reader.next());
-                            else
-                                currentBatch.addRecord(reader.nextRecord());
-                        }
 
-                        // if we've built our batch size - we send it to processing
-                        if (currentBatch.size() == batchSize) {
-                            // we should put callable here
+                            // if we've built our batch size - we send it to processing
+                            if (currentBatch.size() == batchSize) {
+                                // we should put callable here
+                                currentBatch.commit();
+                                Future<DataSet> future = executor.submit(new DataSetCallable(currentBatch));
+                                getMeta = collectMetaData.get();
+                                buffer.put(future);
+                                currentBatch = new OrderedBatch(counterOrder.getAndIncrement());
+                                limitHit = maxNumBatches > 0 && maxNumBatches < counterOrder.get();
+                            }
+                        }
+                        if (currentBatch.size() > 0 && !limitHit) {
+                            // process last batch
                             currentBatch.commit();
                             Future<DataSet> future = executor.submit(new DataSetCallable(currentBatch));
-                            getMeta = collectMetaData.get();
                             buffer.put(future);
-                            currentBatch = new OrderedBatch(counterOrder.getAndIncrement());
+                        }
+
+                        buffer.put(terminator);
+                    } else {
+                        while (!limitHit && reader.hasNext()) {
+                            if (useWorkspaces) {
+                                try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceId)) {
+                                    long time1 = System.currentTimeMillis();
+                                    List<Writable> batch = reader.next(batchSize);
+                                    DataSet ds = getDataSet(batch);
+                                    long time2 = System.currentTimeMillis();
+
+                                    log.info("Compilation time: {} ms; Footprint: {} bytes", time2 - time1, ds.getMemoryFootprint());
+                                    buffer.put(new DummyFuture(ds));
+                                }
+                            } else {
+                                List<Writable> batch = reader.next(batchSize);
+                                buffer.put(new DummyFuture(getDataSet(batch)));
+                            }
+                            counterOrder.getAndIncrement();
+
                             limitHit = maxNumBatches > 0 && maxNumBatches < counterOrder.get();
                         }
-                    }
-                    if (currentBatch.size() > 0 && !limitHit) {
-                        // process last batch
-                        currentBatch.commit();
-                        Future<DataSet> future = executor.submit(new DataSetCallable(currentBatch));
-                        buffer.put(future);
-                    }
 
-                    buffer.put(terminator);
+                        buffer.put(terminator);
+                    }
                 } catch (InterruptedException e) {
                     shouldWork.set(false);
                     isShutdown.set(true);
                 } catch (RuntimeException e) {
+                    e.printStackTrace();
                     this.exception = e;
                     isShutdown.set(true);
                     shouldWork.set(false);
@@ -689,8 +736,10 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         protected void shutdown() {
             shouldWork.set(false);
             thread.interrupt();
-            while (!isShutdown.get())
+            while (!isShutdown.get()) {
                 LockSupport.parkNanos(100);
+                thread.interrupt();
+            }
         }
     }
 
@@ -842,6 +891,15 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
 
     protected static class DummyFuture implements Future<DataSet> {
+        DataSet dataSet;
+
+        public DummyFuture() {
+
+        }
+
+        public DummyFuture(DataSet ds) {
+            this.dataSet = ds;
+        }
 
         @Override
         public boolean cancel(boolean mayInterruptIfRunning) {
@@ -860,12 +918,12 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
         @Override
         public DataSet get() throws InterruptedException, ExecutionException {
-            return null;
+            return dataSet;
         }
 
         @Override
         public DataSet get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-            return null;
+            return dataSet;
         }
     }
 
