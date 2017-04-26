@@ -1117,7 +1117,7 @@ public class ComputationGraph implements Serializable, Model {
             }
             calcBackpropGradients(true);
         } else {
-            Map<String, INDArray> activations = feedForward(true, true);
+            Map<String, INDArray> activations = feedForward(true, true, false, false);
             if (trainingListeners.size() > 0) {
                 for (TrainingListener tl : trainingListeners) {
                     tl.onForwardPass(this, activations);
@@ -1197,10 +1197,33 @@ public class ComputationGraph implements Serializable, Model {
      * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
      */
     public Map<String, INDArray> feedForward(boolean train) {
-        return feedForward(train, false);
+        return feedForward(train, false, false, true);
     }
 
-    private Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers) {
+    /**
+     * Conduct forward pass using the set/stored inputs.
+     * This method allows non-Layer vertex activations to be included in the output map
+     *
+     * @param train                            If true: do forward pass at training time; false: do forward pass at test time
+     * @param includeNonLayerVertexActivations If true: included activations of all vertices, not just layer and input
+     *                                         vertices in the output.
+     * @return Map of activations
+     */
+    public Map<String,INDArray> feedForward(boolean train, boolean includeNonLayerVertexActivations){
+        return feedForward(train, false, includeNonLayerVertexActivations, true);
+    }
+
+    /**
+     *
+     * @param train                            Train/test mode
+     * @param excludeOutputLayers              If true: exclude output layers (not needed for backprop, for example)
+     * @param includeNonLayerVertexActivations If true: include activations for all vertices, not just layer vertices
+     * @param publicApi                        If true: activation arrays are detached from workspace before returning.
+     *                                         False: activations arrays may leak outside of workspace
+     * @return Map of activations, by vertex name
+     */
+    private Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers,
+                                              boolean includeNonLayerVertexActivations, boolean publicApi) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
         WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
@@ -1254,9 +1277,14 @@ public class ComputationGraph implements Serializable, Model {
                         continue;
                     }
                     // once again, pushing stuff out of this workspace
-                    INDArray out = current.doForward(train).leverageTo(workspaceExternal);
+                    INDArray out;
+                    if(publicApi){
+                        out = current.doForward(train).detach();
+                    } else {
+                        out = current.doForward(train).leverageTo(workspaceExternal);
+                    }
 
-                    if (current.hasLayer()) {
+                    if(includeNonLayerVertexActivations || current.hasLayer()) {
                         layerActivations.put(current.getVertexName(), out);
                     }
 
