@@ -225,13 +225,17 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        try {
+            for (PointersPair pair : externalAllocations) {
+                if (pair.getHostPointer() != null)
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pair.getHostPointer());
 
-        for (PointersPair pair : externalAllocations) {
-            if (pair.getHostPointer() != null)
-                NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pair.getHostPointer());
-
-            if (pair.getDevicePointer() != null)
-                NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getDevicePointer(), null);
+                if (pair.getDevicePointer() != null)
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getDevicePointer(), null);
+            }
+        } catch (Exception e) {
+            log.error("RC: Workspace [{}] device_{} threadId {}: clearing external allocations...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), Thread.currentThread().getId());
+            throw new RuntimeException(e);
         }
 
         spilledAllocations.set(0);
