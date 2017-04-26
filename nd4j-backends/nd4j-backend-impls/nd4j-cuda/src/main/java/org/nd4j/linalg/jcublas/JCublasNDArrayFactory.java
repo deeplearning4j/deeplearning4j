@@ -687,7 +687,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             return toConcat[0];
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         PointerPointer shapeInfoPointers = new PointerPointer(toConcat.length);
         PointerPointer dataPointers = new PointerPointer(toConcat.length);
