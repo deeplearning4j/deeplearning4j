@@ -398,6 +398,7 @@ public class ParallelRecordReaderDataSetIterator implements DataSetIterator {
         // TODO: maybe worth shutting down executor as well? or recreate new buffer... or we don't care, Future is gone anyway
 
         this.thread = new AsyncPrefetchThread(buffer, recordReader, terminator);
+        Nd4j.getAffinityManager().attachThreadToDevice(this.thread, Nd4j.getAffinityManager().getDeviceForCurrentThread());
         this.thread.start();
     }
 
