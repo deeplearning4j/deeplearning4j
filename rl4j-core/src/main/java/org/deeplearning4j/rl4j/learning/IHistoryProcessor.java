@@ -52,7 +52,7 @@ public interface IHistoryProcessor {
         }
 
         public int[] getShape() {
-            return new int[] {getHistoryLength(), getCroppingWidth(), getCroppingHeight()};
+            return new int[] {getHistoryLength(), getCroppingHeight(), getCroppingWidth()};
         }
     }
 }
