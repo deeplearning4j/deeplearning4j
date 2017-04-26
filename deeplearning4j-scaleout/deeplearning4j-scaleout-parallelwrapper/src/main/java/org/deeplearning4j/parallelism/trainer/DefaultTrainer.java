@@ -61,6 +61,9 @@ public class DefaultTrainer extends Thread implements Trainer {
     protected WorkspaceMode workspaceMode;
     protected AtomicLong lastEtlTime = new AtomicLong(0);
 
+    protected AtomicBoolean nullMode = new AtomicBoolean(false);
+    protected DataSet nullDataSet;
+
 
 
     @Override
@@ -76,10 +79,13 @@ public class DefaultTrainer extends Thread implements Trainer {
     }
 
     @Override
-    public void feedDataSet(@NonNull DataSet dataSet, long etlTime) {
+    public void feedDataSet(DataSet dataSet, long etlTime) {
         setupIfNeccessary();
         running.incrementAndGet();
-        queue.add(dataSet);
+        if (dataSet != null)
+            queue.add(dataSet);
+        else
+            nullMode.set(true);
 
         if (lastEtlTime == null)
             lastEtlTime = new AtomicLong(0);
@@ -241,7 +247,15 @@ public class DefaultTrainer extends Thread implements Trainer {
 
             if (!useMDS) {
                 while (!shouldStop.get()) {
-                    DataSet dataSet = queue.poll(100, TimeUnit.MILLISECONDS);
+                    DataSet dataSet = null;
+                    if (!nullMode.get())
+                        dataSet = queue.poll(100, TimeUnit.MILLISECONDS);
+                    else {
+                        if (nullDataSet == null)
+                            nullDataSet = new org.nd4j.linalg.dataset.DataSet(Nd4j.create(72, 3, 96, 96), Nd4j.create(72, 8648));
+
+                        dataSet = nullDataSet;
+                    }
                     if (dataSet != null) {
 
                         //if (Nd4j.getAffinityManager().getDeviceForCurrentThread() != Nd4j.getAffinityManager().getDeviceForArray(dataSet.getFeatures()))
