@@ -24,3 +24,10 @@ When humans learn, they alter the way they relate to the world. When algorithms 
 
 Let's ground that abstract explanation of machine learning in a concrete example. Image recognition is a popular application for machine learning. With image recognition, image files are fed into an algorithm, which attempts to recognize what those images represent and produces a "name" as its output. 
 
+## Parameterized Learning Algorithms
+
+OK, what's a parameter? It's a quantity that helps define a particular process, and it comes from the Greek words *metron* (for measure) and *para* (for side). So it's a side measure, a numerical characteristic of the algorithm. In the equation below, which establishes the relationship with the input `x` and the output `y`, the parameters are 9 and 0.1. 
+
+`y = 9x - 0.1`
+
+But what if we didn't actually know the relationship between `x` and `y`? 
