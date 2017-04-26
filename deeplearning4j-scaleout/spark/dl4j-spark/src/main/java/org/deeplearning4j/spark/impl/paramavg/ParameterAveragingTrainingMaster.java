@@ -88,6 +88,7 @@ public class ParameterAveragingTrainingMaster
     private int rddDataSetNumExamples;
     private int batchSizePerWorker;
     private int averagingFrequency;
+    private int aggregationDepth;
     private int prefetchNumBatches;
     private boolean collectTrainingStats;
     private ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper stats;
@@ -128,6 +129,7 @@ public class ParameterAveragingTrainingMaster
         this.rddDataSetNumExamples = builder.rddDataSetNumExamples;
         this.batchSizePerWorker = builder.batchSizePerWorker;
         this.averagingFrequency = builder.averagingFrequency;
+        this.aggregationDepth = builder.aggregationDepth;
         this.prefetchNumBatches = builder.prefetchNumBatches;
         this.repartition = builder.repartition;
         this.repartitionStrategy = builder.repartitionStrategy;
@@ -150,8 +152,8 @@ public class ParameterAveragingTrainingMaster
 
     public ParameterAveragingTrainingMaster(boolean saveUpdater, Integer numWorkers, int rddDataSetNumExamples,
                     int batchSizePerWorker, int averagingFrequency, int prefetchNumBatches) {
-        this(saveUpdater, numWorkers, rddDataSetNumExamples, batchSizePerWorker, averagingFrequency, prefetchNumBatches,
-                        Repartition.Always, RepartitionStrategy.Balanced, false);
+        this(saveUpdater, numWorkers, rddDataSetNumExamples, batchSizePerWorker, averagingFrequency, 2,
+                prefetchNumBatches, Repartition.Always, RepartitionStrategy.Balanced, false);
     }
 
     /**
@@ -160,30 +162,40 @@ public class ParameterAveragingTrainingMaster
      * @param rddDataSetNumExamples Number of examples in each DataSet object in the {@code RDD<DataSet>}
      * @param batchSizePerWorker    Number of examples to use per worker per fit
      * @param averagingFrequency    Frequency (in number of minibatches) with which to average parameters
+     * @param aggregationDepth      Number of aggregation levels used in parameter aggregation
      * @param prefetchNumBatches    Number of batches to asynchronously prefetch (0: disable)
+     * @param repartition           Set if/when repartitioning should be conducted for the training data
+     * @param repartitionStrategy   Repartitioning strategy to use. See {@link RepartitionStrategy}
      * @param collectTrainingStats  If true: collect training statistics for debugging/optimization purposes
      */
     public ParameterAveragingTrainingMaster(boolean saveUpdater, Integer numWorkers, int rddDataSetNumExamples,
-                    int batchSizePerWorker, int averagingFrequency, int prefetchNumBatches, Repartition repartition,
-                    RepartitionStrategy repartitionStrategy, boolean collectTrainingStats) {
-        this(saveUpdater, numWorkers, rddDataSetNumExamples, batchSizePerWorker, averagingFrequency, prefetchNumBatches,
-                        repartition, repartitionStrategy, StorageLevel.MEMORY_ONLY_SER(), collectTrainingStats);
+                    int batchSizePerWorker, int averagingFrequency, int aggregationDepth, int prefetchNumBatches,
+                    Repartition repartition, RepartitionStrategy repartitionStrategy, boolean collectTrainingStats) {
+        this(saveUpdater, numWorkers, rddDataSetNumExamples, batchSizePerWorker, averagingFrequency, aggregationDepth,
+                prefetchNumBatches, repartition, repartitionStrategy, StorageLevel.MEMORY_ONLY_SER(), collectTrainingStats);
     }
 
     public ParameterAveragingTrainingMaster(boolean saveUpdater, Integer numWorkers, int rddDataSetNumExamples,
-                    int batchSizePerWorker, int averagingFrequency, int prefetchNumBatches, Repartition repartition,
-                    RepartitionStrategy repartitionStrategy, StorageLevel storageLevel, boolean collectTrainingStats) {
+                    int batchSizePerWorker, int averagingFrequency, int aggregationDepth, int prefetchNumBatches,
+                    Repartition repartition, RepartitionStrategy repartitionStrategy, StorageLevel storageLevel,
+                    boolean collectTrainingStats) {
         if (numWorkers <= 0)
             throw new IllegalArgumentException("Invalid number of workers: " + numWorkers + " (must be >= 1)");
         if (rddDataSetNumExamples <= 0)
             throw new IllegalArgumentException(
                             "Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
+        if (averagingFrequency <= 0)
+            throw new IllegalArgumentException("Invalid input: averaging frequency must be >= 1");
+        if (aggregationDepth <= 0) {
+            throw new IllegalArgumentException("Invalid input: tree aggregation depth must be >= 1");
+        }
 
         this.saveUpdater = saveUpdater;
         this.numWorkers = numWorkers;
         this.rddDataSetNumExamples = rddDataSetNumExamples;
         this.batchSizePerWorker = batchSizePerWorker;
         this.averagingFrequency = averagingFrequency;
+        this.aggregationDepth = aggregationDepth;
         this.prefetchNumBatches = prefetchNumBatches;
         this.collectTrainingStats = collectTrainingStats;
         this.repartition = repartition;
@@ -857,8 +869,8 @@ public class ParameterAveragingTrainingMaster
 
         if (collectTrainingStats)
             stats.logAggregateStartTime();
-        ParameterAveragingAggregationTuple tuple = results.aggregate(null, new ParameterAveragingElementAddFunction(),
-                        new ParameterAveragingElementCombineFunction());
+        ParameterAveragingAggregationTuple tuple = results.treeAggregate(null, new ParameterAveragingElementAddFunction(),
+                        new ParameterAveragingElementCombineFunction(), this.aggregationDepth);
         INDArray params = tuple.getParametersSum();
         int aggCount = tuple.getAggregationsCount();
         SparkTrainingStats aggregatedStats = tuple.getSparkTrainingStats();
@@ -1089,6 +1101,7 @@ public class ParameterAveragingTrainingMaster
         private int rddDataSetNumExamples;
         private int batchSizePerWorker = 16;
         private int averagingFrequency = 5;
+        private int aggregationDepth = 2;
         private int prefetchNumBatches = 0;
         private Repartition repartition = Repartition.Always;
         private RepartitionStrategy repartitionStrategy = RepartitionStrategy.Balanced;
@@ -1189,6 +1202,22 @@ public class ParameterAveragingTrainingMaster
             if (averagingFrequency <= 0)
                 throw new IllegalArgumentException("Invalid input: averaging frequency must be >= 1");
             this.averagingFrequency = averagingFrequency;
+            return this;
+        }
+
+        /**
+         * The number of levels in the aggregation tree for parameter synchronization. (default: 2)
+         * <b>Note</b>: For large models trained with many partitions, increasing this number
+         * will reduce the load on the driver and help prevent it from becoming a bottleneck.<br>
+         *
+         * @param aggregationDepth RDD tree aggregation depth when averaging parameter updates.
+         */
+        public Builder aggregationDepth(int aggregationDepth) {
+            if (aggregationDepth <= 0) {
+                throw new IllegalArgumentException("Invalid input: tree aggregation depth must " +
+                        "be >= 1");
+            }
+            this.aggregationDepth = aggregationDepth;
             return this;
         }
 

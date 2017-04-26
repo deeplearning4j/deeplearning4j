@@ -368,6 +368,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, conf,
                         new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
                                         .batchSizePerWorker(batchSizePerExecutor).averagingFrequency(1)
+                                        .aggregationDepth(1)
                                         .repartionData(Repartition.Always).build());
         sparkNet.setCollectTrainingStats(true);
 
