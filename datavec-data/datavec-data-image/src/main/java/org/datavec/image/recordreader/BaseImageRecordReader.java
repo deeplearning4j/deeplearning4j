@@ -29,12 +29,14 @@ import org.datavec.api.util.files.FileFromPathIterator;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.RecordConverter;
+import org.datavec.common.data.NDArrayWritable;
 import org.datavec.image.loader.ImageLoader;
 import org.datavec.image.loader.NativeImageLoader;
 import org.datavec.image.loader.BaseImageLoader;
 import org.datavec.image.transform.ImageTransform;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.collection.CompactHeapStringList;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.*;
 import java.net.URI;
@@ -247,6 +249,49 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
             imageTransform.transform(null);
         }
         throw new IllegalStateException("Indeterminant state: record must not be null, or a file iterator must exist");
+    }
+
+    @Override
+    public boolean batchesSupported() {
+        return (imageLoader instanceof NativeImageLoader);
+    }
+
+    @Override
+    public List<Writable> next(int num) {
+        List<File> currBatch = new ArrayList<>();
+
+        int cnt = 0;
+
+        int numCategories = appendLabel ? labels.size() : 0;
+        List<Integer> currLabels = new ArrayList<>();
+        while (cnt < num && iter.hasNext()) {
+            File currFile = iter.next();
+            currBatch.add(currFile);
+            if (appendLabel)
+                currLabels.add(labels.indexOf(getLabel(currFile.getPath())));
+            cnt++;
+        }
+
+        INDArray features = Nd4j.create(cnt, channels, height, width);
+        for(int i = 0; i < cnt; i++) {
+            try {
+                ((NativeImageLoader) imageLoader).asMatrixView(currBatch.get(i), features.tensorAlongDimension(i, 1, 2, 3));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        List<Writable> ret = (RecordConverter.toRecord(features));
+        if (appendLabel) {
+            INDArray labels = Nd4j.create(cnt, numCategories);
+            for (int i = 0; i < currLabels.size(); i++) {
+                labels.put(i, currLabels.get(i), 1.0f);
+            }
+
+            ret.add(new NDArrayWritable(labels));
+        }
+
+        return ret;
     }
 
     @Override
