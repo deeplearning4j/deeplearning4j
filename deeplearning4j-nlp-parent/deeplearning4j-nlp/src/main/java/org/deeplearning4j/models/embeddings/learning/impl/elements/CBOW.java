@@ -171,6 +171,10 @@ public class CBOW<T extends SequenceElement> implements ElementsLearningAlgorith
 
         if (!isInference)
             batches.get().add(cbow);
+            if (batches.get().size() > 4096) {
+                Nd4j.getExecutioner().exec(batches.get());
+                batches.get().clear();
+            }
         else
             Nd4j.getExecutioner().exec(cbow);
 
