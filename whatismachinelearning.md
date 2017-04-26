@@ -30,4 +30,6 @@ OK, what's a parameter? It's a quantity that helps define a particular process, 
 
 `y = 9x - 0.1`
 
-But what if we didn't actually know the relationship between `x` and `y`? 
+But what if we didn't actually know the relationship between `x` and `y`? How could we find the correct parameters that turn each `x` into a `y`? We would start by using variables for the parameters, rather than fixing their amount. 
+
+
