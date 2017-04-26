@@ -240,6 +240,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
         spilledAllocations.set(0);
         externalCount.set(0);
+        externalAllocations.clear();
     }
 
     @Override

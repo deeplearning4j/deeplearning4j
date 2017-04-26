@@ -255,7 +255,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
                 if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT || resetPlanned.get())) {
                     clearExternalAllocations();
-                    externalAllocations.clear();
                     spilledAllocations.set(0);
                     externalCount.set(0);
                     resetPlanned.set(false);
@@ -358,8 +357,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
             if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT || resetPlanned.get())) {
                 clearExternalAllocations();
-                externalAllocations.clear();
-                externalCount.set(0);
                 resetPlanned.set(false);
             }
 
@@ -408,7 +405,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
         if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT || resetPlanned.get())) {
             clearExternalAllocations();
-            externalAllocations.clear();
             externalCount.set(0);
             resetPlanned.set(false);
         }

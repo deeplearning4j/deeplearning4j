@@ -45,6 +45,9 @@ public class CpuWorkspace extends Nd4jWorkspace {
         for (PointersPair pair: externalAllocations) {
             nativeOps.freeHost(pair.getHostPointer());
         }
+        externalAllocations.clear();
+        externalCount.set(0);
+        spilledAllocations.set(0);
     }
 
     @Override
