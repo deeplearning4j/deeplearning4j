@@ -209,6 +209,13 @@ public class VPTree {
     }
 
 
+    /**
+     *
+     * @param target
+     * @param k
+     * @param results
+     * @param distances
+     */
     public void search(DataPoint target, int k, List<DataPoint> results, List<Double> distances) {
         PriorityQueue<HeapItem> pq = new PriorityQueue<>();
         tau = Double.MAX_VALUE;
@@ -228,6 +235,13 @@ public class VPTree {
     }
 
 
+    /**
+     *
+     * @param node
+     * @param target
+     * @param k
+     * @param pq
+     */
     public void search(Node node, DataPoint target, int k, PriorityQueue<HeapItem> pq) {
         if (node == null)
             return;
