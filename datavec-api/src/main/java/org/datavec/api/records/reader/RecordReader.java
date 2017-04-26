@@ -64,11 +64,27 @@ public interface RecordReader extends Closeable, Serializable, Configurable {
     void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException;
 
     /**
+     * This method returns true, if next(int) signature is supported by this RecordReader implementation.
+     *
+     * @return
+     */
+    boolean batchesSupported();
+
+    /**
+     * This method will be used, if batchesSupported() returns true.
+     *
+     * @param num
+     * @return
+     */
+    List<Writable> next(int num);
+
+    /**
      * Get the next record
      *
      * @return
      */
     List<Writable> next();
+
 
 
     /**

@@ -59,6 +59,16 @@ public class InMemoryRecordReader implements RecordReader {
 
     }
 
+    @Override
+    public boolean batchesSupported() {
+        return false;
+    }
+
+    @Override
+    public List<Writable> next(int num) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Get the next record
      *
