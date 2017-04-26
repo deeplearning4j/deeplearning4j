@@ -84,8 +84,12 @@ public class DefaultTrainer extends Thread implements Trainer {
         running.incrementAndGet();
         if (dataSet != null)
             queue.add(dataSet);
-        else
+        else {
+            if (nullMode == null)
+                nullMode = new AtomicBoolean(false);
+
             nullMode.set(true);
+        }
 
         if (lastEtlTime == null)
             lastEtlTime = new AtomicLong(0);
