@@ -252,7 +252,7 @@ public class DefaultTrainer extends Thread implements Trainer {
             if (!useMDS) {
                 while (!shouldStop.get()) {
                     DataSet dataSet = null;
-                    if (!nullMode.get())
+                    if (nullMode == null || !nullMode.get())
                         dataSet = queue.poll(100, TimeUnit.MILLISECONDS);
                     else {
                         if (nullDataSet == null)
