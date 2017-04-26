@@ -993,7 +993,7 @@ public class RecordReaderDataSetiteratorTest {
     @Test
     public void specialRRTest1() throws Exception {
         RecordReader rr = new SpecialImageRecordReader(250, 10,3, 224, 224);
-        DataSetIterator rrdsi = new RecordReaderDataSetIterator.Builder(rr)
+        DataSetIterator rrdsi = new ParallelRecordReaderDataSetIterator.Builder(rr)
                 .setBatchSize(10)
                 .numberOfWorkers(1)
                 .build();
@@ -1018,7 +1018,7 @@ public class RecordReaderDataSetiteratorTest {
     @Test
     public void specialRRTest2() throws Exception {
         RecordReader rr = new SpecialImageRecordReader(250, 10,3, 224, 224);
-        DataSetIterator rrdsi = new RecordReaderDataSetIterator.Builder(rr)
+        DataSetIterator rrdsi = new ParallelRecordReaderDataSetIterator.Builder(rr)
                 .setBatchSize(10)
                 .numberOfWorkers(1)
                 .prefetchBufferSize(4)
@@ -1045,7 +1045,7 @@ public class RecordReaderDataSetiteratorTest {
     @Test
     public void specialRRTest3() throws Exception {
         RecordReader rr = new SpecialImageRecordReader(5000, 10,3, 224, 224);
-        DataSetIterator rrdsi = new RecordReaderDataSetIterator.Builder(rr)
+        DataSetIterator rrdsi = new ParallelRecordReaderDataSetIterator.Builder(rr)
                 .setBatchSize(128)
                 .numberOfWorkers(2)
                 .prefetchBufferSize(2)
