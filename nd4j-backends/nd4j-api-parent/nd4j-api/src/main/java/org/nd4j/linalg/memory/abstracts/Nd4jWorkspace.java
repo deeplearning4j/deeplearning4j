@@ -77,6 +77,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     protected MemoryWorkspace previousWorkspace;
     protected MemoryWorkspace borrowingWorkspace;
 
+    protected String guid;
+
     // this memory manager implementation will be used to allocate real memory for this workspace
 
     public Nd4jWorkspace(@NonNull WorkspaceConfiguration configuration) {
@@ -87,7 +89,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         this.workspaceConfiguration = configuration;
         this.id = workspaceId;
         this.threadId = Thread.currentThread().getId();
-
+        this.guid = java.util.UUID.randomUUID().toString();
         this.memoryManager = Nd4j.getMemoryManager();
 
         // and actual workspace allocation

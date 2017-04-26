@@ -221,7 +221,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
     @Override
     protected void clearExternalAllocations() {
         //if (isDebug.get())
-            log.info("Workspace [{}] device_{} threadId {}: clearing external allocations...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), Thread.currentThread().getId());
+            log.info("Workspace [{}] device_{} threadId {} guid [{}]: clearing external allocations...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), Thread.currentThread().getId(), guid);
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
@@ -234,7 +234,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                     NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getDevicePointer(), null);
             }
         } catch (Exception e) {
-            log.error("RC: Workspace [{}] device_{} threadId {}: clearing external allocations...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), Thread.currentThread().getId());
+            log.error("RC: Workspace [{}] device_{} threadId {} guid [{}]: clearing external allocations...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), Thread.currentThread().getId(), guid);
             throw new RuntimeException(e);
         }
 
