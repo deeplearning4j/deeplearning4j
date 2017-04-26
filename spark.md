@@ -17,6 +17,9 @@ Data parallelism shards large datasets and hands those pieces to separate neural
 * [Configuring the TrainingMaster](#configuring)
 * [Dependencies for Training on Spark](#dependencies)
 * [Spark Examples Repository](#examples)
+* [Training with GPUs on Spark](#gpusspark)
+    * [YARN and GPUs](#yarngpus)
+    * [Mesos and GPUs](#mesosgpus)
 * [Configuring Memory for Spark on YARN](#memoryyarn)
     * [How Deeplearning4j (and ND4J) Manages Memory](#memory1)
     * [How YARN Manages Memory](#memory2)
@@ -166,6 +169,63 @@ Note that ```${scala.binary.version}``` is a Maven property with the value ```2.
 ## <a name="examples">Spark Examples Repository</a>
 
 The [Deeplearning4j examples repo](https://github.com/deeplearning4j/dl4j-examples) ([old examples here](https://github.com/deeplearning4j/dl4j-spark-cdh5-examples)) contains a number of Spark examples.
+
+## <a name="gpusspark">Training with GPUs on Spark</a>
+
+There are some issues to be aware of when running Deeplearning4j with CUDA on Spark, with cluster managers such as YARN.
+
+
+### <a name="yarngpus">YARN and GPUs</a>
+
+[YARN](https://hadoop.apache.org/docs/current/hadoop-yarn/hadoop-yarn-site/YARN.html) is a commonly used cluster resource management/scheduling tool for Hadoop clusters. Running Deeplearning4j with GPUs on Spark+YARN is possible, but (unlike memory and CPU resources) YARN does not track/handle GPUs as a resource. Consequently, some additional steps are typically required to run DL4J with GPUs on YARN. This is problematic for two reasons:
+
+1. On heterogeneous-hardware clusters (i.e., some machines with GPUs, others without), as YARN won't natively allocate your jobs only to machines that have GPUs
+2. YARN may try to schedule two or more GPU-utilizing jobs to a single machine/GPU
+
+A workaround to this is to utilize node labels (which are available with YARN versions 2.6 or greater). Node labels provide a way to tag or group machines based on your own criteria - in this case, the presence or absence of GPUs. After enabling node labels in the YARN configuration, node labels can be created, and then can be assigned to machines in the cluster. Spark jobs can then be limited to using GPU-containing machines only, by specifying a node label.
+
+Some resources on node labels - and how to configure them - can be found at the following links:
+
+- [https://hadoop.apache.org/docs/r2.7.3/hadoop-yarn/hadoop-yarn-site/NodeLabel.html](https://hadoop.apache.org/docs/r2.7.3/hadoop-yarn/hadoop-yarn-site/NodeLabel.html)
+- [https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.4.2/bk_yarn_resource_mgt/content/configuring_node_labels.html](https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.4.2/bk_yarn_resource_mgt/content/configuring_node_labels.html).
+- [https://developer.ibm.com/hadoop/2017/03/10/yarn-node-labels/](https://developer.ibm.com/hadoop/2017/03/10/yarn-node-labels/)
+
+To launch GPU jobs on YARN:
+
+1. Ensure node labels are enabled in the YARN configuration
+2. Create a label (or, multiple labels) for the GPU machines
+3. Assign each GPU machine you want to use for training to the previously-created node label
+4. Add ```--conf spark.yarn.executor.nodeLabelExpression=YOUR_NODE_LABEL``` to your Spark submit launch configuration
+
+Note that multiple labels can be assigned to each node. Multiple labels can be utilized to obtain more fine-grained (albeit manual) control over job/node scheduling, and is a possible workaround to avoid YARN over-allocating GPU resources.
+
+There are some issues to be aware of when using DL4J on Spark/YARN and GPUs.
+
+1. As with single-machine training in DL4J, CUDA must be installed and NVCC must be available on the path for executing tasks
+2. Since YARN does not partition or contain GPU usage, you should make sure it can only schedule a single GPU task on any single-GPU node. This can be done by requiring enough CPU and memory in your GPU-using job that the executor has no capacity left over for another such job. Otherwise, YARN might schedule multiple GPU jobs on the same executor, even if it does not have enough GPU ressources to satisfy the demands of both jobs.
+
+Three workarounds are available to avoid failures due to scheduling:
+
+First, use multiple labels to manually control scheduling, as discussed above.
+
+Second, allocate sufficient resources (cores, memory) to the containers to ensure no other GPU-utilizing tasks are scheduled on each node.
+
+Third, it is possible to utilize containers (specifically, the [Docker container executor](https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/DockerContainerExecutor.html)), where the GPU is declared as being used in the container, via the ```devices``` cgroup - this ensures that GPU is not allocated to multiple tasks. A simpler approach is to use [nvidia-docker containers](https://github.com/NVIDIA/nvidia-docker/wiki/GPU-isolation), which handles this declaration for you.
+
+Requirements for the Docker container executor:
+- Hadoop version 2.6.0 or later
+- An operating system that supports Docker (cgroups and namespaces are required, hence a Linux kernel version 3.x or later is required. Some operating systems, such as CentOS 6 and RHEL 6 and earlier are not supported).
+- Docker client installed and configured on each node
+- A properly configured docker image to launch your jobs
+
+Further details on the Docker container executor can be found [here](https://hadoop.apache.org/docs/stable/hadoop-yarn/hadoop-yarn-site/DockerContainerExecutor.html).
+
+
+
+### <a name="mesosgpus">Mesos and GPUs</a>
+
+[Apache Mesos](http://mesos.apache.org/) is an another cluster resource management tool. Unlike YARN, Mesos has built-in [support for Nvidia GPUs](https://mesos.apache.org/documentation/latest/gpu-support/) (since version 1.0.0), and does not have the GPU over-allocation issues of YARN. Consequently, (all other things being equal) running DL4J+GPUs on Mesos is easier than running the same task on YARN.
+
 
 
 ## <a name="memoryyarn">Configuring Memory for Spark on YARN</a>
