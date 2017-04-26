@@ -187,7 +187,8 @@ public class GravesBidirectionalLSTM
                                         getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                                         getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), training,
                                         null, null, forBackprop, true,
-                                        GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray);
+                                        GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray,
+                                this.layerConf().getLayerNormalization());
 
         final FwdPassReturn backwardsEval =
                         LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
@@ -195,7 +196,8 @@ public class GravesBidirectionalLSTM
                                         getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
                                         getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS), training,
                                         null, null, forBackprop, false,
-                                        GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS, maskArray);
+                                        GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS, maskArray,
+                                this.layerConf().getLayerNormalization());
 
 
         //sum outputs
@@ -221,7 +223,8 @@ public class GravesBidirectionalLSTM
 
         return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
                         getParam(recurrentKey), getParam(inputKey), getParam(biasKey), training, prevOutputActivations,
-                        prevMemCellState, forBackprop, forwards, inputKey, maskArray);
+                        prevMemCellState, forBackprop, forwards, inputKey, maskArray,
+                this.layerConf().getLayerNormalization());
 
     }
 

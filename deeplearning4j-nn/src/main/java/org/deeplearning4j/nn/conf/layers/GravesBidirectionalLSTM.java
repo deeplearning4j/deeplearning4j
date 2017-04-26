@@ -49,13 +49,14 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
         super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
         this.gateActivationFn = builder.gateActivationFn;
+        this.useLayerNormalization = builder.useLayerNormalization;
     }
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTM ret =
-                        new org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTM(conf);
+                new org.deeplearning4j.nn.layers.recurrent.GravesBidirectionalLSTM(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -127,10 +128,18 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
     @NoArgsConstructor
     public static class Builder extends BaseRecurrentLayer.Builder<Builder> {
 
+
         private double forgetGateBiasInit = 1.0;
         private IActivation gateActivationFn = new ActivationSigmoid();
 
-        /** Set forget gate bias initalizations. Values in range 1-5 can potentially
+        public Builder(Builder builder) {
+            super(builder);
+            forgetGateBiasInit=builder.forgetGateBiasInit;
+            gateActivationFn=builder.gateActivationFn;
+        }
+
+        /**
+         * Set forget gate bias initalizations. Values in range 1-5 can potentially
          * help with learning or longer-term dependencies.
          */
         public Builder forgetGateBiasInit(double biasInit) {

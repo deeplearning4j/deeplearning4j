@@ -55,16 +55,18 @@ public class LSTMHelpers {
 
     /**
      * Returns FwdPassReturn object with activations/INDArrays. Allows activateHelper to be used for forward pass, backward pass
-     * and rnnTimeStep whilst being reasonably efficient for all
+     * and rnnTimeStep whilst being reasonably efficient for all.
+     * @param layerNormalizationHelper A instance to use to apply layer normalization.
      */
     static public FwdPassReturn activateHelper(final Layer layer, final NeuralNetConfiguration conf,
-                    final IActivation gateActivationFn, //Activation function for the gates - sigmoid or hard sigmoid (must be found in range 0 to 1)
-                    final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
-                    final INDArray originalInputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
-                    final INDArray biases, //Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
-                    final boolean training, final INDArray originalPrevOutputActivations,
-                    final INDArray originalPrevMemCellState, boolean forBackprop, boolean forwards,
-                    final String inputWeightKey, INDArray maskArray //Input mask: should only be used with bidirectional RNNs + variable length
+                                               final IActivation gateActivationFn, //Activation function for the gates - sigmoid or hard sigmoid (must be found in range 0 to 1)
+                                               final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
+                                               final INDArray originalInputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
+                                               final INDArray biases, //Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
+                                               final boolean training, final INDArray originalPrevOutputActivations,
+                                               final INDArray originalPrevMemCellState, boolean forBackprop, boolean forwards,
+                                               final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
+                                               LayerNormalization layerNormalizationHelper
     ) {
 
         //Mini-batch data format: for mini-batch size m, nIn inputs, and T time series length
@@ -251,6 +253,8 @@ public class LSTMHelpers {
                 currHiddenUnitActivations.muliColumnVector(timeStepMaskColumn);
                 currentMemoryCellState.muliColumnVector(timeStepMaskColumn);
             }
+            // apply optional layerNormalization:
+            layerNormalizationHelper.normalize(currHiddenUnitActivations);
 
             if (forBackprop) {
                 toReturn.fwdPassOutputAsArrays[time] = currHiddenUnitActivations;

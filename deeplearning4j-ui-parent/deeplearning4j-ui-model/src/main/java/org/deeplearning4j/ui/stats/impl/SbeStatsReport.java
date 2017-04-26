@@ -522,6 +522,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
                     Map<String, Double> map = mapForTypes(statsType, summaryType);
                     if (map == null)
                         continue;
+
                     summaryStatsCount++;
                 }
             }
@@ -735,6 +736,7 @@ public class SbeStatsReport implements StatsReport, AgronaPersistable {
                     if (map == null || map.size() == 0)
                         continue;
                     summaryStatsCount++;
+
                 }
             }
 
