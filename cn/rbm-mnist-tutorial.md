@@ -1,48 +1,48 @@
 ---
-title: MNIST for restricted Boltzmann machines
+title: MNIST数据集与受限玻尔兹曼机
 layout: cn-default
 ---
 
-# MNIST for restricted Boltzmann machines
+# MNIST数据集与受限玻尔兹曼机
 
-The MNIST database is a large set of handwritten digits used to train neural networks and other algorithms in image recognition. MNIST has 60,000 images in its training set and 10,000 in its test set. 
+MNIST是一个大型手写数字数据集，用于训练神经网络及其他算法进行图像识别，其定型集有6万幅图像，测试集有1万幅图像。 
 
-MNIST derives from NIST, and stands for “Mixed National Institute of Standards and Technology.” The MNIST database reshuffles the NIST database's thousands of binary images of handwritten digits in order to better train and test various image recognition techniques. A full explanation of why MNIST is preferable to NIST can be found on [Yann LeCun's website](http://yann.lecun.com/exdb/mnist/).
+MNIST全称为“美国国家标准与技术研究院（NIST）混合数据集”，以NIST的数据集为基础创建。MNIST将NIST数据集中的数万幅手写数字的二进制图像重新排序，使之能更好地服务于图像识别算法的定型与测试。[Yann LeCun的网站](http://yann.lecun.com/exdb/mnist/)详细说明了MNIST优于NIST的原因。
 
-Each image in the MNIST database is a 28x28 pixel cell, and each cell is contained within a bounding box, the four lines of pixels that frame it. The image is centered according to the center of mass of its pixels. Reconstructed with our restricted Boltzmann machines, the numbers look like this: 
+MNIST数据集中的每幅图像为一个28 x 28像素的单元，每个单元周围有四条线段构成的像素边框。图像像素的重心即图像的中心。由DL4J的受限玻尔兹曼机重构后的数字如下图所示： 
 
-![Alt text](./img/mnist_render.png)
+![Alt text](../img/mnist_render.png)
 
-Here's an example of how neural nets can cluster random samplings of Mnist images:
+以下是神经网络对随机采集的MNIST图像样本进行聚类的示例。
 
-![Alt text](./img/mnist_large.jpg)
+![Alt text](../img/mnist_large.jpg)
 
-MNIST is a good place to begin exploring image recognition. Here’s an easy way to load the data and get started. 
+对于图像识别的探索可以从MNIST数据集起步。以下是一种加载数据并开始定型网络的简易方法。 
 
-# tutorial
+# 教程
 
-To begin with, you’ll take an image from your data set and binarize it, which means you’ll convert its pixels from continuous gray scale to ones and zeros. A useful rule of thumb if that every gray-scale pixel with a value higher than 35 becomes a 1, and the rest are set to 0. The tool you’ll use to do that is an MNIST data-set iterator class.
+首先需要从数据集中获取一幅图像并将其二进制化，把图像的像素从连续灰度数据转换为零和一。一般的规则是，每个灰度值大于35的像素变为1，其他则变为0。这一过程需要使用的工具是MNIST数据集迭代类。
 
-The [MnistDataSetIterator](./doc/org/deeplearning4j/datasets/iterator/impl/MnistDataSetIterator.html) does this for you.
+[MnistDataSetIterator](./doc/org/deeplearning4j/datasets/iterator/impl/MnistDataSetIterator.html)可以实现这一功能。
 
-A DataSetIterator can be used like this:
+DataSetIterator的使用方法如下：
 
          DataSetIterator iter = ....;
 
          while(iter.hasNext()) {
          	DataSet next = iter.next();
-         	//do stuff with the data set
+         	//对数据集进行操作
          }
 
-Typically, a DataSetIterator handles inputs and data-set-specific concerns like binarizing or normalization. For MNIST, the following does the trick:
+在处理原始图像输入时，需要用DataVec的工具来对图像进行规范化、二进制化或缩放处理。DL4J示例中包括一个MNIST图像数据加工管道示例，说明了如何对图像目录进行规范化、标记和预处理。MNIST数据被广泛使用，因此有一个专用的预建迭代器MnistDataSetIterator来完成这些操作。 
          
-         //Train on batches of 10 out of 60000
+         //用60000个样例定型，每批次10个样例
          DataSetIterator mnistData = new MnistDataSetIterator(10,60000);
 
-We specify the batch size as well as the number of examples so the user can choose how many examples they want to look at.
+用户可以自行设定批次大小及使用的样例总数。
 
-Next, we want to train a restricted Boltzmann machine to reconstruct the MNIST data set. This is done with following snippet:
+接下来需要定型受限玻尔兹曼机，使之学会重构MNIST数据集。这可以通过如下代码片段实现：
 
 <script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.0.3.3-examples/blob/master/src/main/java/org/deeplearning4j/deepbelief/DBNSmallMnistExample.java?slice=33:69"></script>
 
-Now we'll show you how to train a deep-belief network [to reconstruct and recognize the MNIST images](./deepbeliefnetwork.html).
+下面我们将介绍如何定型深度置信网络，使之能[重构并识别MNIST图像](./deepbeliefnetwork.html)。
