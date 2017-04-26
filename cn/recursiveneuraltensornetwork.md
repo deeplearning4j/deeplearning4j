@@ -1,58 +1,58 @@
 ---
-title: Recursive Neural Tensor Network
+title: 递归神经张量网络
 layout: cn-default
 ---
 
-# Recursive Neural Tensor Network
+# 递归神经张量网络
 
-*N.B. We'll be updating this page with code snippets from an example soon. For the moment, please explore other neural nets [here](./quickstart.html).*
+*N.B.DL4J目前尚不支持RNTN。请先访问[此页](./quickstart.html)探究其他神经网络。*
 
-Recursive neural tensor networks (RNTNs) are neural nets useful for natural-language processing. They have a tree structure with a neural net at each node. You can use recursive neural tensor networks for boundary segmentation, to determine which word groups are positive and which are negative. The same applies to sentences as a whole. 
+递归神经张量网络（RNTN）是适合用于自然语言处理的神经网络。RNTN呈树状结构，在每个节点上都有一个神经网络。您可以用RNTN来进行边界切分，判定词组属于正面还是负面，也可以对整个句子进行这些操作。 
 
-Word vectors are used as features and serve as the basis of sequential classification. They are then grouped into subphrases, and the subphrases are combined into a sentence that can be classified by sentiment and other metrics. 
+RNTN用词向量作为特征以及顺序分类的基础。词向量组成子短语（subphrase），子短语再组成句子，如此就可以按情感或其他指标来对句子进行分类。 
 
-Recursive neural tensor networks require external components like [Word2vec](http://deeplearning4j.org/word2vec.html), which is described below. To analyze text with neural nets, words can be represented as continuous vectors of parameters. Those word vectors contain information not only about the word in question, but about surrounding words; i.e. the word's context, usage and other semantic information. Deeplearning4j implements both recursive neural tensor networks and Word2vec. 
+递归神经张量网络需要[Word2vec](http://deeplearning4j.org/cn/word2vec.html)等外部组件，Word2vec的说明见下文。为了用神经网络分析文本，可以将词语表示为参数的连续向量。词向量不仅包含一个词本身的信息，也包含与之相关的词语的信息，亦即词的上下文、用法及其他语义信息。Deeplearning4j可实现Word2Vec，但目前还不能实现递归神经张量网络。 
 
 ### Word2Vec
 
-The first step toward building a working RNTN is word vectorization, which can be accomplished with an algorithm known as Word2vec. Word2Vec converts a corpus of words into vectors, which can then be thrown into a vector space to measure the cosine distance between them; i.e. their similarity or lack of.
+建立RNTN的第一步是词语向量化，可以通过Word2Vec算法完成。Word2Vec将语料库中的词语转换为向量，然后可以在一个向量空间中测量这些词向量之间的余弦距离，亦即词语之间是否具有相似性。
 
-Word2vec is a separate pipeline from NLP. It creates a lookup table that will supply word vectors once you are processing sentences. 
+Word2Vec是独立于NLP之外的加工管道，它所创建的查找表将为之后的语句处理提供词向量。 
 
 ### NLP
 
-Meanwhile, your natural-language-processing pipeline will ingest sentences, tokenize them, and tag the tokens as parts of speech. 
+与此同时，自然语言处理（NLP）数据加工管道将会摄取句子，进行分词并标记词例的词性。 
 
-To organize sentences, recursive neural tensor networks use constituency parsing, which groups words into larger subphrases within the sentence; e.g. the noun phrase (NP) and the verb phrase (VP). This process relies on machine learning, and allows for additional linguistic observations to be made about those words and phrases. By parsing the sentences, you are structuring them as trees. 
+递归神经张量网络采用语法成分解析来梳理句子结构，将句子划分为比词语更长一些的子短语，例如名词短语（NP）或动词短语（VP）。这一过程依赖于机器学习，可以推动相关词语及短语的语言学新发现。解析过程生成句子结构的树形图。 
 
-The trees are later binarized, which makes the math more convenient. Binarizing a tree means making sure each parent node has two child leaves (see below).
+这些树形图随后会被二叉化，便于数学运算。树形图的二叉化即确保每个父节点都有左右两个子叶（如下所示）。
 
-Sentence trees have their a root at the top and leaves at the bottom, a top-down structure that looks like this:
+句子的树形图为上下颠倒的结构，根在顶端，叶在底部，如下图所示：
 
-![Alt text](./img/constituency_tree.jpg) 
+![Alt text](../img/constituency_tree.jpg) 
 
-The entire sentence is at the root of the tree (at the top); each individual word is a leaf (at the bottom). 
+整个句子位于树的根部（顶端）；每个词是一片叶子（底部）。  
 
-Finally, word vectors can be taken from Word2vec and substituted for the words in your tree. Next, we'll tackle how to combine those word vectors with neural nets, with code snippets.
+最后，树形图中的词可以用Word2Vec提供的词向量来替代。下文将结合代码片段介绍如何用神经网络组合词向量。
 
-<!--### Initiating an RNTN
+<!--### RNTN初始化
 
-Instantiating an object of the RNTN class is simple:
+RNTN类对象的实例化方法很简单：
 
 <script src="http://gist-it.appspot.com/https://github.com/SkymindIO/deeplearning4j/blob/2f13b4ac4c82fee649c965026f8e5f88c5f1523f/deeplearning4j-scaleout/deeplearning4j-nlp/src/main/java/org/deeplearning4j/models/rntn/RNTN.java?slice=1092:1094"></script>
 ).-->
 
-### Summary
+### 总结
 
-1. [[Word2vec](http://deeplearning4j.org/word2vec.html) pipeline] Vectorize a corpus of words
-2. [NLP pipeline] Tokenize sentences
-3. [NLP pipeline] Tag tokens as parts of speech
-4. [NLP pipeline] Parse sentences into their constituent subphrases
-5. [NLP pipeline] Binarize the tree 
-6. [NLP pipeline + Word2Vec pipeline] Combine word vectors with neural net.
-7. [NLP pipeline + Word2Vec pipeline] Do task (e.g. classify the sentence's sentiment)
+1. [[Word2vec](http://deeplearning4j.org/cn/word2vec.html)数据加工管道] 语料库词语的向量化
+2. [NLP数据加工管道] 句子的分词
+3. [NLP数据加工管道] 词例的词性标记
+4. [NLP数据加工管道] 解析句子中的子短语成分
+5. [NLP数据加工管道] 树形图二叉化 
+6. [NLP数据加工管道 + Word2Vec数据加工管道] 用神经网络组合词向量
+7. [NLP数据加工管道 + Word2Vec数据加工管道] 执行任务（例如语句情感分类）
 
-### Further reading
+### 扩展阅读
 
-[Recursive Deep Models for Semantic Compositionality over a Sentiment Treebank](http://nlp.stanford.edu/~socherr/EMNLP2013_RNTN.pdf); Richard Socher, Alex Perelygin, Jean Y. Wu, Jason Chuang,
-Christopher D. Manning, Andrew Y. Ng and Christopher Potts; 2013; Stanford University.
+[Recursive Deep Models for Semantic Compositionality over a Sentiment Treebank](http://nlp.stanford.edu/~socherr/EMNLP2013_RNTN.pdf)（用深度递归模型处理情感分析树库的语义组合）；Richard Socher、Alex Perelygin、Jean Y. Wu、Jason Chuang、
+Christopher D. Manning、Andrew Y. Ng和Christopher Potts；2013；斯坦福大学。
