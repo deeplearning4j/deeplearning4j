@@ -2,6 +2,7 @@ package org.deeplearning4j.datasets.iterator;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.datasets.iterator.callbacks.DataSetCallback;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -37,6 +38,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
     private int prefetchSize;
     private String workspaceId;
 
+    private DataSetCallback callback;
+
 
     public AsyncDataSetIterator(DataSetIterator baseIterator) {
         this(baseIterator, 8);
@@ -54,25 +57,19 @@ public class AsyncDataSetIterator implements DataSetIterator {
         this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace);
     }
 
+    public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize, boolean useWorkspace, DataSetCallback callback) {
+        this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace, callback);
+    }
+
     public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace) {
-        if (queueSize <= 0)
-            throw new IllegalArgumentException("Queue size must be > 0");
+        this(iterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace, null);
+    }
+
+    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace, DataSetCallback callback) {
         if (queueSize < 4)
             queueSize = 4;
-/*
-        if (iterator.resetSupported() && useWorkspace) {
-            iterator.reset();
 
-            DataSet ds = iterator.next();
-
-            long initSize = Math.max(ds.getMemoryFootprint() * queueSize, 10 * 1024L * 1024L);
-
-
-
-            MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ADSI_ITER-" + java.util.UUID.randomUUID().toString());
-            this.workspace = workspace;
-        } else workspace = null;
-*/
+        this.callback = callback;
         this.useWorkspace = useWorkspace;
         this.buffer = queue;
         this.prefetchSize = queueSize;
@@ -381,6 +378,9 @@ public class AsyncDataSetIterator implements DataSetIterator {
                             smth = iterator.next();
                         }
                     } else smth = iterator.next();
+
+                    if (callback != null)
+                        callback.call(smth);
 
                     if (smth != null)
                         queue.put(smth);

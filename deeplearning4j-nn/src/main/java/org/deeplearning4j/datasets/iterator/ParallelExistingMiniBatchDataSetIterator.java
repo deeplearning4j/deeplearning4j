@@ -106,6 +106,8 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
         });
 
         this.thread = new AsyncDispatcherThread();
+        Nd4j.getAffinityManager().attachThreadToDevice(thread, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
         this.thread.start();
     }
 

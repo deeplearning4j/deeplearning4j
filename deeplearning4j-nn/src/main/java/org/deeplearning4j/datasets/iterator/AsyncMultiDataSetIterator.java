@@ -2,6 +2,7 @@ package org.deeplearning4j.datasets.iterator;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.datasets.iterator.callbacks.DataSetCallback;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -39,6 +40,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     private boolean useWorkspaces;
     private int prefetchSize;
     private String workspaceId;
+    private DataSetCallback callback;
 
 
     public AsyncMultiDataSetIterator(MultiDataSetIterator baseIterator) {
@@ -58,11 +60,15 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     }
 
     public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue, boolean useWorkspace) {
-        if (queueSize <= 0)
-            throw new IllegalArgumentException("Queue size must be > 0");
+        this(iterator, queueSize, new LinkedBlockingQueue<MultiDataSet>(queueSize), useWorkspace, null);
+    }
+
+    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue, boolean useWorkspace, DataSetCallback callback) {
+
         if (queueSize < 4)
             queueSize = 4;
 
+        this.callback = callback;
         this.buffer = queue;
         this.backedIterator = iterator;
         this.useWorkspaces = useWorkspace;

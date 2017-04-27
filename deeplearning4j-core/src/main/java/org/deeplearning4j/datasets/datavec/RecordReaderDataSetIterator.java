@@ -165,62 +165,72 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             return last;
         }
 
-        List<DataSet> dataSets = new ArrayList<>();
-        List<RecordMetaData> meta = (collectMetaData ? new ArrayList<RecordMetaData>() : null);
-        for (int i = 0; i < num; i++) {
-            if (!hasNext())
-                break;
-            if (recordReader instanceof SequenceRecordReader) {
-                if (sequenceIter == null || !sequenceIter.hasNext()) {
-                    List<List<Writable>> sequenceRecord = ((SequenceRecordReader) recordReader).sequenceRecord();
-                    sequenceIter = sequenceRecord.iterator();
-                }
+        DataSet ret = null;
 
-                try {
-                    List<Writable> record = sequenceIter.next();
-                    DataSet d = getDataSet(record);
-                    //account for transform process
-                    if (d != null)
-                        dataSets.add(d);
-                }catch(Exception e) {
-                    log.warn("Unable to get dataset ...skipping",e);
-                }
-            } else {
-                if (collectMetaData) {
-                    Record record = recordReader.nextRecord();
-                    DataSet d = getDataSet(record.getRecord());
-                    if(d != null) {
-                        dataSets.add(d);
-                        meta.add(record.getMetaData());
+        if (!recordReader.batchesSupported() || collectMetaData) {
+
+            List<DataSet> dataSets = new ArrayList<>();
+            List<RecordMetaData> meta = (collectMetaData ? new ArrayList<RecordMetaData>() : null);
+            for (int i = 0; i < num; i++) {
+                if (!hasNext())
+                    break;
+                if (recordReader instanceof SequenceRecordReader) {
+                    if (sequenceIter == null || !sequenceIter.hasNext()) {
+                        List<List<Writable>> sequenceRecord = ((SequenceRecordReader) recordReader).sequenceRecord();
+                        sequenceIter = sequenceRecord.iterator();
                     }
-                } else {
+
                     try {
-                        List<Writable> record = recordReader.next();
+                        List<Writable> record = sequenceIter.next();
                         DataSet d = getDataSet(record);
+                        //account for transform process
                         if (d != null)
                             dataSets.add(d);
-                    }catch(Exception e) {
-                        log.warn("Unable to get dataset ...skipping",e);
+                    } catch (Exception e) {
+                        log.warn("Unable to get dataset ...skipping", e);
+                    }
+                } else {
+                    if (collectMetaData) {
+                        Record record = recordReader.nextRecord();
+                        DataSet d = getDataSet(record.getRecord());
+                        if (d != null) {
+                            dataSets.add(d);
+                            meta.add(record.getMetaData());
+                        }
+                    } else {
+                        try {
+                            List<Writable> record = recordReader.next();
+                            DataSet d = getDataSet(record);
+                            if (d != null)
+                                dataSets.add(d);
+                        } catch (Exception e) {
+                            log.warn("Unable to get dataset ...skipping", e);
+                        }
                     }
                 }
             }
-        }
-        batchNum++;
+            batchNum++;
 
-        if (dataSets.isEmpty()) {
-            return null;
+            if (dataSets.isEmpty()) {
+                return null;
+            }
+
+            ret = DataSet.merge(dataSets);
+            if (collectMetaData) {
+                ret.setExampleMetaData(meta);
+            }
+        } else {
+            ret = getDataSet(recordReader.next(num));
         }
 
-        DataSet ret = DataSet.merge(dataSets);
-        if (collectMetaData) {
-            ret.setExampleMetaData(meta);
-        }
         last = ret;
         if (preProcessor != null)
             preProcessor.preProcess(ret);
+
         //Add label name values to dataset
         if (recordReader.getLabels() != null)
             ret.setLabelNames(recordReader.getLabels());
+
         return ret;
     }
 
@@ -251,6 +261,14 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             NDArrayWritable writable = (NDArrayWritable) currList.get(0);
             return new DataSet(writable.get(), writable.get());
         }
+
+        if (currList.size() == 2 && currList.get(0) instanceof  NDArrayWritable && currList.get(1) instanceof NDArrayWritable) {
+            NDArrayWritable writableF = (NDArrayWritable) currList.get(0);
+            NDArrayWritable writableL = (NDArrayWritable) currList.get(1);
+            return new DataSet(writableF.get(), writableL.get());
+        }
+
+
         if (currList.size() == 2 && currList.get(0) instanceof NDArrayWritable) {
             if (!regression) {
                 label = FeatureUtil.toOutcomeVector((int) Double.parseDouble(currList.get(1).toString()),

@@ -8,6 +8,7 @@ import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
+import org.deeplearning4j.datasets.iterator.callbacks.InterleavedDataSetCallback;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
@@ -28,6 +29,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -355,24 +357,24 @@ public class ParallelWrapper implements AutoCloseable {
                     log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
                             Nd4j.getAffinityManager().getNumberOfDevices());
 
-                if (mq == null)
-                    mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL).setType(MagicQueue.Type.DS)
-                        .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
+               // if (mq == null)
+               //     mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL).setType(MagicQueue.Type.DS)
+               //         .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
 
-                iterator = new AsyncDataSetIterator(source, prefetchSize * workers, mq);
+                iterator = new AsyncDataSetIterator(source, prefetchSize, new LinkedBlockingQueue<>(prefetchSize * workers), true, new InterleavedDataSetCallback(prefetchSize * 2));
 
             } else
-                iterator = new AsyncDataSetIterator(source, prefetchSize * workers);
+                iterator = new AsyncDataSetIterator(source, prefetchSize);
         } else
             iterator = source;
         List<Long> nanos = new ArrayList<>();
         AtomicInteger locker = new AtomicInteger(0);
         long time1 = System.currentTimeMillis();
-        //while (iterator.hasNext() && !stopFit.get()) {
-        int intcnt = 0;
-        while (intcnt < 1000) {
-            intcnt++;
-            DataSet dataSet = null; //iterator.next();
+        while (iterator.hasNext() && !stopFit.get()) {
+        //int intcnt = 0;
+        //while (intcnt < 1000) {
+            //intcnt++;
+            DataSet dataSet = iterator.next();
             long time2 = System.currentTimeMillis();
             long lastEtlTime = time2 - time1;
             nanos.add((time2 - time1));
@@ -387,6 +389,7 @@ public class ParallelWrapper implements AutoCloseable {
             if (zoo == null)
                 throw new IllegalStateException(
                         "ParallelWrapper.shutdown() has been called too early and will fail from this point forward.");
+
             zoo[pos].feedDataSet(dataSet, lastEtlTime );
 
             /*
@@ -477,6 +480,7 @@ public class ParallelWrapper implements AutoCloseable {
         if (zoo == null) {
             trainerContext.init(model,trainerContextArgs);
             zoo = new Trainer[workers];
+            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
             for (int cnt = 0; cnt < workers; cnt++) {
                 // we pass true here, to tell Trainer to use MultiDataSet queue for training
                 zoo[cnt] = trainerContext.create(cnt,
@@ -485,6 +489,10 @@ public class ParallelWrapper implements AutoCloseable {
                         useMDS,
                         this, workspaceMode);
                 zoo[cnt].setUncaughtExceptionHandler(handler);
+                if (zoo[cnt] instanceof Thread) {
+                    Nd4j.getAffinityManager().attachThreadToDevice((Thread) zoo[cnt], cnt % numDevices);
+                }
+
                 zoo[cnt].start();
             }
         }
