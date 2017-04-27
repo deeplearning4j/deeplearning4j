@@ -59,7 +59,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     protected Map<String, GraphVertex> vertices = new LinkedHashMap<>();
     protected Map<String, List<String>> vertexInputs = new LinkedHashMap<>();
 
-    @Getter @Setter
+    @Getter
+    @Setter
     protected WorkspaceMode workspaceMode;
 
     /**

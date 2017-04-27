@@ -516,7 +516,7 @@ public class TrainModule implements UIModule {
                 }
                 if (stdAct != null) {
                     for (String s : stdevActivations.keySet()) {
-                        double d = stdAct.getOrDefault(s,0.0);
+                        double d = stdAct.getOrDefault(s, 0.0);
                         stdevActivations.get(s).add(fixNaN(d));
                     }
                 }

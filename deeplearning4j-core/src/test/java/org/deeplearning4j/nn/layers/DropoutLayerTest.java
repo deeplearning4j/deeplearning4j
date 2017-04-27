@@ -175,17 +175,15 @@ public class DropoutLayerTest {
 
         // Run without separate activation layer
         Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration confIntegrated =
-                new NeuralNetConfiguration.Builder()
-                        .seed(123).list()
-                        .layer(0, new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20)
-                                .activation(Activation.TANH).weightInit(WeightInit.XAVIER)
-                                .build())
+        MultiLayerConfiguration confIntegrated = new NeuralNetConfiguration.Builder().seed(123)
+                        .list().layer(0,
+                                        new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20)
+                                                        .activation(Activation.TANH).weightInit(WeightInit.XAVIER)
+                                                        .build())
                         .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
-                                .dropOut(0.5).nOut(10).build())
-                        .backprop(true).pretrain(false)
-                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
+                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).dropOut(0.5)
+                                        .nOut(10).build())
+                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
         // Run with separate activation layer
         Nd4j.getRandom().setSeed(12345);
@@ -196,18 +194,13 @@ public class DropoutLayerTest {
         Map<Integer, InputPreProcessor> preProcessorMap = new HashMap<>();
         preProcessorMap.put(1, new CnnToFeedForwardPreProcessor(13, 13, 20));
 
-        MultiLayerConfiguration confSeparate =
-                new NeuralNetConfiguration.Builder()
-                        .seed(123).list()
+        MultiLayerConfiguration confSeparate = new NeuralNetConfiguration.Builder().seed(123).list()
                         .layer(0, new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20)
-                                .activation(Activation.TANH).weightInit(WeightInit.XAVIER)
-                                .build())
+                                        .activation(Activation.TANH).weightInit(WeightInit.XAVIER).build())
                         .layer(1, new DropoutLayer.Builder(0.5).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
-                                .nOut(10).build())
-                        .inputPreProcessors(preProcessorMap)
-                        .backprop(true).pretrain(false)
+                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nOut(10).build())
+                        .inputPreProcessors(preProcessorMap).backprop(true).pretrain(false)
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
 

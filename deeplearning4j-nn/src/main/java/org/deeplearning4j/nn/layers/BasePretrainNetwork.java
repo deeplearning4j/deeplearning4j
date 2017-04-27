@@ -204,7 +204,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         Pair<Gradient, INDArray> result = super.backpropGradient(epsilon);
-        ((DefaultGradient)result.getFirst()).setFlattenedGradient(gradientsFlattened);
+        ((DefaultGradient) result.getFirst()).setFlattenedGradient(gradientsFlattened);
 
         //During backprop, visible bias gradients are set to 0 - this is necessary due to the gradient view mechanics
         // that DL4J uses

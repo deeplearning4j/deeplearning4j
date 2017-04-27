@@ -35,8 +35,7 @@ public class MagicQueue<T> implements BlockingQueue<T> {
     }
 
     public enum Type {
-        DS,
-        MDS
+        DS, MDS
     }
 
     protected final List<LinkedBlockingQueue<T>> backingQueues;
@@ -521,7 +520,8 @@ public class MagicQueue<T> implements BlockingQueue<T> {
             Nd4j.create(1);
             WorkspaceConfiguration configuration = null;
             String id = "MQAD_THREAD";
-            log.info("MQAD_THREAD started on device [{}/{}]", device, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+            log.info("MQAD_THREAD started on device [{}/{}]", device,
+                            Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
             while (true) {
                 try {
@@ -537,23 +537,21 @@ public class MagicQueue<T> implements BlockingQueue<T> {
                         if (configuration == null) {
                             long initSize = Math.max(ds.getMemoryFootprint() * capacity, 10 * 1024L * 1024L);
 
-                            configuration = WorkspaceConfiguration.builder()
-                                    .initialSize(initSize)
-                                    .overallocationLimit(1.0)
-                                    .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
-                                    .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                                    .build();
+                            configuration = WorkspaceConfiguration.builder().initialSize(initSize)
+                                            .overallocationLimit(1.0).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                                            .policyAllocation(AllocationPolicy.OVERALLOCATE).build();
                         }
 
-                        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, id)) {
+                        try (MemoryWorkspace workspace =
+                                        Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, id)) {
                             // now we initialize dataset on target device (if applicable)
                             if (ds.getFeaturesMaskArray() != null)
                                 ds.setFeaturesMaskArray(ds.getFeaturesMaskArray().migrate());
-                                //Nd4j.getAffinityManager().touch(ds.getFeaturesMaskArray());
+                            //Nd4j.getAffinityManager().touch(ds.getFeaturesMaskArray());
 
-                                if (ds.getLabelsMaskArray() != null)
+                            if (ds.getLabelsMaskArray() != null)
                                 ds.setLabelsMaskArray(ds.getLabelsMaskArray().migrate());
-                                //Nd4j.getAffinityManager().touch(ds.getLabelsMaskArray());
+                            //Nd4j.getAffinityManager().touch(ds.getLabelsMaskArray());
 
                             ds.setFeatures(ds.getFeatures().migrate());
                             ds.setLabels(ds.getLabels().migrate());
@@ -567,15 +565,13 @@ public class MagicQueue<T> implements BlockingQueue<T> {
                         if (configuration == null) {
                             long initSize = Math.max(mds.getMemoryFootprint() * capacity, 10 * 1024L * 1024L);
 
-                            configuration = WorkspaceConfiguration.builder()
-                                    .initialSize(initSize)
-                                    .overallocationLimit(1.0)
-                                    .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
-                                    .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                                    .build();
+                            configuration = WorkspaceConfiguration.builder().initialSize(initSize)
+                                            .overallocationLimit(1.0).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                                            .policyAllocation(AllocationPolicy.OVERALLOCATE).build();
                         }
 
-                        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, id)) {
+                        try (MemoryWorkspace workspace =
+                                        Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, id)) {
                             if (mds.getFeaturesMaskArrays() != null)
                                 for (int i = 0; i < mds.getFeaturesMaskArrays().length; i++)
                                     mds.getFeaturesMaskArrays()[i] = mds.getFeaturesMaskArrays()[i].migrate();

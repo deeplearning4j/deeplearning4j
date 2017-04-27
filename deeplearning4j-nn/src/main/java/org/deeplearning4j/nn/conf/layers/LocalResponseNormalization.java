@@ -107,7 +107,7 @@ public class LocalResponseNormalization extends Layer {
 
     @Override
     public boolean isPretrainParam(String paramName) {
-        return false;   //No params in LRN
+        return false; //No params in LRN
     }
 
     @AllArgsConstructor

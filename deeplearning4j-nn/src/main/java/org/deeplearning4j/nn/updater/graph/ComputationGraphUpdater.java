@@ -28,14 +28,14 @@ public class ComputationGraphUpdater extends BaseMultiLayerUpdater<ComputationGr
 
         layersByName = new HashMap<>();
         Layer[] layers = getOrderedLayers();
-        for(Layer l : layers ){
+        for (Layer l : layers) {
             layersByName.put(l.conf().getLayer().getLayerName(), l);
         }
     }
 
     @Override
     protected Layer[] getOrderedLayers() {
-        if(orderedLayers != null){
+        if (orderedLayers != null) {
             return orderedLayers;
         }
         GraphVertex[] vertices = network.getVertices();
@@ -45,8 +45,8 @@ public class ComputationGraphUpdater extends BaseMultiLayerUpdater<ComputationGr
 
         Layer[] out = new Layer[network.getNumLayers()];
 
-        int j=0;
-        for( int i=0; i<topologicalOrdering.length; i++ ) {
+        int j = 0;
+        for (int i = 0; i < topologicalOrdering.length; i++) {
             GraphVertex currentVertex = vertices[topologicalOrdering[i]];
             if (!currentVertex.hasLayer()) {
                 continue;
@@ -61,7 +61,7 @@ public class ComputationGraphUpdater extends BaseMultiLayerUpdater<ComputationGr
 
     @Override
     protected INDArray getFlattenedGradientsView() {
-        if(network.getFlattenedGradients() == null){
+        if (network.getFlattenedGradients() == null) {
             network.initGradientsView();
         }
         return network.getFlattenedGradients();

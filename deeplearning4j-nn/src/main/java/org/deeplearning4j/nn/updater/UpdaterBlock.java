@@ -56,7 +56,7 @@ public class UpdaterBlock {
      *                                  and variables in this list <i>must</i> have an identical updater configuration.
      */
     public UpdaterBlock(int paramOffsetStart, int paramOffsetEnd, int updaterViewOffsetStart, int updaterViewOffsetEnd,
-                        List<ParamState> layersAndVariablesInBlock) {
+                    List<ParamState> layersAndVariablesInBlock) {
         this.paramOffsetStart = paramOffsetStart;
         this.paramOffsetEnd = paramOffsetEnd;
         this.updaterViewOffsetStart = updaterViewOffsetStart;
@@ -64,28 +64,30 @@ public class UpdaterBlock {
         this.layersAndVariablesInBlock = layersAndVariablesInBlock;
     }
 
-    public void init(){
+    public void init() {
         if (gradientUpdater == null) {
             ParamState varState = layersAndVariablesInBlock.get(0);
             gradientUpdater = UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getParamName());
             if (updaterView != null) {
                 //May be null for SGD and no-op updaters
                 int[] gradientViewShape = gradientView.shape();
-                gradientUpdater.setStateViewArray(updaterView, gradientViewShape, 'c', updaterViewRequiresInitialization);
+                gradientUpdater.setStateViewArray(updaterView, gradientViewShape, 'c',
+                                updaterViewRequiresInitialization);
             }
         }
     }
 
-    public boolean isPretrainUpdaterBlock(){
+    public boolean isPretrainUpdaterBlock() {
         //All in block should be the same layer, and all be pretrain params
         ParamState vs = layersAndVariablesInBlock.get(0);
         return vs.getLayer().conf().getLayer().isPretrainParam(vs.getParamName());
     }
 
-    public boolean skipDueToPretrainConfig(){
-        if(!isPretrainUpdaterBlock()) return false;
+    public boolean skipDueToPretrainConfig() {
+        if (!isPretrainUpdaterBlock())
+            return false;
         ParamState vs = layersAndVariablesInBlock.get(0);
-        return !vs.getLayer().conf().isPretrain();  //Skip if not pretrain
+        return !vs.getLayer().conf().isPretrain(); //Skip if not pretrain
     }
 
     /**
@@ -106,8 +108,8 @@ public class UpdaterBlock {
         // variable in the block
         Layer l0 = layersAndVariablesInBlock.get(0).getLayer();
         LearningRatePolicy lrPolicy = l0.conf().getLearningRatePolicy();
-        if (lrPolicy != LearningRatePolicy.None ||
-                l0.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS) {
+        if (lrPolicy != LearningRatePolicy.None
+                        || l0.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS) {
             applyLrDecayPolicy(lrPolicy, iteration);
         }
 
@@ -142,7 +144,7 @@ public class UpdaterBlock {
             Nd4j.getBlasWrapper().level1().axpy(length, l2, paramsView, gradientView);
         }
         if (conf.isUseRegularization() && conf.getL1ByParam(paramName) > 0) {
-            gradientView.addi(Transforms.sign(paramsView,true).muli(conf.getL1ByParam(paramName)));
+            gradientView.addi(Transforms.sign(paramsView, true).muli(conf.getL1ByParam(paramName)));
         }
     }
 

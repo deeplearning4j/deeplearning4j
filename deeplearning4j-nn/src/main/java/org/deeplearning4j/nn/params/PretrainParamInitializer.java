@@ -91,7 +91,7 @@ public class PretrainParamInitializer extends DefaultParamInitializer {
         int nWeightParams = nIn * nOut;
 
         INDArray vBiasView = gradientView.get(NDArrayIndex.point(0),
-                NDArrayIndex.interval(nWeightParams + nOut, nWeightParams + nOut + nIn));
+                        NDArrayIndex.interval(nWeightParams + nOut, nWeightParams + nOut + nIn));
 
         out.put(VISIBLE_BIAS_KEY, vBiasView);
 

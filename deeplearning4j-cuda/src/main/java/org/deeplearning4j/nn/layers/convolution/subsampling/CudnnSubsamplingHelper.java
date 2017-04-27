@@ -200,7 +200,7 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
                         zData, cudnnContext.deltaTensorDesc, epsData, cudnnContext.srcTensorDesc, srcData, beta,
                         cudnnContext.dstTensorDesc, dstData));
 
-        allocator.registerAction(context,outEpsilon, input, epsilon, reduced);
+        allocator.registerAction(context, outEpsilon, input, epsilon, reduced);
 
         return new Pair<>(retGradient, outEpsilon);
     }
@@ -249,8 +249,9 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
 
-        try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
-            reduced = Nd4j.createUninitialized(new int[]{miniBatch, inDepth, outH, outW}, 'c');
+        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
+                        .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
+            reduced = Nd4j.createUninitialized(new int[] {miniBatch, inDepth, outH, outW}, 'c');
         }
 
         int[] dstStride = reduced.stride();

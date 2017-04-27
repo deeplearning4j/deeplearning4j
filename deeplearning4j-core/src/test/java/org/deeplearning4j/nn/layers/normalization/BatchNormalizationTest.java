@@ -59,8 +59,7 @@ public class BatchNormalizationTest {
     protected INDArray cnnEpsilon = Nd4j.linspace(0, 63, 64).reshape(2, 2, 4, 4);
 
     @Before
-    public void doBefore() {
-    }
+    public void doBefore() {}
 
     protected static Layer getLayer(int nOut) {
         return getLayer(nOut, Nd4j.EPS_THRESHOLD, false, -1, -1);
@@ -123,7 +122,7 @@ public class BatchNormalizationTest {
         int nIn = 4;
         int minibatch = 2;
         Nd4j.getRandom().setSeed(12345);
-        INDArray input = Nd4j.rand('c', new int[]{minibatch, nIn});
+        INDArray input = Nd4j.rand('c', new int[] {minibatch, nIn});
 
         //TODO: other values for gamma/beta
         INDArray gamma = Nd4j.ones(1, nIn);
@@ -152,12 +151,12 @@ public class BatchNormalizationTest {
 
         INDArray dldxhat = epsilon.mulRowVector(gamma);
         INDArray dldvar = dldxhat.mul(input.subRowVector(mean)).mul(-0.5)
-                .mulRowVector(Transforms.pow(var.add(eps), -3.0 / 2.0, true)).sum(0);
+                        .mulRowVector(Transforms.pow(var.add(eps), -3.0 / 2.0, true)).sum(0);
         INDArray dldmu = dldxhat.mulRowVector(Transforms.pow(var.add(eps), -1.0 / 2.0, true)).neg().sum(0)
-                .add(dldvar.mul(input.subRowVector(mean).mul(-2.0).sum(0).div(minibatch)));
+                        .add(dldvar.mul(input.subRowVector(mean).mul(-2.0).sum(0).div(minibatch)));
         INDArray dldinExp = dldxhat.mulRowVector(Transforms.pow(var.add(eps), -1.0 / 2.0, true))
-                .add(input.subRowVector(mean).mul(2.0 / minibatch).mulRowVector(dldvar))
-                .addRowVector(dldmu.mul(1.0 / minibatch));
+                        .add(input.subRowVector(mean).mul(2.0 / minibatch).mulRowVector(dldvar))
+                        .addRowVector(dldmu.mul(1.0 / minibatch));
 
         Pair<Gradient, INDArray> p = l.backpropGradient(epsilon);
 
@@ -218,7 +217,7 @@ public class BatchNormalizationTest {
         INDArray in = Nd4j.rand('c', m * h * w, nOut);
 
         INDArray in4 = in.dup();
-        in4 = Shape.newShapeNoCopy(in4, new int[]{m, h, w, nOut}, false);
+        in4 = Shape.newShapeNoCopy(in4, new int[] {m, h, w, nOut}, false);
         assertNotNull(in4);
         in4 = in4.permute(0, 3, 1, 2).dup();
         INDArray arr = Nd4j.rand(1, m * h * w * nOut).reshape('f', h, w, m, nOut).permute(2, 3, 1, 0);
@@ -231,14 +230,14 @@ public class BatchNormalizationTest {
         INDArray out4d = l2.activate(in4.dup(), true);
 
         INDArray out4dAs2 = out4d.permute(0, 2, 3, 1).dup('c');
-        out4dAs2 = Shape.newShapeNoCopy(out4dAs2, new int[]{m * h * w, nOut}, false);
+        out4dAs2 = Shape.newShapeNoCopy(out4dAs2, new int[] {m * h * w, nOut}, false);
 
         assertEquals(out2d, out4dAs2);
 
         //Test backprop:
         INDArray epsilons2d = Nd4j.rand('c', m * h * w, nOut);
         INDArray epsilons4d = epsilons2d.dup();
-        epsilons4d = Shape.newShapeNoCopy(epsilons4d, new int[]{m, h, w, nOut}, false);
+        epsilons4d = Shape.newShapeNoCopy(epsilons4d, new int[] {m, h, w, nOut}, false);
         assertNotNull(epsilons4d);
         epsilons4d = epsilons4d.permute(0, 3, 1, 2).dup();
 
@@ -246,7 +245,7 @@ public class BatchNormalizationTest {
         Pair<Gradient, INDArray> b4d = l2.backpropGradient(epsilons4d);
 
         INDArray e4dAs2d = b4d.getSecond().permute(0, 2, 3, 1).dup('c');
-        e4dAs2d = Shape.newShapeNoCopy(e4dAs2d, new int[]{m * h * w, nOut}, false);
+        e4dAs2d = Shape.newShapeNoCopy(e4dAs2d, new int[] {m * h * w, nOut}, false);
 
         assertEquals(b2d.getSecond(), e4dAs2d);
     }
@@ -258,7 +257,7 @@ public class BatchNormalizationTest {
         int hw = 3;
         int minibatch = 2;
         Nd4j.getRandom().setSeed(12345);
-        INDArray input = Nd4j.rand('c', new int[]{minibatch, nIn, hw, hw});
+        INDArray input = Nd4j.rand('c', new int[] {minibatch, nIn, hw, hw});
 
         //TODO: other values for gamma/beta
         INDArray gamma = Nd4j.ones(1, nIn);
@@ -283,7 +282,7 @@ public class BatchNormalizationTest {
 
         //-------------------------------------------------------------
         //Check backprop
-        INDArray epsilon = Nd4j.rand('c', new int[]{minibatch, nIn, hw, hw}); //dL/dy
+        INDArray epsilon = Nd4j.rand('c', new int[] {minibatch, nIn, hw, hw}); //dL/dy
 
         int effectiveMinibatch = minibatch * hw * hw;
 
@@ -296,22 +295,22 @@ public class BatchNormalizationTest {
 
         INDArray dldvar = dldxhat.mul(inputSubMean).mul(-0.5);
         dldvar = Nd4j.getExecutioner().execAndReturn(
-                new BroadcastMulOp(dldvar, Transforms.pow(var.add(eps), -3.0 / 2.0, true), dldvar.dup(), 1));
+                        new BroadcastMulOp(dldvar, Transforms.pow(var.add(eps), -3.0 / 2.0, true), dldvar.dup(), 1));
         dldvar = dldvar.sum(0, 2, 3);
 
 
         INDArray dldmu = Nd4j
-                .getExecutioner().execAndReturn(new BroadcastMulOp(dldxhat,
-                        Transforms.pow(var.add(eps), -1.0 / 2.0, true), dldxhat.dup(), 1))
-                .neg().sum(0, 2, 3);
+                        .getExecutioner().execAndReturn(new BroadcastMulOp(dldxhat,
+                                        Transforms.pow(var.add(eps), -1.0 / 2.0, true), dldxhat.dup(), 1))
+                        .neg().sum(0, 2, 3);
         dldmu = dldmu.add(dldvar.mul(inputSubMean.mul(-2.0).sum(0, 2, 3).div(effectiveMinibatch)));
 
         INDArray dldinExp = Nd4j.getExecutioner().execAndReturn(
-                new BroadcastMulOp(dldxhat, Transforms.pow(var.add(eps), -1.0 / 2.0, true), dldxhat.dup(), 1));
+                        new BroadcastMulOp(dldxhat, Transforms.pow(var.add(eps), -1.0 / 2.0, true), dldxhat.dup(), 1));
         dldinExp = dldinExp.add(Nd4j.getExecutioner().execAndReturn(
-                new BroadcastMulOp(inputSubMean.mul(2.0 / effectiveMinibatch), dldvar, inputSubMean.dup(), 1)));
+                        new BroadcastMulOp(inputSubMean.mul(2.0 / effectiveMinibatch), dldvar, inputSubMean.dup(), 1)));
         dldinExp = Nd4j.getExecutioner().execAndReturn(
-                new BroadcastAddOp(dldinExp, dldmu.mul(1.0 / effectiveMinibatch), dldinExp.dup(), 1));
+                        new BroadcastAddOp(dldinExp, dldmu.mul(1.0 / effectiveMinibatch), dldinExp.dup(), 1));
 
         Pair<Gradient, INDArray> p = l.backpropGradient(epsilon);
 
@@ -334,17 +333,17 @@ public class BatchNormalizationTest {
 
         // Run with separate activation layer
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(2).seed(123)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(28 * 28).nOut(10).weightInit(WeightInit.XAVIER)
-                        .activation(Activation.RELU).build())
-                .layer(1, new BatchNormalization.Builder().nOut(10).build()).layer(2,
-                        new ActivationLayer.Builder()
-                                .activation(Activation.RELU).build())
-                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(10).nOut(10)
-                        .build())
-                .backprop(true).pretrain(false).build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(2).seed(123)
+                        .list()
+                        .layer(0, new DenseLayer.Builder().nIn(28 * 28).nOut(10).weightInit(WeightInit.XAVIER)
+                                        .activation(Activation.RELU).build())
+                        .layer(1, new BatchNormalization.Builder().nOut(10).build()).layer(2,
+                                        new ActivationLayer.Builder()
+                                                        .activation(Activation.RELU).build())
+                        .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nIn(10).nOut(10)
+                                        .build())
+                        .backprop(true).pretrain(false).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -366,15 +365,15 @@ public class BatchNormalizationTest {
         DataSet next = iter.next();
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(2).seed(123)
-                .list()
-                .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
-                        .activation(Activation.IDENTITY).build())
-                .layer(1, new BatchNormalization.Builder().build())
-                .layer(2, new ActivationLayer.Builder().activation(Activation.RELU).build())
-                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nOut(10).build())
-                .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(2).seed(123)
+                        .list()
+                        .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
+                                        .activation(Activation.IDENTITY).build())
+                        .layer(1, new BatchNormalization.Builder().build())
+                        .layer(2, new ActivationLayer.Builder().activation(Activation.RELU).build())
+                        .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nOut(10).build())
+                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -391,17 +390,17 @@ public class BatchNormalizationTest {
         // i.e., make sure state is properly stored
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(2).seed(12345)
-                .list()
-                .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
-                        .activation(Activation.IDENTITY).build())
-                .layer(1, new BatchNormalization.Builder().build())
-                .layer(2, new ActivationLayer.Builder().activation(Activation.LEAKYRELU).build())
-                .layer(3, new DenseLayer.Builder().nOut(10).activation(Activation.LEAKYRELU).build())
-                .layer(4, new BatchNormalization.Builder().build())
-                .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nOut(10).build())
-                .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(2).seed(12345)
+                        .list()
+                        .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
+                                        .activation(Activation.IDENTITY).build())
+                        .layer(1, new BatchNormalization.Builder().build())
+                        .layer(2, new ActivationLayer.Builder().activation(Activation.LEAKYRELU).build())
+                        .layer(3, new DenseLayer.Builder().nOut(10).activation(Activation.LEAKYRELU).build())
+                        .layer(4, new BatchNormalization.Builder().build())
+                        .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nOut(10).build())
+                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -436,17 +435,17 @@ public class BatchNormalizationTest {
         //Global mean/variance are part of the parameter vector. Expect 0 gradient, and no-op updater for these
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .updater(Updater.RMSPROP).seed(12345).list()
-                .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
-                        .activation(Activation.IDENTITY).build())
-                .layer(1, new BatchNormalization.Builder().build())
-                .layer(2, new ActivationLayer.Builder().activation(Activation.LEAKYRELU).build())
-                .layer(3, new DenseLayer.Builder().nOut(10).activation(Activation.LEAKYRELU).build())
-                .layer(4, new BatchNormalization.Builder().build())
-                .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nOut(10).build())
-                .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .updater(Updater.RMSPROP).seed(12345).list()
+                        .layer(0, new ConvolutionLayer.Builder().nIn(1).nOut(6).weightInit(WeightInit.XAVIER)
+                                        .activation(Activation.IDENTITY).build())
+                        .layer(1, new BatchNormalization.Builder().build())
+                        .layer(2, new ActivationLayer.Builder().activation(Activation.LEAKYRELU).build())
+                        .layer(3, new DenseLayer.Builder().nOut(10).activation(Activation.LEAKYRELU).build())
+                        .layer(4, new BatchNormalization.Builder().build())
+                        .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nOut(10).build())
+                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -465,7 +464,7 @@ public class BatchNormalizationTest {
         for (String s : map.keySet()) {
             INDArray grad = map.get(s);
             if (s.endsWith(BatchNormalizationParamInitializer.GLOBAL_MEAN)
-                    || s.endsWith(BatchNormalizationParamInitializer.GLOBAL_VAR)) {
+                            || s.endsWith(BatchNormalizationParamInitializer.GLOBAL_VAR)) {
                 assertEquals(Nd4j.zeros(grad.shape()), grad);
             }
         }
@@ -475,14 +474,14 @@ public class BatchNormalizationTest {
         MultiLayerUpdater mlu = (MultiLayerUpdater) u;
         List<UpdaterBlock> l = mlu.getUpdaterBlocks();
         assertNotNull(l);
-        assertEquals(5, l.size());  //Conv+bn (RMSProp), No-op (bn), RMSProp (dense, bn), no-op (bn), RMSProp (out)
+        assertEquals(5, l.size()); //Conv+bn (RMSProp), No-op (bn), RMSProp (dense, bn), no-op (bn), RMSProp (out)
 
         for (UpdaterBlock ub : l) {
 
             List<UpdaterBlock.ParamState> list = ub.getLayersAndVariablesInBlock();
             for (UpdaterBlock.ParamState v : list) {
                 if (BatchNormalizationParamInitializer.GLOBAL_MEAN.equals(v.getParamName())
-                        || BatchNormalizationParamInitializer.GLOBAL_VAR.equals(v.getParamName())) {
+                                || BatchNormalizationParamInitializer.GLOBAL_VAR.equals(v.getParamName())) {
                     assertTrue(ub.getGradientUpdater() instanceof NoOpUpdater);
                 } else {
                     assertTrue(ub.getGradientUpdater() instanceof RmsProp);
@@ -499,14 +498,14 @@ public class BatchNormalizationTest {
 
         //First, Mnist data as 2d input (NOT taking into account convolution property)
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .updater(Updater.RMSPROP).seed(12345)
-                .list().layer(0,
-                        new BatchNormalization.Builder().nIn(10).nOut(10).eps(1e-5).decay(0.95)
-                                .build())
-                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER)
-                        .activation(Activation.IDENTITY).nIn(10).nOut(10).build())
-                .backprop(true).pretrain(false).build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .updater(Updater.RMSPROP).seed(12345)
+                        .list().layer(0,
+                                        new BatchNormalization.Builder().nIn(10).nOut(10).eps(1e-5).decay(0.95)
+                                                        .build())
+                        .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER)
+                                        .activation(Activation.IDENTITY).nIn(10).nOut(10).build())
+                        .backprop(true).pretrain(false).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
@@ -518,8 +517,8 @@ public class BatchNormalizationTest {
 
         DataSetIterator iter = new ListDataSetIterator(list);
 
-        INDArray expMean = Nd4j.valueArrayOf(new int[]{1, 10}, 0.5);
-        INDArray expVar = Nd4j.valueArrayOf(new int[]{1, 10}, 1 / 12.0); //Expected variance of U(0,1) distribution: 1/12 * (1-0)^2 = 0.0833
+        INDArray expMean = Nd4j.valueArrayOf(new int[] {1, 10}, 0.5);
+        INDArray expVar = Nd4j.valueArrayOf(new int[] {1, 10}, 1 / 12.0); //Expected variance of U(0,1) distribution: 1/12 * (1-0)^2 = 0.0833
 
 
         for (int i = 0; i < 10; i++) {
@@ -555,25 +554,25 @@ public class BatchNormalizationTest {
 
         //First, Mnist data as 2d input (NOT taking into account convolution property)
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .updater(Updater.RMSPROP).seed(12345).list()
-                .layer(0, new BatchNormalization.Builder().nIn(3).nOut(3).eps(1e-5).decay(0.95).build())
-                .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER)
-                        .activation(Activation.IDENTITY).nOut(10).build())
-                .backprop(true).pretrain(false).setInputType(InputType.convolutional(5, 5, 3)).build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .updater(Updater.RMSPROP).seed(12345).list()
+                        .layer(0, new BatchNormalization.Builder().nIn(3).nOut(3).eps(1e-5).decay(0.95).build())
+                        .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).weightInit(WeightInit.XAVIER)
+                                        .activation(Activation.IDENTITY).nOut(10).build())
+                        .backprop(true).pretrain(false).setInputType(InputType.convolutional(5, 5, 3)).build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
         int minibatch = 32;
         List<DataSet> list = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
-            list.add(new DataSet(Nd4j.rand(new int[]{minibatch, 3, 5, 5}), Nd4j.rand(minibatch, 10)));
+            list.add(new DataSet(Nd4j.rand(new int[] {minibatch, 3, 5, 5}), Nd4j.rand(minibatch, 10)));
         }
 
         DataSetIterator iter = new ListDataSetIterator(list);
 
-        INDArray expMean = Nd4j.valueArrayOf(new int[]{1, 3}, 0.5);
-        INDArray expVar = Nd4j.valueArrayOf(new int[]{1, 3}, 1 / 12.0); //Expected variance of U(0,1) distribution: 1/12 * (1-0)^2 = 0.0833
+        INDArray expMean = Nd4j.valueArrayOf(new int[] {1, 3}, 0.5);
+        INDArray expVar = Nd4j.valueArrayOf(new int[] {1, 3}, 1 / 12.0); //Expected variance of U(0,1) distribution: 1/12 * (1-0)^2 = 0.0833
 
 
         for (int i = 0; i < 10; i++) {

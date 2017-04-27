@@ -76,7 +76,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     public RegressionEvaluation(List<String> columnNames, int precision) {
         if (columnNames == null || columnNames.size() == 0) {
             throw new IllegalArgumentException(
-                    "Column names (or integer number of columns) must be specified (got: " + columnNames + ")");
+                            "Column names (or integer number of columns) must be specified (got: " + columnNames + ")");
         }
         this.columnNames = columnNames;
         this.precision = precision;
@@ -109,8 +109,9 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
         if (columnNames.size() != labels.size(1) || columnNames.size() != predictions.size(1)) {
             throw new IllegalArgumentException(
-                    "Number of the columns of labels and predictions must match specification (" + columnNames.size() +
-                            "). Got " + labels.size(1) + " and " + predictions.size(1));
+                            "Number of the columns of labels and predictions must match specification ("
+                                            + columnNames.size() + "). Got " + labels.size(1) + " and "
+                                            + predictions.size(1));
         }
         labelsSumPerColumn.addi(labels.sum(0));
 
@@ -162,9 +163,9 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         this.sumSquaredErrorsPerColumn.addi(other.sumSquaredErrorsPerColumn);
         this.sumAbsErrorsPerColumn.addi(other.sumAbsErrorsPerColumn);
         this.currentMean.muli(exampleCount).addi(other.currentMean.mul(other.exampleCount))
-                .divi(exampleCount + other.exampleCount);
+                        .divi(exampleCount + other.exampleCount);
         this.currentPredictionMean.muli(exampleCount).addi(other.currentPredictionMean.mul(other.exampleCount))
-                .divi(exampleCount + other.exampleCount);
+                        .divi(exampleCount + other.exampleCount);
         this.sumOfProducts.addi(other.sumOfProducts);
         this.sumSquaredLabels.addi(other.sumSquaredLabels);
         this.sumSquaredPredicted.addi(other.sumSquaredPredicted);
@@ -182,17 +183,17 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         int columnWidth = precision + 10;
 
         String format = "%-" + labelWidth + "s" + "%-" + columnWidth + "." + precision + "e" //MSE
-                + "%-" + columnWidth + "." + precision + "e" //MAE
-                + "%-" + columnWidth + "." + precision + "e" //RMSE
-                + "%-" + columnWidth + "." + precision + "e" //RSE
-                + "%-" + columnWidth + "." + precision + "e"; //R2 (correlation coefficient)
+                        + "%-" + columnWidth + "." + precision + "e" //MAE
+                        + "%-" + columnWidth + "." + precision + "e" //RMSE
+                        + "%-" + columnWidth + "." + precision + "e" //RSE
+                        + "%-" + columnWidth + "." + precision + "e"; //R2 (correlation coefficient)
 
 
 
         //Print header:
         StringBuilder sb = new StringBuilder();
         String headerFormat = "%-" + labelWidth + "s" + "%-" + columnWidth + "s" + "%-" + columnWidth + "s" + "%-"
-                + columnWidth + "s" + "%-" + columnWidth + "s" + "%-" + columnWidth + "s";
+                        + columnWidth + "s" + "%-" + columnWidth + "s" + "%-" + columnWidth + "s";
         sb.append(String.format(headerFormat, "Column", "MSE", "MAE", "RMSE", "RSE", "R^2"));
         sb.append("\n");
 
@@ -243,7 +244,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
         double r2 = sumxiyi - exampleCount * predictionMean * labelMean;
         r2 /= Math.sqrt(sumSquaredLabels - exampleCount * labelMean * labelMean)
-                * Math.sqrt(sumSquaredPredicted - exampleCount * predictionMean * predictionMean);
+                        * Math.sqrt(sumSquaredPredicted - exampleCount * predictionMean * predictionMean);
 
         return r2;
     }
@@ -252,9 +253,9 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         // RSE: sum(predicted-actual)^2 / sum(actual-labelsMean)^2
         // (sum(predicted^2) - 2 * sum(predicted * actual) + sum(actual ^ 2)) / (sum(actual ^ 2) - n * actualMean)
         double numerator = sumSquaredPredicted.getDouble(column) - 2 * sumOfProducts.getDouble(column)
-                + sumSquaredLabels.getDouble(column);
+                        + sumSquaredLabels.getDouble(column);
         double denominator = sumSquaredLabels.getDouble(column)
-                - exampleCount * currentMean.getDouble(column) * currentMean.getDouble(column);
+                        - exampleCount * currentMean.getDouble(column) * currentMean.getDouble(column);
 
         if (Math.abs(denominator) > Nd4j.EPS_THRESHOLD) {
             return numerator / denominator;

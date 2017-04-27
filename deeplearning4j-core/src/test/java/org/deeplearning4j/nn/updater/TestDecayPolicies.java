@@ -47,8 +47,8 @@ public class TestDecayPolicies {
     int nOut = 2;
     double epsilon = 1e-8;
     INDArray gradient;
-    INDArray weightGradient;    // = Nd4j.ones(nIn, nOut);
-    INDArray biasGradient;  // = Nd4j.ones(1, nOut);
+    INDArray weightGradient; // = Nd4j.ones(nIn, nOut);
+    INDArray biasGradient; // = Nd4j.ones(1, nOut);
     Gradient gradientSingle = new DefaultGradient();
     Gradient gradientMLN = new DefaultGradient();
     INDArray val, gradExpected, vPrev;
@@ -63,9 +63,9 @@ public class TestDecayPolicies {
         int nLayers = 2;
         String wKey, bKey;
 
-        gradient = Nd4j.ones(1, nIn*nOut+nOut);
-        weightGradient = gradient.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nIn*nOut));
-        biasGradient = gradient.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn*nOut, nIn*nOut+nOut));
+        gradient = Nd4j.ones(1, nIn * nOut + nOut);
+        weightGradient = gradient.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
+        biasGradient = gradient.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
 
         gradientSingle.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
         gradientSingle.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
@@ -369,11 +369,12 @@ public class TestDecayPolicies {
                 int paramsSoFar = 0;
                 for (int k = 0; k < net.getnLayers(); k++) {
                     int nParams = net.getLayer(k).numParams();
-                    INDArray g = gradViewArr.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramsSoFar, paramsSoFar+nParams));
-                    int nW = nIns[k]*nOuts[k];
+                    INDArray g = gradViewArr.get(NDArrayIndex.point(0),
+                                    NDArrayIndex.interval(paramsSoFar, paramsSoFar + nParams));
+                    int nW = nIns[k] * nOuts[k];
                     int nB = nOuts[k];
-                    INDArray gw = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nW));
-                    INDArray gb = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nW, nW+nB));
+                    INDArray gw = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nW));
+                    INDArray gb = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nW, nW + nB));
                     wKey = String.valueOf(k) + "_" + DefaultParamInitializer.WEIGHT_KEY;
                     gradientActual.setGradientFor(wKey, gw);
                     gradientExpected.setGradientFor(wKey, gw.dup());
@@ -532,11 +533,12 @@ public class TestDecayPolicies {
         int paramsSoFar = 0;
         for (int j = 0; j < 2; j++) {
             int nParams = net.getLayer(j).numParams();
-            INDArray g = gradViewArr.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramsSoFar, paramsSoFar+nParams));
-            int nW = nIns[j]*nOuts[j];
+            INDArray g = gradViewArr.get(NDArrayIndex.point(0),
+                            NDArrayIndex.interval(paramsSoFar, paramsSoFar + nParams));
+            int nW = nIns[j] * nOuts[j];
             int nB = nOuts[j];
-            INDArray gw = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nW));
-            INDArray gb = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nW, nW+nB));
+            INDArray gw = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nW));
+            INDArray gb = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nW, nW + nB));
             wKey = String.valueOf(j) + "_" + DefaultParamInitializer.WEIGHT_KEY;
             gradientMLN.setGradientFor(wKey, gw);
             bKey = String.valueOf(j) + "_" + DefaultParamInitializer.BIAS_KEY;
@@ -549,11 +551,12 @@ public class TestDecayPolicies {
         paramsSoFar = 0;
         for (int j = 0; j < net.getnLayers(); j++) {
             int nParams = net.getLayer(j).numParams();
-            INDArray g = gradViewArr.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramsSoFar, paramsSoFar+nParams));
-            int nW = nIns[j]*nOuts[j];
+            INDArray g = gradViewArr.get(NDArrayIndex.point(0),
+                            NDArrayIndex.interval(paramsSoFar, paramsSoFar + nParams));
+            int nW = nIns[j] * nOuts[j];
             int nB = nOuts[j];
-            INDArray gw = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,nW));
-            INDArray gb = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nW, nW+nB));
+            INDArray gw = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nW));
+            INDArray gb = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nW, nW + nB));
             wKey = String.valueOf(j) + "_" + DefaultParamInitializer.WEIGHT_KEY;
             gradientExpected.setGradientFor(wKey, gw);
             bKey = String.valueOf(j) + "_" + DefaultParamInitializer.BIAS_KEY;

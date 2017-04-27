@@ -122,16 +122,17 @@ public class CudnnLocalResponseNormalizationHelper implements LocalResponseNorma
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha,
                     double beta) {
         if (n < CUDNN_LRN_MIN_N) {
-            throw new IllegalArgumentException("Error: n < CUDNN_LRN_MIN_N (" + n + " < "  + CUDNN_LRN_MIN_N + ")");
+            throw new IllegalArgumentException("Error: n < CUDNN_LRN_MIN_N (" + n + " < " + CUDNN_LRN_MIN_N + ")");
         }
         if (n > CUDNN_LRN_MAX_N) {
-            throw new IllegalArgumentException("Error: n > CUDNN_LRN_MAX_N (" + n + " > "  + CUDNN_LRN_MAX_N + ")");
+            throw new IllegalArgumentException("Error: n > CUDNN_LRN_MAX_N (" + n + " > " + CUDNN_LRN_MAX_N + ")");
         }
         if (k < CUDNN_LRN_MIN_K) {
             throw new IllegalArgumentException("Error: k < CUDNN_LRN_MIN_K (" + k + " < " + CUDNN_LRN_MIN_K + ")");
         }
         if (beta < CUDNN_LRN_MIN_BETA) {
-            throw new IllegalArgumentException("Error: beta < CUDNN_LRN_MIN_BETA (" + beta + " < " + CUDNN_LRN_MIN_BETA + ")");
+            throw new IllegalArgumentException(
+                            "Error: beta < CUDNN_LRN_MIN_BETA (" + beta + " < " + CUDNN_LRN_MIN_BETA + ")");
         }
 
         int miniBatch = input.size(0);
@@ -185,16 +186,17 @@ public class CudnnLocalResponseNormalizationHelper implements LocalResponseNorma
     @Override
     public INDArray activate(INDArray input, boolean training, double k, double n, double alpha, double beta) {
         if (n < CUDNN_LRN_MIN_N) {
-            throw new IllegalArgumentException("Error: n < CUDNN_LRN_MIN_N (" + n + " < "  + CUDNN_LRN_MIN_N + ")");
+            throw new IllegalArgumentException("Error: n < CUDNN_LRN_MIN_N (" + n + " < " + CUDNN_LRN_MIN_N + ")");
         }
         if (n > CUDNN_LRN_MAX_N) {
-            throw new IllegalArgumentException("Error: n > CUDNN_LRN_MAX_N (" + n + " > "  + CUDNN_LRN_MAX_N + ")");
+            throw new IllegalArgumentException("Error: n > CUDNN_LRN_MAX_N (" + n + " > " + CUDNN_LRN_MAX_N + ")");
         }
         if (k < CUDNN_LRN_MIN_K) {
             throw new IllegalArgumentException("Error: k < CUDNN_LRN_MIN_K (" + k + " < " + CUDNN_LRN_MIN_K + ")");
         }
         if (beta < CUDNN_LRN_MIN_BETA) {
-            throw new IllegalArgumentException("Error: beta < CUDNN_LRN_MIN_BETA (" + beta + " < " + CUDNN_LRN_MIN_BETA + ")");
+            throw new IllegalArgumentException(
+                            "Error: beta < CUDNN_LRN_MIN_BETA (" + beta + " < " + CUDNN_LRN_MIN_BETA + ")");
         }
 
         int miniBatch = input.size(0);

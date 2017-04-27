@@ -831,8 +831,8 @@ public class GradientCheckTests {
                         }
 
                         msg = "testGradMLP2LayerIrisSimple() - activationFn=" + afn + ", lossFn=" + lf
-                                + ", outputActivation=" + outputActivation + ", doLearningFirst="
-                                + doLearningFirst + ", l2=" + l2 + ", l1=" + l1;
+                                        + ", outputActivation=" + outputActivation + ", doLearningFirst="
+                                        + doLearningFirst + ", l2=" + l2 + ", l1=" + l1;
                         if (PRINT_RESULTS) {
                             System.out.println(msg);
                             for (int j = 0; j < mln.getnLayers(); j++)

@@ -76,7 +76,7 @@ public class ActivationLayer extends FeedForwardLayer {
     }
 
     @Override
-    public boolean isPretrainParam(String paramName){
+    public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("Activation layer does not contain parameters");
     }
 

@@ -987,25 +987,17 @@ public class ParagraphVectorsTest {
 
                             LabelsSource source = new LabelsSource("DOC_");
 
-                            SentenceIteratorConverter sic = new SentenceIteratorConverter(new BasicLineIterator(file), source);
+                            SentenceIteratorConverter sic =
+                                            new SentenceIteratorConverter(new BasicLineIterator(file), source);
 
-                            ParagraphVectors vec = new ParagraphVectors.Builder()
-                                    .seed(42)
-                                    //.batchSize(10)
-                                    .minWordFrequency(1)
-                                    .iterations(1)
-                                    .epochs(5)
-                                    .layerSize(100)
-                                    .learningRate(0.05)
-                                    //.labelsSource(source)
-                                    .windowSize(5)
-                                    .trainWordVectors(true)
-                                    .allowParallelTokenization(false)
-                                    //.vocabCache(cache)
-                                    .tokenizerFactory(t)
-                                    .workers(1)
-                                    .iterate(sic)
-                                    .build();
+                            ParagraphVectors vec = new ParagraphVectors.Builder().seed(42)
+                                            //.batchSize(10)
+                                            .minWordFrequency(1).iterations(1).epochs(5).layerSize(100)
+                                            .learningRate(0.05)
+                                            //.labelsSource(source)
+                                            .windowSize(5).trainWordVectors(true).allowParallelTokenization(false)
+                                            //.vocabCache(cache)
+                                            .tokenizerFactory(t).workers(1).iterate(sic).build();
 
                             vec.fit();
                         } catch (Exception e) {
@@ -1015,11 +1007,11 @@ public class ParagraphVectorsTest {
                 }));
             }
 
-            for (Thread t: threads) {
+            for (Thread t : threads) {
                 t.start();
             }
 
-            for (Thread t: threads) {
+            for (Thread t : threads) {
                 t.join();
             }
         }

@@ -239,11 +239,9 @@ public class WordVectorSerializer {
 
         Nd4j.getMemoryManager().setOccasionalGcFrequency(50000);
 
-        try (BufferedInputStream bis = new BufferedInputStream(
-                GzipUtils.isCompressedFilename(modelFile.getName())
-                        ? new GZIPInputStream(new FileInputStream(modelFile))
-                        : new FileInputStream(modelFile));
-             DataInputStream dis = new DataInputStream(bis)) {
+        try (BufferedInputStream bis = new BufferedInputStream(GzipUtils.isCompressedFilename(modelFile.getName())
+                        ? new GZIPInputStream(new FileInputStream(modelFile)) : new FileInputStream(modelFile));
+                        DataInputStream dis = new DataInputStream(bis)) {
             words = Integer.parseInt(readString(dis));
             size = Integer.parseInt(readString(dis));
             syn0 = Nd4j.create(words, size);
@@ -946,7 +944,8 @@ public class WordVectorSerializer {
             if (zsyn1Neg != null) {
                 stream = zipFile.getInputStream(zsyn1Neg);
 
-                try (InputStreamReader isr = new InputStreamReader(stream); BufferedReader reader = new BufferedReader(isr)) {
+                try (InputStreamReader isr = new InputStreamReader(stream);
+                                BufferedReader reader = new BufferedReader(isr)) {
                     String line = null;
                     List<INDArray> rows = new ArrayList<>();
                     while ((line = reader.readLine()) != null) {
@@ -2557,11 +2556,8 @@ public class WordVectorSerializer {
 
         Nd4j.getMemoryManager().setOccasionalGcFrequency(50000);
 
-        CompressedRamStorage<Integer> storage = new CompressedRamStorage.Builder<Integer>()
-                .useInplaceCompression(false)
-                .setCompressor(new NoOp())
-                .emulateIsAbsent(false)
-                .build();
+        CompressedRamStorage<Integer> storage = new CompressedRamStorage.Builder<Integer>().useInplaceCompression(false)
+                        .setCompressor(new NoOp()).emulateIsAbsent(false).build();
 
         VocabCache<VocabWord> vocabCache = new AbstractCache.Builder<VocabWord>().build();
 

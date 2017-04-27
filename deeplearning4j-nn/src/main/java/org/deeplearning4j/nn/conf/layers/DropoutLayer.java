@@ -82,7 +82,7 @@ public class DropoutLayer extends FeedForwardLayer {
     }
 
     @Override
-    public boolean isPretrainParam(String paramName){
+    public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("Dropout layer does not contain parameters");
     }
 

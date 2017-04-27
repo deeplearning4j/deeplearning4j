@@ -11,26 +11,25 @@ import java.util.Objects;
  */
 public class UpdaterUtils {
 
-    public static GradientUpdater getGradientUpdater(Layer layer, String variable){
+    public static GradientUpdater getGradientUpdater(Layer layer, String variable) {
         org.deeplearning4j.nn.conf.Updater u = layer.conf().getLayer().getUpdaterByParam(variable);
         switch (u) {
             case SGD:
                 return new org.nd4j.linalg.learning.Sgd(layer.conf().getLearningRateByParam(variable));
             case ADAM:
                 return new Adam(layer.conf().getLearningRateByParam(variable),
-                        layer.conf().getLayer().getAdamMeanDecay(),
-                        layer.conf().getLayer().getAdamVarDecay(), layer.conf().getLayer().getEpsilon());
+                                layer.conf().getLayer().getAdamMeanDecay(), layer.conf().getLayer().getAdamVarDecay(),
+                                layer.conf().getLayer().getEpsilon());
             case ADADELTA:
                 return new AdaDelta(layer.conf().getLayer().getRho(), layer.conf().getLayer().getEpsilon());
             case NESTEROVS:
                 return new Nesterovs(layer.conf().getLayer().getMomentum(),
-                        layer.conf().getLearningRateByParam(variable));
+                                layer.conf().getLearningRateByParam(variable));
             case ADAGRAD:
-                return new AdaGrad(layer.conf().getLearningRateByParam(variable),
-                        layer.conf().getLayer().getEpsilon());
+                return new AdaGrad(layer.conf().getLearningRateByParam(variable), layer.conf().getLayer().getEpsilon());
             case RMSPROP:
                 return new org.nd4j.linalg.learning.RmsProp(layer.conf().getLearningRateByParam(variable),
-                        layer.conf().getLayer().getRmsDecay(), layer.conf().getLayer().getEpsilon());
+                                layer.conf().getLayer().getRmsDecay(), layer.conf().getLayer().getEpsilon());
             case NONE:
                 return new NoOpUpdater();
             case CUSTOM:
@@ -40,8 +39,8 @@ public class UpdaterUtils {
         }
     }
 
-    public static int stateSizeForLayerVariable(Layer layer, String variable){
-        switch(layer.conf().getLayer().getUpdaterByParam(variable)){
+    public static int stateSizeForLayerVariable(Layer layer, String variable) {
+        switch (layer.conf().getLayer().getUpdaterByParam(variable)) {
             case SGD:
             case NONE:
                 return 0;
@@ -56,17 +55,18 @@ public class UpdaterUtils {
                 return 2 * layer.getParam(variable).length();
 
             default:
-                throw new UnsupportedOperationException("Unknown updater: " + layer.conf().getLayer().getUpdaterByParam(variable));
+                throw new UnsupportedOperationException(
+                                "Unknown updater: " + layer.conf().getLayer().getUpdaterByParam(variable));
         }
     }
 
 
-    public static boolean updaterConfigurationsEquals(Layer layer1, String param1, Layer layer2, String param2){
+    public static boolean updaterConfigurationsEquals(Layer layer1, String param1, Layer layer2, String param2) {
         org.deeplearning4j.nn.conf.layers.Layer l1 = layer1.conf().getLayer();
         org.deeplearning4j.nn.conf.layers.Layer l2 = layer2.conf().getLayer();
         org.deeplearning4j.nn.conf.Updater u1 = l1.getUpdaterByParam(param1);
         org.deeplearning4j.nn.conf.Updater u2 = l2.getUpdaterByParam(param2);
-        if( u1 != u2 ){
+        if (u1 != u2) {
             //Different updaters
             return false;
         }
@@ -81,7 +81,7 @@ public class UpdaterUtils {
 
         double lr1 = layer1.conf().getLearningRateByParam(param1);
         double lr2 = layer2.conf().getLearningRateByParam(param2);
-        if(lr1 != lr2){
+        if (lr1 != lr2) {
             return false;
         }
 
@@ -90,23 +90,22 @@ public class UpdaterUtils {
         }
 
         boolean updaterConfigEqual;
-        switch (u1){
-            case SGD:   //Already checked LR and schedules
+        switch (u1) {
+            case SGD: //Already checked LR and schedules
             case NONE:
                 updaterConfigEqual = true;
                 break;
             case ADAM:
                 //Mean decay, var decay, epsilon
-                updaterConfigEqual = l1.getAdamMeanDecay() == l2.getAdamMeanDecay() &&
-                        l1.getAdamVarDecay() == l2.getAdamVarDecay() &&
-                        l1.getEpsilon() == l2.getEpsilon();
+                updaterConfigEqual = l1.getAdamMeanDecay() == l2.getAdamMeanDecay()
+                                && l1.getAdamVarDecay() == l2.getAdamVarDecay() && l1.getEpsilon() == l2.getEpsilon();
                 break;
             case ADADELTA:
                 updaterConfigEqual = l1.getRho() == l2.getRho() && l1.getEpsilon() == l2.getEpsilon();
                 break;
             case NESTEROVS:
-                updaterConfigEqual = l1.getMomentum() == l2.getMomentum() &&
-                        Objects.equals(l1.getMomentumSchedule(), l2.getMomentumSchedule());
+                updaterConfigEqual = l1.getMomentum() == l2.getMomentum()
+                                && Objects.equals(l1.getMomentumSchedule(), l2.getMomentumSchedule());
                 break;
             case ADAGRAD:
                 updaterConfigEqual = l1.getEpsilon() == l2.getEpsilon();
@@ -122,9 +121,9 @@ public class UpdaterUtils {
 
         boolean isPretrainParam1 = layer1.conf().getLayer().isPretrainParam(param1);
         boolean isPretrainParam2 = layer2.conf().getLayer().isPretrainParam(param2);
-        if(isPretrainParam1 || isPretrainParam2){
+        if (isPretrainParam1 || isPretrainParam2) {
             //One or both of params are pretrainable.
-            if(layer1 == layer2 && isPretrainParam1 && isPretrainParam2){
+            if (layer1 == layer2 && isPretrainParam1 && isPretrainParam2) {
                 return updaterConfigEqual;
             } else {
                 //Either layers differ -> don't want to combine a pretrain updaters across layers
@@ -136,18 +135,18 @@ public class UpdaterUtils {
         return updaterConfigEqual;
     }
 
-    public static boolean lrSchedulesEqual(Layer layer1, String param1, Layer layer2, String param2){
+    public static boolean lrSchedulesEqual(Layer layer1, String param1, Layer layer2, String param2) {
 
         LearningRatePolicy lp1 = layer1.conf().getLearningRatePolicy();
         LearningRatePolicy lp2 = layer2.conf().getLearningRatePolicy();
 
-        if(lp1 != lp2){
+        if (lp1 != lp2) {
             return false;
         }
 
         double lr1 = layer1.conf().getLearningRateByParam(param1);
         double lr2 = layer2.conf().getLearningRateByParam(param2);
-        if(lr1 != lr2){
+        if (lr1 != lr2) {
             return false;
         }
 
@@ -155,7 +154,7 @@ public class UpdaterUtils {
         double dr2 = layer2.conf().getLrPolicyDecayRate();
 
         boolean lrConfigEqual;
-        switch (lp1){
+        switch (lp1) {
             case None:
                 lrConfigEqual = true;
                 break;
@@ -179,7 +178,7 @@ public class UpdaterUtils {
                 break;
             case Schedule:
                 lrConfigEqual = Objects.equals(layer1.conf().getLayer().getLearningRateSchedule(),
-                        layer2.conf().getLayer().getLearningRateSchedule());
+                                layer2.conf().getLayer().getLearningRateSchedule());
                 break;
             case Score:
                 //TODO - might be ok sometimes??

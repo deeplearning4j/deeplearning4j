@@ -82,7 +82,7 @@ public class ParallelInference {
 
     public INDArray output(INDArray input) {
         // basically, depending on model type we either throw stuff to specific model, or wait for batch
-        return output(new INDArray[]{input})[0];
+        return output(new INDArray[] {input})[0];
     }
 
     public INDArray output(DataSet dataSet) {
@@ -110,15 +110,15 @@ public class ParallelInference {
 
 
         try {
-                // submit query to processing
+            // submit query to processing
 
 
             // and block until Observable returns
             //observer.wait();
 
-             observer.waitTillDone();
+            observer.waitTillDone();
         } catch (Exception e) {
-                throw new RuntimeException(e);
+            throw new RuntimeException(e);
         }
 
         return observable.getOutput();
@@ -151,7 +151,7 @@ public class ParallelInference {
          * @param inferenceMode
          * @return
          */
-        public Builder inferenceMode(@NonNull InferenceMode inferenceMode){
+        public Builder inferenceMode(@NonNull InferenceMode inferenceMode) {
             this.inferenceMode = inferenceMode;
             return this;
         }
@@ -252,12 +252,12 @@ public class ParallelInference {
         private Model replicatedModel;
         private AtomicLong counter = new AtomicLong(0);
 
-        private InferenceWorker (int id, @NonNull Model model, @NonNull BlockingQueue inputQueue) {
+        private InferenceWorker(int id, @NonNull Model model, @NonNull BlockingQueue inputQueue) {
             this.inputQueue = inputQueue;
             this.protoModel = model;
 
             this.setDaemon(true);
-            this.setName("InferenceThread-"+id);
+            this.setName("InferenceThread-" + id);
         }
 
         protected long getCounterValue() {
@@ -269,8 +269,9 @@ public class ParallelInference {
             try {
                 // model should be replicated & initialized here
                 if (protoModel instanceof ComputationGraph) {
-                    this.replicatedModel = new ComputationGraph(ComputationGraphConfiguration.fromJson(((ComputationGraph) protoModel).getConfiguration().toJson()));
-                    ((ComputationGraph)this.replicatedModel).init();
+                    this.replicatedModel = new ComputationGraph(ComputationGraphConfiguration
+                                    .fromJson(((ComputationGraph) protoModel).getConfiguration().toJson()));
+                    ((ComputationGraph) this.replicatedModel).init();
 
                     synchronized (locker) {
                         ((ComputationGraph) this.replicatedModel).setParams(protoModel.params());
@@ -279,8 +280,9 @@ public class ParallelInference {
                             ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
                     }
                 } else if (protoModel instanceof MultiLayerNetwork) {
-                    this.replicatedModel = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(((MultiLayerNetwork) protoModel).getLayerWiseConfigurations().toJson()));
-                    ((MultiLayerNetwork)this.replicatedModel).init();
+                    this.replicatedModel = new MultiLayerNetwork(MultiLayerConfiguration
+                                    .fromJson(((MultiLayerNetwork) protoModel).getLayerWiseConfigurations().toJson()));
+                    ((MultiLayerNetwork) this.replicatedModel).init();
 
                     synchronized (locker) {
                         ((MultiLayerNetwork) this.replicatedModel).setParams(protoModel.params());
@@ -301,8 +303,8 @@ public class ParallelInference {
                             INDArray[] output = ((ComputationGraph) replicatedModel).output(false, request.getInput());
                             request.setOutput(output);
                         } else if (replicatedModel instanceof MultiLayerNetwork) {
-                           INDArray output = ((MultiLayerNetwork) replicatedModel).output(request.getInput()[0]);
-                           request.setOutput(output);
+                            INDArray output = ((MultiLayerNetwork) replicatedModel).output(request.getInput()[0]);
+                            request.setOutput(output);
                         }
 
 
@@ -320,7 +322,7 @@ public class ParallelInference {
 
         protected void shutdown() {
             shouldWork.set(false);
-            while (!isStopped.get()){
+            while (!isStopped.get()) {
                 // block until main loop is finished
             }
         }
@@ -345,7 +347,8 @@ public class ParallelInference {
         protected InferenceObservable setInput(@NonNull Observer observer, INDArray... input) {
             synchronized (locker) {
                 boolean isNew = false;
-                if (currentObservable == null || currentObservable.getCounter() >= batchLimit || currentObservable.isLocked()) {
+                if (currentObservable == null || currentObservable.getCounter() >= batchLimit
+                                || currentObservable.isLocked()) {
                     isNew = true;
                     currentObservable = new BatchedInferenceObservable();
                 }

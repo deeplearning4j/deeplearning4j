@@ -124,8 +124,8 @@ public abstract class FeedForwardLayer extends Layer {
     }
 
     @Override
-    public boolean isPretrainParam(String paramName){
-        return false;   //No pretrain params in standard FF layers
+    public boolean isPretrainParam(String paramName) {
+        return false; //No pretrain params in standard FF layers
     }
 
     public abstract static class Builder<T extends Builder<T>> extends Layer.Builder<T> {

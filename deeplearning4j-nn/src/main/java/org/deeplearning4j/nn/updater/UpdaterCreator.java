@@ -18,10 +18,10 @@ public class UpdaterCreator {
     public static org.deeplearning4j.nn.api.Updater getUpdater(Model layer) {
         if (layer instanceof MultiLayerNetwork) {
             return new MultiLayerUpdater((MultiLayerNetwork) layer);
-        } else if(layer instanceof ComputationGraph){
-            return new ComputationGraphUpdater((ComputationGraph)layer);
+        } else if (layer instanceof ComputationGraph) {
+            return new ComputationGraphUpdater((ComputationGraph) layer);
         } else {
-            return new LayerUpdater((Layer)layer);
+            return new LayerUpdater((Layer) layer);
         }
     }
 

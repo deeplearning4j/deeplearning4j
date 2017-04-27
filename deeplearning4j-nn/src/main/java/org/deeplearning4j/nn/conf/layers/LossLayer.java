@@ -50,7 +50,7 @@ public class LossLayer extends FeedForwardLayer {
     }
 
     @Override
-    public boolean isPretrainParam(String paramName){
+    public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("LossLayer does not contain parameters");
     }
 

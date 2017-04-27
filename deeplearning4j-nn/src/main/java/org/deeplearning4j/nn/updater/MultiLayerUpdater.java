@@ -30,7 +30,7 @@ public class MultiLayerUpdater extends BaseMultiLayerUpdater<MultiLayerNetwork> 
 
         layersByName = new HashMap<>();
         Layer[] l = network.getLayers();
-        for( int i=0; i<l.length; i++ ){
+        for (int i = 0; i < l.length; i++) {
             layersByName.put(String.valueOf(i), l[i]);
         }
     }
@@ -42,7 +42,7 @@ public class MultiLayerUpdater extends BaseMultiLayerUpdater<MultiLayerNetwork> 
 
     @Override
     protected INDArray getFlattenedGradientsView() {
-        if(network.getFlattenedGradients() == null){
+        if (network.getFlattenedGradients() == null) {
             network.initGradientsView();
         }
         return network.getFlattenedGradients();

@@ -156,7 +156,7 @@ public class GlobalPoolingLayer extends Layer {
     }
 
     @Override
-    public boolean isPretrainParam(String paramName){
+    public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("Global pooling layer does not contain parameters");
     }
 

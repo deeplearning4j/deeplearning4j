@@ -1139,16 +1139,13 @@ public class GradientCheckTestsComputationGraph {
         }
 
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().regularization(true).l2(0.2).l1(0.1)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345L)
-                .updater(Updater.NONE)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0", new EmbeddingLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
-                                .activation(Activation.TANH).build(), "in")
-                .addLayer("1", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3)
-                        .activation(Activation.SOFTMAX).build(), "0")
-                .setOutputs("1")
-                .build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345L)
+                        .updater(Updater.NONE).graphBuilder().addInputs("in")
+                        .addLayer("0", new EmbeddingLayer.Builder().nIn(4).nOut(3).weightInit(WeightInit.XAVIER)
+                                        .activation(Activation.TANH).build(), "in")
+                        .addLayer("1", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(3).nOut(3)
+                                        .activation(Activation.SOFTMAX).build(), "0")
+                        .setOutputs("1").build();
 
         ComputationGraph cg = new ComputationGraph(conf);
         cg.init();
@@ -1160,7 +1157,7 @@ public class GradientCheckTestsComputationGraph {
         }
 
         boolean gradOK = GradientCheckUtil.checkGradients(cg, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{input}, new INDArray[]{labels});
+                        PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input}, new INDArray[] {labels});
 
         String msg = "testGraphEmbeddingLayerSimple";
         assertTrue(msg, gradOK);

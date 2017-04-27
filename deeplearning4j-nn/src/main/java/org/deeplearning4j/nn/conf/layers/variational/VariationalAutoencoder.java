@@ -105,14 +105,14 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
     }
 
     @Override
-    public boolean isPretrainParam(String paramName){
-        if(paramName.startsWith(VariationalAutoencoderParamInitializer.DECODER_PREFIX)){
+    public boolean isPretrainParam(String paramName) {
+        if (paramName.startsWith(VariationalAutoencoderParamInitializer.DECODER_PREFIX)) {
             return true;
         }
-        if(paramName.startsWith(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_PREFIX)){
+        if (paramName.startsWith(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_PREFIX)) {
             return true;
         }
-        if(paramName.startsWith(VariationalAutoencoderParamInitializer.PXZ_PREFIX)){
+        if (paramName.startsWith(VariationalAutoencoderParamInitializer.PXZ_PREFIX)) {
             return true;
         }
         return false;

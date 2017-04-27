@@ -514,10 +514,13 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     protected void applyDropOutIfNecessary(boolean training) {
         if (conf.getLayer().getDropOut() > 0 && !conf.isUseDropConnect() && training && !dropoutApplied) {
             if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
-                try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
+                try (MemoryWorkspace ws = Nd4j.getWorkspaceManager()
+                                .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)
+                                .notifyScopeBorrowed()) {
                     input = input.isView() ? input.dup() : input.unsafeDuplication();
                 }
-            } else input = input.isView() ? input.dup() : input.unsafeDuplication();
+            } else
+                input = input.isView() ? input.dup() : input.unsafeDuplication();
 
             Dropout.applyDropout(input, conf.getLayer().getDropOut());
             dropoutApplied = true;
