@@ -41,6 +41,7 @@ public class NearestNeighborsServerTest {
                 {1,2,3,5},
                 {3,4,5,6}
         });
+
         FileUtils.write(fileSave, Nd4jBase64.base64String(arr));
         // Only one time
         Unirest.setObjectMapper(new ObjectMapper() {

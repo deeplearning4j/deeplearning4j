@@ -26,9 +26,8 @@ import static play.mvc.Results.ok;
 
 /**
  * A rest server for using an
- * {@link TransformProcess} based on simple
- * csv values and a schema via REST.
- *
+ * {@link VPTree} based on loading an ndarray containing
+ * the data points for the path
  * The input values are an {@link CSVRecord}
  * which (based on the input schema) will automatically
  * have their values transformed.
@@ -38,7 +37,7 @@ import static play.mvc.Results.ok;
 public class NearestNeighborsServer {
     @Parameter(names = {"--ndarrayPath"}, arity = 1, required = true)
     private String ndarrayPath = null;
-    @Parameter(names = {"-dp", "--dataVecPort"}, arity = 1)
+    @Parameter(names = {"-dp", "--nearestNeighborsPort"}, arity = 1)
     private int port = 9000;
     @Parameter(names = {"--similarityFunction"}, arity = 1)
     private String similarityFunction = "euclidean";
