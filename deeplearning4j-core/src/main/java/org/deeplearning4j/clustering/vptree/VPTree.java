@@ -46,6 +46,11 @@ public class VPTree {
     private String similarityFunction;
     private boolean invert = true;
 
+
+    public VPTree(INDArray points,boolean invert) {
+        this(points,"euclidean",invert);
+    }
+
     /**
      *
      * @param items the items to use
@@ -80,7 +85,7 @@ public class VPTree {
      * @param invert whether to invert the metric (different optimization objective)
      */
     public VPTree(List<DataPoint> items, CounterMap<DataPoint, DataPoint> distances, String similarityFunction,
-                    boolean invert) {
+                  boolean invert) {
         this.items = items;
         this.distances = distances;
         this.invert = invert;
@@ -230,10 +235,11 @@ public class VPTree {
             pq.next();
         }
 
-        Collections.reverse(results);
-        Collections.reverse(distances);
+        if (invert) {
+            Collections.reverse(results);
+            Collections.reverse(distances);
+        }
     }
-
 
     /**
      *
