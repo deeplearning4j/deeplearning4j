@@ -61,6 +61,19 @@
 
   <repositories>
     <repository>
+      <id>sonatype-nexus-snapshots</id>
+      <name>Sonatype Nexus Snapshots</name>
+      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+        <updatePolicy>never</updatePolicy>
+      </snapshots>
+    </repository>
+
+    <repository>
       <id>scala-tools.org</id>
       <name>Scala-Tools Maven2 Repository</name>
       <url>http://scala-tools.org/repo-releases</url>
