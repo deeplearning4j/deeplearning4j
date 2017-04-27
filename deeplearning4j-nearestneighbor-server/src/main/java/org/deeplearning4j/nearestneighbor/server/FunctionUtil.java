@@ -1,4 +1,4 @@
-package org.datavec.spark.transform;
+package org.deeplearning4j.nearestneighbor.server;
 
 import play.libs.F;
 import play.mvc.Result;

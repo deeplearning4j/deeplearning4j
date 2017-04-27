@@ -1,4 +1,4 @@
-package org.datavec.spark.transform;
+package org.deeplearning4j.nearestneighbor.server;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -9,7 +9,6 @@ import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.nearestneighbor.model.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.serde.base64.Nd4jBase64;
 import play.Mode;
 import play.libs.Json;
@@ -41,6 +40,11 @@ public class NearestNeighborsServer {
     private String ndarrayPath = null;
     @Parameter(names = {"-dp", "--dataVecPort"}, arity = 1)
     private int port = 9000;
+    @Parameter(names = {"--similarityFunction"}, arity = 1)
+    private String similarityFunction = "euclidean";
+    @Parameter(names = {"--invert"}, arity = 1)
+    private boolean invert = false;
+
     private Server server;
 
     public void runMain(String[] args) throws Exception {
@@ -64,7 +68,7 @@ public class NearestNeighborsServer {
         INDArray points = Nd4jBase64.fromBase64(json);
 
 
-        VPTree tree = new VPTree(points);
+        VPTree tree = new VPTree(points,similarityFunction,invert);
 
 
         RoutingDsl routingDsl = new RoutingDsl();
@@ -72,16 +76,11 @@ public class NearestNeighborsServer {
         routingDsl.POST("/knn").routeTo(FunctionUtil.function0((() -> {
             try {
                 NearestNeighborRequest record = Json.fromJson(request().body().asJson(), NearestNeighborRequest.class);
-                INDArray input = points.slice(record.getInputIndex());
-                List<NearestNeighborsResult> results = new ArrayList<>();
-                if(input.isVector()) {
-                    List<DataPoint> add = new ArrayList<>();
-                    List<Double> distances = new ArrayList<>();
-                    tree.search(new DataPoint(record.getInputIndex(), input), record.getK(), add, distances);
-                }
+                NearestNeighbor nearestNeighbor = NearestNeighbor.builder()
+                        .points(points).record(record).tree(tree).build();
                 if (record == null)
                     return badRequest();
-                return ok(Json.toJson(results));
+                return ok(Json.toJson(nearestNeighbor.search()));
             } catch (Exception e) {
                 e.printStackTrace();
                 return internalServerError();
