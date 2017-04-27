@@ -39,7 +39,6 @@ import org.datavec.api.transform.transform.integer.ReplaceEmptyIntegerWithValueT
 import org.datavec.api.transform.transform.integer.ReplaceInvalidWithIntegerTransform;
 import org.datavec.api.transform.transform.string.MapAllStringsExceptListTransform;
 import org.datavec.api.transform.transform.string.ReplaceEmptyStringTransform;
-import org.datavec.api.transform.transform.string.ReplaceStringTransform;
 import org.datavec.api.transform.transform.string.StringListToCategoricalSetTransform;
 import org.datavec.api.transform.transform.time.DeriveColumnsFromTimeTransform;
 import org.datavec.api.writable.DoubleWritable;
@@ -98,7 +97,7 @@ public class TestJsonYaml {
                                                         Arrays.asList("Ok", "SomeVal")))
                                         .stringRemoveWhitespaceTransform("Str")
                                         .transform(new ReplaceEmptyStringTransform("Str", "WasEmpty"))
-                                        .transform(new ReplaceStringTransform("Str", map))
+                                        .replaceStringTransform("Str", map)
                                         .transform(new StringListToCategoricalSetTransform("Str",
                                                         Arrays.asList("StrA", "StrB"), Arrays.asList("StrA", "StrB"),
                                                         ","))
