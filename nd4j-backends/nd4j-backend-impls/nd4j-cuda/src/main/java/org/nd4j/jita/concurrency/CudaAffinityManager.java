@@ -334,4 +334,9 @@ public class CudaAffinityManager extends BasicAffinityManager {
     public Integer getDeviceForArray(@NonNull INDArray array) {
         return AtomicAllocator.getInstance().getDeviceId(array);
     }
+
+    @Override
+    public void unsafeSetDevice(Integer deviceId) {
+        NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
+    }
 }
