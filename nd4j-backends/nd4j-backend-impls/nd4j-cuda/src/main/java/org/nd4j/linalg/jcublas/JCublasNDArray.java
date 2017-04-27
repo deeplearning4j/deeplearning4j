@@ -609,6 +609,8 @@ public class JCublasNDArray extends BaseNDArray {
             AllocationPoint pointDst = AtomicAllocator.getInstance().getAllocationPoint(buffer);
             AllocationPoint pointSrc = AtomicAllocator.getInstance().getAllocationPoint(this.data);
 
+//            CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
             CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(pointDst, pointSrc);
             if (pointSrc.isActualOnDeviceSide()) {
                 if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getDevicePointer(), this.lengthLong() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream()) == 0)
