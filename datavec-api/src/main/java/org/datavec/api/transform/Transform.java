@@ -80,6 +80,7 @@ import java.util.List;
                                 name = "MapAllStringsExceptListTransform"),
                 @JsonSubTypes.Type(value = RemoveWhiteSpaceTransform.class, name = "RemoveWhiteSpaceTransform"),
                 @JsonSubTypes.Type(value = ReplaceEmptyStringTransform.class, name = "ReplaceEmptyStringTransform"),
+                @JsonSubTypes.Type(value = ReplaceStringTransform.class, name = "ReplaceStringTransform"),
                 @JsonSubTypes.Type(value = StringListToCategoricalSetTransform.class,
                                 name = "StringListToCategoricalSetTransform"),
                 @JsonSubTypes.Type(value = StringMapTransform.class, name = "StringMapTransform"),

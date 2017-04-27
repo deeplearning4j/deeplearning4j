@@ -992,4 +992,36 @@ public class TestTransforms {
                         transform.map(Arrays.asList((Writable) new Text("something2"), new DoubleWritable(100.0))));
     }
 
+    @Test
+    public void testReplaceStringTransform() {
+        Schema schema = getSchema(ColumnType.String);
+
+        // Linked
+        Map<String, String> map = new LinkedHashMap<>();
+        map.put("mid", "C2");
+        map.put("\\d", "one");
+        Transform transform = new ReplaceStringTransform("column", map);
+        transform.setInputSchema(schema);
+        Schema out = transform.transform(schema);
+
+        assertEquals(1, out.getColumnMetaData().size());
+        TestCase.assertEquals(ColumnType.String, out.getMetaData(0).getColumnType());
+
+        assertEquals(Collections.singletonList((Writable) new Text("BoneConeTone")),
+            transform.map(Collections.singletonList((Writable) new Text("B1midT3"))));
+
+        // No link
+        map = new HashMap<>();
+        map.put("^\\s+|\\s+$", "");
+        transform = new ReplaceStringTransform("column", map);
+        transform.setInputSchema(schema);
+        out = transform.transform(schema);
+
+        assertEquals(1, out.getColumnMetaData().size());
+        TestCase.assertEquals(ColumnType.String, out.getMetaData(0).getColumnType());
+
+        assertEquals(Collections.singletonList((Writable) new Text("4.25")),
+            transform.map(Collections.singletonList((Writable) new Text("  4.25 "))));
+    }
+
 }
