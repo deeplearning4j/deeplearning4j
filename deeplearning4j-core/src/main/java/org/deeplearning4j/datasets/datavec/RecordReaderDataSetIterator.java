@@ -220,7 +220,14 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 ret.setExampleMetaData(meta);
             }
         } else {
+            long time1 = System.currentTimeMillis();
             ret = getDataSet(recordReader.next(num));
+            long time2 = System.currentTimeMillis();
+
+            batchNum++;
+
+            if (batchNum % 100 == 0)
+                log.info("Compilation time: {} ms", time2 - time1);
         }
 
         last = ret;
