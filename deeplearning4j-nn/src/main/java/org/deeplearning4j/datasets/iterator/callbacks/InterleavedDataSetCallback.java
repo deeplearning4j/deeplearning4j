@@ -49,7 +49,7 @@ public class InterleavedDataSetCallback implements DataSetCallback {
         int cDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         for (int i = 0; i < numDevices; i++) {
             Nd4j.getAffinityManager().unsafeSetDevice(i);
-            workspaces.add(Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration,"IDSC-" + i));
+            workspaces.add(Nd4j.getWorkspaceManager().createNewWorkspace(configuration,"IDSC-" + i, i));
         }
 
         Nd4j.getAffinityManager().unsafeSetDevice(cDevice);
