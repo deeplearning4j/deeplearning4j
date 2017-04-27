@@ -37,6 +37,7 @@ import org.datavec.common.data.NDArrayWritable;
 import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException;
 import org.deeplearning4j.datasets.datavec.tools.SpecialImageRecordReader;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -991,6 +992,29 @@ public class RecordReaderDataSetiteratorTest {
 
 
     @Test
+    @Ignore
+    public void specialRRTest4() throws Exception {
+        RecordReader rr = new SpecialImageRecordReader(25000, 10,3, 224, 224);
+        RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(rr, 128);
+
+        int cnt = 0;
+        int examples = 0;
+        while (rrdsi.hasNext()) {
+            DataSet ds = rrdsi.next();
+            assertEquals(128, ds.numExamples());
+            for (int i = 0; i < ds.numExamples(); i++) {
+                INDArray example = ds.getFeatureMatrix().tensorAlongDimension(i, 1, 2, 3).dup();
+//                assertEquals("Failed on DataSet [" + cnt + "], example [" + i + "]", (double) examples, example.meanNumber().doubleValue(), 0.01);
+
+//                assertEquals("Failed on DataSet [" + cnt + "], example [" + i + "]", (double) examples, ds.getLabels().getRow(i).meanNumber().doubleValue(), 0.01);
+                examples++;
+            }
+            cnt++;
+        }
+
+    }
+
+    @Test
     public void specialRRTest1() throws Exception {
         RecordReader rr = new SpecialImageRecordReader(250, 10,3, 224, 224);
         DataSetIterator rrdsi = new ParallelRecordReaderDataSetIterator.Builder(rr)
@@ -1044,7 +1068,7 @@ public class RecordReaderDataSetiteratorTest {
 
     @Test
     public void specialRRTest3() throws Exception {
-        RecordReader rr = new SpecialImageRecordReader(5000, 10,3, 224, 224);
+        RecordReader rr = new SpecialImageRecordReader(400, 10,3, 224, 224);
         DataSetIterator rrdsi = new ParallelRecordReaderDataSetIterator.Builder(rr)
                 .setBatchSize(128)
                 .numberOfWorkers(2)

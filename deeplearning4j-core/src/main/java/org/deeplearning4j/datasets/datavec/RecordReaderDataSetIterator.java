@@ -166,9 +166,10 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         }
 
         DataSet ret = null;
+        long time1 = System.currentTimeMillis();
 
         if (!recordReader.batchesSupported() || collectMetaData) {
-
+        //if (true) {
             List<DataSet> dataSets = new ArrayList<>();
             List<RecordMetaData> meta = (collectMetaData ? new ArrayList<RecordMetaData>() : null);
             for (int i = 0; i < num; i++) {
@@ -220,15 +221,19 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
                 ret.setExampleMetaData(meta);
             }
         } else {
-            long time1 = System.currentTimeMillis();
+
+
             ret = getDataSet(recordReader.next(num));
-            long time2 = System.currentTimeMillis();
+
 
             batchNum++;
-
-            if (batchNum % 100 == 0)
-                log.info("Compilation time: {} ms", time2 - time1);
+//            if (batchNum % 20 == 0)
+//                log.info("Batch way...");
         }
+
+        long time2 = System.currentTimeMillis();
+//        if (batchNum % 10 == 0)
+//            log.info("Compilation time: {} ms", time2 - time1);
 
         last = ret;
         if (preProcessor != null)
