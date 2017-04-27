@@ -80,7 +80,9 @@ public class NearestNeighborsServer {
                         .points(points).record(record).tree(tree).build();
                 if (record == null)
                     return badRequest();
-                return ok(Json.toJson(nearestNeighbor.search()));
+                NearstNeighborsResults results = NearstNeighborsResults.builder().results(nearestNeighbor.search()).build();
+                return ok(Json.toJson(results));
+
             } catch (Exception e) {
                 e.printStackTrace();
                 return internalServerError();
