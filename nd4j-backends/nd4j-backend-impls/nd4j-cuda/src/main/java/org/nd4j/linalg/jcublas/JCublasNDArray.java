@@ -463,6 +463,7 @@ public class JCublasNDArray extends BaseNDArray {
      */
     public void setShapeInfoDataBuffer(DataBuffer buffer) {
         this.shapeInformation = buffer;
+        this.javaShapeInformation = shapeInformation.asInt();
     }
 
     private Object writeReplace() throws java.io.ObjectStreamException {

@@ -21,7 +21,9 @@ package org.nd4j.linalg.api.buffer;
 
 
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.FloatIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
+import org.bytedeco.javacpp.indexer.IntIndexer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 
@@ -33,6 +35,9 @@ import java.nio.ByteBuffer;
  * @author Adam Gibson
  */
 public class IntBuffer extends BaseDataBuffer {
+
+    protected IntIndexer indexer;
+
     /**
      * Meant for creating another view of a buffer
      *
@@ -97,6 +102,20 @@ public class IntBuffer extends BaseDataBuffer {
     }
 
 
+    @Override
+    protected void setIndexer(Indexer indexer) {
+        this.indexer = (IntIndexer) indexer;
+    }
+
+    @Override
+    public Indexer indexer() {
+        return this.indexer;
+    }
+
+    @Override
+    public int getInt(long i) {
+        return this.indexer.get(offset() + i);
+    }
 
     @Override
     protected DataBuffer create(long length) {

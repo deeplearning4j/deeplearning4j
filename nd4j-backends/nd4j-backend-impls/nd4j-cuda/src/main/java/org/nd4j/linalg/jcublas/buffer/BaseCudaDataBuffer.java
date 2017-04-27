@@ -252,6 +252,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         */
     }
 
+    @Override
+    protected void setIndexer(Indexer indexer) {
+        //TODO: to be abstracted
+    }
+
     /**
      * Base constructor. It's used within all constructors internally
      *
