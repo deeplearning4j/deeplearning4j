@@ -474,7 +474,7 @@ public class TestOptimizers {
             gradient.muli(20 * Math.PI);
             gradient.addi(parameters.mul(2));
 
-            Gradient g = new DefaultGradient();
+            Gradient g = new DefaultGradient(this.gradientView);
             g.gradientForVariable().put("W", this.gradientView);
             this.gradient = g;
             //If any parameters are outside range [-5.12,5.12]: score = infinity
