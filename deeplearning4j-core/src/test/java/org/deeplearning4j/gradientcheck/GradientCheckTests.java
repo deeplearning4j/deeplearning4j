@@ -806,6 +806,7 @@ public class GradientCheckTests {
                         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                         mln.init();
 
+                        String msg;
                         if (doLearningFirst) {
                             //Run a number of iterations of learning
                             mln.setInput(ds.getFeatures());
@@ -817,27 +818,24 @@ public class GradientCheckTests {
                             mln.computeGradientAndScore();
                             double scoreAfter = mln.score();
                             //Can't test in 'characteristic mode of operation' if not learning
-                            String msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="
+                            msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="
                                             + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
                                             + ", doLearningFirst=" + doLearningFirst + ", l2=" + l2 + ", l1=" + l1
                                             + " (before=" + scoreBefore + ", scoreAfter=" + scoreAfter + ")";
                             assertTrue(msg, scoreAfter < scoreBefore);
                         }
 
+                        msg = "testGradMLP2LayerIrisSimple() - activationFn=" + afn + ", lossFn=" + lf
+                                + ", outputActivation=" + outputActivation + ", doLearningFirst="
+                                + doLearningFirst + ", l2=" + l2 + ", l1=" + l1;
                         if (PRINT_RESULTS) {
-                            System.out.println("testGradientMLP2LayerIrisSimpleRandom() - activationFn=" + afn
-                                            + ", lossFn=" + lf + ", outputActivation=" + outputActivation
-                                            + ", doLearningFirst=" + doLearningFirst + ", l2=" + l2 + ", l1=" + l1);
+                            System.out.println(msg);
                             for (int j = 0; j < mln.getnLayers(); j++)
                                 System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
                         }
 
                         boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-
-                        String msg = "testGradMLP2LayerIrisSimple() - activationFn=" + afn + ", lossFn=" + lf
-                                        + ", outputActivation=" + outputActivation + ", doLearningFirst="
-                                        + doLearningFirst + ", l2=" + l2 + ", l1=" + l1;
                         assertTrue(msg, gradOK);
                     }
                 }
