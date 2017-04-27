@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.impl.paramavg;
 
 import lombok.extern.slf4j.Slf4j;
+import static com.google.common.base.Preconditions.checkArgument;
 import org.apache.spark.api.java.JavaRDDLike;
 import org.deeplearning4j.api.storage.*;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -179,16 +180,10 @@ public class ParameterAveragingTrainingMaster
                     int batchSizePerWorker, int averagingFrequency, int aggregationDepth, int prefetchNumBatches,
                     Repartition repartition, RepartitionStrategy repartitionStrategy, StorageLevel storageLevel,
                     boolean collectTrainingStats) {
-        if (numWorkers <= 0)
-            throw new IllegalArgumentException("Invalid number of workers: " + numWorkers + " (must be >= 1)");
-        if (rddDataSetNumExamples <= 0)
-            throw new IllegalArgumentException(
-                            "Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
-        if (averagingFrequency <= 0)
-            throw new IllegalArgumentException("Invalid input: averaging frequency must be >= 1");
-        if (aggregationDepth <= 0) {
-            throw new IllegalArgumentException("Invalid input: tree aggregation depth must be >= 1");
-        }
+        checkArgument(numWorkers > 0, "Invalid number of workers: " + numWorkers + " (must be >= 1)");
+        checkArgument(rddDataSetNumExamples > 0, "Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
+        checkArgument(averagingFrequency > 0, "Invalid input: averaging frequency must be >= 1");
+        checkArgument(aggregationDepth > 0, "Invalid input: tree aggregation depth must be >= 1");
 
         this.saveUpdater = saveUpdater;
         this.numWorkers = numWorkers;
@@ -1170,11 +1165,8 @@ public class ParameterAveragingTrainingMaster
          * @param rddDataSetNumExamples Number of examples in each DataSet object in the {@code RDD<DataSet>}
          */
         public Builder(Integer numWorkers, int rddDataSetNumExamples) {
-            if (numWorkers != null && numWorkers <= 0)
-                throw new IllegalArgumentException("Invalid number of workers: " + numWorkers + " (must be >= 1)");
-            if (rddDataSetNumExamples <= 0)
-                throw new IllegalArgumentException(
-                                "Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
+            checkArgument(numWorkers == null || numWorkers > 0, "Invalid number of workers: " + numWorkers + " (must be >= 1)");
+            checkArgument(rddDataSetNumExamples > 0, "Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
             this.numWorkers = numWorkers;
             this.rddDataSetNumExamples = rddDataSetNumExamples;
         }
@@ -1199,8 +1191,7 @@ public class ParameterAveragingTrainingMaster
          * @param averagingFrequency Frequency (in number of minibatches of size 'batchSizePerWorker') to average parameters
          */
         public Builder averagingFrequency(int averagingFrequency) {
-            if (averagingFrequency <= 0)
-                throw new IllegalArgumentException("Invalid input: averaging frequency must be >= 1");
+            checkArgument(averagingFrequency > 0, "Invalid input: averaging frequency must be >= 1");
             this.averagingFrequency = averagingFrequency;
             return this;
         }
@@ -1213,10 +1204,7 @@ public class ParameterAveragingTrainingMaster
          * @param aggregationDepth RDD tree aggregation depth when averaging parameter updates.
          */
         public Builder aggregationDepth(int aggregationDepth) {
-            if (aggregationDepth <= 0) {
-                throw new IllegalArgumentException("Invalid input: tree aggregation depth must " +
-                        "be >= 1");
-            }
+            checkArgument(aggregationDepth > 0, "Invalid input: tree aggregation depth must be >= 1");
             this.aggregationDepth = aggregationDepth;
             return this;
         }
