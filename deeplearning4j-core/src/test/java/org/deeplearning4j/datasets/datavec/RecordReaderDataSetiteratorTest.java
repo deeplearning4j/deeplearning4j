@@ -60,6 +60,16 @@ public class RecordReaderDataSetiteratorTest {
         DataSetIterator iter = new RecordReaderDataSetIterator(recordReader, 34);
         DataSet next = iter.next();
         assertEquals(34, next.numExamples());
+
+        recordReader = new CSVSequenceRecordReader();
+        recordReader.initialize(csv);
+        iter = new RecordReaderDataSetIterator(recordReader, 1);
+        int count = 0;
+        while (iter.hasNext() && count < 34) {
+            iter.next();
+            count++;
+        }
+        assertEquals(34, count);
     }
 
 
