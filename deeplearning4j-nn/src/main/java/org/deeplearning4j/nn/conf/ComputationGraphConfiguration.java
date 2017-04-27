@@ -375,6 +375,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                 vertexOutputs.put(s, inputTypes[inputIdx]);
                 continue;
             }
+
             GraphVertex gv = vertices.get(s);
 
             List<InputType> inputTypeList = new ArrayList<>();
