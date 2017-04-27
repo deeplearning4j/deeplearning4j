@@ -22,6 +22,7 @@ import org.apache.commons.lang3.ClassUtils;
 import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.transform.string.AppendStringColumnTransform;
 import org.datavec.api.transform.transform.string.ConvertToString;
+import org.datavec.api.transform.transform.string.ReplaceStringTransform;
 import org.datavec.api.util.reflections.DataVecSubTypesScanner;
 import org.reflections.ReflectionUtils;
 import org.reflections.Reflections;
@@ -1089,6 +1090,47 @@ public class TransformProcess implements Serializable {
          */
         public Builder conditionalCopyValueTransform(String columnToReplace, String sourceColumn, Condition condition) {
             return transform(new ConditionalCopyValueTransform(columnToReplace, sourceColumn, condition));
+        }
+
+        /**
+         * Replace one or more String values in the specified column that match regular expressions.
+         * <p>
+         * Keys in the map are the regular expressions; the Values in the map are their String replacements.
+         * For example:
+         * <blockquote>
+         * <table cellpadding="2">
+         * <tr>
+         *      <th>Original</th>
+         *      <th>Regex</th>
+         *      <th>Replacement</th>
+         *      <th>Result</th>
+         * </tr>
+         * <tr>
+         *      <td>Data_Vec</td>
+         *      <td>_</td>
+         *      <td></td>
+         *      <td>DataVec</td>
+         * </tr>
+         * <tr>
+         *      <td>B1C2T3</td>
+         *      <td>\\d</td>
+         *      <td>one</td>
+         *      <td>BoneConeTone</td>
+         * </tr>
+         * <tr>
+         *      <td>'&nbsp&nbsp4.25&nbsp'</td>
+         *      <td>^\\s+|\\s+$</td>
+         *      <td></td>
+         *      <td>'4.25'</td>
+         * </tr>
+         * </table>
+         * </blockquote>
+         *
+         * @param columnName Name of the column in which to do replacement
+         * @param mapping    Map of old values or regular expression to new values
+         */
+        public Builder replaceStringTransform(String columnName, Map<String, String> mapping) {
+            return transform(new ReplaceStringTransform(columnName, mapping));
         }
 
         /**
