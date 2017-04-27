@@ -31,6 +31,7 @@ import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.ImageTransform;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
+import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -254,8 +255,10 @@ public class NativeImageLoader extends BaseImageLoader {
         Pointer pointer = ret.data().pointer();
         int[] stride = ret.stride();
         boolean done = false;
+        PagedPointer pagedPointer = new PagedPointer(pointer, rows * cols * channels, ret.data().offset() * Nd4j.sizeOfDataType(ret.data().dataType()));
+
         if (pointer instanceof FloatPointer) {
-            FloatIndexer retidx = FloatIndexer.create((FloatPointer) pointer, new long[] {channels, rows, cols},
+            FloatIndexer retidx = FloatIndexer.create((FloatPointer) pagedPointer.asFloatPointer(), new long[] {channels, rows, cols},
                     new long[] {stride[0], stride[1], stride[2]});
             if (idx instanceof UByteIndexer) {
                 UByteIndexer ubyteidx = (UByteIndexer) idx;
@@ -299,7 +302,7 @@ public class NativeImageLoader extends BaseImageLoader {
                 done = true;
             }
         } else if (pointer instanceof DoublePointer) {
-            DoubleIndexer retidx = DoubleIndexer.create((DoublePointer) pointer, new long[] {channels, rows, cols},
+            DoubleIndexer retidx = DoubleIndexer.create((DoublePointer) pagedPointer.asDoublePointer(), new long[] {channels, rows, cols},
                     new long[] {stride[0], stride[1], stride[2]});
             if (idx instanceof UByteIndexer) {
                 UByteIndexer ubyteidx = (UByteIndexer) idx;
@@ -343,6 +346,8 @@ public class NativeImageLoader extends BaseImageLoader {
                 done = true;
             }
         }
+
+
         if (!done) {
             for (int k = 0; k < channels; k++) {
                 for (int i = 0; i < rows; i++) {
@@ -372,6 +377,8 @@ public class NativeImageLoader extends BaseImageLoader {
             image = convert(pix);
             pixDestroy(pix);
         }
+        if (image == null)
+            throw new RuntimeException();
         asMatrixView(image, view);
     }
 

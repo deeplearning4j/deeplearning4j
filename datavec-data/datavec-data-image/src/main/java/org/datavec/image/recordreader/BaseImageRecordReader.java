@@ -34,6 +34,7 @@ import org.datavec.image.loader.ImageLoader;
 import org.datavec.image.loader.NativeImageLoader;
 import org.datavec.image.loader.BaseImageLoader;
 import org.datavec.image.transform.ImageTransform;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.collection.CompactHeapStringList;
 import org.nd4j.linalg.factory.Nd4j;
@@ -258,6 +259,10 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
     @Override
     public List<Writable> next(int num) {
+        if (imageLoader == null) {
+            imageLoader = new NativeImageLoader(height, width, channels, imageTransform);
+        }
+
         List<File> currBatch = new ArrayList<>();
 
         int cnt = 0;
@@ -272,7 +277,8 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
             cnt++;
         }
 
-        INDArray features = Nd4j.create(cnt, channels, height, width);
+        INDArray features = Nd4j.createUninitialized(new int[]{cnt, channels, height, width});
+        Nd4j.getAffinityManager().tagLocation(features, AffinityManager.Location.HOST);
         for(int i = 0; i < cnt; i++) {
             try {
                 ((NativeImageLoader) imageLoader).asMatrixView(currBatch.get(i), features.tensorAlongDimension(i, 1, 2, 3));
@@ -281,13 +287,14 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
             }
         }
 
+
         List<Writable> ret = (RecordConverter.toRecord(features));
         if (appendLabel) {
             INDArray labels = Nd4j.create(cnt, numCategories);
+            Nd4j.getAffinityManager().tagLocation(labels, AffinityManager.Location.HOST);
             for (int i = 0; i < currLabels.size(); i++) {
-                labels.put(i, currLabels.get(i), 1.0f);
+                labels.putScalar(i, currLabels.get(i), 1.0f);
             }
-
             ret.add(new NDArrayWritable(labels));
         }
 
