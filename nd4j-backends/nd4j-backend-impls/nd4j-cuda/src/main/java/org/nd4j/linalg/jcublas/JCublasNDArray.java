@@ -623,6 +623,11 @@ public class JCublasNDArray extends BaseNDArray {
 
             context.syncOldStream();
 
+            if (pointDst.getDeviceId() != Nd4j.getMemoryManager().getCurrentWorkspace().getDeviceId()) {
+                //log.info("Swapping [{}] -> [{}]", pointDst.getDeviceId(), Nd4j.getMemoryManager().getCurrentWorkspace().getDeviceId());
+                pointDst.setDeviceId(Nd4j.getMemoryManager().getCurrentWorkspace().getDeviceId());
+            }
+
             copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
 
             // tag buffer as valid on device side

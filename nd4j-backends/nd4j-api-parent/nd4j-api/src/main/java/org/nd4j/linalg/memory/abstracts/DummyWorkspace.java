@@ -43,6 +43,11 @@ public class DummyWorkspace implements MemoryWorkspace {
         return -1L;
     }
 
+    @Override
+    public int getDeviceId() {
+        return 0;
+    }
+
     /**
      * This method does allocation from a given Workspace
      *

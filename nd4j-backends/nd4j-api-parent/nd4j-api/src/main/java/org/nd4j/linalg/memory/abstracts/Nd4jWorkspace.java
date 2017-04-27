@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Slf4j
 public abstract class Nd4jWorkspace implements MemoryWorkspace {
-    protected int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+    @Getter protected int deviceId;
     @Getter protected Long threadId;
 
     protected static final long SAFETY_OFFSET = 1024;
@@ -91,6 +91,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         this.threadId = Thread.currentThread().getId();
         this.guid = java.util.UUID.randomUUID().toString();
         this.memoryManager = Nd4j.getMemoryManager();
+        this.deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
         // and actual workspace allocation
         currentSize.set(workspaceConfiguration.getInitialSize());

@@ -26,6 +26,11 @@ public class CpuWorkspace extends Nd4jWorkspace {
         super(configuration, workspaceId);
     }
 
+    public CpuWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String workspaceId, Integer deviceId) {
+        super(configuration, workspaceId);
+        this.deviceId = deviceId;
+    }
+
     @Override
     protected void init() {
         super.init();

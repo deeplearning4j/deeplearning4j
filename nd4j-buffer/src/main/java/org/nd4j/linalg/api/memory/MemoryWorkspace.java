@@ -28,6 +28,13 @@ public interface MemoryWorkspace extends AutoCloseable {
     String getId();
 
     /**
+     * Returns deviceId for this workspace
+     *
+     * @return
+     */
+    int getDeviceId();
+
+    /**
      * This method returns threadId where this workspace was created
      *
      * @return

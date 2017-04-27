@@ -25,6 +25,15 @@ public class CpuWorkspaceManager extends BasicWorkspaceManager {
         return new CpuWorkspace(defaultConfiguration);
     }
 
+    @Override
+    public MemoryWorkspace createNewWorkspace(WorkspaceConfiguration configuration, String id) {
+        return new CpuWorkspace(configuration, id);
+    }
+
+    @Override
+    public MemoryWorkspace createNewWorkspace(WorkspaceConfiguration configuration, String id, Integer deviceId) {
+        return new CpuWorkspace(configuration, id, deviceId);
+    }
 
     @Override
     public MemoryWorkspace getWorkspaceForCurrentThread(@NonNull WorkspaceConfiguration configuration, @NonNull String id) {
