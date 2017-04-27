@@ -1338,9 +1338,7 @@ public class ComputationGraph implements Serializable, Model {
 
     protected INDArray[] silentOutput(boolean train, INDArray... input) {
 
-        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
-        try(MemoryWorkspace ws = workspace.notifyScopeEntered()) {
             setInputs(input);
             Map<String, INDArray> activations = feedForward(train);
             INDArray[] outputs = new INDArray[numOutputArrays];
@@ -1349,7 +1347,6 @@ public class ComputationGraph implements Serializable, Model {
                 outputs[i++] = activations.get(s);
             }
             return outputs;
-        }
     }
 
     /**
@@ -2752,6 +2749,7 @@ public class ComputationGraph implements Serializable, Model {
         if (!iterator.hasNext())
             iterator.reset();
 
+        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
         while (iterator.hasNext()) {
             DataSet next = iterator.next();
@@ -2759,17 +2757,19 @@ public class ComputationGraph implements Serializable, Model {
             if (next.getFeatures() == null || next.getLabels() == null)
                 break;
 
-            //Assuming single output here
-            INDArray features = next.getFeatures();
-            INDArray featuresMask = next.getFeaturesMaskArray();
-            INDArray labels = next.getLabels();
-            INDArray labelMask = next.getLabelsMaskArray();
+            try (MemoryWorkspace wsB = workspace.notifyScopeEntered()) {
+                //Assuming single output here
+                INDArray features = next.getFeatures();
+                INDArray featuresMask = next.getFeaturesMaskArray();
+                INDArray labels = next.getLabels();
+                INDArray labelMask = next.getLabelsMaskArray();
 
-            setLayerMaskArrays(
-                    featuresMask == null ? null : new INDArray[]{featuresMask},
-                    labelMask == null ? null : new INDArray[]{labelMask});
-            INDArray[] out = silentOutput(false, features);
-            evaluation.eval(labels, out[0], labelMask);
+                setLayerMaskArrays(
+                        featuresMask == null ? null : new INDArray[]{featuresMask},
+                        labelMask == null ? null : new INDArray[]{labelMask});
+                INDArray[] out = silentOutput(false, features);
+                evaluation.eval(labels, out[0], labelMask);
+            }
 
             clearLayerMaskArrays();
         }
@@ -2797,6 +2797,8 @@ public class ComputationGraph implements Serializable, Model {
         if (!iterator.hasNext())
             iterator.reset();
 
+        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+
 
         while (iterator.hasNext()) {
             MultiDataSet next = iterator.next();
@@ -2804,16 +2806,19 @@ public class ComputationGraph implements Serializable, Model {
             if (next.getFeatures() == null || next.getLabels() == null)
                 break;
 
-            //Assuming single output here
-            INDArray[] features = next.getFeatures();
-            INDArray[] featuresMasks = next.getFeaturesMaskArrays();
-            INDArray labels = next.getLabels(0);
-            INDArray[] labelMasks = next.getLabelsMaskArrays();
-            INDArray labelMask = next.getLabelsMaskArray(0);
+            try (MemoryWorkspace wsB = workspace.notifyScopeEntered()) {
 
-            setLayerMaskArrays(featuresMasks, labelMasks);
-            INDArray[] out = silentOutput(false, features);
-            evaluation.eval(labels, out[0], labelMask);
+                //Assuming single output here
+                INDArray[] features = next.getFeatures();
+                INDArray[] featuresMasks = next.getFeaturesMaskArrays();
+                INDArray labels = next.getLabels(0);
+                INDArray[] labelMasks = next.getLabelsMaskArrays();
+                INDArray labelMask = next.getLabelsMaskArray(0);
+
+                setLayerMaskArrays(featuresMasks, labelMasks);
+                INDArray[] out = silentOutput(false, features);
+                evaluation.eval(labels, out[0], labelMask);
+            }
 
             clearLayerMaskArrays();
         }

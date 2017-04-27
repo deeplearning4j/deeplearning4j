@@ -1670,20 +1670,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
 
     protected INDArray silentOutput(INDArray input, boolean train) {
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .initialSize(0)
-                .overallocationLimit(1.0)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .policyReset(ResetPolicy.BLOCK_LEFT)
-                .build();
-
-        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration,workspaceExternal);
-
-        try(MemoryWorkspace ws = workspace.notifyScopeEntered()) {
             List<INDArray> activations = feedForward(input, train);
             //last activation is output
             return activations.get(activations.size() - 1);
-        }
     }
 
     /** Calculate the output of the network, with masking arrays. The masking arrays are used in situations such
@@ -2643,25 +2632,32 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             iterator.reset();
         }
 
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+
         while (iterator.hasNext()) {
             DataSet next = iterator.next();
 
             if (next.getFeatureMatrix() == null || next.getLabels() == null)
                 break;
 
-            INDArray features = next.getFeatures();
-            INDArray labels = next.getLabels();
-            INDArray lMask = next.getLabelsMaskArray();
+            try (MemoryWorkspace wsB = workspace.notifyScopeEntered()) {
 
-            INDArray out;
-            if (next.hasMaskArrays()) {
-                INDArray fMask = next.getFeaturesMaskArray();
-                out = this.silentOutput(features, false, fMask, lMask);
-            } else {
-                out = this.silentOutput(features, false);
+                INDArray features = next.getFeatures();
+                INDArray labels = next.getLabels();
+                INDArray lMask = next.getLabelsMaskArray();
+
+                INDArray out;
+                if (next.hasMaskArrays()) {
+                    INDArray fMask = next.getFeaturesMaskArray();
+                    out = this.silentOutput(features, false, fMask, lMask);
+                } else {
+                    out = this.silentOutput(features, false);
+                }
+
+                evaluation.eval(labels, out, lMask);
             }
 
-            evaluation.eval(labels, out, lMask);
+            clearLayerMaskArrays();
         }
 
         return evaluation;
