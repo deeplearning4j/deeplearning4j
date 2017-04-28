@@ -217,6 +217,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
             try {
                 invokeListeners(image);
                 INDArray row = imageLoader.asMatrix(image);
+                Nd4j.getAffinityManager().ensureLocation(row, AffinityManager.Location.DEVICE);
                 ret = RecordConverter.toRecord(row);
                 if (appendLabel)
                     ret.add(new IntWritable(labels.indexOf(getLabel(image.getPath()))));
@@ -286,6 +287,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 throw new RuntimeException(e);
             }
         }
+        Nd4j.getAffinityManager().ensureLocation(features, AffinityManager.Location.DEVICE);
 
 
         List<Writable> ret = (RecordConverter.toRecord(features));
