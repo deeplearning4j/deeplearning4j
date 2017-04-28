@@ -1,10 +1,6 @@
 package org.deeplearning4j.eval;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
-import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
@@ -12,7 +8,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
-import java.io.Serializable;
 import java.util.*;
 
 /**
