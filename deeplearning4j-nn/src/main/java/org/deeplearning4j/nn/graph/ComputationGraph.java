@@ -101,8 +101,18 @@ public class ComputationGraph implements Serializable, Model {
     public final static String workspaceExternal = "LOOP_EXTERNAL";
     public final static String workspaceFeedForward = "LOOP_FF";
     public final static String workspaceBackProp = "LOOP_BP";
+    public final static String workspaceTBPTT = "LOOP_TBPTT";
 
     protected final static WorkspaceConfiguration workspaceConfigurationFeedForward = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.2)
+            .policyReset(ResetPolicy.BLOCK_LEFT)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyLearning(LearningPolicy.OVER_TIME)
+            .build();
+
+    protected final static WorkspaceConfiguration workspaceConfigurationTBPTT = WorkspaceConfiguration.builder()
             .initialSize(0)
             .overallocationLimit(0.2)
             .policyReset(ResetPolicy.BLOCK_LEFT)
@@ -998,13 +1008,14 @@ public class ComputationGraph implements Serializable, Model {
                         solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
                     }
 
-                    solver.optimize();
+                        solver.optimize();
+
                 }
             }
+        }
 
-            if (featureMaskArrays != null || labelMaskArrays != null) {
+        if (featureMaskArrays != null || labelMaskArrays != null) {
                 clearLayerMaskArrays();
-            }
         }
 
         clearLayersStates();
@@ -2287,57 +2298,63 @@ public class ComputationGraph implements Serializable, Model {
         INDArray[] newFeatureMasks = (featureMasks != null ? new INDArray[featureMasks.length] : null);
         INDArray[] newLabelMasks = (labelMasks != null ? new INDArray[labelMasks.length] : null);
 
+        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationTBPTT,workspaceTBPTT);
         for (int i = 0; i < nSubsets; i++) {
-            int startTimeIdx = i * fwdLen;
-            int endTimeIdx = startTimeIdx + fwdLen;
-            if (endTimeIdx > timeSeriesLength)
-                endTimeIdx = timeSeriesLength;
+            try(MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
+                int startTimeIdx = i * fwdLen;
+                int endTimeIdx = startTimeIdx + fwdLen;
+                if (endTimeIdx > timeSeriesLength)
+                    endTimeIdx = timeSeriesLength;
 
-            for (int j = 0; j < inputs.length; j++) {
-                if (inputs[j].rank() != 3)
-                    newInputs[j] = inputs[j];
-                else {
-                    newInputs[j] = inputs[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
-                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                for (int j = 0; j < inputs.length; j++) {
+                    if (inputs[j].rank() != 3)
+                        newInputs[j] = inputs[j];
+                    else {
+                        newInputs[j] = inputs[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
+                                NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                    }
                 }
-            }
-            for (int j = 0; j < labels.length; j++) {
-                if (labels[j].rank() != 3)
-                    newLabels[j] = labels[j];
-                else {
-                    newLabels[j] = labels[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
-                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                for (int j = 0; j < labels.length; j++) {
+                    if (labels[j].rank() != 3)
+                        newLabels[j] = labels[j];
+                    else {
+                        newLabels[j] = labels[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
+                                NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                    }
                 }
-            }
-            if (featureMasks != null) {
-                for (int j = 0; j < featureMasks.length; j++) {
-                    if (featureMasks[j] == null)
-                        continue;
-                    newFeatureMasks[j] = featureMasks[j].get(NDArrayIndex.all(),
-                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                if (featureMasks != null) {
+                    for (int j = 0; j < featureMasks.length; j++) {
+                        if (featureMasks[j] == null)
+                            continue;
+                        newFeatureMasks[j] = featureMasks[j].get(NDArrayIndex.all(),
+                                NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                    }
                 }
-            }
-            if (labelMasks != null) {
-                for (int j = 0; j < labelMasks.length; j++) {
-                    if (labelMasks[j] == null)
-                        continue;
-                    newLabelMasks[j] = labelMasks[j].get(NDArrayIndex.all(),
-                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                if (labelMasks != null) {
+                    for (int j = 0; j < labelMasks.length; j++) {
+                        if (labelMasks[j] == null)
+                            continue;
+                        newLabelMasks[j] = labelMasks[j].get(NDArrayIndex.all(),
+                                NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                    }
                 }
-            }
 
-            setInputs(newInputs);
-            setLabels(newLabels);
-            setLayerMaskArrays(newFeatureMasks, newLabelMasks);
+                setInputs(newInputs);
+                setLabels(newLabels);
+                setLayerMaskArrays(newFeatureMasks, newLabelMasks);
 
-            if (solver == null) {
-                solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                if (solver == null) {
+                    solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                }
+                solver.optimize();
+
+                //Finally, update the state of the RNN layers:
+                rnnUpdateStateWithTBPTTState();
             }
-            solver.optimize();
-
-            //Finally, update the state of the RNN layers:
-            rnnUpdateStateWithTBPTTState();
         }
+
+        if (configuration.getWorkspaceMode() != WorkspaceMode.NONE)
+            workspace.initializeWorkspace();
 
         rnnClearPreviousState();
 

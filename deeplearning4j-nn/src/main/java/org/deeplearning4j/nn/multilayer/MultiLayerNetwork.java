@@ -116,6 +116,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected final static String workspaceExternal = "LOOP_EXTERNAL";
     protected final static String workspaceFeedForward = "LOOP_FF";
     protected final static String workspaceBackProp = "LOOP_BP";
+    public final static String workspaceTBPTT = "LOOP_TBPTT";
     protected final static MemoryWorkspace dummy = new DummyWorkspace();
 
     protected final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
@@ -134,6 +135,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             .policyLearning(LearningPolicy.OVER_TIME)
             .policySpill(SpillPolicy.REALLOCATE)
             .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .build();
+
+    protected final static WorkspaceConfiguration workspaceConfigurationTBPTT = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.2)
+            .policyReset(ResetPolicy.BLOCK_LEFT)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyLearning(LearningPolicy.OVER_TIME)
             .build();
 
     public MultiLayerNetwork(MultiLayerConfiguration conf) {
@@ -1237,40 +1247,44 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         rnnClearPreviousState();
 
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationTBPTT,workspaceTBPTT);
+
         for (int i = 0; i < nSubsets; i++) {
-            int startTimeIdx = i * fwdLen;
-            int endTimeIdx = startTimeIdx + fwdLen;
-            if (endTimeIdx > timeSeriesLength)
-                endTimeIdx = timeSeriesLength;
+            try (MemoryWorkspace wsT = workspace.notifyScopeEntered()){
+                int startTimeIdx = i * fwdLen;
+                int endTimeIdx = startTimeIdx + fwdLen;
+                if (endTimeIdx > timeSeriesLength)
+                    endTimeIdx = timeSeriesLength;
 
-            INDArray inputSubset = input.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                INDArray inputSubset = input.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                INDArray labelSubset = labels.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+
+                setInput(inputSubset);
+                setLabels(labelSubset);
+
+                INDArray featuresMaskSubset = null;
+                INDArray labelsMaskSubset = null;
+                if (featuresMaskArray != null) {
+                    featuresMaskSubset = featuresMaskArray.get(NDArrayIndex.all(),
                             NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-            INDArray labelSubset = labels.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                }
+                if (labelsMaskArray != null) {
+                    labelsMaskSubset = labelsMaskArray.get(NDArrayIndex.all(),
                             NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                }
+                if (featuresMaskSubset != null || labelsMaskSubset != null)
+                    setLayerMaskArrays(featuresMaskSubset, labelsMaskSubset);
 
-            setInput(inputSubset);
-            setLabels(labelSubset);
+                if (solver == null) {
+                    solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                }
+                solver.optimize();
 
-            INDArray featuresMaskSubset = null;
-            INDArray labelsMaskSubset = null;
-            if (featuresMaskArray != null) {
-                featuresMaskSubset = featuresMaskArray.get(NDArrayIndex.all(),
-                                NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                //Finally, update the state of the RNN layers:
+                updateRnnStateWithTBPTTState();
             }
-            if (labelsMaskArray != null) {
-                labelsMaskSubset = labelsMaskArray.get(NDArrayIndex.all(),
-                                NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-            }
-            if (featuresMaskSubset != null || labelsMaskSubset != null)
-                setLayerMaskArrays(featuresMaskSubset, labelsMaskSubset);
-
-            if (solver == null) {
-                solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
-            }
-            solver.optimize();
-
-            //Finally, update the state of the RNN layers:
-            updateRnnStateWithTBPTTState();
         }
 
         rnnClearPreviousState();
