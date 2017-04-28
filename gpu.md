@@ -7,7 +7,7 @@ layout: default
 
 Deeplearning4j works on distributed GPUs, as well as on native. We allow users to run locally on a single GPU such as the NVIDIA Tesla, Titan or GeForce GTX, and in the cloud on NVIDIA GRID GPUs. 
 
-In order to train a neural network on GPUs, you need to make a single change your POM.xml file. In the [Quickstart](./quickstart), you'll find a POM file configured to run on CPUs by default. It looks like this:
+In order to train a neural network on GPUs, you need to make a single change the POM.xml file in your root folder dl4j-examples. In the [Quickstart](./quickstart), you'll find a POM file configured to run on CPUs by default. It looks like this:
 
             <name>DeepLearning4j Examples Parent</name>
             <description>Examples of training different data sets</description>
