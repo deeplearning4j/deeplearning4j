@@ -23,31 +23,30 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
+import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;
 
 /**
  * LSTM layer implementation.
- * Based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
- * http://www.cs.toronto.edu/~graves/phd.pdf
+ *
  * See also for full/vectorized equations (and a comparison to other LSTM variants):
- * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11. This is the "vanilla" variant in said paper
+ * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11. This is the "no peephole" variant in said paper
  * http://arxiv.org/pdf/1503.04069.pdf
  *
  * @author Alex Black
- * @see LSTM LSTM class, for the version without peephole connections
+ * @see GravesLSTM GravesLSTM class, for the version with peephole connections
  */
-public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GravesLSTM> {
+public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.LSTM> {
     public static final String STATE_KEY_PREV_ACTIVATION = "prevAct";
     public static final String STATE_KEY_PREV_MEMCELL = "prevMem";
 
-    public GravesLSTM(NeuralNetConfiguration conf) {
+    public LSTM(NeuralNetConfiguration conf) {
         super(conf);
     }
 
-    public GravesLSTM(NeuralNetConfiguration conf, INDArray input) {
+    public LSTM(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
     }
 
@@ -76,8 +75,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     private Pair<Gradient, INDArray> backpropGradientHelper(final INDArray epsilon, final boolean truncatedBPTT,
                     final int tbpttBackwardLength) {
 
-        final INDArray inputWeights = getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY);
-        final INDArray recurrentWeights = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY); //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
+        final INDArray inputWeights = getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY);
+        final INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY); //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
 
         //First: Do forward pass to get gate activations, zs etc.
         FwdPassReturn fwdPass;
@@ -94,8 +93,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
         return LSTMHelpers.backpropGradientHelper(this.conf, this.layerConf().getGateActivationFn(), this.input,
                         recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, true,
-                        GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY,
-                        GravesLSTMParamInitializer.BIAS_KEY, gradientViews, null, true);
+                        LSTMParamInitializer.INPUT_WEIGHT_KEY, LSTMParamInitializer.RECURRENT_WEIGHT_KEY,
+                        LSTMParamInitializer.BIAS_KEY, gradientViews, null, false);
     }
 
 
@@ -136,13 +135,13 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     private FwdPassReturn activateHelper(final boolean training, final INDArray prevOutputActivations,
                     final INDArray prevMemCellState, boolean forBackprop) {
 
-        final INDArray recurrentWeights = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY); //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
-        final INDArray inputWeights = getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY); //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
-        final INDArray biases = getParam(GravesLSTMParamInitializer.BIAS_KEY); //by row: IFOG			//Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
+        final INDArray recurrentWeights = getParam(LSTMParamInitializer.RECURRENT_WEIGHT_KEY); //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
+        final INDArray inputWeights = getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY); //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
+        final INDArray biases = getParam(LSTMParamInitializer.BIAS_KEY); //by row: IFOG			//Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
 
         return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
                         recurrentWeights, inputWeights, biases, training, prevOutputActivations, prevMemCellState,
-                        forBackprop, true, GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, null, true);
+                        forBackprop, true, LSTMParamInitializer.INPUT_WEIGHT_KEY, null, false);
     }
 
     @Override
