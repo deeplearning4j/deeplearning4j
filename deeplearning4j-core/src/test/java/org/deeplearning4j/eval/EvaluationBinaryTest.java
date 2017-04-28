@@ -109,26 +109,12 @@ public class EvaluationBinaryTest {
 
         //Provide a mask array: "ignore" the masked steps
 
-        INDArray mask = Nd4j.create(new double[][]{
-                {1, 1, 0},
-                {1, 0, 0},
-                {1, 1, 0},
-                {1, 0, 0},
-                {1, 1, 1}});
+        INDArray mask = Nd4j.create(new double[][] {{1, 1, 0}, {1, 0, 0}, {1, 1, 0}, {1, 0, 0}, {1, 1, 1}});
 
-        INDArray labels = Nd4j.create(new double[][]{
-                {1, 1, 1},
-                {0, 0, 0},
-                {1, 1, 1},
-                {0, 1, 1},
-                {1, 0, 1}});
+        INDArray labels = Nd4j.create(new double[][] {{1, 1, 1}, {0, 0, 0}, {1, 1, 1}, {0, 1, 1}, {1, 0, 1}});
 
-        INDArray predicted = Nd4j.create(new double[][]{
-                {0.9, 0.9, 0.9},
-                {0.7, 0.7, 0.7},
-                {0.6, 0.6, 0.6},
-                {0.4, 0.4, 0.4},
-                {0.1, 0.1, 0.1}});
+        INDArray predicted = Nd4j.create(new double[][] {{0.9, 0.9, 0.9}, {0.7, 0.7, 0.7}, {0.6, 0.6, 0.6},
+                        {0.4, 0.4, 0.4}, {0.1, 0.1, 0.1}});
 
         //Correct?
         //      Y Y m
@@ -162,9 +148,9 @@ public class EvaluationBinaryTest {
     }
 
     @Test
-    public void testTimeSeriesEval(){
+    public void testTimeSeriesEval() {
 
-        int[] shape = {2,4,3};
+        int[] shape = {2, 4, 3};
         Nd4j.getRandom().setSeed(12345);
         INDArray labels = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(shape), 0.5));
         INDArray predicted = Nd4j.rand(shape);
@@ -174,12 +160,12 @@ public class EvaluationBinaryTest {
         eb1.eval(labels, predicted, mask);
 
         EvaluationBinary eb2 = new EvaluationBinary();
-        for( int i=0; i<shape[2]; i++ ){
+        for (int i = 0; i < shape[2]; i++) {
             INDArray l = labels.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i));
             INDArray p = predicted.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i));
             INDArray m = mask.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(i));
 
-            eb2.eval(l,p,m);
+            eb2.eval(l, p, m);
         }
 
         assertEquals(eb2.stats(), eb1.stats());
@@ -190,8 +176,9 @@ public class EvaluationBinaryTest {
         //Simple test for nested ROCBinary in EvaluationBinary
 
         Nd4j.getRandom().setSeed(12345);
-        INDArray l1 = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(new int[]{50,4}), 0.5));
-        INDArray p1 = Nd4j.rand(50,4);
+        INDArray l1 = Nd4j.getExecutioner()
+                        .exec(new BernoulliDistribution(Nd4j.createUninitialized(new int[] {50, 4}), 0.5));
+        INDArray p1 = Nd4j.rand(50, 4);
 
         EvaluationBinary eb = new EvaluationBinary(4, 30);
         eb.eval(l1, p1);

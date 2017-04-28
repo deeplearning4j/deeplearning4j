@@ -174,7 +174,8 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
                     INDArray dGammaView, INDArray dBetaView, double eps) {
         if (eps < CUDNN_BN_MIN_EPSILON) {
-            throw new IllegalArgumentException("Error: eps < CUDNN_BN_MIN_EPSILON (" + eps + " < " + CUDNN_BN_MIN_EPSILON + ")");
+            throw new IllegalArgumentException(
+                            "Error: eps < CUDNN_BN_MIN_EPSILON (" + eps + " < " + CUDNN_BN_MIN_EPSILON + ")");
         }
 
         int miniBatch = input.size(0);
@@ -237,7 +238,8 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
     public INDArray preOutput(INDArray x, boolean training, int[] shape, INDArray gamma, INDArray beta, INDArray mean,
                     INDArray var, double decay, double eps) {
         if (eps < CUDNN_BN_MIN_EPSILON) {
-            throw new IllegalArgumentException("Error: eps < CUDNN_BN_MIN_EPSILON (" + eps + " < " + CUDNN_BN_MIN_EPSILON + ")");
+            throw new IllegalArgumentException(
+                            "Error: eps < CUDNN_BN_MIN_EPSILON (" + eps + " < " + CUDNN_BN_MIN_EPSILON + ")");
         }
 
         int miniBatch = x.size(0);

@@ -11,23 +11,18 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
-import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
-import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
-import org.deeplearning4j.nn.updater.LayerUpdater;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
+import org.deeplearning4j.nn.updater.UpdaterBlock;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
-import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
@@ -36,16 +31,13 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.*;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.lang.reflect.Field;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -478,26 +470,21 @@ public class BatchNormalizationTest {
         }
 
         org.deeplearning4j.nn.api.Updater u = net.getUpdater();
-        Field f = MultiLayerUpdater.class.getDeclaredField("layerUpdaters");
-        f.setAccessible(true);
-        org.deeplearning4j.nn.api.Updater[] updaters = (org.deeplearning4j.nn.api.Updater[]) f.get(u);
-        assertNotNull(updaters);
-        assertEquals(6, updaters.length);
 
-        for (int i = 0; i <= 5; i++) {
-            LayerUpdater lu = (LayerUpdater) updaters[i];
-            Map<String, GradientUpdater> guMap = lu.getUpdaterForVariable();
-            for (Map.Entry<String, GradientUpdater> entry : guMap.entrySet()) {
-                if (i == 1 || i == 4) {
-                    String param = entry.getKey();
-                    if (BatchNormalizationParamInitializer.GLOBAL_MEAN.equals(param)
-                                    || BatchNormalizationParamInitializer.GLOBAL_VAR.equals(param)) {
-                        assertTrue(entry.getValue() instanceof NoOpUpdater);
-                    } else {
-                        assertTrue(entry.getValue() instanceof RmsProp);
-                    }
+        MultiLayerUpdater mlu = (MultiLayerUpdater) u;
+        List<UpdaterBlock> l = mlu.getUpdaterBlocks();
+        assertNotNull(l);
+        assertEquals(5, l.size()); //Conv+bn (RMSProp), No-op (bn), RMSProp (dense, bn), no-op (bn), RMSProp (out)
+
+        for (UpdaterBlock ub : l) {
+
+            List<UpdaterBlock.ParamState> list = ub.getLayersAndVariablesInBlock();
+            for (UpdaterBlock.ParamState v : list) {
+                if (BatchNormalizationParamInitializer.GLOBAL_MEAN.equals(v.getParamName())
+                                || BatchNormalizationParamInitializer.GLOBAL_VAR.equals(v.getParamName())) {
+                    assertTrue(ub.getGradientUpdater() instanceof NoOpUpdater);
                 } else {
-                    assertTrue(entry.getValue() instanceof RmsProp);
+                    assertTrue(ub.getGradientUpdater() instanceof RmsProp);
                 }
             }
         }

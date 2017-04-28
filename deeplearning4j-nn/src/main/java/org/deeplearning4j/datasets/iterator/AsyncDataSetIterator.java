@@ -68,7 +68,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
      * @param queueSize
      * @param queue BlockingQueue instance that will be used as backing queue. MagicQueue probably?
      */
-    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace) {
+    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue,
+                    boolean useWorkspace) {
         if (queueSize <= 0)
             throw new IllegalArgumentException("Queue size must be > 0");
         if (queueSize < 2)
@@ -83,16 +84,15 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
             long initSize = Math.max(ds.getMemoryFootprint() * queueSize, 10 * 1024L * 1024L);
 
-            WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                    .initialSize(initSize)
-                    .overallocationLimit(2.0)
-                    .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
-                    .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                    .build();
+            WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(initSize)
+                            .overallocationLimit(2.0).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                            .policyAllocation(AllocationPolicy.OVERALLOCATE).build();
 
-            MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ADSI_ITER");
+            MemoryWorkspace workspace =
+                            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ADSI_ITER");
             this.workspace = workspace;
-        } else workspace = null;
+        } else
+            workspace = null;
 
         this.baseIterator = iterator;
         if (this.baseIterator.resetSupported())
@@ -163,7 +163,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
     public synchronized void reset() {
         if (!resetSupported())
             throw new UnsupportedOperationException(
-                    "Cannot reset Async iterator wrapping iterator that does not support reset");
+                            "Cannot reset Async iterator wrapping iterator that does not support reset");
         //Complication here: runnable could be blocking on either baseIterator.next() or blockingQueue.put()
         runnable.killRunnable = true;
         if (runnable.isAlive.get()) {
@@ -283,7 +283,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
                     if (runnable.exception != null)
                         throw new RuntimeException("Exception thrown in base iterator", runnable.exception);
                     throw new IllegalStateException(
-                            "Unexpected state occurred for AsyncDataSetIterator: runnable died or no data available");
+                                    "Unexpected state occurred for AsyncDataSetIterator: runnable died or no data available");
                 }
             }
             //exception thrown while getting data from base iterator
@@ -318,7 +318,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
         public IteratorRunnable(boolean hasNext, MemoryWorkspace workspace) {
             this.isAlive.set(hasNext);
-            this.workspace  = workspace;
+            this.workspace = workspace;
             this.setName("AsyncIterator thread");
             this.setDaemon(true);
         }
@@ -366,7 +366,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
                         try (MemoryWorkspace ws1 = workspace.notifyScopeEntered()) {
                             ds = baseIterator.next();
                         }
-                    } else ds = baseIterator.next();
+                    } else
+                        ds = baseIterator.next();
 
 
                     if (Nd4j.getExecutioner() instanceof GridExecutioner)
@@ -375,7 +376,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
                     // feeder is temporary state variable, that shows if we have something between backend iterator and buffer
 
                     lock.writeLock().unlock();
-                    if(ds != null && ds.getFeatureMatrix() != null && ds.getLabels() != null)
+                    if (ds != null && ds.getFeatureMatrix() != null && ds.getLabels() != null)
                         blockingQueue.put(ds);
                 }
                 isAlive.set(false);

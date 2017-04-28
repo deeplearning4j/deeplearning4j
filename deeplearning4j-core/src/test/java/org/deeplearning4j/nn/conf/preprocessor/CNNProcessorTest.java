@@ -212,24 +212,6 @@ public class CNNProcessorTest {
         }
     }
 
-    @Test
-    public void testCNNInputPreProcessorMnist() throws Exception {
-        int numSamples = 1;
-        int batchSize = 1;
-
-        DataSet mnistIter = new MnistDataSetIterator(batchSize, numSamples, true).next();
-        MultiLayerNetwork model = getCNNMnistConfig();
-        model.init();
-        model.fit(mnistIter);
-
-        int val2to4 = model.getLayer(0).input().shape().length;
-        assertTrue(val2to4 == 4);
-
-        int val4to4 = model.getLayer(1).input().shape().length;
-        assertTrue(val4to4 == 4);
-
-    }
-
 
     public static MultiLayerNetwork getCNNMnistConfig() {
 

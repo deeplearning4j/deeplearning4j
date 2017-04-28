@@ -29,6 +29,7 @@ public class TestGradientNormalization {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         Updater updater = UpdaterCreator.getUpdater(layer);
         INDArray weightGrad = Nd4j.rand(10, 20);
         INDArray biasGrad = Nd4j.rand(1, 10);
@@ -72,6 +73,7 @@ public class TestGradientNormalization {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         Updater updater = UpdaterCreator.getUpdater(layer);
         INDArray weightGrad = Nd4j.rand(10, 20);
         INDArray biasGrad = Nd4j.rand(1, 10);
@@ -104,6 +106,7 @@ public class TestGradientNormalization {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         Updater updater = UpdaterCreator.getUpdater(layer);
         INDArray weightGrad = Nd4j.rand(10, 20).muli(10).subi(5);
         INDArray biasGrad = Nd4j.rand(1, 10).muli(10).subi(5);
@@ -157,6 +160,7 @@ public class TestGradientNormalization {
             int numParams = conf.getLayer().initializer().numParams(conf);
             INDArray params = Nd4j.create(1, numParams);
             Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+            layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
             Updater updater = UpdaterCreator.getUpdater(layer);
             INDArray weightGrad = Nd4j.rand(10, 20).muli((t == 0 ? 0.05 : 10));
             INDArray biasGrad = Nd4j.rand(1, 10).muli((t == 0 ? 0.05 : 10));
@@ -208,6 +212,7 @@ public class TestGradientNormalization {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         Updater updater = UpdaterCreator.getUpdater(layer);
         INDArray weightGrad = Nd4j.rand(10, 20).muli(0.05);
         INDArray biasGrad = Nd4j.rand(1, 10).muli(10);

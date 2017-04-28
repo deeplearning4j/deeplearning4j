@@ -70,14 +70,14 @@ public class RBMTests {
 
     @Test
     public void testGradientFlattening() {
-        INDArray features = Nd4j.create(new double[][] {
-                {0,0,0,0,0,0}});
-        INDArray params = Nd4j.create(new double[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
+        INDArray features = Nd4j.create(new double[][] {{0, 0, 0, 0, 0, 0}});
+        INDArray params = Nd4j.create(
+                        new double[] {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0});
         INDArray expectedParams = params.dup();
         RBM rbm = getRBMLayer(6, 3, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false, 1,
-                LossFunctions.LossFunction.SQUARED_LOSS, 1);
-//        INDArray expectedStepParams = Nd4j.create(new double[] {-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,0.0,0.0,0.0,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5});
-
+                        LossFunctions.LossFunction.SQUARED_LOSS, 1);
+        //        INDArray expectedStepParams = Nd4j.create(new double[] {-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,-0.25,0.0,0.0,0.0,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5});
+        rbm.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
         rbm.fit(features);
         Gradient g = rbm.gradient();
 
@@ -102,6 +102,7 @@ public class RBMTests {
         INDArray params = Nd4j.create(1, 4 * 3 + 4 + 3);
         RBM rbm = getRBMLayer(4, 3, HiddenUnit.GAUSSIAN, VisibleUnit.GAUSSIAN, params, true, false, 1,
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
+        rbm.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
 
         rbm.fit(d.getFeatureMatrix());
     }
@@ -118,6 +119,7 @@ public class RBMTests {
         INDArray params = Nd4j.create(1, 4 * 3 + 4 + 3);
         RBM rbm = getRBMLayer(4, 3, HiddenUnit.RECTIFIED, VisibleUnit.LINEAR, params, true, false, 1,
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
+        rbm.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
 
         rbm.fit(d.getFeatureMatrix());
 
@@ -141,14 +143,15 @@ public class RBMTests {
         fetcher.fetch(10);
         DataSet d2 = fetcher.next();
 
-        org.nd4j.linalg.api.rng.distribution.Distribution dist = Nd4j.getDistributions().createNormal(1, 1e-5);
-        System.out.println(dist.sample(new int[] {layerConf.getNIn(), layerConf.getNOut()}));
+        //        org.nd4j.linalg.api.rng.distribution.Distribution dist = Nd4j.getDistributions().createNormal(1, 1e-5);
+        //        System.out.println(dist.sample(new int[] {layerConf.getNIn(), layerConf.getNOut()}));
 
         INDArray input = d2.getFeatureMatrix();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         RBM rbm = (RBM) conf.getLayer().instantiate(conf, null, 0, params, true);
+        rbm.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         rbm.fit(input);
 
     }
@@ -158,6 +161,7 @@ public class RBMTests {
         INDArray params = Nd4j.create(1, 6 * 4 + 6 + 4);
         RBM rbm = getRBMLayer(6, 4, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false, 1,
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
+        rbm.setBackpropGradientsViewArray(Nd4j.create(1, rbm.numParams()));
         INDArray rand2 = Nd4j.rand(new int[] {1, rbm.numParams()});
         rbm.setParams(rand2);
         rbm.setInput(Nd4j.zeros(6));
@@ -177,6 +181,7 @@ public class RBMTests {
         INDArray params = Nd4j.create(1, 6 * 4 + 6 + 4);
         RBM rbm = getRBMLayer(6, 4, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false, 1,
                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
+        rbm.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
 
         rbm.fit(input);
         double value = rbm.score();
@@ -219,6 +224,7 @@ public class RBMTests {
         RBM rbm = getRBMLayer(10, 5, HiddenUnit.BINARY, VisibleUnit.BINARY, params, true, false, 1,
                         LossFunctions.LossFunction.MSE);
         rbm.setInput(input);
+        rbm.setBackpropGradientsViewArray(Nd4j.create(1, rbm.numParams()));
         rbm.computeGradientAndScore();
         Pair<Gradient, Double> pair = rbm.gradientAndScore();
 
@@ -285,6 +291,7 @@ public class RBMTests {
         //        RBM rbm = getRBMLayer(6, 2, HiddenUnit.SOFTMAX, VisibleUnit.LINEAR, params, true, true, 500, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         //        RBM rbm = getRBMLayer(6, 2, HiddenUnit.SOFTMAX, VisibleUnit.SOFTMAX, params, true, true, 500, LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD);
         rbm.setListeners(new ScoreIterationListener(10));
+        rbm.setBackpropGradientsViewArray(Nd4j.create(1, params.length()));
         rbm.fit(features);
     }
 
@@ -345,13 +352,14 @@ public class RBMTests {
 
 
     private static RBM getRBMLayer(int nIn, int nOut, HiddenUnit hiddenUnit, VisibleUnit visibleUnit, INDArray params,
-                                   boolean pretrain, boolean initialize, int iterations, LossFunctions.LossFunction lossFunctions, int learningRate) {
+                    boolean pretrain, boolean initialize, int iterations, LossFunctions.LossFunction lossFunctions,
+                    int learningRate) {
         org.deeplearning4j.nn.conf.layers.RBM layer =
-                new org.deeplearning4j.nn.conf.layers.RBM.Builder(hiddenUnit, visibleUnit).nIn(nIn).nOut(nOut)
-                        .learningRate(learningRate).lossFunction(lossFunctions).build();
+                        new org.deeplearning4j.nn.conf.layers.RBM.Builder(hiddenUnit, visibleUnit).nIn(nIn).nOut(nOut)
+                                        .learningRate(learningRate).lossFunction(lossFunctions).build();
 
         NeuralNetConfiguration conf =
-                new NeuralNetConfiguration.Builder().iterations(iterations).seed(42).layer(layer).build();
+                        new NeuralNetConfiguration.Builder().iterations(iterations).seed(42).layer(layer).build();
         conf.setPretrain(pretrain);
 
         return (RBM) conf.getLayer().instantiate(conf, null, 0, params, initialize);

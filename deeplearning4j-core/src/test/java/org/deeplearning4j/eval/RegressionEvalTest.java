@@ -14,7 +14,7 @@ import static org.junit.Assert.assertEquals;
  */
 public class RegressionEvalTest {
 
-    @Test(expected=java.lang.IllegalArgumentException.class)
+    @Test(expected = java.lang.IllegalArgumentException.class)
     public void testEvalParameters() {
         int specCols = 5;
         INDArray labels = Nd4j.ones(3);

@@ -99,7 +99,8 @@ public class ModelSerializer {
             Nd4j.write(model.params(), dos);
         } finally {
             dos.flush();
-            if(!saveUpdater) dos.close();
+            if (!saveUpdater)
+                dos.close();
         }
 
         if (saveUpdater) {

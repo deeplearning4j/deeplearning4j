@@ -44,11 +44,13 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         this(iterator, queueLength, new LinkedBlockingQueue<MultiDataSet>(queueLength), useWorkspace);
     }
 
-    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueLength, BlockingQueue<MultiDataSet> queue) {
+    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueLength,
+                    BlockingQueue<MultiDataSet> queue) {
         this(iterator, queueLength, queue, true);
     }
 
-    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueLength, BlockingQueue<MultiDataSet> queue, boolean useWorkspace) {
+    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueLength, BlockingQueue<MultiDataSet> queue,
+                    boolean useWorkspace) {
         if (queueLength <= 0)
             throw new IllegalArgumentException("Queue size must be > 0");
 
@@ -62,16 +64,15 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
             long initSize = Math.max(ds.getMemoryFootprint() * queueLength, 10 * 1024L * 1024L);
 
-            WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                    .initialSize(initSize)
-                    .overallocationLimit(2.0)
-                    .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
-                    .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                    .build();
+            WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(initSize)
+                            .overallocationLimit(2.0).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                            .policyAllocation(AllocationPolicy.OVERALLOCATE).build();
 
-            MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "AMDSI_ITER");
+            MemoryWorkspace workspace =
+                            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "AMDSI_ITER");
             this.workspace = workspace;
-        } else workspace = null;
+        } else
+            workspace = null;
 
         this.iterator = iterator;
         if (this.iterator.resetSupported())
@@ -281,7 +282,8 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                         try (MemoryWorkspace ws1 = workspace.notifyScopeEntered()) {
                             ds = iterator.next();
                         }
-                    } else ds = iterator.next();
+                    } else
+                        ds = iterator.next();
 
                     if (Nd4j.getExecutioner() instanceof GridExecutioner)
                         ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();

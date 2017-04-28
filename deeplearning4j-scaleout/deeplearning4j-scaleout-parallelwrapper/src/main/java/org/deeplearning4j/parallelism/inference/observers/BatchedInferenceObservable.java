@@ -90,7 +90,8 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
 
                 INDArray[] split = Nd4j.tear(array, dimensions);
                 if (split.length != counter.get())
-                    throw new ND4JIllegalStateException("Number of splits ["+split.length+"] doesn't match number of queries ["+ counter.get()+"]");
+                    throw new ND4JIllegalStateException("Number of splits [" + split.length
+                                    + "] doesn't match number of queries [" + counter.get() + "]");
 
                 for (int e = 0; e < counter.get(); e++) {
                     outputs.get(e)[cnt] = split[e];
@@ -110,7 +111,7 @@ public class BatchedInferenceObservable extends BasicInferenceObservable impleme
      *
      * @return
      */
-    protected List<INDArray[]> getOutputs(){
+    protected List<INDArray[]> getOutputs() {
         return outputs;
     }
 

@@ -161,6 +161,11 @@ public class BatchNormalization extends FeedForwardLayer {
         }
     }
 
+    @Override
+    public boolean isPretrainParam(String paramName) {
+        return false; //No pretrain params in BN
+    }
+
     @AllArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<Builder> {
         protected double decay = 0.9;

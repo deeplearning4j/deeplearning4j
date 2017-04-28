@@ -27,6 +27,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -45,8 +46,9 @@ public class TestDecayPolicies {
     int nIn = 3;
     int nOut = 2;
     double epsilon = 1e-8;
-    INDArray weightGradient = Nd4j.ones(nIn, nOut);
-    INDArray biasGradient = Nd4j.ones(1, nOut);
+    INDArray gradient;
+    INDArray weightGradient; // = Nd4j.ones(nIn, nOut);
+    INDArray biasGradient; // = Nd4j.ones(1, nOut);
     Gradient gradientSingle = new DefaultGradient();
     Gradient gradientMLN = new DefaultGradient();
     INDArray val, gradExpected, vPrev;
@@ -60,6 +62,10 @@ public class TestDecayPolicies {
     public void beforeDo() {
         int nLayers = 2;
         String wKey, bKey;
+
+        gradient = Nd4j.ones(1, nIn * nOut + nOut);
+        weightGradient = gradient.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
+        biasGradient = gradient.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
 
         gradientSingle.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
         gradientSingle.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
@@ -98,6 +104,7 @@ public class TestDecayPolicies {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -130,6 +137,7 @@ public class TestDecayPolicies {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -162,6 +170,7 @@ public class TestDecayPolicies {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -195,6 +204,7 @@ public class TestDecayPolicies {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -227,6 +237,7 @@ public class TestDecayPolicies {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -260,6 +271,7 @@ public class TestDecayPolicies {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
         Updater updater = UpdaterCreator.getUpdater(layer);
 
         Gradient gradientActual = new DefaultGradient();
@@ -282,6 +294,8 @@ public class TestDecayPolicies {
         int iterations = 2;
 
         for (org.deeplearning4j.nn.conf.Updater updaterFunc : updaters) {
+            gradient.assign(1);
+
             double lr = 1e-2;
             NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr)
                             .learningRateSchedule(learningRateAfter)
@@ -291,14 +305,15 @@ public class TestDecayPolicies {
             int numParams = conf.getLayer().initializer().numParams(conf);
             INDArray params = Nd4j.create(1, numParams);
             Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+            layer.setBackpropGradientsViewArray(gradient);
             Updater updater = UpdaterCreator.getUpdater(layer);
             int stateSize = updater.stateSizeForLayer(layer);
             if (stateSize > 0)
                 updater.setStateViewArray(layer, Nd4j.create(1, stateSize), true);
 
             Gradient gradientActual = new DefaultGradient();
-            gradientActual.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
-            gradientActual.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient.dup());
+            gradientActual.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
+            gradientActual.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
             Gradient gradientExpected = new DefaultGradient();
             gradientExpected.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
@@ -343,18 +358,31 @@ public class TestDecayPolicies {
             net.init();
 
             Updater updater = UpdaterCreator.getUpdater(net);
+
+            INDArray gradViewArr = net.getFlattenedGradients();
+
             String wKey, bKey;
 
             for (int i = 0; i < 2; i++) {
                 Gradient gradientActual = new DefaultGradient();
                 Gradient gradientExpected = new DefaultGradient();
+                int paramsSoFar = 0;
                 for (int k = 0; k < net.getnLayers(); k++) {
+                    int nParams = net.getLayer(k).numParams();
+                    INDArray g = gradViewArr.get(NDArrayIndex.point(0),
+                                    NDArrayIndex.interval(paramsSoFar, paramsSoFar + nParams));
+                    int nW = nIns[k] * nOuts[k];
+                    int nB = nOuts[k];
+                    INDArray gw = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nW));
+                    INDArray gb = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nW, nW + nB));
                     wKey = String.valueOf(k) + "_" + DefaultParamInitializer.WEIGHT_KEY;
-                    gradientActual.setGradientFor(wKey, Nd4j.ones(nIns[k], nOuts[k]));
-                    gradientExpected.setGradientFor(wKey, Nd4j.ones(nIns[k], nOuts[k]));
+                    gradientActual.setGradientFor(wKey, gw);
+                    gradientExpected.setGradientFor(wKey, gw.dup());
                     bKey = String.valueOf(k) + "_" + DefaultParamInitializer.BIAS_KEY;
-                    gradientActual.setGradientFor(bKey, Nd4j.ones(1, nOuts[k]));
-                    gradientExpected.setGradientFor(bKey, Nd4j.ones(1, nOuts[k]));
+                    gradientActual.setGradientFor(bKey, gb);
+                    gradientExpected.setGradientFor(bKey, gb.dup());
+
+                    paramsSoFar += nParams;
                 }
 
                 updater.update(net, gradientActual, i, 1);
@@ -459,9 +487,8 @@ public class TestDecayPolicies {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer.setBackpropGradientsViewArray(gradient);
         Updater updater = UpdaterCreator.getUpdater(layer);
-        int stateSize = updater.stateSizeForLayer(layer);
-        updater.setStateViewArray(layer, Nd4j.create(1, stateSize), true);
 
         Gradient gradientExpected = new DefaultGradient();
         gradientExpected.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient.dup());
@@ -501,21 +528,42 @@ public class TestDecayPolicies {
 
         String wKey, bKey;
 
-        Gradient gradientExpected = new DefaultGradient();
-        for (int k = 0; k < net.getnLayers(); k++) {
-            wKey = String.valueOf(k) + "_" + DefaultParamInitializer.WEIGHT_KEY;
-            gradientExpected.setGradientFor(wKey, Nd4j.ones(nIns[k], nOuts[k]));
-            bKey = String.valueOf(k) + "_" + DefaultParamInitializer.BIAS_KEY;
-            gradientExpected.setGradientFor(bKey, Nd4j.ones(1, nOuts[k]));
+        Gradient gradientMLN = new DefaultGradient();
+        INDArray gradViewArr = net.getGradientsViewArray();
+        int paramsSoFar = 0;
+        for (int j = 0; j < 2; j++) {
+            int nParams = net.getLayer(j).numParams();
+            INDArray g = gradViewArr.get(NDArrayIndex.point(0),
+                            NDArrayIndex.interval(paramsSoFar, paramsSoFar + nParams));
+            int nW = nIns[j] * nOuts[j];
+            int nB = nOuts[j];
+            INDArray gw = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nW));
+            INDArray gb = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nW, nW + nB));
+            wKey = String.valueOf(j) + "_" + DefaultParamInitializer.WEIGHT_KEY;
+            gradientMLN.setGradientFor(wKey, gw);
+            bKey = String.valueOf(j) + "_" + DefaultParamInitializer.BIAS_KEY;
+            gradientMLN.setGradientFor(bKey, gb);
+            paramsSoFar += nParams;
         }
 
-        Gradient gradientMLN = new DefaultGradient();
-        for (int j = 0; j < 2; j++) {
+        Gradient gradientExpected = new DefaultGradient();
+        gradViewArr = gradViewArr.dup();
+        paramsSoFar = 0;
+        for (int j = 0; j < net.getnLayers(); j++) {
+            int nParams = net.getLayer(j).numParams();
+            INDArray g = gradViewArr.get(NDArrayIndex.point(0),
+                            NDArrayIndex.interval(paramsSoFar, paramsSoFar + nParams));
+            int nW = nIns[j] * nOuts[j];
+            int nB = nOuts[j];
+            INDArray gw = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nW));
+            INDArray gb = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nW, nW + nB));
             wKey = String.valueOf(j) + "_" + DefaultParamInitializer.WEIGHT_KEY;
-            gradientMLN.setGradientFor(wKey, Nd4j.ones(nIns[j], nOuts[j]));
+            gradientExpected.setGradientFor(wKey, gw);
             bKey = String.valueOf(j) + "_" + DefaultParamInitializer.BIAS_KEY;
-            gradientMLN.setGradientFor(bKey, Nd4j.ones(1, nOuts[j]));
+            gradientExpected.setGradientFor(bKey, gb);
         }
+
+
 
         for (int i = 0; i < 2; i++) {
             updater.update(net, gradientMLN, i, 1);

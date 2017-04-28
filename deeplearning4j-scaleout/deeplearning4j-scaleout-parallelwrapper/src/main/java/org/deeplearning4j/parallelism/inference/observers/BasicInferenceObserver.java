@@ -28,7 +28,7 @@ public class BasicInferenceObserver implements Observer {
     /**
      * FOR DEBUGGING ONLY, TO BE REMOVED BEFORE MERGE
      */
-    public void waitTillDone(){
+    public void waitTillDone() {
         while (!finished.get()) {
             LockSupport.parkNanos(1000);
         }
