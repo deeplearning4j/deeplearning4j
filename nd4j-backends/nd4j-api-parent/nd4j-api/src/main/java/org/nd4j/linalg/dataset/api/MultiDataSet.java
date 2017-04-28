@@ -169,7 +169,21 @@ public interface MultiDataSet extends Serializable {
      */
     List<Serializable> getExampleMetaData();
 
-
+    /**
+     * This method returns memory amount occupied by this MultiDataSet.
+     *
+     * @return value in bytes
+     */
     long getMemoryFootprint();
+
+    /**
+     * This method migrates this MultiDataSet into current Workspace (if any)
+     */
+    void migrate();
+
+    /**
+     * This method detaches this MultiDataSet from current Workspace (if any)
+     */
+    void detach();
 
 }
