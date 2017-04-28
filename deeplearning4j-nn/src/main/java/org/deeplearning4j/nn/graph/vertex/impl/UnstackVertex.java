@@ -139,6 +139,17 @@ public class UnstackVertex extends BaseGraphVertex {
             return new Pair<>(null, currentMaskState);
         }
 
+        boolean allNull = true;
+        for( int i=0; i<maskArrays.length; i++ ){
+            if(maskArrays[i] != null){
+                allNull = false;
+                break;
+            }
+        }
+        if(allNull){
+            return new Pair<>(null, currentMaskState);
+        }
+
         //Mask arrays are either 1d (column vector) or 2d...
         int start = from * minibatchSize;
         int end = (from + 1) * minibatchSize;
