@@ -37,6 +37,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
     private boolean useWorkspace = true;
     private int prefetchSize;
     private String workspaceId;
+    private Integer deviceId;
 
     private DataSetCallback callback;
 
@@ -57,6 +58,10 @@ public class AsyncDataSetIterator implements DataSetIterator {
         this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace);
     }
 
+    public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize, boolean useWorkspace, Integer deviceId) {
+        this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace, null, deviceId);
+    }
+
     public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize, boolean useWorkspace, DataSetCallback callback) {
         this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace, callback);
     }
@@ -66,9 +71,14 @@ public class AsyncDataSetIterator implements DataSetIterator {
     }
 
     public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace, DataSetCallback callback) {
+        this(iterator, queueSize, queue, useWorkspace, callback, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+    }
+
+    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace, DataSetCallback callback, Integer deviceId) {
         if (queueSize < 4)
             queueSize = 4;
 
+        this.deviceId = deviceId;
         this.callback = callback;
         this.useWorkspace = useWorkspace;
         this.buffer = queue;
@@ -84,7 +94,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
         /**
          * We want to ensure, that background thread will have the same thread->device affinity, as master thread
          */
-        Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
         Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
 
         thread.setDaemon(true);
@@ -188,7 +198,6 @@ public class AsyncDataSetIterator implements DataSetIterator {
         /**
          * We want to ensure, that background thread will have the same thread->device affinity, as master thread
          */
-        Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
 
         thread.setDaemon(true);
@@ -391,8 +400,10 @@ public class AsyncDataSetIterator implements DataSetIterator {
                 shouldWork.set(false);
             } catch (RuntimeException e) {
                 throwable = e;
+                throw new RuntimeException(e);
             } catch (Exception e) {
                 throwable = new RuntimeException(e);
+                throw new RuntimeException(e);
             }
         }
     }
