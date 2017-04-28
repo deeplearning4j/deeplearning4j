@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.graph.graphnodes;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
@@ -254,6 +255,38 @@ public class TestGraphNodes {
         assertEquals(in1, out.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
         assertEquals(in2, out.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()));
         assertEquals(in3, out.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all()));
+
+        unstack.setEpsilon(out);
+        Pair<Gradient, INDArray[]> b = unstack.doBackward(false);
+
+        assertEquals(in1, b.getSecond()[0]);
+        assertEquals(in2, b.getSecond()[1]);
+        assertEquals(in3, b.getSecond()[2]);
+    }
+
+    @Test
+    public void testStackNodeVariableLength() {
+        Nd4j.getRandom().setSeed(12345);
+        GraphVertex unstack = new StackVertex(null, "", -1);
+
+        //Test with mask arrays
+        INDArray in1 = Nd4j.rand(new int[]{5, 2, 5});
+        INDArray in2 = Nd4j.rand(new int[]{5, 2, 6});
+        INDArray in3 = Nd4j.rand(new int[]{5, 2, 7});
+
+        INDArray mask1 = Nd4j.ones(5,5);
+        INDArray mask2 = Nd4j.ones(5,6);
+        INDArray mask3 = Nd4j.ones(5,7);
+
+        unstack.setInputs(in1, in2, in3);
+        Pair<INDArray,MaskState> p = unstack.feedForwardMaskArrays(new INDArray[]{mask1,mask2,mask3}, MaskState.Active, 5);
+        assertArrayEquals(new int[]{15,7}, p.getFirst().shape());
+        assertEquals(MaskState.Active, p.getSecond());
+
+        INDArray out = unstack.doForward(false);
+        assertEquals(in1, out.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(), NDArrayIndex.interval(0,5)));
+        assertEquals(in2, out.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(), NDArrayIndex.interval(0,6)));
+        assertEquals(in3, out.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all(), NDArrayIndex.interval(0,7)));
 
         unstack.setEpsilon(out);
         Pair<Gradient, INDArray[]> b = unstack.doBackward(false);
