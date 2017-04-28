@@ -1,5 +1,6 @@
 package org.deeplearning4j.util;
 
+import org.datavec.api.transform.transform.doubletransform.MinMaxNormalizer;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -12,8 +13,13 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.preprocessor.Normalizer;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
+import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
@@ -152,5 +158,52 @@ public class ModelSerializerTest {
         assertEquals(network.getConfiguration().toJson(), cg.getConfiguration().toJson());
         assertEquals(cg.params(), network.params());
         assertEquals(cg.getUpdater().getStateViewArray(), network.getUpdater().getStateViewArray());
+    }
+
+    @Test
+    public void testSaveRestoreNormalizerFromInputStream() throws Exception {
+        INDArray inputs = Nd4j.create(new float[] { 1.0f, 2.0f, 3.0f });
+        INDArray labels = Nd4j.create(new float[] { 4.0f, 5.0f, 6.0f });
+        DataSet dataSet = new DataSet(inputs, labels);
+
+
+        NormalizerStandardize norm = new NormalizerStandardize();
+        norm.fit(dataSet);
+
+        ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .learningRate(0.1)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("dense", new DenseLayer.Builder().nIn(4).nOut(2).build(), "in")
+                .addLayer("out",
+                        new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3).build(), "dense")
+                .setOutputs("out")
+                .pretrain(false)
+                .backprop(true)
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(config);
+        cg.init();
+
+        File tempFile = File.createTempFile("tsfs", "fdfsdf");
+        tempFile.deleteOnExit();
+
+        ModelSerializer.writeModel(cg, tempFile, true);
+        ModelSerializer.addNormalizerToModel(tempFile, norm);
+
+        FileInputStream fis = new FileInputStream(tempFile);
+
+        NormalizerStandardize restored = ModelSerializer.restoreNormalizerFromInputStream(fis);
+
+        assertEquals(norm.getLabelMean(), restored.getLabelMean());
+        assertEquals(norm.getLabelStd(), restored.getLabelStd());
+
+        DataSet dataSet2 = dataSet.copy();
+
+        norm.preProcess(dataSet2);
+        restored.revert(dataSet2);
+
+        assertEquals(dataSet.getFeatures(), dataSet2.getFeatures());
     }
 }
