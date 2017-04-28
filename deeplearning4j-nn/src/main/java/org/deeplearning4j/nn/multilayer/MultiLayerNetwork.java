@@ -1545,7 +1545,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 doTruncatedBPTT(features, labels, featuresMask, labelsMask);
             } else {
                 if (solver == null) {
-                    solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                    try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                    }
                 }
                 try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
                     solver.optimize();

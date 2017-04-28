@@ -814,8 +814,10 @@ public class ComputationGraph implements Serializable, Model {
                     setInput(0, next.getFeatures());
                     setLabel(0, next.getLabels());
                     if (solver == null) {
-                        solver = new Solver.Builder().configure(defaultConfiguration) //TODO; don't like this
+                        try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                            solver = new Solver.Builder().configure(defaultConfiguration) //TODO; don't like this
                                     .listeners(listeners).model(this).build();
+                        }
                     }
 
                     try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
@@ -906,8 +908,10 @@ public class ComputationGraph implements Serializable, Model {
                     setInputs(next.getFeatures());
                     setLabels(next.getLabels());
                     if (solver == null) {
-                        solver = new Solver.Builder().configure(defaultConfiguration).listeners(listeners).model(this)
-                                .build();
+                        try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                            solver = new Solver.Builder().configure(defaultConfiguration).listeners(listeners).model(this)
+                                    .build();
+                        }
                     }
 
                     try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
@@ -1010,7 +1014,9 @@ public class ComputationGraph implements Serializable, Model {
                 doTruncatedBPTT(inputs, labels, featureMaskArrays, labelMaskArrays);
             } else {
                 if (solver == null) {
-                    solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                    try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                    }
                 }
 
                 try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
