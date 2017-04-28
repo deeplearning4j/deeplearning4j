@@ -62,8 +62,6 @@ public class InterleavedDataSetCallback implements DataSetCallback {
         if (!isInitialized)
             initializeWorkspaces(dataSet.getMemoryFootprint());
 
-        long time1 = System.currentTimeMillis();
-
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
 
@@ -75,12 +73,6 @@ public class InterleavedDataSetCallback implements DataSetCallback {
         dataSet.migrate();
 
         Nd4j.getMemoryManager().setCurrentWorkspace(currWs);
-
-        long time2 = System.currentTimeMillis();
-
-        if (counterInput.get() % 100 == 0)
-            log.info("Callback time: {} ms", time2 - time1);
-
     }
 
     @Override
@@ -95,8 +87,7 @@ public class InterleavedDataSetCallback implements DataSetCallback {
         MemoryWorkspace currWs = Nd4j.getMemoryManager().getCurrentWorkspace();
         Nd4j.getMemoryManager().setCurrentWorkspace(workspaces.get(currIdx));
 
-        // TODO: implement migration on MultiDataSet
-        //multiDataSet.migrate();
+        multiDataSet.migrate();
 
         Nd4j.getMemoryManager().setCurrentWorkspace(currWs);
     }
