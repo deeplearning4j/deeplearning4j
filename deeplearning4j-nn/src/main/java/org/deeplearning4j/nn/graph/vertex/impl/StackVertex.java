@@ -41,6 +41,8 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
  */
 public class StackVertex extends BaseGraphVertex {
 
+    private int[][] lastInputShapes;
+
     public StackVertex(ComputationGraph graph, String name, int vertexIndex) {
         this(graph, name, vertexIndex, null, null);
     }
@@ -70,6 +72,7 @@ public class StackVertex extends BaseGraphVertex {
         // stacking along dimension 0
         // inputs[] is an array of INDArray (e.g.: shape of 3 x [nExamples, nSize])
         // what we want to do is make a stacked output (e.g.: [3 x nExamples, nSize])
+        lastInputShapes = null;
         int nStack = inputs.length;
         int[] inShape = inputs[0].shape();
         int[] outShape = new int[inShape.length];
@@ -99,10 +102,12 @@ public class StackVertex extends BaseGraphVertex {
             outShape[2] = maxLength;
             INDArray out = Nd4j.create(outShape);
             int numExamples = inputs[0].size(0);
+            lastInputShapes = new int[inputs.length][0];
             for( int i=0; i<inputs.length; i++ ){
                 out.put(new INDArrayIndex[]{NDArrayIndex.interval(i*numExamples, (i+1)*numExamples),
                         NDArrayIndex.all(),
                         NDArrayIndex.interval(0, inputs[i].size(2))}, inputs[i]);
+                lastInputShapes[i] = inputs[i].shape();
             }
 
             return out;
@@ -128,8 +133,14 @@ public class StackVertex extends BaseGraphVertex {
                     out[i] = epsilon.get(NDArrayIndex.interval(i * step, (i + 1) * step), NDArrayIndex.all());
                     break;
                 case 3:
-                    out[i] = epsilon.get(NDArrayIndex.interval(i * step, (i + 1) * step), NDArrayIndex.all(),
-                                    NDArrayIndex.all());
+                    if(lastInputShapes != null){
+                        //Variable length time series case
+                        out[i] = epsilon.get(NDArrayIndex.interval(i * step, (i + 1) * step), NDArrayIndex.all(),
+                                NDArrayIndex.interval(0, lastInputShapes[i][2]));
+                    } else {
+                        out[i] = epsilon.get(NDArrayIndex.interval(i * step, (i + 1) * step), NDArrayIndex.all(),
+                                NDArrayIndex.all());
+                    }
                     break;
                 case 4:
                     out[i] = epsilon.get(NDArrayIndex.interval(i * step, (i + 1) * step), NDArrayIndex.all(),
