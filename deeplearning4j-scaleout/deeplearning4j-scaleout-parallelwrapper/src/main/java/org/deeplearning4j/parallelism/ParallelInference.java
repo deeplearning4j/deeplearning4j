@@ -41,11 +41,18 @@ public class ParallelInference {
     // this queue
     private BlockingQueue<InferenceObservable> observables;
 
-    private AtomicLong sequenceId = new AtomicLong(0);
     private final Object locker = new Object();
 
     private InferenceWorker[] zoo;
     private ObservablesProvider provider;
+
+
+
+    public final static int DEFAULT_NUM_WORKERS = Nd4j.getAffinityManager().getNumberOfDevices();
+    public final static int DEFAULT_BATCH_LIMIT = 32;
+    public final static InferenceMode DEFAULT_INFERENCE_MODE = InferenceMode.BATCHED;
+    public final static int DEFAULT_QUEUE_LIMIT = 64;
+
 
 
     protected ParallelInference() {
@@ -91,7 +98,8 @@ public class ParallelInference {
     }
 
     public INDArray output(INDArray input) {
-        // basically, depending on model type we either throw stuff to specific model, or wait for batch
+        // basically, depending on model type we either
+        // throw stuff to specific model, or wait for batch
         return output(new INDArray[] {input})[0];
     }
 
@@ -147,12 +155,10 @@ public class ParallelInference {
 
     public static class Builder {
         private Model model;
-        private List<String> labels;
-        private long nanos;
-        private int workers = Nd4j.getAffinityManager().getNumberOfDevices();
-        private int batchLimit = 32;
-        private InferenceMode inferenceMode = InferenceMode.SEQUENTIAL;
-        private int queueLimit = 64;
+        private int workers = DEFAULT_NUM_WORKERS;
+        private int batchLimit = DEFAULT_BATCH_LIMIT;
+        private InferenceMode inferenceMode = DEFAULT_INFERENCE_MODE;
+        private int queueLimit = DEFAULT_QUEUE_LIMIT;
 
         public Builder(@NonNull Model model) {
             this.model = model;
@@ -175,18 +181,7 @@ public class ParallelInference {
         }
 
 
-        /**
-         * This method allows you to specify String labels that'll be used as output to your input
-         *
-         * PLEASE NOTE: This method is optional, and applies to classification models only
-         *
-         * @param labels
-         * @return
-         */
-        public Builder labels(@NonNull List<String> labels) {
-            this.labels = labels;
-            return this;
-        }
+
 
         /**
          * This method defines, how many model copies will be used for inference.
@@ -249,7 +244,6 @@ public class ParallelInference {
             inference.queueLimit = this.queueLimit;
             inference.inferenceMode = this.inferenceMode;
             inference.model = this.model;
-            inference.nanos = this.nanos;
             inference.workers = this.workers;
 
             inference.init();
