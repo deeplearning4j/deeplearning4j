@@ -794,42 +794,45 @@ public class ComputationGraph implements Serializable, Model {
                 if (next.getFeatures() == null || next.getLabels() == null)
                     break;
 
-                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+
                     //migrate(next);
 
-                    boolean hasMaskArrays = next.hasMaskArrays();
-                    if (hasMaskArrays) {
-                        INDArray[] fMask = (next.getFeaturesMaskArray() != null
-                                ? new INDArray[]{next.getFeaturesMaskArray()} : null);
-                        INDArray[] lMask = (next.getLabelsMaskArray() != null ? new INDArray[]{next.getLabelsMaskArray()}
-                                : null);
-                        setLayerMaskArrays(fMask, lMask);
-                    }
+                boolean hasMaskArrays = next.hasMaskArrays();
+                if (hasMaskArrays) {
+                    INDArray[] fMask = (next.getFeaturesMaskArray() != null
+                        ? new INDArray[]{next.getFeaturesMaskArray()} : null);
+                    INDArray[] lMask = (next.getLabelsMaskArray() != null ? new INDArray[]{next.getLabelsMaskArray()}
+                        : null);
+                    setLayerMaskArrays(fMask, lMask);
+                }
 
-                    if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                        doTruncatedBPTT(new INDArray[]{next.getFeatures()}, new INDArray[]{next.getLabels()},
-                                (hasMaskArrays ? new INDArray[]{next.getFeaturesMaskArray()} : null),
-                                (hasMaskArrays ? new INDArray[]{next.getLabelsMaskArray()} : null));
-                    } else {
-                        setInput(0, next.getFeatures());
-                        setLabel(0, next.getLabels());
-                        if (solver == null) {
-                            solver = new Solver.Builder().configure(defaultConfiguration) //TODO; don't like this
+                if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
+                    doTruncatedBPTT(new INDArray[]{next.getFeatures()}, new INDArray[]{next.getLabels()},
+                            (hasMaskArrays ? new INDArray[]{next.getFeaturesMaskArray()} : null),
+                            (hasMaskArrays ? new INDArray[]{next.getLabelsMaskArray()} : null));
+                } else {
+                    setInput(0, next.getFeatures());
+                    setLabel(0, next.getLabels());
+                    if (solver == null) {
+                        solver = new Solver.Builder().configure(defaultConfiguration) //TODO; don't like this
                                     .listeners(listeners).model(this).build();
-                        }
-                        solver.optimize();
                     }
 
-                    if (hasMaskArrays) {
-                        clearLayerMaskArrays();
+                    try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                        solver.optimize();
                     }
                 }
 
-                Nd4j.getMemoryManager().invokeGcOccasionally();
-
-                time1 = System.currentTimeMillis();
+                if (hasMaskArrays) {
+                    clearLayerMaskArrays();
+                }
             }
+
+            Nd4j.getMemoryManager().invokeGcOccasionally();
+
+            time1 = System.currentTimeMillis();
         }
+
 
         if (trainingListeners.size() > 0) {
             for (TrainingListener tl : trainingListeners) {
@@ -888,36 +891,38 @@ public class ComputationGraph implements Serializable, Model {
                 if (next.getFeatures() == null || next.getLabels() == null)
                     break;
 
-                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+
                     //migrate(next);
 
-                    if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                        doTruncatedBPTT(next.getFeatures(), next.getLabels(), next.getFeaturesMaskArrays(),
+                if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
+                    doTruncatedBPTT(next.getFeatures(), next.getLabels(), next.getFeaturesMaskArrays(),
                                 next.getLabelsMaskArrays());
-                    } else {
-                        boolean hasMaskArrays = next.hasMaskArrays();
-                        if (hasMaskArrays) {
-                            setLayerMaskArrays(next.getFeaturesMaskArrays(), next.getLabelsMaskArrays());
-                        }
-
-                        setInputs(next.getFeatures());
-                        setLabels(next.getLabels());
-                        if (solver == null) {
-                            solver = new Solver.Builder().configure(defaultConfiguration).listeners(listeners).model(this)
-                                    .build();
-                        }
-                        solver.optimize();
-
-                        if (hasMaskArrays) {
-                            clearLayerMaskArrays();
-                        }
+                } else {
+                    boolean hasMaskArrays = next.hasMaskArrays();
+                    if (hasMaskArrays) {
+                        setLayerMaskArrays(next.getFeaturesMaskArrays(), next.getLabelsMaskArrays());
                     }
 
-                    Nd4j.getMemoryManager().invokeGcOccasionally();
+                    setInputs(next.getFeatures());
+                    setLabels(next.getLabels());
+                    if (solver == null) {
+                        solver = new Solver.Builder().configure(defaultConfiguration).listeners(listeners).model(this)
+                                .build();
+                    }
+
+                    try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                        solver.optimize();
+                    }
+
+                    if (hasMaskArrays) {
+                        clearLayerMaskArrays();
+                    }
                 }
 
-                time1 = System.currentTimeMillis();
+                Nd4j.getMemoryManager().invokeGcOccasionally();
             }
+
+            time1 = System.currentTimeMillis();
         }
 
         clearLayersStates();
@@ -999,17 +1004,17 @@ public class ComputationGraph implements Serializable, Model {
 
         MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-            if (configuration.isBackprop()) {
-                if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                    doTruncatedBPTT(inputs, labels, featureMaskArrays, labelMaskArrays);
-                } else {
-                    if (solver == null) {
-                        solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
-                    }
 
-                        solver.optimize();
+        if (configuration.isBackprop()) {
+            if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
+                doTruncatedBPTT(inputs, labels, featureMaskArrays, labelMaskArrays);
+            } else {
+                if (solver == null) {
+                    solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                }
 
+                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                    solver.optimize();
                 }
             }
         }
@@ -2298,7 +2303,7 @@ public class ComputationGraph implements Serializable, Model {
         INDArray[] newFeatureMasks = (featureMasks != null ? new INDArray[featureMasks.length] : null);
         INDArray[] newLabelMasks = (labelMasks != null ? new INDArray[labelMasks.length] : null);
 
-        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationTBPTT,workspaceTBPTT);
+        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
         for (int i = 0; i < nSubsets; i++) {
             try(MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
                 int startTimeIdx = i * fwdLen;

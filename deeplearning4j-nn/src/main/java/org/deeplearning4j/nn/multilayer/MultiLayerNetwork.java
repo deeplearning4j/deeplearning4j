@@ -1056,31 +1056,33 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     break;
 
                 // TODO: basically we want to wrap internals of this loop into workspace
-                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
-                    boolean hasMaskArrays = next.hasMaskArrays();
 
-                    if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-                        doTruncatedBPTT(next.getFeatureMatrix(), next.getLabels(), next.getFeaturesMaskArray(),
+                boolean hasMaskArrays = next.hasMaskArrays();
+
+                if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
+                    doTruncatedBPTT(next.getFeatureMatrix(), next.getLabels(), next.getFeaturesMaskArray(),
                                 next.getLabelsMaskArray());
-                    } else {
-                        if (hasMaskArrays)
-                            setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
-                        setInput(next.getFeatureMatrix());
-                        setLabels(next.getLabels());
-                        if (solver == null) {
-                            try(MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                                solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
-                            }
+                } else {
+                    if (hasMaskArrays)
+                        setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
+
+                    setInput(next.getFeatureMatrix());
+                    setLabels(next.getLabels());
+
+                    if (solver == null) {
+                        try(MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
                         }
-                        solver.optimize();
                     }
 
-                    if (hasMaskArrays)
-                        clearLayerMaskArrays();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                        solver.optimize();
+                    }
                 }
+
+                if (hasMaskArrays)
+                    clearLayerMaskArrays();
 
                 time1 = System.currentTimeMillis();
             }
@@ -1247,7 +1249,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         rnnClearPreviousState();
 
-        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationTBPTT,workspaceTBPTT);
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
         for (int i = 0; i < nSubsets; i++) {
             try (MemoryWorkspace wsT = workspace.notifyScopeEntered()){
@@ -1532,31 +1534,25 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (layerWiseConfigurations.isPretrain()) {
             pretrain(features);
         }
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .initialSize(0)
-                .overallocationLimit(1.0)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .policyReset(ResetPolicy.BLOCK_LEFT)
-                .build();
 
-        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration,workspaceExternal);
 
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-            if (layerWiseConfigurations.isBackprop()) {
-                if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-                    doTruncatedBPTT(features, labels, featuresMask, labelsMask);
-                } else {
-                    if (solver == null) {
-                        solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
-                    }
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
+        if (layerWiseConfigurations.isBackprop()) {
+            if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
+                doTruncatedBPTT(features, labels, featuresMask, labelsMask);
+            } else {
+                if (solver == null) {
+                    solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                }
+                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
                     solver.optimize();
                 }
             }
+        }
 
-            if (featuresMask != null || labelsMask != null) {
-                clearLayerMaskArrays();
-            }
+        if (featuresMask != null || labelsMask != null) {
+            clearLayerMaskArrays();
         }
 
         clearLayersStates();
@@ -1591,21 +1587,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public void fit(org.nd4j.linalg.dataset.api.DataSet data) {
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .initialSize(0)
-                .overallocationLimit(0.5)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .policyReset(ResetPolicy.BLOCK_LEFT)
-                .build();
-
-        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration,workspaceExternal);
-
-
             if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+
                     doTruncatedBPTT(data.getFeatures(), data.getLabels(), data.getFeaturesMaskArray(),
                             data.getLabelsMaskArray());
-                }
+
             } else {
                 //Standard training
                 boolean hasMaskArrays = data.hasMaskArrays();
@@ -1614,6 +1600,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 fit(data.getFeatures(), data.getLabels());
                 if (hasMaskArrays)
                     clearLayerMaskArrays();
+
             }
 
         clearLayersStates();
