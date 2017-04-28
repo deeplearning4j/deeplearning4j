@@ -24,6 +24,13 @@ public interface FlowController {
     void synchronizeToHost(AllocationPoint point);
 
     /**
+     * This method ensures, that all asynchronous operations on referenced AllocationPoint are finished, and device memory state is up-to-date
+     *
+     * @param point
+     */
+    void synchronizeToDevice(AllocationPoint point);
+
+    /**
      * This method ensures, that all asynchronous operations on referenced AllocationPoint are finished
      * @param point
      */

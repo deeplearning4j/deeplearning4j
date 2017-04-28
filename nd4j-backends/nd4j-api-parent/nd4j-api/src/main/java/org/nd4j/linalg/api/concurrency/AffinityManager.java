@@ -110,6 +110,15 @@ public interface AffinityManager {
      */
     void tagLocation(DataBuffer buffer, Location location);
 
+
+    /**
+     * This method propagates given INDArray to specified location
+     *
+     * @param array
+     * @param location
+     */
+    void ensureLocation(INDArray array, Location location);
+
     /**
      * This method forces specific device for current thread.
      *

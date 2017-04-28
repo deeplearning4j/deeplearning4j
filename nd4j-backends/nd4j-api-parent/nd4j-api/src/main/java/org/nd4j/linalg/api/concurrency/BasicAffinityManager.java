@@ -80,4 +80,9 @@ public abstract class BasicAffinityManager implements AffinityManager {
     public void unsafeSetDevice(Integer deviceId) {
         // no-op
     }
+
+    @Override
+    public void ensureLocation(INDArray array, Location location) {
+        // no-op
+    }
 }
