@@ -365,12 +365,17 @@ public class AsyncDataSetIterator implements DataSetIterator {
                     if (workspace != null) {
                         try (MemoryWorkspace ws1 = workspace.notifyScopeEntered()) {
                             ds = baseIterator.next();
+                            ds.decompress();
                         }
-                    } else ds = baseIterator.next();
+                    } else {
+                        ds = baseIterator.next();
+                        ds.decompress();
+                    }
 
 
                     if (Nd4j.getExecutioner() instanceof GridExecutioner)
                         ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
 
                     // feeder is temporary state variable, that shows if we have something between backend iterator and buffer
 
