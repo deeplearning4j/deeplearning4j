@@ -2309,6 +2309,9 @@ public class ComputationGraph implements Serializable, Model {
         INDArray[] newFeatureMasks = (featureMasks != null ? new INDArray[featureMasks.length] : null);
         INDArray[] newLabelMasks = (labelMasks != null ? new INDArray[labelMasks.length] : null);
 
+        workspaceConfigurationExternal.setCyclesBeforeInitialization(0);
+        workspaceConfigurationExternal.setPolicyLearning(LearningPolicy.OVER_TIME);
+
         MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
         for (int i = 0; i < nSubsets; i++) {
             try(MemoryWorkspace wsE = workspace.notifyScopeEntered()) {

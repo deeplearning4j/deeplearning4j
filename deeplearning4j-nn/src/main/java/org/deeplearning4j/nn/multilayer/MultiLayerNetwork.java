@@ -1249,6 +1249,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         rnnClearPreviousState();
 
+        workspaceConfigurationExternal.setCyclesBeforeInitialization(0);
+        workspaceConfigurationExternal.setPolicyLearning(LearningPolicy.OVER_TIME);
+
         MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
         for (int i = 0; i < nSubsets; i++) {
@@ -1290,6 +1293,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 updateRnnStateWithTBPTTState();
             }
         }
+
+        if (layerWiseConfigurations.getWorkspaceMode() != WorkspaceMode.NONE)
+            workspace.initializeWorkspace();
 
         rnnClearPreviousState();
         if (featuresMaskArray != null || labelsMaskArray != null)
