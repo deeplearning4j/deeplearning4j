@@ -2312,65 +2312,71 @@ public class ComputationGraph implements Serializable, Model {
         workspaceConfigurationExternal.setCyclesBeforeInitialization(0);
         workspaceConfigurationExternal.setPolicyLearning(LearningPolicy.OVER_TIME);
 
+        MemoryWorkspace workspaceT = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationTBPTT, workspaceTBPTT);
         MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
-        for (int i = 0; i < nSubsets; i++) {
-            try(MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
-                int startTimeIdx = i * fwdLen;
-                int endTimeIdx = startTimeIdx + fwdLen;
-                if (endTimeIdx > timeSeriesLength)
-                    endTimeIdx = timeSeriesLength;
 
-                for (int j = 0; j < inputs.length; j++) {
-                    if (inputs[j].rank() != 3)
-                        newInputs[j] = inputs[j];
-                    else {
-                        newInputs[j] = inputs[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
-                                NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-                    }
-                }
-                for (int j = 0; j < labels.length; j++) {
-                    if (labels[j].rank() != 3)
-                        newLabels[j] = labels[j];
-                    else {
-                        newLabels[j] = labels[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
-                                NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-                    }
-                }
-                if (featureMasks != null) {
-                    for (int j = 0; j < featureMasks.length; j++) {
-                        if (featureMasks[j] == null)
-                            continue;
-                        newFeatureMasks[j] = featureMasks[j].get(NDArrayIndex.all(),
-                                NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-                    }
-                }
-                if (labelMasks != null) {
-                    for (int j = 0; j < labelMasks.length; j++) {
-                        if (labelMasks[j] == null)
-                            continue;
-                        newLabelMasks[j] = labelMasks[j].get(NDArrayIndex.all(),
-                                NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-                    }
-                }
+        try(MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
+            for (int i = 0; i < nSubsets; i++) {
+                try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
+                    int startTimeIdx = i * fwdLen;
+                    int endTimeIdx = startTimeIdx + fwdLen;
+                    if (endTimeIdx > timeSeriesLength)
+                        endTimeIdx = timeSeriesLength;
 
-                setInputs(newInputs);
-                setLabels(newLabels);
-                setLayerMaskArrays(newFeatureMasks, newLabelMasks);
-
-                if (solver == null) {
-                    try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                        solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                    for (int j = 0; j < inputs.length; j++) {
+                        if (inputs[j].rank() != 3)
+                            newInputs[j] = inputs[j];
+                        else {
+                            newInputs[j] = inputs[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
+                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                        }
                     }
-                }
-                solver.optimize();
+                    for (int j = 0; j < labels.length; j++) {
+                        if (labels[j].rank() != 3)
+                            newLabels[j] = labels[j];
+                        else {
+                            newLabels[j] = labels[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
+                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                        }
+                    }
+                    if (featureMasks != null) {
+                        for (int j = 0; j < featureMasks.length; j++) {
+                            if (featureMasks[j] == null)
+                                continue;
+                            newFeatureMasks[j] = featureMasks[j].get(NDArrayIndex.all(),
+                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                        }
+                    }
+                    if (labelMasks != null) {
+                        for (int j = 0; j < labelMasks.length; j++) {
+                            if (labelMasks[j] == null)
+                                continue;
+                            newLabelMasks[j] = labelMasks[j].get(NDArrayIndex.all(),
+                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                        }
+                    }
 
-                //Finally, update the state of the RNN layers:
-                rnnUpdateStateWithTBPTTState();
+                    setInputs(newInputs);
+                    setLabels(newLabels);
+                    setLayerMaskArrays(newFeatureMasks, newLabelMasks);
+
+                    if (solver == null) {
+                        try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                        }
+                    }
+                    solver.optimize();
+
+                    //Finally, update the state of the RNN layers:
+                    rnnUpdateStateWithTBPTTState();
+                }
             }
         }
 
-        if (configuration.getWorkspaceMode() != WorkspaceMode.NONE)
+        if (configuration.getWorkspaceMode() != WorkspaceMode.NONE) {
             workspace.initializeWorkspace();
+            workspaceT.initializeWorkspace();
+        }
 
         rnnClearPreviousState();
 

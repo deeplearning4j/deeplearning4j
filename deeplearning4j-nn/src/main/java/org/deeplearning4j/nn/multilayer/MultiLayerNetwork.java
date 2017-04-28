@@ -1252,50 +1252,55 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         workspaceConfigurationExternal.setCyclesBeforeInitialization(0);
         workspaceConfigurationExternal.setPolicyLearning(LearningPolicy.OVER_TIME);
 
+        MemoryWorkspace workspaceT = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationTBPTT, workspaceTBPTT);
         MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
-        for (int i = 0; i < nSubsets; i++) {
-            try (MemoryWorkspace wsT = workspace.notifyScopeEntered()){
-                int startTimeIdx = i * fwdLen;
-                int endTimeIdx = startTimeIdx + fwdLen;
-                if (endTimeIdx > timeSeriesLength)
-                    endTimeIdx = timeSeriesLength;
+        try(MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
+            for (int i = 0; i < nSubsets; i++) {
+                try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
+                    int startTimeIdx = i * fwdLen;
+                    int endTimeIdx = startTimeIdx + fwdLen;
+                    if (endTimeIdx > timeSeriesLength)
+                        endTimeIdx = timeSeriesLength;
 
-                INDArray inputSubset = input.get(NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-                INDArray labelSubset = labels.get(NDArrayIndex.all(), NDArrayIndex.all(),
-                        NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-
-                setInput(inputSubset);
-                setLabels(labelSubset);
-
-                INDArray featuresMaskSubset = null;
-                INDArray labelsMaskSubset = null;
-                if (featuresMaskArray != null) {
-                    featuresMaskSubset = featuresMaskArray.get(NDArrayIndex.all(),
+                    INDArray inputSubset = input.get(NDArrayIndex.all(), NDArrayIndex.all(),
                             NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-                }
-                if (labelsMaskArray != null) {
-                    labelsMaskSubset = labelsMaskArray.get(NDArrayIndex.all(),
+                    INDArray labelSubset = labels.get(NDArrayIndex.all(), NDArrayIndex.all(),
                             NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-                }
-                if (featuresMaskSubset != null || labelsMaskSubset != null)
-                    setLayerMaskArrays(featuresMaskSubset, labelsMaskSubset);
 
-                if (solver == null) {
-                    try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                        solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                    setInput(inputSubset);
+                    setLabels(labelSubset);
+
+                    INDArray featuresMaskSubset = null;
+                    INDArray labelsMaskSubset = null;
+                    if (featuresMaskArray != null) {
+                        featuresMaskSubset = featuresMaskArray.get(NDArrayIndex.all(),
+                                NDArrayIndex.interval(startTimeIdx, endTimeIdx));
                     }
-                }
-                solver.optimize();
+                    if (labelsMaskArray != null) {
+                        labelsMaskSubset = labelsMaskArray.get(NDArrayIndex.all(),
+                                NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                    }
+                    if (featuresMaskSubset != null || labelsMaskSubset != null)
+                        setLayerMaskArrays(featuresMaskSubset, labelsMaskSubset);
 
-                //Finally, update the state of the RNN layers:
-                updateRnnStateWithTBPTTState();
+                    if (solver == null) {
+                        try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                        }
+                    }
+                    solver.optimize();
+
+                    //Finally, update the state of the RNN layers:
+                    updateRnnStateWithTBPTTState();
+                }
             }
         }
 
-        if (layerWiseConfigurations.getWorkspaceMode() != WorkspaceMode.NONE)
+        if (layerWiseConfigurations.getWorkspaceMode() != WorkspaceMode.NONE) {
             workspace.initializeWorkspace();
+            workspaceT.initializeWorkspace();
+        }
 
         rnnClearPreviousState();
         if (featuresMaskArray != null || labelsMaskArray != null)
