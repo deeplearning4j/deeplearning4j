@@ -63,6 +63,10 @@ public class RankClassificationResult implements Serializable {
                 rankedIndices[i][j] = indexes.getInt(i,j);
             }
         }
+
+        //initialize max outcomes
+        maxOutcomes();
+
     }
 
     /**
