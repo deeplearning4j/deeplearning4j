@@ -81,6 +81,11 @@ public class DropoutLayer extends FeedForwardLayer {
         return 0;
     }
 
+    @Override
+    public boolean isPretrainParam(String paramName) {
+        throw new UnsupportedOperationException("Dropout layer does not contain parameters");
+    }
+
     @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<DropoutLayer.Builder> {
         public Builder(double dropOut) {

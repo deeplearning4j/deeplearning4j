@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.conf.graph.rnn;
 
+import lombok.EqualsAndHashCode;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
@@ -39,6 +40,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class DuplicateToTimeSeriesVertex extends GraphVertex {
 
     private String inputName;

@@ -42,10 +42,9 @@ public class TestDropout {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
                         .iterations(1).regularization(true).dropOut(0.5).list()
-                        .layer(0, new OutputLayer.Builder()
-                                .activation(Activation.IDENTITY)
-                                .lossFunction(LossFunctions.LossFunction.MSE).nIn(nIn)
-                                        .nOut(nOut).weightInit(WeightInit.XAVIER).build())
+                        .layer(0, new OutputLayer.Builder().activation(Activation.IDENTITY)
+                                        .lossFunction(LossFunctions.LossFunction.MSE).nIn(nIn).nOut(nOut)
+                                        .weightInit(WeightInit.XAVIER).build())
                         .backprop(true).pretrain(false).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -64,7 +63,7 @@ public class TestDropout {
 
             List<INDArray> l = net.feedForward(in, true);
 
-            INDArray postDropout = l.get(l.size()-1);
+            INDArray postDropout = l.get(l.size() - 1);
             //Dropout occurred. Expect inputs to be either scaled 2x original, or set to 0.0 (with dropout = 0.5)
             for (int j = 0; j < inCopy.length(); j++) {
                 double origValue = inCopy.getDouble(j);

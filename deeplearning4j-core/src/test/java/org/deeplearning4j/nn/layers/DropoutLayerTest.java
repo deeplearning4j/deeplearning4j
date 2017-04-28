@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.layers;
 
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -9,6 +10,7 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.DropoutLayer;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -19,7 +21,10 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -169,43 +174,53 @@ public class DropoutLayerTest {
         DataSet next = iter.next();
 
         // Run without separate activation layer
-        MultiLayerConfiguration confIntegrated =
-                        new NeuralNetConfiguration.Builder()
-                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(
-                                                        1)
-                                        .seed(123).list()
-                                        .layer(0, new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20)
-                                                        .activation(Activation.RELU).weightInit(WeightInit.XAVIER)
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerConfiguration confIntegrated = new NeuralNetConfiguration.Builder().seed(123)
+                        .list().layer(0,
+                                        new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20)
+                                                        .activation(Activation.TANH).weightInit(WeightInit.XAVIER)
                                                         .build())
-                                        .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
-                                                        .dropOut(0.25).nOut(10).build())
-                                        .backprop(true).pretrain(false)
-                                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
-
-        MultiLayerNetwork netIntegrated = new MultiLayerNetwork(confIntegrated);
-        netIntegrated.init();
-        netIntegrated.fit(next);
+                        .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).dropOut(0.5)
+                                        .nOut(10).build())
+                        .backprop(true).pretrain(false).setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
 
         // Run with separate activation layer
-        MultiLayerConfiguration confSeparate =
-                        new NeuralNetConfiguration.Builder()
-                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(
-                                                        1)
-                                        .seed(123).list()
-                                        .layer(0, new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20)
-                                                        .activation(Activation.RELU).weightInit(WeightInit.XAVIER)
-                                                        .build())
-                                        .layer(1, new DropoutLayer.Builder(0.25).build())
-                                        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
-                                                        .nOut(10).build())
-                                        .backprop(true).pretrain(false)
-                                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
+        Nd4j.getRandom().setSeed(12345);
 
+        //Manually configure preprocessors
+        //This is necessary, otherwise CnnToFeedForwardPreprocessor will be in different locatinos
+        //i.e., dropout on 4d activations in latter, and dropout on 2d activations in former
+        Map<Integer, InputPreProcessor> preProcessorMap = new HashMap<>();
+        preProcessorMap.put(1, new CnnToFeedForwardPreProcessor(13, 13, 20));
+
+        MultiLayerConfiguration confSeparate = new NeuralNetConfiguration.Builder().seed(123).list()
+                        .layer(0, new ConvolutionLayer.Builder(4, 4).stride(2, 2).nIn(1).nOut(20)
+                                        .activation(Activation.TANH).weightInit(WeightInit.XAVIER).build())
+                        .layer(1, new DropoutLayer.Builder(0.5).build())
+                        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).nOut(10).build())
+                        .inputPreProcessors(preProcessorMap).backprop(true).pretrain(false)
+                        .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();
+
+
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerNetwork netIntegrated = new MultiLayerNetwork(confIntegrated);
+        netIntegrated.init();
+
+        Nd4j.getRandom().setSeed(12345);
         MultiLayerNetwork netSeparate = new MultiLayerNetwork(confSeparate);
         netSeparate.init();
+
+        assertEquals(netIntegrated.params(), netSeparate.params());
+
+        Nd4j.getRandom().setSeed(12345);
+        netIntegrated.fit(next);
+
+        Nd4j.getRandom().setSeed(12345);
         netSeparate.fit(next);
+
+        assertEquals(netIntegrated.params(), netSeparate.params());
 
         // check parameters
         assertEquals(netIntegrated.getLayer(0).getParam("W"), netSeparate.getLayer(0).getParam("W"));

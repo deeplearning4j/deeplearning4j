@@ -11,7 +11,9 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.RnnToCnnPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.solvers.BaseOptimizer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -19,6 +21,7 @@ import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
@@ -27,6 +30,7 @@ import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
+import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
@@ -43,6 +47,7 @@ public class GradientCheckTests {
     private static final double DEFAULT_MIN_ABS_ERROR = 1e-8;
 
     static {
+        Nd4j.zeros(1);
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
     }
 
@@ -806,6 +811,7 @@ public class GradientCheckTests {
                         MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                         mln.init();
 
+                        String msg;
                         if (doLearningFirst) {
                             //Run a number of iterations of learning
                             mln.setInput(ds.getFeatures());
@@ -817,27 +823,24 @@ public class GradientCheckTests {
                             mln.computeGradientAndScore();
                             double scoreAfter = mln.score();
                             //Can't test in 'characteristic mode of operation' if not learning
-                            String msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="
+                            msg = "testGradMLP2LayerIrisSimple() - score did not (sufficiently) decrease during learning - activationFn="
                                             + afn + ", lossFn=" + lf + ", outputActivation=" + outputActivation
                                             + ", doLearningFirst=" + doLearningFirst + ", l2=" + l2 + ", l1=" + l1
                                             + " (before=" + scoreBefore + ", scoreAfter=" + scoreAfter + ")";
                             assertTrue(msg, scoreAfter < scoreBefore);
                         }
 
+                        msg = "testGradMLP2LayerIrisSimple() - activationFn=" + afn + ", lossFn=" + lf
+                                        + ", outputActivation=" + outputActivation + ", doLearningFirst="
+                                        + doLearningFirst + ", l2=" + l2 + ", l1=" + l1;
                         if (PRINT_RESULTS) {
-                            System.out.println("testGradientMLP2LayerIrisSimpleRandom() - activationFn=" + afn
-                                            + ", lossFn=" + lf + ", outputActivation=" + outputActivation
-                                            + ", doLearningFirst=" + doLearningFirst + ", l2=" + l2 + ", l1=" + l1);
+                            System.out.println(msg);
                             for (int j = 0; j < mln.getnLayers(); j++)
                                 System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
                         }
 
                         boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
                                         DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
-
-                        String msg = "testGradMLP2LayerIrisSimple() - activationFn=" + afn + ", lossFn=" + lf
-                                        + ", outputActivation=" + outputActivation + ", doLearningFirst="
-                                        + doLearningFirst + ", l2=" + l2 + ", l1=" + l1;
                         assertTrue(msg, gradOK);
                     }
                 }

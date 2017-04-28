@@ -179,12 +179,12 @@ public class PlayUIServer extends UIServer {
         }
 
         String portProperty = System.getProperty(UI_SERVER_PORT_PROPERTY);
-        if(portProperty != null){
-            try{
+        if (portProperty != null) {
+            try {
                 port = Integer.parseInt(portProperty);
-            }catch (NumberFormatException e){
+            } catch (NumberFormatException e) {
                 log.warn("Could not parse UI port property \"{}\" with value \"{}\"", UI_SERVER_PORT_PROPERTY,
-                        portProperty, e);
+                                portProperty, e);
             }
         }
 

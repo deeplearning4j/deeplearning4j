@@ -692,8 +692,8 @@ public class EvalTest {
     }
 
     @Test
-    public void testBinaryCase(){
-        INDArray ones10 = Nd4j.ones(10,1);
+    public void testBinaryCase() {
+        INDArray ones10 = Nd4j.ones(10, 1);
         INDArray ones4 = Nd4j.ones(4, 1);
         INDArray zeros4 = Nd4j.zeros(4, 1);
         INDArray ones3 = Nd4j.ones(3, 1);
@@ -701,22 +701,22 @@ public class EvalTest {
         INDArray zeros2 = Nd4j.zeros(2, 1);
 
         Evaluation e = new Evaluation();
-        e.eval(ones10, ones10);             //10 true positives
-        e.eval(ones3, zeros3);              //3 false negatives
-        e.eval(zeros4, ones4);              //4 false positives
-        e.eval(zeros2, zeros2);             //2 true negatives
+        e.eval(ones10, ones10); //10 true positives
+        e.eval(ones3, zeros3); //3 false negatives
+        e.eval(zeros4, ones4); //4 false positives
+        e.eval(zeros2, zeros2); //2 true negatives
 
 
-        assertEquals((10+2)/(double)(10+3+4+2), e.accuracy(), 1e-6);
-        assertEquals(10, (int)e.truePositives().get(1));
-        assertEquals(3, (int)e.falseNegatives().get(1));
-        assertEquals(4, (int)e.falsePositives().get(1));
-        assertEquals(2, (int)e.trueNegatives().get(1));
+        assertEquals((10 + 2) / (double) (10 + 3 + 4 + 2), e.accuracy(), 1e-6);
+        assertEquals(10, (int) e.truePositives().get(1));
+        assertEquals(3, (int) e.falseNegatives().get(1));
+        assertEquals(4, (int) e.falsePositives().get(1));
+        assertEquals(2, (int) e.trueNegatives().get(1));
 
         //If we switch the label around: tp becomes tn, fp becomes fn, etc
-        assertEquals(10, (int)e.trueNegatives().get(0));
-        assertEquals(3, (int)e.falsePositives().get(0));
-        assertEquals(4, (int)e.falseNegatives().get(0));
-        assertEquals(2, (int)e.truePositives().get(0));
+        assertEquals(10, (int) e.trueNegatives().get(0));
+        assertEquals(3, (int) e.falsePositives().get(0));
+        assertEquals(4, (int) e.falseNegatives().get(0));
+        assertEquals(2, (int) e.truePositives().get(0));
     }
 }

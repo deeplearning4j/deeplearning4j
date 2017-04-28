@@ -42,8 +42,8 @@ public class TestRecordReaders {
 
         DataSet ds = iter.next();
 
-        assertEquals(Nd4j.create(new double[]{0.5}), ds.getFeatures());
-        assertEquals(Nd4j.create(new double[]{1.0, 0.0}), ds.getLabels());
+        assertEquals(Nd4j.create(new double[] {0.5}), ds.getFeatures());
+        assertEquals(Nd4j.create(new double[] {1.0, 0.0}), ds.getLabels());
     }
 
     @Test

@@ -78,6 +78,6 @@ public class ScoreImprovementEpochTerminationCondition implements EpochTerminati
     @Override
     public String toString() {
         return "ScoreImprovementEpochTerminationCondition(maxEpochsWithNoImprovement=" + maxEpochsWithNoImprovement
-                + ", minImprovement=" + minImprovement + ")";
+                        + ", minImprovement=" + minImprovement + ")";
     }
 }

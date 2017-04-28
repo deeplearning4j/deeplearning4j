@@ -16,6 +16,7 @@ public class AsyncShieldMultiDataSetIterator implements MultiDataSetIterator {
     public AsyncShieldMultiDataSetIterator(@NonNull MultiDataSetIterator iterator) {
         this.backingIterator = iterator;
     }
+
     /**
      * Fetch the next 'num' examples. Similar to the next method, but returns a specified number of examples
      *

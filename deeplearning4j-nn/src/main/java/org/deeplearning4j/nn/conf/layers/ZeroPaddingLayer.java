@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -20,6 +21,7 @@ import java.util.Map;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class ZeroPaddingLayer extends Layer {
 
     private int[] padding;
@@ -103,6 +105,11 @@ public class ZeroPaddingLayer extends Layer {
     @Override
     public double getLearningRateByParam(String paramName) {
         return learningRate;
+    }
+
+    @Override
+    public boolean isPretrainParam(String paramName) {
+        throw new UnsupportedOperationException("ZeroPaddingLayer does not contain parameters");
     }
 
     public static class Builder extends Layer.Builder<Builder> {

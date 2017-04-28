@@ -52,7 +52,7 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
     public void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray) {
         if (countActualPositive != null && countActualPositive.length != labels.size(1)) {
             throw new IllegalStateException("Labels array does not match stored state size. Expected labels array with "
-                    + "size " + countActualPositive.length + ", got labels array with size " + labels.size(1));
+                            + "size " + countActualPositive.length + ", got labels array with size " + labels.size(1));
         }
 
         if (labels.rank() == 3) {
@@ -153,8 +153,9 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
         }
 
         if (this.countActualPositive.length != other.countActualPositive.length) {
-            throw new IllegalStateException("Cannot merge ROCBinary instances with different number of coulmns. " +
-                    "numColumns = " + this.countActualPositive.length + "; other numColumns = " + other.countActualPositive.length);
+            throw new IllegalStateException("Cannot merge ROCBinary instances with different number of coulmns. "
+                            + "numColumns = " + this.countActualPositive.length + "; other numColumns = "
+                            + other.countActualPositive.length);
         }
 
         //Both have data
@@ -168,12 +169,12 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
         }
     }
 
-    private void assertIndex(int outputNum){
-        if(countActualPositive == null){
+    private void assertIndex(int outputNum) {
+        if (countActualPositive == null) {
             throw new UnsupportedOperationException("ROCBinary does not have any stats: eval must be called first");
         }
-        if(outputNum < 0 || outputNum >= countActualPositive.length){
-            throw new IllegalArgumentException("Invalid input: output number must be between 0 and " + (outputNum-1));
+        if (outputNum < 0 || outputNum >= countActualPositive.length) {
+            throw new IllegalArgumentException("Invalid input: output number must be between 0 and " + (outputNum - 1));
         }
     }
 
@@ -193,7 +194,7 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
      *
      * @param outputNum Index of the output (0 to {@link #numLabels()}-1)
      */
-    public long getCountActualPositive(int outputNum){
+    public long getCountActualPositive(int outputNum) {
         assertIndex(outputNum);
         return countActualPositive[outputNum];
     }
@@ -203,7 +204,7 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
      *
      * @param outputNum Index of the output (0 to {@link #numLabels()}-1)
      */
-    public long getCountActualNegative(int outputNum){
+    public long getCountActualNegative(int outputNum) {
         assertIndex(outputNum);
         return countActualNegative[outputNum];
     }
@@ -354,16 +355,16 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
             }
         }
 
-        String patternHeader = "%-" + (maxLabelsLength+5) + "s%-12s%-10s%-10s";
+        String patternHeader = "%-" + (maxLabelsLength + 5) + "s%-12s%-10s%-10s";
         String header = String.format(patternHeader, "Label", "AUC", "# Pos", "# Neg");
 
-        String pattern = "%-" + (maxLabelsLength + 5) + "s"     //Label
-                + "%-12." + printPrecision + "f"                //AUC
-                + "%-10d%-10d";                                   //Count pos, count neg
+        String pattern = "%-" + (maxLabelsLength + 5) + "s" //Label
+                        + "%-12." + printPrecision + "f" //AUC
+                        + "%-10d%-10d"; //Count pos, count neg
 
         sb.append(header);
 
-        for( int i=0; i<countActualPositive.length; i++ ){
+        for (int i = 0; i < countActualPositive.length; i++) {
             double auc = calculateAUC(i);
 
             String label = (labels == null ? String.valueOf(i) : labels.get(i));

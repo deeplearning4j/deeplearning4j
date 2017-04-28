@@ -52,7 +52,7 @@ public class ModelSerializerTest {
 
         assertEquals(network.getLayerWiseConfigurations().toJson(), net.getLayerWiseConfigurations().toJson());
         assertEquals(net.params(), network.params());
-        assertEquals(net.getUpdater(), network.getUpdater());
+        assertEquals(net.getUpdater().getStateViewArray(), network.getUpdater().getStateViewArray());
     }
 
     @Test
@@ -97,7 +97,7 @@ public class ModelSerializerTest {
 
         assertEquals(network.getLayerWiseConfigurations().toJson(), net.getLayerWiseConfigurations().toJson());
         assertEquals(net.params(), network.params());
-        assertEquals(net.getUpdater(), network.getUpdater());
+        assertEquals(net.getUpdater().getStateViewArray(), network.getUpdater().getStateViewArray());
     }
 
 
@@ -124,7 +124,7 @@ public class ModelSerializerTest {
 
         assertEquals(network.getConfiguration().toJson(), cg.getConfiguration().toJson());
         assertEquals(cg.params(), network.params());
-        assertEquals(cg.getUpdater(), network.getUpdater());
+        assertEquals(cg.getUpdater().getStateViewArray(), network.getUpdater().getStateViewArray());
     }
 
     @Test
@@ -151,6 +151,6 @@ public class ModelSerializerTest {
 
         assertEquals(network.getConfiguration().toJson(), cg.getConfiguration().toJson());
         assertEquals(cg.params(), network.params());
-        assertEquals(cg.getUpdater(), network.getUpdater());
+        assertEquals(cg.getUpdater().getStateViewArray(), network.getUpdater().getStateViewArray());
     }
 }

@@ -32,6 +32,9 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
     public static final String PZX_MEAN_PREFIX = PZX_PREFIX + "Mean";
     public static final String PZX_LOGSTD2_PREFIX = PZX_PREFIX + "LogStd2";
 
+    public static final String ENCODER_PREFIX = "e";
+    public static final String DECODER_PREFIX = "d";
+
     /** Key for weight parameters connecting the last encoder layer and the mean values for p(z|data) */
     public static final String PZX_MEAN_W = "pZXMean" + WEIGHT_KEY_SUFFIX;
     /** Key for bias parameters for the mean values for p(z|data) */

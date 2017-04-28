@@ -13,9 +13,12 @@ import java.util.Observable;
  */
 @Slf4j
 public class BasicInferenceObservable extends Observable implements InferenceObservable {
-    @Getter private INDArray[] input;
-    @Getter private long id;
-    @Getter private INDArray[] output;
+    @Getter
+    private INDArray[] input;
+    @Getter
+    private long id;
+    @Getter
+    private INDArray[] output;
 
 
     public BasicInferenceObservable(INDArray... inputs) {

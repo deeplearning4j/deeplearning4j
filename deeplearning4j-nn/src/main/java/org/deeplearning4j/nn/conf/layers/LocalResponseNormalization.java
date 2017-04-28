@@ -105,6 +105,11 @@ public class LocalResponseNormalization extends Layer {
         return 0;
     }
 
+    @Override
+    public boolean isPretrainParam(String paramName) {
+        return false; //No params in LRN
+    }
+
     @AllArgsConstructor
     public static class Builder extends Layer.Builder<Builder> {
         // defaults based on AlexNet model

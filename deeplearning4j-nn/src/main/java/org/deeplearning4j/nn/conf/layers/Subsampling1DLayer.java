@@ -37,9 +37,11 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer ret
-                = new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer(conf);
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
+        org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer ret =
+                        new org.deeplearning4j.nn.layers.convolution.subsampling.Subsampling1DLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -51,21 +53,23 @@ public class Subsampling1DLayer extends SubsamplingLayer {
 
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
-        if(inputType == null || inputType.getType() != InputType.Type.RNN){
-            throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName() + "\"): Expected RNN input, got " + inputType);
+        if (inputType == null || inputType.getType() != InputType.Type.RNN) {
+            throw new IllegalStateException("Invalid input for Subsampling layer (layer name=\"" + getLayerName()
+                            + "\"): Expected RNN input, got " + inputType);
         }
         return inputType;
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override){
+    public void setNIn(InputType inputType, boolean override) {
         //No op: subsampling layer doesn't have nIn value
     }
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if(inputType == null ){
-            throw new IllegalStateException("Invalid input for Subsampling1D layer (layer name=\"" + getLayerName() + "\"): input is null");
+        if (inputType == null) {
+            throw new IllegalStateException("Invalid input for Subsampling1D layer (layer name=\"" + getLayerName()
+                            + "\"): input is null");
         }
 
         return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
@@ -75,14 +79,18 @@ public class Subsampling1DLayer extends SubsamplingLayer {
     public Subsampling1DLayer clone() {
         Subsampling1DLayer clone = (Subsampling1DLayer) super.clone();
 
-        if(clone.kernelSize != null) clone.kernelSize = clone.kernelSize.clone();
-        if(clone.stride != null) clone.stride = clone.stride.clone();
-        if(clone.padding != null) clone.padding = clone.padding.clone();
+        if (clone.kernelSize != null)
+            clone.kernelSize = clone.kernelSize.clone();
+        if (clone.stride != null)
+            clone.stride = clone.stride.clone();
+        if (clone.padding != null)
+            clone.padding = clone.padding.clone();
         return clone;
     }
 
     public static class Builder extends SubsamplingLayer.BaseSubsamplingBuilder<Builder> {
-        private static final org.deeplearning4j.nn.conf.layers.PoolingType DEFAULT_POOLING = org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
+        private static final org.deeplearning4j.nn.conf.layers.PoolingType DEFAULT_POOLING =
+                        org.deeplearning4j.nn.conf.layers.PoolingType.MAX;
         private static final int DEFAULT_KERNEL = 2;
         private static final int DEFAULT_STRIDE = 1;
         private static final int DEFAULT_PADDING = 0;
@@ -115,7 +123,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             this(poolingType, DEFAULT_KERNEL, DEFAULT_STRIDE, DEFAULT_PADDING);
         }
 
-        public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType){
+        public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType) {
             this(poolingType, DEFAULT_KERNEL, DEFAULT_STRIDE, DEFAULT_PADDING);
         }
 
@@ -123,17 +131,20 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             this(DEFAULT_POOLING, DEFAULT_KERNEL, DEFAULT_STRIDE, DEFAULT_PADDING);
         }
 
-        public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int kernelSize, int stride, int padding){
-            super(poolingType, new int[]{kernelSize, 1}, new int[]{stride, 1}, new int[]{padding, 0});
+        public Builder(org.deeplearning4j.nn.conf.layers.PoolingType poolingType, int kernelSize, int stride,
+                        int padding) {
+            super(poolingType, new int[] {kernelSize, 1}, new int[] {stride, 1}, new int[] {padding, 0});
         }
 
-        public Builder(PoolingType poolingType, int kernelSize, int stride, int padding){
-            super(poolingType, new int[]{kernelSize, 1}, new int[]{stride, 1}, new int[]{padding, 0});
+        public Builder(PoolingType poolingType, int kernelSize, int stride, int padding) {
+            super(poolingType, new int[] {kernelSize, 1}, new int[] {stride, 1}, new int[] {padding, 0});
         }
 
         @SuppressWarnings("unchecked")
         public Subsampling1DLayer build() {
-            if(poolingType == org.deeplearning4j.nn.conf.layers.PoolingType.PNORM && pnorm <= 0) throw new IllegalStateException("Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
+            if (poolingType == org.deeplearning4j.nn.conf.layers.PoolingType.PNORM && pnorm <= 0)
+                throw new IllegalStateException(
+                                "Incorrect Subsampling config: p-norm must be set when using PoolingType.PNORM");
             ConvolutionUtils.validateCnnKernelStridePadding(kernelSize, stride, padding);
 
             return new Subsampling1DLayer(this);
@@ -144,7 +155,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          *
          * @param kernelSize    kernel size in height and width dimensions
          */
-        public Subsampling1DLayer.Builder kernelSize(int kernelSize){
+        public Subsampling1DLayer.Builder kernelSize(int kernelSize) {
             this.kernelSize[0] = kernelSize;
             return this;
         }
@@ -154,7 +165,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          *
          * @param stride    stride value
          */
-        public Subsampling1DLayer.Builder stride(int stride){
+        public Subsampling1DLayer.Builder stride(int stride) {
             this.stride[0] = stride;
             return this;
         }
@@ -164,7 +175,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
          *
          * @param padding    padding value
          */
-        public Subsampling1DLayer.Builder padding(int padding){
+        public Subsampling1DLayer.Builder padding(int padding) {
             this.padding[0] = padding;
             return this;
         }

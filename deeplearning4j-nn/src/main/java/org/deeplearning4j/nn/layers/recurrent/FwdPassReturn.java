@@ -56,7 +56,7 @@ public class FwdPassReturn {
 
         if (iz != null)
             for (int i = 0; i < iz.length; i++)
-                    iz[i] = iz[i].leverageTo(id);
+                iz[i] = iz[i].leverageTo(id);
 
         if (ia != null)
             for (int i = 0; i < ia.length; i++)

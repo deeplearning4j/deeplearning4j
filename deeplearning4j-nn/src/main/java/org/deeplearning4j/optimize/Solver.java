@@ -49,7 +49,7 @@ public class Solver {
 
     public void optimize() {
         if (optimizer == null) {
-            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 optimizer = getOptimizer();
             }
 
