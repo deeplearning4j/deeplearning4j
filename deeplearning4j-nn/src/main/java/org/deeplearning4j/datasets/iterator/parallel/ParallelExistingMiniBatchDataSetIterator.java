@@ -1,4 +1,4 @@
-package org.deeplearning4j.datasets.iterator;
+package org.deeplearning4j.datasets.iterator.parallel;
 
 
 import lombok.NonNull;

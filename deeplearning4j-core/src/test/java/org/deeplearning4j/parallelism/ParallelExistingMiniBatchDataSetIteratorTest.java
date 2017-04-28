@@ -4,17 +4,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
-import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
-import org.deeplearning4j.datasets.iterator.ParallelExistingMiniBatchDataSetIterator;
+import org.deeplearning4j.datasets.iterator.parallel.ParallelExistingMiniBatchDataSetIterator;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.ExistingMiniBatchDataSetIterator;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;

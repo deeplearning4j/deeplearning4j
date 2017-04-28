@@ -132,11 +132,12 @@ public class ParallelWrapper implements AutoCloseable {
                     log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
                             Nd4j.getAffinityManager().getNumberOfDevices());
 
-                if (mq == null)
-                    mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL).setType(MagicQueue.Type.MDS)
-                            .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
+                //if (mq == null)
+                    //mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL).setType(MagicQueue.Type.MDS)
+                    //        .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
 
-                iterator = new AsyncMultiDataSetIterator(source, prefetchSize * workers, mq );
+                //iterator = new AsyncMultiDataSetIterator(source, prefetchSize * workers, mq );
+                iterator = new AsyncMultiDataSetIterator(source, prefetchSize, new LinkedBlockingQueue<>(prefetchSize * workers), true, new InterleavedDataSetCallback(prefetchSize * 2));
             } else iterator = new AsyncMultiDataSetIterator(source, prefetchSize);
         } else
             iterator = source;
@@ -506,7 +507,7 @@ public class ParallelWrapper implements AutoCloseable {
         protected boolean reportScore = false;
         protected boolean averageUpdaters = true;
         protected boolean legacyAveraging = true;
-        protected boolean isMQ = false; // Nd4j.getAffinityManager().getNumberOfDevices() > 1;
+        protected boolean isMQ = Nd4j.getAffinityManager().getNumberOfDevices() > 1;
         protected TrainerContext trainerContext = new DefaultTrainerContext();
         protected Object[] trainerContextArgs;
         protected WorkspaceMode workspaceMode = WorkspaceMode.SEPARATE;
@@ -598,12 +599,13 @@ public class ParallelWrapper implements AutoCloseable {
          *
          * PLEASE NOTE: This is experimental feature.
          *
-         * Default: false
+         * Default: true
+         *
          * @param reallyUse
          * @return
          */
         public Builder useMQ(boolean reallyUse) {
-            this.isMQ = reallyUse;
+            //this.isMQ = reallyUse;
             return this;
         }
 
