@@ -1280,7 +1280,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     setLayerMaskArrays(featuresMaskSubset, labelsMaskSubset);
 
                 if (solver == null) {
-                    solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                    try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                    }
                 }
                 solver.optimize();
 
