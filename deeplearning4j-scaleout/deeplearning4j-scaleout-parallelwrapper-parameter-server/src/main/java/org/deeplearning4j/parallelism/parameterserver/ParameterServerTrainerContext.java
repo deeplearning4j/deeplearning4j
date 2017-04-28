@@ -2,6 +2,7 @@ package org.deeplearning4j.parallelism.parameterserver;
 
 import io.aeron.driver.MediaDriver;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.parallelism.MagicQueue;
 import org.deeplearning4j.parallelism.ParallelWrapper;
@@ -39,9 +40,9 @@ public class ParameterServerTrainerContext implements TrainerContext {
         parameterServerNode = new ParameterServerNode(mediaDriver, statusServerPort, numWorkers);
         if (parameterServerArgs == null)
             parameterServerArgs = new String[] {"-m", "true", "-s", "1," + String.valueOf(model.numParams()), "-p",
-                    "40323", "-h", "localhost", "-id", "11", "-md", mediaDriver.aeronDirectoryName(), "-sh",
-                    "localhost", "-sp", String.valueOf(statusServerPort), "-u",
-                    String.valueOf(numUpdatesPerEpoch)};
+                            "40323", "-h", "localhost", "-id", "11", "-md", mediaDriver.aeronDirectoryName(), "-sh",
+                            "localhost", "-sp", String.valueOf(statusServerPort), "-u",
+                            String.valueOf(numUpdatesPerEpoch)};
 
     }
 
@@ -59,23 +60,15 @@ public class ParameterServerTrainerContext implements TrainerContext {
      * @return the created training instance
      */
     @Override
-    public Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper) {
-        return ParameterServerTrainer.builder()
-                .originalModel(model)
-                .parameterServerClient(ParameterServerClient.builder()
-                        .aeron(parameterServerNode.getAeron())
-                        .ndarrayRetrieveUrl(parameterServerNode.getSubscriber()[threadId]
-                                .getResponder()
-                                .connectionUrl())
-                        .ndarraySendUrl(parameterServerNode.getSubscriber()[threadId]
-                                .getSubscriber()
-                                .connectionUrl())
-                        .subscriberHost("localhost").masterStatusHost("localhost")
-                        .masterStatusPort(statusServerPort).subscriberPort(40625 + threadId)
-                        .subscriberStream(12 + threadId).build())
-                .replicatedModel(model)
-                .threadId(threadId)
-                .parallelWrapper(wrapper)
-                .useMDS(useMDS).build();
+    public Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper,
+                    WorkspaceMode mode) {
+        return ParameterServerTrainer.builder().originalModel(model).parameterServerClient(ParameterServerClient
+                        .builder().aeron(parameterServerNode.getAeron())
+                        .ndarrayRetrieveUrl(
+                                        parameterServerNode.getSubscriber()[threadId].getResponder().connectionUrl())
+                        .ndarraySendUrl(parameterServerNode.getSubscriber()[threadId].getSubscriber().connectionUrl())
+                        .subscriberHost("localhost").masterStatusHost("localhost").masterStatusPort(statusServerPort)
+                        .subscriberPort(40625 + threadId).subscriberStream(12 + threadId).build())
+                        .replicatedModel(model).threadId(threadId).parallelWrapper(wrapper).useMDS(useMDS).build();
     }
 }

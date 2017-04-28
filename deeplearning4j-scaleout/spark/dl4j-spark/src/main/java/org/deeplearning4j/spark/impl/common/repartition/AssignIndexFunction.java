@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.impl.common.repartition;
 
 import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.rdd.RDD;
 import scala.Tuple2;
 
 import java.util.ArrayList;
@@ -12,7 +13,9 @@ import java.util.List;
  * to enable partitioning to be done in a way that is more reliable (less random) than standard .repartition calls
  *
  * @author Alex Black
+ * @deprecated Use {@link RDD#zipWithIndex()} instead
  */
+@Deprecated
 public class AssignIndexFunction<T> implements Function2<Integer, Iterator<T>, Iterator<Tuple2<Integer, T>>> {
     private final int[] partitionElementStartIdxs;
 
@@ -26,8 +29,8 @@ public class AssignIndexFunction<T> implements Function2<Integer, Iterator<T>, I
     }
 
     @Override
-    public Iterator<Tuple2<Integer, T>> call(Integer partionNum, Iterator<T> v2) throws Exception {
-        int currIdx = partitionElementStartIdxs[partionNum];
+    public Iterator<Tuple2<Integer, T>> call(Integer partitionNum, Iterator<T> v2) throws Exception {
+        int currIdx = partitionElementStartIdxs[partitionNum];
         List<Tuple2<Integer, T>> list = new ArrayList<>();
         while (v2.hasNext()) {
             list.add(new Tuple2<>(currIdx++, v2.next()));

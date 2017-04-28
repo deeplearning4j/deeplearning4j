@@ -1,14 +1,20 @@
 package org.deeplearning4j.datasets.iterator;
 
 
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -36,6 +42,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
     private Thread thread;
     private IteratorRunnable runnable;
 
+    private MemoryWorkspace workspace;
+
     protected static final Logger logger = LoggerFactory.getLogger(AsyncDataSetIterator.class);
 
     /**
@@ -48,6 +56,10 @@ public class AsyncDataSetIterator implements DataSetIterator {
         this(baseIterator, 8);
     }
 
+    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue) {
+        this(iterator, queueSize, queue, true);
+    }
+
     /**
      * Create an AsyncDataSetIterator with a queue size of 1 (i.e., only load a
      * single additional DataSet)
@@ -56,17 +68,38 @@ public class AsyncDataSetIterator implements DataSetIterator {
      * @param queueSize
      * @param queue BlockingQueue instance that will be used as backing queue. MagicQueue probably?
      */
-    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue) {
+    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue,
+                    boolean useWorkspace) {
         if (queueSize <= 0)
             throw new IllegalArgumentException("Queue size must be > 0");
         if (queueSize < 2)
             queueSize = 2;
 
+        if (iterator.resetSupported() && useWorkspace) {
+            iterator.reset();
+
+            DataSet ds = iterator.next();
+
+            logger.info("Sample dimensions: {}", Arrays.toString(ds.getFeatures().shape()));
+
+            long initSize = Math.max(ds.getMemoryFootprint() * queueSize, 10 * 1024L * 1024L);
+
+            WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(initSize)
+                            .overallocationLimit(2.0).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                            .policyAllocation(AllocationPolicy.OVERALLOCATE).build();
+
+            MemoryWorkspace workspace =
+                            Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ADSI_ITER");
+            this.workspace = workspace;
+        } else
+            workspace = null;
+
         this.baseIterator = iterator;
         if (this.baseIterator.resetSupported())
             this.baseIterator.reset();
         blockingQueue = queue;
-        runnable = new IteratorRunnable(baseIterator.hasNext());
+
+        runnable = new IteratorRunnable(baseIterator.hasNext(), workspace);
         thread = runnable;
 
         /**
@@ -88,6 +121,10 @@ public class AsyncDataSetIterator implements DataSetIterator {
      */
     public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize) {
         this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize));
+    }
+
+    public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize, boolean useWorkspace) {
+        this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace);
     }
 
 
@@ -126,7 +163,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
     public synchronized void reset() {
         if (!resetSupported())
             throw new UnsupportedOperationException(
-                    "Cannot reset Async iterator wrapping iterator that does not support reset");
+                            "Cannot reset Async iterator wrapping iterator that does not support reset");
         //Complication here: runnable could be blocking on either baseIterator.next() or blockingQueue.put()
         runnable.killRunnable = true;
         if (runnable.isAlive.get()) {
@@ -142,7 +179,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
         //Clear the queue, reset the base iterator, set up a new thread
         blockingQueue.clear();
         baseIterator.reset();
-        runnable = new IteratorRunnable(baseIterator.hasNext());
+        runnable = new IteratorRunnable(baseIterator.hasNext(), this.workspace);
         thread = runnable;
 
         Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
@@ -246,7 +283,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
                     if (runnable.exception != null)
                         throw new RuntimeException("Exception thrown in base iterator", runnable.exception);
                     throw new IllegalStateException(
-                            "Unexpected state occurred for AsyncDataSetIterator: runnable died or no data available");
+                                    "Unexpected state occurred for AsyncDataSetIterator: runnable died or no data available");
                 }
             }
             //exception thrown while getting data from base iterator
@@ -277,9 +314,11 @@ public class AsyncDataSetIterator implements DataSetIterator {
         private Semaphore runCompletedSemaphore = new Semaphore(0);
         private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
         private AtomicLong feeder = new AtomicLong(0);
+        private MemoryWorkspace workspace;
 
-        public IteratorRunnable(boolean hasNext) {
+        public IteratorRunnable(boolean hasNext, MemoryWorkspace workspace) {
             this.isAlive.set(hasNext);
+            this.workspace = workspace;
             this.setName("AsyncIterator thread");
             this.setDaemon(true);
         }
@@ -316,10 +355,20 @@ public class AsyncDataSetIterator implements DataSetIterator {
         @Override
         public void run() {
             try {
+
                 while (!killRunnable && baseIterator.hasNext()) {
                     feeder.incrementAndGet();
                     lock.writeLock().lock();
-                    DataSet ds = baseIterator.next();
+
+                    DataSet ds = null;
+
+                    if (workspace != null) {
+                        try (MemoryWorkspace ws1 = workspace.notifyScopeEntered()) {
+                            ds = baseIterator.next();
+                        }
+                    } else
+                        ds = baseIterator.next();
+
 
                     if (Nd4j.getExecutioner() instanceof GridExecutioner)
                         ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
@@ -327,7 +376,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
                     // feeder is temporary state variable, that shows if we have something between backend iterator and buffer
 
                     lock.writeLock().unlock();
-                    if(ds != null && ds.getFeatureMatrix() != null && ds.getLabels() != null)
+                    if (ds != null && ds.getFeatureMatrix() != null && ds.getLabels() != null)
                         blockingQueue.put(ds);
                 }
                 isAlive.set(false);

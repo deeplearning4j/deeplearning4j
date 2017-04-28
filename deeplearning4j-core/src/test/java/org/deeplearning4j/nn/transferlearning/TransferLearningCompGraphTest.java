@@ -287,6 +287,7 @@ public class TransferLearningCompGraphTest {
                         new TransferLearning.GraphBuilder(modelToFineTune).fineTuneConfiguration(fineTuneConfiguration)
                                         .setFeatureExtractor("layer1").nOutReplace("layer4", 600, WeightInit.XAVIER)
                                         .removeVertexAndConnections("layer5").removeVertexAndConnections("layer6")
+                                        .setInputs("layer0In").setInputTypes(InputType.convolutionalFlat(28, 28, 3))
                                         .addLayer("layer5",
                                                         new DenseLayer.Builder().activation(Activation.RELU).nIn(600)
                                                                         .nOut(300).build(),
@@ -385,71 +386,47 @@ public class TransferLearningCompGraphTest {
 
 
     @Test
-    public void testTransferGlobalPool(){
+    public void testTransferGlobalPool() {
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .updater(Updater.ADAM).adamMeanDecay(0.9).adamVarDecay(0.999)
-                .weightInit(WeightInit.XAVIER)
-                .learningRate(0.1)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("blstm1", new GravesBidirectionalLSTM.Builder()
-                        .nIn(10).nOut(10)
-                        .activation(Activation.TANH)
-                        .build(), "in")
-                .addLayer("pool", new GlobalPoolingLayer.Builder().build(), "blstm1")
-                .addLayer("dense", new DenseLayer.Builder().nIn(10).nOut(10).build(), "pool")
-                .addLayer("out", new OutputLayer.Builder()
-                        .nIn(10).nOut(10)
-                        .activation(Activation.IDENTITY)
-                        .lossFunction(LossFunctions.LossFunction.MSE)
-                        .build(), "dense")
-                .setOutputs("out")
-                .build();
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).updater(Updater.ADAM)
+                        .adamMeanDecay(0.9).adamVarDecay(0.999).weightInit(WeightInit.XAVIER).learningRate(0.1)
+                        .graphBuilder().addInputs("in")
+                        .addLayer("blstm1",
+                                        new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10)
+                                                        .activation(Activation.TANH).build(),
+                                        "in")
+                        .addLayer("pool", new GlobalPoolingLayer.Builder().build(), "blstm1")
+                        .addLayer("dense", new DenseLayer.Builder().nIn(10).nOut(10).build(), "pool")
+                        .addLayer("out", new OutputLayer.Builder().nIn(10).nOut(10).activation(Activation.IDENTITY)
+                                        .lossFunction(LossFunctions.LossFunction.MSE).build(), "dense")
+                        .setOutputs("out").build();
 
         ComputationGraph g = new ComputationGraph(conf);
         g.init();
 
-        FineTuneConfiguration fineTuneConfiguration = new FineTuneConfiguration.Builder()
-                .seed(12345)
-                .learningRate(0.01)
-                .build();
+        FineTuneConfiguration fineTuneConfiguration =
+                        new FineTuneConfiguration.Builder().seed(12345).learningRate(0.01).build();
 
-        ComputationGraph graph = new TransferLearning.GraphBuilder(g)
-                .fineTuneConfiguration(fineTuneConfiguration)
-                .removeVertexKeepConnections("out")
-                .setFeatureExtractor("dense")
-                .addLayer("out", new OutputLayer.Builder()
-                        .updater(Updater.ADAM).adamMeanDecay(0.9).adamVarDecay(0.999)
-                        .weightInit(WeightInit.XAVIER)
-                        .activation(Activation.SOFTMAX)
-                        .lossFunction(LossFunctions.LossFunction.MCXENT)
-                        .nIn(10)
-                        .nOut(5)
-                        .build(), "dense")
-                .build();
+        ComputationGraph graph = new TransferLearning.GraphBuilder(g).fineTuneConfiguration(fineTuneConfiguration)
+                        .removeVertexKeepConnections("out").setFeatureExtractor("dense")
+                        .addLayer("out", new OutputLayer.Builder().updater(Updater.ADAM).adamMeanDecay(0.9)
+                                        .adamVarDecay(0.999).weightInit(WeightInit.XAVIER)
+                                        .activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT)
+                                        .nIn(10).nOut(5).build(), "dense")
+                        .build();
 
-        ComputationGraphConfiguration confExpected = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .updater(Updater.ADAM).adamMeanDecay(0.9).adamVarDecay(0.999)
-                .weightInit(WeightInit.XAVIER)
-                .learningRate(0.01)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("blstm1", new GravesBidirectionalLSTM.Builder()
-                        .nIn(10).nOut(10)
-                        .activation(Activation.TANH)
-                        .build(), "in")
-                .addLayer("pool", new GlobalPoolingLayer.Builder().build(), "blstm1")
-                .addLayer("dense", new DenseLayer.Builder().nIn(10).nOut(10).build(), "pool")
-                .addLayer("out", new OutputLayer.Builder()
-                        .nIn(10).nOut(5)
-                        .activation(Activation.SOFTMAX)
-                        .lossFunction(LossFunctions.LossFunction.MCXENT)
-                        .build(), "dense")
-                .setOutputs("out")
-                .build();
+        ComputationGraphConfiguration confExpected = new NeuralNetConfiguration.Builder().seed(12345)
+                        .updater(Updater.ADAM).adamMeanDecay(0.9).adamVarDecay(0.999).weightInit(WeightInit.XAVIER)
+                        .learningRate(0.01).graphBuilder().addInputs("in")
+                        .addLayer("blstm1",
+                                        new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10)
+                                                        .activation(Activation.TANH).build(),
+                                        "in")
+                        .addLayer("pool", new GlobalPoolingLayer.Builder().build(), "blstm1")
+                        .addLayer("dense", new DenseLayer.Builder().nIn(10).nOut(10).build(), "pool")
+                        .addLayer("out", new OutputLayer.Builder().nIn(10).nOut(5).activation(Activation.SOFTMAX)
+                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "dense")
+                        .setOutputs("out").build();
 
         ComputationGraph modelExpected = new ComputationGraph(confExpected);
         modelExpected.init();

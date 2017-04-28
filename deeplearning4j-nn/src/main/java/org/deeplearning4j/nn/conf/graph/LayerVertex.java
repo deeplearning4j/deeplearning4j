@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -36,6 +37,7 @@ import java.util.Arrays;
  */
 @NoArgsConstructor
 @Data
+@EqualsAndHashCode(callSuper = false)
 public class LayerVertex extends GraphVertex {
 
     private NeuralNetConfiguration layerConf;

@@ -127,6 +127,9 @@ public interface Model {
      */
     void setParamsViewArray(INDArray params);
 
+
+    INDArray getGradientsViewArray();
+
     /**
      * Set the gradients array as a view of the full (backprop) network parameters
      * NOTE: this is intended to be used internally in MultiLayerNetwork and ComputationGraph, not by users.

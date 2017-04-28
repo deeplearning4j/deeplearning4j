@@ -326,10 +326,10 @@ public class TestOptimizers {
             // Gradients: d(x^2)/dx = 2x
             INDArray gradient = parameters.mul(2);
             Gradient g = new DefaultGradient();
-            g.gradientForVariable().put("W", gradient);
+            g.gradientForVariable().put("W", this.gradientView);
             this.gradient = g;
             this.score = Nd4j.getBlasWrapper().dot(parameters, parameters); //sum_i x_i^2
-
+            this.gradientView.assign(gradient);
         }
 
         @Override
@@ -474,8 +474,8 @@ public class TestOptimizers {
             gradient.muli(20 * Math.PI);
             gradient.addi(parameters.mul(2));
 
-            Gradient g = new DefaultGradient();
-            g.gradientForVariable().put("W", gradient);
+            Gradient g = new DefaultGradient(this.gradientView);
+            g.gradientForVariable().put("W", this.gradientView);
             this.gradient = g;
             //If any parameters are outside range [-5.12,5.12]: score = infinity
             INDArray paramExceeds512 = parameters.cond(new Condition() {
@@ -513,6 +513,7 @@ public class TestOptimizers {
             costFn += temp.sum(Integer.MAX_VALUE).getDouble(0);
 
             this.score = costFn;
+            this.gradientView.assign(gradient);
         }
 
         @Override
@@ -757,6 +758,7 @@ public class TestOptimizers {
     private static abstract class SimpleOptimizableModel implements Model, Layer {
         private static final long serialVersionUID = 4409380971404019303L;
         protected INDArray parameters;
+        protected INDArray gradientView;
         protected final NeuralNetConfiguration conf;
         protected Gradient gradient;
         protected double score;
@@ -765,6 +767,7 @@ public class TestOptimizers {
          */
         private SimpleOptimizableModel(INDArray parameterInit, NeuralNetConfiguration conf) {
             this.parameters = parameterInit.dup();
+            this.gradientView = Nd4j.create(parameterInit.shape());
             this.conf = conf;
         }
 
@@ -1059,6 +1062,11 @@ public class TestOptimizers {
         public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
                         int minibatchSize) {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public INDArray getGradientsViewArray() {
+            return gradientView;
         }
     }
 }

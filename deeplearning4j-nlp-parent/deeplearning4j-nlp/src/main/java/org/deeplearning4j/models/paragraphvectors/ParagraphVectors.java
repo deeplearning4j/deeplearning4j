@@ -213,6 +213,9 @@ public class ParagraphVectors extends Word2Vec {
     public INDArray inferVector(@NonNull List<VocabWord> document, double learningRate, double minLearningRate,
                     int iterations) {
 
+        if (this.vocab == null || this.vocab.numWords() == 0)
+            reassignExistingModel();
+
         SequenceLearningAlgorithm<VocabWord> learner = sequenceLearningAlgorithm;
 
         if (learner == null) {

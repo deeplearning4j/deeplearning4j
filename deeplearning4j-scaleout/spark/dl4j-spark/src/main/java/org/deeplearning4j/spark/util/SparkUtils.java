@@ -6,21 +6,25 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
+import org.apache.spark.HashPartitioner;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.Function2;
+import org.apache.spark.api.java.function.PairFunction;
 import org.apache.spark.serializer.SerializerInstance;
 import org.deeplearning4j.spark.api.Repartition;
 import org.deeplearning4j.spark.api.RepartitionStrategy;
 import org.deeplearning4j.spark.data.BatchDataSetsFunction;
-import org.deeplearning4j.spark.data.shuffle.IntPartitioner;
 import org.deeplearning4j.spark.data.shuffle.SplitDataSetExamplesPairFlatMapFunction;
 import org.deeplearning4j.spark.impl.common.CountPartitionsFunction;
 import org.deeplearning4j.spark.impl.common.SplitPartitionsFunction;
 import org.deeplearning4j.spark.impl.common.SplitPartitionsFunction2;
-import org.deeplearning4j.spark.impl.common.repartition.AssignIndexFunction;
 import org.deeplearning4j.spark.impl.common.repartition.BalancedPartitioner;
+import org.deeplearning4j.spark.impl.common.repartition.HashingBalancedPartitioner;
 import org.deeplearning4j.spark.impl.common.repartition.MapTupleToPairFlatMap;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -32,9 +36,7 @@ import java.io.*;
 import java.lang.reflect.Array;
 import java.net.URI;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 /**
  * Various utilities for Spark
@@ -241,21 +243,94 @@ public class SparkUtils {
                 return rdd.repartition(numPartitions);
             case Balanced:
                 return repartitionBalanceIfRequired(rdd, repartition, objectsPerPartition, numPartitions);
+            case ApproximateBalanced:
+                return repartitionApproximateBalance(rdd, repartition, numPartitions);
             default:
                 throw new RuntimeException("Unknown repartition strategy: " + repartitionStrategy);
         }
     }
 
+    public static <T> JavaRDD<T> repartitionApproximateBalance(JavaRDD<T> rdd, Repartition repartition,
+                    int numPartitions) {
+        int origNumPartitions = rdd.partitions().size();
+        switch (repartition) {
+            case Never:
+                return rdd;
+            case NumPartitionsWorkersDiffers:
+                if (origNumPartitions == numPartitions)
+                    return rdd;
+            case Always:
+                // Count each partition...
+                List<Integer> partitionCounts =
+                                rdd.mapPartitionsWithIndex(new Function2<Integer, Iterator<T>, Iterator<Integer>>() {
+                                    @Override
+                                    public Iterator<Integer> call(Integer integer, Iterator<T> tIterator)
+                                                    throws Exception {
+                                        int count = 0;
+                                        while (tIterator.hasNext()) {
+                                            tIterator.next();
+                                            count++;
+                                        }
+                                        return Collections.singletonList(count).iterator();
+                                    }
+                                }, true).collect();
+
+                Integer totalCount = 0;
+                for (Integer i : partitionCounts)
+                    totalCount += i;
+                List<Double> partitionWeights = new ArrayList<>(Math.max(numPartitions, origNumPartitions));
+                Double ideal = (double) totalCount / numPartitions;
+                // partitions in the initial set and not in the final one get -1 => elements always jump
+                // partitions in the final set not in the initial one get 0 => aim to receive the average amount
+                for (int i = 0; i < Math.min(origNumPartitions, numPartitions); i++) {
+                    partitionWeights.add((double) partitionCounts.get(i) / ideal);
+                }
+                for (int i = Math.min(origNumPartitions, numPartitions); i < Math.max(origNumPartitions,
+                                numPartitions); i++) {
+                    // we shrink the # of partitions
+                    if (i >= numPartitions)
+                        partitionWeights.add(-1D);
+                    // we enlarge the # of partitions
+                    else
+                        partitionWeights.add(0D);
+                }
+
+                // this method won't trigger a spark job, which is different from {@link org.apache.spark.rdd.RDD#zipWithIndex}
+
+                JavaPairRDD<Tuple2<Long, Integer>, T> indexedRDD = rdd.zipWithUniqueId()
+                                .mapToPair(new PairFunction<Tuple2<T, Long>, Tuple2<Long, Integer>, T>() {
+                                    @Override
+                                    public Tuple2<Tuple2<Long, Integer>, T> call(Tuple2<T, Long> tLongTuple2) {
+                                        return new Tuple2<Tuple2<Long, Integer>, T>(
+                                                        new Tuple2<Long, Integer>(tLongTuple2._2(), 0),
+                                                        tLongTuple2._1());
+                                    }
+                                });
+
+                HashingBalancedPartitioner hbp =
+                                new HashingBalancedPartitioner(Collections.singletonList(partitionWeights));
+                JavaPairRDD<Tuple2<Long, Integer>, T> partitionedRDD = indexedRDD.partitionBy(hbp);
+
+                return partitionedRDD.map(new Function<Tuple2<Tuple2<Long, Integer>, T>, T>() {
+                    @Override
+                    public T call(Tuple2<Tuple2<Long, Integer>, T> indexNPayload) {
+                        return indexNPayload._2();
+                    }
+                });
+            default:
+                throw new RuntimeException("Unknown setting for repartition: " + repartition);
+        }
+    }
 
     /**
-     * Repartition a RDD (given the {@link Repartition} setting) such that we have approximately {@code numPartitions} partitions,
-     * each of which has {@code objectsPerPartition} objects.
+     * Repartition a RDD (given the {@link Repartition} setting) such that we have approximately
+     * {@code numPartitions} partitions, each of which has {@code objectsPerPartition} objects.
      *
-     * @param rdd                 RDD to repartition
-     * @param repartition         Repartitioning setting
+     * @param rdd RDD to repartition
+     * @param repartition Repartitioning setting
      * @param objectsPerPartition Number of objects we want in each partition
-     * @param numPartitions       Number of partitions to have
-     * @param <T>                 Type of RDD
+     * @param numPartitions Number of partitions to have
+     * @param <T> Type of RDD
      * @return Repartitioned RDD, or the original RDD if no repartitioning was performed
      */
     public static <T> JavaRDD<T> repartitionBalanceIfRequired(JavaRDD<T> rdd, Repartition repartition,
@@ -281,11 +356,9 @@ public class SparkUtils {
                 int initialPartitions = partitionCounts.size();
 
                 boolean allCorrectSize = true;
-                int[] countPerPartition = new int[partitionCounts.size()];
                 int x = 0;
                 for (Tuple2<Integer, Integer> t2 : partitionCounts) {
                     int partitionSize = t2._2();
-                    countPerPartition[x++] = partitionSize;
                     allCorrectSize &= (partitionSize == objectsPerPartition);
                     totalObjects += t2._2();
                 }
@@ -297,24 +370,13 @@ public class SparkUtils {
                     }
                 }
 
-
                 if (initialPartitions == numPartitions && allCorrectSize) {
                     //Don't need to do any repartitioning here - already in the format we want
                     return rdd;
                 }
 
-                //In each partition: work out the start offset (so we can work out the index of each element)
-                int[] elementStartOffsetByPartitions = new int[countPerPartition.length];
-                for (int i = 1; i < elementStartOffsetByPartitions.length; i++) {
-                    elementStartOffsetByPartitions[i] =
-                                    elementStartOffsetByPartitions[i - 1] + countPerPartition[i - 1];
-                }
-
                 //Index each element for repartitioning (can only do manual repartitioning on a JavaPairRDD)
-                JavaRDD<Tuple2<Integer, T>> indexed = rdd.mapPartitionsWithIndex(
-                                new AssignIndexFunction<T>(elementStartOffsetByPartitions), true);
-                JavaPairRDD<Integer, T> pairIndexed =
-                                indexed.mapPartitionsToPair(new MapTupleToPairFlatMap<Integer, T>(), true);
+                JavaPairRDD<Integer, T> pairIndexed = indexedRDD(rdd);
 
                 int remainder = (totalObjects - numPartitions * objectsPerPartition) % numPartitions;
                 pairIndexed = pairIndexed
@@ -324,6 +386,15 @@ public class SparkUtils {
             default:
                 throw new RuntimeException("Unknown setting for repartition: " + repartition);
         }
+    }
+
+    static <T> JavaPairRDD<Integer, T> indexedRDD(JavaRDD<T> rdd) {
+        return rdd.zipWithIndex().mapToPair(new PairFunction<Tuple2<T, Long>, Integer, T>() {
+            @Override
+            public Tuple2<Integer, T> call(Tuple2<T, Long> elemIdx) {
+                return new Tuple2<Integer, T>(elemIdx._2().intValue(), elemIdx._1());
+            }
+        });
     }
 
     /**
@@ -441,7 +512,7 @@ public class SparkUtils {
                         rdd.flatMapToPair(new SplitDataSetExamplesPairFlatMapFunction(numPartitions));
 
         //Step 2: repartition according to the random keys
-        singleExampleDataSets = singleExampleDataSets.partitionBy(new IntPartitioner(numPartitions));
+        singleExampleDataSets = singleExampleDataSets.partitionBy(new HashPartitioner(numPartitions));
 
         //Step 3: Recombine
         return singleExampleDataSets.values().mapPartitions(new BatchDataSetsFunction(newBatchSize));

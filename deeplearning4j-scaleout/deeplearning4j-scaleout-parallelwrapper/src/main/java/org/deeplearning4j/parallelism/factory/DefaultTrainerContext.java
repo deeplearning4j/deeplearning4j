@@ -1,6 +1,7 @@
 package org.deeplearning4j.parallelism.factory;
 
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.parallelism.MagicQueue;
 import org.deeplearning4j.parallelism.ParallelWrapper;
@@ -38,12 +39,15 @@ public class DefaultTrainerContext implements TrainerContext {
      * @return the created training instance
      */
     @Override
-    public Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper) {
-        return DefaultTrainer.builder()
-                .originalModel(model)
-                .replicatedModel(model)
-                .threadId(threadId)
-                .parallelWrapper(wrapper)
-                .useMDS(useMDS).build();
+    public Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper,
+                    WorkspaceMode mode) {
+
+        DefaultTrainer trainer = DefaultTrainer.builder().originalModel(model).replicatedModel(model).threadId(threadId)
+                        .parallelWrapper(wrapper).workspaceMode(mode).useMDS(useMDS).build();
+
+        trainer.setName("DefaultTrainer thread " + threadId);
+        trainer.setDaemon(true);
+
+        return trainer;
     }
 }

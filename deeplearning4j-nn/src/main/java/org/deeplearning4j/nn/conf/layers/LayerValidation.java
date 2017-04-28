@@ -95,8 +95,14 @@ public class LayerValidation {
                 }
                 break;
             case ADADELTA:
-                if (Double.isNaN(layer.getRho()))
+                if (Double.isNaN(rho) && Double.isNaN(layer.getRho())) {
+                    layer.setRho(AdaDelta.DEFAULT_ADADELTA_RHO);
+                    log.warn("Layer \"" + layerName + "\" AdaDelta rho is automatically set to "
+                                    + AdaDelta.DEFAULT_ADADELTA_RHO
+                                    + ". Add rho to configuration to change the value.");
+                } else if (Double.isNaN(layer.getRho())) {
                     layer.setRho(rho);
+                }
 
                 if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())) {
                     layer.setEpsilon(AdaDelta.DEFAULT_ADADELTA_EPSILON);
@@ -146,7 +152,7 @@ public class LayerValidation {
         if (useDropConnect && (Double.isNaN(dropOut) && (Double.isNaN(layer.getDropOut()))))
             log.warn("Layer \"" + layerName
                             + "\" dropConnect is set to true but dropout rate has not been added to configuration.");
-        if (useDropConnect && dropOut == 0.0)
+        if (useDropConnect && layer.getDropOut() == 0.0)
             log.warn("Layer \"" + layerName + " dropConnect is set to true but dropout rate is set to 0.0");
         if (useRegularization && (Double.isNaN(l1) && layer != null && Double.isNaN(layer.getL1()) && Double.isNaN(l2)
                         && Double.isNaN(layer.getL2()) && Double.isNaN(l2Bias) && Double.isNaN(l1Bias)

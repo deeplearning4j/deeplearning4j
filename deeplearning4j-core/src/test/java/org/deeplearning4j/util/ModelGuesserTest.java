@@ -74,7 +74,7 @@ public class ModelGuesserTest {
         MultiLayerNetwork network = (MultiLayerNetwork) ModelGuesser.loadModelGuess(tempFile.getAbsolutePath());
         assertEquals(network.getLayerWiseConfigurations().toJson(), net.getLayerWiseConfigurations().toJson());
         assertEquals(net.params(), network.params());
-        assertEquals(net.getUpdater(), network.getUpdater());
+        assertEquals(net.getUpdater().getStateViewArray(), network.getUpdater().getStateViewArray());
 
     }
 

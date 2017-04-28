@@ -10,7 +10,7 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
-public interface Updater extends Serializable, Cloneable {
+public interface Updater extends Serializable {
 
     /**
      * Set the internal (historical) state view array for this updater
@@ -43,6 +43,4 @@ public interface Updater extends Serializable, Cloneable {
      * @param iteration
      */
     void update(Layer layer, Gradient gradient, int iteration, int miniBatchSize);
-
-    Updater clone();
 }

@@ -647,6 +647,11 @@ public class BarnesHutTsne implements Model {
     }
 
     @Override
+    public INDArray getGradientsViewArray() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
         throw new UnsupportedOperationException();
     }

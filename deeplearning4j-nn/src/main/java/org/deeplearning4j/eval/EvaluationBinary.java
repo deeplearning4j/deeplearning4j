@@ -28,10 +28,10 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
     //Because we want evaluation to work for large numbers of examples - and with low precision (FP16), we won't
     //use INDArrays to store the counts
-    private int[] countTruePositive;    //P=1, Act=1
-    private int[] countFalsePositive;   //P=1, Act=0
-    private int[] countTrueNegative;    //P=0, Act=0
-    private int[] countFalseNegative;   //P=0, Act=1
+    private int[] countTruePositive; //P=1, Act=1
+    private int[] countFalsePositive; //P=1, Act=0
+    private int[] countTrueNegative; //P=0, Act=0
+    private int[] countFalseNegative; //P=0, Act=1
     private ROCBinary rocBinary;
 
     private List<String> labels;
@@ -47,12 +47,12 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
      * @param size           Number of outputs
      * @param rocBinarySteps Consructor arg for {@link ROCBinary#ROCBinary(int)}
      */
-    public EvaluationBinary(int size, Integer rocBinarySteps){
+    public EvaluationBinary(int size, Integer rocBinarySteps) {
         countTruePositive = new int[size];
         countFalsePositive = new int[size];
         countTrueNegative = new int[size];
         countFalseNegative = new int[size];
-        if(rocBinarySteps != null){
+        if (rocBinarySteps != null) {
             rocBinary = new ROCBinary(rocBinarySteps);
         }
     }
@@ -64,10 +64,10 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
     @Override
     public void evalTimeSeries(INDArray labels, INDArray predictions, INDArray labelsMask) {
-        if(labelsMask == null || labelsMask.rank() == 2){
+        if (labelsMask == null || labelsMask.rank() == 2) {
             super.evalTimeSeries(labels, predictions, labelsMask);
             return;
-        } else if (labelsMask.rank() != 3){
+        } else if (labelsMask.rank() != 3) {
             throw new IllegalArgumentException("Labels must: must be rank 2 or 3. Got: " + labelsMask.rank());
         }
 
@@ -84,10 +84,10 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
         if (countTruePositive != null && countTruePositive.length != labels.size(1)) {
             throw new IllegalStateException("Labels array does not match stored state size. Expected labels array with "
-                    + "size " + countTruePositive.length + ", got labels array with size " + labels.size(1));
+                            + "size " + countTruePositive.length + ", got labels array with size " + labels.size(1));
         }
 
-        if(labels.rank() == 3){
+        if (labels.rank() == 3) {
             evalTimeSeries(labels, networkPredictions, maskArray);
             return;
         }
@@ -99,10 +99,10 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         INDArray notLabels = Nd4j.getExecutioner().execAndReturn(new Not(labels.dup()));
         INDArray notClassPredictions = Nd4j.getExecutioner().execAndReturn(new Not(classPredictions.dup()));
 
-        INDArray truePositives = classPredictions.mul(labels);          //1s where predictions are 1, and labels are 1. 0s elsewhere
-        INDArray trueNegatives = notClassPredictions.mul(notLabels);    //1s where predictions are 0, and labels are 0. 0s elsewhere
-        INDArray falsePositives = classPredictions.mul(notLabels);      //1s where predictions are 1, labels are 0
-        INDArray falseNegatives = notClassPredictions.mul(labels);      //1s where predictions are 0, labels are 1
+        INDArray truePositives = classPredictions.mul(labels); //1s where predictions are 1, and labels are 1. 0s elsewhere
+        INDArray trueNegatives = notClassPredictions.mul(notLabels); //1s where predictions are 0, and labels are 0. 0s elsewhere
+        INDArray falsePositives = classPredictions.mul(notLabels); //1s where predictions are 1, labels are 0
+        INDArray falseNegatives = notClassPredictions.mul(labels); //1s where predictions are 0, labels are 1
 
         if (maskArray != null) {
             //By multiplying by mask, we keep only those 1s that are actually present
@@ -130,7 +130,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         addInPlace(countTrueNegative, tnCount);
         addInPlace(countFalseNegative, fnCount);
 
-        if(rocBinary != null){
+        if (rocBinary != null) {
             rocBinary.eval(labels, networkPredictions, maskArray);
         }
     }
@@ -150,9 +150,10 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
             this.countFalseNegative = other.countFalseNegative;
             this.rocBinary = other.rocBinary;
         } else {
-            if(this.countTruePositive.length != other.countTruePositive.length){
+            if (this.countTruePositive.length != other.countTruePositive.length) {
                 throw new IllegalStateException("Cannot merge EvaluationBinary instances with different sizes. This "
-                        + "size: " + this.countTruePositive.length + ", other size: " + other.countTruePositive.length);
+                                + "size: " + this.countTruePositive.length + ", other size: "
+                                + other.countTruePositive.length);
             }
 
             //Both have stats
@@ -161,7 +162,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
             addInPlace(this.countFalsePositive, other.countFalsePositive);
             addInPlace(this.countFalseNegative, other.countFalseNegative);
 
-            if(this.rocBinary != null){
+            if (this.rocBinary != null) {
                 this.rocBinary.merge(other.rocBinary);
             }
         }
@@ -198,16 +199,16 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     /**
      * Get the total number of values for the specified column, accounting for any masking
      */
-    public int totalCount(int outputNum){
+    public int totalCount(int outputNum) {
         assertIndex(outputNum);
         return countTruePositive[outputNum] + countTrueNegative[outputNum] + countFalseNegative[outputNum]
-                + countFalsePositive[outputNum];
+                        + countFalsePositive[outputNum];
     }
 
     /**
      * Get the true positives count for the specified output
      */
-    public int truePositives(int outputNum){
+    public int truePositives(int outputNum) {
         assertIndex(outputNum);
         return countTruePositive[outputNum];
     }
@@ -215,7 +216,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     /**
      * Get the true negatives count for the specified output
      */
-    public int trueNegatives(int outputNum){
+    public int trueNegatives(int outputNum) {
         assertIndex(outputNum);
         return countTrueNegative[outputNum];
     }
@@ -223,7 +224,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     /**
      * Get the false positives count for the specified output
      */
-    public int falsePositives(int outputNum){
+    public int falsePositives(int outputNum) {
         assertIndex(outputNum);
         return countFalsePositive[outputNum];
     }
@@ -231,7 +232,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     /**
      * Get the false negatives count for the specified output
      */
-    public int falseNegatives(int outputNum){
+    public int falseNegatives(int outputNum) {
         assertIndex(outputNum);
         return countFalseNegative[outputNum];
     }
@@ -239,53 +240,54 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     /**
      * Get the accuracy for the specified output
      */
-    public double accuracy(int outputNum){
+    public double accuracy(int outputNum) {
         assertIndex(outputNum);
-        return (countTruePositive[outputNum] + countTrueNegative[outputNum]) / (double)totalCount(outputNum);
+        return (countTruePositive[outputNum] + countTrueNegative[outputNum]) / (double) totalCount(outputNum);
     }
 
     /**
      * Get the precision (tp / (tp + fp)) for the specified output
      */
-    public double precision(int outputNum){
+    public double precision(int outputNum) {
         assertIndex(outputNum);
         //double precision = tp / (double) (tp + fp);
-        return countTruePositive[outputNum] / (double)( countTruePositive[outputNum] + countFalsePositive[outputNum]);
+        return countTruePositive[outputNum] / (double) (countTruePositive[outputNum] + countFalsePositive[outputNum]);
     }
 
     /**
      * Get the recall (tp / (tp + fn)) for the specified output
      */
-    public double recall(int outputNum){
+    public double recall(int outputNum) {
         assertIndex(outputNum);
-        return countTruePositive[outputNum] / (double)(countTruePositive[outputNum] + countFalseNegative[outputNum]);
+        return countTruePositive[outputNum] / (double) (countTruePositive[outputNum] + countFalseNegative[outputNum]);
     }
 
     /**
      * Get the F1 score for the specified output
      */
-    public double f1(int outputNum){
+    public double f1(int outputNum) {
         assertIndex(outputNum);
 
         double precision = precision(outputNum);
         double recall = recall(outputNum);
 
-        return 2.0*(precision * recall) / (precision + recall);
+        return 2.0 * (precision * recall) / (precision + recall);
     }
 
     /**
      * Returns the {@link ROCBinary} instance, if present
      */
-    public ROCBinary getROCBinary(){
+    public ROCBinary getROCBinary() {
         return rocBinary;
     }
 
-    private void assertIndex(int outputNum){
-        if(countTruePositive == null){
-            throw new UnsupportedOperationException("EvaluationBinary does not have any stats: eval must be called first");
+    private void assertIndex(int outputNum) {
+        if (countTruePositive == null) {
+            throw new UnsupportedOperationException(
+                            "EvaluationBinary does not have any stats: eval must be called first");
         }
-        if(outputNum < 0 || outputNum >= countTruePositive.length){
-            throw new IllegalArgumentException("Invalid input: output number must be between 0 and " + (outputNum-1));
+        if (outputNum < 0 || outputNum >= countTruePositive.length) {
+            throw new IllegalArgumentException("Invalid input: output number must be between 0 and " + (outputNum - 1));
         }
     }
 
@@ -301,7 +303,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
      *
      * @param printPrecision The precision (number of decimal places) for the accuracy, f1, etc.
      */
-    public String stats(int printPrecision){
+    public String stats(int printPrecision) {
 
         StringBuilder sb = new StringBuilder();
 
@@ -315,18 +317,18 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         }
 
         String subPattern = "%-12." + printPrecision + "f";
-        String pattern = "%-" + (maxLabelsLength + 5) + "s"             //Label
-                + subPattern + subPattern + subPattern + subPattern     //Accuracy, f1, precision, recall
-                + "%-8d%-7d%-7d%-7d%-7d";                               //Total count, TP, TN, FP, FN
+        String pattern = "%-" + (maxLabelsLength + 5) + "s" //Label
+                        + subPattern + subPattern + subPattern + subPattern //Accuracy, f1, precision, recall
+                        + "%-8d%-7d%-7d%-7d%-7d"; //Total count, TP, TN, FP, FN
 
-        String patternHeader = "%-" + (maxLabelsLength+5) + "s%-12s%-12s%-12s%-12s%-8s%-7s%-7s%-7s%-7s";
+        String patternHeader = "%-" + (maxLabelsLength + 5) + "s%-12s%-12s%-12s%-12s%-8s%-7s%-7s%-7s%-7s";
 
 
 
-        List<String> headerNames = Arrays.asList("Label", "Accuracy", "F1", "Precision", "Recall", "Total",
-                "TP", "TN", "FP", "FN");
+        List<String> headerNames = Arrays.asList("Label", "Accuracy", "F1", "Precision", "Recall", "Total", "TP", "TN",
+                        "FP", "FN");
 
-        if(rocBinary != null){
+        if (rocBinary != null) {
             patternHeader += "%-12s";
             pattern += subPattern;
 
@@ -349,9 +351,9 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
             String label = (labels == null ? String.valueOf(i) : labels.get(i));
 
-            List<Object> args = Arrays.<Object>asList(label, acc, f1, precision, recall, totalCount,
-                    truePositives(i), trueNegatives(i), falsePositives(i), falseNegatives(i));
-            if(rocBinary != null){
+            List<Object> args = Arrays.<Object>asList(label, acc, f1, precision, recall, totalCount, truePositives(i),
+                            trueNegatives(i), falsePositives(i), falseNegatives(i));
+            if (rocBinary != null) {
                 args = new ArrayList<>(args);
                 args.add(rocBinary.calculateAUC(i));
             }

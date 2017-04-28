@@ -57,7 +57,7 @@ public class MagicQueueTest {
 
         int cnt = 0;
         while (!queue.isEmpty()) {
-            DataSet ds = queue.poll();
+            DataSet ds = (DataSet) queue.poll();
             assertNotEquals("Failed on iteration: " + cnt, null, ds);
             cnt++;
         }
@@ -92,7 +92,7 @@ public class MagicQueueTest {
 
         int cnt = 0;
         while (!queue.isEmpty()) {
-            DataSet ds = queue.poll();
+            DataSet ds = (DataSet) queue.poll();
             if (cnt < 4) {
                 assertNotEquals("Failed on iteration: " + cnt, null, ds);
                 cnt++;
@@ -231,7 +231,7 @@ public class MagicQueueTest {
 
         int cnt = 0;
         while (!queue.isEmpty()) {
-            DataSet ds = queue.poll(2, TimeUnit.SECONDS);
+            DataSet ds = (DataSet) queue.poll(2, TimeUnit.SECONDS);
 
             // making sure dataset isn't null
             assertNotEquals("Failed on round " + cnt, null, ds);

@@ -25,7 +25,9 @@ import java.util.Arrays;
  * @author dave@skymind.io
  */
 public class Subsampling1DLayer extends SubsamplingLayer {
-    public Subsampling1DLayer(NeuralNetConfiguration conf) { super(conf); }
+    public Subsampling1DLayer(NeuralNetConfiguration conf) {
+        super(conf);
+    }
 
     public Subsampling1DLayer(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
@@ -33,9 +35,11 @@ public class Subsampling1DLayer extends SubsamplingLayer {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        if(epsilon.rank() != 3)
-            throw new DL4JInvalidInputException("Got rank " + epsilon.rank() + " array as epsilon for Subsampling1DLayer backprop with shape "
-                    + Arrays.toString(epsilon.shape()) + ". Expected rank 3 array with shape [minibatchSize, features, length].");
+        if (epsilon.rank() != 3)
+            throw new DL4JInvalidInputException("Got rank " + epsilon.rank()
+                            + " array as epsilon for Subsampling1DLayer backprop with shape "
+                            + Arrays.toString(epsilon.shape())
+                            + ". Expected rank 3 array with shape [minibatchSize, features, length].");
 
         // add singleton fourth dimension to input and next layer's epsilon
         INDArray origInput = input;
@@ -43,7 +47,7 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);
 
         // call 2D SubsamplingLayer's backpropGradient method
-        Pair<Gradient,INDArray> gradientEpsNext = super.backpropGradient(epsilon);
+        Pair<Gradient, INDArray> gradientEpsNext = super.backpropGradient(epsilon);
         INDArray epsNext = gradientEpsNext.getSecond();
 
         // remove singleton fourth dimension from input and current epsilon
@@ -55,9 +59,10 @@ public class Subsampling1DLayer extends SubsamplingLayer {
 
     @Override
     public INDArray activate(boolean training) {
-        if(input.rank() != 3)
-            throw new DL4JInvalidInputException("Got rank " + input.rank() + " array as input to Subsampling1DLayer with shape "
-                    + Arrays.toString(input.shape()) + ". Expected rank 3 array with shape [minibatchSize, features, length].");
+        if (input.rank() != 3)
+            throw new DL4JInvalidInputException("Got rank " + input.rank()
+                            + " array as input to Subsampling1DLayer with shape " + Arrays.toString(input.shape())
+                            + ". Expected rank 3 array with shape [minibatchSize, features, length].");
 
         // add singleton fourth dimension to input
         INDArray origInput = input;

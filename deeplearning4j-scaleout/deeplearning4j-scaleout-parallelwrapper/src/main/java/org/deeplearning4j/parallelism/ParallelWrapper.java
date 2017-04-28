@@ -10,6 +10,7 @@ import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
@@ -61,7 +62,10 @@ public class ParallelWrapper implements AutoCloseable {
     protected List<IterationListener> listeners = new ArrayList<>();
     protected StatsStorageRouter storageRouter;
     protected boolean isMQ;
+    protected WorkspaceMode workspaceMode;
     private Object[] trainerContextArgs;
+
+    private MagicQueue mq;
 
     // log uncaught exceptions
     Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
@@ -124,7 +128,19 @@ public class ParallelWrapper implements AutoCloseable {
 
         MultiDataSetIterator iterator;
         if (prefetchSize > 0 && source.asyncSupported()) {
-            iterator = new AsyncMultiDataSetIterator(source, prefetchSize);
+            if (isMQ) {
+                if (workers % Nd4j.getAffinityManager().getNumberOfDevices() != 0)
+                    log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
+                                    Nd4j.getAffinityManager().getNumberOfDevices());
+
+                if (mq == null)
+                    mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL)
+                                    .setType(MagicQueue.Type.MDS)
+                                    .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
+
+                iterator = new AsyncMultiDataSetIterator(source, prefetchSize * workers, mq);
+            } else
+                iterator = new AsyncMultiDataSetIterator(source, prefetchSize);
         } else
             iterator = source;
 
@@ -200,8 +216,7 @@ public class ParallelWrapper implements AutoCloseable {
             }
 
             Nd4j.averageAndPropagate(model.params(), params);
-        }
-        else {
+        } else {
             INDArray params = Nd4j.zeros(model.params().shape());
             int cnt = 0;
             for (; cnt < workers && cnt < locker.get(); cnt++) {
@@ -301,21 +316,20 @@ public class ParallelWrapper implements AutoCloseable {
                     RoutingIterationListener rl = (RoutingIterationListener) l;
                     if (statsStorage == null && rl.getStorageRouter() == null) {
                         log.warn("RoutingIterationListener provided without providing any StatsStorage instance. Iterator may not function without one. Listener: {}",
-                                l);
+                                        l);
                     } else if (rl.getStorageRouter() != null && !(rl.getStorageRouter() instanceof Serializable)) {
                         //Spark would throw a (probably cryptic) serialization exception later anyway...
                         throw new IllegalStateException(
-                                "RoutingIterationListener provided with non-serializable storage router "
-                                        + "\nRoutingIterationListener class: " + rl.getClass().getName()
-                                        + "\nStatsStorageRouter class: "
-                                        + rl.getStorageRouter().getClass().getName());
+                                        "RoutingIterationListener provided with non-serializable storage router "
+                                                        + "\nRoutingIterationListener class: " + rl.getClass().getName()
+                                                        + "\nStatsStorageRouter class: "
+                                                        + rl.getStorageRouter().getClass().getName());
                     }
                 }
             }
 
             this.listeners.addAll(listeners);
-        }
-        else {
+        } else {
             this.listeners.clear();
         }
 
@@ -338,13 +352,17 @@ public class ParallelWrapper implements AutoCloseable {
             if (isMQ) {
                 if (workers % Nd4j.getAffinityManager().getNumberOfDevices() != 0)
                     log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
-                            Nd4j.getAffinityManager().getNumberOfDevices());
+                                    Nd4j.getAffinityManager().getNumberOfDevices());
 
-                MagicQueue queue = new MagicQueue.Builder().setCapacityPerFlow(8).setMode(MagicQueue.Mode.SEQUENTIAL)
-                        .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
-                iterator = new AsyncDataSetIterator(source, prefetchSize, queue);
+                if (mq == null)
+                    mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL)
+                                    .setType(MagicQueue.Type.DS)
+                                    .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
+
+                iterator = new AsyncDataSetIterator(source, prefetchSize * workers, mq);
+
             } else
-                iterator = new AsyncDataSetIterator(source, prefetchSize);
+                iterator = new AsyncDataSetIterator(source, prefetchSize * workers);
         } else
             iterator = source;
 
@@ -361,7 +379,7 @@ public class ParallelWrapper implements AutoCloseable {
             int pos = locker.getAndIncrement();
             if (zoo == null)
                 throw new IllegalStateException(
-                        "ParallelWrapper.shutdown() has been called too early and will fail from this point forward.");
+                                "ParallelWrapper.shutdown() has been called too early and will fail from this point forward.");
             zoo[pos].feedDataSet(dataSet);
 
             /*
@@ -402,8 +420,7 @@ public class ParallelWrapper implements AutoCloseable {
                                     }
 
                                     Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
-                                }
-                                else {
+                                } else {
                                     INDArray state = Nd4j.zeros(updater.getStateViewArray().shape());
                                     int cnt = 0;
                                     for (; cnt < workers && cnt < locker.get(); cnt++) {
@@ -443,15 +460,12 @@ public class ParallelWrapper implements AutoCloseable {
 
     private void createZooIfNeccessary(boolean useMDS) {
         if (zoo == null) {
-            trainerContext.init(model,trainerContextArgs);
+            trainerContext.init(model, trainerContextArgs);
             zoo = new Trainer[workers];
             for (int cnt = 0; cnt < workers; cnt++) {
                 // we pass true here, to tell Trainer to use MultiDataSet queue for training
-                zoo[cnt] = trainerContext.create(cnt,
-                        model,
-                        Nd4j.getAffinityManager().getDeviceForCurrentThread(),
-                        useMDS,
-                        this);
+                zoo[cnt] = trainerContext.create(cnt, model, Nd4j.getAffinityManager().getDeviceForCurrentThread(),
+                                useMDS, this, workspaceMode);
                 zoo[cnt].setUncaughtExceptionHandler(handler);
                 zoo[cnt].start();
             }
@@ -469,6 +483,7 @@ public class ParallelWrapper implements AutoCloseable {
         protected boolean isMQ = false; // Nd4j.getAffinityManager().getNumberOfDevices() > 1;
         protected TrainerContext trainerContext = new DefaultTrainerContext();
         protected Object[] trainerContextArgs;
+        protected WorkspaceMode workspaceMode = WorkspaceMode.SEPARATE;
 
         /**
          * Transer context args are for calling a
@@ -477,7 +492,7 @@ public class ParallelWrapper implements AutoCloseable {
          * @param trainerContextArgs the args to use (maybe null)
          * @return
          */
-        public Builder trainerContextArgs(Object...trainerContextArgs) {
+        public Builder trainerContextArgs(Object... trainerContextArgs) {
             this.trainerContextArgs = trainerContextArgs;
             return this;
         }
@@ -496,6 +511,12 @@ public class ParallelWrapper implements AutoCloseable {
             this.trainerContext = trainerContext;
             return this;
         }
+
+        public Builder workspaceMode(@NonNull WorkspaceMode mode) {
+            this.workspaceMode = mode;
+            return this;
+        }
+
         /**
          * Build ParallelWrapper for MultiLayerNetwork
          *
@@ -616,13 +637,43 @@ public class ParallelWrapper implements AutoCloseable {
             wrapper.averageUpdaters = this.averageUpdaters;
             wrapper.legacyAveraging = this.legacyAveraging;
             wrapper.isMQ = this.isMQ;
+            wrapper.workspaceMode = this.workspaceMode;
 
             return wrapper;
         }
     }
 
+    private static IterationListener cloneListener(IterationListener original) {
+        if (original instanceof RoutingIterationListener) {
+            return ((RoutingIterationListener) original).clone();
+        }
+        return original;
+    }
 
+    private void configureListeners(String workerUUID, Collection<IterationListener> oldListeners,
+                    Collection<IterationListener> replicatedListeners) {
+        for (IterationListener listener : oldListeners) {
+            IterationListener l = cloneListener(listener);
 
+            if (l instanceof RoutingIterationListener) {
+                RoutingIterationListener rl = (RoutingIterationListener) l;
+                //We're assuming session ID is set by the original RoutingIterationListener constructor, which means
+                // it will be synced across all cloned instances
+                rl.setSessionID(((RoutingIterationListener) listener).getSessionID());
+                rl.setWorkerID(workerUUID);
 
+                StatsStorageRouter currentRouter = ((RoutingIterationListener) listener).getStorageRouter();
+                if (currentRouter != null) {
+                    //User has set router on the listener/model, instead of via the
+                    // setListeners(StatsStorageRouter, ...) method
+                    rl.setStorageRouter(currentRouter);
+                } else {
+                    rl.setStorageRouter(ParallelWrapper.this.storageRouter);
+                }
+
+            }
+            replicatedListeners.add(l);
+        }
+    }
 }
 

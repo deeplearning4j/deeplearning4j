@@ -26,27 +26,26 @@ public class TestTransferStatsCollection {
     @Test
     public void test() throws IOException {
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .layer(1, new OutputLayer.Builder().nIn(10).nOut(10).build()).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
+                        .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                        .layer(1, new OutputLayer.Builder().nIn(10).nOut(10).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
 
-        MultiLayerNetwork net2 = new TransferLearning.Builder(net)
-                .fineTuneConfiguration(new FineTuneConfiguration.Builder()
-                .learningRate(0.01).build())
-                .setFeatureExtractor(0)
-                .build();
+        MultiLayerNetwork net2 =
+                        new TransferLearning.Builder(net)
+                                        .fineTuneConfiguration(
+                                                        new FineTuneConfiguration.Builder().learningRate(0.01).build())
+                                        .setFeatureExtractor(0).build();
 
-        File f = Files.createTempFile("dl4jTestTransferStatsCollection","bin").toFile();
+        File f = Files.createTempFile("dl4jTestTransferStatsCollection", "bin").toFile();
         f.delete();
         net2.setListeners(new StatsListener(new FileStatsStorage(f)));
 
         //Previosuly: failed on frozen layers
-        net2.fit(new DataSet(Nd4j.rand(8,10), Nd4j.rand(8,10)));
+        net2.fit(new DataSet(Nd4j.rand(8, 10), Nd4j.rand(8, 10)));
 
         f.deleteOnExit();
     }

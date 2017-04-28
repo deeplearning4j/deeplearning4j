@@ -26,7 +26,8 @@ import java.util.Map;
  *
  * @author dave@skymind.io
  */
-@Data @NoArgsConstructor
+@Data
+@NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 public class Convolution1DLayer extends ConvolutionLayer {
@@ -36,11 +37,14 @@ public class Convolution1DLayer extends ConvolutionLayer {
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
-        org.deeplearning4j.util.LayerValidation.assertNInNOutSet("Convolution1DLayer", getLayerName(), layerIndex, getNIn(), getNOut());
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
+        org.deeplearning4j.util.LayerValidation.assertNInNOutSet("Convolution1DLayer", getLayerName(), layerIndex,
+                        getNIn(), getNOut());
 
-        org.deeplearning4j.nn.layers.convolution.Convolution1DLayer ret
-                = new org.deeplearning4j.nn.layers.convolution.Convolution1DLayer(conf);
+        org.deeplearning4j.nn.layers.convolution.Convolution1DLayer ret =
+                        new org.deeplearning4j.nn.layers.convolution.Convolution1DLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -53,17 +57,19 @@ public class Convolution1DLayer extends ConvolutionLayer {
     @Override
     public InputType getOutputType(int layerIndex, InputType inputType) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
-            throw new IllegalStateException("Invalid input for 1D CNN layer (layer index = " + layerIndex +
-                    ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: " + inputType);
+            throw new IllegalStateException("Invalid input for 1D CNN layer (layer index = " + layerIndex
+                            + ", layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: "
+                            + inputType);
         }
 
         return InputType.recurrent(nOut);
     }
 
     @Override
-    public void setNIn(InputType inputType, boolean override){
+    public void setNIn(InputType inputType, boolean override) {
         if (inputType == null || inputType.getType() != InputType.Type.RNN) {
-            throw new IllegalStateException("Invalid input for 1D CNN layer (layer name = \"" + getLayerName() + "\"): expect RNN input type with size > 0. Got: " + inputType);
+            throw new IllegalStateException("Invalid input for 1D CNN layer (layer name = \"" + getLayerName()
+                            + "\"): expect RNN input type with size > 0. Got: " + inputType);
         }
 
         if (nIn <= 0 || override) {
@@ -74,8 +80,9 @@ public class Convolution1DLayer extends ConvolutionLayer {
 
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
-        if(inputType == null ){
-            throw new IllegalStateException("Invalid input for Convolution1D layer (layer name=\"" + getLayerName() + "\"): input is null");
+        if (inputType == null) {
+            throw new IllegalStateException("Invalid input for Convolution1D layer (layer name=\"" + getLayerName()
+                            + "\"): input is null");
         }
 
         return InputTypeUtil.getPreprocessorForInputTypeRnnLayers(inputType, getLayerName());
@@ -97,26 +104,26 @@ public class Convolution1DLayer extends ConvolutionLayer {
         }
 
         public Builder(int kernelSize, int stride, int padding) {
-            this.kernelSize = new int[] { kernelSize, 1 };
-            this.stride = new int[]{stride, 1};
-            this.padding = new int[]{padding, 0};
+            this.kernelSize = new int[] {kernelSize, 1};
+            this.stride = new int[] {stride, 1};
+            this.padding = new int[] {padding, 0};
         }
 
         /**
          * Size of the convolution
          * @param kernelSize the length of the kernel
          */
-        public Builder kernelSize(int kernelSize){
-            this.kernelSize = new int[]{kernelSize,1};
+        public Builder kernelSize(int kernelSize) {
+            this.kernelSize = new int[] {kernelSize, 1};
             return this;
         }
 
-        public Builder stride(int stride){
+        public Builder stride(int stride) {
             this.stride[0] = stride;
             return this;
         }
 
-        public Builder padding(int padding){
+        public Builder padding(int padding) {
             this.padding[0] = padding;
             return this;
         }

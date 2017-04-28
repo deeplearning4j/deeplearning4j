@@ -18,6 +18,7 @@ import org.deeplearning4j.nn.layers.normalization.LocalResponseNormalizationHelp
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -55,7 +56,7 @@ public class CuDNNGradientChecks {
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
         String[] activFns = {"sigmoid", "tanh"};
-        boolean[] characteristic = {false, true};    //If true: run some backprop steps first
+        boolean[] characteristic = {false, true}; //If true: run some backprop steps first
 
         int[] minibatchSizes = {1, 4};
         int width = 6;
@@ -71,64 +72,50 @@ public class CuDNNGradientChecks {
             for (boolean doLearningFirst : characteristic) {
                 for (int minibatchSize : minibatchSizes) {
 
-                    INDArray input = Nd4j.rand(new int[]{minibatchSize, inputDepth, height, width});
+                    INDArray input = Nd4j.rand(new int[] {minibatchSize, inputDepth, height, width});
                     INDArray labels = Nd4j.zeros(minibatchSize, nOut);
                     for (int i = 0; i < minibatchSize; i++) {
                         labels.putScalar(i, r.nextInt(nOut), 1.0);
                     }
 
-                    MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
-                            .regularization(false)
-                            .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
-                            .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-1, 1))
-                            .updater(Updater.NONE)
-                            .seed(12345L)
-                            .list()
-                            .layer(0, new ConvolutionLayer.Builder(2, 2)
-                                    .stride(2, 2)
-                                    .padding(1, 1)
-                                    .nOut(3)
-                                    .activation(afn)
-                                    .build())
-                            .layer(1, new ConvolutionLayer.Builder(2, 2)
-                                    .stride(2, 2)
-                                    .padding(0, 0)
-                                    .nOut(3)
-                                    .activation(afn)
-                                    .build())
-                            .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                    .activation(Activation.SOFTMAX)
-                                    .nOut(nOut)
-                                    .build())
-                            .setInputType(InputType.convolutional(height, width, inputDepth))
-                            .pretrain(false).backprop(true);
+                    MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().regularization(false)
+                                    .optimizationAlgo(OptimizationAlgorithm.CONJUGATE_GRADIENT)
+                                    .weightInit(WeightInit.DISTRIBUTION).dist(new UniformDistribution(-1, 1))
+                                    .updater(Updater.NONE).seed(12345L).list()
+                                    .layer(0, new ConvolutionLayer.Builder(2, 2).stride(2, 2).padding(1, 1).nOut(3)
+                                                    .activation(afn).build())
+                                    .layer(1, new ConvolutionLayer.Builder(2, 2).stride(2, 2).padding(0, 0).nOut(3)
+                                                    .activation(afn).build())
+                                    .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                                    .activation(Activation.SOFTMAX).nOut(nOut).build())
+                                    .setInputType(InputType.convolutional(height, width, inputDepth)).pretrain(false)
+                                    .backprop(true);
 
                     MultiLayerConfiguration conf = builder.build();
 
                     MultiLayerNetwork mln = new MultiLayerNetwork(conf);
                     mln.init();
 
-                    org.deeplearning4j.nn.layers.convolution.ConvolutionLayer c0
-                            = (org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) mln.getLayer(0);
+                    org.deeplearning4j.nn.layers.convolution.ConvolutionLayer c0 =
+                                    (org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) mln.getLayer(0);
                     ConvolutionHelper ch0 = (ConvolutionHelper) f.get(c0);
                     assertTrue(ch0 instanceof CudnnConvolutionHelper);
 
-                    org.deeplearning4j.nn.layers.convolution.ConvolutionLayer c1
-                            = (org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) mln.getLayer(1);
+                    org.deeplearning4j.nn.layers.convolution.ConvolutionLayer c1 =
+                                    (org.deeplearning4j.nn.layers.convolution.ConvolutionLayer) mln.getLayer(1);
                     ConvolutionHelper ch1 = (ConvolutionHelper) f.get(c1);
                     assertTrue(ch1 instanceof CudnnConvolutionHelper);
 
                     //-------------------------------
                     //For debugging/comparison to no-cudnn case: set helper field to null
-//                    f.set(c0, null);
-//                    f.set(c1, null);
-//                    assertNull(f.get(c0));
-//                    assertNull(f.get(c1));
+                    //                    f.set(c0, null);
+                    //                    f.set(c1, null);
+                    //                    assertNull(f.get(c0));
+                    //                    assertNull(f.get(c1));
                     //-------------------------------
 
 
-                    String name = new Object() {
-                    }.getClass().getEnclosingMethod().getName();
+                    String name = new Object() {}.getClass().getEnclosingMethod().getName();
 
                     if (doLearningFirst) {
                         //Run a number of iterations of learning
@@ -142,8 +129,8 @@ public class CuDNNGradientChecks {
                         double scoreAfter = mln.score();
                         //Can't test in 'characteristic mode of operation' if not learning
                         String msg = name + " - score did not (sufficiently) decrease during learning - activationFn="
-                                + afn + ", doLearningFirst= " + doLearningFirst
-                                + " (before=" + scoreBefore + ", scoreAfter=" + scoreAfter + ")";
+                                        + afn + ", doLearningFirst= " + doLearningFirst + " (before=" + scoreBefore
+                                        + ", scoreAfter=" + scoreAfter + ")";
                         assertTrue(msg, scoreAfter < 0.8 * scoreBefore);
                     }
 
@@ -153,8 +140,8 @@ public class CuDNNGradientChecks {
                             System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
                     }
 
-                    boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-                            PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+                    boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
                     assertTrue(gradOK);
                 }
@@ -170,34 +157,23 @@ public class CuDNNGradientChecks {
         int depth = 1;
         int hw = 4;
         int nOut = 4;
-        INDArray input = Nd4j.rand(new int[]{minibatch, depth, hw, hw});
+        INDArray input = Nd4j.rand(new int[] {minibatch, depth, hw, hw});
         INDArray labels = Nd4j.zeros(minibatch, nOut);
         Random r = new Random(12345);
-        for( int i=0; i<minibatch; i++ ){
-            labels.putScalar(i,r.nextInt(nOut),1.0);
+        for (int i = 0; i < minibatch; i++) {
+            labels.putScalar(i, r.nextInt(nOut), 1.0);
         }
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
-                .learningRate(1.0)
-                .regularization(false)
-                .updater(Updater.NONE)
-                .seed(12345L)
-                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 2))
-                .list()
-                .layer(0, new ConvolutionLayer.Builder()
-                        .kernelSize(2,2)
-                        .stride(1,1)
-                        .nIn(depth).nOut(2)
-                        .activation(Activation.IDENTITY)
-                        .build())
-                .layer(1, new BatchNormalization.Builder().build())
-                .layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build())
-                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX)
-                        .nOut(nOut)
-                        .build())
-                .setInputType(InputType.convolutional(hw,hw,depth))
-                .pretrain(false).backprop(true);
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().learningRate(1.0)
+                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 2)).list()
+                        .layer(0, new ConvolutionLayer.Builder().kernelSize(2, 2).stride(1, 1).nIn(depth).nOut(2)
+                                        .activation(Activation.IDENTITY).build())
+                        .layer(1, new BatchNormalization.Builder().build())
+                        .layer(2, new ActivationLayer.Builder().activation(Activation.TANH).build())
+                        .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nOut(nOut).build())
+                        .setInputType(InputType.convolutional(hw, hw, depth)).pretrain(false).backprop(true);
 
         MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
         mln.init();
@@ -205,15 +181,15 @@ public class CuDNNGradientChecks {
         Field f = org.deeplearning4j.nn.layers.normalization.BatchNormalization.class.getDeclaredField("helper");
         f.setAccessible(true);
 
-        org.deeplearning4j.nn.layers.normalization.BatchNormalization b
-                = (org.deeplearning4j.nn.layers.normalization.BatchNormalization) mln.getLayer(1);
+        org.deeplearning4j.nn.layers.normalization.BatchNormalization b =
+                        (org.deeplearning4j.nn.layers.normalization.BatchNormalization) mln.getLayer(1);
         BatchNormalizationHelper bn = (BatchNormalizationHelper) f.get(b);
         assertTrue(bn instanceof CudnnBatchNormalizationHelper);
 
         //-------------------------------
         //For debugging/comparison to no-cudnn case: set helper field to null
-//        f.set(b, null);
-//        assertNull(f.get(b));
+        //        f.set(b, null);
+        //        assertNull(f.get(b));
         //-------------------------------
 
         if (PRINT_RESULTS) {
@@ -221,8 +197,8 @@ public class CuDNNGradientChecks {
                 System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
         assertTrue(gradOK);
     }
@@ -235,44 +211,39 @@ public class CuDNNGradientChecks {
         int depth = 6;
         int hw = 5;
         int nOut = 4;
-        INDArray input = Nd4j.rand(new int[]{minibatch, depth, hw, hw});
+        INDArray input = Nd4j.rand(new int[] {minibatch, depth, hw, hw});
         INDArray labels = Nd4j.zeros(minibatch, nOut);
         Random r = new Random(12345);
-        for( int i=0; i<minibatch; i++ ){
-            labels.putScalar(i,r.nextInt(nOut),1.0);
+        for (int i = 0; i < minibatch; i++) {
+            labels.putScalar(i, r.nextInt(nOut), 1.0);
         }
 
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
-                .learningRate(1.0)
-                .regularization(false)
-                .updater(Updater.NONE)
-                .seed(12345L)
-                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 2))
-                .list()
-                .layer(0, new ConvolutionLayer.Builder().nOut(6).kernelSize(2,2).stride(1,1).activation(Activation.TANH).build())
-                .layer(1, new LocalResponseNormalization.Builder().build())
-                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX)
-                        .nOut(nOut)
-                        .build())
-                .setInputType(InputType.convolutional(hw,hw,depth))
-                .pretrain(false).backprop(true);
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().learningRate(1.0)
+                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 2)).list()
+                        .layer(0, new ConvolutionLayer.Builder().nOut(6).kernelSize(2, 2).stride(1, 1)
+                                        .activation(Activation.TANH).build())
+                        .layer(1, new LocalResponseNormalization.Builder().build())
+                        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nOut(nOut).build())
+                        .setInputType(InputType.convolutional(hw, hw, depth)).pretrain(false).backprop(true);
 
         MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
         mln.init();
 
-        Field f = org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization.class.getDeclaredField("helper");
+        Field f = org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization.class
+                        .getDeclaredField("helper");
         f.setAccessible(true);
 
-        org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization l
-                = (org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization) mln.getLayer(1);
+        org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization l =
+                        (org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization) mln.getLayer(1);
         LocalResponseNormalizationHelper lrn = (LocalResponseNormalizationHelper) f.get(l);
         assertTrue(lrn instanceof CudnnLocalResponseNormalizationHelper);
 
         //-------------------------------
         //For debugging/comparison to no-cudnn case: set helper field to null
-//        f.set(l, null);
-//        assertNull(f.get(l));
+        //        f.set(l, null);
+        //        assertNull(f.get(l));
         //-------------------------------
 
         if (PRINT_RESULTS) {
@@ -280,8 +251,8 @@ public class CuDNNGradientChecks {
                 System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
         }
 
-        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR, DEFAULT_MIN_ABS_ERROR,
-                PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
 
         assertTrue(gradOK);
     }

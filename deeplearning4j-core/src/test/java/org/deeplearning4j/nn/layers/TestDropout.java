@@ -1,14 +1,20 @@
 package org.deeplearning4j.nn.layers;
 
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
+import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -18,6 +24,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.lang.reflect.Field;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -30,17 +37,20 @@ public class TestDropout {
         //Layer input: values should be set to either 0.0 or 2.0x original value
 
         int nIn = 8;
-        int nOut = 4;
+        int nOut = 8;
 
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(Updater.SGD)
                         .iterations(1).regularization(true).dropOut(0.5).list()
-                        .layer(0, new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MSE).nIn(nIn)
-                                        .nOut(nOut).weightInit(WeightInit.XAVIER).build())
+                        .layer(0, new OutputLayer.Builder().activation(Activation.IDENTITY)
+                                        .lossFunction(LossFunctions.LossFunction.MSE).nIn(nIn).nOut(nOut)
+                                        .weightInit(WeightInit.XAVIER).build())
                         .backprop(true).pretrain(false).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
+
+        net.getLayer(0).getParam("W").assign(Nd4j.eye(nIn));
 
         int nTests = 15;
 
@@ -51,13 +61,13 @@ public class TestDropout {
             INDArray out = Nd4j.rand(1, nOut);
             INDArray inCopy = in.dup();
 
-            net.fit(new DataSet(in, out));
+            List<INDArray> l = net.feedForward(in, true);
 
-            INDArray l0Input = net.getLayer(0).input();
+            INDArray postDropout = l.get(l.size() - 1);
             //Dropout occurred. Expect inputs to be either scaled 2x original, or set to 0.0 (with dropout = 0.5)
             for (int j = 0; j < inCopy.length(); j++) {
                 double origValue = inCopy.getDouble(j);
-                double doValue = l0Input.getDouble(j);
+                double doValue = postDropout.getDouble(j);
                 if (doValue > 0.0) {
                     //Input was kept -> should be scaled by factor of (1.0/0.5 = 2)
                     assertEquals(origValue * 2.0, doValue, 0.0001);
@@ -92,6 +102,8 @@ public class TestDropout {
 
 
     @Test
+    @Ignore //Due to input field changes/clearing (with workspaces) - we can't inspect the input arrays any more
+    //Consequently, it may not be possible to keep this test
     public void testDropoutMultiLayer() throws Exception {
         //Testing dropout with multiple layers
         //Layer input: values should be set to either 0.0 or 2.0x original value
@@ -184,7 +196,4 @@ public class TestDropout {
             fail("Too many instances of dropout not being applied");
         }
     }
-
-
-
 }

@@ -329,4 +329,36 @@ public class MultiLayerNeuralNetConfigurationTest {
     }
 
 
+    @Test
+    public void testBiasLr() {
+        //setup the network
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).learningRate(1e-2)
+                        .biasLearningRate(0.5).updater(Updater.ADAM).list()
+                        .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).weightInit(WeightInit.XAVIER)
+                                        .activation(Activation.RELU).build())
+                        .layer(1, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).build())
+                        .layer(2, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).biasLearningRate(0.25)
+                                        .build())
+                        .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(10)
+                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
+                        .setInputType(InputType.convolutional(28, 28, 1)).build();
+
+        org.deeplearning4j.nn.conf.layers.Layer l0 = conf.getConf(0).getLayer();
+        org.deeplearning4j.nn.conf.layers.Layer l1 = conf.getConf(1).getLayer();
+        org.deeplearning4j.nn.conf.layers.Layer l2 = conf.getConf(2).getLayer();
+        org.deeplearning4j.nn.conf.layers.Layer l3 = conf.getConf(3).getLayer();
+
+        assertEquals(0.5, l0.getBiasLearningRate(), 1e-6);
+        assertEquals(1e-2, l0.getLearningRate(), 1e-6);
+
+        assertEquals(0.5, l1.getBiasLearningRate(), 1e-6);
+        assertEquals(1e-2, l1.getLearningRate(), 1e-6);
+
+        assertEquals(0.25, l2.getBiasLearningRate(), 1e-6);
+        assertEquals(1e-2, l2.getLearningRate(), 1e-6);
+
+        assertEquals(0.5, l3.getBiasLearningRate(), 1e-6);
+        assertEquals(1e-2, l3.getLearningRate(), 1e-6);
+    }
+
 }

@@ -13,6 +13,6 @@ package org.deeplearning4j.spark.api;
  * @author Alex Black
  */
 public enum RepartitionStrategy {
-    SparkDefault, Balanced
+    SparkDefault, Balanced, ApproximateBalanced
 
 }

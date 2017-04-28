@@ -18,6 +18,7 @@ import org.deeplearning4j.ui.stats.impl.DefaultStatsInitializationConfiguration;
 import org.deeplearning4j.ui.stats.impl.DefaultStatsUpdateConfiguration;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.nativeblas.NativeOps;
@@ -235,11 +236,13 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         if (storeActivations() && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
             //Assumption: we have input, layer 0, layer 1, ...
             activationsMap = new HashMap<>();
-            int count = 0;
-            for (INDArray arr : activations) {
-                String layerName = (count == 0 ? "input" : String.valueOf(count - 1));
-                activationsMap.put(layerName, arr);
-                count++;
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                int count = 0;
+                for (INDArray arr : activations) {
+                    String layerName = (count == 0 ? "input" : String.valueOf(count - 1));
+                    activationsMap.put(layerName, arr.dup());
+                    count++;
+                }
             }
         }
     }
@@ -249,7 +252,12 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
         int iterCount = getModelInfo(model).iterCount;
         if (storeActivations() && updateConfig.reportingFrequency() > 0
                         && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
-            activationsMap = activations;
+            activationsMap = new HashMap<>();
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                for (Map.Entry<String, INDArray> e : activations.entrySet()) {
+                    activationsMap.put(e.getKey(), e.getValue().dup());
+                }
+            }
         }
     }
 
@@ -260,8 +268,10 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
                         && (iterCount == 0 || iterCount % updateConfig.reportingFrequency() == 0)) {
             Gradient g = model.gradient();
             gradientsPreUpdateMap.clear();
-            for (Map.Entry<String, INDArray> entry : g.gradientForVariable().entrySet()) {
-                gradientsPreUpdateMap.put(entry.getKey(), entry.getValue().dup()); //Need to clone: will be modified (updated) in-place soon...
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                for (Map.Entry<String, INDArray> entry : g.gradientForVariable().entrySet()) {
+                    gradientsPreUpdateMap.put(entry.getKey(), entry.getValue().dup()); //Need to clone: will be modified (updated) in-place soon...
+                }
             }
         }
     }

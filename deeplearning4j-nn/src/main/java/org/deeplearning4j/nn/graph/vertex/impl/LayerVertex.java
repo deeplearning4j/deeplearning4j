@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.graph.vertex.impl;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
@@ -41,6 +42,7 @@ import java.util.Arrays;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class LayerVertex extends BaseGraphVertex {
 
     private Layer layer;

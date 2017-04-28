@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -67,10 +68,10 @@ public class LocalResponseNormalization
         try {
             helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnLocalResponseNormalizationHelper")
                             .asSubclass(LocalResponseNormalizationHelper.class).newInstance();
-            log.debug("CudnnLocalResponseNormalizationHelper successfully loaded");
+            log.debug("CudnnLocalResponseNormalizationHelper successfully initialized");
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
-                log.warn("Could not load CudnnLocalResponseNormalizationHelper", t);
+                log.warn("Could not initialize CudnnLocalResponseNormalizationHelper", t);
             }
         }
     }
@@ -165,10 +166,10 @@ public class LocalResponseNormalization
         }
 
         // unitScale = (k + alpha * sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )
-        unitScale = sumPart.mul(alpha).addi(k);
+        unitScale = sumPart.mul(alpha).addi(k).leverageTo(ComputationGraph.workspaceExternal);
         // y = x * unitScale**-beta
-        scale = Transforms.pow(unitScale, -beta);
-        activations = input.mul(scale);
+        scale = Transforms.pow(unitScale, -beta).leverageTo(ComputationGraph.workspaceExternal);
+        activations = input.mul(scale).leverageTo(ComputationGraph.workspaceExternal);
         return activations;
     }
 

@@ -30,6 +30,7 @@ public class PerformanceListener implements IterationListener {
     private boolean reportSample = true;
     private boolean reportBatch = true;
     private boolean reportIteration = true;
+    private boolean reportEtl = true;
     private boolean reportTime = true;
 
 
@@ -102,6 +103,12 @@ public class PerformanceListener implements IterationListener {
             if (Nd4j.getAffinityManager().getNumberOfDevices() > 1)
                 builder.append("Device: [").append(Nd4j.getAffinityManager().getDeviceForCurrentThread()).append("]; ");
 
+            if (reportEtl) {
+                long time = (model instanceof MultiLayerNetwork) ? ((MultiLayerNetwork) model).getLastEtlTime()
+                                : ((ComputationGraph) model).getLastEtlTime();
+                builder.append("ETL: ").append(time).append(" ms; ");
+            }
+
             if (reportIteration)
                 builder.append("iteration ").append(iterationCount.get().get()).append("; ");
 
@@ -132,6 +139,7 @@ public class PerformanceListener implements IterationListener {
         private boolean reportBatch = true;
         private boolean reportIteration = true;
         private boolean reportTime = true;
+        private boolean reportEtl = true;
 
         public Builder() {
 
@@ -156,6 +164,17 @@ public class PerformanceListener implements IterationListener {
          */
         public Builder reportTime(boolean reallyReport) {
             this.reportTime = reallyReport;
+            return this;
+        }
+
+        /**
+         * This method defines, if ETL time per iteration should be reported together with other data
+         *
+         * @param reallyReport
+         * @return
+         */
+        public Builder reportETL(boolean reallyReport) {
+            this.reportEtl = reallyReport;
             return this;
         }
 

@@ -8,7 +8,9 @@ import org.apache.spark.Partitioner;
  * Maps each value to key % numPartitions
  *
  * @author Alex Black
+ * @deprecated Use {@link org.apache.spark.HashPartitioner} instead
  */
+@Deprecated
 @AllArgsConstructor
 public class IntPartitioner extends Partitioner {
 
