@@ -64,7 +64,7 @@ public class NearestNeighborsServerTest {
                 }
             }
         });
-        server.runMain(new String[] {"--ndarrayPath", fileSave.getAbsolutePath(), "-dp", "9050"});
+        server.runMain(new String[] {"--ndarrayPath", fileSave.getAbsolutePath(), "--nearestNeighborsPort", "9050"});
     }
 
     @AfterClass

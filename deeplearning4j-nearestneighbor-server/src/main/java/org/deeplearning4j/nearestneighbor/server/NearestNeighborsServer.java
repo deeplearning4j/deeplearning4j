@@ -37,7 +37,7 @@ import static play.mvc.Results.ok;
 public class NearestNeighborsServer {
     @Parameter(names = {"--ndarrayPath"}, arity = 1, required = true)
     private String ndarrayPath = null;
-    @Parameter(names = {"-dp", "--nearestNeighborsPort"}, arity = 1)
+    @Parameter(names = {"--nearestNeighborsPort"}, arity = 1)
     private int port = 9000;
     @Parameter(names = {"--similarityFunction"}, arity = 1)
     private String similarityFunction = "euclidean";
