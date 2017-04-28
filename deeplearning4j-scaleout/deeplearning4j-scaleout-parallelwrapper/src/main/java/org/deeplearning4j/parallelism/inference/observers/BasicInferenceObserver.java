@@ -8,7 +8,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 /**
- * Simple Observer implementation for sequential inference
+ * Simple Observer implementation for
+ * sequential inference
  *
  * @author raver119@gmail.com
  */

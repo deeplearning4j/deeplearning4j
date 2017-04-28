@@ -24,14 +24,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * This class is simple wrapper for ParallelInference using batched input
+ * This class is simple wrapper for
+ * ParallelInference using batched input
  *
  * @author raver119@gmail.com
  */
 @Slf4j
 public class ParallelInference {
     private Model model;
-    private List<String> labels;
     private long nanos;
     private int workers;
     private int batchLimit;
@@ -72,10 +72,20 @@ public class ParallelInference {
         return zoo[workerIdx].getCounterValue();
     }
 
+    /**
+     *
+     * @param input
+     * @return
+     */
     public INDArray output(double[] input) {
         return output(Nd4j.create(input));
     }
 
+    /**
+     *
+     * @param input
+     * @return
+     */
     public INDArray output(float[] input) {
         return output(Nd4j.create(input));
     }
@@ -85,10 +95,20 @@ public class ParallelInference {
         return output(new INDArray[] {input})[0];
     }
 
+    /**
+     *
+     * @param dataSet
+     * @return
+     */
     public INDArray output(DataSet dataSet) {
         return output(dataSet.getFeatureMatrix());
     }
 
+    /**
+     *
+     * @param input
+     * @return
+     */
     public INDArray[] output(INDArray... input) {
         // basically, depending on model type we either throw stuff to specific model, or wait for batch
 
@@ -134,19 +154,17 @@ public class ParallelInference {
         private InferenceMode inferenceMode = InferenceMode.SEQUENTIAL;
         private int queueLimit = 64;
 
-        public Builder(@NonNull ComputationGraph model) {
+        public Builder(@NonNull Model model) {
             this.model = model;
         }
 
-        public Builder(@NonNull MultiLayerNetwork model) {
-            this.model = model;
-        }
 
         /**
          * This method allows you to define mode that'll be used during inference. Options are:
          *
          * SEQUENTIAL: Input will be sent to last-used worker unmodified.
-         * BATCHED: Multiple inputs will be packed into single batch, and sent to last-used device.
+         * BATCHED: Multiple inputs will be packed into single batch, and
+         * sent to last-used device.
          *
          * @param inferenceMode
          * @return
@@ -187,9 +205,11 @@ public class ParallelInference {
         }
 
         /**
-         * This method defines, how many input samples can be batched within given time frame.
+         * This method defines, how many input samples can
+         * be batched within given time frame.
          *
-         * PLEASE NOTE: This value has no effect in SEQUENTIAL inference mode
+         * PLEASE NOTE: This value has no effect in
+         * SEQUENTIAL inference mode
          *
          * @param limit
          * @return
@@ -228,7 +248,6 @@ public class ParallelInference {
             inference.batchLimit = this.batchLimit;
             inference.queueLimit = this.queueLimit;
             inference.inferenceMode = this.inferenceMode;
-            inference.labels = this.labels;
             inference.model = this.model;
             inference.nanos = this.nanos;
             inference.workers = this.workers;
@@ -271,10 +290,10 @@ public class ParallelInference {
                 if (protoModel instanceof ComputationGraph) {
                     this.replicatedModel = new ComputationGraph(ComputationGraphConfiguration
                                     .fromJson(((ComputationGraph) protoModel).getConfiguration().toJson()));
-                    ((ComputationGraph) this.replicatedModel).init();
+                    this.replicatedModel.init();
 
                     synchronized (locker) {
-                        ((ComputationGraph) this.replicatedModel).setParams(protoModel.params());
+                        this.replicatedModel.setParams(protoModel.params());
 
                         if (Nd4j.getExecutioner() instanceof GridExecutioner)
                             ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
@@ -282,10 +301,10 @@ public class ParallelInference {
                 } else if (protoModel instanceof MultiLayerNetwork) {
                     this.replicatedModel = new MultiLayerNetwork(MultiLayerConfiguration
                                     .fromJson(((MultiLayerNetwork) protoModel).getLayerWiseConfigurations().toJson()));
-                    ((MultiLayerNetwork) this.replicatedModel).init();
+                    this.replicatedModel.init();
 
                     synchronized (locker) {
-                        ((MultiLayerNetwork) this.replicatedModel).setParams(protoModel.params());
+                        this.replicatedModel.setParams(protoModel.params());
 
                         if (Nd4j.getExecutioner() instanceof GridExecutioner)
                             ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();

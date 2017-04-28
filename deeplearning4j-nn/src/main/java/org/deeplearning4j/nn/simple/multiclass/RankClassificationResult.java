@@ -19,6 +19,7 @@ import java.util.List;
 @Data
 public class RankClassificationResult implements Serializable {
     private int[][] rankedIndices;
+    private float[][] probabilities;
     private List<String> labels;
     private List<String> maxLabels;
 
@@ -58,9 +59,11 @@ public class RankClassificationResult implements Serializable {
         }
 
         rankedIndices = new int[indexes.rows()][indexes.columns()];
+        probabilities = new float[outcome.rows()][outcome.columns()];
         for(int i = 0; i < indexes.rows(); i++) {
             for(int j = 0; j  < indexes.columns(); j++) {
                 rankedIndices[i][j] = indexes.getInt(i,j);
+                probabilities[i][j] = outcome.getFloat(new int[]{i,j});
             }
         }
 
