@@ -9,6 +9,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
@@ -71,12 +72,13 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
 
     @Override
-    public synchronized void destroyWorkspace() {
+    public synchronized void destroyWorkspace(boolean extended) {
         currentSize.set(0);
         hostOffset.set(0);
         deviceOffset.set(0);
 
-        clearExternalAllocations();
+        if (extended)
+            clearExternalAllocations();
 
         if (workspace.getHostPointer() != null)
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
@@ -117,10 +119,12 @@ public class CudaWorkspace extends Nd4jWorkspace {
         if (div!= 0)
             requiredMemory += div;
 
-        boolean trimmer = workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && requiredMemory + cycleAllocations.get() > initialBlockSize.get() && initialBlockSize.get() > 0;
-        log.info("Trimmer: {}", trimmer);
-        if (trimmer)
-            log.info("ReqMem: {}; ThisCycle: {}", requiredMemory, cycleAllocations.get());
+        boolean trimmer = (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && requiredMemory + cycleAllocations.get() > initialBlockSize.get() && initialBlockSize.get() > 0 && kind == MemoryKind.DEVICE) || trimmedMode.get();
+
+        if (trimmer && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE && !trimmedMode.get()) {
+            trimmedMode.set(true);
+            trimmedStep.set(stepsCount.get());
+        }
 
         if (kind == MemoryKind.DEVICE) {
             if (deviceOffset.get() + requiredMemory <= currentSize.get() && !trimmer) {
@@ -171,16 +175,29 @@ public class CudaWorkspace extends Nd4jWorkspace {
                     case REALLOCATE:
                     case EXTERNAL:
                         cycleAllocations.addAndGet(requiredMemory);
-                        externalCount.incrementAndGet();
-                        //
-                        //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
-                        PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, initialize), numElements);
-                        //pointer.setLeaked(true);
-                        pointer.isLeaked();
+                        if (!trimmer) {
+                            externalCount.incrementAndGet();
+                            //
+                            //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
+                            PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, initialize), numElements);
+                            //pointer.setLeaked(true);
+                            pointer.isLeaked();
 
-                        externalAllocations.add(new PointersPair(null, pointer));
+                            externalAllocations.add(new PointersPair(null, pointer));
 
-                        return pointer;
+                            return pointer;
+                        } else {
+                            pinnedCount.incrementAndGet();
+                            //
+                            //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
+                            PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.DEVICE, initialize), numElements);
+                            //pointer.setLeaked(true);
+                            pointer.isLeaked();
+
+                            pinnedAllocations.add(new PointersPair(stepsCount.get(), requiredMemory, null, pointer));
+
+                            return pointer;
+                        }
                     case FAIL:
                     default: {
                         throw new ND4JIllegalStateException("Can't allocate memory: Workspace is full");
@@ -206,15 +223,25 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 switch (workspaceConfiguration.getPolicySpill()) {
                     case REALLOCATE:
                     case EXTERNAL:
+                        if (!trimmer) {
+                            //memoryManager.allocate(requiredMemory, MemoryKind.HOST, true)
+                            //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
+                            PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
+                            //pointer.setLeaked(true);
 
-                        //memoryManager.allocate(requiredMemory, MemoryKind.HOST, true)
-                        //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
-                        PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
-                        //pointer.setLeaked(true);
+                            externalAllocations.add(new PointersPair(pointer, null));
 
-                        externalAllocations.add(new PointersPair(pointer, null));
+                            return pointer;
+                        } else {
+                            //AtomicAllocator.getInstance().getMemoryHandler().getMemoryProvider().malloc(shape, null, AllocationStatus.DEVICE).getDevicePointer()
+                            PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
+                            //pointer.setLeaked(true);
+                            pointer.isLeaked();
 
-                        return pointer;
+                            pinnedAllocations.add(new PointersPair(stepsCount.get(), 0L, pointer, null));
+
+                            return pointer;
+                        }
                     case FAIL:
                     default: {
                         throw new ND4JIllegalStateException("Can't allocate memory: Workspace is full");
@@ -228,7 +255,36 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
     @Override
     protected void clearPinnedAllocations() {
-        throw new UnsupportedOperationException();
+        if (isDebug.get())
+            log.info("Workspace [{}] device_{} threadId {} cycle {}: clearing pinned allocations...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), Thread.currentThread().getId(), cyclesCount.get());
+
+        while (!pinnedAllocations.isEmpty()) {
+            PointersPair pair = pinnedAllocations.peek();
+            if (pair == null)
+                throw new RuntimeException();
+
+            long stepNumber = pair.getAllocationCycle();
+            long stepCurrent = stepsCount.get();
+
+            if (isDebug.get())
+                log.info("Allocation step: {}; Current step: {}", stepNumber, stepCurrent);
+
+            if (stepNumber + 2 < stepCurrent) {
+                pinnedAllocations.remove();
+
+                if (pair.getDevicePointer() != null) {
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getHostPointer(), null);
+                    pinnedCount.decrementAndGet();
+                }
+
+                if (pair.getHostPointer() != null)
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pair.getHostPointer());
+
+                pinnedAllocationsSize.addAndGet(pair.getRequiredMemory() * -1);
+            } else {
+                break;
+            }
+        }
     }
 
     @Override

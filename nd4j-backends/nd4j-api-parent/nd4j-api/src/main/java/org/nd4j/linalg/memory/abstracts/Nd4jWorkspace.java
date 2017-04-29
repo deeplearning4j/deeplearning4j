@@ -212,8 +212,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             if (disabledCounter.incrementAndGet() % 10 == 0)
                 log.warn("Worskpace was turned off, and wasn't enabled after {} allocations", disabledCounter.get());
 
-//            log.info("Workspace [{}] spilled  {} bytes, capacity of {} elements",  id, requiredMemory, numElements);
-
             PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
 
             externalAllocations.add(new PointersPair(pointer, null));
@@ -222,11 +220,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         }
 
         boolean trimmer = (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && requiredMemory + cycleAllocations.get() > initialBlockSize.get() && initialBlockSize.get() > 0) || trimmedMode.get();
-        //log.info("Trimmer: {}", trimmer);
-        //if (trimmer)
 
         if (trimmer && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE && !trimmedMode.get()) {
-            log.info("ReqMem: {}; ThisCycle: {}", requiredMemory, cycleAllocations.get());
             trimmedMode.set(true);
             trimmedStep.set(stepsCount.get());
         }
@@ -251,7 +246,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 hostOffset.set(0);
                 deviceOffset.set(0);
                 resetPlanned.set(true);
-                stepsCount.incrementAndGet();
+                //stepsCount.incrementAndGet();
                 return alloc(requiredMemory, kind, type, initialize);
             }
 
