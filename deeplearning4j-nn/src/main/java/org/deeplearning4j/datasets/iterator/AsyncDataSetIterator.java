@@ -75,8 +75,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
     }
 
     public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace, DataSetCallback callback, Integer deviceId) {
-        if (queueSize < 4)
-            queueSize = 4;
+        if (queueSize < 2)
+            queueSize = 2;
 
         this.deviceId = deviceId;
         this.callback = callback;

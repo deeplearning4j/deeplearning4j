@@ -74,8 +74,8 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
     public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue, boolean useWorkspace, DataSetCallback callback, Integer deviceId) {
 
-        if (queueSize < 4)
-            queueSize = 4;
+        if (queueSize < 2)
+            queueSize = 2;
 
         this.callback = callback;
         this.buffer = queue;
@@ -283,7 +283,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         private MultiDataSet terminator;
         private WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
                 .minSize(10 * 1024L * 1024L)
-                .overallocationLimit(prefetchSize + 1)
+                .overallocationLimit(prefetchSize + 2)
                 .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
                 .policyLearning(LearningPolicy.FIRST_LOOP)
                 .policyAllocation(AllocationPolicy.OVERALLOCATE)
@@ -325,8 +325,10 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                 shouldWork.set(false);
             } catch (RuntimeException e) {
                 throwable = e;
+                throw new RuntimeException(e);
             } catch (Exception e) {
                 throwable = new RuntimeException(e);
+                throw new RuntimeException(e);
             }
         }
     }
