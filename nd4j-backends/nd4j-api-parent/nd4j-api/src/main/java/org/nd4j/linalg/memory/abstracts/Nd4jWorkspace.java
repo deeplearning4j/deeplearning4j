@@ -231,6 +231,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
             cycleAllocations.addAndGet(requiredMemory);
             long prevOffset = hostOffset.getAndAdd(requiredMemory);
+            deviceOffset.set(hostOffset.get());
 
             if (isDebug.get())
                 log.info("Workspace [{}]: Allocating array of {} bytes, capacity of {} elements, prevOffset:", id, requiredMemory, numElements);
