@@ -152,7 +152,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray delta;
         IActivation afn = conf.getLayer().getActivationFn();
 
-        delta = conf().getLayer().getActivationFn().backprop(preOutput4d(true), epsilon).getFirst(); //TODO handle activation function params
+        Pair<INDArray,INDArray> p = preOutput4d(true, true);
+        delta = conf().getLayer().getActivationFn().backprop(p.getFirst(), epsilon).getFirst(); //TODO handle activation function params
 
         if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad,
@@ -171,13 +172,15 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //Do im2col, but with order [miniB,outH,outW,depthIn,kH,kW]; but need to input [miniBatch,depth,kH,kW,outH,outW] given the current im2col implementation
         //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
         //to get old order from required order: permute(0,3,4,5,1,2)
-        INDArray col = Nd4j.createUninitialized(new int[] {miniBatch, outH, outW, inDepth, kH, kW}, 'c');
-        INDArray col2 = col.permute(0, 3, 4, 5, 1, 2);
-        Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1],
-                        convolutionMode == ConvolutionMode.Same, col2);
-
-        //Shape im2col to 2d. Due to the permuting above, this should be a zero-copy reshape
-        INDArray im2col2d = col.reshape('c', miniBatch * outH * outW, inDepth * kH * kW);
+        INDArray im2col2d = p.getSecond();
+        if(im2col2d == null) {
+            INDArray col = Nd4j.createUninitialized(new int[]{miniBatch, outH, outW, inDepth, kH, kW}, 'c');
+            INDArray col2 = col.permute(0, 3, 4, 5, 1, 2);
+            Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1],
+                    convolutionMode == ConvolutionMode.Same, col2);
+            //Shape im2col to 2d. Due to the permuting above, this should be a zero-copy reshape
+            im2col2d = col.reshape('c', miniBatch * outH * outW, inDepth * kH * kW);
+        }
 
         //Calculate weight gradients, using cc->c mmul.
         //weightGradView2df is f order, but this is because it's transposed from c order
@@ -228,11 +231,15 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
      * non-4d preOutput method, while overriding this to return 4d activations (for use in backprop) without modifying
      * the public API
      */
-    protected INDArray preOutput4d(boolean training) {
-        return preOutput(training);
+    protected Pair<INDArray,INDArray> preOutput4d(boolean training, boolean forBackprop) {
+        return preOutput(training, forBackprop);
     }
 
     public INDArray preOutput(boolean training) {
+        return preOutput(training, false).getFirst();
+    }
+
+    protected Pair<INDArray,INDArray> preOutput(boolean training, boolean forBackprop){
         INDArray weights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(ConvolutionParamInitializer.BIAS_KEY);
         if (conf.isUseDropConnect() && training && conf.getLayer().getDropOut() > 0) {
@@ -291,7 +298,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             INDArray ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(),
                             convolutionMode);
             if (ret != null) {
-                return ret;
+                return new Pair<>(ret,null);
             }
         }
 
@@ -304,7 +311,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1],
                         convolutionMode == ConvolutionMode.Same, col2);
 
-        INDArray reshapedCol = Shape.newShapeNoCopy(col, new int[] {miniBatch * outH * outW, inDepth * kH * kW}, false);
+        INDArray im2col2d = Shape.newShapeNoCopy(col, new int[] {miniBatch * outH * outW, inDepth * kH * kW}, false);
 
         //Current order of weights: [depthOut,depthIn,kH,kW], c order
         //Permute to give [kW,kH,depthIn,depthOut], f order
@@ -319,17 +326,18 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                                         .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)) {
             try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
                             .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
-                z = reshapedCol.mmul(reshapedW);
+                z = im2col2d.mmul(reshapedW);
             }
         } else
-            z = reshapedCol.mmul(reshapedW);
+            z = im2col2d.mmul(reshapedW);
 
         //Add biases, before reshaping. Note that biases are [1,depthOut] and currently z is [miniBatch*outH*outW,depthOut] -> addiRowVector
         z.addiRowVector(bias);
 
         //Now, reshape to [outW,outH,miniBatch,outDepth], and permute to have correct output order: [miniBath,outDepth,outH,outW];
         z = Shape.newShapeNoCopy(z, new int[] {outW, outH, miniBatch, outDepth}, true);
-        return z.permute(2, 3, 1, 0);
+        z = z.permute(2, 3, 1, 0);
+        return new Pair<>(z, forBackprop ? im2col2d : null);
     }
 
     @Override
