@@ -113,7 +113,7 @@ public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
 
 
         int outCounter = 0;
-        while(!noIncoming.isEmpty()) {
+        while(!noIncoming.isEmpty() && outCounter < ret.length) {
             int next = noIncoming.removeFirst();
             ret[outCounter++] = next;
             Set<Integer> vertexOutputsTo = outputEdges.get(next);

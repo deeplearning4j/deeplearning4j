@@ -99,11 +99,11 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
         Constant<X> ret =  (this.equals(i_v) ? new One<>(graph, m_factory) : new Zero<>(graph, m_factory));
         if(m_x instanceof ArrayField) {
             ArrayField arrayField = (ArrayField) m_x;
-            addEdges(graph,
+            /*addEdges(graph,
                     this,ret,
                     "diff",
                     OpState.OpType.TRANSFORM,
-                    arrayField.getInput().getShape());
+                    arrayField.getInput().getShape());*/
 
         }
         return ret;

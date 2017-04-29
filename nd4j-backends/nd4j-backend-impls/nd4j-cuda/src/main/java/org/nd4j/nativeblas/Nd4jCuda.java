@@ -434,19 +434,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  IntPointer yInfo,
                                  DoublePointer result,
                                  IntPointer resultShapeInfo);
-
-    /**
-     *
-     * @param extraPointers
-     * @param opNum
-     * @param x
-     * @param xInfo
-     * @param extraParamsVals
-     * @param y
-     * @param yInfo
-     * @param result
-     * @param resultShapeInfo
-     */
     public native void execReduce3Double(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
                                  DoubleBuffer x,
@@ -456,19 +443,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  IntBuffer yInfo,
                                  DoubleBuffer result,
                                  IntBuffer resultShapeInfo);
-
-    /**
-     *
-     * @param extraPointers
-     * @param opNum
-     * @param x
-     * @param xInfo
-     * @param extraParamsVals
-     * @param y
-     * @param yInfo
-     * @param result
-     * @param resultShapeInfo
-     */
     public native void execReduce3Double(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
                                  double[] x,
@@ -481,14 +455,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
 
     /**
      *
-     * @param extraPointers
      * @param opNum
      * @param x
-     * @param xInfo
+     * @param xShapeInfo
      * @param extraParamsVals
      * @param y
-     * @param yInfo
-     * @return
+     * @param yShapeInfo
      */
     public native double execReduce3ScalarDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                          int opNum,
@@ -497,18 +469,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                          DoublePointer extraParamsVals,
                                          DoublePointer y,
                                          IntPointer yInfo);
-
-    /**
-     *
-     * @param extraPointers
-     * @param opNum
-     * @param x
-     * @param xInfo
-     * @param extraParamsVals
-     * @param y
-     * @param yInfo
-     * @return
-     */
     public native double execReduce3ScalarDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                          int opNum,
                                          DoubleBuffer x,
@@ -516,18 +476,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                          DoubleBuffer extraParamsVals,
                                          DoubleBuffer y,
                                          IntBuffer yInfo);
-
-    /**
-     *
-     * @param extraPointers
-     * @param opNum
-     * @param x
-     * @param xInfo
-     * @param extraParamsVals
-     * @param y
-     * @param yInfo
-     * @return
-     */
     public native double execReduce3ScalarDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                          int opNum,
                                          double[] x,
@@ -535,16 +483,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                          double[] extraParamsVals,
                                          double[] y,
                                          int[] yInfo);
-
     /**
      *
-     * @param extraPointers
      * @param opNum
      * @param x
-     * @param xInfo
+     * @param xShapeInfo
      * @param extraParamsVals
      * @param y
-     * @param yInfo
+     * @param yShapeInfo
      * @param result
      * @param resultShapeInfoBuffer
      * @param dimension
@@ -561,21 +507,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  IntPointer resultShapeInfoBuffer,
                                  IntPointer dimension,
                                  int dimensionLength);
-
-    /**
-     *
-     * @param extraPointers
-     * @param opNum
-     * @param x
-     * @param xInfo
-     * @param extraParamsVals
-     * @param y
-     * @param yInfo
-     * @param result
-     * @param resultShapeInfoBuffer
-     * @param dimension
-     * @param dimensionLength
-     */
     public native void execReduce3Double(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
                                  DoubleBuffer x,
@@ -587,21 +518,6 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  IntBuffer resultShapeInfoBuffer,
                                  IntBuffer dimension,
                                  int dimensionLength);
-
-    /**
-     *
-     * @param extraPointers
-     * @param opNum
-     * @param x
-     * @param xInfo
-     * @param extraParamsVals
-     * @param y
-     * @param yInfo
-     * @param result
-     * @param resultShapeInfoBuffer
-     * @param dimension
-     * @param dimensionLength
-     */
     public native void execReduce3Double(@Cast("Nd4jPointer*") PointerPointer extraPointers,
                                  int opNum,
                                  double[] x,

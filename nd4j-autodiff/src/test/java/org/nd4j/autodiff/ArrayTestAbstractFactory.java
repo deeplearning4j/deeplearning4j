@@ -133,7 +133,9 @@ public class ArrayTestAbstractFactory
         TensorGradVariable grad = tensorGrad.grad(xTimesX,var);
         System.out.println(tensorGrad.graph());
         System.out.println(grad.getFormula());
-        tensorGrad.graph().print(new File("/tmp/graph.png"));
+        System.out.println(tensorGrad.graph().getOpOrder());
+        tensorGrad.exec();
+        //tensorGrad.graph().print(new File("/tmp/graph.png"));
 
     }
 

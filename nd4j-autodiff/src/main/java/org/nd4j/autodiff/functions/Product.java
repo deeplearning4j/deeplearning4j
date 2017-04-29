@@ -59,7 +59,7 @@ public class Product<X extends Field<X>> extends AbstractBinaryFunction<X> {
                 e.printStackTrace();
             }
 
-            addEdges(graph,
+           /* addEdges(graph,
                     this,
                     result,
                     "diff",
@@ -69,7 +69,7 @@ public class Product<X extends Field<X>> extends AbstractBinaryFunction<X> {
                 graph.print(new File("/tmp/graphmidd4.png"));
             } catch (IOException e) {
                 e.printStackTrace();
-            }
+            }*/
             //    return larg().diff(i_v1).mul(rarg()).mul(2L); // Field
             return result;
         }

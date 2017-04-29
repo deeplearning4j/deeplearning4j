@@ -32,6 +32,8 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.reflections.Reflections;
 import org.reflections.scanners.SubTypesScanner;
 import org.reflections.util.ClasspathHelper;
@@ -340,6 +342,26 @@ public class DefaultOpFactory implements OpFactory {
             case "leakyreluderivative":
                 op = new LeakyReLUDerivative(x,z);
                 break;
+            case "mul":
+                op = new MulOp(x,y,z);
+                break;
+            case "add":
+                op = new AddOp(x,y,z);
+                break;
+            case "sub":
+                op = new SubOp(x,y,z);
+                break;
+            case "div":
+                op = new DivOp(x,y,z);
+                break;
+            case "rdiv":
+                op = new RDivOp(x,y,z);
+                break;
+            case "rsub":
+                op = new RSubOp(x,y,z);
+                break;
+            default:
+                throw new ND4JIllegalStateException("No op found " + name);
         }
 
 
@@ -463,7 +485,12 @@ public class DefaultOpFactory implements OpFactory {
             case "remainder_scalar":
                 ret = new ScalarRemainder(x,y,z,x.length(),scalar);
                 break;
-
+            case   "rdiv_scalar":
+                ret = new ScalarReverseDivision(x,y,z,x.length(),scalar);
+                break;
+            case   "rsub_scalar":
+                ret = new ScalarReverseSubtraction(x,y,z,x.length(),scalar);
+                break;
         }
 
         ret.setExtraArgs(extraArgs);
