@@ -8,6 +8,7 @@ import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.ParallelDataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.enums.InequalityHandling;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
@@ -18,18 +19,18 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class JointParallelDataSetIterator {
+public class JointParallelDataSetIterator extends BaseParallelDataSetIterator {
     protected List<DataSetIterator> asyncIterators = new ArrayList<>();
     protected boolean enforceSingleDevice;
     protected int bufferSizePerDevice;
     protected int numProducers;
 
-    protected AtomicLong counter = new AtomicLong(0);
 
-    public JointParallelDataSetIterator(List<DataSetIterator> iterators, boolean singleDeviceMode, int bufferSize) {
+    public JointParallelDataSetIterator(@NonNull List<DataSetIterator> iterators, boolean singleDeviceMode, int bufferSize, @NonNull InequalityHandling inequalityHandling) {
         this.enforceSingleDevice = singleDeviceMode;
         this.bufferSizePerDevice = bufferSize;
         this.numProducers = iterators.size();
+        this.inequalityHandling = inequalityHandling;
 
         if (numProducers == 0)
             throw new DL4JInvalidInputException("You can't start ParallelDataSetIterator without input data");
@@ -53,10 +54,7 @@ public class JointParallelDataSetIterator {
         }
     }
 
-    public boolean hasNext() {
-        // TODO: configurable probably?
-        return true;
-    }
+
 
     public DataSet next() {
         return asyncIterators.get((int)(counter.getAndIncrement() % numProducers)).next();
@@ -67,13 +65,33 @@ public class JointParallelDataSetIterator {
         private List<DataSetIterator> iterators = new ArrayList<>();
         private boolean enforceSingleDevice = true;
         private int bufferSize = 4;
+        private InequalityHandling inequalityHandling;
+
+        public Builder(@NonNull InequalityHandling inequalityHandling) {
+            this.inequalityHandling = inequalityHandling;
+        }
+
+        public Builder(@NonNull List<DataSetIterator> iterators, @NonNull InequalityHandling inequalityHandling) {
+            this.inequalityHandling = inequalityHandling;
+
+            for (DataSetIterator iterator: iterators)
+                addSourceIterator(iterator);
+        }
+
 
         public Builder addSourceIterator(@NonNull DataSetIterator iterator) {
             if (!iterator.asyncSupported())
                 throw new DL4JInvalidInputException("Source iterators should support async mode");
 
             //TODO: add strict equality check here, we don't want it equal
-            iterators.add(iterator);
+            for (DataSetIterator iter: iterators) {
+                if (iterator == iter) {
+                    throw new DL4JInvalidInputException("You can't put equal iterators into this joint iterator");
+                } else {
+                    iterators.add(iterator);
+                }
+            }
+
             return this;
         }
 
@@ -90,7 +108,7 @@ public class JointParallelDataSetIterator {
 
 
         public JointParallelDataSetIterator build() {
-            JointParallelDataSetIterator jpdsi = new JointParallelDataSetIterator(iterators, enforceSingleDevice, bufferSize);
+            JointParallelDataSetIterator jpdsi = new JointParallelDataSetIterator(iterators, enforceSingleDevice, bufferSize, inequalityHandling);
 
             return jpdsi;
         }

@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.params.GravesLSTMParamInitializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -84,8 +85,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
             fwdPass = activateHelper(true, stateMap.get(STATE_KEY_PREV_ACTIVATION),
                             stateMap.get(STATE_KEY_PREV_MEMCELL), true);
             //Store last time step of output activations and memory cell state in tBpttStateMap
-            tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct);
-            tBpttStateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell);
+            tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct.leverageTo(ComputationGraph.workspaceTBPTT));
+            tBpttStateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell.leverageTo(ComputationGraph.workspaceTBPTT));
         } else {
             fwdPass = activateHelper(true, null, null, true);
         }
@@ -234,8 +235,8 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         INDArray outAct = fwdPass.fwdPassOutput;
         if (storeLastForTBPTT) {
             //Store last time step of output activations and memory cell state in tBpttStateMap
-            tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct);
-            tBpttStateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell);
+            tBpttStateMap.put(STATE_KEY_PREV_ACTIVATION, fwdPass.lastAct.leverageTo(ComputationGraph.workspaceTBPTT));
+            tBpttStateMap.put(STATE_KEY_PREV_MEMCELL, fwdPass.lastMemCell.leverageTo(ComputationGraph.workspaceTBPTT));
         }
 
         return outAct;

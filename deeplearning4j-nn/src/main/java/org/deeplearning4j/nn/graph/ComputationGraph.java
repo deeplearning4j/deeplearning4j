@@ -101,8 +101,18 @@ public class ComputationGraph implements Serializable, Model {
     public final static String workspaceExternal = "LOOP_EXTERNAL";
     public final static String workspaceFeedForward = "LOOP_FF";
     public final static String workspaceBackProp = "LOOP_BP";
+    public final static String workspaceTBPTT = "LOOP_TBPTT";
 
     protected final static WorkspaceConfiguration workspaceConfigurationFeedForward = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.2)
+            .policyReset(ResetPolicy.BLOCK_LEFT)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyLearning(LearningPolicy.OVER_TIME)
+            .build();
+
+    protected final static WorkspaceConfiguration workspaceConfigurationTBPTT = WorkspaceConfiguration.builder()
             .initialSize(0)
             .overallocationLimit(0.2)
             .policyReset(ResetPolicy.BLOCK_LEFT)
@@ -784,42 +794,47 @@ public class ComputationGraph implements Serializable, Model {
                 if (next.getFeatures() == null || next.getLabels() == null)
                     break;
 
-                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+
                     //migrate(next);
 
-                    boolean hasMaskArrays = next.hasMaskArrays();
-                    if (hasMaskArrays) {
-                        INDArray[] fMask = (next.getFeaturesMaskArray() != null
-                                ? new INDArray[]{next.getFeaturesMaskArray()} : null);
-                        INDArray[] lMask = (next.getLabelsMaskArray() != null ? new INDArray[]{next.getLabelsMaskArray()}
-                                : null);
-                        setLayerMaskArrays(fMask, lMask);
-                    }
+                boolean hasMaskArrays = next.hasMaskArrays();
+                if (hasMaskArrays) {
+                    INDArray[] fMask = (next.getFeaturesMaskArray() != null
+                        ? new INDArray[]{next.getFeaturesMaskArray()} : null);
+                    INDArray[] lMask = (next.getLabelsMaskArray() != null ? new INDArray[]{next.getLabelsMaskArray()}
+                        : null);
+                    setLayerMaskArrays(fMask, lMask);
+                }
 
-                    if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                        doTruncatedBPTT(new INDArray[]{next.getFeatures()}, new INDArray[]{next.getLabels()},
-                                (hasMaskArrays ? new INDArray[]{next.getFeaturesMaskArray()} : null),
-                                (hasMaskArrays ? new INDArray[]{next.getLabelsMaskArray()} : null));
-                    } else {
-                        setInput(0, next.getFeatures());
-                        setLabel(0, next.getLabels());
-                        if (solver == null) {
+                if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
+                    doTruncatedBPTT(new INDArray[]{next.getFeatures()}, new INDArray[]{next.getLabels()},
+                            (hasMaskArrays ? new INDArray[]{next.getFeaturesMaskArray()} : null),
+                            (hasMaskArrays ? new INDArray[]{next.getLabelsMaskArray()} : null));
+                } else {
+                    setInput(0, next.getFeatures());
+                    setLabel(0, next.getLabels());
+                    if (solver == null) {
+                        try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                             solver = new Solver.Builder().configure(defaultConfiguration) //TODO; don't like this
                                     .listeners(listeners).model(this).build();
                         }
-                        solver.optimize();
                     }
 
-                    if (hasMaskArrays) {
-                        clearLayerMaskArrays();
+                    try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                        solver.optimize();
                     }
                 }
 
-                Nd4j.getMemoryManager().invokeGcOccasionally();
-
-                time1 = System.currentTimeMillis();
+                if (hasMaskArrays) {
+                    clearLayerMaskArrays();
+                }
             }
+
+            Nd4j.getMemoryManager().invokeGcOccasionally();
+
+            time1 = System.currentTimeMillis();
         }
+
 
         if (trainingListeners.size() > 0) {
             for (TrainingListener tl : trainingListeners) {
@@ -878,36 +893,40 @@ public class ComputationGraph implements Serializable, Model {
                 if (next.getFeatures() == null || next.getLabels() == null)
                     break;
 
-                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+
                     //migrate(next);
 
-                    if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                        doTruncatedBPTT(next.getFeatures(), next.getLabels(), next.getFeaturesMaskArrays(),
+                if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
+                    doTruncatedBPTT(next.getFeatures(), next.getLabels(), next.getFeaturesMaskArrays(),
                                 next.getLabelsMaskArrays());
-                    } else {
-                        boolean hasMaskArrays = next.hasMaskArrays();
-                        if (hasMaskArrays) {
-                            setLayerMaskArrays(next.getFeaturesMaskArrays(), next.getLabelsMaskArrays());
-                        }
+                } else {
+                    boolean hasMaskArrays = next.hasMaskArrays();
+                    if (hasMaskArrays) {
+                        setLayerMaskArrays(next.getFeaturesMaskArrays(), next.getLabelsMaskArrays());
+                    }
 
-                        setInputs(next.getFeatures());
-                        setLabels(next.getLabels());
-                        if (solver == null) {
+                    setInputs(next.getFeatures());
+                    setLabels(next.getLabels());
+                    if (solver == null) {
+                        try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                             solver = new Solver.Builder().configure(defaultConfiguration).listeners(listeners).model(this)
                                     .build();
                         }
-                        solver.optimize();
-
-                        if (hasMaskArrays) {
-                            clearLayerMaskArrays();
-                        }
                     }
 
-                    Nd4j.getMemoryManager().invokeGcOccasionally();
+                    try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                        solver.optimize();
+                    }
+
+                    if (hasMaskArrays) {
+                        clearLayerMaskArrays();
+                    }
                 }
 
-                time1 = System.currentTimeMillis();
+                Nd4j.getMemoryManager().invokeGcOccasionally();
             }
+
+            time1 = System.currentTimeMillis();
         }
 
         clearLayersStates();
@@ -989,22 +1008,25 @@ public class ComputationGraph implements Serializable, Model {
 
         MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-            if (configuration.isBackprop()) {
-                if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                    doTruncatedBPTT(inputs, labels, featureMaskArrays, labelMaskArrays);
-                } else {
-                    if (solver == null) {
+
+        if (configuration.isBackprop()) {
+            if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
+                doTruncatedBPTT(inputs, labels, featureMaskArrays, labelMaskArrays);
+            } else {
+                if (solver == null) {
+                    try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                         solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
                     }
+                }
 
+                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
                     solver.optimize();
                 }
             }
+        }
 
-            if (featureMaskArrays != null || labelMaskArrays != null) {
+        if (featureMaskArrays != null || labelMaskArrays != null) {
                 clearLayerMaskArrays();
-            }
         }
 
         clearLayersStates();
@@ -2287,56 +2309,73 @@ public class ComputationGraph implements Serializable, Model {
         INDArray[] newFeatureMasks = (featureMasks != null ? new INDArray[featureMasks.length] : null);
         INDArray[] newLabelMasks = (labelMasks != null ? new INDArray[labelMasks.length] : null);
 
-        for (int i = 0; i < nSubsets; i++) {
-            int startTimeIdx = i * fwdLen;
-            int endTimeIdx = startTimeIdx + fwdLen;
-            if (endTimeIdx > timeSeriesLength)
-                endTimeIdx = timeSeriesLength;
+        workspaceConfigurationExternal.setCyclesBeforeInitialization(0);
+        workspaceConfigurationExternal.setPolicyLearning(LearningPolicy.OVER_TIME);
 
-            for (int j = 0; j < inputs.length; j++) {
-                if (inputs[j].rank() != 3)
-                    newInputs[j] = inputs[j];
-                else {
-                    newInputs[j] = inputs[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
+        MemoryWorkspace workspaceT = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationTBPTT, workspaceTBPTT);
+        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+
+        try(MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
+            for (int i = 0; i < nSubsets; i++) {
+                try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
+                    int startTimeIdx = i * fwdLen;
+                    int endTimeIdx = startTimeIdx + fwdLen;
+                    if (endTimeIdx > timeSeriesLength)
+                        endTimeIdx = timeSeriesLength;
+
+                    for (int j = 0; j < inputs.length; j++) {
+                        if (inputs[j].rank() != 3)
+                            newInputs[j] = inputs[j];
+                        else {
+                            newInputs[j] = inputs[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
                                     NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                        }
+                    }
+                    for (int j = 0; j < labels.length; j++) {
+                        if (labels[j].rank() != 3)
+                            newLabels[j] = labels[j];
+                        else {
+                            newLabels[j] = labels[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
+                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                        }
+                    }
+                    if (featureMasks != null) {
+                        for (int j = 0; j < featureMasks.length; j++) {
+                            if (featureMasks[j] == null)
+                                continue;
+                            newFeatureMasks[j] = featureMasks[j].get(NDArrayIndex.all(),
+                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                        }
+                    }
+                    if (labelMasks != null) {
+                        for (int j = 0; j < labelMasks.length; j++) {
+                            if (labelMasks[j] == null)
+                                continue;
+                            newLabelMasks[j] = labelMasks[j].get(NDArrayIndex.all(),
+                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                        }
+                    }
+
+                    setInputs(newInputs);
+                    setLabels(newLabels);
+                    setLayerMaskArrays(newFeatureMasks, newLabelMasks);
+
+                    if (solver == null) {
+                        try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                        }
+                    }
+                    solver.optimize();
+
+                    //Finally, update the state of the RNN layers:
+                    rnnUpdateStateWithTBPTTState();
                 }
             }
-            for (int j = 0; j < labels.length; j++) {
-                if (labels[j].rank() != 3)
-                    newLabels[j] = labels[j];
-                else {
-                    newLabels[j] = labels[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
-                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-                }
-            }
-            if (featureMasks != null) {
-                for (int j = 0; j < featureMasks.length; j++) {
-                    if (featureMasks[j] == null)
-                        continue;
-                    newFeatureMasks[j] = featureMasks[j].get(NDArrayIndex.all(),
-                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-                }
-            }
-            if (labelMasks != null) {
-                for (int j = 0; j < labelMasks.length; j++) {
-                    if (labelMasks[j] == null)
-                        continue;
-                    newLabelMasks[j] = labelMasks[j].get(NDArrayIndex.all(),
-                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-                }
-            }
+        }
 
-            setInputs(newInputs);
-            setLabels(newLabels);
-            setLayerMaskArrays(newFeatureMasks, newLabelMasks);
-
-            if (solver == null) {
-                solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
-            }
-            solver.optimize();
-
-            //Finally, update the state of the RNN layers:
-            rnnUpdateStateWithTBPTTState();
+        if (configuration.getWorkspaceMode() != WorkspaceMode.NONE) {
+            workspace.initializeWorkspace();
+            workspaceT.initializeWorkspace();
         }
 
         rnnClearPreviousState();

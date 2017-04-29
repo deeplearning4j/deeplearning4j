@@ -8,8 +8,8 @@ import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
-import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.MultiDataSet;
+import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;

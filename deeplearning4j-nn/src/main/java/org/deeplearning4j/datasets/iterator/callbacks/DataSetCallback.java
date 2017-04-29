@@ -1,7 +1,8 @@
 package org.deeplearning4j.datasets.iterator.callbacks;
 
-import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.MultiDataSet;
+
+import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 /**
  * @author raver119@gmail.com

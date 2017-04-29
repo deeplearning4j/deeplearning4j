@@ -41,6 +41,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     private int prefetchSize;
     private String workspaceId;
     private DataSetCallback callback;
+    private Integer deviceId;
 
 
     public AsyncMultiDataSetIterator(MultiDataSetIterator baseIterator) {
@@ -59,11 +60,19 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         this(baseIterator, queueSize, new LinkedBlockingQueue<MultiDataSet>(queueSize), useWorkspace);
     }
 
+    public AsyncMultiDataSetIterator(MultiDataSetIterator baseIterator, int queueSize, boolean useWorkspace, Integer deviceId) {
+        this(baseIterator, queueSize, new LinkedBlockingQueue<MultiDataSet>(queueSize), useWorkspace, null, deviceId);
+    }
+
     public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue, boolean useWorkspace) {
         this(iterator, queueSize, new LinkedBlockingQueue<MultiDataSet>(queueSize), useWorkspace, null);
     }
 
     public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue, boolean useWorkspace, DataSetCallback callback) {
+        this(iterator, queueSize, queue, useWorkspace, callback, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+    }
+
+    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue, boolean useWorkspace, DataSetCallback callback, Integer deviceId) {
 
         if (queueSize < 4)
             queueSize = 4;
@@ -74,6 +83,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         this.useWorkspaces = useWorkspace;
         this.prefetchSize = queueSize;
         this.workspaceId = "AMDSI_ITER-" + java.util.UUID.randomUUID().toString();
+        this.deviceId = deviceId;
 
         if (iterator.resetSupported())
             this.backedIterator.reset();
@@ -83,7 +93,6 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         /**
          * We want to ensure, that background thread will have the same thread->device affinity, as master thread
          */
-        Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
 
         thread.setDaemon(true);
@@ -168,7 +177,6 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         /**
          * We want to ensure, that background thread will have the same thread->device affinity, as master thread
          */
-        Integer deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
 
         thread.setDaemon(true);
@@ -304,6 +312,9 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                             smth = iterator.next();
                         }
                     } else smth = iterator.next();
+
+                    if (callback != null)
+                        callback.call(smth);
 
                     if (smth != null)
                         queue.put(smth);
