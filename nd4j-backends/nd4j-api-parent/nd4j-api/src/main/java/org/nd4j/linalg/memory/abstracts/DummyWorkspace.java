@@ -137,6 +137,11 @@ public class DummyWorkspace implements MemoryWorkspace {
 
     }
 
+    @Override
+    public void destroyWorkspace(boolean extended) {
+
+    }
+
     /**
      * This method allows you to temporary disable/enable given Workspace use.
      * If turned off - direct memory allocations will be used.

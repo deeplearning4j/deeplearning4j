@@ -100,6 +100,8 @@ public interface MemoryWorkspace extends AutoCloseable {
      */
     void destroyWorkspace();
 
+    void destroyWorkspace(boolean extended);
+
     /**
      * This method allows you to temporary disable/enable given Workspace use.
      * If turned off - direct memory allocations will be used.

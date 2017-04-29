@@ -89,12 +89,13 @@ public class CpuWorkspace extends Nd4jWorkspace {
     }
 
     @Override
-    public void destroyWorkspace() {
+    public void destroyWorkspace(boolean extended) {
         currentSize.set(0);
         hostOffset.set(0);
         deviceOffset.set(0);
 
-        clearExternalAllocations();
+        if (extended)
+            clearExternalAllocations();
 
         NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
 

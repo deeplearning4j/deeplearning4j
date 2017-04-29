@@ -12,6 +12,7 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
@@ -45,6 +46,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
                 .initialSize(0)
                 .overallocationLimit(3.0)
                 .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .policySpill(SpillPolicy.EXTERNAL)
                 .policyLearning(LearningPolicy.FIRST_LOOP)
                 .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
                 .build();
@@ -112,6 +114,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
                 Nd4j.create(500);
                 Nd4j.create(500);
                 Nd4j.create(500);
+
+                assertEquals(1500 * Nd4j.sizeOfDataType(), workspace.getThisCycleAllocations());
             }
         }
 
@@ -137,6 +141,53 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
 
         log.info("Workspace state after second block: ---------------------------------------------------------");
         Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
+    }
+
+
+    @Test
+    public void testVariableTimeSeries2() throws Exception {
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .overallocationLimit(3.0)
+                .policyAllocation(AllocationPolicy.OVERALLOCATE)
+                .policySpill(SpillPolicy.REALLOCATE)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                .build();
+
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "WS1");
+        workspace.enableDebug(true);
+
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
+            Nd4j.create(500);
+            Nd4j.create(500);
+        }
+
+
+
+        assertEquals(0, workspace.getStepNumber());
+
+        assertEquals(1000 * Nd4j.sizeOfDataType(), workspace.getSpilledSize());
+        assertEquals(1000 * Nd4j.sizeOfDataType(), workspace.getInitialBlockSize());
+        assertEquals((1000 + (1000*3)) * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+
+
+        for (int i = 0; i < 100; i++) {
+            try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
+                Nd4j.create(500);
+                Nd4j.create(500);
+                Nd4j.create(500);
+            }
+        }
+
+
+        assertEquals((1500 + (1500*3)) * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+
+        assertEquals(0, workspace.getSpilledSize());
+        assertEquals(0, workspace.getPinnedSize());
+        assertEquals(0, workspace.getNumberOfPinnedAllocations());
+        assertEquals(0, workspace.getNumberOfExternalAllocations());
+
     }
 
     @Override
