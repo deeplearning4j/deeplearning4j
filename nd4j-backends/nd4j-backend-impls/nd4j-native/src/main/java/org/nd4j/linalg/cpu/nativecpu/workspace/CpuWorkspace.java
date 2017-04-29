@@ -2,7 +2,6 @@ package org.nd4j.linalg.cpu.nativecpu.workspace;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
@@ -52,7 +51,7 @@ public class CpuWorkspace extends Nd4jWorkspace {
         }
         externalAllocations.clear();
         externalCount.set(0);
-        spilledAllocations.set(0);
+        spilledAllocationsSize.set(0);
     }
 
     @Override

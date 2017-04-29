@@ -3,7 +3,6 @@ package org.nd4j.jita.workspace;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
-import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationShape;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -17,10 +16,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
-import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
-
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * CUDA-aware MemoryWorkspace implementation
@@ -121,9 +117,13 @@ public class CudaWorkspace extends Nd4jWorkspace {
         if (div!= 0)
             requiredMemory += div;
 
+        boolean trimmer = workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && requiredMemory + cycleAllocations.get() > initialBlockSize.get() && initialBlockSize.get() > 0;
+        log.info("Trimmer: {}", trimmer);
+        if (trimmer)
+            log.info("ReqMem: {}; ThisCycle: {}", requiredMemory, cycleAllocations.get());
 
         if (kind == MemoryKind.DEVICE) {
-            if (deviceOffset.get() + requiredMemory <= currentSize.get()) {
+            if (deviceOffset.get() + requiredMemory <= currentSize.get() && !trimmer) {
                 cycleAllocations.addAndGet(requiredMemory);
                 long prevOffset = deviceOffset.getAndAdd(requiredMemory);
 
@@ -147,14 +147,17 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 return ptr;
             } else {
                 // spill
-                if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0) {
+                if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0 && !trimmer) {
                     hostOffset.set(0);
                     deviceOffset.set(0);
                     resetPlanned.set(true);
                     return alloc(requiredMemory, kind, type, initialize);
                 }
 
-                spilledAllocations.addAndGet(requiredMemory);
+                if (!trimmer)
+                    spilledAllocationsSize.addAndGet(requiredMemory);
+                else
+                    pinnedAllocationsSize.addAndGet(requiredMemory);
 
                 if (isDebug.get()) {
                     log.info("Workspace [{}] device_{}: spilled DEVICE array of {} bytes, capacity of {} elements", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory, numElements);
@@ -185,7 +188,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 }
             }
         } else if (kind == MemoryKind.HOST) {
-            if (hostOffset.get() + requiredMemory <= currentSize.get()) {
+            if (hostOffset.get() + requiredMemory <= currentSize.get() && !trimmer) {
 
                 long prevOffset = hostOffset.getAndAdd(requiredMemory);
 
@@ -243,7 +246,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
             throw new RuntimeException(e);
         }
 
-        spilledAllocations.set(0);
+        spilledAllocationsSize.set(0);
         externalCount.set(0);
         externalAllocations.clear();
     }
