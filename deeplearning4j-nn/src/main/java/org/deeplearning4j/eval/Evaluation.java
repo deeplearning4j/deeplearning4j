@@ -36,6 +36,8 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Evaluation metrics:
@@ -205,7 +207,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *
      */
     @Override
-    public void eval(INDArray realOutcomes, INDArray guesses, List<? extends Serializable> recordMetaData) {
+    public void eval(final INDArray realOutcomes, final INDArray guesses, final List<? extends Serializable> recordMetaData) {
         // Add the number of rows to numRowCounter
         numRowCounter += realOutcomes.shape()[0];
 
@@ -227,8 +229,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         // For each row get the most probable label (column) from prediction and assign as guessMax
         // For each row get the column of the true label and assign as currMax
 
-        int nCols = realOutcomes.columns();
-        int nRows = realOutcomes.rows();
+        final int nCols = realOutcomes.columns();
+        final int nRows = realOutcomes.rows();
 
         if (nCols == 1) {
             INDArray binaryGuesses = guesses.gt(0.5);
@@ -268,10 +270,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             }
 
         } else {
-            INDArray guessIndex = Nd4j.argMax(guesses, 1);
-            INDArray realOutcomeIndex = Nd4j.argMax(realOutcomes, 1);
-
+            final INDArray guessIndex = Nd4j.argMax(guesses, 1);
+            final INDArray realOutcomeIndex = Nd4j.argMax(realOutcomes, 1);
             int nExamples = guessIndex.length();
+
             for (int i = 0; i < nExamples; i++) {
                 int actual = (int) realOutcomeIndex.getDouble(i);
                 int predicted = (int) guessIndex.getDouble(i);
@@ -281,21 +283,30 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                     Object m = recordMetaData.get(i);
                     addToMetaConfusionMatrix(actual, predicted, m);
                 }
-            }
 
-            for (int col = 0; col < nCols; col++) {
-                INDArray colBinaryGuesses = guessIndex.eps(col);
-                INDArray colRealOutcomes = realOutcomes.getColumn(col);
+                // instead of looping through each label for confusion
+                // matrix, instead infer those values by determining if true/false negative/positive,
+                // then just add across matrix
 
-                int colTp = colBinaryGuesses.mul(colRealOutcomes).sumNumber().intValue();
-                int colFp = colBinaryGuesses.mul(colRealOutcomes.mul(-1.0).addi(1.0)).sumNumber().intValue();
-                int colFn = colBinaryGuesses.mul(-1.0).addi(1.0).muli(colRealOutcomes).sumNumber().intValue();
-                int colTn = nRows - colTp - colFp - colFn;
+                // if actual == predicted, then it's a true positive, assign true negative to every other label
+                if(actual == predicted) {
+                    truePositives.incrementCount(actual, 1);
+                    for (int col = 0; col < actual; col++) trueNegatives.incrementCount(col, 1); // all cols prior
+                    for (int col = actual+1; col < nCols-actual; col++) trueNegatives.incrementCount(col, 1); // all cols after
+                } else {
+                    falsePositives.incrementCount(predicted, 1);
+                    falseNegatives.incrementCount(actual, 1);
 
-                truePositives.incrementCount(col, colTp);
-                falsePositives.incrementCount(col, colFp);
-                falseNegatives.incrementCount(col, colFn);
-                trueNegatives.incrementCount(col, colTn);
+                    // first determine intervals for adding true negatives
+                    int lesserIndex, greaterIndex;
+                    if(actual < predicted) { lesserIndex = actual; greaterIndex = predicted; }
+                    else { lesserIndex = predicted; greaterIndex = actual; }
+
+                    // now loop through intervals
+                    for (int col = 0; col < lesserIndex; col++) trueNegatives.incrementCount(col, 1); // all cols prior
+                    for (int col = lesserIndex+1; col < greaterIndex; col++) trueNegatives.incrementCount(col, 1); // all cols after
+                    for (int col = greaterIndex+1; col < nCols-greaterIndex; col++) trueNegatives.incrementCount(col, 1); // all cols after
+                }
             }
         }
 
