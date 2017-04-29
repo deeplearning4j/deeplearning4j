@@ -826,6 +826,7 @@ public class TensorGrad {
 
 
     public void exec() {
+        allocate();
         for(OpExecAction opExecAction : graph().getOpOrder()) {
             Nd4j.getExecutioner().exec(createOp(opExecAction.getOpState().getOpType(),opExecAction));
         }

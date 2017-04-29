@@ -143,7 +143,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
         addEdgeHelper(edge, fromList);
 
-        List<Edge<E>> incomingList =  incomingEdges.get(edge.getFrom());
+        List<Edge<E>> incomingList =  incomingEdges.get(edge.getTo());
         if(incomingList == null) {
             incomingList = new ArrayList<>();
             incomingEdges.put(edge.getTo(),incomingList);
