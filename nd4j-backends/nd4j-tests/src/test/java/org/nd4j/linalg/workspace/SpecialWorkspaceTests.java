@@ -65,6 +65,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
         }
 
         assertEquals(1000 * Nd4j.sizeOfDataType(), workspace.getSpilledSize());
+        assertEquals(1100 * Nd4j.sizeOfDataType(), workspace.getPinnedSize());
         assertEquals(0, workspace.getHostOffset());
         assertEquals(0, workspace.getThisCycleAllocations());
         log.info("------------------");
@@ -80,11 +81,16 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
 
                 assertEquals("Failed on iteration " + i, (i + 1) * 1000 * Nd4j.sizeOfDataType(), workspace.getHostOffset());
             }
+
+            if (e >= 1) {
+                assertEquals(0, workspace.getNumberOfPinnedAllocations());
+            } else {
+                assertEquals(1, workspace.getNumberOfPinnedAllocations());
+            }
         }
 
         assertEquals(0, workspace.getSpilledSize());
-
-
+        assertEquals(0, workspace.getPinnedSize());
 
         assertEquals(0, workspace.getNumberOfExternalAllocations());
 

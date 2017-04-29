@@ -236,6 +236,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
             log.info("Workspace: {}", key);
             log.info("Allocated amount: {} bytes", ((Nd4jWorkspace)map.get(key)).getCurrentSize());
             log.info("External (spilled) amount: {} bytes", ((Nd4jWorkspace)map.get(key)).getSpilledSize());
+            log.info("External (pinned) amount: {} bytes", ((Nd4jWorkspace)map.get(key)).getPinnedSize());
             System.out.println();
         }
     }

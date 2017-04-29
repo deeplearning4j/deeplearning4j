@@ -2,10 +2,12 @@ package org.nd4j.linalg.cpu.nativecpu.workspace;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.PointerPointer;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.memory.pointers.PointersPair;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -44,7 +46,28 @@ public class CpuWorkspace extends Nd4jWorkspace {
     }
 
     @Override
+    protected void clearPinnedAllocations() {
+        while (!pinnedAllocations.isEmpty()) {
+            PointersPair pair = pinnedAllocations.peek();
+            if (pair == null)
+                throw new RuntimeException();
+
+            if (pair.getAllocationCycle() + 1 < cyclesCount.get()) {
+                pinnedAllocations.remove();
+
+                NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pair.getHostPointer());
+
+                pinnedCount.decrementAndGet();
+                pinnedAllocationsSize.addAndGet(pair.getRequiredMemory() * -1);
+            }
+        }
+    }
+
+    @Override
     protected void clearExternalAllocations() {
+        if (isDebug.get())
+            log.info("Workspace [{}] device_{} threadId {} guid [{}]: clearing external allocations...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), Thread.currentThread().getId(), guid);
+
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         for (PointersPair pair: externalAllocations) {
             nativeOps.freeHost(pair.getHostPointer());
