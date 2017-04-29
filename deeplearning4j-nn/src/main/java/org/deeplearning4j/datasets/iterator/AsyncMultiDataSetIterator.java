@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Async prefetching iterator wrapper for MultiDataSetIterator implementations
@@ -281,13 +282,14 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         private BlockingQueue<MultiDataSet> queue;
         private MultiDataSetIterator iterator;
         private MultiDataSet terminator;
+        private AtomicLong internalCounter = new AtomicLong(0);
         private WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
                 .minSize(10 * 1024L * 1024L)
-                .overallocationLimit(prefetchSize + 2)
+                .overallocationLimit(prefetchSize + 1)
                 .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
                 .policyLearning(LearningPolicy.FIRST_LOOP)
                 .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                .policySpill(SpillPolicy.EXTERNAL)
+                .policySpill(SpillPolicy.REALLOCATE)
                 .build();
 
 
@@ -318,8 +320,12 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
                     if (smth != null)
                         queue.put(smth);
+
+                    if (internalCounter.incrementAndGet() % 100 == 0)
+                        Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
                 }
                 queue.put(terminator);
+                Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
             } catch (InterruptedException e) {
                 // do nothing
                 shouldWork.set(false);

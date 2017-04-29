@@ -363,7 +363,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
                 .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
                 .policyLearning(LearningPolicy.FIRST_LOOP)
                 .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                .policySpill(SpillPolicy.EXTERNAL)
+                .policySpill(SpillPolicy.REALLOCATE)
                 .build();
 
 
