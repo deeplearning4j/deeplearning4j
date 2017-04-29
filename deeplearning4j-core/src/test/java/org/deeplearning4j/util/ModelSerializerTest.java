@@ -160,16 +160,13 @@ public class ModelSerializerTest {
         assertEquals(cg.getUpdater().getStateViewArray(), network.getUpdater().getStateViewArray());
     }
 
-    @Test
-    public void testSaveRestoreNormalizerFromInputStream() throws Exception {
+    private DataSet trivialDataSet() {
         INDArray inputs = Nd4j.create(new float[] { 1.0f, 2.0f, 3.0f });
         INDArray labels = Nd4j.create(new float[] { 4.0f, 5.0f, 6.0f });
-        DataSet dataSet = new DataSet(inputs, labels);
+        return new DataSet(inputs, labels);
+    }
 
-
-        NormalizerStandardize norm = new NormalizerStandardize();
-        norm.fit(dataSet);
-
+    private ComputationGraph simpleComputationGraph() {
         ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .learningRate(0.1)
@@ -183,27 +180,59 @@ public class ModelSerializerTest {
                 .backprop(true)
                 .build();
 
-        ComputationGraph cg = new ComputationGraph(config);
+        return new ComputationGraph(config);
+    }
+
+    @Test
+    public void testSaveRestoreNormalizerFromInputStream() throws Exception {
+        DataSet dataSet = trivialDataSet();
+
+        NormalizerStandardize norm = new NormalizerStandardize();
+        norm.fit(dataSet);
+
+        ComputationGraph cg = simpleComputationGraph();
         cg.init();
 
         File tempFile = File.createTempFile("tsfs", "fdfsdf");
         tempFile.deleteOnExit();
 
         ModelSerializer.writeModel(cg, tempFile, true);
+
         ModelSerializer.addNormalizerToModel(tempFile, norm);
+        FileInputStream fis = new FileInputStream(tempFile);
+
+
+        NormalizerStandardize restored = ModelSerializer.restoreNormalizerFromInputStream(fis);
+
+        assertNotEquals(null, restored);
+
+        DataSet dataSet2 = dataSet.copy();
+
+        norm.preProcess(dataSet2);
+        assertNotEquals(dataSet.getFeatures(), dataSet2.getFeatures());
+
+        restored.revert(dataSet2);
+        assertEquals(dataSet.getFeatures(), dataSet2.getFeatures());
+    }
+
+    @Test
+    public void testRestoreUnsavedNormalizerFromInputStream() throws Exception {
+        DataSet dataSet = trivialDataSet();
+
+        NormalizerStandardize norm = new NormalizerStandardize();
+        norm.fit(dataSet);
+
+        ComputationGraph cg = simpleComputationGraph();
+        cg.init();
+
+        File tempFile = File.createTempFile("tsfs", "fdfsdf");
+        tempFile.deleteOnExit();
+        ModelSerializer.writeModel(cg, tempFile, true);
 
         FileInputStream fis = new FileInputStream(tempFile);
 
         NormalizerStandardize restored = ModelSerializer.restoreNormalizerFromInputStream(fis);
 
-        assertEquals(norm.getLabelMean(), restored.getLabelMean());
-        assertEquals(norm.getLabelStd(), restored.getLabelStd());
-
-        DataSet dataSet2 = dataSet.copy();
-
-        norm.preProcess(dataSet2);
-        restored.revert(dataSet2);
-
-        assertEquals(dataSet.getFeatures(), dataSet2.getFeatures());
+        assertEquals(null, restored);
     }
 }
