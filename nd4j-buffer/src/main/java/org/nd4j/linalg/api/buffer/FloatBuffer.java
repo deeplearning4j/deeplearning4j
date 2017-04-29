@@ -37,8 +37,6 @@ import java.nio.ByteBuffer;
  */
 public class FloatBuffer extends BaseDataBuffer {
 
-    protected FloatIndexer indexer;
-
     /**
      * Meant for creating another view of a buffer
      *
@@ -158,22 +156,7 @@ public class FloatBuffer extends BaseDataBuffer {
     public FloatBuffer(float[] data, boolean copy, int offset, MemoryWorkspace workspace) {
         super(data, copy, offset, workspace);
     }
-
-    @Override
-    public void put(long i, double element) {
-        this.indexer.put(offset() + i, (float) element);
-    }
-
-    @Override
-    protected void setIndexer(@NonNull Indexer indexer) {
-        this.indexer = (FloatIndexer) indexer;
-    }
-
-    @Override
-    public Indexer indexer() {
-        return indexer;
-    }
-
+    
     @Override
     protected DataBuffer create(long length) {
         return new FloatBuffer(length);

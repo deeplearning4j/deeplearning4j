@@ -36,8 +36,6 @@ import java.nio.ByteBuffer;
  */
 public class IntBuffer extends BaseDataBuffer {
 
-    protected IntIndexer indexer;
-
     /**
      * Meant for creating another view of a buffer
      *
@@ -99,22 +97,6 @@ public class IntBuffer extends BaseDataBuffer {
 
     public IntBuffer(ByteBuffer buffer, int length) {
         super(buffer, length);
-    }
-
-
-    @Override
-    protected void setIndexer(Indexer indexer) {
-        this.indexer = (IntIndexer) indexer;
-    }
-
-    @Override
-    public Indexer indexer() {
-        return this.indexer;
-    }
-
-    @Override
-    public int getInt(long i) {
-        return this.indexer.get(offset() + i);
     }
 
     @Override

@@ -17,6 +17,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 /**
  * @author raver119@gmail.com
@@ -56,6 +57,8 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread("WS1");
         workspace.enableDebug(true);
 
+        assertEquals(0, workspace.getStepNumber());
+
         assertEquals(1000 * Nd4j.sizeOfDataType(), workspace.getSpilledSize());
         assertEquals(1000 * Nd4j.sizeOfDataType(), workspace.getInitialBlockSize());
         assertEquals((1000 + (1000*3)) * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
@@ -64,8 +67,11 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
             Nd4j.create(1100);
         }
 
+        assertEquals(0, workspace.getStepNumber());
+
         assertEquals(1000 * Nd4j.sizeOfDataType(), workspace.getSpilledSize());
         assertEquals(1100 * Nd4j.sizeOfDataType(), workspace.getPinnedSize());
+
         assertEquals(0, workspace.getHostOffset());
         assertEquals(0, workspace.getThisCycleAllocations());
         log.info("------------------");
@@ -83,7 +89,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
             }
 
             if (e >= 1) {
-                assertEquals(0, workspace.getNumberOfPinnedAllocations());
+                assertEquals("Failed on iteration " + e,0, workspace.getNumberOfPinnedAllocations());
             } else {
                 assertEquals(1, workspace.getNumberOfPinnedAllocations());
             }
@@ -91,10 +97,46 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
 
         assertEquals(0, workspace.getSpilledSize());
         assertEquals(0, workspace.getPinnedSize());
+        assertEquals(0, workspace.getNumberOfPinnedAllocations());
+        assertEquals(0, workspace.getNumberOfExternalAllocations());
 
+        log.info("Workspace state after first block: ---------------------------------------------------------");
+        Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
+
+
+        log.info("--------------------------------------------------------------------------------------------");
+
+        // we just do huge loop now, with pinned stuff in it
+        for (int i = 0; i < 100; i++) {
+            try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
+                Nd4j.create(500);
+                Nd4j.create(500);
+                Nd4j.create(500);
+            }
+        }
+
+        assertEquals(0, workspace.getSpilledSize());
+        assertNotEquals(0, workspace.getPinnedSize());
+        assertNotEquals(0, workspace.getNumberOfPinnedAllocations());
         assertEquals(0, workspace.getNumberOfExternalAllocations());
 
 
+        // and we do another clean loo, without pinned stuff in it, to ensure all pinned allocates are gone
+        for (int i = 0; i < 100; i++) {
+            try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "WS1")) {
+                Nd4j.create(500);
+                Nd4j.create(500);
+            }
+        }
+
+        assertEquals(0, workspace.getSpilledSize());
+        assertEquals(0, workspace.getPinnedSize());
+        assertEquals(0, workspace.getNumberOfPinnedAllocations());
+        assertEquals(0, workspace.getNumberOfExternalAllocations());
+
+
+        log.info("Workspace state after second block: ---------------------------------------------------------");
+        Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
     }
 
     @Override

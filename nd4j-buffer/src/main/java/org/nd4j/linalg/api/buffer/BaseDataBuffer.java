@@ -109,7 +109,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
 
-    protected abstract void setIndexer(Indexer indexer);
+    protected void setIndexer(Indexer indexer) {
+        this.indexer = indexer;
+    }
 
     /**
      *
@@ -982,7 +984,6 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public void put(long i, float element) {
         if (dataType() == Type.DOUBLE) {
             ((DoubleIndexer) indexer).put(offset() + i, element);
-
         } else if (dataType() == Type.INT) {
             ((IntIndexer) indexer).put(offset() + i, (int) element);
         } else {

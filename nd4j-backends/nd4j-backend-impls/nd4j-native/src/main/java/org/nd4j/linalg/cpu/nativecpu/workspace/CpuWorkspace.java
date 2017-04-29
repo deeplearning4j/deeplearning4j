@@ -47,18 +47,29 @@ public class CpuWorkspace extends Nd4jWorkspace {
 
     @Override
     protected void clearPinnedAllocations() {
+        if (isDebug.get())
+            log.info("Workspace [{}] device_{} threadId {} cycle {}: clearing pinned allocations...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), Thread.currentThread().getId(), cyclesCount.get());
+
         while (!pinnedAllocations.isEmpty()) {
             PointersPair pair = pinnedAllocations.peek();
             if (pair == null)
                 throw new RuntimeException();
 
-            if (pair.getAllocationCycle() + 1 < cyclesCount.get()) {
+            long stepNumber = pair.getAllocationCycle();
+            long stepCurrent = stepsCount.get();
+
+            if (isDebug.get())
+                log.info("Allocation step: {}; Current step: {}", stepNumber, stepCurrent);
+
+            if (stepNumber + 2 < stepCurrent) {
                 pinnedAllocations.remove();
 
                 NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pair.getHostPointer());
 
                 pinnedCount.decrementAndGet();
                 pinnedAllocationsSize.addAndGet(pair.getRequiredMemory() * -1);
+            } else {
+                break;
             }
         }
     }

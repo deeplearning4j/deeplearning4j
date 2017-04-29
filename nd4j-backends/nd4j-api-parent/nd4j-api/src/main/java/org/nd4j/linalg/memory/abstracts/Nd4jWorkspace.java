@@ -56,7 +56,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
 
     protected AtomicLong cyclesCount = new AtomicLong(0);
-    protected AtomicLong buffersCount = new AtomicLong(0);
+    protected AtomicLong stepsCount = new AtomicLong(0);
+    protected int stepsNumber = 0;
 
     protected AtomicLong lastCycleAllocations = new AtomicLong(0);
     protected AtomicLong cycleAllocations = new AtomicLong(0);
@@ -107,10 +108,22 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         // and actual workspace allocation
         currentSize.set(workspaceConfiguration.getInitialSize());
 
+        if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED) {
+            if (workspaceConfiguration.getOverallocationLimit() < 1.0)
+                throw new ND4JIllegalStateException("For cyclic workspace overallocation should be positive integral value.");
+
+            stepsNumber = (int) (workspaceConfiguration.getOverallocationLimit() + 1);
+            log.info("Steps: {}", stepsNumber);
+        }
+
         //if (workspaceConfiguration.getPolicyLearning() == LearningPolicy.OVER_TIME && workspaceConfiguration.getCyclesBeforeInitialization() < 1)
             //log.warn("Workspace [{}]: initialization OVER_TIME was selected, but number of cycles isn't positive value!", id);
 
         init();
+    }
+
+    public long getStepNumber() {
+        return stepsCount.get();
     }
 
     public long getSpilledSize() {
@@ -206,9 +219,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         }
 
         boolean trimmer = workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && requiredMemory + cycleAllocations.get() > initialBlockSize.get() && initialBlockSize.get() > 0;
-        log.info("Trimmer: {}", trimmer);
-        if (trimmer)
-            log.info("ReqMem: {}; ThisCycle: {}", requiredMemory, cycleAllocations.get());
+        //log.info("Trimmer: {}", trimmer);
+        //if (trimmer)
+            //log.info("ReqMem: {}; ThisCycle: {}", requiredMemory, cycleAllocations.get());
 
         if (hostOffset.get() + requiredMemory <= currentSize.get() && !trimmer) {
             // just alignment to 8 bytes
@@ -230,6 +243,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 hostOffset.set(0);
                 deviceOffset.set(0);
                 resetPlanned.set(true);
+                stepsCount.incrementAndGet();
                 return alloc(requiredMemory, kind, type, initialize);
             }
 
@@ -239,7 +253,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 pinnedAllocationsSize.addAndGet(requiredMemory);
 
             if (isDebug.get())
-                log.info("Workspace [{}]: spilled  {} bytes, capacity of {} elements",  id, requiredMemory, numElements);
+                log.info("Workspace [{}]: step: {}, spilled  {} bytes, capacity of {} elements",  id, stepsCount.get(), requiredMemory, numElements);
 
             switch (workspaceConfiguration.getPolicySpill()) {
                 case REALLOCATE:
@@ -257,7 +271,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                         pinnedCount.incrementAndGet();
                         PagedPointer pointer = new PagedPointer(memoryManager.allocate(requiredMemory, MemoryKind.HOST, initialize), numElements);
 
-                        pinnedAllocations.add(new PointersPair(cyclesCount.get(), requiredMemory, pointer, null));
+                        pinnedAllocations.add(new PointersPair(stepsCount.get(), requiredMemory, pointer, null));
+
 
                         return pointer;
                     }
@@ -380,6 +395,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
 
         cyclesCount.incrementAndGet();
+        if (cyclesCount.get() % stepsNumber == 0)
+            stepsCount.incrementAndGet();
         /*
             Basically all we want here, is:
             1) memset primary page(s)
@@ -407,7 +424,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
             if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT || resetPlanned.get())) {
                 clearExternalAllocations();
-                clearPinnedAllocations();
                 resetPlanned.set(false);
             }
 
@@ -419,6 +435,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 initializeWorkspace();
             }
         }
+
+        if (pinnedCount.get() > 0)
+            clearPinnedAllocations();
 
         lastCycleAllocations.set(cycleAllocations.get());
 
@@ -467,6 +486,11 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         disabledCounter.set(0);
 
         return this;
+    }
+
+    public void reset() {
+        hostOffset.set(0);
+        deviceOffset.set(0);
     }
 
     protected abstract void resetWorkspace();

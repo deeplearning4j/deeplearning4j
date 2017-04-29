@@ -142,11 +142,6 @@ public class DoubleBuffer extends BaseDataBuffer {
     }
 
     @Override
-    protected void setIndexer(Indexer indexer) {
-        this.indexer = (DoubleIndexer) indexer;
-    }
-
-    @Override
     public float getFloat(long i) {
         return (float) getDouble(i);
     }
