@@ -17,10 +17,8 @@
  */
 package org.deeplearning4j.nn.layers.recurrent;
 
-import java.util.Arrays;
 import java.util.Map;
 import org.bytedeco.javacpp.*;
-import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -29,6 +27,8 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.ActivationTanH;
+import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
@@ -251,11 +251,17 @@ public class CudnnLSTMHelper implements LSTMHelper {
         }
     }
 
-    int numLayers = 1;
-    float dropout = 0;
-    boolean bidirectional = false;
-    int RNNMode = CUDNN_LSTM;
-    int numLinearLayers = 8; // CUDNN_LSTM
+    // These constants might eventually become variable parameters...
+    static final int numLayers = 1;
+    static final float dropout = 0;
+    static final boolean bidirectional = false;
+    static final int RNNMode = CUDNN_LSTM;
+    static final int numLinearLayers = 8; // CUDNN_LSTM
+
+    static int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE
+                        : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
+    static int dataTypeSize = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8
+                            : Nd4j.dataType() == DataBuffer.Type.FLOAT ? 4 : 2;
 
     CudnnContext cudnnContext = new CudnnContext();
     TensorArray xDesc = new TensorArray();
@@ -266,17 +272,6 @@ public class CudnnLSTMHelper implements LSTMHelper {
     DataCache workSpace = new DataCache();
     DataCache reserveSpace = new DataCache();
     DataCache weightsSpace = new DataCache();
-    int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE
-                 : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
-    int dataTypeSize = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8
-                     : Nd4j.dataType() == DataBuffer.Type.FLOAT ? 4 : 2;
-    int tensorFormat = CUDNN_TENSOR_NCHW;
-    Pointer alpha = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(1.0)
-                  : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(1.0f)
-                                    : new ShortPointer(new short[] {(short) HalfIndexer.fromFloat(1.0f)});
-    Pointer beta = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(0.0)
-                 : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(0.0f)
-                                    : new ShortPointer(new short[] {(short) HalfIndexer.fromFloat(0.0f)});;
     SizeTPointer sizeInBytes = new SizeTPointer(1);
 
     @Override
@@ -289,6 +284,16 @@ public class CudnnLSTMHelper implements LSTMHelper {
                     final Map<String, INDArray> gradientViews, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
                     final boolean hasPeepholeConnections) {            //True for GravesLSTM, false for LSTM
 
+        if (!(gateActivationFn instanceof ActivationSigmoid)) {
+            throw new IllegalArgumentException("Error: Gate activation functions != ActivationSigmoid are not supported.");
+        }
+        if (!(conf.getLayer().getActivationFn() instanceof ActivationTanH)) {
+            throw new IllegalArgumentException("Error: Layer activation functions != ActivationTanH are not supported.");
+        }
+        if (hasPeepholeConnections) {
+            throw new IllegalArgumentException("Error: LSTM layers with peephole connections are not supported.");
+        }
+
         //Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
         int hiddenLayerSize = recurrentWeights.size(0); //i.e., n^L
         int prevLayerSize = inputWeights.size(0); //n^(L-1)
@@ -297,16 +302,15 @@ public class CudnnLSTMHelper implements LSTMHelper {
         boolean is2dInput = epsilon.rank() < 3; //Edge case: T=1 may have shape [miniBatchSize,n^(L+1)], equiv. to [miniBatchSize,n^(L+1),1]
         int timeSeriesLength = (is2dInput ? 1 : epsilon.size(2));
 
-        INDArray x = input.permute(2, 0, 1).dup();
-        INDArray dx = Nd4j.create(new int[] {timeSeriesLength, miniBatchSize, prevLayerSize});
-        INDArray dy = epsilon.permute(2, 0, 1).dup();
+        INDArray x = input.permute(2, 0, 1).dup('c');
+        INDArray dy = epsilon.permute(2, 0, 1).dup('c');
+        INDArray dx = Nd4j.createUninitialized(new int[] {timeSeriesLength, miniBatchSize, prevLayerSize}, 'c');
 
-        INDArray iwGradientsOut = Nd4j.create(new int[] {4, hiddenLayerSize, inputLayerSize});
-        INDArray rwGradientsOut = Nd4j.create(new int[] {4, hiddenLayerSize, hiddenLayerSize});
-        INDArray bGradientsOut  = Nd4j.create(new int[] {4, hiddenLayerSize});
-        INDArray bGradientsOut2 = bGradientsOut.dup();
+        INDArray iwGradientsOut = gradientViews.get(inputWeightKey);
+        INDArray rwGradientsOut = gradientViews.get(recurrentWeightKey); //Order: {I,F,O,G,FF,OO,GG}
+        INDArray bGradientsOut = gradientViews.get(biasWeightKey);
 
-        INDArray fwdPassOutput = fwdPass.fwdPassOutputAsArrays[0];
+        INDArray outputActivations = fwdPass.fwdPassOutputAsArrays[0];
         INDArray memCellState = fwdPass.memCellState[0];
         INDArray memCellActivations = fwdPass.memCellActivations[0];
 
@@ -314,90 +318,99 @@ public class CudnnLSTMHelper implements LSTMHelper {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         Allocator allocator = AtomicAllocator.getInstance();
-        CudaContext context = allocator.getFlowController().prepareActionAllWrite(x, recurrentWeights, inputWeights, dy, dx,
-                fwdPass.fwdPassOutputAsArrays[0], fwdPass.memCellState[0], fwdPass.memCellActivations[0],
-                iwGradientsOut, rwGradientsOut, bGradientsOut, bGradientsOut2);
+        CudaContext context = allocator.getFlowController().prepareActionAllWrite(x, dy, dx, outputActivations,
+                        memCellState, memCellActivations, iwGradientsOut, rwGradientsOut, bGradientsOut);
         Pointer xData = allocator.getPointer(x, context);
-        Pointer recurrentWeightsData = allocator.getPointer(recurrentWeights, context);
-        Pointer inputWeightsData = allocator.getPointer(inputWeights, context);
         Pointer dyData = allocator.getPointer(dy, context);
         Pointer dxData = allocator.getPointer(dx, context);
-        Pointer fwdPassOutputData = allocator.getPointer(fwdPass.fwdPassOutputAsArrays[0], context);
-        Pointer memCellStateData = allocator.getPointer(fwdPass.memCellState[0], context);
-        Pointer memCellActivationsData = allocator.getPointer(fwdPass.memCellActivations[0], context);
+        Pointer outputActivationsData = allocator.getPointer(outputActivations, context);
+        Pointer memCellStateData = allocator.getPointer(memCellState, context);
+        Pointer memCellActivationsData = allocator.getPointer(memCellActivations, context);
         Pointer iwGradientsOutData = allocator.getPointer(iwGradientsOut, context);
         Pointer rwGradientsOutData = allocator.getPointer(rwGradientsOut, context);
         Pointer bGradientsOutData = allocator.getPointer(bGradientsOut, context);
-        Pointer bGradientsOut2Data = allocator.getPointer(bGradientsOut2, context);
 
         CUstream_st stream = new CUstream_st(context.getOldStream());
         checkCudnn(cudnnSetStream(cudnnContext, stream));
 
+        if (truncatedBPTT) {
+            int endIdx = Math.max(0, timeSeriesLength - tbpttBackwardLength) * miniBatchSize * hiddenLayerSize;
+            xData.position(endIdx * dataTypeSize);
+            dyData.position(endIdx * (bidirectional ? 2 : 1) * dataTypeSize);
+            outputActivationsData.position(endIdx * (bidirectional ? 2 : 1) * dataTypeSize);
+            timeSeriesLength = Math.min(timeSeriesLength, tbpttBackwardLength);
+        }
+
         cudnnTensorStruct xDesc0 = xDesc.get(cudnnTensorStruct.class, 0);
 
-        checkCudnn(cudnnRNNBackwardData(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, yDesc, fwdPassOutputData, dyDesc, dyData,
-                cudnnContext.dhyDesc, null, cudnnContext.dcyDesc, null, cudnnContext.wDesc, weightsSpace, cudnnContext.hxDesc, memCellActivationsData,
-                cudnnContext.cxDesc, memCellStateData, dxDesc, dxData, cudnnContext.dhxDesc, null, cudnnContext.dcxDesc, null,
-                workSpace, workSpace.limit(), reserveSpace, reserveSpace.limit()));
+        checkCudnn(cudnnRNNBackwardData(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, yDesc,
+                        outputActivationsData, dyDesc, dyData, cudnnContext.dhyDesc, null, cudnnContext.dcyDesc, null,
+                        cudnnContext.wDesc, weightsSpace, cudnnContext.hxDesc, memCellActivationsData,
+                        cudnnContext.cxDesc, memCellStateData, dxDesc, dxData, cudnnContext.dhxDesc, null,
+                        cudnnContext.dcxDesc, null, workSpace, workSpace.limit(), reserveSpace, reserveSpace.limit()));
 
         // cudnnRNNBackwardWeights adds to the data in dw.
         checkCuda(cudaMemsetAsync(weightsSpace, 0, weightsSpace.limit(), stream));
 
-        checkCudnn(cudnnRNNBackwardWeights(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, xDesc, xData, cudnnContext.hxDesc, memCellActivationsData,
-                yDesc, fwdPassOutputData, workSpace, workSpace.limit(), cudnnContext.dwDesc, weightsSpace, reserveSpace, reserveSpace.limit()));
+        checkCudnn(cudnnRNNBackwardWeights(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, xDesc,
+                        xData, cudnnContext.hxDesc, memCellActivationsData, yDesc, outputActivationsData, workSpace,
+                        workSpace.limit(), cudnnContext.dwDesc, weightsSpace, reserveSpace, reserveSpace.limit()));
+
+        int[] dataType = new int[1];
+        int[] format = new int[1];
+        int[] nbDims = new int[1];
+        int[] filterDimA = new int[3];
+        Pointer linLayerMat = new Pointer();
+        Pointer linLayerBias = new Pointer();
 
         for (int layer = 0; layer < numLayers * (bidirectional ? 2 : 1); layer++) {
             for (int linLayerID = 0; linLayerID < numLinearLayers; linLayerID++) {
-                int[] dataType = new int[1];
-                int[] format = new int[1];
-                int[] nbDims = new int[1];
-                int[] filterDimA = new int[3];
-
-                Pointer linLayerMat = new Pointer();
-
                 checkCudnn(cudnnGetRNNLinLayerMatrixParams(cudnnContext, cudnnContext.rnnDesc, layer, xDesc0,
-                        cudnnContext.wDesc, weightsSpace, linLayerID, cudnnContext.linLayerMatDesc, linLayerMat));
+                                cudnnContext.wDesc, weightsSpace, linLayerID,
+                                cudnnContext.linLayerMatDesc, linLayerMat));
 
-                checkCudnn(cudnnGetFilterNdDescriptor(cudnnContext.linLayerMatDesc, 3, dataType, format, nbDims, filterDimA));
-
-                Pointer linLayerBias = new Pointer();
+                checkCudnn(cudnnGetFilterNdDescriptor(cudnnContext.linLayerMatDesc,
+                                3, dataType, format, nbDims, filterDimA));
 
                 checkCudnn(cudnnGetRNNLinLayerBiasParams(cudnnContext, cudnnContext.rnnDesc, layer, xDesc0,
-                        cudnnContext.wDesc, weightsSpace, linLayerID, cudnnContext.linLayerBiasDesc, linLayerBias));
+                                cudnnContext.wDesc, weightsSpace, linLayerID,
+                                cudnnContext.linLayerBiasDesc, linLayerBias));
 
-                checkCudnn(cudnnGetFilterNdDescriptor(cudnnContext.linLayerBiasDesc, 3, dataType, format, nbDims, filterDimA));
+                checkCudnn(cudnnGetFilterNdDescriptor(cudnnContext.linLayerBiasDesc,
+                                3, dataType, format, nbDims, filterDimA));
 
                 // our data is in "new, forget, output, and input gates" order (aka IFOG), each kind of weight packed together
                 int position = 0, size = 0;
-                Pointer mat = null, bias = null;
+                Pointer data = null;
                 switch (linLayerID) {
-                    case 0: mat = iwGradientsOutData; bias = bGradientsOutData;  position = 3; size = inputLayerSize; break; // input gate
-                    case 1: mat = iwGradientsOutData; bias = bGradientsOutData;  position = 1; size = inputLayerSize; break; // forget gate
-                    case 2: mat = iwGradientsOutData; bias = bGradientsOutData;  position = 0; size = inputLayerSize; break; // memory gate
-                    case 3: mat = iwGradientsOutData; bias = bGradientsOutData;  position = 2; size = inputLayerSize; break; // output gate
-                    case 4: mat = rwGradientsOutData; bias = bGradientsOut2Data; position = 3; size = hiddenLayerSize; break; // input gate
-                    case 5: mat = rwGradientsOutData; bias = bGradientsOut2Data; position = 1; size = hiddenLayerSize; break; // forget gate
-                    case 6: mat = rwGradientsOutData; bias = bGradientsOut2Data; position = 0; size = hiddenLayerSize; break; // memory gate
-                    case 7: mat = rwGradientsOutData; bias = bGradientsOut2Data; position = 2; size = hiddenLayerSize; break; // output gate
+                    case 0: data = iwGradientsOutData; position = 3; size = inputLayerSize; break; // input gate
+                    case 1: data = iwGradientsOutData; position = 1; size = inputLayerSize; break; // forget gate
+                    case 2: data = iwGradientsOutData; position = 0; size = inputLayerSize; break; // new gate
+                    case 3: data = iwGradientsOutData; position = 2; size = inputLayerSize; break; // output gate
+                    case 4: data = rwGradientsOutData; position = 3; size = hiddenLayerSize; break; // input gate
+                    case 5: data = rwGradientsOutData; position = 1; size = hiddenLayerSize; break; // forget gate
+                    case 6: data = rwGradientsOutData; position = 0; size = hiddenLayerSize; break; // new gate
+                    case 7: data = rwGradientsOutData; position = 2; size = hiddenLayerSize; break; // output gate
                     default: assert false;
                 }
-                checkCuda(cudaMemcpyAsync(mat.position(position * size * hiddenLayerSize * dataTypeSize), linLayerMat, size * hiddenLayerSize * dataTypeSize, cudaMemcpyDeviceToDevice, stream));
-                checkCuda(cudaMemcpyAsync(bias.position(position * hiddenLayerSize * dataTypeSize), linLayerBias, hiddenLayerSize * dataTypeSize, cudaMemcpyDeviceToDevice, stream));
+                checkCuda(cudaMemcpyAsync(data.position(position * size * hiddenLayerSize * dataTypeSize),
+                                linLayerMat, size * hiddenLayerSize * dataTypeSize, cudaMemcpyDeviceToDevice, stream));
+                if (linLayerID < 4) {
+                    checkCuda(cudaMemcpyAsync(bGradientsOutData.position(position * hiddenLayerSize * dataTypeSize),
+                                    linLayerBias, hiddenLayerSize * dataTypeSize, cudaMemcpyDeviceToDevice, stream));
+                }
             }
         }
 
-        allocator.getFlowController().registerActionAllWrite(context, x, recurrentWeights, inputWeights, dy, dx,
-                fwdPass.fwdPassOutputAsArrays[0], fwdPass.memCellState[0], fwdPass.memCellActivations[0],
-                iwGradientsOut, rwGradientsOut, bGradientsOut, bGradientsOut2);
-
-        bGradientsOut = bGradientsOut.addi(bGradientsOut2);
+        allocator.getFlowController().registerActionAllWrite(context, x, dy, dx, outputActivations,
+                        memCellState, memCellActivations, iwGradientsOut, rwGradientsOut, bGradientsOut);
 
         Gradient retGradient = new DefaultGradient();
-        retGradient.gradientForVariable().put(inputWeightKey, iwGradientsOut/*.permute(0, 1, 2)*/.reshape('f', inputLayerSize, 4 * hiddenLayerSize));
-        retGradient.gradientForVariable().put(recurrentWeightKey, rwGradientsOut/*.permute(0, 1, 2)*/.reshape('f', hiddenLayerSize, 4 * hiddenLayerSize));
-        retGradient.gradientForVariable().put(biasWeightKey, bGradientsOut.reshape(1, 4 * hiddenLayerSize));
+        retGradient.gradientForVariable().put(inputWeightKey, iwGradientsOut/*.permute(0, 1, 2).reshape('f', inputLayerSize, hiddenLayerSize * 4)*/);
+        retGradient.gradientForVariable().put(recurrentWeightKey, rwGradientsOut/*.permute(0, 1, 2).reshape('f', hiddenLayerSize, hiddenLayerSize * 4)*/);
+        retGradient.gradientForVariable().put(biasWeightKey, bGradientsOut/*.reshape(1, 4 * hiddenLayerSize)*/);
 
-        INDArray epsilonNext = dx.permute(1, 2, 0); //i.e., what would be W^L*(delta^L)^T. Shape: [m,n^(L-1),T]
+        INDArray epsilonNext = dx.permute(1, 2, 0).dup('f'); //i.e., what would be W^L*(delta^L)^T. Shape: [m,n^(L-1),T]
 
         return new Pair<>(retGradient, epsilonNext);
     }
@@ -413,11 +426,42 @@ public class CudnnLSTMHelper implements LSTMHelper {
                     final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
                     final boolean hasPeepholeConnections) {            //True for GravesLSTM, false for LSTM
 
+        if (!(gateActivationFn instanceof ActivationSigmoid)) {
+            throw new IllegalArgumentException("Error: Gate activation functions != ActivationSigmoid are not supported.");
+        }
+        if (!(conf.getLayer().getActivationFn() instanceof ActivationTanH)) {
+            throw new IllegalArgumentException("Error: Layer activation functions != ActivationTanH are not supported.");
+        }
+        if (hasPeepholeConnections) {
+            throw new IllegalArgumentException("Error: LSTM layers with peephole connections are not supported.");
+        }
+
         boolean is2dInput = input.rank() < 3; //Edge case of T=1, may have shape [m,nIn], equiv. to [m,nIn,1]
         int timeSeriesLength = (is2dInput ? 1 : input.size(2));
         int hiddenLayerSize = recurrentWeights.size(0);
         int miniBatchSize = input.size(0);
         int inputLayerSize = input.size(1);
+
+        INDArray x = input.permute(2, 0, 1).dup('c');
+        INDArray linInputWeights = inputWeights;//.reshape('f', inputLayerSize, hiddenLayerSize, 4).permute(0, 1, 2).dup('f');
+        INDArray linRecurrentWeights = recurrentWeights;//.reshape('f', hiddenLayerSize, hiddenLayerSize, 4).permute(0, 1, 2).dup('f');
+        INDArray linBiases = biases;//.reshape(4, hiddenLayerSize);
+        INDArray prevAct = prevOutputActivations.dup('c');
+        INDArray prevMemCell = prevMemCellState.dup('c');
+
+        INDArray outputActivations = Nd4j.createUninitialized(new int[] {
+                        timeSeriesLength, miniBatchSize, hiddenLayerSize * (bidirectional ? 2 : 1)}, 'c');
+        INDArray memCellState = Nd4j.createUninitialized(new int[] {
+                        /*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');
+        INDArray memCellActivations = Nd4j.createUninitialized(new int[] {
+                        /*numLayers * (bidirectional ? 2 : 1),*/ miniBatchSize, hiddenLayerSize}, 'c');
+
+        FwdPassReturn toReturn = new FwdPassReturn();
+//        if (forBackprop) {
+            toReturn.fwdPassOutputAsArrays = new INDArray[] {outputActivations};
+            toReturn.memCellState = new INDArray[] {memCellState};
+            toReturn.memCellActivations = new INDArray[] {memCellActivations};
+//        }
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
@@ -446,7 +490,7 @@ public class CudnnLSTMHelper implements LSTMHelper {
             checkCudnn(cudnnSetTensorNdDescriptor(xDesc.get(cudnnTensorStruct.class, i), dataType, 3, dimA, strideA));
             checkCudnn(cudnnSetTensorNdDescriptor(dxDesc.get(cudnnTensorStruct.class, i), dataType, 3, dimA, strideA));
 
-            int[] dimB = {miniBatchSize, bidirectional ? hiddenLayerSize * 2 : hiddenLayerSize, 1};
+            int[] dimB = {miniBatchSize, hiddenLayerSize * (bidirectional ? 2 : 1), 1};
             int[] strideB = {dimB[2] * dimB[1], dimB[2], 1};
 
             checkCudnn(cudnnSetTensorNdDescriptor(yDesc.get(cudnnTensorStruct.class, i), dataType, 3, dimB, strideB));
@@ -477,7 +521,8 @@ public class CudnnLSTMHelper implements LSTMHelper {
                         dropout, stateSpace, stateSize, Nd4j.getRandom().getSeed()));
 
         checkCudnn(cudnnSetRNNDescriptor(cudnnContext.rnnDesc, hiddenLayerSize, numLayers, cudnnContext.dropoutDesc,
-                        CUDNN_LINEAR_INPUT, bidirectional ? CUDNN_BIDIRECTIONAL : CUDNN_UNIDIRECTIONAL, RNNMode, dataType));
+                        CUDNN_LINEAR_INPUT, bidirectional ? CUDNN_BIDIRECTIONAL
+                                                          : CUDNN_UNIDIRECTIONAL, RNNMode, dataType));
 
         cudnnTensorStruct xDesc0 = xDesc.get(cudnnTensorStruct.class, 0);
         checkCudnn(cudnnGetRNNParamsSize(cudnnContext, cudnnContext.rnnDesc, xDesc0, sizeInBytes, dataType));
@@ -509,64 +554,47 @@ public class CudnnLSTMHelper implements LSTMHelper {
         }
         reserveSpace.limit(reserveSize);
 
-        INDArray x = input.permute(2, 0, 1).dup();
-        INDArray linInputWeights = inputWeights.reshape(4, hiddenLayerSize, inputLayerSize);//.permute(0, 1, 2).dup();
-        INDArray linRecurrentWeights = recurrentWeights.reshape(4, hiddenLayerSize, hiddenLayerSize);//.permute(0, 1, 2).dup();
-        INDArray linHalfBiases = biases.reshape(4, hiddenLayerSize).mul(0.5);
-        INDArray prevAct = prevOutputActivations.permute(1, 2, 0).dup();
-        INDArray prevMemCell = prevMemCellState.permute(1, 2, 0).dup();
-//        INDArray outputActivations = null;
-
-        FwdPassReturn toReturn = new FwdPassReturn();
-//        if (forBackprop) {
-            toReturn.fwdPassOutputAsArrays = new INDArray[] {Nd4j.create(new int[] {timeSeriesLength, miniBatchSize, bidirectional ? hiddenLayerSize * 2 : hiddenLayerSize})};
-            toReturn.memCellState = new INDArray[] {Nd4j.create(new int[] {numLayers * (bidirectional ? 2 : 1), miniBatchSize, hiddenLayerSize})};
-            toReturn.memCellActivations = new INDArray[] {Nd4j.create(new int[] {numLayers * (bidirectional ? 2 : 1), miniBatchSize, hiddenLayerSize})};
-//        } else {
-//            outputActivations = Nd4j.create(new int[] {miniBatchSize, bidirectional ? hiddenLayerSize * 2 : hiddenLayerSize, timeSeriesLength}, 'f');
-//            toReturn.fwdPassOutput = outputActivations;
-//        }
-
         Allocator allocator = AtomicAllocator.getInstance();
         CudaContext context = allocator.getFlowController().prepareActionAllWrite(x,
-                        linInputWeights, linRecurrentWeights, linHalfBiases, prevAct, prevMemCell,
-                        toReturn.fwdPassOutputAsArrays[0], toReturn.memCellState[0], toReturn.memCellActivations[0]/*, outputActivations*/);
+                        linInputWeights, linRecurrentWeights, linBiases, prevAct, prevMemCell,
+                        outputActivations, memCellState, memCellActivations);
         Pointer xData = allocator.getPointer(x, context);
         Pointer linInputWeightsData = allocator.getPointer(linInputWeights, context);
         Pointer linRecurrentWeightsData = allocator.getPointer(linRecurrentWeights, context);
-        Pointer linHalfBiasesData = allocator.getPointer(linHalfBiases, context);
+        Pointer linBiasesData = allocator.getPointer(linBiases, context);
         Pointer prevActData = allocator.getPointer(prevAct, context);
         Pointer prevMemCellData = allocator.getPointer(prevMemCell, context);
-        Pointer fwdPassOutputData = allocator.getPointer(toReturn.fwdPassOutputAsArrays[0], context);
-        Pointer memCellStateData = allocator.getPointer(toReturn.memCellState[0], context);
-        Pointer memCellActivationsData = allocator.getPointer(toReturn.memCellActivations[0], context);
-//        Pointer outputActivationsData = allocator.getPointer(outputActivations, context);
+        Pointer outputActivationsData = allocator.getPointer(outputActivations, context);
+        Pointer memCellStateData = allocator.getPointer(memCellState, context);
+        Pointer memCellActivationsData = allocator.getPointer(memCellActivations, context);
 
         CUstream_st stream = new CUstream_st(context.getOldStream());
         checkCudnn(cudnnSetStream(cudnnContext, stream));
 
         checkCuda(cudaMemsetAsync(weightsSpace, 0, weightsSpace.limit(), stream));
 
+        int[] dataType = new int[1];
+        int[] format = new int[1];
+        int[] nbDims = new int[1];
+        int[] filterDimA = new int[3];
+        Pointer linLayerMat = new Pointer();
+        Pointer linLayerBias = new Pointer();
+
         for (int layerNum = 0; layerNum < numLayers * (bidirectional ? 2 : 1); layerNum++) {
             for (int linLayerID = 0; linLayerID < numLinearLayers; linLayerID++) {
-                int[] dataType = new int[1];
-                int[] format = new int[1];
-                int[] nbDims = new int[1];
-                int[] filterDimA = new int[3];
-
-                Pointer linLayerMat = new Pointer();
-
                 checkCudnn(cudnnGetRNNLinLayerMatrixParams(cudnnContext, cudnnContext.rnnDesc, layerNum, xDesc0,
-                        cudnnContext.wDesc, weightsSpace, linLayerID, cudnnContext.linLayerMatDesc, linLayerMat));
+                                cudnnContext.wDesc, weightsSpace, linLayerID,
+                                cudnnContext.linLayerMatDesc, linLayerMat));
 
-                checkCudnn(cudnnGetFilterNdDescriptor(cudnnContext.linLayerMatDesc, 3, dataType, format, nbDims, filterDimA));
-
-                Pointer linLayerBias = new Pointer();
+                checkCudnn(cudnnGetFilterNdDescriptor(cudnnContext.linLayerMatDesc,
+                                3, dataType, format, nbDims, filterDimA));
 
                 checkCudnn(cudnnGetRNNLinLayerBiasParams(cudnnContext, cudnnContext.rnnDesc, layerNum, xDesc0,
-                        cudnnContext.wDesc, weightsSpace, linLayerID, cudnnContext.linLayerBiasDesc, linLayerBias));
+                                cudnnContext.wDesc, weightsSpace, linLayerID,
+                                cudnnContext.linLayerBiasDesc, linLayerBias));
 
-                checkCudnn(cudnnGetFilterNdDescriptor(cudnnContext.linLayerBiasDesc, 3, dataType, format, nbDims, filterDimA));
+                checkCudnn(cudnnGetFilterNdDescriptor(cudnnContext.linLayerBiasDesc,
+                                3, dataType, format, nbDims, filterDimA));
 
                 // our data is in "new, forget, output, and input gates" order (aka IFOG), each kind of weight packed together
                 int position = 0, size = 0;
@@ -582,32 +610,37 @@ public class CudnnLSTMHelper implements LSTMHelper {
                     case 7: data = linRecurrentWeightsData; position = 2; size = hiddenLayerSize; break; // output gate
                     default: assert false;
                 }
-                checkCuda(cudaMemcpyAsync(linLayerMat, data.position(position * size * hiddenLayerSize * dataTypeSize), size * hiddenLayerSize * dataTypeSize, cudaMemcpyDeviceToDevice, stream));
-                checkCuda(cudaMemcpyAsync(linLayerBias, linHalfBiasesData.position(position * hiddenLayerSize * dataTypeSize), hiddenLayerSize * dataTypeSize, cudaMemcpyDeviceToDevice, stream));
+                checkCuda(cudaMemcpyAsync(linLayerMat, data.position(position * size * hiddenLayerSize * dataTypeSize),
+                                size * hiddenLayerSize * dataTypeSize, cudaMemcpyDeviceToDevice, stream));
+                if (linLayerID < 4) {
+                    checkCuda(cudaMemcpyAsync(linLayerBias, linBiasesData.position(position * hiddenLayerSize * dataTypeSize),
+                                    hiddenLayerSize * dataTypeSize, cudaMemcpyDeviceToDevice, stream));
+                }
             }
         }
 
         if (training) {
-            checkCudnn(cudnnRNNForwardTraining(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength,
-                            xDesc, xData, cudnnContext.hxDesc, prevActData, cudnnContext.cxDesc, prevMemCellData,
-                            cudnnContext.wDesc, weightsSpace, yDesc, fwdPassOutputData, cudnnContext.hyDesc, memCellActivationsData,
-                            cudnnContext.cyDesc, memCellStateData, workSpace, workSpace.limit(), reserveSpace, reserveSpace.limit()));
+            checkCudnn(cudnnRNNForwardTraining(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, xDesc, xData,
+                            cudnnContext.hxDesc, prevActData, cudnnContext.cxDesc, prevMemCellData, cudnnContext.wDesc,
+                            weightsSpace, yDesc, outputActivationsData, cudnnContext.hyDesc, memCellActivationsData,
+                            cudnnContext.cyDesc, memCellStateData, workSpace, workSpace.limit(),
+                            reserveSpace, reserveSpace.limit()));
         } else {
-            checkCudnn(cudnnRNNForwardInference(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength,
-                            xDesc, xData, cudnnContext.hxDesc, prevActData, cudnnContext.cxDesc, prevMemCellData,
-                            cudnnContext.wDesc, weightsSpace, yDesc, fwdPassOutputData, cudnnContext.hyDesc, memCellActivationsData,
+            checkCudnn(cudnnRNNForwardInference(cudnnContext, cudnnContext.rnnDesc, timeSeriesLength, xDesc, xData,
+                            cudnnContext.hxDesc, prevActData, cudnnContext.cxDesc, prevMemCellData, cudnnContext.wDesc,
+                            weightsSpace, yDesc, outputActivationsData, cudnnContext.hyDesc, memCellActivationsData,
                             cudnnContext.cyDesc, memCellStateData, workSpace, workSpace.limit()));
         }
 
         allocator.getFlowController().registerActionAllWrite(context, x,
-                        linInputWeights, linRecurrentWeights, linHalfBiases, prevAct, prevMemCell,
-                        toReturn.fwdPassOutputAsArrays[0], toReturn.memCellState[0], toReturn.memCellActivations[0]/*, outputActivations*/);
+                        linInputWeights, linRecurrentWeights, linBiases, prevAct, prevMemCell,
+                        outputActivations, memCellState, memCellActivations);
 
-        if (!forBackprop) {
-            toReturn.fwdPassOutput = toReturn.fwdPassOutputAsArrays[0].permute(1, 2, 0);
-            toReturn.lastAct = toReturn.memCellActivations[0].permute(1, 2, 0);
-            toReturn.lastMemCell = toReturn.memCellState[0].permute(1, 2, 0);
-        }
+//        if (!forBackprop) {
+            toReturn.fwdPassOutput = outputActivations.permute(1, 2, 0).dup('f');
+            toReturn.lastAct = memCellActivations.dup('f');
+            toReturn.lastMemCell = memCellState.dup('f');
+//        }
 
         return toReturn;
     }
