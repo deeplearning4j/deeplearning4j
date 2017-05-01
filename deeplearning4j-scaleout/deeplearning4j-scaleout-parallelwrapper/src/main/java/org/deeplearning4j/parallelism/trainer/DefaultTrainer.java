@@ -181,7 +181,7 @@ public class DefaultTrainer extends Thread implements Trainer {
                 if (!onRootModel) {
                     MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(
                                     ((MultiLayerNetwork) originalModel).getLayerWiseConfigurations().toJson());
-                    conf.setWorkspaceMode(workspaceMode);
+                    conf.setTrainingWorkspaceMode(workspaceMode);
                     this.replicatedModel = new MultiLayerNetwork(conf);
 
                     replicatedModel.init();
@@ -217,7 +217,7 @@ public class DefaultTrainer extends Thread implements Trainer {
                 if (!onRootModel) {
                     ComputationGraphConfiguration conf = ComputationGraphConfiguration
                                     .fromJson(((ComputationGraph) originalModel).getConfiguration().toJson());
-                    conf.setWorkspaceMode(workspaceMode);
+                    conf.setTrainingWorkspaceMode(workspaceMode);
 
                     this.replicatedModel = new ComputationGraph(conf);
                     this.replicatedModel.init();
