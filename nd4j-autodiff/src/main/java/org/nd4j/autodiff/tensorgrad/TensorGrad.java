@@ -848,11 +848,17 @@ public class TensorGrad {
     }
 
 
-    public void exec() {
+    public List<Op> exec() {
         allocate();
-        for(OpExecAction opExecAction : graph().getOpOrder()) {
-            Nd4j.getExecutioner().exec(createOp(opExecAction.getOpState().getOpType(),opExecAction));
+        List<Op> ops = new ArrayList<>();
+        for(OpExecAction opExecAction : graph().getOpOrder().getActions()) {
+          Op op = createOp(opExecAction.getOpState().getOpType(),
+                  opExecAction);
+            Nd4j.getExecutioner().exec(op);
+            ops.add(op);
         }
+
+        return ops;
     }
 
 }

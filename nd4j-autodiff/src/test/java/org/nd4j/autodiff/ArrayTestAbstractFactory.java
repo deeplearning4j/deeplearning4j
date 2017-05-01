@@ -9,9 +9,11 @@ import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
+import org.nd4j.autodiff.opstate.OpExecOrder;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.TensorGrad;
 import org.nd4j.autodiff.tensorgrad.impl.TensorGradVariable;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
@@ -128,13 +130,16 @@ public class ArrayTestAbstractFactory
     @Test
     public void testGrad() throws Exception {
         TensorGrad tensorGrad = TensorGrad.create();
-        TensorGradVariable var = tensorGrad.var("x", Nd4j.create(1));
+        TensorGradVariable var = tensorGrad.var("x", Nd4j.valueArrayOf(1,2.0));
         TensorGradVariable xTimesX = var.mul(var);
         TensorGradVariable grad = tensorGrad.grad(xTimesX,var);
         System.out.println(tensorGrad.graph());
         System.out.println(grad.getFormula());
-        System.out.println(tensorGrad.graph().getOpOrder());
-        tensorGrad.exec();
+        OpExecOrder opExecOrder = tensorGrad.graph().getOpOrder();
+        List<OpState> opStates = opExecOrder.opStates();
+        List<Op> ops = tensorGrad.exec();
+        assertEquals(4.0,ops.get(ops.size() - 1).z().getDouble(0),1e-1);
+        System.out.println(ops);
         //tensorGrad.graph().print(new File("/tmp/graph.png"));
 
     }
