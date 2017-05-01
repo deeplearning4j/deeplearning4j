@@ -103,6 +103,7 @@ public class TestYamlJsonSerde {
                         new LongMathOpTransform("Col", MathOp.ScalarMax, 5L),
                         new MapAllStringsExceptListTransform("Col", "NewVal", Arrays.asList("E1", "E2")),
                         new RemoveWhiteSpaceTransform("Col"), new ReplaceEmptyStringTransform("Col", "WasEmpty"),
+                        new ReplaceStringTransform("Col_A", map),
                         new StringListToCategoricalSetTransform("Col", Arrays.asList("A", "B"), Arrays.asList("A", "B"),
                                         ","),
                         new StringMapTransform("Col", map),

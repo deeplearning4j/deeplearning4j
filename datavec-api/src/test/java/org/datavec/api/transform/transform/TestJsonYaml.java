@@ -97,6 +97,7 @@ public class TestJsonYaml {
                                                         Arrays.asList("Ok", "SomeVal")))
                                         .stringRemoveWhitespaceTransform("Str")
                                         .transform(new ReplaceEmptyStringTransform("Str", "WasEmpty"))
+                                        .replaceStringTransform("Str", map)
                                         .transform(new StringListToCategoricalSetTransform("Str",
                                                         Arrays.asList("StrA", "StrB"), Arrays.asList("StrA", "StrB"),
                                                         ","))
