@@ -28,6 +28,7 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
@@ -172,7 +173,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //Do im2col, but with order [miniB,outH,outW,depthIn,kH,kW]; but need to input [miniBatch,depth,kH,kW,outH,outW] given the current im2col implementation
         //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
         //to get old order from required order: permute(0,3,4,5,1,2)
-        INDArray im2col2d = p.getSecond();
+        INDArray im2col2d = p.getSecond();  //Re-use im2col2d array from forward pass if available; recalculate if not
         if(im2col2d == null) {
             INDArray col = Nd4j.createUninitialized(new int[]{miniBatch, outH, outW, inDepth, kH, kW}, 'c');
             INDArray col2 = col.permute(0, 3, 4, 5, 1, 2);
@@ -235,10 +236,20 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         return preOutput(training, forBackprop);
     }
 
+    @Override
     public INDArray preOutput(boolean training) {
         return preOutput(training, false).getFirst();
     }
 
+    /**
+     * PreOutput method that also returns the im2col2d array (if being called for backprop), as this can be re-used
+     * instead of being calculated again.
+     *
+     * @param training    Train or test time (impacts dropout)
+     * @param forBackprop If true: return the im2col2d array for re-use during backprop. False: return null for second
+     *                    pair entry. Note that it may still be null in the case of CuDNN and the like.
+     * @return            Pair of arrays: preOutput (activations) and optionally the im2col2d array
+     */
     protected Pair<INDArray,INDArray> preOutput(boolean training, boolean forBackprop){
         INDArray weights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(ConvolutionParamInitializer.BIAS_KEY);
