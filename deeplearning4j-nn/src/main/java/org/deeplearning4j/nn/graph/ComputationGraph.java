@@ -1350,11 +1350,16 @@ public class ComputationGraph implements Serializable, Model {
      * @return Output activations (order: same as defined in network configuration)
      */
     public INDArray[] output(boolean train, INDArray... input) {
-        INDArray[] tmp = silentOutput(train, input);
-        for (int x = 0; x < tmp.length; x++)
-            tmp[x] = tmp[x].detach();
+        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
 
-        return tmp;
+        try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
+            INDArray[] tmp = silentOutput(train, input);
+            for (int x = 0; x < tmp.length; x++)
+                tmp[x] = tmp[x].detach();
+
+
+            return tmp;
+        }
     }
 
     protected INDArray[] silentOutput(boolean train, INDArray... input) {
