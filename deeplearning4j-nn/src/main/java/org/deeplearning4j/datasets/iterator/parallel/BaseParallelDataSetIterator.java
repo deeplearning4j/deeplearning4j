@@ -18,41 +18,55 @@ public abstract class BaseParallelDataSetIterator {
 
     protected AtomicBoolean allDepleted = new AtomicBoolean(false);
     protected AtomicBoolean oneDepleted = new AtomicBoolean(false);
+    protected MultiBoolean states;
+    protected MultiBoolean resetTracker;
+
+
+    protected BaseParallelDataSetIterator(int numProducers) {
+        states = new MultiBoolean(numProducers, true);
+        resetTracker = new MultiBoolean(numProducers, false, true);
+    }
 
 
     public boolean hasNext() {
-        // TODO: configurable probably?
-        if (allDepleted.get())
+        // if all producers are depleted - there's nothing to do here then
+        if (states.allFalse() || allDepleted.get())
             return false;
 
         boolean hasNext = hasNextFor(getCurrentProducerIndex());
+        states.set(hasNext, getCurrentProducerIndex());
 
         switch (inequalityHandling) {
             // FIXME: RESET should be applicable ONLY to producers which return TRUE for resetSupported();
             case RESET: {
-                if (!hasNext)
-                    reset(getCurrentProducerIndex());
+                    if (!hasNext) {
+                        resetTracker.set(true, getCurrentProducerIndex());
 
-                return true;
-            }
+                        if (resetTracker.allTrue()) {
+                            allDepleted.set(true);
+                            return false;
+                        }
+
+                        reset(getCurrentProducerIndex());
+                    }
+
+                    return true;
+                }
             case RELOCATE: {
-                // TODO: transparent switch to next producer should happen here
-            }
+                    // TODO: transparent switch to next producer should happen here
+                }
             case PASS_NULL: {
-                // we just return true here, no matter what's up
-                return true;
-            }
+                    // we just return true here, no matter what's up
+                    return true;
+                }
             case STOP_EVERYONE: {
-                    if (oneDepleted.get())
+                    if (!states.allTrue())
                         return false;
 
-                    oneDepleted.compareAndSet(true, hasNext);
-
-                    return !oneDepleted.get();
+                    return true;
                 }
             default:
                 throw new ND4JIllegalStateException("Unknown InequalityHanding option was passed in: " + inequalityHandling);
-
         }
     }
 

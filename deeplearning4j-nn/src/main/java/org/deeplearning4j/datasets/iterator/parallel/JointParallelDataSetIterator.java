@@ -27,6 +27,7 @@ public class JointParallelDataSetIterator extends BaseParallelDataSetIterator {
 
 
     public JointParallelDataSetIterator(@NonNull List<DataSetIterator> iterators, boolean singleDeviceMode, int bufferSize, @NonNull InequalityHandling inequalityHandling) {
+        super(iterators.size());
         this.enforceSingleDevice = singleDeviceMode;
         this.bufferSizePerDevice = bufferSize;
         this.numProducers = iterators.size();
