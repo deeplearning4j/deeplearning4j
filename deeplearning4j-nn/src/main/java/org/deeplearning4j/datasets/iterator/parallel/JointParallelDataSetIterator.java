@@ -9,6 +9,7 @@ import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.ParallelDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.enums.InequalityHandling;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
@@ -23,7 +24,6 @@ public class JointParallelDataSetIterator extends BaseParallelDataSetIterator {
     protected List<DataSetIterator> asyncIterators = new ArrayList<>();
     protected boolean enforceSingleDevice;
     protected int bufferSizePerDevice;
-    protected int numProducers;
 
 
     public JointParallelDataSetIterator(@NonNull List<DataSetIterator> iterators, boolean singleDeviceMode, int bufferSize, @NonNull InequalityHandling inequalityHandling) {
@@ -54,10 +54,26 @@ public class JointParallelDataSetIterator extends BaseParallelDataSetIterator {
         }
     }
 
+    public boolean hasNextFor(int consumer) {
+        if (consumer >= numProducers)
+            throw new ND4JIllegalStateException("Non-existent consumer was requested");
+
+        return asyncIterators.get(consumer).hasNext();
+    }
 
 
-    public DataSet next() {
-        return asyncIterators.get((int)(counter.getAndIncrement() % numProducers)).next();
+    public DataSet nextFor(int consumer) {
+        if (consumer >= numProducers)
+            throw new ND4JIllegalStateException("Non-existent consumer was requested");
+
+        return asyncIterators.get(consumer).next();
+    }
+
+    protected void reset(int consumer) {
+        if (consumer >= numProducers)
+            throw new ND4JIllegalStateException("Non-existent consumer was requested");
+
+        asyncIterators.get(consumer).reset();
     }
 
 
