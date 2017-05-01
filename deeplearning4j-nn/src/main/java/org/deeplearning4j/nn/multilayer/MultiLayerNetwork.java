@@ -1658,15 +1658,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray input, TrainingMode train) {
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).overallocationLimit(1.0)
-                        .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();
-
-        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, workspaceExternal);
-
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-            return output(input, train == TrainingMode.TRAIN);
-        }
+        return output(input, train == TrainingMode.TRAIN);
     }
 
     /**
@@ -1685,13 +1677,25 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray input, boolean train) {
+        WorkspaceMode cMode = layerWiseConfigurations.getWorkspaceMode();
+        boolean canSwitch = cMode == WorkspaceMode.SEPARATE;
+        layerWiseConfigurations.setWorkspaceMode(WorkspaceMode.SINGLE);
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
+
+        try(MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
+
+            layerWiseConfigurations.setWorkspaceMode(cMode);
+            return silentOutput(input, train).detach();
+        }
+    }
+
+    public INDArray outputStrict(INDArray input, boolean train) {
         MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
 
         try(MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
             return silentOutput(input, train).detach();
         }
     }
-
 
     protected INDArray silentOutput(INDArray input, boolean train) {
         List<INDArray> activations = feedForward(input, train);

@@ -1247,8 +1247,16 @@ public class ComputationGraph implements Serializable, Model {
         return feedForward(true, excludeOutputLayers, false, true);
     }
 
-
-    private Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers, boolean includeNonLayerVertexActivations, boolean publicApi) {
+    /**
+     * PLEASE NEVER USE THIS METHOD IF YOU"RE NOT SURE WHAT YOU'll GET
+     *
+     * @param train
+     * @param excludeOutputLayers
+     * @param includeNonLayerVertexActivations
+     * @param publicApi
+     * @return
+     */
+    public Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers, boolean includeNonLayerVertexActivations, boolean publicApi) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
         MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy :
@@ -1369,6 +1377,23 @@ public class ComputationGraph implements Serializable, Model {
      * @return Output activations (order: same as defined in network configuration)
      */
     public INDArray[] output(boolean train, INDArray... input) {
+        WorkspaceMode cMode = configuration.getWorkspaceMode();
+        boolean canSwitch = cMode == WorkspaceMode.SEPARATE;
+        configuration.setWorkspaceMode(WorkspaceMode.SINGLE);
+        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
+
+        try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
+            INDArray[] tmp = silentOutput(train, input);
+            for (int x = 0; x < tmp.length; x++)
+                tmp[x] = tmp[x].detach();
+
+
+            configuration.setWorkspaceMode(cMode);
+            return tmp;
+        }
+    }
+
+    public INDArray[] outputStrict(boolean train, INDArray... input) {
         MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
 
         try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
@@ -1385,7 +1410,7 @@ public class ComputationGraph implements Serializable, Model {
 
 
             setInputs(input);
-            Map<String, INDArray> activations = feedForward(train);
+            Map<String, INDArray> activations = feedForward(false, false, false, false);
             INDArray[] outputs = new INDArray[numOutputArrays];
             int i = 0;
             for (String s : configuration.getNetworkOutputs()) {
