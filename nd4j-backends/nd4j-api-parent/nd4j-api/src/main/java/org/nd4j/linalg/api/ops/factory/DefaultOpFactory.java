@@ -286,7 +286,7 @@ public class DefaultOpFactory implements OpFactory {
                 op = new Negative(x, z);
                 break;
             case "pow":
-                op = new Pow(x, z, 2);
+                op = new Pow(x, z, (double) extraArgs[0]);
                 break;
             case "round":
                 op = new Round(x, z);

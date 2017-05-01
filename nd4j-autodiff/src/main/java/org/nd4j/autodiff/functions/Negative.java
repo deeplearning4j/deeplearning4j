@@ -12,7 +12,7 @@ public class Negative<X extends Field<X>> extends AbstractUnaryFunction<X> {
 
 
     public Negative(Graph<NDArrayInformation,OpState> graph,DifferentialFunction<X> i_v) {
-        super(graph,i_v);
+        super(graph,i_v,null);
     }
 
     @Override

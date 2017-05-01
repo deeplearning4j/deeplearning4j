@@ -4,10 +4,6 @@ import org.nd4j.autodiff.graph.exception.NoEdgesException;
 
 import java.util.List;
 import java.util.Random;
-import org.nd4j.autodiff.graph.exception.NoEdgesException;
-
-import java.util.List;
-import java.util.Random;
 
 /** Interface for a IGraph, with objects for each vertex and edge.
  * In the simplest case, edges and vertices may be labelled (i.e., IGraph<String,String> for example), or may be
@@ -21,7 +17,7 @@ import java.util.Random;
 public interface IGraph<V, E> {
 
     /** Number of vertices in the graph */
-    public int numVertices();
+    int numVertices();
 
     /**Get a vertex in the graph for a given index
      * @param idx integer index of the vertex to get. must be in range 0 to numVertices()

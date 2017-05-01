@@ -21,7 +21,7 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
     public AbstractBinaryFunction(Graph<NDArrayInformation,OpState> graph,
                                   DifferentialFunction<X> i_v1,
                                   DifferentialFunction<X> i_v2) {
-        super(graph);
+        super(graph,new Object[] {i_v2});
         if (i_v1 != null && i_v2 != null) {
             m_x1 = i_v1;
             m_x2 = i_v2;

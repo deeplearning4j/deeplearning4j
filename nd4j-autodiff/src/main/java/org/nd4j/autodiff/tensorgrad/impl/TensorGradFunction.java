@@ -18,7 +18,6 @@ public class TensorGradFunction implements Serializable {
     protected DifferentialFunction<ArrayField> differentialFunction;
 
 
-
     public TensorGradVariable exec(TensorGradVariable[] inputs, Object[] extraArgs) {
           return null;
     }

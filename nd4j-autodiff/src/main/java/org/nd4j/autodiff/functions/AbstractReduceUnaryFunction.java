@@ -20,8 +20,10 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
     protected int[] dimensions;
     protected OpState opState;
 
-    public AbstractReduceUnaryFunction(Graph<NDArrayInformation,OpState> graph, DifferentialFunction<X> i_v,int[] dimensions) {
-        super(graph);
+    public AbstractReduceUnaryFunction(Graph<NDArrayInformation,OpState> graph,
+                                       DifferentialFunction<X> i_v,
+                                       int[] dimensions) {
+        super(graph,new Object[]{dimensions});
         if (i_v != null) {
             m_x = i_v;
             this.dimensions = dimensions;

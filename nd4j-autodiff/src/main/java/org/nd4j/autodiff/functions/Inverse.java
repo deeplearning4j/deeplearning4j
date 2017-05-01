@@ -12,7 +12,7 @@ public class Inverse<X extends Field<X>> extends AbstractUnaryFunction<X> {
 
 
     public Inverse(Graph<NDArrayInformation,OpState> graph, DifferentialFunction<X> i_v) {
-        super(graph,i_v);
+        super(graph,i_v,new Object[]{});
     }
 
     @Override
@@ -27,7 +27,7 @@ public class Inverse<X extends Field<X>> extends AbstractUnaryFunction<X> {
 
     @Override
     public DifferentialFunction<X> diff(Variable<X> i_v) {
-        return new PolynomialTerm<X>(graph,-1L, arg(), -2).mul(arg().diff(i_v));
+        return new PolynomialTerm<>(graph, -1L, arg(), -2).mul(arg().diff(i_v));
     }
 
     @Override

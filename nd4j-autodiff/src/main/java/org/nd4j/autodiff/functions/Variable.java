@@ -28,10 +28,11 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     }
 
     protected Variable(Graph<NDArrayInformation,OpState> graph,
-                       String i_name, X i_v,
+                       String i_name,
+                       X i_v,
                        AbstractIdentityFactory<X> i_factory,
                        PreEvaluator<X> preEvaluator) {
-        super(graph);
+        super(graph,null);
         this.preEvaluator = preEvaluator;
         setName(i_name);
         if (i_v != null && i_factory != null) {

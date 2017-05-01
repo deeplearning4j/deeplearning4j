@@ -24,9 +24,12 @@ public abstract class DifferentialFunction<X extends Field<X>>
     protected Graph<NDArrayInformation,OpState> graph;
     protected OpState opState;
     protected int vertexId;
+    protected Object[] extraArgs;
 
-    public DifferentialFunction(Graph<NDArrayInformation, OpState> graph) {
+
+    public DifferentialFunction(Graph<NDArrayInformation, OpState> graph, Object[] extraArgs) {
         this.graph = graph;
+        this.extraArgs = extraArgs;
     }
 
     /**
@@ -218,7 +221,9 @@ public abstract class DifferentialFunction<X extends Field<X>>
                         .opName(opName)
                         .id(opName + "(" + dupVertex.getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
                         .vertexIds(new String[]{String.valueOf(v2VertexId),String.valueOf(newVertex.vertexID())})
-                        .n(ArrayUtil.prod(shape)).extraArgs(extraArgs)
+                        .n(ArrayUtil.prod(shape))
+                        .extraArgs(extraArgs)
+                        .result(arrInfo)
                         .build();
 
                 graph.addEdge(
@@ -232,8 +237,11 @@ public abstract class DifferentialFunction<X extends Field<X>>
                         .opName(opName)
                         .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
                         .vertexIds(new String[]{String.valueOf(v2VertexId),String.valueOf(newVertex.vertexID())})
-                        .n(ArrayUtil.prod(shape)).extraArgs(extraArgs)
+                        .n(ArrayUtil.prod(shape))
+                        .extraArgs(extraArgs)
+                        .result(arrInfo)
                         .build();
+
                 graph.addEdge(v2VertexId,
                         newVertex.vertexID(),
                         opState
@@ -245,12 +253,15 @@ public abstract class DifferentialFunction<X extends Field<X>>
                     .opName(opName).result(arrInfo)
                     .id(opName + "(" + v1.getVertex().getValue().getId() + " -> " + newVertex.getValue().getId() + ")")
                     .vertexIds(new String[]{String.valueOf(v1VertexId),String.valueOf(newVertex.vertexID())})
-                    .n(ArrayUtil.prod(shape)).extraArgs(extraArgs)
+                    .n(ArrayUtil.prod(shape))
+                    .extraArgs(extraArgs)
+                    .result(arrInfo)
                     .build();
             //add the first vertex no matter what as normal
             graph.addEdge(v1VertexId,
                     newVertex.vertexID(),
                     opState2,true);
+
             newVertex.setOpState(opState2);
             arrInfo.setOwner(opState2);
             this.opState = opState;
@@ -268,7 +279,12 @@ public abstract class DifferentialFunction<X extends Field<X>>
                             String opName) {
         if(i_v1.getValue() instanceof ArrayField) {
             ArrayField arrayField = (ArrayField) i_v1.getValue();
-            addEdges(graph,i_v1,i_v2,opName, OpState.OpType.TRANSFORM,arrayField.getInput().getShape());
+            addEdges(graph,
+                    i_v1,
+                    i_v2,
+                    opName,
+                    OpState.OpType.TRANSFORM,
+                    arrayField.getInput().getShape());
 
         }
 

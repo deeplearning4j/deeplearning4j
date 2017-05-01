@@ -18,8 +18,10 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
     protected X m_x;
     private AbstractIdentityFactory<X> m_factory;
 
-    protected Constant(Graph<NDArrayInformation,OpState> graph, X i_v, AbstractIdentityFactory<X> i_factory) {
-        super(graph);
+    protected Constant(Graph<NDArrayInformation,OpState> graph,
+                       X i_v,
+                       AbstractIdentityFactory<X> i_factory) {
+        super(graph,new Object[]{i_v});
         if (i_v != null && i_factory != null) {
             m_x = i_v;
             m_factory = i_factory;

@@ -24,6 +24,7 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
     private Variable<ArrayField> arrayField;
     private String varName;
     private TensorGrad tensorGrad;
+    protected int[] shape;
 
     @Builder
     private TensorGradVariable(DifferentialFunction<ArrayField> differentialFunction,
@@ -49,6 +50,9 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
     }
 
     public int[] getShape() {
+        if(shape != null)
+            return shape;
+
         if(arrayField != null)
             return arrayField.getValue().getInput().getShape();
         else {
@@ -113,6 +117,7 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
     //lombok for inheritance purposes, do not remove
     @SuppressWarnings("unused")
     public static class TensorGradVariableBuilder extends TensorGradFunction.TensorGradFunctionBuilder {
+
 
     }
 
