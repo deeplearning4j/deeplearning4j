@@ -101,15 +101,21 @@ public class JointParallelDataSetIterator extends BaseParallelDataSetIterator {
                 throw new DL4JInvalidInputException("Source iterators should support async mode");
 
             //TODO: add strict equality check here, we don't want it equal
-            for (DataSetIterator iter: iterators) {
-                if (iterator == iter) {
-                    throw new DL4JInvalidInputException("You can't put equal iterators into this joint iterator");
-                } else {
-                    iterators.add(iterator);
-                }
-            }
+            if (!hasIterator(iterator))
+                iterators.add(iterator);
+            else
+                throw new DL4JInvalidInputException("You can't put equal iterators into this joint iterator");
 
             return this;
+        }
+
+        protected boolean hasIterator(DataSetIterator iterator) {
+            for (DataSetIterator iter: iterators){
+                if (iter == iterator)
+                    return true;
+            }
+
+            return false;
         }
 
         public Builder setBufferSizePerSplit(int bufferSize) {

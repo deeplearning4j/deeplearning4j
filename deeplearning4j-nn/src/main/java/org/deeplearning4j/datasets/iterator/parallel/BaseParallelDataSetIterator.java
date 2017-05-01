@@ -42,6 +42,7 @@ public abstract class BaseParallelDataSetIterator {
                     if (!hasNext) {
                         resetTracker.set(true, getCurrentProducerIndex());
 
+                        // we don't want to have endless loop here, so we only do reset until all producers depleted at least once
                         if (resetTracker.allTrue()) {
                             allDepleted.set(true);
                             return false;
