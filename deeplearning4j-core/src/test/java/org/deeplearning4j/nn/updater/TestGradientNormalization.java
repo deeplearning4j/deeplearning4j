@@ -10,7 +10,9 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import static org.junit.Assert.*;
 
@@ -106,16 +108,18 @@ public class TestGradientNormalization {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
-        layer.setBackpropGradientsViewArray(Nd4j.create(params.shape()));
-        Updater updater = UpdaterCreator.getUpdater(layer);
-        INDArray weightGrad = Nd4j.rand(10, 20).muli(10).subi(5);
-        INDArray biasGrad = Nd4j.rand(1, 10).muli(10).subi(5);
+        INDArray gradArray = Nd4j.rand(1,220).muli(10).subi(5);
+        layer.setBackpropGradientsViewArray(gradArray);
+        INDArray weightGrad = Shape.newShapeNoCopy(gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,200)),
+                new int[]{10,20},true);
+        INDArray biasGrad = gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(200,220));
         INDArray weightGradCopy = weightGrad.dup();
         INDArray biasGradCopy = biasGrad.dup();
-        Gradient gradient = new DefaultGradient();
+        Gradient gradient = new DefaultGradient(gradArray);
         gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
         gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGrad);
 
+        Updater updater = UpdaterCreator.getUpdater(layer);
         updater.update(layer, gradient, 0, 1);
 
         assertNotEquals(weightGradCopy, weightGrad);
