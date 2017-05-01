@@ -57,7 +57,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     protected AtomicLong cyclesCount = new AtomicLong(0);
     protected AtomicLong stepsCount = new AtomicLong(0);
-    protected int stepsNumber = 0;
+    protected int stepsNumber = 1;
 
     protected AtomicLong lastCycleAllocations = new AtomicLong(0);
     protected AtomicLong cycleAllocations = new AtomicLong(0);
