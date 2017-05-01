@@ -421,6 +421,10 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      * @param seed Seed to use for the random Number Generator
      */
     public void shuffle(long seed) {
+        // just skip shuffle if there's only 1 example
+        if (numExamples() < 2)
+            return;
+
         //note here we use the same seed with different random objects guaranteeing same order
 
         List<INDArray> arrays = new ArrayList<>();
@@ -1320,6 +1324,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     /**
      * This method migrates this DataSet into current Workspace (if any)
      */
+    @Override
     public void migrate() {
         if (Nd4j.getMemoryManager().getCurrentWorkspace() != null) {
             if (features != null)
@@ -1339,6 +1344,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     /**
      * This method migrates this DataSet into current Workspace (if any)
      */
+    @Override
     public void detach() {
         if (features != null)
             features = features.detach();

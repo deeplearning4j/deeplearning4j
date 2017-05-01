@@ -1209,11 +1209,11 @@ public class Nd4j {
     public static DataBuffer createBuffer(float[] data, int offset) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data);
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data, Nd4j.getMemoryManager().getCurrentWorkspace());
         else if (dataType() == DataBuffer.Type.HALF)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data);
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data, Nd4j.getMemoryManager().getCurrentWorkspace());
         else
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, ArrayUtil.toDoubles(data));
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, ArrayUtil.toDoubles(data)) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, ArrayUtil.toDoubles(data), Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1227,11 +1227,11 @@ public class Nd4j {
     public static DataBuffer createBuffer(double[] data, int offset) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.DOUBLE)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, data);
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, data, Nd4j.getMemoryManager().getCurrentWorkspace());
         else if (dataType() == DataBuffer.Type.HALF)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data);
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
         else
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, ArrayUtil.toFloats(data));
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, ArrayUtil.toFloats(data)) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -5507,6 +5507,21 @@ public class Nd4j {
      */
     public static INDArray concat(int dimension, INDArray... toConcat) {
         INDArray ret = INSTANCE.concat(dimension, toConcat);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Concatneate ndarrays along a dimension
+     *
+     * PLEASE NOTE: This method is special for GPU backend, it works on HOST side only.
+     *
+     * @param dimension
+     * @param toConcat
+     * @return
+     */
+    public static INDArray specialConcat(int dimension, INDArray... toConcat) {
+        INDArray ret = INSTANCE.specialConcat(dimension, toConcat);
         logCreationIfNecessary(ret);
         return ret;
     }

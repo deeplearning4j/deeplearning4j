@@ -40,6 +40,7 @@ import org.nd4j.linalg.cpu.nativecpu.blas.*;
 import org.nd4j.linalg.cpu.nativecpu.complex.ComplexDouble;
 import org.nd4j.linalg.cpu.nativecpu.complex.ComplexFloat;
 import org.nd4j.linalg.cpu.nativecpu.complex.ComplexNDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -659,20 +660,40 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         PointerPointer dummy = new PointerPointer(new Pointer[] {null});
 
         INDArray ret = Nd4j.createUninitialized(outputShape, Nd4j.order());
+
         if (ret.data().dataType() == DataBuffer.Type.DOUBLE) {
             nativeOps.concatDouble(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,
                     (DoublePointer) ret.data().addressPointer(),
                     (IntPointer) ret.shapeInfoDataBuffer().addressPointer(),
                     new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
-        } else {
+        } else if (ret.data().dataType() == DataBuffer.Type.FLOAT) {
             nativeOps.concatFloat(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,
                     (FloatPointer) ret.data().addressPointer(),
                     (IntPointer) ret.shapeInfoDataBuffer().addressPointer(),
                     new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
 
+        } else if (ret.data().dataType() == DataBuffer.Type.HALF) {
+            nativeOps.concatHalf(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,
+                    (ShortPointer) ret.data().addressPointer(),
+                    (IntPointer) ret.shapeInfoDataBuffer().addressPointer(),
+                    new PointerPointer(new Pointer[]{null}), new PointerPointer(new Pointer[]{null}));
+        } else {
+            throw new ND4JIllegalStateException("Unknown dataType: " + ret.data().dataType());
         }
         return ret;
         // return super.concat(dimension,toConcat);
+    }
+
+    /**
+     * For CPU backend this method is equal to concat()
+     *
+     * @param dimension the dimension to concatneate along
+     * @param toConcat  the ndarrays to concateneate
+     * @return
+     */
+    @Override
+    public INDArray specialConcat(int dimension, INDArray... toConcat) {
+        return concat(dimension, toConcat);
     }
 
     /**

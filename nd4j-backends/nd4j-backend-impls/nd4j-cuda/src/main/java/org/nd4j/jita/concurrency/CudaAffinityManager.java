@@ -7,6 +7,7 @@ import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.concurrency.BasicAffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -333,5 +334,29 @@ public class CudaAffinityManager extends BasicAffinityManager {
     @Override
     public Integer getDeviceForArray(@NonNull INDArray array) {
         return AtomicAllocator.getInstance().getDeviceId(array);
+    }
+
+    @Override
+    public void unsafeSetDevice(Integer deviceId) {
+        NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(new CudaPointer(deviceId));
+    }
+
+    @Override
+    public void ensureLocation(INDArray array, Location location) {
+        AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(array);
+        switch (location) {
+            case HOST: {
+                AtomicAllocator.getInstance().synchronizeHostData(array);
+                }
+                break;
+            case DEVICE:{
+                AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(point);
+                }
+                break;
+            case EVERYWHERE:
+            default: {
+                throw new UnsupportedOperationException("Unknown location specified: " + location);
+            }
+        }
     }
 }

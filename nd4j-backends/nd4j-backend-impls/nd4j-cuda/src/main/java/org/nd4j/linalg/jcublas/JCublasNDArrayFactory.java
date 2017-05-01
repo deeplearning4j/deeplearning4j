@@ -24,6 +24,7 @@ import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.DoubleRawIndexer;
 import org.bytedeco.javacpp.indexer.FloatRawIndexer;
 import org.bytedeco.javacpp.indexer.IntRawIndexer;
+import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
@@ -41,6 +42,7 @@ import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.blas.*;
@@ -677,6 +679,83 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         return ret;
         //return super.concat(dimension, toConcat);
     }
+
+
+    @Override
+    public INDArray specialConcat(int dimension, INDArray... toConcat) {
+        if (toConcat.length == 1)
+            return toConcat[0];
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
+        PointerPointer shapeInfoPointers = new PointerPointer(toConcat.length);
+        PointerPointer dataPointers = new PointerPointer(toConcat.length);
+
+        AtomicAllocator allocator = AtomicAllocator.getInstance();
+        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+
+
+        int sumAlongDim = 0;
+
+        int[] outputShape = ArrayUtil.copy(toConcat[0].shape());
+
+
+        for (int i = 0; i < toConcat.length; i++) {
+            if (toConcat[i].isCompressed())
+                Nd4j.getCompressor().decompressi(toConcat[i]);
+
+            allocator.synchronizeHostData(toConcat[i]);
+            shapeInfoPointers.put(i, allocator.getHostPointer(toConcat[i].shapeInfoDataBuffer()));
+            dataPointers.put(i, allocator.getHostPointer(toConcat[i].data()));
+            sumAlongDim += toConcat[i].size(dimension);
+
+            for (int j = 0; j < toConcat[i].rank(); j++)
+                if (j != dimension && toConcat[i].size(j) != outputShape[j]) {
+                    throw new IllegalArgumentException(
+                            "Illegal concatneation at array " + i + " and shape element " + j);
+                }
+        }
+
+        outputShape[dimension] = sumAlongDim;
+
+        PointerPointer dummy = new PointerPointer(new Pointer[] {null});
+
+        INDArray ret = Nd4j.createUninitialized(outputShape, Nd4j.order());
+
+        if (ret.data().dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.specialConcatDouble(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,
+                    (DoublePointer) ret.data().addressPointer(),
+                    (IntPointer) ret.shapeInfoDataBuffer().addressPointer(),
+                    new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
+        } else if (ret.data().dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.specialConcatFloat(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,
+                    (FloatPointer) ret.data().addressPointer(),
+                    (IntPointer) ret.shapeInfoDataBuffer().addressPointer(),
+                    new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
+
+        } else if (ret.data().dataType() == DataBuffer.Type.HALF) {
+            nativeOps.specialConcatHalf(dummy, dimension, toConcat.length, dataPointers, shapeInfoPointers,
+                    (ShortPointer) ret.data().addressPointer(),
+                    (IntPointer) ret.shapeInfoDataBuffer().addressPointer(),
+                    new PointerPointer(new Pointer[]{null}), new PointerPointer(new Pointer[]{null}));
+        } else {
+            throw new ND4JIllegalStateException("Unknown dataType: " + ret.data().dataType());
+        }
+
+        AllocationPoint point = allocator.getAllocationPoint(ret);
+
+
+        nativeOps.memcpyAsync(point.getDevicePointer(), point.getHostPointer(), ret.lengthLong() * Nd4j.sizeOfDataType(ret.data().dataType()), CudaConstants.cudaMemcpyHostToDevice, context.getSpecialStream());
+        context.getSpecialStream().synchronize();
+
+        point.tickHostRead();
+        point.tickDeviceWrite();
+
+        return ret;
+    }
+
+
 
     /**
      * This method produces concatenated array, that consist from tensors, fetched from source array, against some dimension and specified indexes

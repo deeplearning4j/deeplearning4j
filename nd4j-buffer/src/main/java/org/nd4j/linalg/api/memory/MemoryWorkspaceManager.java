@@ -34,6 +34,23 @@ public interface MemoryWorkspaceManager {
     MemoryWorkspace createNewWorkspace();
 
     /**
+     * This method builds new Workspace with given configuration
+     *
+     * @param configuration
+     * @return
+     */
+    MemoryWorkspace createNewWorkspace(WorkspaceConfiguration configuration, String id);
+
+
+    /**
+     * This method builds new Workspace with given configuration
+     *
+     * @param configuration
+     * @return
+     */
+    MemoryWorkspace createNewWorkspace(WorkspaceConfiguration configuration, String id, Integer deviceId);
+
+    /**
      * This method returns you current default Workspace for current Thread
      *
      * PLEASE NOTE: If Workspace wasn't defined, new Workspace will be created using current default configuration

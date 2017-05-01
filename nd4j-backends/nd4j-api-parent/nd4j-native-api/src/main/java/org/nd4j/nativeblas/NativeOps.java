@@ -1116,6 +1116,44 @@ public abstract class NativeOps extends Pointer {
                                     PointerPointer inputShapeInfo, @Cast("float16*") ShortPointer results, IntPointer resultShapeInfo,
                                     PointerPointer tadPointers, PointerPointer tadOffsets);
 
+
+    public abstract void specialConcatDouble(PointerPointer extraPointers, int dimension, int numArrays, PointerPointer data,
+                                      PointerPointer inputShapeInfo, DoublePointer results, IntPointer resultShapeInfo,
+                                      PointerPointer tadPointers, PointerPointer tadOffsets);
+
+    /**
+     *
+     * @param extraPointers
+     * @param dimension
+     * @param numArrays
+     * @param data
+     * @param inputShapeInfo
+     * @param results
+     * @param resultShapeInfo
+     * @param tadPointers
+     * @param tadOffsets
+     */
+    public abstract void specialConcatFloat(PointerPointer extraPointers, int dimension, int numArrays, PointerPointer data,
+                                     PointerPointer inputShapeInfo, FloatPointer results, IntPointer resultShapeInfo,
+                                     PointerPointer tadPointers, PointerPointer tadOffsets);
+
+
+    /**
+     *
+     * @param extraPointers
+     * @param dimension
+     * @param numArrays
+     * @param data
+     * @param inputShapeInfo
+     * @param results
+     * @param resultShapeInfo
+     * @param tadPointers
+     * @param tadOffsets
+     */
+    public abstract void specialConcatHalf(PointerPointer extraPointers, int dimension, int numArrays, PointerPointer data,
+                                    PointerPointer inputShapeInfo, @Cast("float16*") ShortPointer results, IntPointer resultShapeInfo,
+                                    PointerPointer tadPointers, PointerPointer tadOffsets);
+
     /**
      * Gets the maximum number of open mp threads
      * @return

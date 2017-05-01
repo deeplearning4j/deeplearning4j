@@ -75,4 +75,14 @@ public abstract class BasicAffinityManager implements AffinityManager {
     public void tagLocation(DataBuffer buffer, Location location) {
         // no-op
     }
+
+    @Override
+    public void unsafeSetDevice(Integer deviceId) {
+        // no-op
+    }
+
+    @Override
+    public void ensureLocation(INDArray array, Location location) {
+        // no-op
+    }
 }

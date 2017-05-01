@@ -7,6 +7,7 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
 import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.jcublas.CublasPointer;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -94,12 +95,14 @@ public class CudaContext {
     }
 
     public void syncSpecialStream() {
-        nativeOps.streamSynchronize(specialStream);
+        if (nativeOps.streamSynchronize(specialStream) == 0)
+            throw new ND4JIllegalStateException("CUDA stream synchronization failed");
     }
 
     public void syncOldStream(boolean syncCuBlas) {
         //        ContextHolder.getInstance().setContext();
-        nativeOps.streamSynchronize(oldStream);
+        if (nativeOps.streamSynchronize(oldStream) == 0)
+            throw new ND4JIllegalStateException("CUDA stream synchronization failed");
 
         if (syncCuBlas)
             syncCublasStream();
@@ -107,7 +110,8 @@ public class CudaContext {
 
     public void syncCublasStream() {
         if (cublasStream != null) {
-            nativeOps.streamSynchronize(cublasStream);
+            if (nativeOps.streamSynchronize(cublasStream) == 0)
+                throw new ND4JIllegalStateException("CUDA stream synchronization failed");
         } else
             throw new IllegalStateException("cuBLAS stream isnt set");
     }
@@ -115,7 +119,8 @@ public class CudaContext {
 
     public void syncSolverStream() {
         if (solverStream != null) {
-            nativeOps.streamSynchronize(solverStream);
+            if (nativeOps.streamSynchronize(solverStream) == 0)
+                throw new ND4JIllegalStateException("CUDA stream synchronization failed");
         } else
             throw new IllegalStateException("cuBLAS stream isnt set");
     }
