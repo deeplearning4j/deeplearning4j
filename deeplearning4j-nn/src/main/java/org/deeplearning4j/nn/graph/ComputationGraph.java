@@ -1243,7 +1243,12 @@ public class ComputationGraph implements Serializable, Model {
         return feedForward(train, false, false, true);
     }
 
-    private Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers) {
+    public Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers) {
+        return feedForward(true, excludeOutputLayers, false, true);
+    }
+
+
+    private Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers, boolean includeNonLayerVertexActivations, boolean publicApi) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
         MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy :

@@ -122,6 +122,11 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         backedIterator.setPreProcessor(preProcessor);
     }
 
+    @Override
+    public MultiDataSetPreProcessor getPreProcessor() {
+        return backedIterator.getPreProcessor();
+    }
+
     /**
      * Is resetting supported by this DataSetIterator? Many DataSetIterators do support resetting,
      * but some don't

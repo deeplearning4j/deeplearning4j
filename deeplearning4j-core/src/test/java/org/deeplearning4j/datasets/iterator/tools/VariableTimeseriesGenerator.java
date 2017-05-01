@@ -73,6 +73,11 @@ public class VariableTimeseriesGenerator implements MultiDataSetIterator {
     }
 
     @Override
+    public MultiDataSetPreProcessor getPreProcessor() {
+        return null;
+    }
+
+    @Override
     public boolean resetSupported() {
         return true;
     }

@@ -101,6 +101,11 @@ public class LegacyAsyncMultiDataSetIterator implements MultiDataSetIterator {
     }
 
     @Override
+    public MultiDataSetPreProcessor getPreProcessor() {
+        return iterator.getPreProcessor();
+    }
+
+    @Override
     public boolean resetSupported() {
         return iterator.resetSupported();
     }
