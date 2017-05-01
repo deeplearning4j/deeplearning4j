@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.embeddings.inmemory.InMemoryLookupTable;
@@ -27,6 +28,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T> {
     public static final String EXISTS = "exists";
     public static final String CORRECT = "correct";
@@ -36,7 +38,6 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
 
     protected volatile boolean normalized = false;
 
-    private static final Logger log = LoggerFactory.getLogger(BasicModelUtils.class);
 
     public BasicModelUtils() {
 

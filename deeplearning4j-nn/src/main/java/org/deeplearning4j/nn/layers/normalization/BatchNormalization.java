@@ -55,10 +55,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         try {
             helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnBatchNormalizationHelper")
                             .asSubclass(BatchNormalizationHelper.class).newInstance();
-            log.debug("CudnnBatchNormalizationHelper successfully loaded");
+            log.debug("CudnnBatchNormalizationHelper successfully initialized");
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
-                log.warn("Could not load CudnnBatchNormalizationHelper", t);
+                log.warn("Could not initialize CudnnBatchNormalizationHelper", t);
             }
         }
     }
@@ -330,10 +330,14 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         } else if (x.rank() == 4) {
             if (!Shape.strideDescendingCAscendingF(x))
                 x = x.dup(); //TODO: temp Workaround for broadcast bug. To be removed when fixed
-            xMu = Nd4j.getExecutioner().execAndReturn(
-                            new BroadcastSubOp(x, mean, Nd4j.createUninitialized(x.shape(), x.ordering()), 1)).leverageTo(ComputationGraph.workspaceExternal);
-            xHat = Nd4j.getExecutioner().execAndReturn(
-                            new BroadcastDivOp(xMu, std, Nd4j.createUninitialized(x.shape(), x.ordering()), 1)).leverageTo(ComputationGraph.workspaceExternal);
+            xMu = Nd4j.getExecutioner()
+                            .execAndReturn(new BroadcastSubOp(x, mean,
+                                            Nd4j.createUninitialized(x.shape(), x.ordering()), 1))
+                            .leverageTo(ComputationGraph.workspaceExternal);
+            xHat = Nd4j.getExecutioner()
+                            .execAndReturn(new BroadcastDivOp(xMu, std,
+                                            Nd4j.createUninitialized(x.shape(), x.ordering()), 1))
+                            .leverageTo(ComputationGraph.workspaceExternal);
 
             if (layerConf.isLockGammaBeta()) {
                 //Special case: gamma/beta have fixed values for all outputs

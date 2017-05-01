@@ -17,7 +17,7 @@ import static org.junit.Assert.fail;
 public class ROCBinaryTest {
 
     @Test
-    public void testROCBinary(){
+    public void testROCBinary() {
         //Compare ROCBinary to ROC class
 
         Nd4j.getRandom().setSeed(12345);
@@ -64,7 +64,7 @@ public class ROCBinaryTest {
             List<ROCBinary.PrecisionRecallPoint> p = rb.getPrecisionRecallCurve(i);
             assertEquals(pExp.size(), p.size());
 
-            for( int j=0; j<pExp.size(); j++ ){
+            for (int j = 0; j < pExp.size(); j++) {
                 ROC.PrecisionRecallPoint a = pExp.get(j);
                 ROCBinary.PrecisionRecallPoint b = p.get(j);
                 assertEquals(a.getClassiferThreshold(), b.getClassiferThreshold(), eps);
@@ -76,14 +76,14 @@ public class ROCBinaryTest {
             double[][] d2 = rb.getResultsAsArray(i);
 
             assertEquals(d1.length, d2.length);
-            for( int j=0; j<d1.length; j++ ){
+            for (int j = 0; j < d1.length; j++) {
                 assertArrayEquals(d1[j], d2[j], eps);
             }
         }
     }
 
     @Test
-    public void testRocBinaryMerging(){
+    public void testRocBinaryMerging() {
         int nSteps = 30;
         int nOut = 4;
         int[] shape1 = {30, nOut};
@@ -112,43 +112,22 @@ public class ROCBinaryTest {
 
 
     @Test
-    public void testROCBinaryPerOutputMasking(){
+    public void testROCBinaryPerOutputMasking() {
         int nSteps = 30;
 
         //Here: we'll create a test array, then insert some 'masked out' values, and ensure we get the same results
-        INDArray mask = Nd4j.create(new double[][]{
-                {1,1,1},
-                {0,1,1},
-                {1,0,1},
-                {1,1,0},
-                {1,1,1}});
+        INDArray mask = Nd4j.create(new double[][] {{1, 1, 1}, {0, 1, 1}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1}});
 
-        INDArray labels = Nd4j.create(new double[][]{
-                {0,1,0},
-                {1,1,0},
-                {0,1,1},
-                {0,0,1},
-                {1,1,1}});
+        INDArray labels = Nd4j.create(new double[][] {{0, 1, 0}, {1, 1, 0}, {0, 1, 1}, {0, 0, 1}, {1, 1, 1}});
 
         //Remove the 1 masked value for each column
-        INDArray labelsExMasked = Nd4j.create(new double[][]{
-                {0,1,0},
-                {0,1,0},
-                {0,0,1},
-                {1,1,1}});
+        INDArray labelsExMasked = Nd4j.create(new double[][] {{0, 1, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 1}});
 
-        INDArray predicted = Nd4j.create(new double[][]{
-                {0.9,0.4,0.6},
-                {0.2,0.8,0.4},
-                {0.6,0.1,0.1},
-                {0.3,0.7,0.2},
-                {0.8,0.6,0.6}});
+        INDArray predicted = Nd4j.create(new double[][] {{0.9, 0.4, 0.6}, {0.2, 0.8, 0.4}, {0.6, 0.1, 0.1},
+                        {0.3, 0.7, 0.2}, {0.8, 0.6, 0.6}});
 
-        INDArray predictedExMasked = Nd4j.create(new double[][]{
-                {0.9,0.4,0.6},
-                {0.6,0.8,0.4},
-                {0.3,0.7,0.1},
-                {0.8,0.6,0.6}});
+        INDArray predictedExMasked = Nd4j
+                        .create(new double[][] {{0.9, 0.4, 0.6}, {0.6, 0.8, 0.4}, {0.3, 0.7, 0.1}, {0.8, 0.6, 0.6}});
 
         ROCBinary rbMasked = new ROCBinary(nSteps);
         rbMasked.eval(labels, predicted, mask);
@@ -158,7 +137,7 @@ public class ROCBinaryTest {
 
         assertEquals(rb.stats(), rbMasked.stats());
 
-        for( int i=0; i<3; i++ ){
+        for (int i = 0; i < 3; i++) {
             List<ROCBinary.PrecisionRecallPoint> pExp = rb.getPrecisionRecallCurve(i);
             List<ROCBinary.PrecisionRecallPoint> p = rbMasked.getPrecisionRecallCurve(i);
 

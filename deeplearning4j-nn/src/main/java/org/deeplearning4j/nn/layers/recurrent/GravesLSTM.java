@@ -38,6 +38,7 @@ import java.util.Map;
  * http://arxiv.org/pdf/1503.04069.pdf
  *
  * @author Alex Black
+ * @see LSTM LSTM class, for the version without peephole connections
  */
 public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GravesLSTM> {
     public static final String STATE_KEY_PREV_ACTIVATION = "prevAct";
@@ -95,7 +96,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         return LSTMHelpers.backpropGradientHelper(this.conf, this.layerConf().getGateActivationFn(), this.input,
                         recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY,
-                        GravesLSTMParamInitializer.BIAS_KEY, gradientViews, null);
+                        GravesLSTMParamInitializer.BIAS_KEY, gradientViews, null, true);
     }
 
 
@@ -142,7 +143,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
         return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
                         recurrentWeights, inputWeights, biases, training, prevOutputActivations, prevMemCellState,
-                        forBackprop, true, GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, null);
+                        forBackprop, true, GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, null, true);
     }
 
     @Override

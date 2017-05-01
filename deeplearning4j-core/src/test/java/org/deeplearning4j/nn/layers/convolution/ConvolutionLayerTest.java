@@ -189,9 +189,9 @@ public class ConvolutionLayerTest {
 
     @Test(expected = Exception.class)
     @Ignore //Test is based on the assumption that there is no default kernel size. Needs to be revisited.
-    public void testCNNKernelNoSize(){
-        int imageHeight= 20;
-        int imageWidth= 23;
+    public void testCNNKernelNoSize() {
+        int imageHeight = 20;
+        int imageWidth = 23;
         int nChannels = 1;
         int classes = 2;
         int numSamples = 200;
@@ -200,34 +200,23 @@ public class ConvolutionLayerTest {
         int kernelWidth = 3;
 
         DataSet trainInput;
-        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder()
-                .seed(123)
-                .iterations(1)
-                .list()
-                .layer(0, new ConvolutionLayer.Builder()
-                        .nOut(2)
-                        .activation(Activation.RELU)
-                        .weightInit(WeightInit.XAVIER)
-                        .build())
-                .layer(1, new SubsamplingLayer.Builder()
-                        .poolingType(SubsamplingLayer.PoolingType.MAX)
-                        .build())
-                .layer(2, new OutputLayer.Builder()
-                        .nOut(classes)
-                        .weightInit(WeightInit.XAVIER)
-                        .activation(Activation.SOFTMAX)
-                        .build())
-                .setInputType(InputType.convolutionalFlat(imageHeight, imageWidth, nChannels))
-                .backprop(true).pretrain(false);
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(123).iterations(1).list()
+                        .layer(0, new ConvolutionLayer.Builder().nOut(2).activation(Activation.RELU)
+                                        .weightInit(WeightInit.XAVIER).build())
+                        .layer(1, new SubsamplingLayer.Builder().poolingType(SubsamplingLayer.PoolingType.MAX).build())
+                        .layer(2, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER)
+                                        .activation(Activation.SOFTMAX).build())
+                        .setInputType(InputType.convolutionalFlat(imageHeight, imageWidth, nChannels)).backprop(true)
+                        .pretrain(false);
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
 
-        INDArray emptyFeatures = Nd4j.zeros(numSamples,imageWidth*imageHeight*nChannels);
-        INDArray emptyLables = Nd4j.zeros(numSamples,classes);
+        INDArray emptyFeatures = Nd4j.zeros(numSamples, imageWidth * imageHeight * nChannels);
+        INDArray emptyLables = Nd4j.zeros(numSamples, classes);
 
-        trainInput = new DataSet(emptyFeatures,emptyLables);
+        trainInput = new DataSet(emptyFeatures, emptyLables);
         model.fit(trainInput);
     }
 

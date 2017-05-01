@@ -112,7 +112,7 @@ public class TestCompareParameterAveragingSparkVsSingleMachine {
     private static TrainingMaster getTrainingMaster(int avgFreq, int miniBatchSize, boolean saveUpdater) {
         ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(1)
                         .averagingFrequency(avgFreq).batchSizePerWorker(miniBatchSize).saveUpdater(saveUpdater)
-                        .workerPrefetchNumBatches(0).build();
+                        .aggregationDepth(2).workerPrefetchNumBatches(0).build();
         return tm;
     }
 

@@ -332,21 +332,16 @@ public class MultiLayerNeuralNetConfigurationTest {
     @Test
     public void testBiasLr() {
         //setup the network
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .learningRate(1e-2)
-                .biasLearningRate(0.5)
-                .updater(Updater.ADAM)
-                .list()
-                .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).weightInit(WeightInit.XAVIER)
-                        .activation(Activation.RELU).build())
-                .layer(1, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).build())
-                .layer(2, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).biasLearningRate(0.25).build())
-                .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .nOut(10).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
-                        .build())
-                .setInputType(InputType.convolutional(28,28,1))
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).learningRate(1e-2)
+                        .biasLearningRate(0.5).updater(Updater.ADAM).list()
+                        .layer(0, new ConvolutionLayer.Builder(5, 5).nOut(5).weightInit(WeightInit.XAVIER)
+                                        .activation(Activation.RELU).build())
+                        .layer(1, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).build())
+                        .layer(2, new DenseLayer.Builder().nOut(100).activation(Activation.RELU).biasLearningRate(0.25)
+                                        .build())
+                        .layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(10)
+                                        .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
+                        .setInputType(InputType.convolutional(28, 28, 1)).build();
 
         org.deeplearning4j.nn.conf.layers.Layer l0 = conf.getConf(0).getLayer();
         org.deeplearning4j.nn.conf.layers.Layer l1 = conf.getConf(1).getLayer();

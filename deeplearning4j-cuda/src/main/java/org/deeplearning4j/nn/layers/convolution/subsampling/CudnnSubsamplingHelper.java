@@ -207,7 +207,7 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
                         zData, cudnnContext.deltaTensorDesc, epsData, cudnnContext.srcTensorDesc, srcData, beta,
                         cudnnContext.dstTensorDesc, dstData));
 
-        allocator.registerAction(context,outEpsilon, input, epsilon, reduced);
+        allocator.registerAction(context, outEpsilon, input, epsilon, reduced);
 
         return new Pair<>(retGradient, outEpsilon);
     }

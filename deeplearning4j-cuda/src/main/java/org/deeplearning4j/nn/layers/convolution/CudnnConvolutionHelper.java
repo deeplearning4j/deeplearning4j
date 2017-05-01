@@ -200,8 +200,7 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode); //Also performs validation
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {input.size(2), input.size(3)}, kernel,
-                            strides);
+            pad = ConvolutionUtils.getSameModeBottomRightPadding(outSize, new int[] {inH, inW}, kernel, strides);
         } else {
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode); //Also performs validation
         }
@@ -227,8 +226,8 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.deltaTensorDesc, dataType, miniBatch, outDepth, outH, outW,
                         deltaStride[0], deltaStride[1], deltaStride[2], deltaStride[3]));
-        checkCudnn(cudnnSetConvolution2dDescriptor_v5(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], 1, 1,
-                        CUDNN_CROSS_CORRELATION, dataType));
+        checkCudnn(cudnnSetConvolution2dDescriptor_v5(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], 1,
+                        1, CUDNN_CROSS_CORRELATION, dataType));
         checkCudnn(cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, tensorFormat, outDepth, inDepth, kH,
                         kW));
         checkCudnn(cudnnGetConvolutionBackwardFilterAlgorithm(cudnnContext, cudnnContext.srcTensorDesc,
@@ -317,8 +316,7 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode); //Also performs validation
-            pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {input.size(2), input.size(3)}, kernel,
-                            strides);
+            pad = ConvolutionUtils.getSameModeBottomRightPadding(outSize, new int[] {inH, inW}, kernel, strides);
         } else {
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode); //Also performs validation
         }
@@ -336,8 +334,8 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
         checkCudnn(cudnnSetFilter4dDescriptor(cudnnContext.filterDesc, dataType, tensorFormat, outDepth, inDepth, kH,
                         kW));
-        checkCudnn(cudnnSetConvolution2dDescriptor_v5(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], 1, 1,
-                        CUDNN_CROSS_CORRELATION, dataType));
+        checkCudnn(cudnnSetConvolution2dDescriptor_v5(cudnnContext.convDesc, pad[0], pad[1], strides[0], strides[1], 1,
+                        1, CUDNN_CROSS_CORRELATION, dataType));
 
         // find dimension of convolution output
         //        checkCudnn(cudnnGetConvolution2dForwardOutputDim(cudnnContext.convDesc, cudnnContext.srcTensorDesc, cudnnContext.filterDesc, n, c, h, w));

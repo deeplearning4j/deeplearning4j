@@ -45,28 +45,27 @@ import java.util.Map;
  * A neural network layer.
  */
 @JsonTypeInfo(use = Id.NAME, include = As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {
-        @JsonSubTypes.Type(value = AutoEncoder.class, name = "autoEncoder"),
-        @JsonSubTypes.Type(value = ConvolutionLayer.class, name = "convolution"),
-        @JsonSubTypes.Type(value = Convolution1DLayer.class, name = "convolution1d"),
-        @JsonSubTypes.Type(value = GravesLSTM.class, name = "gravesLSTM"),
-        @JsonSubTypes.Type(value = GravesBidirectionalLSTM.class, name = "gravesBidirectionalLSTM"),
-        @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
-        @JsonSubTypes.Type(value = RnnOutputLayer.class, name = "rnnoutput"),
-        @JsonSubTypes.Type(value = LossLayer.class, name = "loss"),
-        @JsonSubTypes.Type(value = RBM.class, name = "RBM"),
-        @JsonSubTypes.Type(value = DenseLayer.class, name = "dense"),
-        @JsonSubTypes.Type(value = SubsamplingLayer.class, name = "subsampling"),
-        @JsonSubTypes.Type(value = Subsampling1DLayer.class, name = "subsampling1d"),
-        @JsonSubTypes.Type(value = BatchNormalization.class, name = "batchNormalization"),
-        @JsonSubTypes.Type(value = LocalResponseNormalization.class, name = "localResponseNormalization"),
-        @JsonSubTypes.Type(value = EmbeddingLayer.class, name = "embedding"),
-        @JsonSubTypes.Type(value = ActivationLayer.class, name = "activation"),
-        @JsonSubTypes.Type(value = VariationalAutoencoder.class, name = "VariationalAutoencoder"),
-        @JsonSubTypes.Type(value = DropoutLayer.class, name = "dropout"),
-        @JsonSubTypes.Type(value = GlobalPoolingLayer.class, name = "GlobalPooling"),
-        @JsonSubTypes.Type(value = ZeroPaddingLayer.class, name = "zeroPadding")
-})
+@JsonSubTypes(value = {@JsonSubTypes.Type(value = AutoEncoder.class, name = "autoEncoder"),
+                @JsonSubTypes.Type(value = ConvolutionLayer.class, name = "convolution"),
+                @JsonSubTypes.Type(value = Convolution1DLayer.class, name = "convolution1d"),
+                @JsonSubTypes.Type(value = GravesLSTM.class, name = "gravesLSTM"),
+                @JsonSubTypes.Type(value = LSTM.class, name = "LSTM"),
+                @JsonSubTypes.Type(value = GravesBidirectionalLSTM.class, name = "gravesBidirectionalLSTM"),
+                @JsonSubTypes.Type(value = OutputLayer.class, name = "output"),
+                @JsonSubTypes.Type(value = RnnOutputLayer.class, name = "rnnoutput"),
+                @JsonSubTypes.Type(value = LossLayer.class, name = "loss"),
+                @JsonSubTypes.Type(value = RBM.class, name = "RBM"),
+                @JsonSubTypes.Type(value = DenseLayer.class, name = "dense"),
+                @JsonSubTypes.Type(value = SubsamplingLayer.class, name = "subsampling"),
+                @JsonSubTypes.Type(value = Subsampling1DLayer.class, name = "subsampling1d"),
+                @JsonSubTypes.Type(value = BatchNormalization.class, name = "batchNormalization"),
+                @JsonSubTypes.Type(value = LocalResponseNormalization.class, name = "localResponseNormalization"),
+                @JsonSubTypes.Type(value = EmbeddingLayer.class, name = "embedding"),
+                @JsonSubTypes.Type(value = ActivationLayer.class, name = "activation"),
+                @JsonSubTypes.Type(value = VariationalAutoencoder.class, name = "VariationalAutoencoder"),
+                @JsonSubTypes.Type(value = DropoutLayer.class, name = "dropout"),
+                @JsonSubTypes.Type(value = GlobalPoolingLayer.class, name = "GlobalPooling"),
+                @JsonSubTypes.Type(value = ZeroPaddingLayer.class, name = "zeroPadding")})
 @Data
 @NoArgsConstructor
 public abstract class Layer implements Serializable, Cloneable {
@@ -236,6 +235,17 @@ public abstract class Layer implements Serializable, Cloneable {
      * @return Initial learning rate value for that parameter
      */
     public abstract double getLearningRateByParam(String paramName);
+
+    /**
+     * Is the specified parameter a layerwise pretraining only parameter?<br>
+     * For example, visible bias params in an autoencoder (or, decoder params in a variational autoencoder) aren't
+     * used during supervised backprop.<br>
+     * Layers (like DenseLayer, etc) with no pretrainable parameters will return false for all (valid) inputs.
+     *
+     * @param paramName Parameter name/key
+     * @return True if the parameter is for layerwise pretraining only, false otherwise
+     */
+    public abstract boolean isPretrainParam(String paramName);
 
     /**
      * Get the updater for the given parameter. Typically the same updater will be used for all updaters, but this

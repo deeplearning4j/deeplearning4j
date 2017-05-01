@@ -67,6 +67,11 @@ public class PathSparkMultiDataSetIterator implements MultiDataSetIterator {
     }
 
     @Override
+    public MultiDataSetPreProcessor getPreProcessor() {
+        return preprocessor;
+    }
+
+    @Override
     public boolean hasNext() {
         return iter.hasNext();
     }

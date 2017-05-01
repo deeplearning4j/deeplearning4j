@@ -240,6 +240,11 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     }
 
     @Override
+    public INDArray getGradientsViewArray() {
+        return insideLayer.getGradientsViewArray();
+    }
+
+    @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
         if (!logGradient) {
             log.info("Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");

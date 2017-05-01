@@ -104,7 +104,8 @@ public class PerformanceListener implements IterationListener {
                 builder.append("Device: [").append(Nd4j.getAffinityManager().getDeviceForCurrentThread()).append("]; ");
 
             if (reportEtl) {
-                long time = (model instanceof MultiLayerNetwork) ? ((MultiLayerNetwork) model).getLastEtlTime() : ((ComputationGraph) model).getLastEtlTime();
+                long time = (model instanceof MultiLayerNetwork) ? ((MultiLayerNetwork) model).getLastEtlTime()
+                                : ((ComputationGraph) model).getLastEtlTime();
                 builder.append("ETL: ").append(time).append(" ms; ");
             }
 

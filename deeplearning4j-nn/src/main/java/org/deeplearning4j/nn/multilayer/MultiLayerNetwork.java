@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.multilayer;
 
 
+import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -100,6 +101,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     @Setter
     protected boolean initDone = false;
     protected INDArray flattenedParams; //Params for all layers are a view/subset of this array
+    @Getter
     protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
 
     protected ThreadLocal<Long> lastEtlTime = new ThreadLocal<>();
@@ -781,7 +783,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
 
         for (int i = 0; i <= layerNum; i++) {
-           // log.info("Activating layer: {}", i);
+            // log.info("Activating layer: {}", i);
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
                 currInput = activationFromPrevLayer(i, currInput, train).leverageTo(workspaceExternal);
                 //currInput = activationFromPrevLayer(i, currInput, train);
@@ -956,6 +958,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     }
 
     @Override
+    public INDArray getGradientsViewArray() {
+        return flattenedGradients;
+    }
+
+    @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
         int paramsSoFar = 0;
         for (Layer layer : layers) {
@@ -1017,8 +1024,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         for (TrainingListener tl : trainingListeners) {
-                tl.onEpochStart(this);
-            }
+            tl.onEpochStart(this);
+        }
 
         if (layerWiseConfigurations.isPretrain()) {
             // TODO: pratrain should be wrapped into workspace
@@ -1188,8 +1195,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     break;
                 }
                 currPair = currLayer.backpropGradient(currPair.getSecond());
-                if(currPair.getSecond() != null){
-                    //Epsilons may be null for embedding layer
+                if (currPair.getSecond() != null) {
+                    //May be null for embedding layer, etc
                     currPair.setSecond(currPair.getSecond().leverageTo(workspaceExternal));
                 }
 
@@ -1198,7 +1205,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     String origName = entry.getKey();
                     multiGradientKey = String.valueOf(j) + "_" + origName;
                     tempList.addFirst(new Triple<>(multiGradientKey, entry.getValue(),
-                            currPair.getFirst().flatteningOrderForVariable(origName)));
+                                    currPair.getFirst().flatteningOrderForVariable(origName)));
                 }
                 for (Triple<String, INDArray, Character> triple : tempList)
                     gradientList.addFirst(triple);
@@ -1206,7 +1213,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                 //Pass epsilon through input processor before passing to next layer (if applicable)
                 if (getLayerWiseConfigurations().getInputPreProcess(j) != null)
                     currPair = new Pair<>(currPair.getFirst(), getLayerWiseConfigurations().getInputPreProcess(j)
-                            .backprop(currPair.getSecond(), getInputMiniBatchSize()));
+                                    .backprop(currPair.getSecond(), getInputMiniBatchSize()));
 
                 //log.info("This layer space: {}", ((Nd4jWorkspace) ws).getThisCycleAllocations());
             } catch (Exception e) {
@@ -1651,16 +1658,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray input, TrainingMode train) {
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .initialSize(0)
-                .overallocationLimit(1.0)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .policyReset(ResetPolicy.BLOCK_LEFT)
-                .build();
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).overallocationLimit(1.0)
+                        .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();
 
-        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration,workspaceExternal);
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, workspaceExternal);
 
-        try(MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
             return output(input, train == TrainingMode.TRAIN);
         }
     }
@@ -1825,7 +1829,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             //Network updater state: should be cloned over also
             INDArray updaterView = network.getUpdater().getStateViewArray();
             if (updaterView != null) {
-                Updater newUpdater = new MultiLayerUpdater(this, updaterView.dup());
+                //                Updater newUpdater = new MultiLayerUpdater(this, updaterView.dup());
+                Updater newUpdater = new MultiLayerUpdater(this);
+                newUpdater.setStateViewArray(this, updaterView.dup(), false);
                 this.setUpdater(newUpdater);
             }
         } else {
@@ -2792,7 +2798,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * This method just makes sure there's no state preserved within layers
      */
     protected void clearLayersStates() {
-        for(int f = 0; f < layers.length; f++) {
+        for (int f = 0; f < layers.length; f++) {
             layers[f].setInput(null);
             layers[f].setMaskArray(null);
             layers[f].clear();

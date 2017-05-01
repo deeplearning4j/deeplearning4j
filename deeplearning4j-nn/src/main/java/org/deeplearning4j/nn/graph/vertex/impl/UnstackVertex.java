@@ -140,8 +140,8 @@ public class UnstackVertex extends BaseGraphVertex {
         }
 
         //Mask arrays are either 1d (column vector) or 2d...
-        int start = from * step;
-        int end = (from + 1) * step;
+        int start = from * minibatchSize;
+        int end = (from + 1) * minibatchSize;
         INDArray outMask = maskArrays[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all());
         return new Pair<>(outMask, currentMaskState);
     }

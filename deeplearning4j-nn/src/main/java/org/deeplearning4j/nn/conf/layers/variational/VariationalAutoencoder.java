@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.layers.variational;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
@@ -35,6 +36,7 @@ import java.util.Map;
  */
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class VariationalAutoencoder extends BasePretrainNetwork {
 
     private int[] encoderLayerSizes;
@@ -100,6 +102,20 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
         if (paramName.endsWith(VariationalAutoencoderParamInitializer.BIAS_KEY_SUFFIX))
             return l2Bias;
         return l2;
+    }
+
+    @Override
+    public boolean isPretrainParam(String paramName) {
+        if (paramName.startsWith(VariationalAutoencoderParamInitializer.DECODER_PREFIX)) {
+            return true;
+        }
+        if (paramName.startsWith(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_PREFIX)) {
+            return true;
+        }
+        if (paramName.startsWith(VariationalAutoencoderParamInitializer.PXZ_PREFIX)) {
+            return true;
+        }
+        return false;
     }
 
     public static class Builder extends BasePretrainNetwork.Builder<Builder> {

@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.graph;
 
+import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -92,6 +93,7 @@ public class ComputationGraph implements Serializable, Model {
     protected boolean initCalled = false;
     protected transient Solver solver; //Used to call optimizers during backprop
     protected INDArray flattenedParams; //Params for all layers are a view/subset of this array
+    @Getter
     protected transient INDArray flattenedGradients; //Gradients for all layers are a view/subset of this array
     protected Gradient gradient;
     protected double score;
@@ -462,7 +464,7 @@ public class ComputationGraph implements Serializable, Model {
             for (String s : vertexInputNames) {
                 List<String> list = verticesOutputTo.get(s);
                 if (list == null) {
-                    list = new ArrayList<>();
+                    list  = new ArrayList<>();
                     verticesOutputTo.put(s, list);
                 }
                 list.add(vertexName); //Edge: s -> vertexName
@@ -816,7 +818,7 @@ public class ComputationGraph implements Serializable, Model {
                     if (solver == null) {
                         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                             solver = new Solver.Builder().configure(defaultConfiguration) //TODO; don't like this
-                                    .listeners(listeners).model(this).build();
+                                            .listeners(listeners).model(this).build();
                         }
                     }
 
@@ -1037,6 +1039,8 @@ public class ComputationGraph implements Serializable, Model {
      * (a) working out what order to do forward pass,
      * (b) what order to do backprop (i.e., reverse of this)
      * (c) order to flatten parameters (and gradients)
+     *
+     * Specifically, gradients/params/forward pass are executed on vertex[topologicalSortOrder[i]], for i=0..nVertices-1
      */
     public int[] topologicalSortOrder() {
         if (topologicalOrder != null)
@@ -1156,7 +1160,7 @@ public class ComputationGraph implements Serializable, Model {
             }
             calcBackpropGradients(true);
         } else {
-            Map<String, INDArray> activations = feedForward(true, true);
+            Map<String, INDArray> activations = feedForward(true, true, false, false);
             if (trainingListeners.size() > 0) {
                 for (TrainingListener tl : trainingListeners) {
                     tl.onForwardPass(this, activations);
@@ -1236,7 +1240,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return A map of activations for each layer (not each GraphVertex). Keys = layer name, values = layer activations
      */
     public Map<String, INDArray> feedForward(boolean train) {
-        return feedForward(train, false);
+        return feedForward(train, false, false, true);
     }
 
     private Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers) {
@@ -1278,15 +1282,20 @@ public class ComputationGraph implements Serializable, Model {
                 } else {
                     //Do forward pass:
                     if (excludeOutputLayers && current.isOutputVertex() && current.hasLayer()
-                            && current.getLayer() instanceof IOutputLayer) {
+                                    && current.getLayer() instanceof IOutputLayer) {
                         //When doing backprop (i.e., excludeOutputLayers = false), we don't need to do full forward pass through output layers too
                         // we only need to ensure the input to the output layers is set properly
                         continue;
                     }
                     // once again, pushing stuff out of this workspace
-                    INDArray out = current.doForward(train).leverageTo(workspaceExternal);
+                    INDArray out;
+                    if (publicApi) {
+                        out = current.doForward(train).detach();
+                    } else {
+                        out = current.doForward(train).leverageTo(workspaceExternal);
+                    }
 
-                    if (current.hasLayer()) {
+                    if (includeNonLayerVertexActivations || current.hasLayer()) {
                         layerActivations.put(current.getVertexName(), out);
                     }
 
@@ -1297,8 +1306,13 @@ public class ComputationGraph implements Serializable, Model {
                             int vIdx = v.getVertexIndex();
                             int inputNum = v.getVertexEdgeNumber();
                             //This (jth) connection from the output: is the 'inputNum'th input to vertex 'vIdx'
-                            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal) && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)) {
-                                try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
+                            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal)
+                                            && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j
+                                                            .getWorkspaceManager().getWorkspaceForCurrentThread(
+                                                                            ComputationGraph.workspaceExternal)) {
+                                try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
+                                                .getWorkspaceForCurrentThread(workspaceExternal)
+                                                .notifyScopeBorrowed()) {
                                     // FIXME: we don't really want detach here.
                                     vertices[vIdx].setInput(inputNum, out);
                                 }
@@ -1421,7 +1435,7 @@ public class ComputationGraph implements Serializable, Model {
      */
     protected void calcBackpropGradients(boolean truncatedBPTT, INDArray... externalEpsilons) {
         if (flattenedGradients == null) {
-            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 initGradientsView();
             }
         }
@@ -1438,7 +1452,7 @@ public class ComputationGraph implements Serializable, Model {
         //Do backprop according to the reverse of the topological ordering of the network
         boolean[] setVertexEpsilon = new boolean[topologicalOrder.length]; //If true: already set epsilon for this vertex; later epsilons should be *added* to the existing one, not set
         for (int i = topologicalOrder.length - 1; i >= 0; i--) {
-            try(MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+            try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
                 GraphVertex current = vertices[topologicalOrder[i]];
 
                 if (current.isInputVertex())
@@ -1489,8 +1503,10 @@ public class ComputationGraph implements Serializable, Model {
                             if (configuration.getWorkspaceMode() == WorkspaceMode.NONE) {
                                 gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
                             } else {
-                                try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
-                                //try (MemoryWorkspace wsB = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                                try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
+                                                .getWorkspaceForCurrentThread(workspaceExternal)
+                                                .notifyScopeBorrowed()) {
+                                    //try (MemoryWorkspace wsB = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                                     gv.setEpsilon(currentEps.add(epsilons[j++]));
                                 }
                             }
@@ -1509,7 +1525,8 @@ public class ComputationGraph implements Serializable, Model {
                     for (Map.Entry<String, INDArray> entry : map.entrySet()) {
                         String origName = entry.getKey();
                         String newName = current.getVertexName() + "_" + origName;
-                        tempList.addFirst(new Triple<>(newName, entry.getValue(), g.flatteningOrderForVariable(origName)));
+                        tempList.addFirst(new Triple<>(newName, entry.getValue(),
+                                        g.flatteningOrderForVariable(origName)));
                     }
                     for (Triple<String, INDArray, Character> t : tempList)
                         gradients.addFirst(t);
@@ -1940,6 +1957,11 @@ public class ComputationGraph implements Serializable, Model {
     @Override
     public void setParamsViewArray(INDArray gradient) {
         throw new RuntimeException("Not yet implemented");
+    }
+
+    @Override
+    public INDArray getGradientsViewArray() {
+        return flattenedGradients;
     }
 
     @Override
@@ -2642,7 +2664,8 @@ public class ComputationGraph implements Serializable, Model {
      * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
      */
     public Evaluation evaluate(MultiDataSetIterator iterator, List<String> labelsList, int topN) {
-        MultiDataSetIterator amdsi = iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 8, true) : iterator;
+        MultiDataSetIterator amdsi =
+                        iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 8, true) : iterator;
 
         Evaluation evaluation = doEvaluation(amdsi, new Evaluation(labelsList, topN));
 
@@ -2690,7 +2713,8 @@ public class ComputationGraph implements Serializable, Model {
      * @return Regression evaluation
      */
     public RegressionEvaluation evaluateRegression(MultiDataSetIterator iterator, List<String> columnNames) {
-        MultiDataSetIterator amdsi = iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 8, true) : iterator;
+        MultiDataSetIterator amdsi =
+                        iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 8, true) : iterator;
 
         RegressionEvaluation evaluation = doEvaluation(amdsi, new RegressionEvaluation(columnNames));;
 
@@ -2726,7 +2750,8 @@ public class ComputationGraph implements Serializable, Model {
      * @return ROC evaluation on the given dataset
      */
     public ROC evaluateROC(MultiDataSetIterator iterator, int rocThresholdSteps) {
-        MultiDataSetIterator amdsi = iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 8, true) : iterator;
+        MultiDataSetIterator amdsi =
+                        iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 8, true) : iterator;
 
         ROC evaluation = doEvaluation(amdsi, new ROC(rocThresholdSteps));
 
@@ -2762,7 +2787,8 @@ public class ComputationGraph implements Serializable, Model {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public ROCMultiClass evaluateROCMultiClass(MultiDataSetIterator iterator, int rocThresholdSteps) {
-        MultiDataSetIterator amdsi = iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 8, true) : iterator;
+        MultiDataSetIterator amdsi =
+                        iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 8, true) : iterator;
 
         ROCMultiClass evaluation = doEvaluation(amdsi, new ROCMultiClass(rocThresholdSteps));
 
@@ -2780,12 +2806,12 @@ public class ComputationGraph implements Serializable, Model {
      * @param <T>        Type of the IEvaluation instance
      * @return           The input IEvaluation instance, after performing evaluation on the test data
      */
-    public <T extends IEvaluation> T doEvaluation(DataSetIterator iterator, T evaluation){
+    public <T extends IEvaluation> T doEvaluation(DataSetIterator iterator, T evaluation) {
         if (layers == null || !(getOutputLayer(0) instanceof IOutputLayer)) {
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
 
-        if( getNumOutputArrays() != 1){
+        if (getNumOutputArrays() != 1) {
             throw new IllegalStateException("Cannot evaluate a model with > 1 output arrays from a DataSetIterator");
         }
 
@@ -2806,6 +2832,7 @@ public class ComputationGraph implements Serializable, Model {
                 INDArray featuresMask = next.getFeaturesMaskArray();
                 INDArray labels = next.getLabels();
                 INDArray labelMask = next.getLabelsMaskArray();
+
 
                 setLayerMaskArrays(
                         featuresMask == null ? null : new INDArray[]{featuresMask},
@@ -2828,12 +2855,12 @@ public class ComputationGraph implements Serializable, Model {
      * @param <T>        Type of the IEvaluation instance
      * @return           The input IEvaluation instance, after performing evaluation on the test data
      */
-    public <T extends IEvaluation> T doEvaluation(MultiDataSetIterator iterator, T evaluation){
+    public <T extends IEvaluation> T doEvaluation(MultiDataSetIterator iterator, T evaluation) {
         if (layers == null || !(getOutputLayer(0) instanceof IOutputLayer)) {
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
 
-        if( getNumOutputArrays() != 1){
+        if (getNumOutputArrays() != 1) {
             throw new IllegalStateException("Cannot evaluate a model using this method with > 1 output arrays");
         }
 
@@ -2942,7 +2969,7 @@ public class ComputationGraph implements Serializable, Model {
      * This method just makes sure there's no state preserved within layers
      */
     protected void clearLayersStates() {
-        for(int f = 0; f < layers.length; f++) {
+        for (int f = 0; f < layers.length; f++) {
             layers[f].setInput(null);
         }
 

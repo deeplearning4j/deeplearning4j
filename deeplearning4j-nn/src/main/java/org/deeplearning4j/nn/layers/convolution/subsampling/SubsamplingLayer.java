@@ -75,10 +75,10 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         try {
             helper = Class.forName("org.deeplearning4j.nn.layers.convolution.subsampling.CudnnSubsamplingHelper")
                             .asSubclass(SubsamplingHelper.class).newInstance();
-            log.debug("CudnnSubsamplingHelper successfully loaded");
+            log.debug("CudnnSubsamplingHelper successfully initialized");
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
-                log.warn("Could not load CudnnSubsamplingHelper", t);
+                log.warn("Could not initialize CudnnSubsamplingHelper", t);
             }
         }
     }

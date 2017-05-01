@@ -36,12 +36,15 @@ import java.util.Map;
 /**
  * LSTM recurrent net, based on Graves: Supervised Sequence Labelling with Recurrent Neural Networks
  * http://www.cs.toronto.edu/~graves/phd.pdf
+ *
+ * @author Alex Black
+ * @see LSTM LSTM class, for the version without peephole connections
  */
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class GravesLSTM extends BaseRecurrentLayer {
+public class GravesLSTM extends AbstractLSTM {
 
     private double forgetGateBiasInit;
     private IActivation gateActivationFn = new ActivationSigmoid();
@@ -72,95 +75,8 @@ public class GravesLSTM extends BaseRecurrentLayer {
         return GravesLSTMParamInitializer.getInstance();
     }
 
-    @Override
-    public double getL1ByParam(String paramName) {
-        switch (paramName) {
-            case GravesLSTMParamInitializer.INPUT_WEIGHT_KEY:
-            case GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY:
-                return l1;
-            case GravesLSTMParamInitializer.BIAS_KEY:
-                return l1Bias;
-            default:
-                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
-    public double getL2ByParam(String paramName) {
-        switch (paramName) {
-            case GravesLSTMParamInitializer.INPUT_WEIGHT_KEY:
-            case GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY:
-                return l2;
-            case GravesLSTMParamInitializer.BIAS_KEY:
-                return l2Bias;
-            default:
-                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
-        }
-    }
-
-    @Override
-    public double getLearningRateByParam(String paramName) {
-        switch (paramName) {
-            case GravesLSTMParamInitializer.INPUT_WEIGHT_KEY:
-            case GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY:
-                return learningRate;
-            case GravesLSTMParamInitializer.BIAS_KEY:
-                if (!Double.isNaN(biasLearningRate)) {
-                    //Bias learning rate has been explicitly set
-                    return biasLearningRate;
-                } else {
-                    return learningRate;
-                }
-            default:
-                throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
-        }
-    }
-
     @AllArgsConstructor
-    @NoArgsConstructor
-    public static class Builder extends BaseRecurrentLayer.Builder<Builder> {
-
-        private double forgetGateBiasInit = 1.0;
-        private IActivation gateActivationFn = new ActivationSigmoid();
-
-        /** Set forget gate bias initalizations. Values in range 1-5 can potentially
-         * help with learning or longer-term dependencies.
-         */
-        public Builder forgetGateBiasInit(double biasInit) {
-            this.forgetGateBiasInit = biasInit;
-            return this;
-        }
-
-        /**
-         * Activation function for the LSTM gates.
-         * Note: This should be bounded to range 0-1: sigmoid or hard sigmoid, for example
-         *
-         * @param gateActivationFn Activation function for the LSTM gates
-         */
-        public Builder gateActivationFunction(String gateActivationFn) {
-            return gateActivationFunction(Activation.fromString(gateActivationFn));
-        }
-
-        /**
-         * Activation function for the LSTM gates.
-         * Note: This should be bounded to range 0-1: sigmoid or hard sigmoid, for example
-         *
-         * @param gateActivationFn Activation function for the LSTM gates
-         */
-        public Builder gateActivationFunction(Activation gateActivationFn) {
-            return gateActivationFunction(gateActivationFn.getActivationFunction());
-        }
-
-        /**
-         * Activation function for the LSTM gates.
-         * Note: This should be bounded to range 0-1: sigmoid or hard sigmoid, for example
-         *
-         * @param gateActivationFn Activation function for the LSTM gates
-         */
-        public Builder gateActivationFunction(IActivation gateActivationFn) {
-            this.gateActivationFn = gateActivationFn;
-            return this;
-        }
+    public static class Builder extends AbstractLSTM.Builder<Builder> {
 
         @SuppressWarnings("unchecked")
         public GravesLSTM build() {

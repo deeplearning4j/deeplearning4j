@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.gradient;
 
+import lombok.Setter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -37,6 +38,7 @@ public class DefaultGradient implements Gradient {
     public static final char DEFAULT_FLATTENING_ORDER = 'f';
     private Map<String, INDArray> gradients = new LinkedHashMap<>();
     private Map<String, Character> flatteningOrders;
+    @Setter
     private INDArray flattenedGradient;
 
     public DefaultGradient() {}

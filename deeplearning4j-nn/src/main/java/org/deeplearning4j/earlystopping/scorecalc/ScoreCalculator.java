@@ -13,9 +13,9 @@ import java.io.Serializable;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonSubTypes(value={
-        @JsonSubTypes.Type(value = DataSetLossCalculator.class, name = "BestScoreEpochTerminationCondition"),
-        @JsonSubTypes.Type(value = DataSetLossCalculatorCG.class, name = "MaxEpochsTerminationCondition"),
+@JsonSubTypes(value = {
+                @JsonSubTypes.Type(value = DataSetLossCalculator.class, name = "BestScoreEpochTerminationCondition"),
+                @JsonSubTypes.Type(value = DataSetLossCalculatorCG.class, name = "MaxEpochsTerminationCondition"),
 
 })
 public interface ScoreCalculator<T extends Model> extends Serializable {

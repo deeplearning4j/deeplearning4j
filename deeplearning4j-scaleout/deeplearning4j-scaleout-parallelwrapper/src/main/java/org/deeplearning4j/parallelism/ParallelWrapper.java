@@ -130,7 +130,7 @@ public class ParallelWrapper implements AutoCloseable {
             if (isMQ) {
                 if (workers % Nd4j.getAffinityManager().getNumberOfDevices() != 0)
                     log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
-                            Nd4j.getAffinityManager().getNumberOfDevices());
+                                    Nd4j.getAffinityManager().getNumberOfDevices());
 
                 //if (mq == null)
                     //mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL).setType(MagicQueue.Type.MDS)
@@ -218,8 +218,7 @@ public class ParallelWrapper implements AutoCloseable {
             }
 
             Nd4j.averageAndPropagate(model.params(), params);
-        }
-        else {
+        } else {
             INDArray params = Nd4j.zeros(model.params().shape());
             int cnt = 0;
             for (; cnt < workers && cnt < locker.get(); cnt++) {
@@ -319,21 +318,20 @@ public class ParallelWrapper implements AutoCloseable {
                     RoutingIterationListener rl = (RoutingIterationListener) l;
                     if (statsStorage == null && rl.getStorageRouter() == null) {
                         log.warn("RoutingIterationListener provided without providing any StatsStorage instance. Iterator may not function without one. Listener: {}",
-                                l);
+                                        l);
                     } else if (rl.getStorageRouter() != null && !(rl.getStorageRouter() instanceof Serializable)) {
                         //Spark would throw a (probably cryptic) serialization exception later anyway...
                         throw new IllegalStateException(
-                                "RoutingIterationListener provided with non-serializable storage router "
-                                        + "\nRoutingIterationListener class: " + rl.getClass().getName()
-                                        + "\nStatsStorageRouter class: "
-                                        + rl.getStorageRouter().getClass().getName());
+                                        "RoutingIterationListener provided with non-serializable storage router "
+                                                        + "\nRoutingIterationListener class: " + rl.getClass().getName()
+                                                        + "\nStatsStorageRouter class: "
+                                                        + rl.getStorageRouter().getClass().getName());
                     }
                 }
             }
 
             this.listeners.addAll(listeners);
-        }
-        else {
+        } else {
             this.listeners.clear();
         }
 
@@ -356,7 +354,7 @@ public class ParallelWrapper implements AutoCloseable {
             if (isMQ) {
                 if (workers % Nd4j.getAffinityManager().getNumberOfDevices() != 0)
                     log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
-                            Nd4j.getAffinityManager().getNumberOfDevices());
+                                    Nd4j.getAffinityManager().getNumberOfDevices());
 
                // if (mq == null)
                //     mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL).setType(MagicQueue.Type.DS)
@@ -378,10 +376,10 @@ public class ParallelWrapper implements AutoCloseable {
             DataSet dataSet = iterator.next();
             long time2 = System.currentTimeMillis();
             long lastEtlTime = time2 - time1;
-            nanos.add((time2 - time1));
+            //nanos.add((time2 - time1));
 
-        //    if (dataSet == null)
-        //        throw new ND4JIllegalStateException("You can't have NULL as DataSet");
+            if (dataSet == null)
+                throw new ND4JIllegalStateException("You can't have NULL as DataSet");
 
             /*
              now dataSet should be dispatched to next free workers, until all workers are busy. And then we should block till all finished.
@@ -431,8 +429,7 @@ public class ParallelWrapper implements AutoCloseable {
                                     }
 
                                     Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
-                                }
-                                else {
+                                } else {
                                     INDArray state = Nd4j.zeros(updater.getStateViewArray().shape());
                                     int cnt = 0;
                                     for (; cnt < workers && cnt < locker.get(); cnt++) {
@@ -463,9 +460,9 @@ public class ParallelWrapper implements AutoCloseable {
             time1 = System.currentTimeMillis();
         }
 
-        Collections.sort(nanos);
-        int pos = (int) (nanos.size() * 0.85);
-        log.info("p85 ETL time: {} ms; p50 ETL time: {} ms", nanos.get(pos), nanos.get(nanos.size() / 2));
+        //Collections.sort(nanos);
+        //int pos = (int) (nanos.size() * 0.85);
+        //log.info("p85 ETL time: {} ms; p50 ETL time: {} ms", nanos.get(pos), nanos.get(nanos.size() / 2));
 
 
         // sanity checks, or the dataset may never average
@@ -479,21 +476,17 @@ public class ParallelWrapper implements AutoCloseable {
 
     private void createZooIfNeccessary(boolean useMDS) {
         if (zoo == null) {
-            trainerContext.init(model,trainerContextArgs);
+            trainerContext.init(model, trainerContextArgs);
             zoo = new Trainer[workers];
             int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
             for (int cnt = 0; cnt < workers; cnt++) {
                 // we pass true here, to tell Trainer to use MultiDataSet queue for training
-                zoo[cnt] = trainerContext.create(cnt,
-                        model,
-                        Nd4j.getAffinityManager().getDeviceForCurrentThread(),
-                        useMDS,
-                        this, workspaceMode);
+                zoo[cnt] = trainerContext.create(cnt, model, Nd4j.getAffinityManager().getDeviceForCurrentThread(),
+                                useMDS, this, workspaceMode);
                 zoo[cnt].setUncaughtExceptionHandler(handler);
                 if (zoo[cnt] instanceof Thread) {
                     Nd4j.getAffinityManager().attachThreadToDevice((Thread) zoo[cnt], cnt % numDevices);
                 }
-
                 zoo[cnt].start();
             }
         }
@@ -519,7 +512,7 @@ public class ParallelWrapper implements AutoCloseable {
          * @param trainerContextArgs the args to use (maybe null)
          * @return
          */
-        public Builder trainerContextArgs(Object...trainerContextArgs) {
+        public Builder trainerContextArgs(Object... trainerContextArgs) {
             this.trainerContextArgs = trainerContextArgs;
             return this;
         }
@@ -672,27 +665,27 @@ public class ParallelWrapper implements AutoCloseable {
         }
     }
 
-    private static IterationListener cloneListener(IterationListener original){
-        if(original instanceof RoutingIterationListener){
+    private static IterationListener cloneListener(IterationListener original) {
+        if (original instanceof RoutingIterationListener) {
             return ((RoutingIterationListener) original).clone();
         }
         return original;
     }
 
     private void configureListeners(String workerUUID, Collection<IterationListener> oldListeners,
-                                    Collection<IterationListener> replicatedListeners){
+                    Collection<IterationListener> replicatedListeners) {
         for (IterationListener listener : oldListeners) {
             IterationListener l = cloneListener(listener);
 
             if (l instanceof RoutingIterationListener) {
-                RoutingIterationListener rl = (RoutingIterationListener)l;
+                RoutingIterationListener rl = (RoutingIterationListener) l;
                 //We're assuming session ID is set by the original RoutingIterationListener constructor, which means
                 // it will be synced across all cloned instances
                 rl.setSessionID(((RoutingIterationListener) listener).getSessionID());
                 rl.setWorkerID(workerUUID);
 
-                StatsStorageRouter currentRouter = ((RoutingIterationListener)listener).getStorageRouter();
-                if(currentRouter != null){
+                StatsStorageRouter currentRouter = ((RoutingIterationListener) listener).getStorageRouter();
+                if (currentRouter != null) {
                     //User has set router on the listener/model, instead of via the
                     // setListeners(StatsStorageRouter, ...) method
                     rl.setStorageRouter(currentRouter);

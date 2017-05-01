@@ -375,34 +375,34 @@ public class FineTuneConfiguration {
     }
 
 
-    public String toJson(){
-        try{
+    public String toJson() {
+        try {
             return NeuralNetConfiguration.mapper().writeValueAsString(this);
-        }catch (JsonProcessingException e){
+        } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public String toYaml(){
-        try{
+    public String toYaml() {
+        try {
             return NeuralNetConfiguration.mapperYaml().writeValueAsString(this);
-        }catch (JsonProcessingException e){
+        } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static FineTuneConfiguration fromJson(String json){
-        try{
+    public static FineTuneConfiguration fromJson(String json) {
+        try {
             return NeuralNetConfiguration.mapper().readValue(json, FineTuneConfiguration.class);
-        }catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static FineTuneConfiguration fromYaml(String yaml){
-        try{
+    public static FineTuneConfiguration fromYaml(String yaml) {
+        try {
             return NeuralNetConfiguration.mapperYaml().readValue(yaml, FineTuneConfiguration.class);
-        }catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
