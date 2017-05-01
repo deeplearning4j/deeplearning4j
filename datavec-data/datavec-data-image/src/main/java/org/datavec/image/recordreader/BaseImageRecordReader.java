@@ -278,7 +278,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
             cnt++;
         }
 
-        INDArray features = Nd4j.createUninitialized(new int[]{cnt, channels, height, width});
+        INDArray features = Nd4j.createUninitialized(new int[]{cnt, channels, height, width}, 'c');
         Nd4j.getAffinityManager().tagLocation(features, AffinityManager.Location.HOST);
         for(int i = 0; i < cnt; i++) {
             try {
@@ -292,7 +292,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
         List<Writable> ret = (RecordConverter.toRecord(features));
         if (appendLabel) {
-            INDArray labels = Nd4j.create(cnt, numCategories);
+            INDArray labels = Nd4j.create(cnt, numCategories, 'c');
             Nd4j.getAffinityManager().tagLocation(labels, AffinityManager.Location.HOST);
             for (int i = 0; i < currLabels.size(); i++) {
                 labels.putScalar(i, currLabels.get(i), 1.0f);
