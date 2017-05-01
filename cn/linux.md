@@ -1,66 +1,66 @@
 ---
 layout: cn-default
-title: Getting Started on Linux
+title: 在Linux上进行安装
 ---
 
-# Getting Started on Linux
+# 在Linux上进行安装
 
-* To run examples, go to our [quickstart](./quickstart.html).
+* 如需运行示例，请参阅[快速入门指南](./quickstart.html)。
 
-* DeepLearning4J requires [Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html) or above.
+* DeepLearning4J需要[Java 7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html)或以上的版本。
 
-* Due to our reliance on Jblas for CPUs, native bindings for Blas are required.
+* CPU操作依赖于Jblas，所以需要BLAS的原生绑定。
 
         Fedora/RHEL
         yum -y install blas
         
         Ubuntu
-        apt-get install libblas* (credit to @sujitpal)
+        apt-get install libblas* (感谢@sujitpal贡献代码)
 
-* You can install DL4J either from source or from Maven central. Here are the **source** instructions. 
+* 您可以从源代码或Maven中央仓库安装DL4J。以下是从**源代码**安装的操作指南。 
 
          git clone https://github.com/agibsonccc/java-deeplearning
          cd java-deeplearning
 
 ### IntelliJ
 
-* To work with DL4J code, you should download the Java IDE IntelliJ. A [free, community edition](http://www.jetbrains.com/idea/download/) is available at:
+* 下载Java IDE工具IntelliJ来使用DL4J代码。[免费的社区版本](http://www.jetbrains.com/idea/download/)可在此处下载：
 
          http://www.jetbrains.com/idea/download/
 
-* Unzip the download, move it to your applications folder, and open the application. Upon opening, you may be prompted to install a Java SE 6 runtime. If so, install it. 
+* 解压缩下载文件，移动至应用文件夹，打开该应用。打开后，系统可能会提示您安装Java SE 6运行时。请按提示进行安装。 
 
-* As you open IntelliJ, you will have to choose whether to create or open a project. Choose "Open Project" from the menu, and then select the working directory for Deeplearning4j. Mine was "java-deeplearning". Click the open button for that folder. (It will take a while for all the dependencies to be resolved, during which time you will not be able to run your examples.)
+* 打开IntelliJ时，您必须选择创建或打开一个项目。在菜单中选择“Open Project（打开项目）”，然后选中Deeplearning4j的工作目录。此处的目录为“java-deeplearning”。点击打开按钮，打开该文件夹。（系统处理所有的依赖项需要一些时间，在此期间无法运行示例。）
 
-![Alt text](./img/open_project.png) 
+![Alt text](../img/open_project.png) 
 
-* You'll need to make sure the Maven 2 Integration plugin is installed. On Macs, go to Preferences and then click on Plugins. (On Linux, you'll find the plugins in Settings.) Then choose "Browse Repositories" and search for "Maven 2 Integration." Install that plugin and restart IntelliJ. Restarting should take you back to your java-deeplearning project. 
+* 确保Maven 2 Integration插件已安装。在Mac环境下，选择Preferences（偏好设置），然后点击Plugins（插件）。（Linux环境下，插件选项可以在Settings中找到。）然后选择“Browse Repositories（浏览库）”，搜索“Maven 2 Integration”。安装该插件，重启IntelliJ。重启后应会返回java-deeplearning项目。 
 
-* Click through the folder names to the examples folder -- java-deeplearning/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/ -- and then right-click on the dataset you're interested in. (MNIST is where most users start.) There, you will find a number of nets that will run on MNIST. Right click on RBMMnistExample. In the menu that appears, look for the green arrow and choose "Run." 
+* 进入示例文件夹－java-deeplearning/deeplearning4j-examples/src/main/java/org/deeplearning4j/example/－随后右击您感兴趣的数据集（大多数用户从MNIST数据集入门）。该目录下有一系列用于处理MNIST的网络。右击RBMMnistExample。在出现的菜单中找到绿色箭头，选择“Run（运行）”。 
 
-![Alt text](./img/run_menu.png)
+![Alt text](../img/run_menu.png)
 
-* Warning messages will appear at the top of the screen. If IntelliJ prompts you to add an SDK, choose JDK.
+* 屏幕顶端会出现警告消息。如果IntelliJ提示您添加SDK，请选择JDK。
 
 ### Maven
 
-* To check if you have Maven on your machine, type this in the terminal/cmd:
+* 如需检查系统中是否已安装Maven，请在终端/cmd中键入以下命令：
 
          mvn --version
 
-* If you have Maven, you'll see the particular version on your computer, as well as the file path to where it lives. On a Windows PC, my file path was:
+* 如果您已安装Maven，系统会显示其版本和安装路径。在Windows系统的PC上，文件路径为：
 
          c:\Programs\maven\bin\..
 
-* If you don't have Maven, you can follow the installation instructions on Maven's ["getting started" page](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html). Finally, run this command:
+* 如果您尚未安装Maven，可以按Maven的[“入门指南”](https://maven.apache.org/guides/getting-started/maven-in-five-minutes.html)进行安装。最后请运行以下命令：
 
          mvn clean install -DskipTests
 
-* After you run "mvn clean", a compressed tar file with a name similar to "deeplearning4j-dist-bin.tar.gz" will be installed in the local folder (This is where you will find the jar files and it's where compiling happens.):
+* 运行“mvn clean”之后，一个名为“deeplearning4j-dist-bin.tar.gz”的tar压缩文件会被安装到本地文件夹中（即jar文件所在的位置，也是编译发生的位置）：
 
 		*/java-deeplearning/deeplearning4j-distribution/target
 	
-* Add the coordinates below to your Project Object Model (POM) file (POM.xml files live in the root of a given directory):
+* 将以下内容加入您的项目对象模型（POM）文件（POM.xml文件位于指定位置的根目录下）：
 
          <repositories>
              <repository>
@@ -71,7 +71,7 @@ title: Getting Started on Linux
              </repository>
          </repositories>
 
-* All dependencies should be added after the tags "dependencyManagement" and "dependencies", and before they close. Add this dependency to your POM file:
+* 所有的依赖项都应当添加在“dependencyManagement”和“dependencies”标签对内。将以下依赖项加入POM文件：
 
          <dependency>
 			<groupId>org.deeplearning4j</groupId>
@@ -79,7 +79,7 @@ title: Getting Started on Linux
 			<version>0.0.3.2-SNAPSHOT</version>
 		 </dependency>
 
-* For multithreaded/clustering support, add this dependency to your POM file:
+* 多线程/聚类支持所需的依赖项：
 
          <dependency>
 			<groupId>org.deeplearning4j</groupId>
@@ -87,7 +87,7 @@ title: Getting Started on Linux
 			<version>0.0.3.2-SNAPSHOT</version>
          </dependency>
 
-* For natural-language processing (NLP), add this dependency to your POM file:
+* 自然语言处理（NLP）所需的依赖项：
          
          <dependency>
             <groupId>org.deeplearning4j</groupId>
@@ -95,12 +95,12 @@ title: Getting Started on Linux
             <version>0.0.3.2-SNAPSHOT</version>
          </dependency>
 
-* To locally install Jcublas, which does linear algebra for GPUs, first enter these commands:
+* 如需在本地安装GPU线性代数运算所需的Jcublas，请先输入以下命令：
 
 		git clone git@github.com:MysterionRise/mavenized-jcuda.git
 		cd mavenized-jcuda && mvn clean install -DskipTests
 
-  Then include linear-algebra-jcublas in your POM:
+  然后将linear-algebra-jcublas加入POM：
 
            <dependency>
              <groupId>org.deeplearning4j</groupId>
@@ -108,8 +108,8 @@ title: Getting Started on Linux
              <version>0.0.3.2-SNAPSHOT</version>
            </dependency>
 
-**Next step**: Follow our [**MNIST tutorial**](./rbm-mnist-tutorial.html) and [running a few examples](./quickstart.html). 
+**后续步骤**：您可以参阅[**MNIST教程**](./rbm-mnist-tutorial.html)，再[运行一些示例](./quickstart.html)。 
 
-If you have a clear idea of how deep learning works and know what you want it to do, go straight to our section on [custom datasets](./customdatasets.html).
+如果您已熟悉深度学习的工作原理，也明确了需要借助深度学习达成的目的，那么请直接阅读有关[自定义数据集](./customdatasets.html)的内容。
 
-For a deeper dive, check out our [Github repo](https://github.com/agibsonccc/java-deeplearning) or access the core through [Maven](http://maven.apache.org/download.cgi).
+如需深入探究，请访问我们的[Github代码库](https://github.com/agibsonccc/java-deeplearning)，或者通过[Maven](http://maven.apache.org/download.cgi)访问核心库。
