@@ -38,6 +38,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
     private int prefetchSize;
     private String workspaceId;
     private Integer deviceId;
+    private AtomicBoolean hasDepleted = new AtomicBoolean(false);
 
     private DataSetCallback callback;
 
@@ -298,6 +299,9 @@ public class AsyncDataSetIterator implements DataSetIterator {
             throw throwable;
 
         try {
+            if (hasDepleted.get())
+                return false;
+
             if (nextElement != null && nextElement != terminator) {
                 return true;
             } else if(nextElement == terminator)
@@ -306,8 +310,10 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
             nextElement = buffer.take();
 
-            if (nextElement == terminator)
+            if (nextElement == terminator) {
+                hasDepleted.set(true);
                 return false;
+            }
 
             return true;
         } catch (Exception e) {
@@ -325,6 +331,9 @@ public class AsyncDataSetIterator implements DataSetIterator {
     public DataSet next() {
         if (throwable != null)
             throw throwable;
+
+        if (hasDepleted.get())
+            return null;
 
         DataSet temp = nextElement;
         nextElement = null;

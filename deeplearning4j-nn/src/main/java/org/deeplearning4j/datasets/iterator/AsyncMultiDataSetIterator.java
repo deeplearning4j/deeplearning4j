@@ -43,6 +43,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     private String workspaceId;
     private DataSetCallback callback;
     private Integer deviceId;
+    private AtomicBoolean hasDepleted = new AtomicBoolean(false);
 
 
     public AsyncMultiDataSetIterator(MultiDataSetIterator baseIterator) {
@@ -228,6 +229,9 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             throw throwable;
 
         try {
+            if (hasDepleted.get())
+                return false;
+
             if (nextElement != null && nextElement != terminator) {
                 return true;
             } else if(nextElement == terminator)
@@ -236,8 +240,10 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
             nextElement = buffer.take();
 
-            if (nextElement == terminator)
+            if (nextElement == terminator) {
+                hasDepleted.set(true);
                 return false;
+            }
 
             return true;
         } catch (Exception e) {
@@ -255,6 +261,9 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     public MultiDataSet next() {
         if (throwable != null)
             throw throwable;
+
+        if (hasDepleted.get())
+            return null;
 
         MultiDataSet temp = nextElement;
         nextElement = null;

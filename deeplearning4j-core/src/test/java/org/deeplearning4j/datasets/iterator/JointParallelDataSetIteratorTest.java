@@ -50,6 +50,11 @@ public class JointParallelDataSetIteratorTest {
         assertEquals(200, cnt);
     }
 
+
+    /**
+     * This test checks for pass_null scenario, so in total we should have 300 real datasets + 100 nulls
+     * @throws Exception
+     */
     @Test
     public void testJointIterator2() throws Exception {
         DataSetIterator iteratorA = new SimpleVariableGenerator(119, 200, 32, 100, 10);
@@ -62,10 +67,14 @@ public class JointParallelDataSetIteratorTest {
 
         int cnt = 0;
         int example = 0;
+        int nulls = 0;
         while (jpdsi.hasNext()) {
             DataSet ds = jpdsi.next();
             if (cnt < 200)
                 assertNotNull("Failed on iteration " + cnt, ds);
+
+            if (ds == null)
+                nulls++;
 
             if (cnt % 2 == 2) {
                 assertEquals("Failed on iteration " + cnt, (double) example, ds.getFeatures().meanNumber().doubleValue(), 0.001);
@@ -78,7 +87,41 @@ public class JointParallelDataSetIteratorTest {
                 example++;
         }
 
-        assertEquals(100, example);
-        assertEquals(300, cnt);
+        assertEquals(100, nulls);
+        assertEquals(200, example);
+        assertEquals(400, cnt);
+    }
+
+    /**
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testJointIterator3() throws Exception {
+        DataSetIterator iteratorA = new SimpleVariableGenerator(119, 200, 32, 100, 10);
+        DataSetIterator iteratorB = new SimpleVariableGenerator(119, 100, 32, 100, 10);
+
+        JointParallelDataSetIterator jpdsi = new JointParallelDataSetIterator.Builder(InequalityHandling.RELOCATE)
+                .addSourceIterator(iteratorA)
+                .addSourceIterator(iteratorB)
+                .build();
+
+        int cnt = 0;
+        int example = 0;
+        while (jpdsi.hasNext()) {
+            DataSet ds = jpdsi.next();
+            assertNotNull("Failed on iteration " + cnt, ds);
+
+            assertEquals("Failed on iteration " + cnt, (double) example, ds.getFeatures().meanNumber().doubleValue(), 0.001);
+            assertEquals("Failed on iteration " + cnt, (double) example + 0.5, ds.getLabels().meanNumber().doubleValue(), 0.001);
+
+
+            cnt++;
+            if (cnt < 200) {
+                if (cnt % 2 == 0)
+                    example++;
+            } else
+                example++;
+        }
     }
 }

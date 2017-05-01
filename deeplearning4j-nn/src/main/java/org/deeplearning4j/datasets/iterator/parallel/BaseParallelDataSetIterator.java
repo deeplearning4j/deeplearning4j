@@ -36,6 +36,9 @@ public abstract class BaseParallelDataSetIterator {
         boolean hasNext = hasNextFor(getCurrentProducerIndex());
         states.set(hasNext, getCurrentProducerIndex());
 
+        if (states.allFalse())
+            return false;
+
         switch (inequalityHandling) {
             // FIXME: RESET should be applicable ONLY to producers which return TRUE for resetSupported();
             case RESET: {
