@@ -525,6 +525,25 @@ public class Shape {
         return offset;
     }
 
+    public static long getOffsetUnsafe(int[] shapeInformation, int dim0, int dim1, int dim2) {
+        int offset = 0;
+        int size_0 = sizeUnsafe(shapeInformation, 0);
+        int size_1 = sizeUnsafe(shapeInformation, 1);
+        int size_2 = sizeUnsafe(shapeInformation, 2);
+        if (dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2)
+            throw new IllegalArgumentException("Invalid indices: cannot get [" + dim0 + "," + dim1 + "," + dim2
+                    + "] from a " + Arrays.toString(shapeInformation) + " NDArray");
+
+        if (size_0 != 1)
+            offset += dim0 * strideUnsafe(shapeInformation, 0, 3);
+        if (size_1 != 1)
+            offset += dim1 * strideUnsafe(shapeInformation, 1, 3);
+        if (size_2 != 1)
+            offset += dim2 * strideUnsafe(shapeInformation, 2, 3);
+
+        return offset;
+    }
+
     /** Get the offset of the specified [dim0,dim1,dim2,dim3] for the 4d array
      *
      * @param shapeInformation    Shape information
@@ -1526,6 +1545,10 @@ public class Shape {
         return buffer.getInt(1 + dimension);
     }
 
+    public static int sizeUnsafe(int[] buffer, int dimension) {
+        return buffer[1 + dimension];
+    }
+
     /**
      * Get array shape from the buffer, as an int[]
      * @param buffer    Buffer to get the shape from
@@ -1598,6 +1621,10 @@ public class Shape {
      */
     public static int strideUnsafe(DataBuffer buffer, int dimension, int rank) {
         return buffer.getInt(1 + rank + dimension);
+    }
+
+    public static int strideUnsafe(int[] buffer, int dimension, int rank) {
+        return buffer[1 + rank + dimension];
     }
 
     /**

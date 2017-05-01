@@ -27,6 +27,16 @@ public class CudaWorkspaceManager extends BasicWorkspaceManager {
 
 
     @Override
+    public MemoryWorkspace createNewWorkspace(WorkspaceConfiguration configuration, String id) {
+        return new CudaWorkspace(configuration, id);
+    }
+
+    @Override
+    public MemoryWorkspace createNewWorkspace(WorkspaceConfiguration configuration, String id, Integer deviceId) {
+        return new CudaWorkspace(configuration, id, deviceId);
+    }
+
+    @Override
     public MemoryWorkspace getWorkspaceForCurrentThread(@NonNull WorkspaceConfiguration configuration, @NonNull String id) {
         ensureThreadExistense();
 
@@ -39,4 +49,6 @@ public class CudaWorkspaceManager extends BasicWorkspaceManager {
 
         return workspace;
     }
+
+
 }

@@ -463,6 +463,7 @@ public class JCublasNDArray extends BaseNDArray {
      */
     public void setShapeInfoDataBuffer(DataBuffer buffer) {
         this.shapeInformation = buffer;
+        this.javaShapeInformation = shapeInformation.asInt();
     }
 
     private Object writeReplace() throws java.io.ObjectStreamException {
@@ -554,8 +555,13 @@ public class JCublasNDArray extends BaseNDArray {
 
             context.syncOldStream();
 */
-            if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getDevicePointer(), this.lengthLong() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream()) == 0)
-                throw new ND4JIllegalStateException("memcpyAsync failed");
+            if (pointSrc.isActualOnDeviceSide()) {
+                if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getDevicePointer(), this.lengthLong() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream()) == 0)
+                    throw new ND4JIllegalStateException("memcpyAsync failed");
+            } else {
+                if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getHostPointer(), this.lengthLong() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream()) == 0)
+                    throw new ND4JIllegalStateException("memcpyAsync failed");
+            }
 
             context.syncOldStream();
 
@@ -604,12 +610,23 @@ public class JCublasNDArray extends BaseNDArray {
             AllocationPoint pointDst = AtomicAllocator.getInstance().getAllocationPoint(buffer);
             AllocationPoint pointSrc = AtomicAllocator.getInstance().getAllocationPoint(this.data);
 
-            CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(pointDst, pointSrc);
+//            CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
-            if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getDevicePointer(), this.lengthLong() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream()) == 0)
-                throw new ND4JIllegalStateException("memcpyAsync failed");
+            CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(pointDst, pointSrc);
+            if (pointSrc.isActualOnDeviceSide()) {
+                if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getDevicePointer(), this.lengthLong() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream()) == 0)
+                    throw new ND4JIllegalStateException("memcpyAsync failed");
+            } else {
+                if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getHostPointer(), this.lengthLong() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream()) == 0)
+                    throw new ND4JIllegalStateException("memcpyAsync failed");
+            }
 
             context.syncOldStream();
+
+            if (pointDst.getDeviceId() != Nd4j.getMemoryManager().getCurrentWorkspace().getDeviceId()) {
+                //log.info("Swapping [{}] -> [{}]", pointDst.getDeviceId(), Nd4j.getMemoryManager().getCurrentWorkspace().getDeviceId());
+                pointDst.setDeviceId(Nd4j.getMemoryManager().getCurrentWorkspace().getDeviceId());
+            }
 
             copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
 

@@ -101,6 +101,10 @@ public class CudaHalfDataBuffer extends BaseCudaDataBuffer {
         super(data, copy, offset);
     }
 
+    public CudaHalfDataBuffer(float[] data, boolean copy, int offset, MemoryWorkspace workspace) {
+        super(data, copy, offset, workspace);
+    }
+
     public CudaHalfDataBuffer(double[] data) {
         super(data);
     }

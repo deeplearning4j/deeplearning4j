@@ -28,6 +28,13 @@ public interface MemoryWorkspace extends AutoCloseable {
     String getId();
 
     /**
+     * Returns deviceId for this workspace
+     *
+     * @return
+     */
+    int getDeviceId();
+
+    /**
      * This method returns threadId where this workspace was created
      *
      * @return
@@ -92,6 +99,8 @@ public interface MemoryWorkspace extends AutoCloseable {
      * This method causes Workspace destruction: all memory allocations are released after this call.
      */
     void destroyWorkspace();
+
+    void destroyWorkspace(boolean extended);
 
     /**
      * This method allows you to temporary disable/enable given Workspace use.

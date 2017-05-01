@@ -95,8 +95,8 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         if (workspace == null || workspace instanceof DummyWorkspace)
             return;
 
+        //workspace.destroyWorkspace();
         backingMap.get().remove(workspace.getId());
-        workspace.destroyWorkspace();
     }
 
     @Override
@@ -104,8 +104,8 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         ensureThreadExistense();
 
         MemoryWorkspace workspace = backingMap.get().get(MemoryWorkspace.DEFAULT_ID);
-        if (workspace != null)
-            workspace.destroyWorkspace();
+        //if (workspace != null)
+            //workspace.destroyWorkspace();
 
         backingMap.get().remove(MemoryWorkspace.DEFAULT_ID);
     }
@@ -120,6 +120,8 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         for (MemoryWorkspace workspace: workspaces) {
             destroyWorkspace(workspace);
         }
+
+        System.gc();
     }
 
     protected void ensureThreadExistense() {
@@ -226,7 +228,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     }
 
 
-    public void printAllocationStatisticsForCurrentThread() {
+    public synchronized void printAllocationStatisticsForCurrentThread() {
         ensureThreadExistense();
         Map<String, MemoryWorkspace> map = backingMap.get();
         log.info("Workspace statistics: ---------------------------------");
@@ -234,6 +236,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
             log.info("Workspace: {}", key);
             log.info("Allocated amount: {} bytes", ((Nd4jWorkspace)map.get(key)).getCurrentSize());
             log.info("External (spilled) amount: {} bytes", ((Nd4jWorkspace)map.get(key)).getSpilledSize());
+            log.info("External (pinned) amount: {} bytes", ((Nd4jWorkspace)map.get(key)).getPinnedSize());
             System.out.println();
         }
     }

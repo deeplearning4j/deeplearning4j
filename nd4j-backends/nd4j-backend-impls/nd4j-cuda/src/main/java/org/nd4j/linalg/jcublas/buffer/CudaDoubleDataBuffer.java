@@ -108,6 +108,10 @@ public class CudaDoubleDataBuffer extends BaseCudaDataBuffer {
         super(data, copy, offset);
     }
 
+    public CudaDoubleDataBuffer(double[] data, boolean copy, long offset, MemoryWorkspace workspace) {
+        super(data, copy, offset, workspace);
+    }
+
     public CudaDoubleDataBuffer(float[] data) {
         super(data);
     }

@@ -11,6 +11,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PointersPair {
+    private Long allocationCycle;
+    private Long requiredMemory;
     private PagedPointer hostPointer;
     private PagedPointer devicePointer;
+
+    public PointersPair(PagedPointer hostPointer, PagedPointer devicePointer) {
+        if (hostPointer == null && devicePointer == null)
+            throw new RuntimeException("Both pointers can't be null");
+
+        this.hostPointer = hostPointer;
+        this.devicePointer = devicePointer;
+    }
 }

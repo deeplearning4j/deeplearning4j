@@ -82,6 +82,11 @@ public class AsynchronousFlowController implements FlowController {
     }
 
     @Override
+    public void synchronizeToDevice(AllocationPoint point) {
+
+    }
+
+    @Override
     public void init(Allocator allocator) {
         this.allocator = allocator;
     }

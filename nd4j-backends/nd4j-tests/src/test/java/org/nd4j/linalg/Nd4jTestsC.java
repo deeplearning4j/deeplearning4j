@@ -91,7 +91,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Before
     public void before() throws Exception {
         super.before();
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
         Nd4j.getRandom().setSeed(123);
 
     }
@@ -4032,6 +4032,54 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray col = Nd4j.linspace(1,3,3).transpose();
         INDArray mean1 = col.mean(1);
         assertFalse(mean1 == col);
+    }
+
+
+    @Test
+    public void testSpecialConcat1() throws Exception {
+        for (int i = 0; i < 10; i++) {
+            List<INDArray> arrays = new ArrayList<>();
+            for (int x = 0; x < 10; x++) {
+                arrays.add(Nd4j.create(100).assign(x));
+            }
+
+            INDArray matrix = Nd4j.specialConcat(0, arrays.toArray(new INDArray[0]));
+            assertEquals(10, matrix.rows());
+            assertEquals(100, matrix.columns());
+
+            for (int x = 0; x < 10; x++) {
+                assertEquals((double) x, matrix.getRow(x).meanNumber().doubleValue(), 0.1);
+                assertEquals(arrays.get(x), matrix.getRow(x));
+            }
+        }
+    }
+
+
+    @Test
+    public void testSpecialConcat2() throws Exception {
+        List<INDArray> arrays = new ArrayList<>();
+        for (int x = 0; x < 10; x++) {
+            arrays.add(Nd4j.create(new double[]{x, x, x, x, x, x}));
+        }
+
+        INDArray matrix = Nd4j.specialConcat(0, arrays.toArray(new INDArray[0]));
+        assertEquals(10, matrix.rows());
+        assertEquals(6, matrix.columns());
+
+        for (int x = 0; x < 10; x++) {
+            assertEquals((double)x, matrix.getRow(x).meanNumber().doubleValue(), 0.1);
+            assertEquals(arrays.get(x), matrix.getRow(x));
+        }
+    }
+
+    @Test
+    public void testPutScalar1() {
+        INDArray array = Nd4j.create(10, 3, 96, 96);
+
+        for (int i = 0; i < 10; i++) {
+            log.info("Trying i: {}", i);
+            array.tensorAlongDimension(i, 1, 2, 3).putScalar(1, 2, 3, 1);
+        }
     }
 
     @Override

@@ -158,15 +158,13 @@ public class CudaFullCachingProvider extends CudaCachingZeroProvider {
     protected void ensureDeviceCacheHolder(Integer deviceId, AllocationShape shape) {
         if (!deviceCache.containsKey(deviceId)) {
             try {
-                singleLock.acquire();
-
-                if (!deviceCache.containsKey(deviceId)) {
-                    deviceCache.put(deviceId, new ConcurrentHashMap<AllocationShape, CacheHolder>());
+                synchronized (this) {
+                   if (!deviceCache.containsKey(deviceId)) {
+                        deviceCache.put(deviceId, new ConcurrentHashMap<AllocationShape, CacheHolder>());
+                    }
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
-            } finally {
-                singleLock.release();
             }
         }
 
