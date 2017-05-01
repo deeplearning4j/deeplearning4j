@@ -59,6 +59,16 @@ public class TransformProcessSequenceRecordReader implements SequenceRecordReade
         return transformProcess.executeSequence(sequenceRecordReader.sequenceRecord());
     }
 
+    @Override
+    public boolean batchesSupported() {
+        return false;
+    }
+
+    @Override
+    public List<Writable> next(int num) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Load a sequence record from the given DataInputStream
      * Unlike {@link #next()} the internal state of the RecordReader is not modified

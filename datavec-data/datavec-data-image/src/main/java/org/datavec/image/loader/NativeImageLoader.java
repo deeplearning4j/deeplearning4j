@@ -31,7 +31,9 @@ import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.ImageTransform;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
+import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -239,6 +241,211 @@ public class NativeImageLoader extends BaseImageLoader {
         return array;
     }
 
+
+    protected void fillNDArray(Mat image, INDArray ret) {
+        int rows = image.rows();
+        int cols = image.cols();
+        int channels = image.channels();
+
+        if (ret.lengthLong() != rows * cols * channels) {
+            throw new ND4JIllegalStateException("INDArray provided to store image not equal to image: {channels: "+ channels+", rows: "+rows+", columns: "+ cols+"}");
+        }
+
+        Indexer idx = image.createIndexer();
+        Pointer pointer = ret.data().pointer();
+        int[] stride = ret.stride();
+        boolean done = false;
+        PagedPointer pagedPointer = new PagedPointer(pointer, rows * cols * channels, ret.data().offset() * Nd4j.sizeOfDataType(ret.data().dataType()));
+
+        if (pointer instanceof FloatPointer) {
+            FloatIndexer retidx = FloatIndexer.create((FloatPointer) pagedPointer.asFloatPointer(), new long[] {channels, rows, cols},
+                    new long[] {stride[0], stride[1], stride[2]});
+            if (idx instanceof UByteIndexer) {
+                UByteIndexer ubyteidx = (UByteIndexer) idx;
+                for (int k = 0; k < channels; k++) {
+                    for (int i = 0; i < rows; i++) {
+                        for (int j = 0; j < cols; j++) {
+                            retidx.put(k, i, j, ubyteidx.get(i, j, k));
+                        }
+                    }
+                }
+                done = true;
+            } else if (idx instanceof UShortIndexer) {
+                UShortIndexer ushortidx = (UShortIndexer) idx;
+                for (int k = 0; k < channels; k++) {
+                    for (int i = 0; i < rows; i++) {
+                        for (int j = 0; j < cols; j++) {
+                            retidx.put(k, i, j, ushortidx.get(i, j, k));
+                        }
+                    }
+                }
+                done = true;
+            } else if (idx instanceof IntIndexer) {
+                IntIndexer intidx = (IntIndexer) idx;
+                for (int k = 0; k < channels; k++) {
+                    for (int i = 0; i < rows; i++) {
+                        for (int j = 0; j < cols; j++) {
+                            retidx.put(k, i, j, intidx.get(i, j, k));
+                        }
+                    }
+                }
+                done = true;
+            } else if (idx instanceof FloatIndexer) {
+                FloatIndexer floatidx = (FloatIndexer) idx;
+                for (int k = 0; k < channels; k++) {
+                    for (int i = 0; i < rows; i++) {
+                        for (int j = 0; j < cols; j++) {
+                            retidx.put(k, i, j, floatidx.get(i, j, k));
+                        }
+                    }
+                }
+                done = true;
+            }
+        } else if (pointer instanceof DoublePointer) {
+            DoubleIndexer retidx = DoubleIndexer.create((DoublePointer) pagedPointer.asDoublePointer(), new long[] {channels, rows, cols},
+                    new long[] {stride[0], stride[1], stride[2]});
+            if (idx instanceof UByteIndexer) {
+                UByteIndexer ubyteidx = (UByteIndexer) idx;
+                for (int k = 0; k < channels; k++) {
+                    for (int i = 0; i < rows; i++) {
+                        for (int j = 0; j < cols; j++) {
+                            retidx.put(k, i, j, ubyteidx.get(i, j, k));
+                        }
+                    }
+                }
+                done = true;
+            } else if (idx instanceof UShortIndexer) {
+                UShortIndexer ushortidx = (UShortIndexer) idx;
+                for (int k = 0; k < channels; k++) {
+                    for (int i = 0; i < rows; i++) {
+                        for (int j = 0; j < cols; j++) {
+                            retidx.put(k, i, j, ushortidx.get(i, j, k));
+                        }
+                    }
+                }
+                done = true;
+            } else if (idx instanceof IntIndexer) {
+                IntIndexer intidx = (IntIndexer) idx;
+                for (int k = 0; k < channels; k++) {
+                    for (int i = 0; i < rows; i++) {
+                        for (int j = 0; j < cols; j++) {
+                            retidx.put(k, i, j, intidx.get(i, j, k));
+                        }
+                    }
+                }
+                done = true;
+            } else if (idx instanceof FloatIndexer) {
+                FloatIndexer floatidx = (FloatIndexer) idx;
+                for (int k = 0; k < channels; k++) {
+                    for (int i = 0; i < rows; i++) {
+                        for (int j = 0; j < cols; j++) {
+                            retidx.put(k, i, j, floatidx.get(i, j, k));
+                        }
+                    }
+                }
+                done = true;
+            }
+        }
+
+
+        if (!done) {
+            for (int k = 0; k < channels; k++) {
+                for (int i = 0; i < rows; i++) {
+                    for (int j = 0; j < cols; j++) {
+                        if (channels > 1) {
+                            ret.putScalar(k, i, j, idx.getDouble(i, j, k));
+                        } else {
+                            ret.putScalar(i, j, idx.getDouble(i, j));
+                        }
+                    }
+                }
+            }
+        }
+
+        image.data();
+        Nd4j.getAffinityManager().tagLocation(ret, AffinityManager.Location.HOST);
+    }
+
+    public void asMatrixView(InputStream is, INDArray view) throws IOException {
+        byte[] bytes = IOUtils.toByteArray(is);
+        Mat image = imdecode(new Mat(bytes), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+        if (image == null || image.empty()) {
+            PIX pix = pixReadMem(bytes, bytes.length);
+            if (pix == null) {
+                throw new IOException("Could not decode image from input stream");
+            }
+            image = convert(pix);
+            pixDestroy(pix);
+        }
+        if (image == null)
+            throw new RuntimeException();
+        asMatrixView(image, view);
+    }
+
+    public void asMatrixView(File f, INDArray view) throws IOException {
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f))) {
+            asMatrixView(bis, view);
+        }
+    }
+
+    public void asMatrixView(Mat image, INDArray view) throws IOException {
+        if (imageTransform != null && converter != null) {
+            ImageWritable writable = new ImageWritable(converter.convert(image));
+            writable = imageTransform.transform(writable);
+            image = converter.convert(writable.getFrame());
+        }
+
+        if (channels > 0 && image.channels() != channels) {
+            int code = -1;
+            switch (image.channels()) {
+                case 1:
+                    switch (channels) {
+                        case 3:
+                            code = CV_GRAY2BGR;
+                            break;
+                        case 4:
+                            code = CV_GRAY2RGBA;
+                            break;
+                    }
+                    break;
+                case 3:
+                    switch (channels) {
+                        case 1:
+                            code = CV_BGR2GRAY;
+                            break;
+                        case 4:
+                            code = CV_BGR2RGBA;
+                            break;
+                    }
+                    break;
+                case 4:
+                    switch (channels) {
+                        case 1:
+                            code = CV_RGBA2GRAY;
+                            break;
+                        case 3:
+                            code = CV_RGBA2BGR;
+                            break;
+                    }
+                    break;
+            }
+            if (code < 0) {
+                throw new IOException("Cannot convert from " + image.channels() + " to " + channels + " channels.");
+            }
+            Mat newimage = new Mat();
+            cvtColor(image, newimage, code);
+            image = newimage;
+        }
+        if (centerCropIfNeeded) {
+            image = centerCropIfNeeded(image);
+        }
+        image = scalingIfNeed(image);
+
+        fillNDArray(image, view);
+
+        image.data();
+    }
+
     public INDArray asMatrix(Mat image) throws IOException {
         if (imageTransform != null && converter != null) {
             ImageWritable writable = new ImageWritable(converter.convert(image));
@@ -295,115 +502,11 @@ public class NativeImageLoader extends BaseImageLoader {
         int rows = image.rows();
         int cols = image.cols();
         int channels = image.channels();
-        Indexer idx = image.createIndexer();
         INDArray ret = Nd4j.create(channels, rows, cols);
-        Pointer pointer = ret.data().pointer();
-        int[] stride = ret.stride();
-        boolean done = false;
-        if (pointer instanceof FloatPointer) {
-            FloatIndexer retidx = FloatIndexer.create((FloatPointer) pointer, new long[] {channels, rows, cols},
-                            new long[] {stride[0], stride[1], stride[2]});
-            if (idx instanceof UByteIndexer) {
-                UByteIndexer ubyteidx = (UByteIndexer) idx;
-                for (int k = 0; k < channels; k++) {
-                    for (int i = 0; i < rows; i++) {
-                        for (int j = 0; j < cols; j++) {
-                            retidx.put(k, i, j, ubyteidx.get(i, j, k));
-                        }
-                    }
-                }
-                done = true;
-            } else if (idx instanceof UShortIndexer) {
-                UShortIndexer ushortidx = (UShortIndexer) idx;
-                for (int k = 0; k < channels; k++) {
-                    for (int i = 0; i < rows; i++) {
-                        for (int j = 0; j < cols; j++) {
-                            retidx.put(k, i, j, ushortidx.get(i, j, k));
-                        }
-                    }
-                }
-                done = true;
-            } else if (idx instanceof IntIndexer) {
-                IntIndexer intidx = (IntIndexer) idx;
-                for (int k = 0; k < channels; k++) {
-                    for (int i = 0; i < rows; i++) {
-                        for (int j = 0; j < cols; j++) {
-                            retidx.put(k, i, j, intidx.get(i, j, k));
-                        }
-                    }
-                }
-                done = true;
-            } else if (idx instanceof FloatIndexer) {
-                FloatIndexer floatidx = (FloatIndexer) idx;
-                for (int k = 0; k < channels; k++) {
-                    for (int i = 0; i < rows; i++) {
-                        for (int j = 0; j < cols; j++) {
-                            retidx.put(k, i, j, floatidx.get(i, j, k));
-                        }
-                    }
-                }
-                done = true;
-            }
-        } else if (pointer instanceof DoublePointer) {
-            DoubleIndexer retidx = DoubleIndexer.create((DoublePointer) pointer, new long[] {channels, rows, cols},
-                            new long[] {stride[0], stride[1], stride[2]});
-            if (idx instanceof UByteIndexer) {
-                UByteIndexer ubyteidx = (UByteIndexer) idx;
-                for (int k = 0; k < channels; k++) {
-                    for (int i = 0; i < rows; i++) {
-                        for (int j = 0; j < cols; j++) {
-                            retidx.put(k, i, j, ubyteidx.get(i, j, k));
-                        }
-                    }
-                }
-                done = true;
-            } else if (idx instanceof UShortIndexer) {
-                UShortIndexer ushortidx = (UShortIndexer) idx;
-                for (int k = 0; k < channels; k++) {
-                    for (int i = 0; i < rows; i++) {
-                        for (int j = 0; j < cols; j++) {
-                            retidx.put(k, i, j, ushortidx.get(i, j, k));
-                        }
-                    }
-                }
-                done = true;
-            } else if (idx instanceof IntIndexer) {
-                IntIndexer intidx = (IntIndexer) idx;
-                for (int k = 0; k < channels; k++) {
-                    for (int i = 0; i < rows; i++) {
-                        for (int j = 0; j < cols; j++) {
-                            retidx.put(k, i, j, intidx.get(i, j, k));
-                        }
-                    }
-                }
-                done = true;
-            } else if (idx instanceof FloatIndexer) {
-                FloatIndexer floatidx = (FloatIndexer) idx;
-                for (int k = 0; k < channels; k++) {
-                    for (int i = 0; i < rows; i++) {
-                        for (int j = 0; j < cols; j++) {
-                            retidx.put(k, i, j, floatidx.get(i, j, k));
-                        }
-                    }
-                }
-                done = true;
-            }
-        }
-        if (!done) {
-            for (int k = 0; k < channels; k++) {
-                for (int i = 0; i < rows; i++) {
-                    for (int j = 0; j < cols; j++) {
-                        if (channels > 1) {
-                            ret.putScalar(k, i, j, idx.getDouble(i, j, k));
-                        } else {
-                            ret.putScalar(i, j, idx.getDouble(i, j));
-                        }
-                    }
-                }
-            }
-        }
+
+        fillNDArray(image, ret);
+
         image.data(); // dummy call to make sure it does not get deallocated prematurely
-        Nd4j.getAffinityManager().tagLocation(ret, AffinityManager.Location.HOST);
         return ret.reshape(ArrayUtil.combine(new int[] {1}, ret.shape()));
     }
 

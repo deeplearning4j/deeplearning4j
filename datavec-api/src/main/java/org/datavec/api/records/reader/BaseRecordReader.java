@@ -18,6 +18,7 @@ package org.datavec.api.records.reader;
 import java.util.*;
 
 import org.datavec.api.records.listener.RecordListener;
+import org.datavec.api.writable.Writable;
 
 /**
  * Manages record listeners.
@@ -50,4 +51,14 @@ public abstract class BaseRecordReader implements RecordReader {
         setListeners(Arrays.asList(listeners));
     }
 
+
+    @Override
+    public boolean batchesSupported() {
+        return false;
+    }
+
+    @Override
+    public List<Writable> next(int num) {
+        throw new UnsupportedOperationException();
+    }
 }

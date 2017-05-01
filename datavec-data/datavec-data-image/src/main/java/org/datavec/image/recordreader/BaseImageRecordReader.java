@@ -29,12 +29,15 @@ import org.datavec.api.util.files.FileFromPathIterator;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.RecordConverter;
+import org.datavec.common.data.NDArrayWritable;
 import org.datavec.image.loader.ImageLoader;
 import org.datavec.image.loader.NativeImageLoader;
 import org.datavec.image.loader.BaseImageLoader;
 import org.datavec.image.transform.ImageTransform;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.collection.CompactHeapStringList;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.*;
 import java.net.URI;
@@ -214,6 +217,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
             try {
                 invokeListeners(image);
                 INDArray row = imageLoader.asMatrix(image);
+                Nd4j.getAffinityManager().ensureLocation(row, AffinityManager.Location.DEVICE);
                 ret = RecordConverter.toRecord(row);
                 if (appendLabel)
                     ret.add(new IntWritable(labels.indexOf(getLabel(image.getPath()))));
@@ -247,6 +251,56 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
             imageTransform.transform(null);
         }
         throw new IllegalStateException("Indeterminant state: record must not be null, or a file iterator must exist");
+    }
+
+    @Override
+    public boolean batchesSupported() {
+        return (imageLoader instanceof NativeImageLoader);
+    }
+
+    @Override
+    public List<Writable> next(int num) {
+        if (imageLoader == null) {
+            imageLoader = new NativeImageLoader(height, width, channels, imageTransform);
+        }
+
+        List<File> currBatch = new ArrayList<>();
+
+        int cnt = 0;
+
+        int numCategories = appendLabel ? labels.size() : 0;
+        List<Integer> currLabels = new ArrayList<>();
+        while (cnt < num && iter.hasNext()) {
+            File currFile = iter.next();
+            currBatch.add(currFile);
+            if (appendLabel)
+                currLabels.add(labels.indexOf(getLabel(currFile.getPath())));
+            cnt++;
+        }
+
+        INDArray features = Nd4j.createUninitialized(new int[]{cnt, channels, height, width}, 'c');
+        Nd4j.getAffinityManager().tagLocation(features, AffinityManager.Location.HOST);
+        for(int i = 0; i < cnt; i++) {
+            try {
+                ((NativeImageLoader) imageLoader).asMatrixView(currBatch.get(i), features.tensorAlongDimension(i, 1, 2, 3));
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+        Nd4j.getAffinityManager().ensureLocation(features, AffinityManager.Location.DEVICE);
+
+
+        List<Writable> ret = (RecordConverter.toRecord(features));
+        if (appendLabel) {
+            INDArray labels = Nd4j.create(cnt, numCategories, 'c');
+            Nd4j.getAffinityManager().tagLocation(labels, AffinityManager.Location.HOST);
+            for (int i = 0; i < currLabels.size(); i++) {
+                labels.putScalar(i, currLabels.get(i), 1.0f);
+            }
+            ret.add(new NDArrayWritable(labels));
+        }
+
+        return ret;
     }
 
     @Override
