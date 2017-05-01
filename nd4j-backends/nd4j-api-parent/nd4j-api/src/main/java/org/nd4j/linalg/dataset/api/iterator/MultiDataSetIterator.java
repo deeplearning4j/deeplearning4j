@@ -23,6 +23,15 @@ public interface MultiDataSetIterator extends Iterator<MultiDataSet>, Serializab
      */
     void setPreProcessor(MultiDataSetPreProcessor preProcessor);
 
+
+    /**
+     * Get the {@link MultiDataSetPreProcessor}, if one has previously been set.
+     * Returns null if no preprocessor has been set
+     *
+     * @return Preprocessor
+     */
+    MultiDataSetPreProcessor getPreProcessor();
+
     /**
      * Is resetting supported by this DataSetIterator? Many DataSetIterators do support resetting,
      * but some don't
