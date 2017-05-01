@@ -828,11 +828,11 @@ public class ComputationGraph implements Serializable, Model {
                 if (hasMaskArrays) {
                     clearLayerMaskArrays();
                 }
+
+                time1 = System.currentTimeMillis();
             }
 
             Nd4j.getMemoryManager().invokeGcOccasionally();
-
-            time1 = System.currentTimeMillis();
         }
 
 
@@ -924,9 +924,8 @@ public class ComputationGraph implements Serializable, Model {
                 }
 
                 Nd4j.getMemoryManager().invokeGcOccasionally();
+                time1 = System.currentTimeMillis();
             }
-
-            time1 = System.currentTimeMillis();
         }
 
         clearLayersStates();
