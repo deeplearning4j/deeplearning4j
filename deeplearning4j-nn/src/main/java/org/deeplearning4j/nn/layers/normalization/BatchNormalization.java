@@ -297,7 +297,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             beta = getParam(BatchNormalizationParamInitializer.BETA);
         }
 
-        if (helper != null && input.rank() != 4) {
+        if (helper != null && input.rank() == 4) {
             //Note that cudnn does not support dense (2d) batch norm case as of v5.1
             double decay = layerConf.getDecay();
             INDArray ret = helper.preOutput(x, training == TrainingMode.TRAIN, shape, gamma, beta, globalMeanView,

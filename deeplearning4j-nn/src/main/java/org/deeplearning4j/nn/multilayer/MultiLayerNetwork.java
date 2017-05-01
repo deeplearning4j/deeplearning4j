@@ -49,6 +49,7 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.memory.enums.ResetPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -117,11 +118,43 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected final static String workspaceExternal = "LOOP_EXTERNAL";
     protected final static String workspaceFeedForward = "LOOP_FF";
     protected final static String workspaceBackProp = "LOOP_BP";
+    public final static String workspaceTBPTT = "LOOP_TBPTT";
     protected final static MemoryWorkspace dummy = new DummyWorkspace();
+
+    protected final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.3)
+            .policyLearning(LearningPolicy.FIRST_LOOP)
+            .policyReset(ResetPolicy.BLOCK_LEFT)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .build();
+
+    protected WorkspaceConfiguration workspaceConfigurationFeedForward = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.2)
+            .policyReset(ResetPolicy.BLOCK_LEFT)
+            .policyLearning(LearningPolicy.OVER_TIME)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .build();
+
+    protected final static WorkspaceConfiguration workspaceConfigurationTBPTT = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.2)
+            .policyReset(ResetPolicy.BLOCK_LEFT)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyLearning(LearningPolicy.OVER_TIME)
+            .build();
 
     public MultiLayerNetwork(MultiLayerConfiguration conf) {
         this.layerWiseConfigurations = conf;
         this.defaultConfiguration = conf.getConf(0).clone();
+    }
+
+    public void setLastEtlTime(long time) {
+        lastEtlTime.set(time);
     }
 
     public long getLastEtlTime() {
@@ -660,15 +693,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
 
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0)
-                        .cyclesBeforeInitialization(layers.length).policyLearning(LearningPolicy.OVER_TIME).build();
-
         for (int i = 0; i < layers.length; i++) {
-            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "1")) {
-                currInput = zFromPrevLayer(i, currInput, training).leverageTo(workspaceExternal);
+                currInput = zFromPrevLayer(i, currInput, training);
                 //applies drop connect to the activation
                 activations.add(currInput);
-            }
         }
         return activations;
     }
@@ -749,19 +777,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
 
-        //WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).cyclesBeforeInitialization(100).policyLearning(LearningPolicy.OVER_TIME).build();
-        WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder().initialSize(0).overallocationLimit(0.2)
-                        .policyReset(ResetPolicy.BLOCK_LEFT)
-                        //.cyclesBeforeInitialization(layerNum)
-                        .policyLearning(LearningPolicy.OVER_TIME)
-                        //.policyAllocation(AllocationPolicy.STRICT)
-                        .build();
 
-        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy
-                        : layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.SINGLE
-                                        ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
-                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf,
-                                                        workspaceFeedForward);
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy :
+                layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.SINGLE ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
 
         for (int i = 0; i <= layerNum; i++) {
             // log.info("Activating layer: {}", i);
@@ -996,9 +1015,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public void fit(DataSetIterator iterator) {
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch - where appropriate
         DataSetIterator iter;
+        boolean destructable = false;
         if (iterator.asyncSupported()) {
-            iter = new AsyncDataSetIterator(iterator, Math.min(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 4),
-                            layerWiseConfigurations.getWorkspaceMode() != WorkspaceMode.NONE);
+            iter = new AsyncDataSetIterator(iterator, Math.min(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 4), layerWiseConfigurations.getWorkspaceMode() != WorkspaceMode.NONE);
+            destructable = true;
         } else {
             iter = iterator;
         }
@@ -1023,21 +1043,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             //            }
         }
 
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).overallocationLimit(0.3)
-                        .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT)
-                        //.policyAllocation(AllocationPolicy.STRICT)
-                        .build();
 
-        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, workspaceExternal);
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
         if (layerWiseConfigurations.isBackprop()) {
             update(TaskUtils.buildTask(iter));
             if (!iter.hasNext() && iter.resetSupported()) {
                 iter.reset();
             }
+            long time1 = System.currentTimeMillis();
             while (iter.hasNext()) {
-                long time1 = System.currentTimeMillis();
+
                 DataSet next = iter.next();
                 long time2 = System.currentTimeMillis();
 
@@ -1047,32 +1063,35 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     break;
 
                 // TODO: basically we want to wrap internals of this loop into workspace
-                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
-                    boolean hasMaskArrays = next.hasMaskArrays();
 
-                    if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-                        doTruncatedBPTT(next.getFeatureMatrix(), next.getLabels(), next.getFeaturesMaskArray(),
-                                        next.getLabelsMaskArray());
-                    } else {
-                        if (hasMaskArrays)
-                            setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
-                        setInput(next.getFeatureMatrix());
-                        setLabels(next.getLabels());
-                        if (solver == null) {
-                            try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                                solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this)
-                                                .build();
-                            }
+                boolean hasMaskArrays = next.hasMaskArrays();
+
+                if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
+                    doTruncatedBPTT(next.getFeatureMatrix(), next.getLabels(), next.getFeaturesMaskArray(),
+                                next.getLabelsMaskArray());
+                } else {
+                    if (hasMaskArrays)
+                        setLayerMaskArrays(next.getFeaturesMaskArray(), next.getLabelsMaskArray());
+
+                    setInput(next.getFeatureMatrix());
+                    setLabels(next.getLabels());
+
+                    if (solver == null) {
+                        try(MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
                         }
-                        solver.optimize();
                     }
 
-                    if (hasMaskArrays)
-                        clearLayerMaskArrays();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+                    try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                        solver.optimize();
+                    }
                 }
+
+                if (hasMaskArrays)
+                    clearLayerMaskArrays();
+
+                time1 = System.currentTimeMillis();
             }
         } else if (layerWiseConfigurations.isPretrain()) {
             log.warn("Warning: finetune is not applied.");
@@ -1085,6 +1104,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         clearLayersStates();
+
+        if (destructable)
+            ((AsyncDataSetIterator) iter).shutdown();
     }
 
     /** Calculate and set gradients for MultiLayerNetwork, based on OutputLayer and labels*/
@@ -1105,10 +1127,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     protected Pair<Gradient, INDArray> calcBackpropGradients(INDArray epsilon, boolean withOutputLayer) {
         if (flattenedGradients == null) {
-            MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
-            Nd4j.getMemoryManager().setCurrentWorkspace(null);
-            initGradientsView();
-            Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                initGradientsView();
+            }
         }
         String multiGradientKey;
         Gradient gradient = new DefaultGradient(flattenedGradients);
@@ -1161,26 +1182,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             layerFrom = numLayers - 1;
         }
 
-        WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder().initialSize(0).overallocationLimit(0.2)
-                        .policyReset(ResetPolicy.BLOCK_LEFT)
-                        //.cyclesBeforeInitialization(layerFrom)
-                        .policyLearning(LearningPolicy.OVER_TIME).build();
-
-        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy
-                        : layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.SINGLE
-                                        ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
-                                        //: Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceBackProp);
-                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf,
-                                                        workspaceFeedForward);
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy :
+                layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.SINGLE ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
+                        //: Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceBackProp);
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
 
         // Calculate gradients for previous layers & drops output layer in count
         for (int j = layerFrom; j >= 0; j--) {
             try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                if (j == 1)
-                    ws.enableDebug(false);
-                else
-                    ws.enableDebug(false);
-
                 currLayer = getLayer(j);
                 if (currLayer instanceof FrozenLayer) {
                     break;
@@ -1247,40 +1256,57 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         rnnClearPreviousState();
 
-        for (int i = 0; i < nSubsets; i++) {
-            int startTimeIdx = i * fwdLen;
-            int endTimeIdx = startTimeIdx + fwdLen;
-            if (endTimeIdx > timeSeriesLength)
-                endTimeIdx = timeSeriesLength;
+        workspaceConfigurationExternal.setCyclesBeforeInitialization(0);
+        workspaceConfigurationExternal.setPolicyLearning(LearningPolicy.OVER_TIME);
 
-            INDArray inputSubset = input.get(NDArrayIndex.all(), NDArrayIndex.all(),
+        MemoryWorkspace workspaceT = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationTBPTT, workspaceTBPTT);
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+
+        try(MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
+            for (int i = 0; i < nSubsets; i++) {
+                try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
+                    int startTimeIdx = i * fwdLen;
+                    int endTimeIdx = startTimeIdx + fwdLen;
+                    if (endTimeIdx > timeSeriesLength)
+                        endTimeIdx = timeSeriesLength;
+
+                    INDArray inputSubset = input.get(NDArrayIndex.all(), NDArrayIndex.all(),
                             NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-            INDArray labelSubset = labels.get(NDArrayIndex.all(), NDArrayIndex.all(),
+                    INDArray labelSubset = labels.get(NDArrayIndex.all(), NDArrayIndex.all(),
                             NDArrayIndex.interval(startTimeIdx, endTimeIdx));
 
-            setInput(inputSubset);
-            setLabels(labelSubset);
+                    setInput(inputSubset);
+                    setLabels(labelSubset);
 
-            INDArray featuresMaskSubset = null;
-            INDArray labelsMaskSubset = null;
-            if (featuresMaskArray != null) {
-                featuresMaskSubset = featuresMaskArray.get(NDArrayIndex.all(),
+                    INDArray featuresMaskSubset = null;
+                    INDArray labelsMaskSubset = null;
+                    if (featuresMaskArray != null) {
+                        featuresMaskSubset = featuresMaskArray.get(NDArrayIndex.all(),
                                 NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-            }
-            if (labelsMaskArray != null) {
-                labelsMaskSubset = labelsMaskArray.get(NDArrayIndex.all(),
+                    }
+                    if (labelsMaskArray != null) {
+                        labelsMaskSubset = labelsMaskArray.get(NDArrayIndex.all(),
                                 NDArrayIndex.interval(startTimeIdx, endTimeIdx));
-            }
-            if (featuresMaskSubset != null || labelsMaskSubset != null)
-                setLayerMaskArrays(featuresMaskSubset, labelsMaskSubset);
+                    }
+                    if (featuresMaskSubset != null || labelsMaskSubset != null)
+                        setLayerMaskArrays(featuresMaskSubset, labelsMaskSubset);
 
-            if (solver == null) {
-                solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
-            }
-            solver.optimize();
+                    if (solver == null) {
+                        try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                        }
+                    }
+                    solver.optimize();
 
-            //Finally, update the state of the RNN layers:
-            updateRnnStateWithTBPTTState();
+                    //Finally, update the state of the RNN layers:
+                    updateRnnStateWithTBPTTState();
+                }
+            }
+        }
+
+        if (layerWiseConfigurations.getWorkspaceMode() != WorkspaceMode.NONE) {
+            workspace.initializeWorkspace();
+            workspaceT.initializeWorkspace();
         }
 
         rnnClearPreviousState();
@@ -1528,28 +1554,27 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (layerWiseConfigurations.isPretrain()) {
             pretrain(features);
         }
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).overallocationLimit(1.0)
-                        .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();
 
-        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, workspaceExternal);
 
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-            if (layerWiseConfigurations.isBackprop()) {
-                if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-                    doTruncatedBPTT(features, labels, featuresMask, labelsMask);
-                } else {
-                    if (solver == null) {
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+
+        if (layerWiseConfigurations.isBackprop()) {
+            if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
+                doTruncatedBPTT(features, labels, featuresMask, labelsMask);
+            } else {
+                if (solver == null) {
+                    try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                         solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
                     }
-
+                }
+                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
                     solver.optimize();
                 }
             }
+        }
 
-            if (featuresMask != null || labelsMask != null) {
-                clearLayerMaskArrays();
-            }
+        if (featuresMask != null || labelsMask != null) {
+            clearLayerMaskArrays();
         }
 
         clearLayersStates();
@@ -1584,27 +1609,21 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public void fit(org.nd4j.linalg.dataset.api.DataSet data) {
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).overallocationLimit(0.5)
-                        .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();
+            if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
 
-        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, workspaceExternal);
+                    doTruncatedBPTT(data.getFeatures(), data.getLabels(), data.getFeaturesMaskArray(),
+                            data.getLabelsMaskArray());
 
+            } else {
+                //Standard training
+                boolean hasMaskArrays = data.hasMaskArrays();
+                if (hasMaskArrays)
+                    setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
+                fit(data.getFeatures(), data.getLabels());
+                if (hasMaskArrays)
+                    clearLayerMaskArrays();
 
-        if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
-            try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                doTruncatedBPTT(data.getFeatures(), data.getLabels(), data.getFeaturesMaskArray(),
-                                data.getLabelsMaskArray());
             }
-        } else {
-            //Standard training
-            boolean hasMaskArrays = data.hasMaskArrays();
-            if (hasMaskArrays)
-                setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
-            fit(data.getFeatures(), data.getLabels());
-            if (hasMaskArrays)
-                clearLayerMaskArrays();
-        }
 
         clearLayersStates();
     }
@@ -1666,17 +1685,19 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray input, boolean train) {
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(0).overallocationLimit(1.0)
-                        .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
 
-        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, workspaceExternal);
-
-        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-            List<INDArray> activations = feedForward(input, train);
-            //last activation is output
-            return activations.get(activations.size() - 1).detach();
+        try(MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
+            return silentOutput(input, train).detach();
         }
+    }
+
+
+    protected INDArray silentOutput(INDArray input, boolean train) {
+        List<INDArray> activations = feedForward(input, train);
+
+        //last activation is output
+        return activations.get(activations.size() - 1);
     }
 
     /** Calculate the output of the network, with masking arrays. The masking arrays are used in situations such
@@ -1684,8 +1705,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * of varying lengths within the same minibatch.
      */
     public INDArray output(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask) {
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
+
+        try(MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
+            return silentOutput(input, train, featuresMask, labelsMask).detach();
+        }
+    }
+
+    protected INDArray silentOutput(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask) {
         setLayerMaskArrays(featuresMask, labelsMask);
-        INDArray out = output(input, train);
+        INDArray out = silentOutput(input, train);
         clearLayerMaskArrays();
         return out;
     }
@@ -1858,26 +1887,33 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         boolean hasMaskArray = data.hasMaskArrays();
         if (hasMaskArray)
             setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
-        // activation for output layer is calculated in computeScore
-        List<INDArray> activations = feedForwardToLayer(layers.length - 2, data.getFeatureMatrix(), training);
-        int n = activations.size();
-        setLabels(data.getLabels());
-        if (getOutputLayer() instanceof IOutputLayer) {
-            IOutputLayer ol = (IOutputLayer) getOutputLayer();
-            INDArray olInput = activations.get(n - 1);
-            if (getLayerWiseConfigurations().getInputPreProcess(n - 1) != null) {
-                olInput = getLayerWiseConfigurations().getInputPreProcess(n - 1).preProcess(olInput, input.size(0));
+
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+
+        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+            // activation for output layer is calculated in computeScore
+            List<INDArray> activations = feedForwardToLayer(layers.length - 2, data.getFeatureMatrix(), training);
+            int n = activations.size();
+            setLabels(data.getLabels());
+            if (getOutputLayer() instanceof IOutputLayer) {
+                IOutputLayer ol = (IOutputLayer) getOutputLayer();
+                INDArray olInput = activations.get(n - 1);
+                if (getLayerWiseConfigurations().getInputPreProcess(n - 1) != null) {
+                    olInput = getLayerWiseConfigurations().getInputPreProcess(n - 1).preProcess(olInput, input.size(0));
+                }
+                ol.setInput(olInput); //Feedforward doesn't include output layer for efficiency
+                ol.setLabels(data.getLabels());
+                ol.computeScore(calcL1(true), calcL2(true), training);
+                this.score = ol.score();
+            } else {
+                log.warn("Cannot calculate score wrt labels without an OutputLayer");
+                return 0.0;
             }
-            ol.setInput(olInput); //Feedforward doesn't include output layer for efficiency
-            ol.setLabels(data.getLabels());
-            ol.computeScore(calcL1(true), calcL2(true), training);
-            this.score = ol.score();
-        } else {
-            log.warn("Cannot calculate score wrt labels without an OutputLayer");
-            return 0.0;
         }
+
         if (hasMaskArray)
             clearLayerMaskArrays();
+
         return score();
     }
 
@@ -2572,7 +2608,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
 
-        return doEvaluation(adsi, new RegressionEvaluation(iterator.totalOutcomes()));
+        RegressionEvaluation evaluation = doEvaluation(adsi, new RegressionEvaluation(iterator.totalOutcomes()));
+
+        if (iterator.asyncSupported())
+            ((AsyncDataSetIterator) adsi).shutdown();
+
+        return evaluation;
     }
 
     /**
@@ -2585,7 +2626,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public ROC evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
         DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
 
-        return doEvaluation(adsi, new ROC(rocThresholdSteps));
+        ROC evaluation = doEvaluation(adsi, new ROC(rocThresholdSteps));
+
+        if (iterator.asyncSupported())
+            ((AsyncDataSetIterator) adsi).shutdown();
+
+        return evaluation;
     }
 
     /**
@@ -2598,7 +2644,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
         DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
 
-        return doEvaluation(adsi, new ROCMultiClass(rocThresholdSteps));
+        ROCMultiClass evaluation = doEvaluation(adsi, new ROCMultiClass(rocThresholdSteps));
+
+        if (iterator.asyncSupported())
+            ((AsyncDataSetIterator) adsi).shutdown();
+
+        return evaluation;
     }
 
     /**
@@ -2612,25 +2663,32 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             iterator.reset();
         }
 
+        MemoryWorkspace workspace = layerWiseConfigurations.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+
         while (iterator.hasNext()) {
             DataSet next = iterator.next();
 
             if (next.getFeatureMatrix() == null || next.getLabels() == null)
                 break;
 
-            INDArray features = next.getFeatures();
-            INDArray labels = next.getLabels();
-            INDArray lMask = next.getLabelsMaskArray();
+            try (MemoryWorkspace wsB = workspace.notifyScopeEntered()) {
 
-            INDArray out;
-            if (next.hasMaskArrays()) {
-                INDArray fMask = next.getFeaturesMaskArray();
-                out = this.output(features, false, fMask, lMask);
-            } else {
-                out = this.output(features, false);
+                INDArray features = next.getFeatures();
+                INDArray labels = next.getLabels();
+                INDArray lMask = next.getLabelsMaskArray();
+
+                INDArray out;
+                if (next.hasMaskArrays()) {
+                    INDArray fMask = next.getFeaturesMaskArray();
+                    out = this.silentOutput(features, false, fMask, lMask);
+                } else {
+                    out = this.silentOutput(features, false);
+                }
+
+                evaluation.eval(labels, out, lMask);
             }
 
-            evaluation.eval(labels, out, lMask);
+            clearLayerMaskArrays();
         }
 
         return evaluation;
@@ -2666,6 +2724,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         Evaluation e = new Evaluation(labelsList, topN);
         doEvaluation(adsi, e);
+
+        if (iterator.asyncSupported())
+            ((AsyncDataSetIterator) adsi).shutdown();
 
         return e;
     }

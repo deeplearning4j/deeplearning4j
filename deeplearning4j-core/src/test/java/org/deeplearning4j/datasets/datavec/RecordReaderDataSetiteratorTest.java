@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.datasets.datavec;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
@@ -34,6 +35,9 @@ import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException;
+import org.deeplearning4j.datasets.datavec.tools.SpecialImageRecordReader;
+import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
@@ -50,6 +54,7 @@ import static org.junit.Assert.*;
 /**
  * Created by agibsonccc on 3/6/15.
  */
+@Slf4j
 public class RecordReaderDataSetiteratorTest {
 
     @Test
@@ -79,7 +84,10 @@ public class RecordReaderDataSetiteratorTest {
         FileSplit csv = new FileSplit(new ClassPathResource("csv-example.csv").getTempFileFromArchive());
         recordReader.initialize(csv);
         DataSetIterator iter = new RecordReaderDataSetIterator(recordReader, 10, -1, -1, 2);
-        iter.next();
+        DataSet ds = iter.next();
+        assertFalse(ds == null);
+        assertEquals(10, ds.numExamples());
+        iter.hasNext();
         iter.next();
         assertEquals(false, iter.hasNext());
     }
@@ -916,7 +924,7 @@ public class RecordReaderDataSetiteratorTest {
                 for (int j = 0; j < 4; j++) {
                     double exp = r.getRecord().get(j).toDouble();
                     double act = row.getDouble(j);
-                    assertEquals(exp, act, 1e-6);
+                    assertEquals("Failed on idx: " + j, exp, act, 1e-6);
                 }
                 i++;
             }
@@ -925,6 +933,24 @@ public class RecordReaderDataSetiteratorTest {
             DataSet fromMeta = rrdsi.loadFromMetaData(meta);
             assertEquals(ds, fromMeta);
         }
+    }
+
+    @Test
+    public void testRRDSIwithAsync() throws Exception{
+        RecordReader csv = new CSVRecordReader();
+        csv.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
+
+        int batchSize = 10;
+        int labelIdx = 4;
+        int numClasses = 3;
+
+        RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(csv, batchSize, labelIdx, numClasses);
+        AsyncDataSetIterator adsi = new AsyncDataSetIterator(rrdsi, 8, true);
+        while (adsi.hasNext()) {
+            DataSet ds = adsi.next();
+
+        }
+
     }
 
 
@@ -972,5 +998,108 @@ public class RecordReaderDataSetiteratorTest {
         ds = rrdsi.next();
         assertEquals(expFeatures, ds.getFeatures());
         assertEquals(expLabels, ds.getLabels());
+    }
+
+
+    @Test
+    @Ignore
+    public void specialRRTest4() throws Exception {
+        RecordReader rr = new SpecialImageRecordReader(25000, 10,3, 224, 224);
+        RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(rr, 128);
+
+        int cnt = 0;
+        int examples = 0;
+        while (rrdsi.hasNext()) {
+            DataSet ds = rrdsi.next();
+            assertEquals(128, ds.numExamples());
+            for (int i = 0; i < ds.numExamples(); i++) {
+                INDArray example = ds.getFeatureMatrix().tensorAlongDimension(i, 1, 2, 3).dup();
+//                assertEquals("Failed on DataSet [" + cnt + "], example [" + i + "]", (double) examples, example.meanNumber().doubleValue(), 0.01);
+
+//                assertEquals("Failed on DataSet [" + cnt + "], example [" + i + "]", (double) examples, ds.getLabels().getRow(i).meanNumber().doubleValue(), 0.01);
+                examples++;
+            }
+            cnt++;
+        }
+
+    }
+
+    @Test
+    public void specialRRTest1() throws Exception {
+        RecordReader rr = new SpecialImageRecordReader(250, 10,3, 224, 224);
+        DataSetIterator rrdsi = new ParallelRecordReaderDataSetIterator.Builder(rr)
+                .setBatchSize(10)
+                .numberOfWorkers(1)
+                .build();
+
+        int cnt = 0;
+        int examples = 0;
+        while (rrdsi.hasNext()) {
+            DataSet ds = rrdsi.next();
+            for (int i = 0; i < ds.numExamples(); i++) {
+                INDArray example = ds.getFeatureMatrix().tensorAlongDimension(i, 1, 2, 3).dup();
+                assertEquals("Failed on DataSet ["+ cnt + "], example ["+ i +"]",(double) examples, example.meanNumber().doubleValue(), 0.01);
+                examples++;
+            }
+            cnt++;
+            log.info("DataSet {} passed...", cnt);
+        }
+
+        assertEquals(25, cnt);
+    }
+
+
+    @Test
+    public void specialRRTest2() throws Exception {
+        RecordReader rr = new SpecialImageRecordReader(250, 10,3, 224, 224);
+        DataSetIterator rrdsi = new ParallelRecordReaderDataSetIterator.Builder(rr)
+                .setBatchSize(10)
+                .numberOfWorkers(1)
+                .prefetchBufferSize(4)
+                .build();
+
+        rrdsi = new AsyncDataSetIterator(rrdsi);
+
+        int cnt = 0;
+        int examples = 0;
+        while (rrdsi.hasNext()) {
+            DataSet ds = rrdsi.next();
+            for (int i = 0; i < ds.numExamples(); i++) {
+                INDArray example = ds.getFeatureMatrix().tensorAlongDimension(i, 1, 2, 3).dup();
+                assertEquals("Failed on DataSet ["+ cnt + "], example ["+ i +"]",(double) examples, example.meanNumber().doubleValue(), 0.01);
+                examples++;
+            }
+            cnt++;
+        }
+
+        assertEquals(25, cnt);
+    }
+
+
+    @Test
+    public void specialRRTest3() throws Exception {
+        RecordReader rr = new SpecialImageRecordReader(400, 10,3, 224, 224);
+        DataSetIterator rrdsi = new ParallelRecordReaderDataSetIterator.Builder(rr)
+                .setBatchSize(128)
+                .numberOfWorkers(2)
+                .prefetchBufferSize(2)
+                .build();
+
+        log.info("DataType: {}", Nd4j.dataType() );
+
+       // rrdsi = new AsyncDataSetIterator(rrdsi);
+
+        int cnt = 0;
+        int examples = 0;
+        while (rrdsi.hasNext()) {
+            DataSet ds = rrdsi.next();
+            for (int i = 0; i < ds.numExamples(); i++) {
+                INDArray example = ds.getFeatureMatrix().tensorAlongDimension(i, 1, 2, 3).dup();
+                assertEquals("Failed on DataSet ["+ cnt + "], example ["+ i +"]",(double) examples, example.meanNumber().doubleValue(), 0.01);
+                examples++;
+            }
+            cnt++;
+        }
+
     }
 }
