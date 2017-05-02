@@ -74,12 +74,13 @@ public class TensorGrad {
         if(inputs.size() != getGraph().getInputs().size())
             throw new ND4JIllegalStateException("The number of inputs must be the same as the number of inputs in to the graph");
         TensorGrad execPipeline = dup();
-        int count = 0;
         for(Map.Entry<String,INDArray> variableEntry : inputs.entrySet()) {
             execPipeline.updateNDArray(variableEntry.getKey(),variableEntry.getValue());
         }
 
         List<Op> opExecAction = execPipeline.exec();
+        if(opExecAction.isEmpty())
+            throw new IllegalStateException("No ops found to execute.");
         INDArray[] ret = new INDArray[opExecAction.size()];
         for(int i = 0; i < ret.length; i++) {
             ret[i] = opExecAction.get(i).z();

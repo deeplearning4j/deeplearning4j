@@ -12,6 +12,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -136,6 +137,17 @@ public class TensorGradTests {
         TensorGradVariable result = tensorGrad.mmul(0,x,y);
         TensorGradVariable otherResult = result.add(result);
         assertEquals(2,tensorGrad.graph().getOutputs().size());
+    }
+
+    @Test
+    public void testEval() {
+        TensorGrad tensorGrad = TensorGrad.create();
+        INDArray arr = Nd4j.linspace(1,4,4);
+        TensorGradVariable x = tensorGrad.var("x",arr);
+        TensorGradVariable sigmoid = tensorGrad.sigmoid(x);
+        INDArray assertion = Transforms.sigmoid(arr);
+        INDArray[] eval = tensorGrad.eval(Collections.singletonMap("x",arr));
+        assertEquals(assertion,eval[0]);
     }
 
     @Test
