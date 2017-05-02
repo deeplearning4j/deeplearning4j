@@ -28,7 +28,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author Alex Black
  * @author raver119@gmail.com
  */
-@Deprecated
+@Deprecated // TODO: to be deleted
 public class LegacyAsyncMultiDataSetIterator implements MultiDataSetIterator {
 
     private final MultiDataSetIterator iterator;

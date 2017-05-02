@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author Alex Black
  * @author raver119@gmail.com
  */
-@Deprecated
+@Deprecated // TODO: to be deleted
 public class LegacyAsyncDataSetIterator implements DataSetIterator {
     private final DataSetIterator baseIterator;
     private BlockingQueue<DataSet> blockingQueue;

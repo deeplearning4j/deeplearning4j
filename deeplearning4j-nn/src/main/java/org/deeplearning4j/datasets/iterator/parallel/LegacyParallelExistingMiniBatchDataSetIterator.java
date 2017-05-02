@@ -26,8 +26,10 @@ import java.util.concurrent.locks.LockSupport;
  * by the mini batch file datasetiterator.
  *
  * @author Adam Gibson
+ * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated // TODO: to be deleted
 public class LegacyParallelExistingMiniBatchDataSetIterator implements DataSetIterator {
 
     public static final String DEFAULT_PATTERN = "dataset-%d.bin";
