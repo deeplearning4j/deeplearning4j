@@ -1,23 +1,48 @@
 package org.nd4j.autodiff.tensorgrad;
 
+import lombok.Builder;
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.graph.api.Edge;
+import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpExecOrder;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.autodiff.tensorgrad.impl.TensorGradVariable;
 
 import java.util.*;
 
 /**
  * Created by agibsonccc on 4/11/17.
  */
+@NoArgsConstructor
 public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
+
+
+    @Builder
+    private TensorGradGraph(boolean allowMultipleEdges,
+                            Map<Integer, List<Edge<OpState>>> edges,
+                            Map<Integer, Vertex<NDArrayInformation>> vertices,
+                            boolean frozen,
+                            Map<Integer, List<Edge<OpState>>> incomingEdges) {
+        super(allowMultipleEdges, edges, vertices, frozen, incomingEdges);
+    }
+
+    public List<NDArrayInformation> getOutputs() {
+        List<NDArrayInformation> ret = new ArrayList<>();
+        for(int i = 0; i < numVertices(); i++) {
+            if(getEdgesOut(i).size() < 1)
+                ret.add(getVertex(i).getValue());
+        }
+
+        return ret;
+    }
 
     public List<NDArrayInformation> getInputs() {
         List<NDArrayInformation> ret = new ArrayList<>();
         for(int i = 0; i < numVertices(); i++) {
-            if(getVertexDegree(i) < 1)
+            if(getVertexInDegree(i) < 1)
                 ret.add(getVertex(i).getValue());
         }
 
@@ -34,6 +59,9 @@ public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
         }
         return this;
     }
+
+
+
 
     public OpExecOrder getOpOrder() {
         int[] order = topologicalSort();

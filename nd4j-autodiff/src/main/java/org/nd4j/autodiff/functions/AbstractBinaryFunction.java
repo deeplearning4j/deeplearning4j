@@ -44,11 +44,15 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
     }
 
     public DifferentialFunction<X> larg() {
+        if(m_x1 == this)
+            return m_x1.dup();
         return m_x1;
     }
 
 
     public DifferentialFunction<X> rarg() {
+        if(m_x2 == this)
+            return m_x2.dup();
         return m_x2;
     }
 

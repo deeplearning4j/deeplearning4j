@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import lombok.Data;
 import org.nd4j.autodiff.AbstractFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
@@ -22,6 +23,7 @@ import org.nd4j.linalg.util.ArrayUtil;
  *
  * @param <X>
  */
+@Data
 public class DifferentialFunctionFactory<X extends Field<X>> implements FunctionFactory<X> {
 
     protected AbstractFactory<X> mFactory;

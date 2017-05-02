@@ -20,6 +20,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class ArrayTestAbstractFactory
@@ -133,11 +134,12 @@ public class ArrayTestAbstractFactory
         TensorGradVariable var = tensorGrad.var("x", Nd4j.valueArrayOf(1,2.0));
         TensorGradVariable xTimesX = var.mul(var);
         TensorGradVariable grad = tensorGrad.grad(xTimesX,var);
-        System.out.println(tensorGrad.graph());
-        System.out.println(grad.getFormula());
-        OpExecOrder opExecOrder = tensorGrad.graph().getOpOrder();
+        assertEquals("pow",grad.getFormula());
+       OpExecOrder opExecOrder = tensorGrad.graph().getOpOrder();
         List<OpState> opStates = opExecOrder.opStates();
         List<Op> ops = tensorGrad.exec();
+        assertEquals(opStates.size(),ops.size());
+        assertArrayEquals(new int[]{1,1},ops.get(ops.size() - 1).z().shape());
         assertEquals(4.0,ops.get(ops.size() - 1).z().getDouble(0),1e-1);
         System.out.println(ops);
         //tensorGrad.graph().print(new File("/tmp/graph.png"));

@@ -3,7 +3,10 @@ package org.nd4j.autodiff.graph;
 import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.model.Label;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.graph.api.BaseGraph;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.IGraph;
@@ -35,6 +38,7 @@ import static guru.nidi.graphviz.model.Link.to;
  * @author Alex Black
  */
 @Data
+@AllArgsConstructor
 public class Graph<V, E> extends BaseGraph<V, E> {
     private boolean allowMultipleEdges = true;
     private Map<Integer,List<Edge<E>>> edges; //edge[i].get(j).to = k, then edge from i -> k
@@ -52,6 +56,8 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         edges = new HashMap<>();
         this.incomingEdges = new TreeMap<>();
     }
+
+
 
     public void addVertex(Vertex<V> vVertex) {
         if(frozen)

@@ -70,7 +70,7 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
      */
     @Override
     protected X doGetValue() {
-        return differentialFunctionFactory.tensorMmul(larg(),rarg(),axes,argNum).getValue();
+        return differentialFunctionFactory.getMFactory().tensorMmul(larg(),rarg(),axes);
     }
 
 

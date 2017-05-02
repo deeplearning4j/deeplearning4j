@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.tensorgrad;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
@@ -13,6 +14,7 @@ import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.impl.TensorGradVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -26,12 +28,14 @@ import java.util.Map;
  */
 @AllArgsConstructor
 @Data
+@Builder
 public class TensorGrad {
     private TensorGradGraph graph = new TensorGradGraph();
     private ArrayFactory arrayFactory = new ArrayFactory(graph);
     private DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory;
     private List<TensorGradVariable> tensorGradVariables = new ArrayList<>();
     private Map<String,TensorGradVariable> variableMap;
+
     private TensorGrad() {
         graph = new TensorGradGraph();
         arrayFactory = new ArrayFactory(graph);
@@ -48,6 +52,39 @@ public class TensorGrad {
         return new TensorGrad();
     }
 
+
+
+    public INDArray[] eval(INDArray...inputs) {
+        if(inputs.length != getGraph().getInputs().size())
+            throw new ND4JIllegalStateException("The number of inputs must be the same as the number of inputs in to the graph");
+        TensorGrad execPipeline = dup();
+        List<TensorGradVariable> vars = new ArrayList<>();
+        int count = 0;
+        for(INDArray arr : inputs) {
+            vars.add(execPipeline.var(String.valueOf(count++),arr));
+        }
+
+
+        return null;
+    }
+
+    public TensorGrad dup() {
+        TensorGradGraph tensorGradGraph = TensorGradGraph.builder()
+                .allowMultipleEdges(graph.isAllowMultipleEdges())
+                .frozen(graph.isFrozen())
+                .edges(new HashMap<>(graph.getEdges()))
+                .incomingEdges(new HashMap<>(graph.getIncomingEdges()))
+                .vertices(new HashMap<>(graph.getVertices()))
+                .build();
+        TensorGrad ret = TensorGrad.builder()
+                .arrayFactory(new ArrayFactory(tensorGradGraph))
+                .graph(tensorGradGraph)
+                .tensorGradVariables(new ArrayList<>(tensorGradVariables))
+                .variableMap(new HashMap<>(variableMap))
+                .arrayFieldDifferentialFunctionFactory(arrayFieldDifferentialFunctionFactory)
+                .build();
+        return ret;
+    }
 
 
     public long numElements() {

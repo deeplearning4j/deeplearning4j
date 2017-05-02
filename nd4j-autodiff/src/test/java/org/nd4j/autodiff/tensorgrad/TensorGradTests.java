@@ -108,10 +108,34 @@ public class TensorGradTests {
         TensorGradVariable x = tensorGrad.var("x",arr);
         TensorGradVariable y = tensorGrad.var("y",arr);
         TensorGradVariable result = tensorGrad.mmul(0,x,y);
+        TensorGradVariable otherResult = result.add(result);
         assertEquals("mmul(x,y)",result.getVarName());
         assertEquals(3,tensorGrad.graph().numVertices());
         assertEquals(2,tensorGrad.graph().getEdges().size());
         assertArrayEquals(new int[]{2,2},result.getShape());
+    }
+
+
+    @Test
+    public void testGetInputs() {
+        TensorGrad tensorGrad = TensorGrad.create();
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1,4,4)).reshape(2,2);
+        TensorGradVariable x = tensorGrad.var("x",arr);
+        TensorGradVariable y = tensorGrad.var("y",arr);
+        TensorGradVariable result = tensorGrad.mmul(0,x,y);
+        TensorGradVariable otherResult = result.add(result);
+        assertEquals(2,tensorGrad.graph().getInputs().size());
+    }
+
+    @Test
+    public void testGetOutputs() {
+        TensorGrad tensorGrad = TensorGrad.create();
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1,4,4)).reshape(2,2);
+        TensorGradVariable x = tensorGrad.var("x",arr);
+        TensorGradVariable y = tensorGrad.var("y",arr);
+        TensorGradVariable result = tensorGrad.mmul(0,x,y);
+        TensorGradVariable otherResult = result.add(result);
+        assertEquals(2,tensorGrad.graph().getOutputs().size());
     }
 
     @Test
@@ -126,6 +150,16 @@ public class TensorGradTests {
         assertEquals(2,tensorGrad.graph().getEdges().size());
         assertArrayEquals(ArrayUtil.getTensorMmulShape(new int[]{2,2,2},new int[]{2,2,2},new int[][]{{0},{1}}),result.getShape());
         assertEquals(32,tensorGrad.numElements());
+    }
+
+    @Test
+    public void testDup() {
+        TensorGrad tensorGrad = TensorGrad.create();
+        INDArray arr = Transforms.sigmoid(Nd4j.linspace(1,8,8)).reshape(2,2,2);
+        TensorGradVariable x = tensorGrad.var("x",arr);
+        TensorGradVariable y = tensorGrad.var("y",arr);
+        TensorGrad tg2 = tensorGrad.dup();
+        assertEquals(tensorGrad,tg2);
     }
 
     @Test
