@@ -17,7 +17,6 @@ public abstract class BaseParallelDataSetIterator {
     protected int numProducers;
 
     protected AtomicBoolean allDepleted = new AtomicBoolean(false);
-    protected AtomicBoolean oneDepleted = new AtomicBoolean(false);
     protected MultiBoolean states;
     protected MultiBoolean resetTracker;
 
@@ -33,31 +32,47 @@ public abstract class BaseParallelDataSetIterator {
         if (states.allFalse() || allDepleted.get())
             return false;
 
+        int curIdx = getCurrentProducerIndex();
+
         boolean hasNext = hasNextFor(getCurrentProducerIndex());
         states.set(hasNext, getCurrentProducerIndex());
 
         if (states.allFalse())
             return false;
 
+        if (hasNext)
+            return true;
+
         switch (inequalityHandling) {
             // FIXME: RESET should be applicable ONLY to producers which return TRUE for resetSupported();
             case RESET: {
-                    if (!hasNext) {
-                        resetTracker.set(true, getCurrentProducerIndex());
+                    resetTracker.set(true, getCurrentProducerIndex());
 
-                        // we don't want to have endless loop here, so we only do reset until all producers depleted at least once
-                        if (resetTracker.allTrue()) {
-                            allDepleted.set(true);
-                            return false;
-                        }
-
-                        reset(getCurrentProducerIndex());
+                    // we don't want to have endless loop here, so we only do reset until all producers depleted at least once
+                    if (resetTracker.allTrue()) {
+                        allDepleted.set(true);
+                        return false;
                     }
+
+                    reset(getCurrentProducerIndex());
+
+                    // triggering possible adsi underneath
+                    hasNextFor(getCurrentProducerIndex());
 
                     return true;
                 }
             case RELOCATE: {
                     // TODO: transparent switch to next producer should happen here
+                    while (!hasNext) {
+                        stepForward();
+                        hasNext = hasNextFor(getCurrentProducerIndex());
+                        states.set(hasNext, getCurrentProducerIndex());
+
+                        if (states.allFalse())
+                            return false;
+                    }
+
+                    return true;
                 }
             case PASS_NULL: {
                     // we just return true here, no matter what's up

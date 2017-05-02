@@ -189,6 +189,8 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         thread.setDaemon(true);
         thread.start();
 
+        hasDepleted.set(false);
+
         nextElement = null;
     }
 

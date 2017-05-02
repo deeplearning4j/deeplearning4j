@@ -93,6 +93,7 @@ public class JointParallelDataSetIteratorTest {
     }
 
     /**
+     * Testing relocate
      *
      * @throws Exception
      */
@@ -123,5 +124,61 @@ public class JointParallelDataSetIteratorTest {
             } else
                 example++;
         }
+
+
+        assertEquals(300, cnt);
+        assertEquals(200, example);
+    }
+
+    /**
+     * Testing relocate
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testJointIterator4() throws Exception {
+        DataSetIterator iteratorA = new SimpleVariableGenerator(119, 200, 32, 100, 10);
+        DataSetIterator iteratorB = new SimpleVariableGenerator(119, 100, 32, 100, 10);
+
+        JointParallelDataSetIterator jpdsi = new JointParallelDataSetIterator.Builder(InequalityHandling.RESET)
+                .addSourceIterator(iteratorA)
+                .addSourceIterator(iteratorB)
+                .build();
+
+        int cnt = 0;
+        int cnt_sec = 0;
+        int example_sec = 0;
+        int example = 0;
+        while (jpdsi.hasNext()) {
+            DataSet ds = jpdsi.next();
+            assertNotNull("Failed on iteration " + cnt, ds);
+
+            if (cnt % 2 == 0) {
+                assertEquals("Failed on iteration " + cnt, (double) example, ds.getFeatures().meanNumber().doubleValue(), 0.001);
+                assertEquals("Failed on iteration " + cnt, (double) example + 0.5, ds.getLabels().meanNumber().doubleValue(), 0.001);
+            } else {
+                if (cnt <= 200) {
+                    assertEquals("Failed on iteration " + cnt, (double) example, ds.getFeatures().meanNumber().doubleValue(), 0.001);
+                    assertEquals("Failed on iteration " + cnt, (double) example + 0.5, ds.getLabels().meanNumber().doubleValue(), 0.001);
+                } else {
+                    assertEquals("Failed on iteration " + cnt + ", second iteration " + cnt_sec, (double) example_sec, ds.getFeatures().meanNumber().doubleValue(), 0.001);
+                    assertEquals("Failed on iteration " + cnt + ", second iteration " + cnt_sec, (double) example_sec + 0.5, ds.getLabels().meanNumber().doubleValue(), 0.001);
+                }
+            }
+
+            cnt++;
+            if (cnt % 2 == 0)
+                example++;
+
+            if (cnt > 201 && cnt % 2 == 1) {
+                cnt_sec++;
+                example_sec++;
+            }
+
+        }
+
+
+        assertEquals(400, cnt);
+        assertEquals(200, example);
     }
 }

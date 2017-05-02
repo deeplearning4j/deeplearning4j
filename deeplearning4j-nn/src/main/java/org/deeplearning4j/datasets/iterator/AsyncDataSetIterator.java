@@ -203,6 +203,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
         thread.setDaemon(true);
         thread.start();
+        hasDepleted.set(false);
 
         nextElement = null;
     }
