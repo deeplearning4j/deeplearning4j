@@ -369,17 +369,17 @@ public class ParallelWrapper implements AutoCloseable {
         List<Long> nanos = new ArrayList<>();
         AtomicInteger locker = new AtomicInteger(0);
         long time1 = System.currentTimeMillis();
-        //while (iterator.hasNext() && !stopFit.get()) {
-        int intcnt = 0;
-        while (intcnt < 1000) {
-            intcnt++;
-            DataSet dataSet = null;// iterator.next();
+        while (iterator.hasNext() && !stopFit.get()) {
+        //int intcnt = 0;
+        //while (intcnt < 1000) {
+          //  intcnt++;
+            DataSet dataSet = iterator.next();
             long time2 = System.currentTimeMillis();
             long lastEtlTime = time2 - time1;
             //nanos.add((time2 - time1));
 
-            //if (dataSet == null)
-            //    throw new ND4JIllegalStateException("You can't have NULL as DataSet");
+            if (dataSet == null)
+                throw new ND4JIllegalStateException("You can't have NULL as DataSet");
 
             /*
              now dataSet should be dispatched to next free workers, until all workers are busy. And then we should block till all finished.
