@@ -1,10 +1,12 @@
 package org.deeplearning4j.datasets.iterator;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.datasets.iterator.callbacks.FileCallback;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.util.List;
@@ -16,6 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class FileSplitDataSetIterator implements DataSetIterator {
     private DataSetPreProcessor preProcessor;
 
@@ -103,10 +106,15 @@ public class FileSplitDataSetIterator implements DataSetIterator {
 
     @Override
     public DataSet next() {
+        //long time1 = System.nanoTime();
         DataSet ds = callback.call(files.get(counter.getAndIncrement()));
 
         if (preProcessor != null && ds != null)
             preProcessor.preProcess(ds);
+
+        //long time2 = System.nanoTime();
+
+        //log.info("Device: [{}]; Time: [{}] ns;", Nd4j.getAffinityManager().getDeviceForCurrentThread(), time2 - time1);
 
         return ds;
     }

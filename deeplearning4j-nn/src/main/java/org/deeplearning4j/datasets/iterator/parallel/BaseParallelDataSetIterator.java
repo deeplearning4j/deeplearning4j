@@ -40,19 +40,20 @@ public abstract class BaseParallelDataSetIterator implements ParallelDataSetIter
 
         int curIdx = getCurrentProducerIndex();
 
-        boolean hasNext = hasNextFor(getCurrentProducerIndex());
-        states.set(hasNext, getCurrentProducerIndex());
+        boolean hasNext = hasNextFor(curIdx);
+
+        if (hasNext)
+            return true;
+        else
+            states.set(hasNext, curIdx);
 
         if (states.allFalse())
             return false;
 
-        if (hasNext)
-            return true;
-
         switch (inequalityHandling) {
             // FIXME: RESET should be applicable ONLY to producers which return TRUE for resetSupported();
             case RESET: {
-                    resetTracker.set(true, getCurrentProducerIndex());
+                    resetTracker.set(true, curIdx);
 
                     // we don't want to have endless loop here, so we only do reset until all producers depleted at least once
                     if (resetTracker.allTrue()) {
@@ -60,10 +61,10 @@ public abstract class BaseParallelDataSetIterator implements ParallelDataSetIter
                         return false;
                     }
 
-                    reset(getCurrentProducerIndex());
+                    reset(curIdx);
 
                     // triggering possible adsi underneath
-                    hasNextFor(getCurrentProducerIndex());
+                    hasNextFor(curIdx);
 
                     return true;
                 }

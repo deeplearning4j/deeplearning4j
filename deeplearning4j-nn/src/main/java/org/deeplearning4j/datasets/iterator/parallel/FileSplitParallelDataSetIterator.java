@@ -31,6 +31,7 @@ public class FileSplitParallelDataSetIterator extends BaseParallelDataSetIterato
 
     public static final String DEFAULT_PATTERN = "dataset-%d.bin";
     private String pattern;
+    private int buffer;
 
     protected List<DataSetIterator> asyncIterators = new ArrayList<>();
 
@@ -43,6 +44,10 @@ public class FileSplitParallelDataSetIterator extends BaseParallelDataSetIterato
     }
 
     public FileSplitParallelDataSetIterator(@NonNull File rootFolder, @NonNull String pattern, @NonNull FileCallback callback, int numThreads, @NonNull InequalityHandling inequalityHandling) {
+        this(rootFolder, pattern, callback, numThreads, 2, inequalityHandling);
+    }
+
+    public FileSplitParallelDataSetIterator(@NonNull File rootFolder, @NonNull String pattern, @NonNull FileCallback callback, int numThreads, int bufferPerThread, @NonNull InequalityHandling inequalityHandling) {
         super(numThreads);
 
         if (!rootFolder.exists() || !rootFolder.isDirectory())
@@ -50,6 +55,7 @@ public class FileSplitParallelDataSetIterator extends BaseParallelDataSetIterato
 
         this.pattern = pattern;
         this.inequalityHandling = inequalityHandling;
+        this.buffer = bufferPerThread;
 
         String modifiedPattern = pattern.replaceAll("\\%d",".*.");
 
@@ -66,7 +72,7 @@ public class FileSplitParallelDataSetIterator extends BaseParallelDataSetIterato
         int cnt = 0;
         for (List<File> part: Lists.partition(files, files.size() / numThreads)) {
             int cDev = cnt % numDevices;
-            asyncIterators.add(new AsyncDataSetIterator(new FileSplitDataSetIterator(part, callback), 2, true, cDev));
+            asyncIterators.add(new AsyncDataSetIterator(new FileSplitDataSetIterator(part, callback), bufferPerThread, true, cDev));
             cnt++;
         }
 

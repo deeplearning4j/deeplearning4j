@@ -42,14 +42,29 @@ public class ParallelExistingMiniBatchDataSetIteratorTest {
     public void testNewSimpleLoop1() throws Exception {
         FileSplitParallelDataSetIterator fspdsi = new FileSplitParallelDataSetIterator(rootFolder, "mnist-train-%d.bin", new DataSetDeserializer());
 
+        List<Pair<Long, Long>> pairs = new ArrayList<>();
+
+
+        long time1 = System.nanoTime();
         int cnt = 0;
         while (fspdsi.hasNext()) {
             DataSet ds = fspdsi.next();
+            long time2 = System.nanoTime();
+            pairs.add(new Pair<Long, Long>(time2 - time1, 0L));
             assertNotNull(ds);
+
+            // imitating processing here
+            Thread.sleep(10);
+
             cnt++;
+            time1 = System.nanoTime();
         }
 
         assertEquals(26, cnt);
+
+        for (Pair<Long, Long> times: pairs) {
+            log.info("Parallel: {} ns; Simple: {} ns", times.getFirst(), times.getSecond());
+        }
     }
 
 
