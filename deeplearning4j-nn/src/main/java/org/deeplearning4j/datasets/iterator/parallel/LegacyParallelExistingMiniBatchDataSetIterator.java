@@ -28,7 +28,7 @@ import java.util.concurrent.locks.LockSupport;
  * @author Adam Gibson
  */
 @Slf4j
-public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator {
+public class LegacyParallelExistingMiniBatchDataSetIterator implements DataSetIterator {
 
     public static final String DEFAULT_PATTERN = "dataset-%d.bin";
 
@@ -55,11 +55,11 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
      * Create with the given root directory, using the default filename pattern {@link #DEFAULT_PATTERN}
      * @param rootDir the root directory to use
      */
-    public ParallelExistingMiniBatchDataSetIterator(File rootDir) {
+    public LegacyParallelExistingMiniBatchDataSetIterator(File rootDir) {
         this(rootDir, DEFAULT_PATTERN);
     }
 
-    public ParallelExistingMiniBatchDataSetIterator(File rootDir, int numThreads) {
+    public LegacyParallelExistingMiniBatchDataSetIterator(File rootDir, int numThreads) {
         this(rootDir, DEFAULT_PATTERN, numThreads);
     }
 
@@ -69,19 +69,19 @@ public class ParallelExistingMiniBatchDataSetIterator implements DataSetIterator
      * @param pattern    The filename pattern to use. Used with {@code String.format(pattern,idx)}, where idx is an
      *                   integer, starting at 0.
      */
-    public ParallelExistingMiniBatchDataSetIterator(File rootDir, String pattern) {
+    public LegacyParallelExistingMiniBatchDataSetIterator(File rootDir, String pattern) {
         this(rootDir, pattern, 2);
     }
 
-    public ParallelExistingMiniBatchDataSetIterator(File rootDir, String pattern, int numThreads) {
+    public LegacyParallelExistingMiniBatchDataSetIterator(File rootDir, String pattern, int numThreads) {
         this(rootDir, pattern, numThreads, 8);
     }
 
-    public ParallelExistingMiniBatchDataSetIterator(File rootDir, String pattern, int numThreads, int bufferSize) {
+    public LegacyParallelExistingMiniBatchDataSetIterator(File rootDir, String pattern, int numThreads, int bufferSize) {
         this(rootDir, pattern, numThreads, bufferSize, true);
     }
 
-    public ParallelExistingMiniBatchDataSetIterator(File rootDir, String pattern, int numThreads, int bufferSize, boolean useWorkspaces) {
+    public LegacyParallelExistingMiniBatchDataSetIterator(File rootDir, String pattern, int numThreads, int bufferSize, boolean useWorkspaces) {
         if (numThreads < 2)
             numThreads = 2;
 
