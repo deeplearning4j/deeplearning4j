@@ -11,9 +11,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -148,6 +146,42 @@ public class TensorGradTests {
         INDArray assertion = Transforms.sigmoid(arr);
         INDArray[] eval = tensorGrad.eval(Collections.singletonMap("x",arr));
         assertEquals(assertion,eval[0]);
+
+    }
+
+    @Test
+    public void testEvalAddSelf() {
+        /**
+         * Note this test fails yet due to needing
+         * to validate simple cases like x * x
+         * matching number of inputs.
+         */
+        TensorGrad tensorGrad = TensorGrad.create();
+        INDArray arr = Nd4j.linspace(1,4,4);
+        TensorGradVariable x = tensorGrad.var("x",arr);
+        TensorGradVariable sigmoid = x.mul(x);
+        INDArray assertion = arr.mul(arr);
+        INDArray[] eval = tensorGrad.eval(Collections.singletonMap("x",arr));
+        assertEquals(assertion,eval[0]);
+
+    }
+
+    @Test
+    public void testEvalAdd() {
+        TensorGrad tensorGrad = TensorGrad.create();
+        INDArray arr = Nd4j.linspace(1,4,4);
+        INDArray yArr = arr.dup();
+        TensorGradVariable x = tensorGrad.var("x",arr);
+        TensorGradVariable y = tensorGrad.var("y",yArr);
+
+        TensorGradVariable sigmoid = x.mul(y);
+        INDArray assertion = arr.mul(arr);
+        Map<String,INDArray> vars = new HashMap<>();
+        vars.put("x",arr);
+        vars.put("y",yArr);
+        INDArray[] eval = tensorGrad.eval(vars);
+        assertEquals(assertion,eval[0]);
+
     }
 
     @Test
