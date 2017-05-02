@@ -62,8 +62,8 @@ public class Convolution1DLayer extends ConvolutionLayer {
     }
 
     @Override
-    protected INDArray preOutput4d(boolean training) {
-        return super.preOutput(true);
+    protected Pair<INDArray,INDArray> preOutput4d(boolean training, boolean forBackprop) {
+        return super.preOutput(true, forBackprop);
     }
 
     @Override
