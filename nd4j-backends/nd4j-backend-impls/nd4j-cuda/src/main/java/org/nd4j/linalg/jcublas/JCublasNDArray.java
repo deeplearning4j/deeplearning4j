@@ -535,8 +535,7 @@ public class JCublasNDArray extends BaseNDArray {
         INDArray copy = null;
         if (!this.isView()) {
         //if (1 < 0) {
-            if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+            Nd4j.getExecutioner().commit();
 
             DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
 
@@ -575,8 +574,7 @@ public class JCublasNDArray extends BaseNDArray {
         } else {
             copy = this.dup(this.ordering());
 
-            if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+            Nd4j.getExecutioner().commit();
         }
 
         Nd4j.getMemoryManager().setCurrentWorkspace(current);

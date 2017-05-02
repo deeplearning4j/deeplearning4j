@@ -47,8 +47,7 @@ public class DataTypeValidationTests extends BaseNd4jTest {
 
         x.addi(y);
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
     }
 
     /**

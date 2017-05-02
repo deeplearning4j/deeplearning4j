@@ -82,9 +82,9 @@ public class SporadicTests {
         int length = 4*4*5*2;
         INDArray arr = Nd4j.linspace(1,length,length).reshape('c',4,4,5,2).permute(2,3,1,0);
 //        INDArray arr = Nd4j.linspace(1,length,length).reshape('f',4,4,5,2).permute(2,3,1,0);
-        ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
         INDArray arrDup = arr.dup('c');
-        ((GridExecutioner)Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         INDArray row = Nd4j.rand(1,2);
         assertEquals(row.length(), arr.size(1));
@@ -473,8 +473,7 @@ public class SporadicTests {
         INDArray out1 = temp1.diviColumnVector(norm2_1);
         System.out.println("------");
 
-        if (Nd4j.getExecutioner() instanceof CudaGridExecutioner)
-            ((CudaGridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         INDArray norm2_2 = l2.norm2(1);
 
@@ -561,7 +560,7 @@ public class SporadicTests {
         INDArray z = Nd4j.ones(2, 2)
                 .eq(2);
 
-        ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         System.out.println("Z: " + z);
     }

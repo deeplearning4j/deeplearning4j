@@ -2007,6 +2007,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             dev.get(Nd4jEnvironment.CUDA_DEVICE_MAJOR_VERSION_KEY), dev.get(Nd4jEnvironment.CUDA_DEVICE_MINOR_VERSION_KEY), dev.get(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY));
         }
     }
+
+    @Override
+    public void commit() {
+        ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncOldStream();
+    }
 }
 
 

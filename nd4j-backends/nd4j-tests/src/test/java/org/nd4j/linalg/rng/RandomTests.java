@@ -618,8 +618,7 @@ public class RandomTests extends BaseNd4jTest {
                     rnd.setSeed(119);
                     INDArray array = Nd4j.getExecutioner().exec(new UniformDistribution(Nd4j.createUninitialized(25)));
 
-                    if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                        ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                    Nd4j.getExecutioner().commit();
 
                     list.set(cnt.getAndIncrement(), array);
                 }

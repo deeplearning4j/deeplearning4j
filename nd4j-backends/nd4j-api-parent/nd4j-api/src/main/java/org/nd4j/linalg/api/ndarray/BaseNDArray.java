@@ -5001,8 +5001,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (!isAttached())
             return this;
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         /*
          two options here
@@ -5060,8 +5059,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (parentWorkspace == null)
             return this.detach();
         else {
-            if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+            Nd4j.getExecutioner().commit();
 
             // temporary set parent ws as current ws
             Nd4j.getMemoryManager().setCurrentWorkspace(parentWorkspace);
