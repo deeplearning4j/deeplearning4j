@@ -1022,4 +1022,10 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         private INDArray array;
         private String tag;
     }
+
+
+    @Override
+    public void commit() {
+        flushQueueBlocking();
+    }
 }

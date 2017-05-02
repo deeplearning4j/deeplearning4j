@@ -144,8 +144,7 @@ public class BasicNDArrayCompressor {
     }
 
     public INDArray compress(INDArray array) {
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         return compress(array, getDefaultCompression());
     }

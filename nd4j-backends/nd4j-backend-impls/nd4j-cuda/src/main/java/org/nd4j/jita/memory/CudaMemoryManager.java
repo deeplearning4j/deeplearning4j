@@ -81,7 +81,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
         // we basically want to free memory, without touching INDArray itself.
         // so we don't care when gc is going to release object: memory is already cached
 
-        ((CudaGridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         int cnt = -1;
         AtomicAllocator allocator = AtomicAllocator.getInstance();
