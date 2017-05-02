@@ -5,6 +5,7 @@ import lombok.Data;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.Variable;
+import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.TensorGrad;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -39,6 +40,11 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
         this.arr = arr;
         this.arrayField = arrayField;
         this.tensorGrad = tensorGrad;
+    }
+
+
+    public NDArrayInformation getInfo() {
+        return getArrayField().getM_x().getInput();
     }
 
     public String getFormula() {

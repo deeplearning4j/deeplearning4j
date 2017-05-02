@@ -18,10 +18,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by agibsonccc on 4/9/17.
@@ -53,19 +50,41 @@ public class TensorGrad {
     }
 
 
+    /**
+     * Set the ndarray for the given value
+     * @param value
+     * @param arr
+     */
+    public void updateNDArray(String value,INDArray arr) {
+        if(!variableMap.containsKey(value))
+            throw new IllegalArgumentException("Illegal key specified vor variable " + value);
+        if(!Arrays.equals(arr.shape(),variableMap.get(value).getShape()))
+            throw new IllegalArgumentException("Illegal array specified must be of shape " + Arrays.toString(variableMap.get(value).getShape()));
+        getVariableMap().get(value).setArr(arr);
+    }
 
-    public INDArray[] eval(INDArray...inputs) {
-        if(inputs.length != getGraph().getInputs().size())
+
+    /**
+     * Evaluate the given inputs
+     * based on the current grpah
+     * @param inputs the inputs to evaluate
+     * @return
+     */
+    public INDArray[] eval(Map<String,INDArray> inputs) {
+        if(inputs.size() != getGraph().getInputs().size())
             throw new ND4JIllegalStateException("The number of inputs must be the same as the number of inputs in to the graph");
         TensorGrad execPipeline = dup();
-        List<TensorGradVariable> vars = new ArrayList<>();
         int count = 0;
-        for(INDArray arr : inputs) {
-            vars.add(execPipeline.var(String.valueOf(count++),arr));
+        for(Map.Entry<String,INDArray> variableEntry : inputs.entrySet()) {
+            execPipeline.updateNDArray(variableEntry.getKey(),variableEntry.getValue());
         }
 
-
-        return null;
+        List<Op> opExecAction = execPipeline.exec();
+        INDArray[] ret = new INDArray[opExecAction.size()];
+        for(int i = 0; i < ret.length; i++) {
+            ret[i] = opExecAction.get(i).z();
+        }
+        return ret;
     }
 
     public TensorGrad dup() {
@@ -889,8 +908,8 @@ public class TensorGrad {
         allocate();
         List<Op> ops = new ArrayList<>();
         for(OpExecAction opExecAction : graph().getOpOrder().getActions()) {
-          Op op = createOp(opExecAction.getOpState().getOpType(),
-                  opExecAction);
+            Op op = createOp(opExecAction.getOpState().getOpType(),
+                    opExecAction);
             Nd4j.getExecutioner().exec(op);
             ops.add(op);
         }
