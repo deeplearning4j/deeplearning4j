@@ -53,8 +53,7 @@ public class ParameterAveragingElementCombineFunction implements
                 stats.addOtherTrainingStats(v2.getSparkTrainingStats());
         }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         Collection<StorageMetaData> listenerMetaData = v1.getListenerMetaData();
         if (listenerMetaData == null)

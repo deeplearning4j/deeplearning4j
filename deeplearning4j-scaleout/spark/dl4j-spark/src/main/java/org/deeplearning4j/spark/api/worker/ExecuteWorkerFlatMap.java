@@ -149,12 +149,11 @@ class ExecuteWorkerFlatMapAdapter<R extends TrainingResult> implements FlatMapFu
             }
         } finally {
             //Make sure we shut down the async thread properly...
+            Nd4j.getExecutioner().commit();
+
             if (batchedIterator instanceof AsyncDataSetIterator) {
                 ((AsyncDataSetIterator) batchedIterator).shutdown();
             }
-
-            if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
         }
     }
 }

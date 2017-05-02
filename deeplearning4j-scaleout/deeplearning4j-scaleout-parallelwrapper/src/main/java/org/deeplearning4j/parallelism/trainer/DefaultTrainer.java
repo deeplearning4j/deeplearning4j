@@ -115,8 +115,7 @@ public class DefaultTrainer extends Thread implements Trainer {
                 updater = ((MultiLayerNetwork) replicatedModel).getUpdater();
                 INDArray viewD = view.dup();
 
-                if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                    ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                Nd4j.getExecutioner().commit();
 
                 updater.setStateViewArray((MultiLayerNetwork) replicatedModel, viewD, false);
             }
@@ -129,16 +128,14 @@ public class DefaultTrainer extends Thread implements Trainer {
             if (view != null) {
                 INDArray viewD = view.dup();
 
-                if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                    ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                Nd4j.getExecutioner().commit();
 
                 updater = ((ComputationGraph) replicatedModel).getUpdater();
                 updater.setStateViewArray(viewD);
             }
         }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
     }
 
 
@@ -197,8 +194,7 @@ public class DefaultTrainer extends Thread implements Trainer {
                             updaterReplica.setStateViewArray((MultiLayerNetwork) replicatedModel,
                                             updaterOrigina.getStateViewArray().dup(), false);
 
-                        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                        Nd4j.getExecutioner().commit();
                     }
 
                     Collection<IterationListener> oldListeners = ((MultiLayerNetwork) originalModel).getListeners();
@@ -232,8 +228,7 @@ public class DefaultTrainer extends Thread implements Trainer {
                         if (updaterOrigina != null && updaterOrigina.getStateViewArray() != null)
                             updaterReplica.setStateViewArray(updaterOrigina.getStateViewArray().dup());
 
-                        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                        Nd4j.getExecutioner().commit();
                     }
 
                     Collection<IterationListener> oldListeners = ((ComputationGraph) originalModel).getListeners();
@@ -273,8 +268,7 @@ public class DefaultTrainer extends Thread implements Trainer {
                             ((ComputationGraph) replicatedModel).fit(dataSet);
                         }
 
-                        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                        Nd4j.getExecutioner().commit();
 
                         running.decrementAndGet();
                     }
@@ -290,8 +284,7 @@ public class DefaultTrainer extends Thread implements Trainer {
                         } else
                             throw new RuntimeException("MultiDataSet can be fit into ComputationGraph only");
 
-                        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                        Nd4j.getExecutioner().commit();
 
                         running.decrementAndGet();
                     }

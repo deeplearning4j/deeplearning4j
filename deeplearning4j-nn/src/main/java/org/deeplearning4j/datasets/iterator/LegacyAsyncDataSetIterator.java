@@ -370,8 +370,7 @@ public class LegacyAsyncDataSetIterator implements DataSetIterator {
                     } else ds = baseIterator.next();
 
 
-                    if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                        ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                    Nd4j.getExecutioner().commit();
 
                     // feeder is temporary state variable, that shows if we have something between backend iterator and buffer
 

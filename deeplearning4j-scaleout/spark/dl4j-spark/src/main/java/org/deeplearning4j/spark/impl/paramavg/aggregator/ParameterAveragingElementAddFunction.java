@@ -50,8 +50,7 @@ public class ParameterAveragingElementAddFunction implements
                 stats.addOtherTrainingStats(result.getSparkTrainingStats());
         }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         Collection<StorageMetaData> listenerMetaData = tuple.getListenerMetaData();
         if (listenerMetaData == null)

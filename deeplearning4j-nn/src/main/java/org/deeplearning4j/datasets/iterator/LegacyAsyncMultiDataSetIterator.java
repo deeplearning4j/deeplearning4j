@@ -289,8 +289,7 @@ public class LegacyAsyncMultiDataSetIterator implements MultiDataSetIterator {
                         }
                     } else ds = iterator.next();
 
-                    if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                        ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                    Nd4j.getExecutioner().commit();
 
                     // feeder is temporary state variable, that shows if we have something between backend iterator and buffer
                     lock.writeLock().unlock();
