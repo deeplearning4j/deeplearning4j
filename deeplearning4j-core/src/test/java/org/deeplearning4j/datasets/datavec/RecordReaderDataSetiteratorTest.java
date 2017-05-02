@@ -1023,7 +1023,8 @@ public class RecordReaderDataSetiteratorTest {
         }
 
     }
-/*
+
+    /*
     @Test
     public void specialRRTest1() throws Exception {
         RecordReader rr = new SpecialImageRecordReader(250, 10,3, 224, 224);

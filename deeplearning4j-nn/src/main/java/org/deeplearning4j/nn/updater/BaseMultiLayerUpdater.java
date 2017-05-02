@@ -301,18 +301,13 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             return; //no op
 
         final double threshold = layer.conf().getLayer().getGradientNormalizationThreshold();
+        INDArray layerGradientView = layer.getGradientsViewArray();
 
         switch (normalization) {
             case RenormalizeL2PerLayer:
-                double sumSquares = 0.0;
-                for (INDArray g : gradient.gradientForVariable().values()) {
-                    double l2 = g.norm2Number().doubleValue();
-                    //l2 norm: sqrt(sum_i g_i^2)
-                    sumSquares += l2 * l2;
-                }
-                double layerL2 = FastMath.sqrt(sumSquares);
-                for (INDArray g : gradient.gradientForVariable().values()) {
-                    g.divi(layerL2);
+                if(layerGradientView != null){
+                    double l2 = layerGradientView.norm2Number().doubleValue();
+                    layerGradientView.divi(l2);
                 }
                 break;
             case RenormalizeL2PerParamType:
@@ -322,23 +317,17 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 }
                 break;
             case ClipElementWiseAbsoluteValue:
-                for (INDArray g : gradient.gradientForVariable().values()) {
-                    BooleanIndexing.replaceWhere(g, threshold, Conditions.greaterThan(threshold));
-                    BooleanIndexing.replaceWhere(g, -threshold, Conditions.lessThan(-threshold));
+                if(layerGradientView != null){
+                    BooleanIndexing.replaceWhere(layerGradientView, threshold, Conditions.greaterThan(threshold));
+                    BooleanIndexing.replaceWhere(layerGradientView, -threshold, Conditions.lessThan(-threshold));
                 }
                 break;
             case ClipL2PerLayer:
-                double sumSquares2 = 0.0;
-                for (INDArray g : gradient.gradientForVariable().values()) {
-                    double l2 = Nd4j.getExecutioner().execAndReturn(new Norm2(g)).getFinalResult().doubleValue();
-                    //l2 norm: sqrt(sum_i g_i^2)
-                    sumSquares2 += l2 * l2;
-                }
-                double layerL22 = FastMath.sqrt(sumSquares2);
-                if (layerL22 > threshold) {
-                    double scalingFactor = threshold / layerL22; // g = g / l2 * threshold ->
-                    for (INDArray g : gradient.gradientForVariable().values()) {
-                        g.muli(scalingFactor);
+                if(layerGradientView != null){
+                    double layerL2 = layerGradientView.norm2Number().doubleValue();
+                    if (layerL2 > threshold) {
+                        double scalingFactor = threshold / layerL2; // g = g / l2 * threshold ->
+                        layerGradientView.muli(scalingFactor);
                     }
                 }
                 break;

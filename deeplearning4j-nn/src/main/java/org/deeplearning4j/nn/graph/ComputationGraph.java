@@ -766,7 +766,7 @@ public class ComputationGraph implements Serializable, Model {
         DataSetIterator dataSetIterator;
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch - where appropriate
         if (iterator.asyncSupported()) {
-            dataSetIterator = new AsyncDataSetIterator(iterator, Math.min(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 4), configuration.getWorkspaceMode() != WorkspaceMode.NONE);
+            dataSetIterator = new AsyncDataSetIterator(iterator, Math.min(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 4), configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE);
             destructable = true;
         } else
             dataSetIterator = iterator;
@@ -781,7 +781,7 @@ public class ComputationGraph implements Serializable, Model {
             pretrain(dataSetIterator);
         }
 
-        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
         if (configuration.isBackprop()) {
             update(TaskUtils.buildTask(dataSetIterator));
@@ -871,7 +871,7 @@ public class ComputationGraph implements Serializable, Model {
 
         MultiDataSetIterator multiDataSetIterator;
         if (multi.asyncSupported()) {
-            multiDataSetIterator = new AsyncMultiDataSetIterator(multi, Math.max(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 4), configuration.getWorkspaceMode() != WorkspaceMode.NONE);
+            multiDataSetIterator = new AsyncMultiDataSetIterator(multi, Math.max(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 4), configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE);
             destructable = true;
         } else
             multiDataSetIterator = multi;
@@ -881,7 +881,7 @@ public class ComputationGraph implements Serializable, Model {
         }
 
 
-        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
         if (configuration.isBackprop()) {
 
@@ -1007,7 +1007,7 @@ public class ComputationGraph implements Serializable, Model {
             pretrain(iter);
         }
 
-        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
 
         if (configuration.isBackprop()) {
@@ -1247,12 +1247,20 @@ public class ComputationGraph implements Serializable, Model {
         return feedForward(true, excludeOutputLayers, false, true);
     }
 
-
+    /**
+     * PLEASE NEVER USE THIS METHOD IF YOU"RE NOT SURE WHAT YOU'll GET
+     *
+     * @param train
+     * @param excludeOutputLayers
+     * @param includeNonLayerVertexActivations
+     * @param publicApi
+     * @return
+     */
     public Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers, boolean includeNonLayerVertexActivations, boolean publicApi) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
-        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy :
-                configuration.getWorkspaceMode() == WorkspaceMode.SINGLE ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
+        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy :
+                configuration.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
                 : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
 
         //Do forward pass according to the topological ordering of the network
@@ -1331,7 +1339,7 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         if (!train)
-            if (configuration.getWorkspaceMode() == WorkspaceMode.SEPARATE)
+            if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.SEPARATE)
                 Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
 
         return layerActivations;
@@ -1369,29 +1377,31 @@ public class ComputationGraph implements Serializable, Model {
      * @return Output activations (order: same as defined in network configuration)
      */
     public INDArray[] output(boolean train, INDArray... input) {
-        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
+        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
 
         try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
             INDArray[] tmp = silentOutput(train, input);
             for (int x = 0; x < tmp.length; x++)
                 tmp[x] = tmp[x].detach();
 
-
             return tmp;
         }
     }
 
     protected INDArray[] silentOutput(boolean train, INDArray... input) {
+        WorkspaceMode cMode = configuration.getTrainingWorkspaceMode();
+        configuration.setTrainingWorkspaceMode(configuration.getInferenceWorkspaceMode());
 
+        setInputs(input);
+        Map<String, INDArray> activations = feedForward(false, false, false, false);
+        INDArray[] outputs = new INDArray[numOutputArrays];
+        int i = 0;
+        for (String s : configuration.getNetworkOutputs()) {
+            outputs[i++] = activations.get(s);
+        }
 
-            setInputs(input);
-            Map<String, INDArray> activations = feedForward(train);
-            INDArray[] outputs = new INDArray[numOutputArrays];
-            int i = 0;
-            for (String s : configuration.getNetworkOutputs()) {
-                outputs[i++] = activations.get(s);
-            }
-            return outputs;
+        configuration.setTrainingWorkspaceMode(cMode);
+        return outputs;
     }
 
     /**
@@ -1446,8 +1456,8 @@ public class ComputationGraph implements Serializable, Model {
         }
 
 
-        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy :
-                configuration.getWorkspaceMode() == WorkspaceMode.SINGLE ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
+        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy :
+                configuration.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
                          //: Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceBackProp);
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
 
@@ -1505,7 +1515,7 @@ public class ComputationGraph implements Serializable, Model {
                         if (setVertexEpsilon[gv.getVertexIndex()]) {
                             //This vertex: must output to multiple vertices... we want to add the epsilons here
                             INDArray currentEps = gv.getEpsilon().leverageTo(workspaceExternal);
-                            if (configuration.getWorkspaceMode() == WorkspaceMode.NONE) {
+                            if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE) {
                                 gv.setEpsilon(currentEps.add(epsilons[j++])); //TODO: in some circumstances, it may be safe  to do in-place add (but not always)
                             } else {
                                 try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
@@ -1545,7 +1555,7 @@ public class ComputationGraph implements Serializable, Model {
             gradient.setGradientFor(t.getFirst(), t.getSecond(), t.getThird());
         }
 
-        if (configuration.getWorkspaceMode() == WorkspaceMode.SEPARATE)
+        if (configuration.getTrainingWorkspaceMode() == WorkspaceMode.SEPARATE)
             Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceFeedForward).initializeWorkspace();
 
         this.gradient = gradient;
@@ -1753,7 +1763,7 @@ public class ComputationGraph implements Serializable, Model {
             setLayerMaskArrays(dataSet.getFeaturesMaskArrays(), dataSet.getLabelsMaskArrays());
         }
 
-        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
             feedForward(dataSet.getFeatures(), training);
@@ -2343,8 +2353,8 @@ public class ComputationGraph implements Serializable, Model {
         workspaceConfigurationExternal.setCyclesBeforeInitialization(0);
         workspaceConfigurationExternal.setPolicyLearning(LearningPolicy.OVER_TIME);
 
-        MemoryWorkspace workspaceT = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationTBPTT, workspaceTBPTT);
-        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace workspaceT = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationTBPTT, workspaceTBPTT);
+        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
         try(MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
             for (int i = 0; i < nSubsets; i++) {
@@ -2404,7 +2414,7 @@ public class ComputationGraph implements Serializable, Model {
             }
         }
 
-        if (configuration.getWorkspaceMode() != WorkspaceMode.NONE) {
+        if (configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE) {
             workspace.initializeWorkspace();
             workspaceT.initializeWorkspace();
         }
@@ -2823,7 +2833,7 @@ public class ComputationGraph implements Serializable, Model {
         if (!iterator.hasNext())
             iterator.reset();
 
-        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
         while (iterator.hasNext()) {
             DataSet next = iterator.next();
@@ -2872,7 +2882,7 @@ public class ComputationGraph implements Serializable, Model {
         if (!iterator.hasNext())
             iterator.reset();
 
-        MemoryWorkspace workspace = configuration.getWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
 
         while (iterator.hasNext()) {
