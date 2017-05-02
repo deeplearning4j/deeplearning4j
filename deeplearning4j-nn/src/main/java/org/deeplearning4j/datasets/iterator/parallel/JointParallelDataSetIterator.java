@@ -1,11 +1,11 @@
 package org.deeplearning4j.datasets.iterator.parallel;
 
-import lombok.AllArgsConstructor;
+
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
-import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.ParallelDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.enums.InequalityHandling;

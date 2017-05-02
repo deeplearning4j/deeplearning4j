@@ -1,16 +1,19 @@
 package org.deeplearning4j.datasets.iterator.parallel;
 
-import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.iterator.ParallelDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.enums.InequalityHandling;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author raver119@gmail.com
  */
-public abstract class BaseParallelDataSetIterator {
+public abstract class BaseParallelDataSetIterator implements ParallelDataSetIterator {
     protected AtomicLong counter = new AtomicLong(0);
 
     protected InequalityHandling inequalityHandling;
@@ -19,6 +22,8 @@ public abstract class BaseParallelDataSetIterator {
     protected AtomicBoolean allDepleted = new AtomicBoolean(false);
     protected MultiBoolean states;
     protected MultiBoolean resetTracker;
+
+    protected ThreadLocal<Integer> producerAffinity = new ThreadLocal<>();
 
 
     protected BaseParallelDataSetIterator(int numProducers) {
@@ -103,9 +108,102 @@ public abstract class BaseParallelDataSetIterator {
         counter.getAndIncrement();
     }
 
-    public abstract boolean hasNextFor( int consumer);
+    @Override
+    public void reset() {
+        for(int i = 0; i < numProducers; i++)
+            reset(i);
+    }
+
+    @Override
+    public void attachThread(int producer) {
+        producerAffinity.set(producer);
+    }
+
+    @Override
+    public boolean hasNextFor() {
+        if (producerAffinity.get() == null)
+            throw new ND4JIllegalStateException("attachThread(int) should be called prior to this call");
+
+        return hasNextFor(producerAffinity.get());
+    }
+
+    @Override
+    public DataSet nextFor() {
+        if (producerAffinity.get() == null)
+            throw new ND4JIllegalStateException("attachThread(int) should be called prior to this call");
+
+        return nextFor(producerAffinity.get());
+    }
+
+    public abstract boolean hasNextFor(int consumer);
 
     public abstract DataSet nextFor(int consumer);
 
     protected abstract void reset(int consumer);
+
+
+    @Override
+    public int totalExamples() {
+        return 0;
+    }
+
+    @Override
+    public int totalOutcomes() {
+        return 0;
+    }
+
+    @Override
+    public boolean resetSupported() {
+        return true;
+    }
+
+    @Override
+    public boolean asyncSupported() {
+        return false;
+    }
+
+    @Override
+    public int batch() {
+        return 0;
+    }
+
+    @Override
+    public int cursor() {
+        return 0;
+    }
+
+    @Override
+    public int numExamples() {
+        return 0;
+    }
+
+    @Override
+    public DataSet next(int num) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int inputColumns() {
+        return 0;
+    }
+
+    @Override
+    public void setPreProcessor(DataSetPreProcessor preProcessor) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DataSetPreProcessor getPreProcessor() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<String> getLabels() {
+        return null;
+    }
+
+    @Override
+    public void remove() {
+        // no-op
+    }
 }
