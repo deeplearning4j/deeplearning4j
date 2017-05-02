@@ -29,6 +29,7 @@ public abstract class BaseParallelDataSetIterator implements ParallelDataSetIter
     protected BaseParallelDataSetIterator(int numProducers) {
         states = new MultiBoolean(numProducers, true);
         resetTracker = new MultiBoolean(numProducers, false, true);
+        this.numProducers = numProducers;
     }
 
 

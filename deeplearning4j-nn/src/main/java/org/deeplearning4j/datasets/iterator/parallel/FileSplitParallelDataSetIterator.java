@@ -2,12 +2,20 @@ package org.deeplearning4j.datasets.iterator.parallel;
 
 import com.google.common.collect.Lists;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.NameFileFilter;
+import org.apache.commons.io.filefilter.RegexFileFilter;
+import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
+import org.deeplearning4j.datasets.iterator.FileSplitDataSetIterator;
+import org.deeplearning4j.datasets.iterator.callbacks.DataSetDeserializer;
 import org.deeplearning4j.datasets.iterator.callbacks.FileCallback;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.enums.InequalityHandling;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
@@ -18,49 +26,76 @@ import java.util.List;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class FileSplitParallelDataSetIterator extends BaseParallelDataSetIterator {
 
     public static final String DEFAULT_PATTERN = "dataset-%d.bin";
     private String pattern;
+
+    protected List<DataSetIterator> asyncIterators = new ArrayList<>();
 
     public FileSplitParallelDataSetIterator(@NonNull File rootFolder, @NonNull String pattern, @NonNull FileCallback callback) {
         this(rootFolder, pattern, callback, Nd4j.getAffinityManager().getNumberOfDevices());
     }
 
     public FileSplitParallelDataSetIterator(@NonNull File rootFolder, @NonNull String pattern, @NonNull FileCallback callback, int numThreads) {
+        this(rootFolder, pattern, callback, numThreads, InequalityHandling.STOP_EVERYONE);
+    }
+
+    public FileSplitParallelDataSetIterator(@NonNull File rootFolder, @NonNull String pattern, @NonNull FileCallback callback, int numThreads, @NonNull InequalityHandling inequalityHandling) {
         super(numThreads);
 
         if (!rootFolder.exists() || !rootFolder.isDirectory())
             throw new DL4JInvalidInputException("Root folder should point to existing folder");
 
         this.pattern = pattern;
+        this.inequalityHandling = inequalityHandling;
 
-        String modifiedPattern = pattern.replaceAll("%d","*");
+        String modifiedPattern = pattern.replaceAll("\\%d",".*.");
 
-        IOFileFilter fileFilter = new NameFileFilter(modifiedPattern);
+        IOFileFilter fileFilter = new RegexFileFilter(modifiedPattern);
 
 
         List<File> files = new ArrayList<>(FileUtils.listFiles(rootFolder, fileFilter, null));
+        log.info("Files found: {}; Producers: {}", files.size(), numProducers);
+
+        if (files.size() < 1)
+            throw new DL4JInvalidInputException("No suitable files were found");
 
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        int cnt = 0;
         for (List<File> part: Lists.partition(files, files.size() / numThreads)) {
-
+            int cDev = cnt % numDevices;
+            asyncIterators.add(new AsyncDataSetIterator(new FileSplitDataSetIterator(part, callback), 2, true, cDev));
+            cnt++;
         }
 
     }
 
     @Override
     public boolean hasNextFor(int consumer) {
-        return false;
+        if (consumer >= numProducers)
+            throw new ND4JIllegalStateException("Non-existent consumer was requested");
+
+        return asyncIterators.get(consumer).hasNext();
     }
 
     @Override
     public DataSet nextFor(int consumer) {
-        return null;
+        if (consumer >= numProducers)
+            throw new ND4JIllegalStateException("Non-existent consumer was requested");
+
+        return asyncIterators.get(consumer).next();
     }
 
     @Override
     protected void reset(int consumer) {
+        if (consumer >= numProducers)
+            throw new ND4JIllegalStateException("Non-existent consumer was requested");
 
+        asyncIterators.get(consumer).reset();
     }
+
+
+
 }
