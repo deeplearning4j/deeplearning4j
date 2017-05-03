@@ -351,6 +351,7 @@ public class ParallelWrapper implements AutoCloseable {
 
         DataSetIterator iterator;
         if (prefetchSize > 0 && source.asyncSupported()) {
+            log.info("Creating asynchronous prefetcher...");
             if (isMQ) {
                 if (workers % Nd4j.getAffinityManager().getNumberOfDevices() != 0)
                     log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
@@ -360,12 +361,14 @@ public class ParallelWrapper implements AutoCloseable {
                //     mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL).setType(MagicQueue.Type.DS)
                //         .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
 
+
                 iterator = new AsyncDataSetIterator(source, prefetchSize, new LinkedBlockingQueue<>(prefetchSize * workers), true, new InterleavedDataSetCallback(prefetchSize * 2));
 
             } else
                 iterator = new AsyncDataSetIterator(source, prefetchSize);
-        } else
+        } else {
             iterator = source;
+        }
         List<Long> nanos = new ArrayList<>();
         AtomicInteger locker = new AtomicInteger(0);
         long time1 = System.currentTimeMillis();
@@ -397,20 +400,20 @@ public class ParallelWrapper implements AutoCloseable {
             if (pos + 1 == workers ) {
                 iterationsCounter.incrementAndGet();
 
-                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                    try {
-                        zoo[cnt].waitTillRunning();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-
-                Nd4j.getMemoryManager().invokeGcOccasionally();
-
                 /*
                     average model, and propagate it to whole
                 */
                 if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers) {
+                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                        try {
+                            zoo[cnt].waitTillRunning();
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                    Nd4j.getMemoryManager().invokeGcOccasionally();
+
                     double score = getScore(locker);
 
                     // averaging updaters state
