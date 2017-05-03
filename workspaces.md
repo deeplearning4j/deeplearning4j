@@ -1,6 +1,7 @@
 As of 0.9.0 (or 0.8.1-SNAPSHOT) ND4j offers additional memory management model: Workspaces. Basically it allows you to reuse memory in cyclic workloads, without JVM Garbage Collector  use for off-heap memory tracking. In other words: at the end of Workspace loop all INDArrays memory content is invalidated.
 
 Here are some [examples](https://github.com/deeplearning4j/dl4j-examples/blob/58cc1b56515458003fdd7b606f6451aee851b8c3/nd4j-examples/src/main/java/org/nd4j/examples/Nd4jEx15_Workspaces.java) how to use it with ND4j.
+Basic idea is very simple: you can do your stuff within workspace(s), and if you need to get INDArray out of it (i.e. to move result out of workspace) - you just call INDArray.detach() method, and you'll get independent INDArray copy.
 
 ## Neural networks:
 For DL4j users Workspaces give better performance just out of box. All you need to do is to choose affordable modes for training & inference of a given model
@@ -18,8 +19,30 @@ The only exclusion is output() method, which uses workspaces (if enabled) intern
 
 ***Please note***: by default training workspace mode is set to **NONE** for now.
 
-## ParallelWrapper
+## ParallelWrapper & ParallelInference
 For ParallelWrapper there’s also workspace mode configuration option was added, so each of trainer threads will use separate workspace, attached to designated device.
+
+```
+ParallelWrapper wrapper = new ParallelWrapper.Builder(model)
+            // DataSets prefetching options. Set this value with respect to number of actual devices
+            .prefetchBuffer(8)
+
+            // set number of workers equal or higher then number of available devices. x1-x2 are good values to start with
+            .workers(2)
+
+            // rare averaging improves performance, but might reduce model accuracy
+            .averagingFrequency(5)
+
+            // if set to TRUE, on every averaging model score will be reported
+            .reportScoreAfterAveraging(false)
+
+            // optinal parameter, set to false ONLY if your system has support P2P memory access across PCIe (hint: AWS do not support P2P)
+            .useLegacyAveraging(false)
+
+            .workspaceMode(WorkspaceMode.SINGLE)
+
+            .build();
+```
 
 ## Iterators:
 We provide asynchronous prefetch iterators, AsyncDataSetIterator and AsyncMultiDataSetIterator, which are usually used internally. These iterators are optionally using special cyclic workspace mode for smaller memory footprint. Size of workspace in this case will be determined by memory requirements of first DataSet coming out of underlying iterator and buffer size defined by user. However workspace will be adjusted if memory requirements will change over time (i.e. if you’re using variable length time series)
