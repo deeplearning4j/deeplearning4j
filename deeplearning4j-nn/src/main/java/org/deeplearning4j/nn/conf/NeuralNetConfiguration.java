@@ -23,7 +23,6 @@ import lombok.*;
 import org.apache.commons.lang3.ClassUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
-import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
@@ -269,7 +268,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors)
                             .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                             .tBPTTBackwardLength(tbpttBackLength).cnnInputSize(this.cnnInputSize)
-                            .setInputType(this.inputType).workspaceMode(globalConfig.workspaceMode).confs(list).build();
+                            .setInputType(this.inputType).trainingWorkspaceMode(globalConfig.trainingWorkspaceMode).confs(list).build();
         }
 
     }
@@ -532,7 +531,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected double lrPolicyPower = Double.NaN;
         protected boolean pretrain = false;
 
-        protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
+        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
+        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SINGLE;
 
         protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;
 
@@ -568,7 +568,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * This method defines Workspace mode being used during training/inference:
+         * This method defines Workspace mode being used during training:
          * NONE: workspace won't be used
          * SINGLE: one workspace will be used during whole iteration loop
          * SEPARATE: separate workspaces will be used for feedforward and backprop iteration loops
@@ -576,8 +576,22 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @param workspaceMode
          * @return
          */
-        public Builder workspaceMode(@NonNull WorkspaceMode workspaceMode) {
-            this.workspaceMode = workspaceMode;
+        public Builder trainingWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
+            this.trainingWorkspaceMode = workspaceMode;
+            return this;
+        }
+
+        /**
+         * This method defines Workspace mode being used during inference:
+         * NONE: workspace won't be used
+         * SINGLE: one workspace will be used during whole iteration loop
+         * SEPARATE: separate workspaces will be used for feedforward and backprop iteration loops
+         *
+         * @param workspaceMode
+         * @return
+         */
+        public Builder inferenceWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
+            this.inferenceWorkspaceMode = workspaceMode;
             return this;
         }
 

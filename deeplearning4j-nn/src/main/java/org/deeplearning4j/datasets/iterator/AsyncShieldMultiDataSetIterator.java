@@ -37,6 +37,11 @@ public class AsyncShieldMultiDataSetIterator implements MultiDataSetIterator {
         backingIterator.setPreProcessor(preProcessor);
     }
 
+    @Override
+    public MultiDataSetPreProcessor getPreProcessor() {
+        return backingIterator.getPreProcessor();
+    }
+
     /**
      * Is resetting supported by this DataSetIterator? Many DataSetIterators do support resetting,
      * but some don't

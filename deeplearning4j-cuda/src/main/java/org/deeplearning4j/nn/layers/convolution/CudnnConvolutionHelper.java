@@ -24,12 +24,14 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer.AlgoMode;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
@@ -239,7 +241,13 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
                                         : CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST,
                         0, algo2));
 
-        INDArray epsNext = Nd4j.create(new int[] {miniBatch, inDepth, inH, inW}, 'c');
+        INDArray epsNext;
+        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
+            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
+                epsNext = Nd4j.create(new int[] {miniBatch, inDepth, inH, inW}, 'c');
+            }
+        } else epsNext = Nd4j.create(new int[] {miniBatch, inDepth, inH, inW}, 'c');
+
         int[] dstStride = epsNext.stride();
 
         Allocator allocator = AtomicAllocator.getInstance();
@@ -312,7 +320,15 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         } else {
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode); //Also performs validation
         }
-        INDArray z = Nd4j.createUninitialized(new int[] {miniBatch, outDepth, outSize[0], outSize[1]});
+
+
+        INDArray z;
+
+        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
+            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
+                z = Nd4j.createUninitialized(new int[]{miniBatch, outDepth, outSize[0], outSize[1]});
+            }
+        } else z = Nd4j.createUninitialized(new int[]{miniBatch, outDepth, outSize[0], outSize[1]});
 
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));

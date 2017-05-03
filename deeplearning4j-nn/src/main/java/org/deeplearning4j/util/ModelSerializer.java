@@ -612,6 +612,20 @@ public class ModelSerializer {
         }
     }
 
+
+    /**
+     * This method restores the normalizer form a persisted model file.
+     *
+     * @param is A stream to load data from.
+     * @return the loaded normalizer
+     */
+    public static <T extends Normalizer> T restoreNormalizerFromInputStream(InputStream is) throws IOException {
+        File tmpFile = File.createTempFile("restore", "normalizer");
+        tmpFile.deleteOnExit();
+        FileUtils.copyInputStreamToFile(is, tmpFile);
+        return restoreNormalizerFromFile(tmpFile);
+    }
+
     /**
      * @deprecated
      *

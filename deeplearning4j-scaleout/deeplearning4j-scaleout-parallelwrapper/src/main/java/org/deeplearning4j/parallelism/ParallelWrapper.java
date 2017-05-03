@@ -8,6 +8,7 @@ import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
+import org.deeplearning4j.datasets.iterator.callbacks.InterleavedDataSetCallback;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
@@ -27,10 +28,8 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -133,21 +132,22 @@ public class ParallelWrapper implements AutoCloseable {
                     log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
                                     Nd4j.getAffinityManager().getNumberOfDevices());
 
-                if (mq == null)
-                    mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL)
-                                    .setType(MagicQueue.Type.MDS)
-                                    .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
+                //if (mq == null)
+                    //mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL).setType(MagicQueue.Type.MDS)
+                    //        .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
 
-                iterator = new AsyncMultiDataSetIterator(source, prefetchSize * workers, mq);
-            } else
-                iterator = new AsyncMultiDataSetIterator(source, prefetchSize);
+                //iterator = new AsyncMultiDataSetIterator(source, prefetchSize * workers, mq );
+                iterator = new AsyncMultiDataSetIterator(source, prefetchSize, new LinkedBlockingQueue<>(prefetchSize * workers), true, new InterleavedDataSetCallback(prefetchSize * 2));
+            } else iterator = new AsyncMultiDataSetIterator(source, prefetchSize);
         } else
             iterator = source;
 
         AtomicInteger locker = new AtomicInteger(0);
 
+        long time1 = System.currentTimeMillis();
         while (iterator.hasNext() && !stopFit.get()) {
             MultiDataSet dataSet = iterator.next();
+            long time2 = System.currentTimeMillis();
 
             if (dataSet == null)
                 throw new ND4JIllegalStateException("You can't have NULL as MultiDataSet");
@@ -156,7 +156,7 @@ public class ParallelWrapper implements AutoCloseable {
              now dataSet should be dispatched to next free workers, until all workers are busy. And then we should block till all finished.
             */
             int pos = locker.getAndIncrement();
-            zoo[pos].feedMultiDataSet(dataSet);
+            zoo[pos].feedMultiDataSet(dataSet, time2 - time1);
 
             /*
                 if all workers are dispatched now, join till all are finished
@@ -194,6 +194,8 @@ public class ParallelWrapper implements AutoCloseable {
                 }
                 locker.set(0);
             }
+
+            time1 = System.currentTimeMillis();
         }
 
         // sanity checks, or the dataset may never average
@@ -354,21 +356,27 @@ public class ParallelWrapper implements AutoCloseable {
                     log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
                                     Nd4j.getAffinityManager().getNumberOfDevices());
 
-                if (mq == null)
-                    mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL)
-                                    .setType(MagicQueue.Type.DS)
-                                    .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
+               // if (mq == null)
+               //     mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL).setType(MagicQueue.Type.DS)
+               //         .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
 
-                iterator = new AsyncDataSetIterator(source, prefetchSize * workers, mq);
+                iterator = new AsyncDataSetIterator(source, prefetchSize, new LinkedBlockingQueue<>(prefetchSize * workers), true, new InterleavedDataSetCallback(prefetchSize * 2));
 
             } else
-                iterator = new AsyncDataSetIterator(source, prefetchSize * workers);
+                iterator = new AsyncDataSetIterator(source, prefetchSize);
         } else
             iterator = source;
-
+        List<Long> nanos = new ArrayList<>();
         AtomicInteger locker = new AtomicInteger(0);
+        long time1 = System.currentTimeMillis();
         while (iterator.hasNext() && !stopFit.get()) {
+        //int intcnt = 0;
+        //while (intcnt < 1000) {
+            //intcnt++;
             DataSet dataSet = iterator.next();
+            long time2 = System.currentTimeMillis();
+            long lastEtlTime = time2 - time1;
+            //nanos.add((time2 - time1));
 
             if (dataSet == null)
                 throw new ND4JIllegalStateException("You can't have NULL as DataSet");
@@ -379,13 +387,14 @@ public class ParallelWrapper implements AutoCloseable {
             int pos = locker.getAndIncrement();
             if (zoo == null)
                 throw new IllegalStateException(
-                                "ParallelWrapper.shutdown() has been called too early and will fail from this point forward.");
-            zoo[pos].feedDataSet(dataSet);
+                        "ParallelWrapper.shutdown() has been called too early and will fail from this point forward.");
+
+            zoo[pos].feedDataSet(dataSet, lastEtlTime );
 
             /*
                 if all workers are dispatched now, join till all are finished
             */
-            if (pos + 1 == workers || !iterator.hasNext()) {
+            if (pos + 1 == workers ) {
                 iterationsCounter.incrementAndGet();
 
                 for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
@@ -447,7 +456,14 @@ public class ParallelWrapper implements AutoCloseable {
                 }
                 locker.set(0);
             }
+
+            time1 = System.currentTimeMillis();
         }
+
+        //Collections.sort(nanos);
+        //int pos = (int) (nanos.size() * 0.85);
+        //log.info("p85 ETL time: {} ms; p50 ETL time: {} ms", nanos.get(pos), nanos.get(nanos.size() / 2));
+
 
         // sanity checks, or the dataset may never average
         if (!wasAveraged)
@@ -462,11 +478,15 @@ public class ParallelWrapper implements AutoCloseable {
         if (zoo == null) {
             trainerContext.init(model, trainerContextArgs);
             zoo = new Trainer[workers];
+            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
             for (int cnt = 0; cnt < workers; cnt++) {
                 // we pass true here, to tell Trainer to use MultiDataSet queue for training
                 zoo[cnt] = trainerContext.create(cnt, model, Nd4j.getAffinityManager().getDeviceForCurrentThread(),
                                 useMDS, this, workspaceMode);
                 zoo[cnt].setUncaughtExceptionHandler(handler);
+                if (zoo[cnt] instanceof Thread) {
+                    Nd4j.getAffinityManager().attachThreadToDevice((Thread) zoo[cnt], cnt % numDevices);
+                }
                 zoo[cnt].start();
             }
         }
@@ -480,7 +500,7 @@ public class ParallelWrapper implements AutoCloseable {
         protected boolean reportScore = false;
         protected boolean averageUpdaters = true;
         protected boolean legacyAveraging = true;
-        protected boolean isMQ = false; // Nd4j.getAffinityManager().getNumberOfDevices() > 1;
+        protected boolean isMQ = Nd4j.getAffinityManager().getNumberOfDevices() > 1;
         protected TrainerContext trainerContext = new DefaultTrainerContext();
         protected Object[] trainerContextArgs;
         protected WorkspaceMode workspaceMode = WorkspaceMode.SEPARATE;
@@ -572,12 +592,13 @@ public class ParallelWrapper implements AutoCloseable {
          *
          * PLEASE NOTE: This is experimental feature.
          *
-         * Default: false
+         * Default: true
+         *
          * @param reallyUse
          * @return
          */
         public Builder useMQ(boolean reallyUse) {
-            this.isMQ = reallyUse;
+            //this.isMQ = reallyUse;
             return this;
         }
 
@@ -638,6 +659,7 @@ public class ParallelWrapper implements AutoCloseable {
             wrapper.legacyAveraging = this.legacyAveraging;
             wrapper.isMQ = this.isMQ;
             wrapper.workspaceMode = this.workspaceMode;
+            wrapper.trainerContext = this.trainerContext;
 
             return wrapper;
         }

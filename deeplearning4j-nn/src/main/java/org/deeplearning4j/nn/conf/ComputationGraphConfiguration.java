@@ -61,7 +61,11 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
     @Getter
     @Setter
-    protected WorkspaceMode workspaceMode;
+    protected WorkspaceMode trainingWorkspaceMode;
+
+    @Getter
+    @Setter
+    protected WorkspaceMode inferenceWorkspaceMode;
 
     /**
      * List of inputs to the network, by name
@@ -233,7 +237,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.tbpttFwdLength = tbpttFwdLength;
         conf.tbpttBackLength = tbpttBackLength;
         conf.defaultConfiguration = defaultConfiguration.clone();
-        conf.workspaceMode = workspaceMode;
+        conf.trainingWorkspaceMode = trainingWorkspaceMode;
+        conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
 
         return conf;
     }
@@ -446,8 +451,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
         protected NeuralNetConfiguration.Builder globalConfiguration;
 
-        protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
-
         public GraphBuilder(NeuralNetConfiguration.Builder globalConfiguration) {
             this.globalConfiguration = globalConfiguration;
         }
@@ -483,12 +486,6 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             inputPreProcessors.put(layer, processor);
             return this;
         }
-
-        public GraphBuilder workspaceMode(@NonNull WorkspaceMode workspaceMode) {
-            this.workspaceMode = workspaceMode;
-            return this;
-        }
-
 
         /**
          * Whether to do back prop (standard supervised learning) or not
@@ -708,7 +705,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
             conf.vertices = this.vertices;
             conf.vertexInputs = this.vertexInputs;
-            conf.workspaceMode = globalConfiguration.workspaceMode;
+            conf.trainingWorkspaceMode = globalConfiguration.trainingWorkspaceMode;
+            conf.inferenceWorkspaceMode = globalConfiguration.inferenceWorkspaceMode;
 
             conf.defaultConfiguration = globalConfiguration.build();
             conf.getDefaultConfiguration().setPretrain(pretrain);
