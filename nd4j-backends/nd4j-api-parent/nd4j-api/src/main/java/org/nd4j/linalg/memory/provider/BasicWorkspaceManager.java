@@ -214,7 +214,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
                         PointersPair pair = reference.getPointersPair();
                         if (pair!= null) {
                             if (pair.getDevicePointer() != null) {
-                                log.info("Deallocating device...");
+                                //log.info("Deallocating device...");
                                 Nd4j.getMemoryManager().release(pair.getDevicePointer(), MemoryKind.DEVICE);
                             }
 
