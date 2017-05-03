@@ -3,6 +3,7 @@ package org.deeplearning4j.datasets.iterator;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.datasets.iterator.callbacks.DataSetCallback;
+import org.deeplearning4j.datasets.iterator.callbacks.DefaultCallback;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -60,7 +61,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
     }
 
     public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize, boolean useWorkspace, Integer deviceId) {
-        this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace, null, deviceId);
+        this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace, new DefaultCallback(), deviceId);
     }
 
     public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize, boolean useWorkspace, DataSetCallback callback) {
@@ -414,6 +415,10 @@ public class AsyncDataSetIterator implements DataSetIterator {
             } catch (Exception e) {
                 throwable = new RuntimeException(e);
                 throw new RuntimeException(e);
+            } finally {
+                //log.info("Trying destroy...");
+                //if (useWorkspace)
+                    //Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).destroyWorkspace();
             }
         }
     }

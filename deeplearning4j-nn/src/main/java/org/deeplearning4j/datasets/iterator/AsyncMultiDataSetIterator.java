@@ -351,6 +351,10 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             } catch (Exception e) {
                 throwable = new RuntimeException(e);
                 throw new RuntimeException(e);
+            } finally {
+                //log.info("Trying destroy...");
+                //if (useWorkspaces)
+                    //Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).destroyWorkspace();
             }
         }
     }
