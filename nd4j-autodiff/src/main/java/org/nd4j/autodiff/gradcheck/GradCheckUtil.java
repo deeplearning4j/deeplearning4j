@@ -7,10 +7,12 @@ import org.nd4j.autodiff.tensorgrad.impl.TensorGradVariable;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -29,7 +31,7 @@ public class GradCheckUtil {
      * @param minAbsoluteError
      * @param print
      * @param exitOnFirstError
-     * @param input
+     * @param inputParameters
      * @param rngSeed
      * @return
      */
@@ -39,7 +41,7 @@ public class GradCheckUtil {
                                          double minAbsoluteError,
                                          boolean print,
                                          boolean exitOnFirstError,
-                                         TensorGradVariable input,
+                                         Map<String,INDArray> inputParameters,
                                          int rngSeed) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
@@ -54,81 +56,68 @@ public class GradCheckUtil {
                     + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
         }
 
-        TensorGradVariable grad = input.getTensorGrad().grad(input,wrt);
-        TensorGradVariable gradientToCheck = grad.dup();
-        TensorGradVariable originalParams = input.dup();
 
-        int nParams = ArrayUtil.prod(originalParams.getShape());
-
+        TensorGrad tensorGrad = wrt.getTensorGrad();
         int totalNFailures = 0;
         double maxError = 0.0;
- /*       *//**
-         * Need to figure out how to avoid the graph changing
-         *
-         *//*
-        for (int i = 0; i < nParams; i++) {
-              //(w+epsilon): Do forward pass and score
-            double origValue = params.getDouble(i);
-            params.putScalar(i, origValue + epsilon);
-
-            //TODO add a 'score' method that doesn't calculate gradients...
-            Nd4j.getRandom().setSeed(rngSeed);
-            layer.computeGradientAndScore();
-            double scorePlus = layer.score();
-
-            //(w-epsilon): Do forward pass and score
-            params.putScalar(i, origValue - epsilon);
-            Nd4j.getRandom().setSeed(rngSeed);
-            layer.computeGradientAndScore();
-            double scoreMinus = layer.score();
-
-            //Reset original param value
-            params.putScalar(i, origValue);
-
-            //Calculate numerical parameter gradient:
-            double scoreDelta = scorePlus - scoreMinus;
-
-            double numericalGradient = scoreDelta / (2 * epsilon);
-            if (Double.isNaN(numericalGradient))
-                throw new IllegalStateException("Numerical gradient was NaN for parameter " + i + " of " + nParams);
-
-            double backpropGradient = gradientToCheck.getDouble(i);
-            //http://cs231n.github.io/neural-networks-3/#gradcheck
-            //use mean centered
-            double relError = Math.abs(backpropGradient - numericalGradient)
-                    / (Math.abs(numericalGradient) + Math.abs(backpropGradient));
-            if (backpropGradient == 0.0 && numericalGradient == 0.0)
-                relError = 0.0; //Edge case: i.e., RNNs with time series length of 1.0
-
-            if (relError > maxError)
-                maxError = relError;
-            if (relError > maxRelError || Double.isNaN(relError)) {
-                double absError = Math.abs(backpropGradient - numericalGradient);
-                if (absError < minAbsoluteError) {
-                    log.info("Param " + i +  " passed: grad= " + backpropGradient
-                            + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                            + "; absolute error = " + absError + " < minAbsoluteError = " + minAbsoluteError);
-                } else {
-                    if (print)
-                        log.info("Param " + i + " FAILED: grad= " + backpropGradient
-                                + ", numericalGrad= " + numericalGradient + ", relError= " + relError
-                                + ", scorePlus=" + scorePlus + ", scoreMinus= " + scoreMinus);
-                    if (exitOnFirstError)
-                        return false;
-                    totalNFailures++;
+        for(Map.Entry<String,INDArray> entry : inputParameters.entrySet()) {
+            int nParams = entry.getValue().length();
+            INDArray params = entry.getValue().dup();
+            for (int i = 0; i < nParams; i++) {
+                //(w+epsilon): Do forward pass and score
+                double origValue = params.getDouble(i);
+                params.putScalar(i, origValue + epsilon);
+                Map<String, INDArray> evalParams = new HashMap<>();
+                for (Map.Entry<String, INDArray> entry2 : inputParameters.entrySet()) {
+                    if (!entry2.getKey().equals(entry.getKey())) {
+                        evalParams.put(entry2.getKey(), entry2.getValue());
+                    } else {
+                        evalParams.put(entry.getKey(), params);
+                    }
                 }
-            } else if (print) {
-                log.info("Param " + i + "passed: grad= " + backpropGradient + ", numericalGrad= "
-                        + numericalGradient + ", relError= " + relError);
+
+                /**
+                 * Need to figure out how I want to extract
+                 * parameters for computing the delta..
+                 *
+                 */
+                INDArray[] plusParams = tensorGrad.eval(evalParams);
+
+
+                //(w-epsilon): Do forward pass and score
+                params.putScalar(i, origValue - epsilon);
+                INDArray[] minusParams = tensorGrad.eval(evalParams);
+
+
+                Nd4j.getRandom().setSeed(rngSeed);
+
+                /**
+                 * Difference between new params and old
+                 */
+                INDArray[] newDifferences = new INDArray[minusParams.length];
+                for (int j = 0; j < newDifferences.length; j++) {
+                    newDifferences[i] = plusParams[i].subi(minusParams[i]).divi(epsilon);
+                }
+
+                double scoreDelta = 0.0;
+                for (INDArray arr : newDifferences)
+                    scoreDelta += arr.sumNumber().doubleValue();
+
+                //Reset original param value
+                params.putScalar(i, origValue);
+
+                double numericalGradient = scoreDelta / (2 * epsilon);
+                if (Double.isNaN(numericalGradient))
+                    throw new IllegalStateException("Numerical gradient was NaN for parameter " + i + " of " + nParams);
+
+                if (print) {
+                    int nPass = nParams - totalNFailures;
+                    log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
+                            + totalNFailures + " failed. Largest relative error = " + maxError);
+                }
             }
         }
-
-        if (print) {
-            int nPass = nParams - totalNFailures;
-            log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "
-                    + totalNFailures + " failed. Largest relative error = " + maxError);
-        }
-*/
+        
         return totalNFailures == 0;
     }
 }

@@ -66,13 +66,15 @@ public class TensorGrad {
 
     /**
      * Evaluate the given inputs
-     * based on the current grpah
+     * based on the current graph
      * @param inputs the inputs to evaluate
      * @return
      */
     public INDArray[] eval(Map<String,INDArray> inputs) {
-        if(inputs.size() != getGraph().getInputs().size())
-            throw new ND4JIllegalStateException("The number of inputs must be the same as the number of inputs in to the graph");
+        for(String s : inputs.keySet()) {
+            if(!variableMap.containsKey(s))
+                throw new IllegalArgumentException("Illegal key for variables " + s);
+        }
         TensorGrad execPipeline = dup();
         for(Map.Entry<String,INDArray> variableEntry : inputs.entrySet()) {
             execPipeline.updateNDArray(variableEntry.getKey(),variableEntry.getValue());
