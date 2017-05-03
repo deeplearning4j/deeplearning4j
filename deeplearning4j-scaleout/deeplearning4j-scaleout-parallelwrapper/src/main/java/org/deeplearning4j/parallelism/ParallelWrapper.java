@@ -400,20 +400,20 @@ public class ParallelWrapper implements AutoCloseable {
             if (pos + 1 == workers ) {
                 iterationsCounter.incrementAndGet();
 
+                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                    try {
+                        zoo[cnt].waitTillRunning();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+
+                Nd4j.getMemoryManager().invokeGcOccasionally();
+
                 /*
                     average model, and propagate it to whole
                 */
                 if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers) {
-                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                        try {
-                            zoo[cnt].waitTillRunning();
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-
-                    Nd4j.getMemoryManager().invokeGcOccasionally();
-
                     double score = getScore(locker);
 
                     // averaging updaters state
