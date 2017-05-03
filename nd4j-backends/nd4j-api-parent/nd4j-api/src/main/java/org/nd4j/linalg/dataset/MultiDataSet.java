@@ -70,8 +70,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         this.featuresMaskArrays = featuresMaskArrays;
         this.labelsMaskArrays = labelsMaskArrays;
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
     }
 

@@ -31,8 +31,7 @@ public class DeviceLocalNDArray extends DeviceLocal<INDArray> {
         if (array == null)
             return;
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         for (int i = 0; i < numDevices; i++) {

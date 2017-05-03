@@ -3257,9 +3257,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         Nd4j.getExecutioner().exec(new Set(arr2f, arr, z_f, arr2c.length()));
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
-
+        Nd4j.getExecutioner().commit();
 
         Nd4j.getExecutioner().exec(new Set(arr2f, arr, z_c, arr2c.length()));
 
@@ -3285,8 +3283,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         Nd4j.getExecutioner().exec(new Set(arr3c, arr, arr3f, arr3c.length()));
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
 
         Nd4j.getExecutioner().exec(new Set(arr3f, arr, arr3c, arr3c.length()));

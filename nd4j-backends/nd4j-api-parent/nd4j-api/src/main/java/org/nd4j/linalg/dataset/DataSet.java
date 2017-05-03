@@ -117,8 +117,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         this.labelsMask = labelsMask;
 
         // we want this dataset to be fully committed to device
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
     }
 
     public boolean isPreProcessed() {

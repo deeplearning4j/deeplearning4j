@@ -298,7 +298,7 @@ public class HalfOpsTests {
         array.addi(am);
 
         array.divi(0.5f);
-        ((CudaGridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
         Thread.sleep(1000);
 
         assertArrayEquals(exp3.data().asFloat(), am.data().asFloat(), 0.001f);
