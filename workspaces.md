@@ -26,6 +26,8 @@ We provide asynchronous prefetch iterators, AsyncDataSetIterator and AsyncMultiD
 
 ***Caution***: if you’re using custom iterator or RecordReader, please make sure you’re not initializing something huge within first next() call, do that in your constructor, to avoid undesired workspace growth.
 
+***Caution***: with AsyncDataSetIterator being used, DataSets are supposed to be used before calling for next() DataSet. So, you're not supposed to store them in any way without detach() call, because otherwise memory used for INDArrays within DataSet will be overwritten within AsyncDataSetIterator eventually.
+
 If, for some reason, you don’t want your iterator to be wrapped into asynchronous prefetch (i.e. for debugging purposes), there’s special wrappers provided: AsyncShieldDataSetIterator and AsyncShieldMultiDataSetIterator. Basically that’s just thin wrappers that prevent prefetch.
 
 ## Garbage Collector:
