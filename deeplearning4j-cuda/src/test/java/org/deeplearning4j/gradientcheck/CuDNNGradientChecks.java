@@ -15,6 +15,8 @@ import org.deeplearning4j.nn.layers.normalization.BatchNormalizationHelper;
 import org.deeplearning4j.nn.layers.normalization.CudnnBatchNormalizationHelper;
 import org.deeplearning4j.nn.layers.normalization.CudnnLocalResponseNormalizationHelper;
 import org.deeplearning4j.nn.layers.normalization.LocalResponseNormalizationHelper;
+import org.deeplearning4j.nn.layers.recurrent.CudnnLSTMHelper;
+import org.deeplearning4j.nn.layers.recurrent.LSTMHelper;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -239,6 +241,64 @@ public class CuDNNGradientChecks {
                         (org.deeplearning4j.nn.layers.normalization.LocalResponseNormalization) mln.getLayer(1);
         LocalResponseNormalizationHelper lrn = (LocalResponseNormalizationHelper) f.get(l);
         assertTrue(lrn instanceof CudnnLocalResponseNormalizationHelper);
+
+        //-------------------------------
+        //For debugging/comparison to no-cudnn case: set helper field to null
+        //        f.set(l, null);
+        //        assertNull(f.get(l));
+        //-------------------------------
+
+        if (PRINT_RESULTS) {
+            for (int j = 0; j < mln.getnLayers(); j++)
+                System.out.println("Layer " + j + " # params: " + mln.getLayer(j).numParams());
+        }
+
+        boolean gradOK = GradientCheckUtil.checkGradients(mln, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                        DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, input, labels);
+
+        assertTrue(gradOK);
+    }
+
+    @Test
+    public void testLSTM() throws Exception {
+
+        Nd4j.getRandom().setSeed(12345);
+        int minibatch = 10;
+        int inputSize = 8;
+        int lstmLayerSize = 7;
+        int timeSeriesLength = 6;
+        int nOut = 4;
+        INDArray input = Nd4j.rand(new int[] {minibatch, inputSize, timeSeriesLength});
+        INDArray labels = Nd4j.zeros(minibatch, nOut, timeSeriesLength);
+        Random r = new Random(12345);
+        for (int i = 0; i < minibatch; i++) {
+            for (int j = 0; j < timeSeriesLength; j++) {
+                labels.putScalar(i, r.nextInt(nOut), j, 1.0);
+            }
+        }
+
+        MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().learningRate(1.0)
+                        .regularization(false).updater(Updater.NONE).seed(12345L).weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0, 2)).list()
+                        .layer(0, new LSTM.Builder().nIn(input.size(1)).nOut(lstmLayerSize)
+                                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
+                        .layer(1, new LSTM.Builder().nIn(lstmLayerSize).nOut(lstmLayerSize)
+                                        .gateActivationFunction(Activation.SIGMOID).activation(Activation.TANH).build())
+                        .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nIn(lstmLayerSize).nOut(nOut).build())
+                        .pretrain(false).backprop(true);
+
+        MultiLayerNetwork mln = new MultiLayerNetwork(builder.build());
+        mln.init();
+
+        Field f = org.deeplearning4j.nn.layers.recurrent.LSTM.class
+                        .getDeclaredField("helper");
+        f.setAccessible(true);
+
+        org.deeplearning4j.nn.layers.recurrent.LSTM l =
+                        (org.deeplearning4j.nn.layers.recurrent.LSTM) mln.getLayer(1);
+        LSTMHelper lrn = (LSTMHelper) f.get(l);
+        assertTrue(lrn instanceof CudnnLSTMHelper);
 
         //-------------------------------
         //For debugging/comparison to no-cudnn case: set helper field to null
