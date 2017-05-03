@@ -1,6 +1,5 @@
 package org.deeplearning4j.ui.module.tsne;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
@@ -8,10 +7,6 @@ import org.deeplearning4j.ui.api.FunctionType;
 import org.deeplearning4j.ui.api.HttpMethod;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
-import play.Logger;
-import play.api.mvc.MultipartFormData;
-import play.data.DynamicForm;
-import play.data.Form;
 import play.libs.Json;
 import play.mvc.Http;
 import play.mvc.Result;
@@ -21,7 +16,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
-import static play.mvc.Controller.flash;
 import static play.mvc.Controller.request;
 import static play.mvc.Results.badRequest;
 import static play.mvc.Results.ok;
