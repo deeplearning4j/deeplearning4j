@@ -24,10 +24,10 @@ For ParallelWrapper there’s also workspace mode configuration option was added
 
 ```
 ParallelWrapper wrapper = new ParallelWrapper.Builder(model)
-            // DataSets prefetching options. Set this value with respect to number of actual devices
+            // DataSets prefetching options. Buffer size per worker.
             .prefetchBuffer(8)
 
-            // set number of workers equal or higher then number of available devices. x1-x2 are good values to start with
+            // set number of workers equal to number of GPUs.
             .workers(2)
 
             // rare averaging improves performance, but might reduce model accuracy
