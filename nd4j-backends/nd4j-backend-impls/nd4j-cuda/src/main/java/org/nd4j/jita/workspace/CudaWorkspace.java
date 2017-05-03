@@ -80,6 +80,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
         if (extended)
             clearExternalAllocations();
 
+        stepsCount.set(Long.MAX_VALUE - 100);
+        clearPinnedAllocations();
+
         if (workspace.getHostPointer() != null)
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
 

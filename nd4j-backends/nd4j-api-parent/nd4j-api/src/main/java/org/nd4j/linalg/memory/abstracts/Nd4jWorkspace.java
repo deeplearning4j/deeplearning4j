@@ -579,17 +579,20 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     @Data
     public static class GarbageWorkspaceReference extends WeakReference<MemoryWorkspace> {
-        private PagedPointer pointerDevice;
-        private PagedPointer pointerHost;
+        private PointersPair pointersPair;
         private String id;
         private Long threadId;
+        private Queue<PointersPair> pinnedPointers;
+        private List<PointersPair> externalPointers;
 
         public GarbageWorkspaceReference(MemoryWorkspace referent, ReferenceQueue<? super MemoryWorkspace> queue) {
             super(referent, queue);
-            this.pointerDevice = ((Nd4jWorkspace) referent).workspace.getDevicePointer();
-            this.pointerHost = ((Nd4jWorkspace) referent).workspace.getHostPointer();
+            this.pointersPair = ((Nd4jWorkspace) referent).workspace;
+
             this.id = referent.getId();
             this.threadId = referent.getThreadId();
+            this.pinnedPointers = ((Nd4jWorkspace) referent).pinnedAllocations;
+            this.externalPointers = ((Nd4jWorkspace) referent).externalAllocations;
         }
     }
 }
