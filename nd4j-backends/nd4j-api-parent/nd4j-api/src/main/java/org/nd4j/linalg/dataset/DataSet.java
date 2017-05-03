@@ -230,8 +230,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     @Override
     public void load(InputStream from) {
         try {
-            BufferedInputStream bis = new BufferedInputStream(from);
-            DataInputStream dis = new DataInputStream(bis);
+
+            DataInputStream dis = from instanceof BufferedInputStream ? new DataInputStream(from) : new DataInputStream(new BufferedInputStream(from));
 
             byte included = dis.readByte();
             boolean hasFeatures = (included & BITMASK_FEATURES_PRESENT) != 0;
@@ -260,7 +260,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public void load(File from) {
-        try (FileInputStream fis = new FileInputStream(from); BufferedInputStream bis = new BufferedInputStream(fis)) {
+        try (FileInputStream fis = new FileInputStream(from); BufferedInputStream bis = new BufferedInputStream(fis, 1024 * 1024)) {
             load(bis);
         } catch (IOException e) {
             throw new RuntimeException(e);
