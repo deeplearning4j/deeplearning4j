@@ -34,6 +34,11 @@ public class SingletonMultiDataSetIterator implements MultiDataSetIterator {
     }
 
     @Override
+    public MultiDataSetPreProcessor getPreProcessor() {
+        return preProcessor;
+    }
+
+    @Override
     public boolean resetSupported() {
         return true;
     }

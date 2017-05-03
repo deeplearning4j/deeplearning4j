@@ -30,6 +30,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -58,21 +59,42 @@ public class DefaultTrainer extends Thread implements Trainer {
     protected boolean onRootModel = false;
     protected ParallelWrapper parallelWrapper;
     protected WorkspaceMode workspaceMode;
+    protected AtomicLong lastEtlTime = new AtomicLong(0);
+
+    protected AtomicBoolean nullMode = new AtomicBoolean(false);
+    protected DataSet nullDataSet;
 
 
 
     @Override
-    public void feedMultiDataSet(@NonNull MultiDataSet dataSet) {
+    public void feedMultiDataSet(@NonNull MultiDataSet dataSet, long etlTime) {
         setupIfNeccessary();
         running.incrementAndGet();
         queueMDS.add(dataSet);
+
+        if (lastEtlTime == null)
+            lastEtlTime = new AtomicLong(0);
+
+        lastEtlTime.set(etlTime);
     }
 
     @Override
-    public void feedDataSet(@NonNull DataSet dataSet) {
+    public void feedDataSet(DataSet dataSet, long etlTime) {
         setupIfNeccessary();
         running.incrementAndGet();
-        queue.add(dataSet);
+        if (dataSet != null)
+            queue.add(dataSet);
+        else {
+            if (nullMode == null)
+                nullMode = new AtomicBoolean(false);
+
+            nullMode.set(true);
+        }
+
+        if (lastEtlTime == null)
+            lastEtlTime = new AtomicLong(0);
+
+        lastEtlTime.set(etlTime);
     }
 
     @Override
@@ -159,7 +181,7 @@ public class DefaultTrainer extends Thread implements Trainer {
                 if (!onRootModel) {
                     MultiLayerConfiguration conf = MultiLayerConfiguration.fromJson(
                                     ((MultiLayerNetwork) originalModel).getLayerWiseConfigurations().toJson());
-                    conf.setWorkspaceMode(workspaceMode);
+                    conf.setTrainingWorkspaceMode(workspaceMode);
                     this.replicatedModel = new MultiLayerNetwork(conf);
 
                     replicatedModel.init();
@@ -195,7 +217,7 @@ public class DefaultTrainer extends Thread implements Trainer {
                 if (!onRootModel) {
                     ComputationGraphConfiguration conf = ComputationGraphConfiguration
                                     .fromJson(((ComputationGraph) originalModel).getConfiguration().toJson());
-                    conf.setWorkspaceMode(workspaceMode);
+                    conf.setTrainingWorkspaceMode(workspaceMode);
 
                     this.replicatedModel = new ComputationGraph(conf);
                     this.replicatedModel.init();
@@ -229,15 +251,25 @@ public class DefaultTrainer extends Thread implements Trainer {
 
             if (!useMDS) {
                 while (!shouldStop.get()) {
-                    DataSet dataSet = queue.poll(100, TimeUnit.MILLISECONDS);
+                    DataSet dataSet = null;
+                    if (nullMode == null || !nullMode.get())
+                        dataSet = queue.poll(100, TimeUnit.MILLISECONDS);
+                    else {
+                        if (nullDataSet == null)
+                            nullDataSet = new org.nd4j.linalg.dataset.DataSet(Nd4j.create(32, 3, 224, 224), Nd4j.create(32, 200));
+
+                        dataSet = nullDataSet;
+                    }
                     if (dataSet != null) {
 
                         //if (Nd4j.getAffinityManager().getDeviceForCurrentThread() != Nd4j.getAffinityManager().getDeviceForArray(dataSet.getFeatures()))
                         //    log.debug("Thread: {}; Bad align for data: {}/{}", Thread.currentThread().getId(), Nd4j.getAffinityManager().getDeviceForCurrentThread(), Nd4j.getAffinityManager().getDeviceForArray(dataSet.getFeatures()));
 
                         if (replicatedModel instanceof MultiLayerNetwork) {
+                            ((MultiLayerNetwork) replicatedModel).setLastEtlTime(lastEtlTime.get());
                             ((MultiLayerNetwork) replicatedModel).fit(dataSet);
                         } else if (replicatedModel instanceof ComputationGraph) {
+                            ((ComputationGraph) replicatedModel).setLastEtlTime(lastEtlTime.get());
                             ((ComputationGraph) replicatedModel).fit(dataSet);
                         }
 
@@ -253,6 +285,7 @@ public class DefaultTrainer extends Thread implements Trainer {
                     MultiDataSet dataSet = queueMDS.poll(100, TimeUnit.MILLISECONDS);
                     if (dataSet != null) {
                         if (replicatedModel instanceof ComputationGraph) {
+                            ((ComputationGraph) replicatedModel).setLastEtlTime(lastEtlTime.get());
                             ((ComputationGraph) replicatedModel).fit(dataSet);
                         } else
                             throw new RuntimeException("MultiDataSet can be fit into ComputationGraph only");

@@ -45,7 +45,7 @@ import java.util.Map;
  * @author Alex Black
  */
 @Slf4j
-public class GradientCheckUtil {
+public class    GradientCheckUtil {
 
     private static final List<Class<? extends IActivation>> VALID_ACTIVATION_FUNCTIONS =
                     Arrays.asList(Activation.CUBE.getActivationFunction().getClass(),
@@ -162,7 +162,7 @@ public class GradientCheckUtil {
             String paramName = paramNames.get(currParamNameIdx);
 
             //(w+epsilon): Do forward pass and score
-            double origValue = params.getDouble(i);
+            double origValue     = params.getDouble(i);
             params.putScalar(i, origValue + epsilon);
             double scorePlus = mln.score(ds, true);
 

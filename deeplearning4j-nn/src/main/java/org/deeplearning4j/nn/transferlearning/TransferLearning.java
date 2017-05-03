@@ -17,6 +17,7 @@ import org.deeplearning4j.nn.graph.vertex.VertexIndices;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -432,6 +433,7 @@ public class TransferLearning {
         private String[] frozenOutputAt;
         private boolean hasFrozen = false;
         private Set<String> editedVertices = new HashSet<>();
+        private WorkspaceMode workspaceMode;
 
         /**
          * Computation Graph to tweak for transfer learning
@@ -709,8 +711,13 @@ public class TransferLearning {
             return this;
         }
 
-        protected GraphBuilder addInputs(String... inputNames) {
+        public GraphBuilder addInputs(String... inputNames) {
             editedConfigBuilder.addInputs(inputNames);
+            return this;
+        }
+
+        public GraphBuilder setWorkspaceMode(WorkspaceMode workspaceMode) {
+            this.workspaceMode = workspaceMode;
             return this;
         }
 
@@ -723,6 +730,7 @@ public class TransferLearning {
             initBuilderIfReq();
 
             ComputationGraphConfiguration newConfig = editedConfigBuilder.build();
+            if(this.workspaceMode != null) newConfig.setTrainingWorkspaceMode(workspaceMode);
             ComputationGraph newGraph = new ComputationGraph(newConfig);
             newGraph.init();
 

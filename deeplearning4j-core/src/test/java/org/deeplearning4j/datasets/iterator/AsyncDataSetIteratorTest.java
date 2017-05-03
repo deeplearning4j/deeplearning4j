@@ -21,7 +21,7 @@ import static org.junit.Assert.assertNotEquals;
 public class AsyncDataSetIteratorTest {
     private ExistingDataSetIterator backIterator;
     private static final int TEST_SIZE = 100;
-    private static final int ITERATIONS = 100;
+    private static final int ITERATIONS = 10;
 
     // time spent in consumer thread, milliseconds
     private static final long EXECUTION_TIME = 5;
@@ -102,6 +102,8 @@ public class AsyncDataSetIteratorTest {
         consumer.consumeWhileHasNext(true);
         iterator.shutdown();
     }
+
+
 
     private class IterableWithException implements Iterable<DataSet> {
         private final AtomicLong counter = new AtomicLong(0);

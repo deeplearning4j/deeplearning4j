@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.graph.graphnodes;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
@@ -261,6 +262,64 @@ public class TestGraphNodes {
         assertEquals(in1, b.getSecond()[0]);
         assertEquals(in2, b.getSecond()[1]);
         assertEquals(in3, b.getSecond()[2]);
+    }
+
+    @Test
+    public void testStackUnstackNodeVariableLength() {
+        Nd4j.getRandom().setSeed(12345);
+        GraphVertex stack = new StackVertex(null, "", -1);
+
+        //Test stack with variable length + mask arrays
+        INDArray in0 = Nd4j.rand(new int[]{5, 2, 5});
+        INDArray in1 = Nd4j.rand(new int[]{5, 2, 6});
+        INDArray in2 = Nd4j.rand(new int[]{5, 2, 7});
+
+        INDArray mask0 = Nd4j.ones(5,5);
+        INDArray mask1 = Nd4j.ones(5,6);
+        INDArray mask2 = Nd4j.ones(5,7);
+
+        stack.setInputs(in0, in1, in2);
+        Pair<INDArray,MaskState> p = stack.feedForwardMaskArrays(new INDArray[]{mask0,mask1,mask2}, MaskState.Active, 5);
+        assertArrayEquals(new int[]{15,7}, p.getFirst().shape());
+        assertEquals(MaskState.Active, p.getSecond());
+
+        INDArray out = stack.doForward(false);
+        assertEquals(in0, out.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all(), NDArrayIndex.interval(0,5)));
+        assertEquals(in1, out.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all(), NDArrayIndex.interval(0,6)));
+        assertEquals(in2, out.get(NDArrayIndex.interval(10, 15), NDArrayIndex.all(), NDArrayIndex.interval(0,7)));
+
+        stack.setEpsilon(out);
+        Pair<Gradient, INDArray[]> b = stack.doBackward(false);
+
+        assertEquals(in0, b.getSecond()[0]);
+        assertEquals(in1, b.getSecond()[1]);
+        assertEquals(in2, b.getSecond()[2]);
+
+        //Test unstack with variable length + mask arrays
+        //Note that we don't actually need changes here - unstack has a single input, and the unstacked mask
+        //might be a bit longer than we really need, but it'll still be correct
+        GraphVertex unstack0 = new UnstackVertex(null, "u0", 0, 0, 3);
+        GraphVertex unstack1 = new UnstackVertex(null, "u1", 0, 1, 3);
+        GraphVertex unstack2 = new UnstackVertex(null, "u2", 0, 2, 3);
+
+        unstack0.setInputs(out);
+        unstack1.setInputs(out);
+        unstack2.setInputs(out);
+        INDArray f0 = unstack0.doForward(true);
+        INDArray f1 = unstack1.doForward(true);
+        INDArray f2 = unstack2.doForward(true);
+
+        assertEquals(in0, f0.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0,5)));
+        assertEquals(in1, f1.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0,6)));
+        assertEquals(in2, f2.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(0,7)));
+
+        Pair<INDArray,MaskState> p0 = unstack0.feedForwardMaskArrays(new INDArray[]{p.getFirst()}, MaskState.Active, 5);
+        Pair<INDArray,MaskState> p1 = unstack1.feedForwardMaskArrays(new INDArray[]{p.getFirst()}, MaskState.Active, 5);
+        Pair<INDArray,MaskState> p2 = unstack2.feedForwardMaskArrays(new INDArray[]{p.getFirst()}, MaskState.Active, 5);
+
+        assertEquals(mask0, p0.getFirst().get(NDArrayIndex.all(), NDArrayIndex.interval(0,5)));
+        assertEquals(mask1, p1.getFirst().get(NDArrayIndex.all(), NDArrayIndex.interval(0,6)));
+        assertEquals(mask2, p2.getFirst().get(NDArrayIndex.all(), NDArrayIndex.interval(0,7)));
     }
 
     @Test

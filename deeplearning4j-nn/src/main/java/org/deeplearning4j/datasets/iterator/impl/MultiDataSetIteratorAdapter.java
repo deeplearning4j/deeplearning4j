@@ -33,6 +33,11 @@ public class MultiDataSetIteratorAdapter implements MultiDataSetIterator {
     }
 
     @Override
+    public MultiDataSetPreProcessor getPreProcessor() {
+        return preProcessor;
+    }
+
+    @Override
     public boolean resetSupported() {
         return iter.resetSupported();
     }

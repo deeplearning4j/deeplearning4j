@@ -43,7 +43,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Configuration for a multi layer network
@@ -66,7 +65,11 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     @Getter
     @Setter
-    protected WorkspaceMode workspaceMode;
+    protected WorkspaceMode trainingWorkspaceMode;
+
+    @Getter
+    @Setter
+    protected WorkspaceMode inferenceWorkspaceMode;
 
     //Counter for the number of parameter updates so far
     // This is important for learning rate schedules, for example, and is stored here to ensure it is persisted
@@ -286,6 +289,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                 clone.inputPreProcessors = map;
             }
 
+            clone.inferenceWorkspaceMode = this.inferenceWorkspaceMode;
+            clone.trainingWorkspaceMode = this.trainingWorkspaceMode;
+
             return clone;
 
         } catch (CloneNotSupportedException e) {
@@ -312,7 +318,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         @Deprecated
         protected int[] cnnInputSize;
 
-        protected WorkspaceMode workspaceMode = WorkspaceMode.NONE;
+        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
+        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SINGLE;
 
         /**
          * Specify the processors.
@@ -342,7 +349,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         }
 
         /**
-         * This method defines Workspace mode being used during training/inference:
+         * This method defines Workspace mode being used during training:
          * NONE: workspace won't be used
          * SINGLE: one workspace will be used during whole iteration loop
          * SEPARATE: separate workspaces will be used for feedforward and backprop iteration loops
@@ -350,8 +357,22 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          * @param workspaceMode
          * @return
          */
-        public Builder workspaceMode(@NonNull WorkspaceMode workspaceMode) {
-            this.workspaceMode = workspaceMode;
+        public Builder trainingWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
+            this.trainingWorkspaceMode = workspaceMode;
+            return this;
+        }
+
+        /**
+         * This method defines Workspace mode being used during inference:
+         * NONE: workspace won't be used
+         * SINGLE: one workspace will be used during whole iteration loop
+         * SEPARATE: separate workspaces will be used for feedforward and backprop iteration loops
+         *
+         * @param workspaceMode
+         * @return
+         */
+        public Builder inferenceWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
+            this.inferenceWorkspaceMode = workspaceMode;
             return this;
         }
 
@@ -516,7 +537,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.backpropType = backpropType;
             conf.tbpttFwdLength = tbpttFwdLength;
             conf.tbpttBackLength = tbpttBackLength;
-            conf.workspaceMode = workspaceMode;
+            conf.trainingWorkspaceMode = trainingWorkspaceMode;
+            conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
             return conf;
 

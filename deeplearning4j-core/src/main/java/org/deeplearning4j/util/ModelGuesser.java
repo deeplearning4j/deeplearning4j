@@ -103,16 +103,28 @@ public class ModelGuesser {
             } catch (Exception e1) {
                 log.warn("Tried computation graph");
                 try {
-                    return KerasModelImport.importKerasModelAndWeights(path);
-                } catch (Exception e2) {
-                    log.warn("Tried multi layer network keras");
+                    return ModelSerializer.restoreMultiLayerNetwork(new File(path), false);
+                }catch(Exception e4) {
                     try {
-                        return KerasModelImport.importKerasSequentialModelAndWeights(path);
+                        return ModelSerializer.restoreComputationGraph(new File(path), false);
+                    }catch(Exception e5) {
+                        try {
+                            return KerasModelImport.importKerasModelAndWeights(path);
+                        } catch (Exception e2) {
+                            log.warn("Tried multi layer network keras");
+                            try {
+                                return KerasModelImport.importKerasSequentialModelAndWeights(path);
 
-                    } catch (Exception e3) {
-                        throw e3;
+                            } catch (Exception e3) {
+                                throw e3;
+                            }
+                        }
                     }
+
                 }
+
+
+
             }
         }
     }
@@ -133,15 +145,28 @@ public class ModelGuesser {
                 return ModelSerializer.restoreComputationGraph(stream, true);
             } catch (Exception e1) {
                 try {
-                    return KerasModelImport.importKerasModelAndWeights(stream);
-                } catch (Exception e2) {
-                    try {
-                        return KerasModelImport.importKerasSequentialModelAndWeights(stream);
+                    return ModelSerializer.restoreMultiLayerNetwork(stream, false);
 
-                    } catch (Exception e3) {
-                        throw e3;
+                }catch(Exception e5) {
+                    try {
+                        return ModelSerializer.restoreComputationGraph(stream, false);
+
+                    }catch(Exception e6) {
+                        try {
+                            return KerasModelImport.importKerasModelAndWeights(stream);
+                        } catch (Exception e2) {
+                            try {
+                                return KerasModelImport.importKerasSequentialModelAndWeights(stream);
+
+                            } catch (Exception e3) {
+                                throw e3;
+                            }
+                        }
                     }
+
                 }
+
+
             }
         }
     }
