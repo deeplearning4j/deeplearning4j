@@ -39,7 +39,8 @@ public class CpuWorkspace extends Nd4jWorkspace {
         if (currentSize.get() > 0) {
             isInit.set(true);
 
-            log.info("Allocating [{}] workspace of {} bytes...", id, currentSize.get());
+
+            log.debug("Allocating [{}] workspace of {} bytes...", id, currentSize.get());
 
             workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, true)));
         }
@@ -89,7 +90,7 @@ public class CpuWorkspace extends Nd4jWorkspace {
     }
 
     @Override
-    public void destroyWorkspace(boolean extended) {
+    public synchronized void destroyWorkspace(boolean extended) {
         currentSize.set(0);
         hostOffset.set(0);
         deviceOffset.set(0);
@@ -97,7 +98,11 @@ public class CpuWorkspace extends Nd4jWorkspace {
         if (extended)
             clearExternalAllocations();
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
+        stepsCount.set(Long.MAX_VALUE - 100);
+        clearPinnedAllocations();
+
+        if (workspace.getHostPointer() != null)
+            NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
 
         workspace.setDevicePointer(null);
         workspace.setHostPointer(null);

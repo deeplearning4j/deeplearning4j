@@ -127,4 +127,17 @@ public interface AffinityManager {
      * @param deviceId
      */
     void unsafeSetDevice(Integer deviceId);
+
+
+    /**
+     * This method returns TRUE if cross-device access is allowed on this system
+     */
+    boolean isCrossDeviceAccessSupported();
+
+    /**
+     * This method allows to block cross-device access. Mostly suitable for debugging/testing purposes
+     *
+     * @param reallyAllow
+     */
+    void allowCrossDeviceAccess(boolean reallyAllow);
 }

@@ -7,6 +7,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspaceManager;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
+import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
@@ -209,15 +210,38 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
                 try {
                     Nd4jWorkspace.GarbageWorkspaceReference reference = (Nd4jWorkspace.GarbageWorkspaceReference) queue.remove();
                     if (reference != null) {
-                        //log.info("Releasing reference for Workspace [{}]", reference.getId());
-                        PagedPointer ptrDevice = reference.getPointerDevice();
-                        if (ptrDevice != null)
-                            Nd4j.getMemoryManager().release(ptrDevice, MemoryKind.DEVICE);
+//                      log.info("Releasing reference for Workspace [{}]", reference.getId());
+                        PointersPair pair = reference.getPointersPair();
+                        if (pair!= null) {
+                            if (pair.getDevicePointer() != null) {
+                                //log.info("Deallocating device...");
+                                Nd4j.getMemoryManager().release(pair.getDevicePointer(), MemoryKind.DEVICE);
+                            }
 
-                        PagedPointer ptrHost = reference.getPointerHost();
-                        if (ptrHost != null) {
-                            referenceMap.remove(reference.getId() + "_" + reference.getThreadId());
-                            Nd4j.getMemoryManager().release(ptrHost, MemoryKind.HOST);
+
+                            if (pair.getHostPointer() != null) {
+//                                log.info("Deallocating host...");
+                                referenceMap.remove(reference.getId() + "_" + reference.getThreadId());
+                                Nd4j.getMemoryManager().release(pair.getHostPointer(), MemoryKind.HOST);
+                            }
+                        }
+
+                        for (PointersPair pair2 : reference.getExternalPointers()) {
+                            if (pair2 != null) {
+                                if (pair2.getHostPointer() != null)
+                                    Nd4j.getMemoryManager().release(pair2.getHostPointer(), MemoryKind.HOST);
+
+                                if (pair2.getDevicePointer() != null)
+                                    Nd4j.getMemoryManager().release(pair2.getDevicePointer(), MemoryKind.DEVICE);
+                            }
+                        }
+
+                        while ((pair = reference.getPinnedPointers().poll()) != null) {
+                            if (pair.getHostPointer() != null)
+                                Nd4j.getMemoryManager().release(pair.getHostPointer(), MemoryKind.HOST);
+
+                            if (pair.getDevicePointer() != null)
+                                Nd4j.getMemoryManager().release(pair.getDevicePointer(), MemoryKind.DEVICE);
                         }
                     }
                 } catch (Exception e) {

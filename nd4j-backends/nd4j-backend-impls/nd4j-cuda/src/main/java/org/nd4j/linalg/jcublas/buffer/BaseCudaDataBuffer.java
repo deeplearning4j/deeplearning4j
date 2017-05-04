@@ -798,19 +798,24 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asIntPointer();
                 indexer = IntIndexer.create((IntPointer) pointer);
 
+                IntIndexer Iindexer = (IntIndexer) indexer;
+
                 int[] array = new int[(int) length];
 
                 for (int i = 0; i < length(); i++) {
                     if (t == Type.INT)
-                        array[i] = s.readInt();
+                        //array[i] = s.readInt();
+                        Iindexer.put(i, s.readInt());
                     else if (t == Type.DOUBLE)
-                        array[i] = (int) s.readDouble();
+                        Iindexer.put(i, (int) s.readDouble());
                     else if (t == Type.FLOAT)
-                        array[i] = (int) s.readFloat();
+                        Iindexer.put(i, (int) s.readFloat());
                     else if (t == Type.HALF)
-                        array[i] = (int) toFloat((int) s.readShort());
+                        Iindexer.put(i, (int) toFloat((int) s.readShort()));
                 }
-                setData(array);
+
+                allocationPoint.tickHostWrite();
+
             } else if (globalType == Type.DOUBLE) {
                 this.elementSize = 8;
 
@@ -831,20 +836,18 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     indexer = DoubleIndexer.create((DoublePointer) pointer);
                 }
 
-                double[] array = new double[(int) length];
+                DoubleIndexer Dindexer = (DoubleIndexer) indexer;
 
                 for (int i = 0; i < length(); i++) {
-                    if (t == Type.INT)
-                        array[i] = (double) s.readInt();
-                    else if (t == Type.DOUBLE)
-                        array[i] = s.readDouble();
+                    if (t == Type.DOUBLE)
+                        Dindexer.put(i, s.readDouble());
                     else if (t == Type.FLOAT)
-                        array[i] = (double) s.readFloat();
+                        Dindexer.put(i, (double) s.readFloat());
                     else if (t == Type.HALF)
-                        array[i] = (double) toFloat((int) s.readShort());
+                        Dindexer.put(i, (double) toFloat((int) s.readShort()));
                 }
 
-                setData(array);
+                allocationPoint.tickHostWrite();
 
             } else if (globalType == Type.FLOAT) {
                 this.elementSize = 4;
@@ -857,21 +860,21 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                     indexer = FloatIndexer.create((FloatPointer) pointer);
                 }
 
-                float[] array = new float[(int) length];
+                FloatIndexer Findexer = (FloatIndexer) indexer;
 
-                for (int i = 0; i < length(); i++) {
-                    if (t == Type.INT)
-                        array[i] = (float) s.readInt();
-                    else if (t == Type.DOUBLE)
-                        array[i] = (float) s.readDouble();
+                for (int i = 0; i < length; i++) {
+
+
+                    if (t == Type.DOUBLE)
+                        Findexer.put(i, (float) s.readDouble());
                     else if (t == Type.FLOAT)
-                        array[i] = s.readFloat();
+                        Findexer.put(i, s.readFloat());
                     else if (t == Type.HALF) {
-                        array[i] = toFloat((int) s.readShort());
+                        Findexer.put(i, toFloat((int) s.readShort()));
                     }
                 }
 
-                setData(array);
+                allocationPoint.tickHostWrite();
             } else if (globalType == Type.HALF) {
                 this.elementSize = 2;
                 if (reallocate) {
@@ -884,23 +887,21 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
                 }
 
+                HalfIndexer Hindexer = (HalfIndexer) indexer;
+
                 for (int i = 0; i < length; i++) {
 
-                    if (t == Type.INT)
-                        ((HalfIndexer) indexer).put(i, (float) s.readInt());
-                    else if (t == Type.DOUBLE)
-                        ((HalfIndexer) indexer).put(i, (float) s.readDouble());
+                    if (t == Type.DOUBLE)
+                        Hindexer.put(i, (float) s.readDouble());
                     else if (t == Type.FLOAT)
-                        ((HalfIndexer) indexer).put(i, s.readFloat());
+                        Hindexer.put(i, s.readFloat());
                     else if (t == Type.HALF) {
-                        ((HalfIndexer) indexer).put(i, toFloat((int) s.readShort()));
+                        Hindexer.put(i, toFloat((int) s.readShort()));
                     }
                 }
 
-                AllocationPoint pointDst = allocationPoint;
-
                 // for HALF & HALF2 datatype we just tag data as fresh on host
-                pointDst.tickHostWrite();
+                allocationPoint.tickHostWrite();
             } else
                 throw new IllegalStateException("Unknown dataType: [" + t.toString() + "]");
 
@@ -914,7 +915,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
 
         // we call sync to copyback data to host
-        allocator.synchronizeHostData(this);
+        AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(allocationPoint);
+        //allocator.synchronizeHostData(this);
     }
 
     @Override

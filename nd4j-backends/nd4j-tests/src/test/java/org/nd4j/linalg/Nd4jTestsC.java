@@ -4079,6 +4079,24 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testAveraging1() {
+        Nd4j.getAffinityManager().allowCrossDeviceAccess(false);
+
+        List<INDArray> arrays = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            arrays.add(Nd4j.create(100).assign((double) i));
+        }
+
+        INDArray result = Nd4j.averageAndPropagate(arrays);
+
+        assertEquals(4.5, result.meanNumber().doubleValue(), 0.01);
+
+        for (int i = 0; i < 10; i++) {
+            assertEquals(result, arrays.get(i));
+        }
+    }
+
     @Override
     public char ordering() {
         return 'c';

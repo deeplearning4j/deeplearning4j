@@ -49,8 +49,12 @@ public class CudaWorkspace extends Nd4jWorkspace {
             //log.info("Allocating {} bytes at DEVICE & HOST space...", currentSize.get());
             isInit.set(true);
 
-            log.info("Allocating [{}] workspace on device_{}, {} bytes...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), currentSize.get());
-            Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
+
+            log.debug("Allocating [{}] workspace on device_{}, {} bytes...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), currentSize.get());
+
+            if (isDebug.get()) {
+                Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
+            }
 
             Pointer ptr = memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, false);
             if (ptr == null)
@@ -79,6 +83,9 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
         if (extended)
             clearExternalAllocations();
+
+        stepsCount.set(Long.MAX_VALUE - 100);
+        clearPinnedAllocations();
 
         if (workspace.getHostPointer() != null)
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());

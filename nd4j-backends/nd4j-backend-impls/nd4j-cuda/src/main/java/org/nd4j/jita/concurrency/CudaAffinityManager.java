@@ -359,4 +359,15 @@ public class CudaAffinityManager extends BasicAffinityManager {
             }
         }
     }
+
+
+    @Override
+    public boolean isCrossDeviceAccessSupported() {
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().isP2PAvailable();
+    }
+
+    @Override
+    public void allowCrossDeviceAccess(boolean reallyAllow) {
+        CudaEnvironment.getInstance().getConfiguration().allowCrossDeviceAccess(reallyAllow);
+    }
 }

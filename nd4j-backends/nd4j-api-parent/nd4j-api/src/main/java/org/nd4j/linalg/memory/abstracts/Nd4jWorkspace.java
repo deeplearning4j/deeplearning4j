@@ -111,12 +111,12 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         // and actual workspace allocation
         currentSize.set(workspaceConfiguration.getInitialSize());
 
-        if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED) {
+        if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE) {
             if (workspaceConfiguration.getOverallocationLimit() < 1.0)
                 throw new ND4JIllegalStateException("For cyclic workspace overallocation should be positive integral value.");
 
             stepsNumber = (int) (workspaceConfiguration.getOverallocationLimit() + 1);
-            log.info("Steps: {}", stepsNumber);
+            log.debug("Steps: {}", stepsNumber);
         }
 
         //if (workspaceConfiguration.getPolicyLearning() == LearningPolicy.OVER_TIME && workspaceConfiguration.getCyclesBeforeInitialization() < 1)
@@ -430,7 +430,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
 
         if (cycleAllocations.get() > maxCycle.get()) {
-            log.info("Workspace [{}], current cycle: {}; max cycle: {}", id, cycleAllocations.get(), maxCycle.get());
+            log.debug("Workspace [{}], current cycle: {}; max cycle: {}", id, cycleAllocations.get(), maxCycle.get());
             maxCycle.set(cycleAllocations.get());
         }
 
@@ -579,17 +579,20 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     @Data
     public static class GarbageWorkspaceReference extends WeakReference<MemoryWorkspace> {
-        private PagedPointer pointerDevice;
-        private PagedPointer pointerHost;
+        private PointersPair pointersPair;
         private String id;
         private Long threadId;
+        private Queue<PointersPair> pinnedPointers;
+        private List<PointersPair> externalPointers;
 
         public GarbageWorkspaceReference(MemoryWorkspace referent, ReferenceQueue<? super MemoryWorkspace> queue) {
             super(referent, queue);
-            this.pointerDevice = ((Nd4jWorkspace) referent).workspace.getDevicePointer();
-            this.pointerHost = ((Nd4jWorkspace) referent).workspace.getHostPointer();
+            this.pointersPair = ((Nd4jWorkspace) referent).workspace;
+
             this.id = referent.getId();
             this.threadId = referent.getThreadId();
+            this.pinnedPointers = ((Nd4jWorkspace) referent).pinnedAllocations;
+            this.externalPointers = ((Nd4jWorkspace) referent).externalAllocations;
         }
     }
 }
