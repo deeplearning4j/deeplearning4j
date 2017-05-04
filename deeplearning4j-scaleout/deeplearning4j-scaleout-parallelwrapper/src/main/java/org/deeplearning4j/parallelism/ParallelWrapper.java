@@ -210,31 +210,22 @@ public class ParallelWrapper implements AutoCloseable {
     private double getScore(AtomicInteger locker) {
         wasAveraged = true;
         double score = 0.0;
-        if (!legacyAveraging || Nd4j.getAffinityManager().getNumberOfDevices() == 1) {
-            List<INDArray> params = new ArrayList<>();
-            for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                params.add(zoo[cnt].getModel().params());
-                score += zoo[cnt].getModel().score();
-            }
 
-            Nd4j.averageAndPropagate(model.params(), params);
-        } else {
-            INDArray params = Nd4j.zeros(model.params().shape());
-            int cnt = 0;
-            for (; cnt < workers && cnt < locker.get(); cnt++) {
-                params.addi(zoo[cnt].getModel().params());
-                score += zoo[cnt].getModel().score();
-            }
-
-            params.divi(cnt);
-            model.setParams(params);
+        List<INDArray> params = new ArrayList<>();
+        for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+            params.add(zoo[cnt].getModel().params());
+            score += zoo[cnt].getModel().score();
         }
+
+        Nd4j.averageAndPropagate(model.params(), params);
+
 
         score /= Math.min(workers, locker.get());
 
         // TODO: improve this
         if (reportScore)
             log.info("Averaged score: " + score);
+
         return score;
     }
 
@@ -244,25 +235,13 @@ public class ParallelWrapper implements AutoCloseable {
             int batchSize = 0;
 
             if (updater != null && updater.getStateViewArray() != null) {
-                if (!legacyAveraging || Nd4j.getAffinityManager().getNumberOfDevices() == 1) {
-                    List<INDArray> updaters = new ArrayList<>();
-                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                        ComputationGraph workerModel = (ComputationGraph) zoo[cnt].getModel();
-                        updaters.add(workerModel.getUpdater().getStateViewArray());
-                        batchSize += workerModel.batchSize();
-                    }
-                    Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
-                } else {
-                    INDArray state = Nd4j.zeros(updater.getStateViewArray().shape());
-                    int cnt = 0;
-                    for (; cnt < workers && cnt < locker.get(); cnt++) {
-                        ComputationGraph workerModel = (ComputationGraph) zoo[cnt].getModel();
-                        state.addi(workerModel.getUpdater().getStateViewArray());
-                        batchSize += workerModel.batchSize();
-                    }
-                    state.divi(cnt);
-                    updater.setStateViewArray(state);
+                List<INDArray> updaters = new ArrayList<>();
+                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                    ComputationGraph workerModel = (ComputationGraph) zoo[cnt].getModel();
+                    updaters.add(workerModel.getUpdater().getStateViewArray());
+                    batchSize += workerModel.batchSize();
                 }
+                Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
             }
         }
 
@@ -423,38 +402,20 @@ public class ParallelWrapper implements AutoCloseable {
                             int batchSize = 0;
 
                             if (updater != null && updater.getStateViewArray() != null) {
-                                if (!legacyAveraging || Nd4j.getAffinityManager().getNumberOfDevices() == 1) {
-                                    List<INDArray> updaters = new ArrayList<>();
-                                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                                        MultiLayerNetwork workerModel = (MultiLayerNetwork) zoo[cnt].getModel();
-                                        updaters.add(workerModel.getUpdater().getStateViewArray());
-                                        batchSize += workerModel.batchSize();
-                                    }
-
-                                    Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
-                                } else {
-                                    INDArray state = Nd4j.zeros(updater.getStateViewArray().shape());
-                                    int cnt = 0;
-                                    for (; cnt < workers && cnt < locker.get(); cnt++) {
-                                        MultiLayerNetwork workerModel = (MultiLayerNetwork) zoo[cnt].getModel();
-                                        state.addi(workerModel.getUpdater().getStateViewArray().dup());
-                                        batchSize += workerModel.batchSize();
-                                    }
-                                    state.divi(cnt);
-                                    updater.setStateViewArray((MultiLayerNetwork) model, state, false);
+                                List<INDArray> updaters = new ArrayList<>();
+                                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                                    MultiLayerNetwork workerModel = (MultiLayerNetwork) zoo[cnt].getModel();
+                                    updaters.add(workerModel.getUpdater().getStateViewArray());
+                                    batchSize += workerModel.batchSize();
                                 }
+
+                                Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
                             }
                         }
 
                         ((MultiLayerNetwork) model).setScore(score);
                     } else if (model instanceof ComputationGraph) {
                         averageUpdatersState(locker, score);
-                    }
-
-                    if (legacyAveraging && Nd4j.getAffinityManager().getNumberOfDevices() > 1) {
-                        for (int cnt = 0; cnt < workers; cnt++) {
-                            zoo[cnt].updateModel(model);
-                        }
                     }
                 }
                 locker.set(0);
