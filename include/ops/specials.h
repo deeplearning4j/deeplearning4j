@@ -6,6 +6,12 @@
 #define LIBND4J_CONCAT_H
 
 
+#ifdef __CUDACC__
+#define ELEMENT_THRESHOLD 8192
+#define TAD_THRESHOLD 2
+#endif
+
+
 /**
   * Concatneate multi array of the same shape together
   * along a particular dimension
@@ -297,6 +303,63 @@ void concatCpuGeneric(
         arrOffset += shape::length(arrTad.tadOnlyShapeInfo);
     }
 
+}
+
+
+
+template<typename T>
+void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) {
+
+    bool tempZ = false;
+    if (z == nullptr) {
+        z = new T[length];
+        if (z == nullptr) {
+            printf("Can't allocate temporary array for averaging!\n");
+            return;
+        }
+
+        tempZ = true;
+    }
+
+// aggregation step
+// TODO: this step should be improved, to exploit SIMD
+#pragma omp parallel for schedule(guided) default(shared)
+    for (Nd4jIndex i = 0; i < length; i++) {
+        z[i] = 0.0;
+
+#pragma omp simd
+        for (int ar = 0; ar < n; ar++) {
+            z[i] += x[ar][i];
+        }
+    }
+
+//div step
+    if (length > ELEMENT_THRESHOLD) {
+#pragma omp parallel for simd schedule(guided) default(shared)
+        for (Nd4jIndex i = 0; i < length; i++) {
+            z[i] /= n;
+        }
+    } else {
+#pragma omp simd
+        for (Nd4jIndex i = 0; i < length; i++) {
+            z[i] /= n;
+        }
+    }
+
+//propagation step
+    if (propagate) {
+#pragma omp parallel for if (n > 4 || length > ELEMENT_THRESHOLD) default(shared)
+        for(int ar = 0; ar < n; ar++) {
+
+#pragma omp simd
+            for (Nd4jIndex i = 0; i < length; i++) {
+                x[ar][i] = z[i];
+            }
+        }
+    }
+
+    if (tempZ)
+        delete[] z;
 }
 
 #endif //LIBND4J_CONCAT_H

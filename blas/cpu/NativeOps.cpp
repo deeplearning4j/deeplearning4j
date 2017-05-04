@@ -26,7 +26,7 @@ bool experimentalSupport = true;
 bool experimentalSupport = false;
 #endif
 
-#include <ops/concat.h>
+#include <ops/specials.h>
 
 
 void NativeOps::setElementThreshold(int num) {
@@ -2091,57 +2091,6 @@ void NativeOps::tearFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo,
 
 void NativeOps::tearHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets) {
     tearGeneric<float16>(x, xShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets);
-}
-
-
-template<typename T>
-void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) {
-
-    bool tempZ = false;
-    if (z == nullptr) {
-        z = new T[length];
-        tempZ = true;
-    }
-
-// aggregation step
-// TODO: this step should be improved, to exploit SIMD
-#pragma omp parallel for schedule(guided) default(shared)
-    for (Nd4jIndex i = 0; i < length; i++) {
-        z[i] = 0.0;
-
-#pragma omp simd
-        for (int ar = 0; ar < n; ar++) {
-            z[i] += x[ar][i];
-        }
-    }
-
-//div step
-    if (length > ELEMENT_THRESHOLD) {
-#pragma omp parallel for simd schedule(guided) default(shared)
-        for (Nd4jIndex i = 0; i < length; i++) {
-            z[i] /= n;
-        }
-    } else {
-#pragma omp simd
-        for (Nd4jIndex i = 0; i < length; i++) {
-            z[i] /= n;
-        }
-    }
-
-//propagation step
-    if (propagate) {
-#pragma omp parallel for if (n > 4 || length > ELEMENT_THRESHOLD) default(shared)
-        for(int ar = 0; ar < n; ar++) {
-
-#pragma omp simd
-            for (Nd4jIndex i = 0; i < length; i++) {
-                x[ar][i] = z[i];
-            }
-        }
-    }
-
-    if (tempZ)
-        delete[] z;
 }
 
 void NativeOps::averageHalf(Nd4jPointer *extras, Nd4jPointer *dx, float16 *dz, int n, Nd4jIndex length, bool propagate) {

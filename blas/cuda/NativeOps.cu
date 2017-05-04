@@ -6,7 +6,7 @@
 #include <buffer.h>
 #include <helpers/shape.h>
 
-#include <ops/concat.h>
+#include <ops/specials.h>
 #include <loops/reduce3.h>
 #include <loops/reduce.h>
 #include <loops/indexreduce.h>
@@ -4413,8 +4413,10 @@ void NativeOps::checkP2P() {
 
 				cudaDeviceCanAccessPeer(&canAccess, x , y);
 
-				if (!canAccess)
-					tempSupport = false;
+				if (!canAccess) {
+                    tempSupport = false;
+                    break;
+                }
 			}
 		}
 
@@ -5338,47 +5340,66 @@ void NativeOps::pullRowsDouble(Nd4jPointer *extraPointers, double *x, int *xShap
 
 void NativeOps::averageHalf(Nd4jPointer *extras, Nd4jPointer *dx, float16 *dz, int n, Nd4jIndex length, bool propagate) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+	int mode = getDeviceId(extras[3]);
 
     float16 **x = reinterpret_cast<float16 **>(dx);
 
     if (debug && verbose)
         printf("averageHalf called\n");
 
-    dim3 launchDims = getBasicLaunchParams(getDeviceId(extras[2]), length, sizeof(float16), funcAttributes[44]);
+	// launching on gpu
+	if (mode == 0) {
+		dim3 launchDims = getBasicLaunchParams(getDeviceId(extras[2]), length, sizeof(float16), funcAttributes[44]);
 
-    averagingKernelHalf<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, dz, n, length, propagate);
+		averagingKernelHalf<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, dz, n, length, propagate);
 
-    checkCudaErrors(cudaStreamSynchronize(*stream));
+		checkCudaErrors(cudaStreamSynchronize(*stream));
+	} else {
+		averageGeneric<float16>(x, dz, n, length, propagate);
+	}
 }
 
 void NativeOps::averageFloat(Nd4jPointer *extras, Nd4jPointer *dx, float *dz, int n, Nd4jIndex length, bool propagate) {
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+	cudaStream_t * stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+	int mode = getDeviceId(extras[3]);
 
-    float **x = reinterpret_cast<float **>(dx);
+	float **x = reinterpret_cast<float **>(dx);
 
-    if (debug && verbose)
-        printf("averageFloat called\n");
+	if (debug && verbose)
+		printf("averageFloat called\n");
 
-    dim3 launchDims = getBasicLaunchParams(getDeviceId(extras[2]), length, sizeof(float), funcAttributes[45]);
+	// launching on gpu
+	if (mode == 0) {
+		dim3 launchDims = getBasicLaunchParams(getDeviceId(extras[2]), length, sizeof(float), funcAttributes[45]);
 
-    averagingKernelFloat<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, dz, n, length, propagate);
+		averagingKernelFloat<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, dz, n, length, propagate);
 
-    checkCudaErrors(cudaStreamSynchronize(*stream));
+		checkCudaErrors(cudaStreamSynchronize(*stream));
+	} else {
+		// launching on host memory
+		averageGeneric<float>(x, dz, n, length, propagate);
+	}
 }
 
 void NativeOps::averageDouble(Nd4jPointer *extras, Nd4jPointer *dx, double *dz, int n, Nd4jIndex length, bool propagate) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+	int mode = getDeviceId(extras[3]);
 
     double **x = reinterpret_cast<double **>(dx);
 
     if (debug && verbose)
         printf("averageDouble called\n");
 
-    dim3 launchDims = getBasicLaunchParams(getDeviceId(extras[2]), length, sizeof(double), funcAttributes[46]);
+	// launching on gpu
+	if (mode == 0) {
+		dim3 launchDims = getBasicLaunchParams(getDeviceId(extras[2]), length, sizeof(double), funcAttributes[46]);
 
-    averagingKernelDouble<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, dz, n, length, propagate);
+		averagingKernelDouble << < launchDims.x, launchDims.y, launchDims.z, *stream >> > (x, dz, n, length, propagate);
 
-    checkCudaErrors(cudaStreamSynchronize(*stream));
+		checkCudaErrors(cudaStreamSynchronize(*stream));
+	} else {
+		averageGeneric<double>(x, dz, n, length, propagate);
+	}
 }
 
 void NativeOps::shuffleDouble(Nd4jPointer *extras, Nd4jPointer *dx, Nd4jPointer *xShapeInfo, Nd4jPointer *dz, Nd4jPointer *zShapeInfo, int N, int *shuffleMap, Nd4jPointer *tadShapeInfo, Nd4jPointer *tadOffsets) {
