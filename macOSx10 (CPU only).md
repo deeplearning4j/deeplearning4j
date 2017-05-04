@@ -43,7 +43,7 @@ brew insall gcc
 
 11. make sure you have maven installed and accessible via terminal at time its available to intelliJ but but via terminal ( try `mvn --version`) if you dont have `brew install maven`
 
-12. inside the nd4j directory run `mvn clean install -X -DskipTests -Dmaven.javadoc.skip=true -pl '!org.nd4j:nd4j-cuda-8.0,!org.nd4j:nd4j-tests'` this should mainly fly by.
+12. inside the nd4j directory run `mvn clean install -X -DskipTests -Dmaven.javadoc.skip=true -pl '!org.nd4j:nd4j-cuda-8.0,!org.nd4j:nd4j-tests,!org.nd4j:nd4j-cuda-8.0-platform'` this should mainly fly by.
 
 Once you have done all the above steps and have been successful, you should now open the IntelliJ ( or any other IDE) and properly set the maven dependencies for yoru project
 
