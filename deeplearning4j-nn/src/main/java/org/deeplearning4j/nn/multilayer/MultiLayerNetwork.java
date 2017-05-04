@@ -687,15 +687,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return the list of activations for each layer
      */
     public List<INDArray> computeZ(boolean training) {
-        INDArray currInput = this.input;
+        INDArray currentInput = this.input;
+        INDArray currentZ;
 
         List<INDArray> activations = new ArrayList<>();
-        activations.add(currInput);
+        activations.add(currentInput);
 
         for (int i = 0; i < layers.length; i++) {
-                currInput = zFromPrevLayer(i, currInput, training);
-                //applies drop connect to the activation
-                activations.add(currInput);
+            //It's inefficient, but we do need to do forward pass twice, as some layers (like LSTMs)
+            // don't decompose into out = activationFn(preOut)
+            currentZ = zFromPrevLayer(i, currentInput, training);
+            currentInput = activationFromPrevLayer(i, currentInput, training);
+            activations.add(currentZ);
         }
         return activations;
     }
