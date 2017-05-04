@@ -1034,4 +1034,34 @@ public class MultiLayerTest {
         System.out.println(modelExpectedArch.summary());
         System.out.println(modelMow.summary());
     }
+
+
+    @Test
+    public void testComputeZ(){
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .weightInit(WeightInit.XAVIER)
+                .activation(Activation.TANH)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        INDArray in = Nd4j.rand(10, 10);
+        List<INDArray> preOuts = net.computeZ(in, false);
+
+        assertEquals(3, preOuts.size());    //Includes original input
+        assertEquals(in, preOuts.get(0));
+
+        INDArray preOut0 = net.getLayer(0).preOutput(in);
+        INDArray out0 = net.getLayer(0).activate(in);
+        assertEquals(preOut0, preOuts.get(1));
+
+        INDArray preOut1 = net.getLayer(1).preOutput(out0);
+        INDArray out1 = net.getLayer(1).activate(out0);
+        assertEquals(preOut1, preOuts.get(2));
+    }
 }
