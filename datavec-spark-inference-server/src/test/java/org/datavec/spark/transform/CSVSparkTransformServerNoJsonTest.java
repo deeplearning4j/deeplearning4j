@@ -4,8 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.ObjectMapper;
 import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.options.Option;
-import com.mashape.unirest.http.options.Options;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.schema.Schema;
@@ -13,19 +11,20 @@ import org.datavec.spark.transform.model.Base64NDArrayBody;
 import org.datavec.spark.transform.model.BatchRecord;
 import org.datavec.spark.transform.model.CSVRecord;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import play.libs.Json;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeNotNull;
+
 /**
  * Created by agibsonccc on 1/22/17.
  */
-public class CSVSparkTransformServerTest {
+public class CSVSparkTransformServerNoJsonTest {
 
     private static CSVSparkTransformServer server;
     private static Schema schema = new Schema.Builder().addColumnDouble("1.0").addColumnDouble("2.0").build();
@@ -58,7 +57,7 @@ public class CSVSparkTransformServerTest {
                 }
             }
         });
-        server.runMain(new String[] {"--jsonPath", fileSave.getAbsolutePath(), "-dp", "9050"});
+        server.runMain(new String[] {"-dp", "9050"});
     }
 
     @AfterClass
@@ -73,6 +72,13 @@ public class CSVSparkTransformServerTest {
 
     @Test
     public void testServer() throws Exception {
+       assertTrue(server.getTransform() == null);
+        JsonNode jsonStatus = Unirest.post("http://localhost:9050/transformprocess")
+                .header("accept", "application/json")
+                .header("Content-Type", "application/json").body(transformProcess.toJson())
+                .asJson().getBody();
+        assumeNotNull(server.getTransform());
+
         String[] values = new String[] {"1.0", "2.0"};
         CSVRecord record = new CSVRecord(values);
         JsonNode jsonNode = Unirest.post("http://localhost:9050/transform").header("accept", "application/json")

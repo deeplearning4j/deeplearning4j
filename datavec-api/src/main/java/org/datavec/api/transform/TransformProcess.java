@@ -232,7 +232,8 @@ public class TransformProcess implements Serializable {
                 Transform t = d.getTransform();
                 currValues = t.map(currValues);
 
-            } else if (d.getFilter() != null) {
+            }
+            else if (d.getFilter() != null) {
                 Filter f = d.getFilter();
                 if (f.removeExample(currValues))
                     return null;
