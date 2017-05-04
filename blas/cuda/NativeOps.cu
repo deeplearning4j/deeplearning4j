@@ -1592,6 +1592,8 @@ void   NativeOps::execTransformDouble(
 					else if (opNum == 39)
 						execTransformDouble(extraPointers, 42, dx, xShapeInfo, dx, xShapeInfo, extraParams);
 
+                    checkCudaErrors(cudaStreamSynchronize(*stream));
+
 					delete hostMaxShapeBuffer;
 
 					break;
@@ -3730,8 +3732,8 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
 					else if (opNum == 39)
 						execTransformFloat(extraPointers, 42, dx, xShapeInfo, dx, xShapeInfo, extraParams);
 
-					if (debug)
-						checkCudaErrors(cudaStreamSynchronize(*stream));
+
+					checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					delete hostMaxShapeBuffer;
 
@@ -3977,8 +3979,8 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
 					else if (opNum == 39)
 						execTransformHalf(extraPointers, 42, dx, xShapeInfo, dx, xShapeInfo, extraParams);
 
-					if (debug)
-						checkCudaErrors(cudaStreamSynchronize(*stream));
+
+					checkCudaErrors(cudaStreamSynchronize(*stream));
 
 					delete hostMaxShapeBuffer;
 
