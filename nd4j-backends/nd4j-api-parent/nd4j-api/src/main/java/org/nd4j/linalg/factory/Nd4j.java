@@ -5133,6 +5133,34 @@ public class Nd4j {
         return matrix;
     }
 
+    /**
+     * @param data
+     * @param columns
+     * @param pointerB
+     * @param pointerE
+     * @param shape
+     * @return a INDArray
+     * */
+    public static INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+        INDArray matrix = SPARSE_INSTANCE.createSparse(data, columns, pointerB, pointerE, shape);
+
+        return matrix;
+    }
+
+    /**
+     * @param data
+     * @param columns
+     * @param pointerB
+     * @param pointerE
+     * @param shape
+     * @return a INDArray
+     * */
+    public static INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+        INDArray matrix = SPARSE_INSTANCE.createSparse(data, columns, pointerB, pointerE, shape);
+
+        return matrix;
+    }
+
     ////////////////////// OTHER ///////////////////////////////
 
 

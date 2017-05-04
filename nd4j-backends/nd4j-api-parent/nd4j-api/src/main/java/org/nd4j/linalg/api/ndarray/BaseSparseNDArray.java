@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
@@ -25,8 +26,10 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     protected Boolean isVector = null;
     protected Boolean isMatrix = null;
     protected Boolean isScalar = null;
+    protected long length = -1;
     public static final boolean isSparse = true;
-    protected int[] shape; //todo: same as BaseNdArray
+    protected transient volatile DataBuffer shapeInformation;
+    protected DataBuffer shape;
 
     protected DataBuffer reallocate(DataBuffer buffer) {
         int newSize = (int) buffer.length() * 2; // should be bound to max(nnz, size*2)
@@ -113,12 +116,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public int rank() {
-        return 0;
+        return Shape.rank(shapeInformation);
     }
 
     @Override
     public int stride(int dimension) {
-        return 0;
+        return stride()[dimension];
     }
 
     @Override
@@ -1308,12 +1311,18 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public int[] shape() {
+        return Shape.shape(shapeInformation);
+    }
+
+    protected DataBuffer shapeOf() {
+        if (shape == null)
+            shape = Shape.shapeOf(shapeInfoDataBuffer());
         return shape;
     }
 
     @Override
     public int[] stride() {
-        return new int[0];
+        return shape();
     }
 
     @Override
@@ -1323,7 +1332,23 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public int size(int dimension) {
-        return 0;
+        if (isScalar()) {
+            if (dimension == 0 || dimension == 1 || dimension < 0)
+                return (int) length;
+            else
+                throw new IllegalArgumentException("Illegal dimension for scalar " + dimension);
+        }
+
+        if (dimension < 0) {
+            return shapeOf().getInt(dimension + Shape.rank(shapeInformation));
+        }
+
+        if (dimension >= rank())
+            throw new IllegalArgumentException("Invalid size: cannot get size of dimension " + dimension + " for rank "
+                    + rank() + " NDArray (array shape: " + Arrays.toString(this.shape()) + ")");
+
+
+        return shapeOf().getInt(dimension);
     }
 
     @Override

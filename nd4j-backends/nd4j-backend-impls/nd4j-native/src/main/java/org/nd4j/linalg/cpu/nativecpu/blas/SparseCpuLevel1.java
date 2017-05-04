@@ -229,7 +229,10 @@ public class SparseCpuLevel1 extends SparseBaseLevel1 {
      * */
     @Override
     protected void sroti(int N, INDArray X, DataBuffer indexes, INDArray Y, double c, double s) {
-        cblas_sroti(N, (FloatPointer) X.data().addressPointer(), (IntPointer) indexes.addressPointer(),
+        System.out.println("X data: "  + X.data());
+        System.out.println("X indexes: "  + indexes);
+        System.out.println("Y data: "  + Y.data());
+        cblas_sroti(N, (FloatPointer) X.data().addressPointer(), (IntPointer) indexes.addressPointer().capacity(X.columns()),
                 (FloatPointer) Y.data().addressPointer(), (float) c, (float) s);
     }
 

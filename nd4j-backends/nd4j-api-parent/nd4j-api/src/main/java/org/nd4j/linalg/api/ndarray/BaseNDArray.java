@@ -4025,7 +4025,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
 
-
         INDArray ret = subArray(resolution);
         return ret;
     }

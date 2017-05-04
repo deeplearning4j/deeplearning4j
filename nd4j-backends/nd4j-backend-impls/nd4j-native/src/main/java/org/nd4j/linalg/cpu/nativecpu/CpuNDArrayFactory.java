@@ -1165,4 +1165,14 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     public INDArray createSparse(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public INDArray createSparse(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray createSparse(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+        throw new UnsupportedOperationException();
+    }
 }

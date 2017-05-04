@@ -1,7 +1,15 @@
 package org.nd4j.linalg.api.ndarray;
 
+import com.google.common.primitives.Ints;
+import net.ericaro.neoitertools.Generator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.*;
+import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -14,6 +22,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     protected transient volatile DataBuffer columnsPointers;
     protected transient volatile DataBuffer pointerB;
     protected transient volatile DataBuffer pointerE;
+
 
 
     /**
@@ -35,43 +44,66 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         checkArgument(data.length == columnsPointers.length);
         checkArgument(pointerB.length == pointerE.length);
         // TODO
-        if (shape.length == 2) {
-            rows = shape[0];
-            columns = shape[1];
-            rank = shape.length;
-        } else if (shape.length == 1) {
-            rows = 1;
-            this.columns = shape[0];
-            rank = 2;
-        } else {
-            // ??
-            rank = shape.length;
-        }
-
+        this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape);
+        init(shape);
         int valuesSpace = (int) (data.length * THRESHOLD_MEMORY_ALLOCATION) + data.length;
-        this.values = Nd4j.createBuffer(data);
+        this.values = Nd4j.getDataBufferFactory().createDouble(valuesSpace);
         this.values.setData(data);
         this.columnsPointers = Nd4j.getDataBufferFactory().createInt(valuesSpace);
         this.columnsPointers.setData(columnsPointers);
-        nnz = data.length;
-        this.shape = shape;
-
+        nnz = columnsPointers.length;
+        System.out.println("nnz set for data[]");
         // The size of these pointers are constant
         int pointersSpace = rows;
         this.pointerB = Nd4j.getDataBufferFactory().createInt(pointersSpace);
         this.pointerB.setData(pointerB);
         this.pointerE = Nd4j.getDataBufferFactory().createInt(pointersSpace);
         this.pointerE.setData(pointerE);
+
+
     }
 
-    public ISparseNDArray putScalar(int row, int col, double value){
-        // TODO use shape information to get the corresponding index ?
+    public BaseSparseNDArrayCSR(float[] data, int[] columnsPointers, int[] pointerB, int[] pointerE, int[] shape) {
+        this(Nd4j.createBuffer(data), columnsPointers, pointerB, pointerE, shape);
+    }
 
-        checkArgument(row < rows);
-        checkArgument(col < columns);
+    public BaseSparseNDArrayCSR(DataBuffer data, int[] columnsPointers, int[] pointerB, int[] pointerE, int[] shape){
+        checkArgument(pointerB.length == pointerE.length);
+        this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape);
+        init(shape);
+        this.values = data;
+        this.columnsPointers = Nd4j.getDataBufferFactory().createInt(data.length());
+        this.columnsPointers.setData(columnsPointers);
+        this.nnz = columnsPointers.length;
+        // The size of these pointers are constant
+        int pointersSpace = rows;
+        this.pointerB = Nd4j.getDataBufferFactory().createInt(pointersSpace);
+        this.pointerB.setData(pointerB);
+        this.pointerE = Nd4j.getDataBufferFactory().createInt(pointersSpace);
+        this.pointerE.setData(pointerE);
+
+        }
+
+    protected void init(int[] shape) {
+
+        if (shape.length == 1) {
+            rows = 1;
+            columns = shape[0];
+        } else if (this.shape().length == 2) {
+            rows = shape[0];
+            columns = shape[1];
+        }
+        this.length = ArrayUtil.prodLong(shape);
+        rank = shape.length;
+    }
+
+    public INDArray putScalar(int row, int col, double value){
+
+        checkArgument(row < rows && 0 <= rows);
+        checkArgument(col < columns && 0 <= columns);
 
         int idx = pointerB.getInt(row);
-        int idxNextRow = pointerE.getInt(row    );
+        int idxNextRow = pointerE.getInt(row);
 
         while(columnsPointers.getInt(idx) < col && columnsPointers.getInt(idx) < idxNextRow) {
             idx ++;
@@ -94,26 +126,57 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         return this;
     }
 
-    /*
-    * TODO Should take an index in parameter and should return a view of the current matrix
-    * */
-    public INDArray get(int r, int c) {
-//        DataBuffer ret = new FloatBuffer()
-//        for(int i = 0; i < length; i++){
-//            if(cooColIndA.get(i) == c && cooRowIndA.get(i) == r) {
-//                return cooValA.get(i);
-//cooColIndA.getFloat(i);
-//            }
-//        }
-//        return 0;
-        return null;
+
+    /**
+     * Returns a subset of this array based on the specified
+     * indexes
+     *
+     * @param indexes the indexes in to the array
+     * @return a view of the array with the specified indices
+     */
+    @Override
+    public INDArray get(INDArrayIndex... indexes) {
+        //check for row/column vector and point index being 0
+        if (indexes.length == 1 && indexes[0] instanceof NDArrayIndexAll
+                || (indexes.length == 2 && (isRowVector()
+                && indexes[0] instanceof PointIndex && indexes[0].offset() == 0
+                && indexes[1] instanceof NDArrayIndexAll
+                || isColumnVector()
+                && indexes[1] instanceof PointIndex && indexes[0].offset() == 0
+                && indexes[0] instanceof NDArrayIndexAll)))
+            return this;
+
+        indexes = NDArrayIndex.resolve(shapeInfoDataBuffer(), indexes);
+        ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
+        resolution.exec(indexes);
+
+        if (indexes.length < 1)
+            throw new IllegalStateException("Invalid index found of zero length");
+
+        int[] shape = resolution.getShapes();
+        int numSpecifiedIndex = 0;
+
+        for (int i = 0; i < indexes.length; i++)
+            if (indexes[i] instanceof SpecifiedIndex)
+                numSpecifiedIndex++;
+
+
+        if (shape != null && numSpecifiedIndex > 0) {
+            // TODO create a new ndarray with the specified indexes
+            return null;
+
+        }
+
+        INDArray ret = subArray(resolution);
+        return ret;
+
     }
+
     /**
      * Return the minor pointers. (columns for CSR, rows for CSC,...)
      * */
     public DataBuffer getMinorPointer(){
-        System.out.println(columnsPointers.length() + " nnz: " + length());
-        return Nd4j.getDataBufferFactory().create(columnsPointers, 0, length());
+       return Nd4j.getDataBufferFactory().create(columnsPointers, 0, length());
     }
 
     public double[] getDoubleValues(){
@@ -219,14 +282,8 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     }
 
     @Override
-    public int[] stride() {
-        // Sparse matrix hasn't any stride. return .. ?
-        return super.stride();
-    }
-
-    @Override
     public INDArray toDense() {
-        // Dummy way - going to use the conversion routines in level2
+        // Dummy way - going to use the conversion routines in level2 (?)
         INDArray result = Nd4j.zeros(shape());
 
         int[] pointersB = pointerB.asInt();
@@ -238,5 +295,99 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
             }
         }
         return result;
+    }
+
+    @Override
+    public DataBuffer shapeInfoDataBuffer() {
+        return shapeInformation;
+    }
+
+    @Override
+    public INDArray subArray(ShapeOffsetResolution resolution) {
+
+        int[] offsets = resolution.getOffsets();
+        int[] shape = resolution.getShapes();
+
+        List<Integer> accuColumns = new ArrayList<>();
+        List<Integer> accuPointerB = new ArrayList<>();
+        List<Integer> accuPointerE = new ArrayList<>();
+
+        if(shape.length == 2) {
+
+            int firstRow = 0;
+            int lastRow = 0;
+            int firstElement = 0;
+            int lastElement = 0;
+
+            if(resolution.getOffset() != 0) {
+                //System.out.println("resolution offset " + (int)resolution.getOffset() + " length row "+ shape[1]);
+                firstRow = (int)resolution.getOffset() / shape()[1];
+                lastRow = firstRow + shape[0];
+                firstElement = (int)resolution.getOffset() % shape()[1];
+                lastElement = firstElement + shape[1];
+            } else {
+                firstRow = offsets [0];
+                lastRow = firstRow + shape[0];
+                firstElement = offsets [1];
+                lastElement = firstElement + shape[1];
+            }
+
+            System.out.println(firstRow + " to " + lastRow);
+
+            for(int rowIdx = firstRow; rowIdx < lastRow; rowIdx++){
+                //System.out.println("Row : " + rowIdx);
+                boolean isFirstInRow = true;
+                for(int idx = pointerB.getInt(rowIdx); idx < pointerE.getInt(rowIdx); idx++){
+                    //System.out.println("Idx: " + idx);
+                    int colIdx = columnsPointers.getInt(idx);
+
+                    // add the element in the subarray it it belongs to the view
+                    if(colIdx >= firstElement && colIdx < lastElement){
+
+                        // add the new column pointer for this element
+                        //System.out.println("row " + rowIdx + " idx " + idx + "colidx " + colIdx);
+                        //System.out.println("value " + values.getNumber(idx) +" - add " + colIdx + " " + offsets[1]);
+                        accuColumns.add(colIdx - offsets[1]);
+
+                        if(isFirstInRow){
+                            // Add the index of the first element of the row in the pointer array
+                            accuPointerB.add(idx);
+                            accuPointerE.add(idx+1);
+                            isFirstInRow = false;
+                        } else {
+                            // update the last element pointer array
+                            accuPointerE.set(rowIdx - firstRow,idx + 1);
+                        }
+                    }
+                    if(colIdx > lastElement){
+                        break;
+                    }
+                }
+
+                // If the row doesn't contain any element
+                if(isFirstInRow){
+                    int lastIdx = rowIdx == 0 ? 0 : accuPointerE.get(rowIdx-1);
+                    accuPointerB.add(lastIdx);
+                    accuPointerE.add(lastIdx);
+                }
+                isFirstInRow = true;
+            }
+
+            int[] newColumns = Ints.toArray(accuColumns);
+            int[] newPointerB = Ints.toArray(accuPointerB);
+            int[] newPointerE = Ints.toArray(accuPointerE);
+
+            INDArray subarray = Nd4j.createSparseCSR(values, newColumns, newPointerB, newPointerE, shape);
+
+            return subarray;
+
+        } else {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    @Override
+    public INDArray subArray(int[] offsets, int[] shape, int[] stride) {
+        return null;
     }
 }

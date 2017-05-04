@@ -1,6 +1,7 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.*;
 
 
@@ -28,6 +29,14 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
 
         super(data, columns, pointerB, pointerE, shape);
     }
+    public SparseNDArrayCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
 
+        super(data, columns, pointerB, pointerE, shape);
+    }
+
+    public SparseNDArrayCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+
+        super(data, columns, pointerB, pointerE, shape);
+    }
 
 }
