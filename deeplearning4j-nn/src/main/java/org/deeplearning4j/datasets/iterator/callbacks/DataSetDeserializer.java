@@ -11,18 +11,10 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Slf4j
 public class DataSetDeserializer implements FileCallback {
-    private AtomicLong counter = new AtomicLong(0);
-
     @Override
     public <T> T call(File file) {
-        long time1 = System.nanoTime();
         DataSet dataSet = new DataSet();
         dataSet.load(file);
-        long time2 = System.nanoTime();
-
-        if (counter.getAndIncrement() % 5 == 0)
-            log.info("Real time: [{}] ns", time2 - time1);
-
         return (T) dataSet;
     }
 }
