@@ -2608,15 +2608,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return
      */
     public RegressionEvaluation evaluateRegression(DataSetIterator iterator) {
-
-        DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
-
-        RegressionEvaluation evaluation = doEvaluation(adsi, new RegressionEvaluation(iterator.totalOutcomes()));
-
-        if (iterator.asyncSupported())
-            ((AsyncDataSetIterator) adsi).shutdown();
-
-        return evaluation;
+        return doEvaluation(iterator, new RegressionEvaluation(iterator.totalOutcomes()));
     }
 
     /**
@@ -2627,14 +2619,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return ROC evaluation on the given dataset
      */
     public ROC evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
-        DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
-
-        ROC evaluation = doEvaluation(adsi, new ROC(rocThresholdSteps));
-
-        if (iterator.asyncSupported())
-            ((AsyncDataSetIterator) adsi).shutdown();
-
-        return evaluation;
+        return doEvaluation(iterator, new ROC(rocThresholdSteps));
     }
 
     /**
@@ -2645,14 +2630,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
-        DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
-
-        ROCMultiClass evaluation = doEvaluation(adsi, new ROCMultiClass(rocThresholdSteps));
-
-        if (iterator.asyncSupported())
-            ((AsyncDataSetIterator) adsi).shutdown();
-
-        return evaluation;
+        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps));
     }
 
     /**
@@ -2666,10 +2644,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             iterator.reset();
         }
 
+        DataSetIterator iter = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 2, true) : iterator;
+
         MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
-        while (iterator.hasNext()) {
-            DataSet next = iterator.next();
+        while (iter.hasNext()) {
+            DataSet next = iter.next();
 
             if (next.getFeatureMatrix() == null || next.getLabels() == null)
                 break;
@@ -2693,6 +2673,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
             clearLayerMaskArrays();
         }
+
+        if (iterator.asyncSupported())
+            ((AsyncDataSetIterator) iter).shutdown();
 
         return evaluation;
     }
@@ -2723,13 +2706,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (labelsList == null)
             labelsList = iterator.getLabels();
 
-        DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
-
         Evaluation e = new Evaluation(labelsList, topN);
-        doEvaluation(adsi, e);
-
-        if (iterator.asyncSupported())
-            ((AsyncDataSetIterator) adsi).shutdown();
+        doEvaluation(iterator, e);
 
         return e;
     }

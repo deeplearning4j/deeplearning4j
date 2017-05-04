@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * Async prefetching iterator wrapper for MultiDataSetIterator implementations
@@ -191,7 +192,9 @@ public class AsyncDataSetIterator implements DataSetIterator {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        this.thread.shutdown();
         buffer.clear();
+
 
         backedIterator.reset();
         shouldWork.set(true);
@@ -227,6 +230,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        this.thread.shutdown();
         buffer.clear();
     }
 
@@ -368,6 +372,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
         private BlockingQueue<DataSet> queue;
         private DataSetIterator iterator;
         private DataSet terminator;
+        private AtomicBoolean isShutdown = new AtomicBoolean(false);
         private WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
                 .minSize(10 * 1024L * 1024L)
                 .overallocationLimit(prefetchSize + 1)
@@ -376,6 +381,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
                 .policyAllocation(AllocationPolicy.OVERALLOCATE)
                 .policySpill(SpillPolicy.REALLOCATE)
                 .build();
+
+        private MemoryWorkspace workspace;
 
 
         protected AsyncPrefetchThread(@NonNull BlockingQueue<DataSet> queue, @NonNull DataSetIterator iterator, @NonNull DataSet terminator, MemoryWorkspace workspace) {
@@ -390,17 +397,22 @@ public class AsyncDataSetIterator implements DataSetIterator {
         @Override
         public void run() {
             try {
+                if (useWorkspace)
+                    workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, workspaceId);
+
                 while (iterator.hasNext() && shouldWork.get()) {
                     DataSet smth = null;
 
                     if (useWorkspace) {
-                        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceId)) {
+                        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
                             smth = iterator.next();
-                        }
-                    } else smth = iterator.next();
 
-                    if (callback != null)
-                        callback.call(smth);
+                            if (callback != null)
+                                callback.call(smth);
+                        }
+                    } else {
+                        smth = iterator.next();
+                    }
 
                     if (smth != null)
                         queue.put(smth);
@@ -419,6 +431,17 @@ public class AsyncDataSetIterator implements DataSetIterator {
                 //log.info("Trying destroy...");
                 //if (useWorkspace)
                     //Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).destroyWorkspace();
+                isShutdown.set(true);
+            }
+        }
+
+        public void shutdown() {
+            while (!isShutdown.get())
+                LockSupport.parkNanos(100L);
+
+            if (workspace != null) {
+                log.debug("Manually destroying ADSI workspace");
+                workspace.destroyWorkspace(true);
             }
         }
     }
