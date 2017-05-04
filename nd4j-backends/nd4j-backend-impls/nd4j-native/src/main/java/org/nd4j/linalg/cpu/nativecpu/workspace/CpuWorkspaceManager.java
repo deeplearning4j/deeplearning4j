@@ -17,22 +17,42 @@ public class CpuWorkspaceManager extends BasicWorkspaceManager {
 
     @Override
     public MemoryWorkspace createNewWorkspace(@NonNull WorkspaceConfiguration configuration) {
-        return new CpuWorkspace(configuration);
+        MemoryWorkspace workspace = new CpuWorkspace(configuration);
+
+        backingMap.get().put(workspace.getId(), workspace);
+        pickReference(workspace);
+
+        return workspace;
     }
 
     @Override
     public MemoryWorkspace createNewWorkspace() {
-        return new CpuWorkspace(defaultConfiguration);
+        MemoryWorkspace workspace = new CpuWorkspace(defaultConfiguration);
+
+        backingMap.get().put(workspace.getId(), workspace);
+        pickReference(workspace);
+
+        return workspace;
     }
 
     @Override
-    public MemoryWorkspace createNewWorkspace(WorkspaceConfiguration configuration, String id) {
-        return new CpuWorkspace(configuration, id);
+    public MemoryWorkspace createNewWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String id) {
+        MemoryWorkspace workspace = new CpuWorkspace(configuration, id);
+
+        backingMap.get().put(id, workspace);
+        pickReference(workspace);
+
+        return workspace;
     }
 
     @Override
-    public MemoryWorkspace createNewWorkspace(WorkspaceConfiguration configuration, String id, Integer deviceId) {
-        return new CpuWorkspace(configuration, id, deviceId);
+    public MemoryWorkspace createNewWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String id, Integer deviceId) {
+        MemoryWorkspace workspace = new CpuWorkspace(configuration, id, deviceId);
+
+        backingMap.get().put(id, workspace);
+        pickReference(workspace);
+
+        return workspace;
     }
 
     @Override
