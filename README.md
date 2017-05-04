@@ -43,7 +43,7 @@ mvn clean install -Djavacpp.platform=android-xxx -DskipTests -pl '!:nd4j-cuda-8.
 
 Run ./setuposx.sh (Please ensure you have brew installed)
 
-See [macOSx10 (CPU only).md](macOSx10 (CPU only).md)
+See [macOSx10 CPU only.md](macOSx10%20%28CPU%20only%29.md)
 
 ### Linux
 
