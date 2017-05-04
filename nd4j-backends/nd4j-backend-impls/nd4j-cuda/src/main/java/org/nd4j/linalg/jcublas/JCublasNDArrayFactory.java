@@ -29,6 +29,7 @@ import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
@@ -852,52 +853,98 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         if (arrays.length == 1)
             return target.assign(arrays[0]);
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+        // we do averaging on GPU only if ALL devices have p2p links
+        if (nativeOps.isP2PAvailable() && CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed()) {
 
-        long len = target.lengthLong();
+            if (Nd4j.getExecutioner() instanceof GridExecutioner)
+                ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
-        AtomicAllocator allocator = AtomicAllocator.getInstance();
+            long len = target.lengthLong();
 
-        CudaContext context = allocator.getFlowController().prepareAction(target, arrays);
+            AtomicAllocator allocator = AtomicAllocator.getInstance();
 
-        PointerPointer extras = new PointerPointer(null, // not used
-                        context.getOldStream(), allocator.getDeviceIdPointer());
+            CudaContext context = allocator.getFlowController().prepareAction(target, arrays);
+
+            PointerPointer extras = new PointerPointer(null, // not used
+                    context.getOldStream(), allocator.getDeviceIdPointer(), new CudaPointer(0));
 
 
+            Pointer z = AtomicAllocator.getInstance().getPointer(target, context);
 
-        Pointer z = AtomicAllocator.getInstance().getPointer(target, context);
+            long[] xPointers = new long[arrays.length];
 
-        long[] xPointers = new long[arrays.length];
+            for (int i = 0; i < arrays.length; i++) {
+                if (arrays[i].lengthLong() != len)
+                    throw new RuntimeException("All arrays should have equal length for averaging");
 
-        for (int i = 0; i < arrays.length; i++) {
-            if (arrays[i].lengthLong() != len)
-                throw new RuntimeException("All arrays should have equal length for averaging");
+                AllocationPoint point = allocator.getAllocationPoint(arrays[i]);
+                xPointers[i] = point.getPointers().getDevicePointer().address();
+                point.tickDeviceWrite();
+            }
 
-            AllocationPoint point = allocator.getAllocationPoint(arrays[i]);
-            xPointers[i] = point.getPointers().getDevicePointer().address();
-            point.tickDeviceWrite();
-        }
+            CudaDoubleDataBuffer tempX = new CudaDoubleDataBuffer(arrays.length);
 
-        CudaDoubleDataBuffer tempX = new CudaDoubleDataBuffer(arrays.length);
+            allocator.memcpyBlocking(tempX, new LongPointer(xPointers), xPointers.length * 8, 0);
 
-        allocator.memcpyBlocking(tempX, new LongPointer(xPointers), xPointers.length * 8, 0);
+            PointerPointer x = new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context));
 
-        PointerPointer x = new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context));
+            if (target.data().dataType() == DataBuffer.Type.DOUBLE) {
+                nativeOps.averageDouble(extras, x, (DoublePointer) z, arrays.length, len, true);
+            } else if (target.data().dataType() == DataBuffer.Type.FLOAT) {
+                nativeOps.averageFloat(extras, x, (FloatPointer) z, arrays.length, len, true);
+            } else {
+                nativeOps.averageHalf(extras, x, (ShortPointer) z, arrays.length, len, true);
+            }
 
-        if (target.data().dataType() == DataBuffer.Type.DOUBLE) {
-            nativeOps.averageDouble(extras, x, (DoublePointer) z, arrays.length, len, true);
-        } else if (target.data().dataType() == DataBuffer.Type.FLOAT) {
-            nativeOps.averageFloat(extras, x, (FloatPointer) z, arrays.length, len, true);
+            allocator.getFlowController().registerAction(context, target, arrays);
+
+            tempX.address();
+
+            return target;
         } else {
-            nativeOps.averageHalf(extras, x, (ShortPointer) z, arrays.length, len, true);
+            // otherwise we do averging on CPU side
+            /**
+             * We expect all operations are complete at this point
+             */
+            long len = target.lengthLong();
+
+            CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+            PointerPointer dataPointers = new PointerPointer(arrays.length);
+            PointerPointer extras = new PointerPointer(null, // not used
+                    context.getOldStream(), AtomicAllocator.getInstance().getDeviceIdPointer(), new CudaPointer(1) );
+
+            for (int i = 0; i < arrays.length; i++) {
+                Nd4j.getCompressor().autoDecompress(arrays[i]);
+
+                if (arrays[i].lengthLong() != len)
+                    throw new RuntimeException("All arrays should have equal length for averaging");
+
+                dataPointers.put(i, AtomicAllocator.getInstance().getHostPointer(arrays[i]));
+            }
+
+            if (target.data().dataType() == DataBuffer.Type.DOUBLE) {
+                nativeOps.averageDouble(extras, dataPointers, (DoublePointer) AtomicAllocator.getInstance().getHostPointer(target), arrays.length,
+                        len, true);
+            } else if (target.data().dataType() == DataBuffer.Type.FLOAT) {
+                nativeOps.averageFloat(extras, dataPointers, (FloatPointer) AtomicAllocator.getInstance().getHostPointer(target), arrays.length,
+                        len, true);
+            } else {
+                nativeOps.averageHalf(extras, dataPointers, (ShortPointer) AtomicAllocator.getInstance().getHostPointer(target), arrays.length, len,
+                        true);
+            }
+
+            AtomicAllocator.getInstance().getAllocationPoint(target).tickHostWrite();
+
+            // TODO: make propagation optional maybe?
+            if (true) {
+                for (int i = 0; i < arrays.length; i++) {
+                    AtomicAllocator.getInstance().getAllocationPoint(arrays[i]).tickHostWrite();
+                }
+            }
+
+            return target;
         }
-
-        allocator.getFlowController().registerAction(context, target, arrays);
-
-        tempX.address();
-
-        return target;
     }
 
     @Override

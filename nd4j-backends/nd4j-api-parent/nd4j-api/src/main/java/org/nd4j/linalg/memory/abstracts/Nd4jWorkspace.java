@@ -111,7 +111,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         // and actual workspace allocation
         currentSize.set(workspaceConfiguration.getInitialSize());
 
-        if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED) {
+        if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE) {
             if (workspaceConfiguration.getOverallocationLimit() < 1.0)
                 throw new ND4JIllegalStateException("For cyclic workspace overallocation should be positive integral value.");
 
