@@ -99,7 +99,7 @@ public class CpuWorkspace extends Nd4jWorkspace {
             clearExternalAllocations();
 
         stepsCount.set(Long.MAX_VALUE - 100);
-        clearPinnedAllocations(true);
+        clearPinnedAllocations(extended);
 
         if (workspace.getHostPointer() != null)
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
