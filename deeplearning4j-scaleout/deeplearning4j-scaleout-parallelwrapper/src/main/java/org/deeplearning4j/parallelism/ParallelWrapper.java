@@ -198,6 +198,9 @@ public class ParallelWrapper implements AutoCloseable {
             time1 = System.currentTimeMillis();
         }
 
+        if (prefetchSize > 0 && source.asyncSupported())
+            ((AsyncMultiDataSetIterator) iterator).shutdown();
+
         // sanity checks, or the dataset may never average
         if (!wasAveraged)
             log.warn("Parameters were never averaged on current fit(). Ratios of batch size, num workers, and averaging frequency may be responsible.");
@@ -423,6 +426,9 @@ public class ParallelWrapper implements AutoCloseable {
 
             time1 = System.currentTimeMillis();
         }
+
+        if (prefetchSize > 0 && source.asyncSupported())
+            ((AsyncDataSetIterator) iterator).shutdown();
 
         //Collections.sort(nanos);
         //int pos = (int) (nanos.size() * 0.85);
