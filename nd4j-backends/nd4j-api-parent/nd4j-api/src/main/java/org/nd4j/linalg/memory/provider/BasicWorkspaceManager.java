@@ -212,6 +212,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
                     if (reference != null) {
 //                      log.info("Releasing reference for Workspace [{}]", reference.getId());
                         PointersPair pair = reference.getPointersPair();
+                        // purging workspace planes
                         if (pair!= null) {
                             if (pair.getDevicePointer() != null) {
                                 //log.info("Deallocating device...");
@@ -226,6 +227,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
                             }
                         }
 
+                        // purging all spilled pointers
                         for (PointersPair pair2 : reference.getExternalPointers()) {
                             if (pair2 != null) {
                                 if (pair2.getHostPointer() != null)
@@ -236,6 +238,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
                             }
                         }
 
+                        // purging all pinned pointers
                         while ((pair = reference.getPinnedPointers().poll()) != null) {
                             if (pair.getHostPointer() != null)
                                 Nd4j.getMemoryManager().release(pair.getHostPointer(), MemoryKind.HOST);

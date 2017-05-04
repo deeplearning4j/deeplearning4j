@@ -459,7 +459,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
 
         if (pinnedCount.get() > 0)
-            clearPinnedAllocations();
+            clearPinnedAllocations(false);
 
         if (trimmedMode.get() && trimmedStep.get() + 2 < stepsCount.get()) {
             initialBlockSize.set(cycleAllocations.get());
@@ -482,7 +482,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         }
     }
 
-    protected abstract void clearPinnedAllocations();
+    protected abstract void clearPinnedAllocations(boolean extended);
 
     protected abstract void clearExternalAllocations();
 

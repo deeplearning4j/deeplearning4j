@@ -85,7 +85,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
             clearExternalAllocations();
 
         stepsCount.set(Long.MAX_VALUE - 100);
-        clearPinnedAllocations();
+        clearPinnedAllocations(true);
 
         if (workspace.getHostPointer() != null)
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
@@ -261,7 +261,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
     }
 
     @Override
-    protected void clearPinnedAllocations() {
+    protected void clearPinnedAllocations(boolean extended) {
         if (isDebug.get())
             log.info("Workspace [{}] device_{} threadId {} cycle {}: clearing pinned allocations...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), Thread.currentThread().getId(), cyclesCount.get());
 
@@ -276,7 +276,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
             if (isDebug.get())
                 log.info("Allocation step: {}; Current step: {}", stepNumber, stepCurrent);
 
-            if (stepNumber + 2 < stepCurrent) {
+            if (stepNumber + 2 < stepCurrent|| extended) {
                 pinnedAllocations.remove();
 
                 if (pair.getDevicePointer() != null) {
