@@ -44,7 +44,7 @@ public class ActorCriticCompGraph implements IActorCritic {
 
 
     public void applyGradient(Gradient[] gradient, int batchSize) {
-        cg.getUpdater().update(cg, gradient[0], 1, batchSize);
+        cg.getUpdater().update(gradient[0], 1, batchSize);
         cg.params().subi(gradient[0].gradient());
     }
 
