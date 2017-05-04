@@ -259,6 +259,10 @@ public class ComputationGraph implements Serializable, Model {
      * Set the specified input for the ComputationGraph
      */
     public void setInput(int inputNum, INDArray input) {
+        if(inputs == null){
+            //May be null after clear()
+            inputs = new INDArray[numInputArrays];
+        }
         inputs[inputNum] = input;
     }
 
@@ -1763,6 +1767,7 @@ public class ComputationGraph implements Serializable, Model {
             setLayerMaskArrays(dataSet.getFeaturesMaskArrays(), dataSet.getLabelsMaskArrays());
         }
 
+        double score = 0.0;
         MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
@@ -1774,7 +1779,6 @@ public class ComputationGraph implements Serializable, Model {
             double l1 = calcL1();
             double l2 = calcL2();
 
-            double score = 0.0;
             int i = 0;
             for (String s : configuration.getNetworkOutputs()) {
                 Layer outLayer = verticesMap.get(s).getLayer();
