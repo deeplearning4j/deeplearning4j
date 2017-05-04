@@ -82,7 +82,8 @@ public class CpuWorkspace extends Nd4jWorkspace {
 
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         for (PointersPair pair: externalAllocations) {
-            nativeOps.freeHost(pair.getHostPointer());
+            if (pair.getHostPointer() != null)
+                nativeOps.freeHost(pair.getHostPointer());
         }
         externalAllocations.clear();
         externalCount.set(0);

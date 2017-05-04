@@ -280,12 +280,19 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 pinnedAllocations.remove();
 
                 if (pair.getDevicePointer() != null) {
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getHostPointer(), null);
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getDevicePointer(), null);
                     pinnedCount.decrementAndGet();
+
+                    if (isDebug.get())
+                        log.info("deleting external device allocation ");
                 }
 
-                if (pair.getHostPointer() != null)
+                if (pair.getHostPointer() != null) {
                     NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pair.getHostPointer());
+
+                    if (isDebug.get())
+                        log.info("deleting external host allocation ");
+                }
 
                 pinnedAllocationsSize.addAndGet(pair.getRequiredMemory() * -1);
             } else {
@@ -303,11 +310,19 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
         try {
             for (PointersPair pair : externalAllocations) {
-                if (pair.getHostPointer() != null)
+                if (pair.getHostPointer() != null) {
                     NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pair.getHostPointer());
 
-                if (pair.getDevicePointer() != null)
+                    if (isDebug.get())
+                        log.info("deleting external host allocation... ");
+                }
+
+                if (pair.getDevicePointer() != null) {
                     NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getDevicePointer(), null);
+
+                    if (isDebug.get())
+                        log.info("deleting external device allocation... ");
+                }
             }
         } catch (Exception e) {
             log.error("RC: Workspace [{}] device_{} threadId {} guid [{}]: clearing external allocations...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), Thread.currentThread().getId(), guid);
