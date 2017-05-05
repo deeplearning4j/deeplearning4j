@@ -496,7 +496,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         }
 
         assertEquals(2, workspace.getNumberOfPinnedAllocations());
-        assertEquals(1, workspace.getStepNumber());
+        assertEquals(0, workspace.getStepNumber());
         assertEquals(4, workspace.getCyclesCount());
 
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(adsiConfiguration, "ADSI")) {
@@ -508,7 +508,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         assertEquals(1, workspace.getStepNumber());
         assertEquals(5, workspace.getCyclesCount());
 
-        for (int i = 0; i < 13; i++) {
+        for (int i = 0; i < 12; i++) {
             try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(adsiConfiguration, "ADSI")) {
                 // allocating same shape
                 array1 = Nd4j.create(8, 128, 100);
@@ -516,7 +516,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         }
 
         // Now we know that workspace was reallocated and offset was shifted to the end of workspace
-        assertEquals(5, workspace.getStepNumber());
+        assertEquals(4, workspace.getStepNumber());
         assertEquals(8 * 128 * 200 * 4 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
         assertEquals(8 * 128 * 200 * 4 * Nd4j.sizeOfDataType(), workspace.getHostOffset());
         assertEquals(8 * 128 * 200 * 4 * Nd4j.sizeOfDataType(), workspace.getDeviceOffset());

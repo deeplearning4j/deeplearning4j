@@ -94,7 +94,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
                 assertEquals("Failed on iteration " + i, (i + 1) * 1000 * Nd4j.sizeOfDataType(), workspace.getDeviceOffset());
             }
 
-            if (e >= 1) {
+            if (e >= 2) {
                 assertEquals("Failed on iteration " + e,0, workspace.getNumberOfPinnedAllocations());
             } else {
                 assertEquals("Failed on iteration " + e,1, workspace.getNumberOfPinnedAllocations());
