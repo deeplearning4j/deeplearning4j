@@ -272,15 +272,18 @@ public class DefaultTrainer extends Thread implements Trainer {
                         // we ensure all operations are finished in this training round
                         Nd4j.getExecutioner().commit();
 
-                        // we ensure memory is updated on host side
-                        Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(), AffinityManager.Location.HOST);
+                        // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
+                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported()) {
+                            // we ensure memory is updated on host side
+                            Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(), AffinityManager.Location.HOST);
 
-                        if (replicatedModel instanceof MultiLayerNetwork) {
-                            Updater updaterReplica = ((MultiLayerNetwork) replicatedModel).getUpdater();
-                            Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
-                        } else {
-                            ComputationGraphUpdater updaterReplica = ((ComputationGraph) replicatedModel).getUpdater();
-                            Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
+                            if (replicatedModel instanceof MultiLayerNetwork) {
+                                Updater updaterReplica = ((MultiLayerNetwork) replicatedModel).getUpdater();
+                                Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
+                            } else {
+                                ComputationGraphUpdater updaterReplica = ((ComputationGraph) replicatedModel).getUpdater();
+                                Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
+                            }
                         }
 
                         running.decrementAndGet();
@@ -300,11 +303,16 @@ public class DefaultTrainer extends Thread implements Trainer {
                         // we ensure all operations are finished in this training round
                         Nd4j.getExecutioner().commit();
 
-                        // we ensure memory is updated on host side
-                        Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(), AffinityManager.Location.HOST);
 
-                        ComputationGraphUpdater updaterReplica = ((ComputationGraph) replicatedModel).getUpdater();
-                        Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
+                        // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
+                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported()) {
+
+                            // we ensure memory is updated on host side
+                            Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(), AffinityManager.Location.HOST);
+
+                            ComputationGraphUpdater updaterReplica = ((ComputationGraph) replicatedModel).getUpdater();
+                            Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
+                        }
 
                         running.decrementAndGet();
                     }
