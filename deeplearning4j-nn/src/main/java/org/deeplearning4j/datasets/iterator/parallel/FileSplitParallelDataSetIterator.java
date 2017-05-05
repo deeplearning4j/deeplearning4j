@@ -63,7 +63,7 @@ public class FileSplitParallelDataSetIterator extends BaseParallelDataSetIterato
 
 
         List<File> files = new ArrayList<>(FileUtils.listFiles(rootFolder, fileFilter, null));
-        log.info("Files found: {}; Producers: {}", files.size(), numProducers);
+        log.debug("Files found: {}; Producers: {}", files.size(), numProducers);
 
         if (files.size() < 1)
             throw new DL4JInvalidInputException("No suitable files were found");
@@ -80,7 +80,7 @@ public class FileSplitParallelDataSetIterator extends BaseParallelDataSetIterato
 
     @Override
     public boolean hasNextFor(int consumer) {
-        if (consumer >= numProducers)
+        if (consumer >= numProducers  || consumer < 0)
             throw new ND4JIllegalStateException("Non-existent consumer was requested");
 
         return asyncIterators.get(consumer).hasNext();
@@ -88,7 +88,7 @@ public class FileSplitParallelDataSetIterator extends BaseParallelDataSetIterato
 
     @Override
     public DataSet nextFor(int consumer) {
-        if (consumer >= numProducers)
+        if (consumer >= numProducers || consumer < 0)
             throw new ND4JIllegalStateException("Non-existent consumer was requested");
 
         return asyncIterators.get(consumer).next();
@@ -96,7 +96,7 @@ public class FileSplitParallelDataSetIterator extends BaseParallelDataSetIterato
 
     @Override
     protected void reset(int consumer) {
-        if (consumer >= numProducers)
+        if (consumer >= numProducers || consumer < 0)
             throw new ND4JIllegalStateException("Non-existent consumer was requested");
 
         asyncIterators.get(consumer).reset();

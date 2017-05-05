@@ -4,27 +4,33 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 /**
- * This is utility class, that allows easy handling of multiple joint boolean states
+ * This is utility class, that allows easy handling of multiple joint boolean states.
+ *
+ * PLEASE NOTE: It's suited for tracking up to 32 states in total.
+ * PLEASE NOTE: This class is NOT thread safe
  *
  * @author raver119@gmail.com
  */
 @Slf4j
-public class MultiBoolean {
+class MultiBoolean {
     private final int numEntries;
     private int holder = 0;
     private int max = 0;
     private boolean oneTime;
     private MultiBoolean timeTracker;
 
-    public MultiBoolean(int numEntries) {
+    MultiBoolean(int numEntries) {
         this(numEntries, false);
     }
 
-    public MultiBoolean(int numEntries, boolean initialValue) {
+    MultiBoolean(int numEntries, boolean initialValue) {
         this(numEntries, initialValue, false);
     }
 
-    public MultiBoolean(int numEntries, boolean initialValue, boolean oneTime) {
+    MultiBoolean(int numEntries, boolean initialValue, boolean oneTime) {
+        if (numEntries > 32)
+            throw new UnsupportedOperationException("Up to 32 entries can be tracked at once.");
+
         this.oneTime = oneTime;
         this.numEntries = numEntries;
         for (int i = 1; i <= numEntries; i++) {
@@ -45,7 +51,7 @@ public class MultiBoolean {
      * @param entry
      */
     public void set(boolean value, int entry){
-        if (entry > numEntries)
+        if (entry > numEntries || entry < 0)
             throw new ND4JIllegalStateException("Entry index given (" + entry + ")in is higher then configured one (" + numEntries + ")");
 
         if (oneTime && this.timeTracker.get(entry))
@@ -67,7 +73,7 @@ public class MultiBoolean {
      * @return
      */
     public boolean get(int entry) {
-        if (entry > numEntries)
+        if (entry > numEntries  || entry < 0)
             throw new ND4JIllegalStateException("Entry index given (" + entry + ")in is higher then configured one (" + numEntries + ")");
 
         return (this.holder & 1 << (entry + 1)) != 0;

@@ -56,7 +56,7 @@ public class JointParallelDataSetIterator extends BaseParallelDataSetIterator {
     }
 
     public boolean hasNextFor(int consumer) {
-        if (consumer >= numProducers)
+        if (consumer >= numProducers || consumer < 0)
             throw new ND4JIllegalStateException("Non-existent consumer was requested");
 
         return asyncIterators.get(consumer).hasNext();
@@ -64,14 +64,14 @@ public class JointParallelDataSetIterator extends BaseParallelDataSetIterator {
 
 
     public DataSet nextFor(int consumer) {
-        if (consumer >= numProducers)
+        if (consumer >= numProducers || consumer < 0)
             throw new ND4JIllegalStateException("Non-existent consumer was requested");
 
         return asyncIterators.get(consumer).next();
     }
 
     protected void reset(int consumer) {
-        if (consumer >= numProducers)
+        if (consumer >= numProducers || consumer < 0)
             throw new ND4JIllegalStateException("Non-existent consumer was requested");
 
         asyncIterators.get(consumer).reset();

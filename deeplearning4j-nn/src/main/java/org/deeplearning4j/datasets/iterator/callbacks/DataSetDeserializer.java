@@ -7,6 +7,8 @@ import java.io.File;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * This callback does DataSet deserialization of a given file.
+ *
  * @author raver119@gmail.com
  */
 @Slf4j
