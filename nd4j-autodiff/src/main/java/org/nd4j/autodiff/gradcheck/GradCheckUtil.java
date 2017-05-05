@@ -36,6 +36,7 @@ public class GradCheckUtil {
      * @return
      */
     public static boolean checkGradients(TensorGradVariable wrt,
+                                         TensorGradVariable function,
                                          double epsilon,
                                          double maxRelError,
                                          double minAbsoluteError,
@@ -56,8 +57,18 @@ public class GradCheckUtil {
                     + "DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE); before using GradientCheckUtil");
         }
 
+        /**
+         * Need to pass in the exact gradient.
+         * This is obtained from executing a subgraph
+         * with just the gradient part to get the exact values.
+         * You then run the comparison vs the approximation from that.
+         *
+         * To obtain the comparison/computing the values,  use the below routine
+         */
+
 
         TensorGrad tensorGrad = wrt.getTensorGrad();
+        TensorGradVariable variable = tensorGrad.grad(function,wrt);
         int totalNFailures = 0;
         double maxError = 0.0;
         for(Map.Entry<String,INDArray> entry : inputParameters.entrySet()) {
@@ -117,7 +128,7 @@ public class GradCheckUtil {
                 }
             }
         }
-        
+
         return totalNFailures == 0;
     }
 }

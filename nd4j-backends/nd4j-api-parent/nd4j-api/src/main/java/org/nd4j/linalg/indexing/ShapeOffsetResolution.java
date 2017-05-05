@@ -583,7 +583,14 @@ public class ShapeOffsetResolution implements Serializable {
             this.offset = 0;
         }
         if (numIntervals > 0 && arr.rank() > 2) {
-            if (encounteredAll && arr.size(0) != 1)
+            boolean containsOne = false;
+            for(int i = 0; i < arr.rank(); i++) {
+                if(arr.size(i) == 1) {
+                    containsOne = true;
+                    break;
+                }
+            }
+            if (encounteredAll && !containsOne || anyHaveStrideOne(indexes))
                 this.offset += ArrayUtil.dotProductLong(accumOffsets, accumStrides);
             else
                 this.offset += ArrayUtil.dotProductLong(accumOffsets, accumStrides) / Math.max(1, numIntervals);

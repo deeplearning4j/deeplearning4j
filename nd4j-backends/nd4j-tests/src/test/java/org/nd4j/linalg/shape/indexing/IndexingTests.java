@@ -56,7 +56,6 @@ public class IndexingTests extends BaseNd4jTest {
 
                 double val = arr.getDouble( slice, i,j );
                 int[] sub = new int[]{ i - iStart ,j - jStart};
-
                 subArr_A.putScalar( sub, val );
             }
         }
@@ -65,17 +64,18 @@ public class IndexingTests extends BaseNd4jTest {
 
         INDArray subArr_B = Nd4j.create( new int[]{ 3, 3 } );
 
-        INDArrayIndex ndi_Slice = NDArrayIndex.point( slice );
-        INDArrayIndex ndi_J     = NDArrayIndex.interval( iStart, iEnd );
+        INDArrayIndex ndi_Slice = NDArrayIndex.point(slice);
+        INDArrayIndex ndi_J     = NDArrayIndex.interval(iStart,iEnd);
         INDArrayIndex ndi_I     = NDArrayIndex.interval( iStart, iEnd );
 
         INDArrayIndex[] whereToGet = new INDArrayIndex[]{ ndi_Slice, ndi_J, ndi_I };
 
-        INDArray whatToPut = arr.get( whereToGet );
+        INDArray whatToPut = arr.get(whereToGet);
+        assertEquals(subArr_A,whatToPut);
         System.out.println(whatToPut);
         INDArrayIndex[] whereToPut = new INDArrayIndex[]{ NDArrayIndex.all(), NDArrayIndex.all() };
 
-        subArr_B.put( whereToPut, whatToPut );
+        subArr_B.put(whereToPut, whatToPut);
 
         assertEquals( subArr_A, subArr_B );
 

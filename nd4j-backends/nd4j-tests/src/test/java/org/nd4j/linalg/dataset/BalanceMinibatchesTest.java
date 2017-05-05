@@ -46,18 +46,20 @@ public class BalanceMinibatchesTest extends BaseNd4jTest {
 
         assertTrue(iterator.resetSupported()); // this is testing the Iris dataset more than anything
         iterator.reset();
-        List<Double> totalCounts = new ArrayList<Double>(iterator.totalOutcomes());
+        List<Double> totalCounts = new ArrayList<>(iterator.totalOutcomes());
         while (iterator.hasNext()) {
             Map<Integer, Double> outcomes = iterator.next().labelCounts();
             for (int i = 0; i < iterator.totalOutcomes(); i++) {
                 if (outcomes.containsKey(i)) {
+                    totalCounts.add(0.0);
                     totalCounts.set(i, totalCounts.get(i) + outcomes.get(i));
                 }
             }
         }
 
-        List<Integer> fullBatches = new ArrayList<Integer>(totalCounts.size());
+        List<Integer> fullBatches = new ArrayList<>(totalCounts.size());
         for (int i = 0; i < totalCounts.size(); i++) {
+            fullBatches.add(0);
             fullBatches.set(i, totalCounts.get(i).intValue() * iterator.totalOutcomes() / miniBatchSize);
         }
 
