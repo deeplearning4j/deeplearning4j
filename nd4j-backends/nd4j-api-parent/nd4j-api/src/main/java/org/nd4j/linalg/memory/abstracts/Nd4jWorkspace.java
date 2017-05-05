@@ -116,7 +116,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 throw new ND4JIllegalStateException("For cyclic workspace overallocation should be positive integral value.");
 
             stepsNumber = (int) (workspaceConfiguration.getOverallocationLimit() + 1);
-            log.info("Steps: {}", stepsNumber);
+            log.debug("Steps: {}", stepsNumber);
         }
 
         //if (workspaceConfiguration.getPolicyLearning() == LearningPolicy.OVER_TIME && workspaceConfiguration.getCyclesBeforeInitialization() < 1)
@@ -453,7 +453,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 //log.info("Initializing on cycle {}", cyclesCount.get());
                 initializeWorkspace();
             } else if (currentSize.get() > 0 && cycleAllocations.get() > 0 && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE && workspaceConfiguration.getPolicyReset() != ResetPolicy.ENDOFBUFFER_REACHED) {
-                log.info("Reinit on cycle {}; step: {}", cyclesCount.get(), stepsCount.get());
+                log.debug("Reinit on cycle {}; step: {}", cyclesCount.get(), stepsCount.get());
                 initializeWorkspace();
             }
         }
