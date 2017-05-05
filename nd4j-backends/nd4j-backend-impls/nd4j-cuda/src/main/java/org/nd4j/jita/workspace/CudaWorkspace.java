@@ -129,7 +129,6 @@ public class CudaWorkspace extends Nd4jWorkspace {
         if (trimmer && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE && !trimmedMode.get()) {
             trimmedMode.set(true);
             trimmedStep.set(stepsCount.get());
-            log.info("Entering trimmed mode");
         }
 
         if (kind == MemoryKind.DEVICE) {

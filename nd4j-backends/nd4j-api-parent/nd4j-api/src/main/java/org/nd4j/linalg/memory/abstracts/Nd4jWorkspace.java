@@ -432,7 +432,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
 
         if (cycleAllocations.get() > maxCycle.get()) {
-            log.info("Workspace [{}], current cycle: {}; max cycle: {}", id, cycleAllocations.get(), maxCycle.get());
+            log.debug("Workspace [{}], current cycle: {}; max cycle: {}", id, cycleAllocations.get(), maxCycle.get());
             maxCycle.set(cycleAllocations.get());
         }
 
