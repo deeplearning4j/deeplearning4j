@@ -27,6 +27,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
     public static final int DEFAULT_PRECISION = 5;
 
+    private boolean initialized;
     private List<String> columnNames;
     private int precision;
     private long exampleCount = 0;
@@ -39,6 +40,10 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     private INDArray sumOfProducts;
     private INDArray sumSquaredLabels;
     private INDArray sumSquaredPredicted;
+
+    public RegressionEvaluation(){
+        this(null, DEFAULT_PRECISION);
+    }
 
     /** Create a regression evaluation object with the specified number of columns, and default precision
      * for the stats() method.
@@ -60,7 +65,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
      * @param columnNames Names of the columns
      */
     public RegressionEvaluation(String... columnNames) {
-        this(Arrays.asList(columnNames), DEFAULT_PRECISION);
+        this(columnNames == null ? null : Arrays.asList(columnNames), DEFAULT_PRECISION);
     }
 
     /** Create a regression evaluation object with default precision for the stats() method
@@ -74,14 +79,20 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
      * @param columnNames Names of the columns
      */
     public RegressionEvaluation(List<String> columnNames, int precision) {
-        if (columnNames == null || columnNames.size() == 0) {
-            throw new IllegalArgumentException(
-                            "Column names (or integer number of columns) must be specified (got: " + columnNames + ")");
-        }
-        this.columnNames = columnNames;
         this.precision = precision;
 
-        int n = columnNames.size();
+        if (columnNames == null || columnNames.size() == 0) {
+            initialized = false;
+        } else {
+            this.columnNames = columnNames;
+            initialize(columnNames.size());
+        }
+    }
+
+    private void initialize(int n){
+        if(columnNames == null || columnNames.size() != n){
+            columnNames = createDefaultColumnNames(n);
+        }
         labelsSumPerColumn = Nd4j.zeros(n);
         sumSquaredErrorsPerColumn = Nd4j.zeros(n);
         sumAbsErrorsPerColumn = Nd4j.zeros(n);
@@ -91,6 +102,8 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         sumOfProducts = Nd4j.zeros(n);
         sumSquaredLabels = Nd4j.zeros(n);
         sumSquaredPredicted = Nd4j.zeros(n);
+
+        initialized = true;
     }
 
     private static List<String> createDefaultColumnNames(int nColumns) {
@@ -102,6 +115,9 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
     @Override
     public void eval(INDArray labels, INDArray predictions) {
+        if(!initialized){
+            initialize(labels.size(1));
+        }
         //References for the calculations is this section:
         //https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
         //https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient#For_a_sample
