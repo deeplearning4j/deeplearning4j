@@ -289,8 +289,7 @@ public class ParallelInference {
                     synchronized (locker) {
                         this.replicatedModel.setParams(protoModel.params());
 
-                        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                        Nd4j.getExecutioner().commit();
                     }
                 } else if (protoModel instanceof MultiLayerNetwork) {
                     this.replicatedModel = new MultiLayerNetwork(MultiLayerConfiguration
@@ -300,8 +299,7 @@ public class ParallelInference {
                     synchronized (locker) {
                         this.replicatedModel.setParams(protoModel.params());
 
-                        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                        Nd4j.getExecutioner().commit();
                     }
                 }
 

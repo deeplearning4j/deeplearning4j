@@ -32,8 +32,7 @@ public class Add implements Function2<INDArray, INDArray, INDArray> {
     public INDArray call(INDArray v1, INDArray v2) throws Exception {
         INDArray res = v1.addi(v2);
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         return res;
     }

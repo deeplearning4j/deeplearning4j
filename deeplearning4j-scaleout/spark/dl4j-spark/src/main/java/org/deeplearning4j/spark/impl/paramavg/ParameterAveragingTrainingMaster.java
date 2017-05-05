@@ -924,10 +924,7 @@ public class ParameterAveragingTrainingMaster
             }
         }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
-
-
+        Nd4j.getExecutioner().commit();
 
         log.info("Completed training of split {} of {}", splitNum, totalSplits);
 

@@ -4,7 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.util.ClassPathResource;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
-import org.deeplearning4j.datasets.iterator.parallel.ParallelExistingMiniBatchDataSetIterator;
+import org.deeplearning4j.datasets.iterator.FileSplitDataSetIterator;
+import org.deeplearning4j.datasets.iterator.callbacks.DataSetDeserializer;
+import org.deeplearning4j.datasets.iterator.parallel.FileSplitParallelDataSetIterator;
 import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
@@ -35,6 +37,38 @@ public class ParallelExistingMiniBatchDataSetIteratorTest {
         }
     }
 
+
+    @Test
+    public void testNewSimpleLoop1() throws Exception {
+        FileSplitParallelDataSetIterator fspdsi = new FileSplitParallelDataSetIterator(rootFolder, "mnist-train-%d.bin", new DataSetDeserializer());
+
+        List<Pair<Long, Long>> pairs = new ArrayList<>();
+
+
+        long time1 = System.nanoTime();
+        int cnt = 0;
+        while (fspdsi.hasNext()) {
+            DataSet ds = fspdsi.next();
+            long time2 = System.nanoTime();
+            pairs.add(new Pair<Long, Long>(time2 - time1, 0L));
+            assertNotNull(ds);
+
+            // imitating processing here
+            Thread.sleep(10);
+
+            cnt++;
+            time1 = System.nanoTime();
+        }
+
+        assertEquals(26, cnt);
+
+        for (Pair<Long, Long> times: pairs) {
+            log.info("Parallel: {} ns; Simple: {} ns", times.getFirst(), times.getSecond());
+        }
+    }
+
+
+/*
     @Test
     public void testSimpleLoop1() throws Exception {
         ParallelExistingMiniBatchDataSetIterator iterator = new ParallelExistingMiniBatchDataSetIterator(rootFolder,"mnist-train-%d.bin", 4);
@@ -117,4 +151,5 @@ public class ParallelExistingMiniBatchDataSetIteratorTest {
         }
         assertEquals(36, cnt);
     }
+    */
 }

@@ -1679,18 +1679,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray input, boolean train) {
+        WorkspaceMode cMode = layerWiseConfigurations.getTrainingWorkspaceMode();
+        layerWiseConfigurations.setTrainingWorkspaceMode(layerWiseConfigurations.getInferenceWorkspaceMode());
         MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
 
         try(MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
-            return silentOutput(input, train).detach();
-        }
-    }
+            INDArray ret = silentOutput(input, train).detach();
 
-    public INDArray outputStrict(INDArray input, boolean train) {
-        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
-
-        try(MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
-            return silentOutput(input, train).detach();
+            layerWiseConfigurations.setTrainingWorkspaceMode(cMode);
+            return ret;
         }
     }
 
@@ -1706,22 +1703,24 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * of varying lengths within the same minibatch.
      */
     public INDArray output(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask) {
+        WorkspaceMode cMode = layerWiseConfigurations.getTrainingWorkspaceMode();
+        layerWiseConfigurations.setTrainingWorkspaceMode(layerWiseConfigurations.getInferenceWorkspaceMode());
         MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
 
         try(MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
-            return silentOutput(input, train, featuresMask, labelsMask).detach();
+            INDArray ret = silentOutput(input, train, featuresMask, labelsMask).detach();
+
+            layerWiseConfigurations.setTrainingWorkspaceMode(cMode);
+            return ret;
         }
     }
 
     protected INDArray silentOutput(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask) {
-        WorkspaceMode cMode = layerWiseConfigurations.getTrainingWorkspaceMode();
-        layerWiseConfigurations.setTrainingWorkspaceMode(layerWiseConfigurations.getInferenceWorkspaceMode());
+
 
         setLayerMaskArrays(featuresMask, labelsMask);
         INDArray out = silentOutput(input, train);
         clearLayerMaskArrays();
-
-        layerWiseConfigurations.setTrainingWorkspaceMode(cMode);
         return out;
     }
 
@@ -2611,15 +2610,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return
      */
     public RegressionEvaluation evaluateRegression(DataSetIterator iterator) {
-
-        DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
-
-        RegressionEvaluation evaluation = doEvaluation(adsi, new RegressionEvaluation(iterator.totalOutcomes()));
-
-        if (iterator.asyncSupported())
-            ((AsyncDataSetIterator) adsi).shutdown();
-
-        return evaluation;
+        return doEvaluation(iterator, new RegressionEvaluation(iterator.totalOutcomes()));
     }
 
     /**
@@ -2630,14 +2621,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return ROC evaluation on the given dataset
      */
     public ROC evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
-        DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
-
-        ROC evaluation = doEvaluation(adsi, new ROC(rocThresholdSteps));
-
-        if (iterator.asyncSupported())
-            ((AsyncDataSetIterator) adsi).shutdown();
-
-        return evaluation;
+        return doEvaluation(iterator, new ROC(rocThresholdSteps));
     }
 
     /**
@@ -2648,14 +2632,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
-        DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
-
-        ROCMultiClass evaluation = doEvaluation(adsi, new ROCMultiClass(rocThresholdSteps));
-
-        if (iterator.asyncSupported())
-            ((AsyncDataSetIterator) adsi).shutdown();
-
-        return evaluation;
+        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps));
     }
 
     /**
@@ -2669,10 +2646,12 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             iterator.reset();
         }
 
+        DataSetIterator iter = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 2, true) : iterator;
+
         MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
-        while (iterator.hasNext()) {
-            DataSet next = iterator.next();
+        while (iter.hasNext()) {
+            DataSet next = iter.next();
 
             if (next.getFeatureMatrix() == null || next.getLabels() == null)
                 break;
@@ -2696,6 +2675,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
             clearLayerMaskArrays();
         }
+
+        if (iterator.asyncSupported())
+            ((AsyncDataSetIterator) iter).shutdown();
 
         return evaluation;
     }
@@ -2726,13 +2708,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (labelsList == null)
             labelsList = iterator.getLabels();
 
-        DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
-
         Evaluation e = new Evaluation(labelsList, topN);
-        doEvaluation(adsi, e);
-
-        if (iterator.asyncSupported())
-            ((AsyncDataSetIterator) adsi).shutdown();
+        doEvaluation(iterator, e);
 
         return e;
     }

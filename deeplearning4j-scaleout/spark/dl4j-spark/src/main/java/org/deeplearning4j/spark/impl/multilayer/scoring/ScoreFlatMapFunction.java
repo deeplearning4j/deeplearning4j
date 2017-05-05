@@ -67,8 +67,7 @@ class ScoreFlatMapFunctionAdapter implements FlatMapFunctionAdapter<Iterator<Dat
             out.add(new Tuple2<>(numExamples, score * numExamples));
         }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         return out;
     }
