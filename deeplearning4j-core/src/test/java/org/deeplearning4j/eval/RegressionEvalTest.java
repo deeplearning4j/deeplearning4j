@@ -176,4 +176,35 @@ public class RegressionEvalTest {
         }
     }
 
+    @Test
+    public void testRegressionEvalPerOutputMasking(){
+
+        INDArray l = Nd4j.create(new double[][]{
+                {1,2,3},
+                {10,20,30},
+                {-5,-10,-20}});
+
+        INDArray predictions = Nd4j.zeros(l.shape());
+
+        INDArray mask = Nd4j.create(new double[][]{
+                {0,1,1},
+                {1,1,0},
+                {0,1,0}});
+
+
+        RegressionEvaluation re = new RegressionEvaluation();
+
+        re.eval(l, predictions, mask);
+
+        double[] mse = new double[]{
+                (10*10)/1.0,
+                (2*2 + 20*20 + 10*10)/3,
+                (3*3)/1.0};
+
+        for( int i=0; i<3; i++ ){
+            assertEquals(mse[i], re.meanSquaredError(i), 1e-6);
+        }
+
+    }
+
 }
