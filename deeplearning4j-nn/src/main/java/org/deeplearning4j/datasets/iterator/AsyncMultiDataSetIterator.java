@@ -330,6 +330,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             try {
                 if (useWorkspaces) {
                     workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, workspaceId);
+                    //workspace.enableDebug(true);
                 }
 
                 while (iterator.hasNext() && shouldWork.get()) {
@@ -352,8 +353,8 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                     if (smth != null)
                         queue.put(smth);
 
-                    if (internalCounter.incrementAndGet() % 100 == 0)
-                        Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
+//                    if (internalCounter.incrementAndGet() % 100 == 0)
+//                        Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
                 }
                 queue.put(terminator);
             } catch (InterruptedException e) {
