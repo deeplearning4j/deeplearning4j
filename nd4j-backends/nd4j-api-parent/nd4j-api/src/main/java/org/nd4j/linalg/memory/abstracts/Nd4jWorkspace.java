@@ -453,7 +453,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 //log.info("Initializing on cycle {}", cyclesCount.get());
                 initializeWorkspace();
             } else if (currentSize.get() > 0 && cycleAllocations.get() > 0 && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE && workspaceConfiguration.getPolicyReset() != ResetPolicy.ENDOFBUFFER_REACHED) {
-                log.debug("Reinit on cycle {}; step: {}", cyclesCount.get(), stepsCount.get());
+                //log.debug("Reinit on cycle {}; step: {}", cyclesCount.get(), stepsCount.get());
                 initializeWorkspace();
             }
         }
