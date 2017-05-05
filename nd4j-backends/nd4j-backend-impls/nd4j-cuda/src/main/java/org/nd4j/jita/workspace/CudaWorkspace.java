@@ -85,7 +85,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
             clearExternalAllocations();
 
         stepsCount.set(Long.MAX_VALUE - 100);
-        clearPinnedAllocations();
+        clearPinnedAllocations(extended);
 
         if (workspace.getHostPointer() != null)
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
@@ -261,7 +261,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
     }
 
     @Override
-    protected void clearPinnedAllocations() {
+    protected void clearPinnedAllocations(boolean extended) {
         if (isDebug.get())
             log.info("Workspace [{}] device_{} threadId {} cycle {}: clearing pinned allocations...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), Thread.currentThread().getId(), cyclesCount.get());
 
@@ -276,16 +276,23 @@ public class CudaWorkspace extends Nd4jWorkspace {
             if (isDebug.get())
                 log.info("Allocation step: {}; Current step: {}", stepNumber, stepCurrent);
 
-            if (stepNumber + 2 < stepCurrent) {
+            if (stepNumber + 2 < stepCurrent|| extended) {
                 pinnedAllocations.remove();
 
                 if (pair.getDevicePointer() != null) {
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getHostPointer(), null);
+                    NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getDevicePointer(), null);
                     pinnedCount.decrementAndGet();
+
+                    if (isDebug.get())
+                        log.info("deleting external device allocation ");
                 }
 
-                if (pair.getHostPointer() != null)
+                if (pair.getHostPointer() != null) {
                     NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pair.getHostPointer());
+
+                    if (isDebug.get())
+                        log.info("deleting external host allocation ");
+                }
 
                 pinnedAllocationsSize.addAndGet(pair.getRequiredMemory() * -1);
             } else {
@@ -303,11 +310,19 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
         try {
             for (PointersPair pair : externalAllocations) {
-                if (pair.getHostPointer() != null)
+                if (pair.getHostPointer() != null) {
                     NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pair.getHostPointer());
 
-                if (pair.getDevicePointer() != null)
+                    if (isDebug.get())
+                        log.info("deleting external host allocation... ");
+                }
+
+                if (pair.getDevicePointer() != null) {
                     NativeOpsHolder.getInstance().getDeviceNativeOps().freeDevice(pair.getDevicePointer(), null);
+
+                    if (isDebug.get())
+                        log.info("deleting external device allocation... ");
+                }
             }
         } catch (Exception e) {
             log.error("RC: Workspace [{}] device_{} threadId {} guid [{}]: clearing external allocations...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), Thread.currentThread().getId(), guid);

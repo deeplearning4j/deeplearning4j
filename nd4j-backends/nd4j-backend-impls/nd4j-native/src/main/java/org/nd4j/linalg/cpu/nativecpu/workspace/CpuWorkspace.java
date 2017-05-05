@@ -47,7 +47,7 @@ public class CpuWorkspace extends Nd4jWorkspace {
     }
 
     @Override
-    protected void clearPinnedAllocations() {
+    protected void clearPinnedAllocations(boolean extended) {
         if (isDebug.get())
             log.info("Workspace [{}] device_{} threadId {} cycle {}: clearing pinned allocations...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), Thread.currentThread().getId(), cyclesCount.get());
 
@@ -62,7 +62,7 @@ public class CpuWorkspace extends Nd4jWorkspace {
             if (isDebug.get())
                 log.info("Allocation step: {}; Current step: {}", stepNumber, stepCurrent);
 
-            if (stepNumber + 2 < stepCurrent) {
+            if (stepNumber + 2 < stepCurrent|| extended) {
                 pinnedAllocations.remove();
 
                 NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(pair.getHostPointer());
@@ -82,7 +82,8 @@ public class CpuWorkspace extends Nd4jWorkspace {
 
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         for (PointersPair pair: externalAllocations) {
-            nativeOps.freeHost(pair.getHostPointer());
+            if (pair.getHostPointer() != null)
+                nativeOps.freeHost(pair.getHostPointer());
         }
         externalAllocations.clear();
         externalCount.set(0);
@@ -99,7 +100,7 @@ public class CpuWorkspace extends Nd4jWorkspace {
             clearExternalAllocations();
 
         stepsCount.set(Long.MAX_VALUE - 100);
-        clearPinnedAllocations();
+        clearPinnedAllocations(extended);
 
         if (workspace.getHostPointer() != null)
             NativeOpsHolder.getInstance().getDeviceNativeOps().freeHost(workspace.getHostPointer());
