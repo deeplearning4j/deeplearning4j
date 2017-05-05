@@ -120,6 +120,16 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
             .build();
 
+
+    private static final WorkspaceConfiguration adsiConfiguration = WorkspaceConfiguration.builder()
+            .overallocationLimit(3.0)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyLearning(LearningPolicy.FIRST_LOOP)
+            .policyMirroring(MirroringPolicy.FULL)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+            .build();
+
     DataBuffer.Type initialType;
 
     public WorkspaceProviderTests(Nd4jBackend backend) {
@@ -434,6 +444,86 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testVariableInput1() throws Exception {
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(adsiConfiguration, "ADSI");
+
+        INDArray array1 = null;
+        INDArray array2 = null;
+
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(adsiConfiguration, "ADSI")) {
+            // we allocate first element smaller then subsequent;
+            array1 = Nd4j.create(8, 128, 100);
+        }
+
+        assertEquals(8 * 128 * 100 * 4 * 4, workspace.getCurrentSize());
+        assertEquals(0, workspace.getHostOffset());
+        assertEquals(0, workspace.getDeviceOffset());
+
+        assertEquals(1, workspace.getCyclesCount());
+        assertEquals(0, workspace.getStepNumber());
+
+
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(adsiConfiguration, "ADSI")) {
+            // allocating same shape
+            array1 = Nd4j.create(8, 128, 100);
+        }
+
+        assertEquals(8 * 128 * 100 * 4, workspace.getHostOffset());
+        assertEquals(8 * 128 * 100 * 4, workspace.getDeviceOffset());
+
+        assertEquals(2, workspace.getCyclesCount());
+        assertEquals(0, workspace.getStepNumber());
+
+
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(adsiConfiguration, "ADSI")) {
+            // allocating bigger shape
+            array1 = Nd4j.create(8, 128, 200).assign(1.0);
+        }
+
+        // offsets should be intact, allocation happened as pinned
+        assertEquals(8 * 128 * 100 * 4, workspace.getHostOffset());
+        assertEquals(8 * 128 * 100 * 4, workspace.getDeviceOffset());
+
+        assertEquals(1, workspace.getNumberOfPinnedAllocations());
+
+        assertEquals(3, workspace.getCyclesCount());
+        assertEquals(0, workspace.getStepNumber());
+
+
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(adsiConfiguration, "ADSI")) {
+            // allocating same shape
+            array1 = Nd4j.create(8, 128, 100);
+        }
+
+        assertEquals(2, workspace.getNumberOfPinnedAllocations());
+        assertEquals(0, workspace.getStepNumber());
+        assertEquals(4, workspace.getCyclesCount());
+
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(adsiConfiguration, "ADSI")) {
+            // allocating same shape
+            array1 = Nd4j.create(8, 128, 100);
+        }
+
+        assertEquals(3, workspace.getNumberOfPinnedAllocations());
+        assertEquals(1, workspace.getStepNumber());
+        assertEquals(5, workspace.getCyclesCount());
+
+        for (int i = 0; i < 12; i++) {
+            try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(adsiConfiguration, "ADSI")) {
+                // allocating same shape
+                array1 = Nd4j.create(8, 128, 100);
+            }
+        }
+
+        // Now we know that workspace was reallocated and offset was shifted to the end of workspace
+        assertEquals(4, workspace.getStepNumber());
+        assertEquals(8 * 128 * 200 * 4 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+        assertEquals(8 * 128 * 200 * 4 * Nd4j.sizeOfDataType(), workspace.getHostOffset());
+        assertEquals(8 * 128 * 200 * 4 * Nd4j.sizeOfDataType(), workspace.getDeviceOffset());
+
+    }
+
+    @Test
     public void testReallocate3() throws Exception {
         MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(reallocateUnspecifiedConfiguration, "WS_1");
 
@@ -487,6 +577,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
             Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(circularConfiguration, "WSX");
             assertEquals(10 * 1024 * 1024L, workspace.getCurrentSize());
+            log.info("Step number: {}", workspace.getStepNumber());
             if (i == 0)
                 assertEquals(0, workspace.getHostOffset());
             else if (i == 1)

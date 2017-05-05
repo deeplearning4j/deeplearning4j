@@ -78,13 +78,11 @@ public class CudaWorkspace extends Nd4jWorkspace {
     @Override
     public synchronized void destroyWorkspace(boolean extended) {
         currentSize.set(0);
-        hostOffset.set(0);
-        deviceOffset.set(0);
+        reset();
 
         if (extended)
             clearExternalAllocations();
 
-        stepsCount.set(Long.MAX_VALUE - 100);
         clearPinnedAllocations(extended);
 
         if (workspace.getHostPointer() != null)
@@ -138,10 +136,10 @@ public class CudaWorkspace extends Nd4jWorkspace {
                 cycleAllocations.addAndGet(requiredMemory);
                 long prevOffset = deviceOffset.getAndAdd(requiredMemory);
 
-                if (isDebug.get())
-                    log.info("Workspace [{}] device_{}: alloc array of {} bytes, capacity of {} elements; offset: {}; size: {};", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory, numElements, deviceOffset.get(), currentSize.get());
-
                 PagedPointer ptr = workspace.getDevicePointer().withOffset(prevOffset, numElements);
+
+                if (isDebug.get())
+                    log.info("Workspace [{}] device_{}: alloc array of {} bytes, capacity of {} elements; prevOffset: {}; newOffset: {}; size: {}; address: {}", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory, numElements, prevOffset, deviceOffset.get(), currentSize.get(), ptr.address());
 
                 if (initialize) {
                     //CudaContext context = AtomicAllocator.getInstance().getMemoryHandler().getCudaContext();
@@ -159,8 +157,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
             } else {
                 // spill
                 if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0 && !trimmer) {
-                    hostOffset.set(0);
-                    deviceOffset.set(0);
+                    //log.info("End of space reached. Current offset: {}; requiredMemory: {}", deviceOffset.get(), requiredMemory);
+                    reset();
                     resetPlanned.set(true);
                     return alloc(requiredMemory, kind, type, initialize);
                 }
@@ -276,7 +274,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
             if (isDebug.get())
                 log.info("Allocation step: {}; Current step: {}", stepNumber, stepCurrent);
 
-            if (stepNumber + 2 < stepCurrent|| extended) {
+            if (stepNumber + 2 < stepCurrent || extended) {
                 pinnedAllocations.remove();
 
                 if (pair.getDevicePointer() != null) {

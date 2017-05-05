@@ -234,7 +234,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             deviceOffset.set(hostOffset.get());
 
             if (isDebug.get())
-                log.info("Workspace [{}]: Allocating array of {} bytes, capacity of {} elements, prevOffset:", id, requiredMemory, numElements);
+                log.info("Workspace [{}]: Allocating array of {} bytes, capacity of {} elements, prevOffset: {}", id, requiredMemory, numElements, prevOffset);
 
             PagedPointer ptr = workspace.getHostPointer().withOffset(prevOffset, numElements);
 
@@ -244,8 +244,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             return ptr;
         } else {
             if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0 && !trimmer) {
-                hostOffset.set(0);
-                deviceOffset.set(0);
+                reset();
                 resetPlanned.set(true);
                 //stepsCount.incrementAndGet();
                 return alloc(requiredMemory, kind, type, initialize);
@@ -358,8 +357,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
         workspace.setHostPointer(null);
         currentSize.set(0);
-        hostOffset.set(0);
-        deviceOffset.set(0);
+        reset();
 
         externalCount.set(0);
 
@@ -388,6 +386,10 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         return this;
     }
 
+    public long getCyclesCount() {
+        return cyclesCount.get();
+    }
+
     @Override
     public void close() {
         if (isBorrowed.get()) {
@@ -414,7 +416,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
 
         cyclesCount.incrementAndGet();
-        if (cyclesCount.get() % stepsNumber == 0) {
+        if (cyclesCount.get() > 1 & (cyclesCount.get() - 1) % stepsNumber == 0) {
             stepsCount.incrementAndGet();
         }
         /*
@@ -451,7 +453,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 //log.info("Initializing on cycle {}", cyclesCount.get());
                 initializeWorkspace();
             } else if (currentSize.get() > 0 && cycleAllocations.get() > 0 && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE && workspaceConfiguration.getPolicyReset() != ResetPolicy.ENDOFBUFFER_REACHED) {
-                //log.info("Reinit on cycle {}", cyclesCount.get());
+                log.debug("Reinit on cycle {}; step: {}", cyclesCount.get(), stepsCount.get());
                 initializeWorkspace();
             }
         }
@@ -462,24 +464,37 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             clearPinnedAllocations(false);
 
         if (trimmedMode.get() && trimmedStep.get() + 2 < stepsCount.get()) {
-            initialBlockSize.set(cycleAllocations.get());
+            initialBlockSize.set(maxCycle.get());
             initializeWorkspace();
             trimmedMode.set(false);
             trimmedStep.set(0);
 
-            hostOffset.set(0);
-            deviceOffset.set(0);
+            //log.info("Exiting trimmed mode");
+            reset();
         }
 
         lastCycleAllocations.set(cycleAllocations.get());
 
         disabledCounter.set(0);
-        cycleAllocations.set(0);
+
 
         if (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT) {
-            hostOffset.set(0);
-            deviceOffset.set(0);
+            reset();
+        } else if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0) {
+
+            // for variable input we want to ensure alignment to max block, to avoid accidental buffer overruns
+            long diff = initialBlockSize.get() - cycleAllocations.get();
+
+            //log.info("Align to [{}]; diff: [{}]; block size: [{}]; currentOffset: [{}]; workspaceSize: [{}]; trimmedMode: {}", initialBlockSize.get(), diff, cycleAllocations.get(), deviceOffset.get(), currentSize.get(), trimmedMode.get());
+
+            // we don't care about offsets if that's trimmed mode, offsets will be reset anyway upon reallocation
+            if (diff > 0 && !trimmedMode.get() && deviceOffset.get() > 0) {
+                deviceOffset.getAndAdd(diff);
+                hostOffset.getAndAdd(diff);
+            }
         }
+
+        cycleAllocations.set(0);
     }
 
     protected abstract void clearPinnedAllocations(boolean extended);
@@ -504,8 +519,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         isOpen.set(true);
 
         if (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT) {
-            hostOffset.set(0);
-            deviceOffset.set(0);
+            reset();
         }
 
         if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT || resetPlanned.get())) {
@@ -521,6 +535,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     }
 
     public void reset() {
+        //log.info("Resetting at device: {}; host: {};", deviceOffset.get(), hostOffset.get());
         hostOffset.set(0);
         deviceOffset.set(0);
     }

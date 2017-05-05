@@ -99,7 +99,6 @@ public class CpuWorkspace extends Nd4jWorkspace {
         if (extended)
             clearExternalAllocations();
 
-        stepsCount.set(Long.MAX_VALUE - 100);
         clearPinnedAllocations(extended);
 
         if (workspace.getHostPointer() != null)
