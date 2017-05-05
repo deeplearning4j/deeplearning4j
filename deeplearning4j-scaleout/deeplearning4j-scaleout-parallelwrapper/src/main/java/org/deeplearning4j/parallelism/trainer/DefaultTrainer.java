@@ -17,6 +17,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.parallelism.ParallelWrapper;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -268,7 +269,19 @@ public class DefaultTrainer extends Thread implements Trainer {
                             ((ComputationGraph) replicatedModel).fit(dataSet);
                         }
 
+                        // we ensure all operations are finished in this training round
                         Nd4j.getExecutioner().commit();
+
+                        // we ensure memory is updated on host side
+                        Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(), AffinityManager.Location.HOST);
+
+                        if (replicatedModel instanceof MultiLayerNetwork) {
+                            Updater updaterReplica = ((MultiLayerNetwork) replicatedModel).getUpdater();
+                            Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
+                        } else {
+                            ComputationGraphUpdater updaterReplica = ((ComputationGraph) replicatedModel).getUpdater();
+                            Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
+                        }
 
                         running.decrementAndGet();
                     }
@@ -284,7 +297,14 @@ public class DefaultTrainer extends Thread implements Trainer {
                         } else
                             throw new RuntimeException("MultiDataSet can be fit into ComputationGraph only");
 
+                        // we ensure all operations are finished in this training round
                         Nd4j.getExecutioner().commit();
+
+                        // we ensure memory is updated on host side
+                        Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(), AffinityManager.Location.HOST);
+
+                        ComputationGraphUpdater updaterReplica = ((ComputationGraph) replicatedModel).getUpdater();
+                        Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
 
                         running.decrementAndGet();
                     }
