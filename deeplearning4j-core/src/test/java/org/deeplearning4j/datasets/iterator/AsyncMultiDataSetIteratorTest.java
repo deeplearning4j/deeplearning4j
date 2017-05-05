@@ -18,7 +18,7 @@ public class AsyncMultiDataSetIteratorTest {
      */
     @Test
     public void testVariableTimeSeries1() throws Exception {
-        AsyncMultiDataSetIterator amdsi = new AsyncMultiDataSetIterator(new VariableTimeseriesGenerator(1192, 1000, 32, 128, 100, 500, 100), 2, true);
+        AsyncMultiDataSetIterator amdsi = new AsyncMultiDataSetIterator(new VariableTimeseriesGenerator(1192, 1000, 32, 128, 100, 500, 500), 2, true);
 
         for (int e = 0; e < 100; e++) {
             int cnt = 0;
