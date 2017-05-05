@@ -17,6 +17,8 @@ public class CpuWorkspaceManager extends BasicWorkspaceManager {
 
     @Override
     public MemoryWorkspace createNewWorkspace(@NonNull WorkspaceConfiguration configuration) {
+        ensureThreadExistense();
+
         MemoryWorkspace workspace = new CpuWorkspace(configuration);
 
         backingMap.get().put(workspace.getId(), workspace);
@@ -27,6 +29,8 @@ public class CpuWorkspaceManager extends BasicWorkspaceManager {
 
     @Override
     public MemoryWorkspace createNewWorkspace() {
+        ensureThreadExistense();
+
         MemoryWorkspace workspace = new CpuWorkspace(defaultConfiguration);
 
         backingMap.get().put(workspace.getId(), workspace);
@@ -37,6 +41,8 @@ public class CpuWorkspaceManager extends BasicWorkspaceManager {
 
     @Override
     public MemoryWorkspace createNewWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String id) {
+        ensureThreadExistense();
+
         MemoryWorkspace workspace = new CpuWorkspace(configuration, id);
 
         backingMap.get().put(id, workspace);
@@ -47,6 +53,8 @@ public class CpuWorkspaceManager extends BasicWorkspaceManager {
 
     @Override
     public MemoryWorkspace createNewWorkspace(@NonNull WorkspaceConfiguration configuration, @NonNull String id, Integer deviceId) {
+        ensureThreadExistense();
+
         MemoryWorkspace workspace = new CpuWorkspace(configuration, id, deviceId);
 
         backingMap.get().put(id, workspace);
