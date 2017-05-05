@@ -12,22 +12,22 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
  * @author raver119@gmail.com
  */
 @Slf4j
-class MultiBoolean {
+public class MultiBoolean {
     private final int numEntries;
     private int holder = 0;
     private int max = 0;
     private boolean oneTime;
     private MultiBoolean timeTracker;
 
-    MultiBoolean(int numEntries) {
+    public MultiBoolean(int numEntries) {
         this(numEntries, false);
     }
 
-    MultiBoolean(int numEntries, boolean initialValue) {
+    public MultiBoolean(int numEntries, boolean initialValue) {
         this(numEntries, initialValue, false);
     }
 
-    MultiBoolean(int numEntries, boolean initialValue, boolean oneTime) {
+    public MultiBoolean(int numEntries, boolean initialValue, boolean oneTime) {
         if (numEntries > 32)
             throw new UnsupportedOperationException("Up to 32 entries can be tracked at once.");
 
