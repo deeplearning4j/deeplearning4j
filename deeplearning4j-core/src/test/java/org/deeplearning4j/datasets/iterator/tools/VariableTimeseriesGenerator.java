@@ -48,7 +48,7 @@ public class VariableTimeseriesGenerator implements MultiDataSetIterator {
     @Override
     public MultiDataSet next(int num) {
         int localMaxima = isFirst && firstMaxima > 0 ? firstMaxima: rng.nextInt(maxTS - minTS) + minTS;
-        log.info("Local maxima: {}", localMaxima);
+        //log.info("Local maxima: {}", localMaxima);
 
         isFirst = false;
 

@@ -1676,18 +1676,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * [0.5, 0.5] or some other probability distribution summing to one
      */
     public INDArray output(INDArray input, boolean train) {
+        WorkspaceMode cMode = layerWiseConfigurations.getTrainingWorkspaceMode();
+        layerWiseConfigurations.setTrainingWorkspaceMode(layerWiseConfigurations.getInferenceWorkspaceMode());
         MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
 
         try(MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
-            return silentOutput(input, train).detach();
-        }
-    }
+            INDArray ret = silentOutput(input, train).detach();
 
-    public INDArray outputStrict(INDArray input, boolean train) {
-        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
-
-        try(MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
-            return silentOutput(input, train).detach();
+            layerWiseConfigurations.setTrainingWorkspaceMode(cMode);
+            return ret;
         }
     }
 
@@ -1703,22 +1700,24 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * of varying lengths within the same minibatch.
      */
     public INDArray output(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask) {
+        WorkspaceMode cMode = layerWiseConfigurations.getTrainingWorkspaceMode();
+        layerWiseConfigurations.setTrainingWorkspaceMode(layerWiseConfigurations.getInferenceWorkspaceMode());
         MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
 
         try(MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
-            return silentOutput(input, train, featuresMask, labelsMask).detach();
+            INDArray ret = silentOutput(input, train, featuresMask, labelsMask).detach();
+
+            layerWiseConfigurations.setTrainingWorkspaceMode(cMode);
+            return ret;
         }
     }
 
     protected INDArray silentOutput(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask) {
-        WorkspaceMode cMode = layerWiseConfigurations.getTrainingWorkspaceMode();
-        layerWiseConfigurations.setTrainingWorkspaceMode(layerWiseConfigurations.getInferenceWorkspaceMode());
+
 
         setLayerMaskArrays(featuresMask, labelsMask);
         INDArray out = silentOutput(input, train);
         clearLayerMaskArrays();
-
-        layerWiseConfigurations.setTrainingWorkspaceMode(cMode);
         return out;
     }
 

@@ -1377,6 +1377,8 @@ public class ComputationGraph implements Serializable, Model {
      * @return Output activations (order: same as defined in network configuration)
      */
     public INDArray[] output(boolean train, INDArray... input) {
+        WorkspaceMode cMode = configuration.getTrainingWorkspaceMode();
+        configuration.setTrainingWorkspaceMode(configuration.getInferenceWorkspaceMode());
         MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
 
         try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
@@ -1384,14 +1386,12 @@ public class ComputationGraph implements Serializable, Model {
             for (int x = 0; x < tmp.length; x++)
                 tmp[x] = tmp[x].detach();
 
+            configuration.setTrainingWorkspaceMode(cMode);
             return tmp;
         }
     }
 
     protected INDArray[] silentOutput(boolean train, INDArray... input) {
-        WorkspaceMode cMode = configuration.getTrainingWorkspaceMode();
-        configuration.setTrainingWorkspaceMode(configuration.getInferenceWorkspaceMode());
-
         setInputs(input);
         Map<String, INDArray> activations = feedForward(false, false, false, false);
         INDArray[] outputs = new INDArray[numOutputArrays];
@@ -1399,8 +1399,6 @@ public class ComputationGraph implements Serializable, Model {
         for (String s : configuration.getNetworkOutputs()) {
             outputs[i++] = activations.get(s);
         }
-
-        configuration.setTrainingWorkspaceMode(cMode);
         return outputs;
     }
 

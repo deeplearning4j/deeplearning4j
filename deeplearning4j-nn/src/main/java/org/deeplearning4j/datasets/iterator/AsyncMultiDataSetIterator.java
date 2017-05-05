@@ -328,8 +328,9 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         @Override
         public void run() {
             try {
-                if (useWorkspaces)
+                if (useWorkspaces) {
                     workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, workspaceId);
+                }
 
                 while (iterator.hasNext() && shouldWork.get()) {
                     MultiDataSet smth = null;
@@ -379,6 +380,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             if (workspace != null) {
                 log.debug("Manually destroying AMDSI workspace");
                 workspace.destroyWorkspace(true);
+                workspace = null;
             }
         }
     }
