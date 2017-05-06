@@ -125,18 +125,34 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         init();
     }
 
+    /**
+     * This method returns step number. Viable only in circular mode.
+     * @return
+     */
     public long getStepNumber() {
         return stepsCount.get();
     }
 
+    /**
+     * This method returns number of bytes in spilled allocations.
+     * @return
+     */
     public long getSpilledSize() {
         return spilledAllocationsSize.get();
     }
 
+    /**
+     * This method returns number of bytes in pinned allocations.
+     * @return
+     */
     public long getPinnedSize() {
         return pinnedAllocationsSize.get();
     }
 
+    /**
+     * This method returns number of bytes for first block of circular workspace.
+     * @return
+     */
     public long getInitialBlockSize() {
         return initialBlockSize.get();
     }
@@ -151,15 +167,28 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         return previousWorkspace;
     }
 
-
+    /**
+     * This method returns current device memory offset within workspace
+     * @return
+     */
     public long getDeviceOffset() {
         return deviceOffset.get();
     }
 
+    /**
+     * This method returns current host memory offset within workspace
+     * @return
+     */
     public long getHostOffset() {
         return hostOffset.get();
     }
 
+    /**
+     * This method returns current amount of memory allocated for workspace.
+     *
+     * PLEASE NOTE: It shows only amount of HOST memory. If current backend assumes DEVICE/HOST memory pair, DEVICE memory will probably have the same size, but won't be accounted in this value.
+     * @return
+     */
     public long getCurrentSize() {
         return currentSize.get();
     }
@@ -199,8 +228,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         /*
             just two options here:
             1) reqMem + hostOffset < totalSize, we just return pointer + offset
-            2) go for either realloc or external allocation
+            2) go for either external spilled, or pinned allocation
          */
+        // we enforce 8 byte alignment to ensure CUDA doesn't blame us
         long div = requiredMemory % 8;
         if (div!= 0)
             requiredMemory += div;
@@ -219,6 +249,11 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             return pointer;
         }
 
+        /*
+            Trimmed mode is possible for cyclic workspace mode. Used in AsyncDataSetIterator, MQ, etc.
+            Basically idea is simple: if one of datasets coming out of iterator has size higher then expected - we should reallocate workspace to match this size.
+            So, we switch to trimmed mode, and all allocations will be "pinned", and eventually workspace will be reallocated.
+         */
         boolean trimmer = (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && requiredMemory + cycleAllocations.get() > initialBlockSize.get() && initialBlockSize.get() > 0) || trimmedMode.get();
 
         if (trimmer && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE && !trimmedMode.get()) {
@@ -226,6 +261,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             trimmedStep.set(stepsCount.get());
         }
 
+        // if size is enough - allocate from workspace
         if (hostOffset.get() + requiredMemory <= currentSize.get() && !trimmer) {
             // just alignment to 8 bytes
 
@@ -243,13 +279,16 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
             return ptr;
         } else {
+            // if current workspace isn't enough - we allocate it separately as spilled (or pinned, in case of circular mode)
+
+            // in case of circular mode - we just reset offsets, and start from the beginning of the workspace
             if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED && currentSize.get() > 0 && !trimmer) {
                 reset();
                 resetPlanned.set(true);
-                //stepsCount.incrementAndGet();
                 return alloc(requiredMemory, kind, type, initialize);
             }
 
+            // updating respective counters
             if (!trimmer)
                 spilledAllocationsSize.addAndGet(requiredMemory);
             else
@@ -293,12 +332,14 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public void initializeWorkspace() {
+        // we can reallocate this workspace to larger size if that's needed and allowed by configuration
         if ((currentSize.get() < maxCycle.get() || currentSize.get() < cycleAllocations.get()) && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE && (workspaceConfiguration.getMaxSize() == 0 || (maxCycle.get() < workspaceConfiguration.getMaxSize()))) {
             if (workspaceConfiguration.getPolicyReset() != ResetPolicy.ENDOFBUFFER_REACHED)
                 destroyWorkspace();
             isInit.set(false);
         }
 
+        // if we're in cyclic mode, we do reallocations only after 2 full cycles, to avoid race conditions
         if (trimmedMode.get() && trimmedStep.get() + 2 < stepsCount.get()) {
             destroyWorkspace(false);
             isInit.set(false);
@@ -312,8 +353,10 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 else
                     currentSize.set(maxCycle.get());
 
+                // we're updating single block size for circular mode, will be used for alignment later
                 initialBlockSize.set(currentSize.get());
 
+                // handliong optional overallocation here, however it's usually good idea to use it everywhere, to avoid frequent realloc calls
                 if (!isOver.get()) {
                     if (workspaceConfiguration.getPolicyAllocation() == AllocationPolicy.OVERALLOCATE && workspaceConfiguration.getOverallocationLimit() > 0 && currentSize.get() > 0) {
                         currentSize.set(currentSize.get() + (long) (currentSize.get() * workspaceConfiguration.getOverallocationLimit()));
@@ -324,6 +367,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 if (workspaceConfiguration.getMinSize() > 0 && currentSize.get() < workspaceConfiguration.getMinSize())
                     currentSize.set(workspaceConfiguration.getMinSize());
 
+                // purge spilled allocations
                 if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT || resetPlanned.get())) {
                     clearExternalAllocations();
                     spilledAllocationsSize.set(0);
@@ -331,15 +375,25 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                     resetPlanned.set(false);
                 }
 
-
+                // calling for implementation-specific workspace initialization. basically allocation happens there
                 init();
             }
     }
 
+    /**
+     * This method returns number of spilled allocations, that can be purged at the end of block
+     * @return
+     */
     public int getNumberOfExternalAllocations() {
         return externalCount.get();
     }
 
+    /**
+     * This method returns number of pinned allocations, they can be purged after 2 steps.
+     *
+     * PLEASE NOTE: This method can return non-zero calues only for circular workspace mode
+     * @return
+     */
     public int getNumberOfPinnedAllocations() {
         return pinnedCount.get();
     }
@@ -350,6 +404,11 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     }
 
 
+    /**
+     * This method basically deallocates workspace memory
+     *
+     * @param extended
+     */
     @Override
     public void destroyWorkspace(boolean extended) {
         if (workspace.getHostPointer() != null && workspace.getHostPointer().getOriginalPointer() != null && workspace.getHostPointer().getOriginalPointer() instanceof BytePointer)
@@ -392,12 +451,14 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     @Override
     public void close() {
+        // first we check if this workspace was borrowed. if yes - just close without reset.
         if (isBorrowed.get()) {
             isBorrowed.set(false);
             Nd4j.getMemoryManager().setCurrentWorkspace(borrowingWorkspace);
             return;
         }
 
+        // next we check, if the same workspace was opened multiple times sequentially. then we just decrement counter, without reset
         if (tagScope.get() > 0) {
             if (tagScope.decrementAndGet() == 0){
                 Nd4j.getMemoryManager().setCurrentWorkspace(this);
@@ -405,18 +466,14 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             return;
         }
 
-
-//        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-//            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
-
+        // since this workspace block is finished, we restore previous one. Even if it's null
         Nd4j.getMemoryManager().setCurrentWorkspace(previousWorkspace);
         isOpen.set(false);
-        //isDebug.set(false);
 
-
-
+        // just counter for cycles/blocks
         cyclesCount.incrementAndGet();
         if (cyclesCount.get() > 1 & (cyclesCount.get() - 1) % stepsNumber == 0) {
+            // this counter is for cyclic mode, it counts generations, full loops over buffer
             stepsCount.incrementAndGet();
         }
         /*
@@ -430,20 +487,22 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             isUsed.set(true);
         }
 
-
+        // if during this cycle we've used more memory then before - increase max count. we'll use it in future for optional reallocation
         if (cycleAllocations.get() > maxCycle.get()) {
             log.debug("Workspace [{}], current cycle: {}; max cycle: {}", id, cycleAllocations.get(), maxCycle.get());
             maxCycle.set(cycleAllocations.get());
         }
 
-
+        // this is for safety. We have to be sure that no ops were left non-processed
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
 
+        // checking, if we should reallocate this workspace to higher amount of memory
         if (workspaceConfiguration.getPolicyLearning() != LearningPolicy.NONE && maxCycle.get() > 0) {
             //log.info("Delayed workspace {}, device_{} initialization starts...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
+            // if we're going to resize - we're probably safe to purge spilled allocations
             if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT || resetPlanned.get())) {
                 clearExternalAllocations();
                 resetPlanned.set(false);
@@ -459,17 +518,17 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         }
 
 
-
+        // clearing pinned allocations that are old enough
         if (pinnedCount.get() > 0)
             clearPinnedAllocations(false);
 
+        // if we're in trimmed mode (preparing for reallocation of circular buffer) - we can do it 2 generations after
         if (trimmedMode.get() && trimmedStep.get() + 2 < stepsCount.get()) {
             initialBlockSize.set(maxCycle.get());
             initializeWorkspace();
             trimmedMode.set(false);
             trimmedStep.set(0);
 
-            //log.info("Exiting trimmed mode");
             reset();
         }
 
@@ -508,20 +567,24 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
         MemoryWorkspace prev = Nd4j.getMemoryManager().getCurrentWorkspace();
 
+        // if we're opening the same workspace - just increase counter, and skip everything else
         if (prev == this && isOpen.get()) {
             tagScope.incrementAndGet();
             return this;
         }
 
+        // we'll need this in close() call, to restore previous workspace (if any)
         previousWorkspace = prev;
 
         Nd4j.getMemoryManager().setCurrentWorkspace(this);
         isOpen.set(true);
 
+        // resetting workspace to 0 offset (if anything), not applicable to circular mode, sure
         if (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT) {
             reset();
         }
 
+        // if we have any spilled allocations left from last cycle - purge them.
         if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT || resetPlanned.get())) {
             clearExternalAllocations();
             externalCount.set(0);
@@ -534,6 +597,11 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         return this;
     }
 
+    /**
+     * This method reset host/device offsets within workspace
+     *
+     * PLEASE NOTE: Never call this method unless you realize all consequences
+     */
     public void reset() {
         //log.info("Resetting at device: {}; host: {};", deviceOffset.get(), hostOffset.get());
         hostOffset.set(0);
@@ -542,27 +610,48 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     protected abstract void resetWorkspace();
 
+    /**
+     * This method is shortcut to close() method
+     *
+     * @return
+     */
     @Override
     public MemoryWorkspace notifyScopeLeft() {
         close();
         return this;
     }
 
+    /**
+     * This method allows to temporary disable this workspace, and issue allocations directly.
+     * @param isEnabled
+     */
     @Override
     public void toggleWorkspaceUse(boolean isEnabled) {
         isUsed.set(isEnabled);
     }
 
+    /**
+     * This method returns number of bytes allocated during last full cycle
+     * @return
+     */
     @Override
     public long getLastCycleAllocations() {
         return lastCycleAllocations.get();
     }
 
+    /**
+     * This method returns number of bytes allocated during THIS cycle
+     * @return
+     */
     @Override
     public long getThisCycleAllocations() {
         return cycleAllocations.get();
     }
 
+    /**
+     * This method returns number of bytes of biggest cycle
+     * @return
+     */
     @Override
     public long getMaxCycleAllocations() {
         return maxCycle.get();
