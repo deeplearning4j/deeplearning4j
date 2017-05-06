@@ -138,7 +138,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
     @Override
     protected void setScoreWithZ(INDArray z) {
         if (input == null || z == null)
-            throw new IllegalStateException("Cannot calculate score without input and labels");
+            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         ILossFunction lossFunction = layerConf().getLossFunction().getILossFunction();
 
         //double score = lossFunction.computeScore(input, z, layerConf().getActivationFunction(), maskArray, false);
@@ -194,7 +194,8 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
         }
 
         if (params.length() != paramLength) {
-            throw new IllegalArgumentException("Unable to set parameters: must be of length " + paramLength);
+            throw new IllegalArgumentException("Unable to set parameters: must be of length " + paramLength
+                    + ", got params of length " + params.length() + " " + layerId());
         }
 
         // Set for backprop and only W & hb

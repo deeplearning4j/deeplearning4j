@@ -75,7 +75,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     @Override
     public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
         if (input == null || labels == null)
-            throw new IllegalStateException("Cannot calculate score without input and labels");
+            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
         INDArray preOut = input;
@@ -102,7 +102,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
     @Override
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
         if (input == null || labels == null)
-            throw new IllegalStateException("Cannot calculate score without input and labels");
+            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         INDArray preOut = input;
 
         ILossFunction lossFunction = layerConf().getLossFn();
@@ -129,7 +129,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
 
     @Override
     protected void setScoreWithZ(INDArray z) {
-        throw new RuntimeException("Not yet implemented");
+        throw new RuntimeException("Not supported " + layerId());
     }
 
     @Override
@@ -235,14 +235,15 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
      * @return a probability distribution for each row
      */
     public INDArray output(boolean training) {
-        if (input == null)
-            throw new IllegalArgumentException("No null input allowed");
+        if (input == null) {
+            throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
+        }
         return activate(training);
     }
 
     @Override
     public Layer transpose() {
-        throw new UnsupportedOperationException("Not applicable");
+        throw new UnsupportedOperationException("Not applicable " + layerId());
     }
 
     @Override
@@ -253,12 +254,12 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
 
     @Override
     public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        throw new UnsupportedOperationException("Not applicable");
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
     public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
@@ -412,7 +413,7 @@ public class LossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.LossL
 
     @Override
     public void iterate(INDArray input) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override

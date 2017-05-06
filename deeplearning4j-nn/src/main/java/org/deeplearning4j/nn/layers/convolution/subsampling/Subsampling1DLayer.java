@@ -39,7 +39,8 @@ public class Subsampling1DLayer extends SubsamplingLayer {
             throw new DL4JInvalidInputException("Got rank " + epsilon.rank()
                             + " array as epsilon for Subsampling1DLayer backprop with shape "
                             + Arrays.toString(epsilon.shape())
-                            + ". Expected rank 3 array with shape [minibatchSize, features, length].");
+                            + ". Expected rank 3 array with shape [minibatchSize, features, length]. "
+                            + layerId());
 
         // add singleton fourth dimension to input and next layer's epsilon
         INDArray origInput = input;
@@ -62,7 +63,8 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         if (input.rank() != 3)
             throw new DL4JInvalidInputException("Got rank " + input.rank()
                             + " array as input to Subsampling1DLayer with shape " + Arrays.toString(input.shape())
-                            + ". Expected rank 3 array with shape [minibatchSize, features, length].");
+                            + ". Expected rank 3 array with shape [minibatchSize, features, length]. "
+                            + layerId());
 
         // add singleton fourth dimension to input
         INDArray origInput = input;

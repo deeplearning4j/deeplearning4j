@@ -78,8 +78,9 @@ public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
 
     @Override
     public INDArray activate(boolean training) {
-        if (input == null)
-            throw new IllegalArgumentException("No null input allowed");
+        if (input == null) {
+            throw new IllegalArgumentException("Cannot do forward pass with null input " + layerId());
+        }
         applyDropOutIfNecessary(training);
 
         INDArray in;
@@ -96,7 +97,7 @@ public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
 
     @Override
     public Layer transpose() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported - " + layerId());
     }
 
     @Override
@@ -107,12 +108,12 @@ public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
 
     @Override
     public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported - " + layerId());
     }
 
     @Override
     public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Not supported - " + layerId());
     }
 
     @Override
