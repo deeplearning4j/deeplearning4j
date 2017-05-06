@@ -361,9 +361,16 @@ public class LSTMHelpers {
         boolean sigmoidGates = gateActivationFn instanceof ActivationSigmoid;
         IActivation afn = conf.getLayer().getActivationFn();
 
+        // we check, if we have defined workspace here. If we don't - we working without workspace, and we're skipping internal LSTM one. Otherwise - we go for it
+        MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace() != null ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceConfigurationLSTM, ComputationGraph.workspaceLSTM) : null;
+
         INDArray timeStepMaskColumn = null;
         for (int iTimeIndex = timeSeriesLength - 1; iTimeIndex >= endIdx; iTimeIndex--) {
-            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceConfigurationExternal, ComputationGraph.workspaceLSTM)) {
+
+                // we're emulating try block here
+                if (workspace != null)
+                    workspace.notifyScopeEntered();
+
                 int time = iTimeIndex;
                 int inext = 1;
 
@@ -424,7 +431,11 @@ public class LSTMHelpers {
                     int length = nablaCellState.length();
                     l1BLAS.axpy(length, 1.0, nextForgetGateAs.muli(nablaCellStateNext), nablaCellState); //nablaCellState.addi(nextForgetGateAs.mul(nablaCellStateNext))
                 }
-                nablaCellStateNext = nablaCellState; //Store for use in next iteration
+
+
+                //Store for use in next iteration, and since we're in workspace, we need to push it out of current workspace
+                nablaCellStateNext = nablaCellState.leverage();
+
 
                 //Forget gate delta:
                 INDArray af = fwdPass.fa[time];
@@ -547,7 +558,9 @@ public class LSTMHelpers {
                     // but 0s to the layer below at this time step (for the given example)
                     epsilonNextSlice.muliColumnVector(timeStepMaskColumn);
                 }
-            }
+
+                if (workspace != null)
+                    workspace.close();
         }
 
         Gradient retGradient = new DefaultGradient();
