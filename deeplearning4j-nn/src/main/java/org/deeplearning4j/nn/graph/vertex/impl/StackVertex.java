@@ -122,6 +122,12 @@ public class StackVertex extends BaseGraphVertex {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
+        if(epsilon == null){
+            //Edge case for stack vertex: stack -> embedding
+            //If the null epsilons are a problem in practice, this should be picked up by other layers
+            return new Pair<>(null, new INDArray[inputs.length]);
+        }
+
         int nStack = inputs.length;
         INDArray[] out = new INDArray[nStack];
 
