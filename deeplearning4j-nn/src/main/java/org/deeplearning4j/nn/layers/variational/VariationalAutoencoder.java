@@ -901,7 +901,7 @@ public class VariationalAutoencoder implements Layer {
             solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();
             //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
             Updater updater = solver.getOptimizer().getUpdater();
-            int updaterStateSize = updater.stateSizeForLayer(this);
+            int updaterStateSize = (int)conf().getLayer().getIUpdater().stateSize(numParams());
             if (updaterStateSize > 0) {
                 updater.setStateViewArray(this, Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order()),
                                 true);

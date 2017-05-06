@@ -189,21 +189,6 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
     }
 
     @Override
-    public int stateSizeForLayer(Layer layer) {
-        if (updaterStateViewArray == null) {
-            for (UpdaterBlock b : updaterBlocks) {
-                org.deeplearning4j.nn.conf.Updater u =
-                                b.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getUpdater();
-                if (u != org.deeplearning4j.nn.conf.Updater.NONE && u != org.deeplearning4j.nn.conf.Updater.SGD) {
-                    throw new IllegalStateException("No updater state view array has been set");
-                }
-            }
-            return 0; //All are None or SGD
-        }
-        return updaterStateViewArray.length();
-    }
-
-    @Override
     public void update(Layer layer, Gradient gradient, int iteration, int batchSize) {
         update(gradient, iteration, batchSize);
     }

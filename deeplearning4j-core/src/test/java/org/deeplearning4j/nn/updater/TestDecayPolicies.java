@@ -28,6 +28,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -307,7 +308,7 @@ public class TestDecayPolicies {
             Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
             layer.setBackpropGradientsViewArray(gradient);
             Updater updater = UpdaterCreator.getUpdater(layer);
-            int stateSize = updater.stateSizeForLayer(layer);
+            int stateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
             if (stateSize > 0)
                 updater.setStateViewArray(layer, Nd4j.create(1, stateSize), true);
 
@@ -523,7 +524,7 @@ public class TestDecayPolicies {
         net.init();
 
         Updater updater = UpdaterCreator.getUpdater(net);
-        int stateSize = updater.stateSizeForLayer(net);
+        int stateSize = (int)new Nesterovs().stateSize(net.numParams());
         updater.setStateViewArray(net, Nd4j.create(1, stateSize), true);
 
         String wKey, bKey;

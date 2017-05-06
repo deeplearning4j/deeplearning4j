@@ -74,7 +74,7 @@ public class TestUpdaters {
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
-        int updaterStateSize = updater.stateSizeForLayer(layer);
+        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
@@ -141,7 +141,7 @@ public class TestUpdaters {
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
-        int updaterStateSize = updater.stateSizeForLayer(layer);
+        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
@@ -185,7 +185,7 @@ public class TestUpdaters {
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
-        int updaterStateSize = updater.stateSizeForLayer(layer);
+        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
@@ -242,7 +242,7 @@ public class TestUpdaters {
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
-        int updaterStateSize = updater.stateSizeForLayer(layer);
+        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
@@ -290,7 +290,7 @@ public class TestUpdaters {
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
-        int updaterStateSize = updater.stateSizeForLayer(layer);
+        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
