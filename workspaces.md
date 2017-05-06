@@ -1,3 +1,7 @@
+---
+title: Workspaces guide
+layout: default
+---
 As of 0.9.0 (or 0.8.1-SNAPSHOT) ND4j offers additional memory management model: Workspaces. Basically it allows you to reuse memory in cyclic workloads, without JVM Garbage Collector  use for off-heap memory tracking. In other words: at the end of Workspace loop all INDArrays memory content is invalidated.
 
 Here are some [examples](https://github.com/deeplearning4j/dl4j-examples/blob/58cc1b56515458003fdd7b606f6451aee851b8c3/nd4j-examples/src/main/java/org/nd4j/examples/Nd4jEx15_Workspaces.java) how to use it with ND4j.
@@ -36,9 +40,7 @@ ParallelWrapper wrapper = new ParallelWrapper.Builder(model)
             // if set to TRUE, on every averaging model score will be reported
             .reportScoreAfterAveraging(false)
 
-            // optinal parameter, set to false ONLY if your system has support P2P memory access across PCIe (hint: AWS do not support P2P)
-            .useLegacyAveraging(false)
-
+            // 3 options here: NONE, SINGLE, SEPARATE
             .workspaceMode(WorkspaceMode.SINGLE)
 
             .build();
@@ -52,6 +54,16 @@ We provide asynchronous prefetch iterators, AsyncDataSetIterator and AsyncMultiD
 ***Caution***: with AsyncDataSetIterator being used, DataSets are supposed to be used before calling for next() DataSet. So, you're not supposed to store them in any way without detach() call, because otherwise memory used for INDArrays within DataSet will be overwritten within AsyncDataSetIterator eventually.
 
 If, for some reason, you don’t want your iterator to be wrapped into asynchronous prefetch (i.e. for debugging purposes), there’s special wrappers provided: AsyncShieldDataSetIterator and AsyncShieldMultiDataSetIterator. Basically that’s just thin wrappers that prevent prefetch.
+
+## Evaluation:
+Usually evaluation assumes use of model.output() method, which essentially returns INDArray detached from workspace. So, in case of regular evaluations during training it might be better to use built-in methods for evaluation. I.e.:
+```
+Evaluation eval = new Evaluation(outputNum);
+ROC roceval = new ROC(outputNum);
+model.doEvaluation(iteratorTest, eval, roceval);
+```
+
+This piece of code will do single cycle over `iteratorTest`, and will update both (or less/more, if required by your needs) IEvaluation implementations, without any additional INDArray allocation. 
 
 ## Garbage Collector:
 If your training process uses workspaces, it’s recommended to disable (or reduce frequency of) periodic gc calls. That can be done using this:
