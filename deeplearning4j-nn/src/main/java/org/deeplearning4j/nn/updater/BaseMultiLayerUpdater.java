@@ -72,7 +72,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             for (int j = 0; j < variables.size(); j++) {
                 String var = variables.get(j);
                 int paramSizeThisVariable = layerParamTable.get(var).length();
-                int updaterStateSizeThisVariable = UpdaterUtils.stateSizeForLayerVariable(layers[i], var);
+                int updaterStateSizeThisVariable = (int)layers[i].conf().getLayer().getIupdater().stateSize(paramSizeThisVariable);
 
                 INDArray gradientViewSubset = null;
                 INDArray paramsViewSubset = null;

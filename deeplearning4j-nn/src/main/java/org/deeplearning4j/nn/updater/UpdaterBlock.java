@@ -67,7 +67,8 @@ public class UpdaterBlock {
     public void init() {
         if (gradientUpdater == null) {
             ParamState varState = layersAndVariablesInBlock.get(0);
-            gradientUpdater = UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getParamName());
+
+            gradientUpdater = varState.getLayer().conf().getLayer().getIupdater().instantiate(null, false); //UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getParamName());
             if (updaterView != null) {
                 //May be null for SGD and no-op updaters
                 int[] gradientViewShape = gradientView.shape();

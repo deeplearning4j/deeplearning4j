@@ -258,8 +258,13 @@ public abstract class Layer implements Serializable, Cloneable {
      * @param paramName    Parameter name
      * @return             Updater for the parameter
      */
+    @Deprecated
     public Updater getUpdaterByParam(String paramName) {
         return updater;
+    }
+
+    public IUpdater getIUpdaterByParam(String paramName){
+        return iupdater;
     }
 
     @SuppressWarnings("unchecked")
