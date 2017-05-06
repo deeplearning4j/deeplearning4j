@@ -362,7 +362,7 @@ public class LSTMHelpers {
         IActivation afn = conf.getLayer().getActivationFn();
 
         // we check, if we have defined workspace here. If we don't - we working without workspace, and we're skipping internal LSTM one. Otherwise - we go for it
-        MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace() != null ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceConfigurationLSTM, ComputationGraph.workspaceLSTM) : null;
+        MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace() != null && !Nd4j.getMemoryManager().getCurrentWorkspace().getId().equals(ComputationGraph.workspaceExternal) ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceConfigurationLSTM, ComputationGraph.workspaceLSTM) : null;
 
         INDArray timeStepMaskColumn = null;
         for (int iTimeIndex = timeSeriesLength - 1; iTimeIndex >= endIdx; iTimeIndex--) {
@@ -370,6 +370,7 @@ public class LSTMHelpers {
                 // we're emulating try block here
                 if (workspace != null)
                     workspace.notifyScopeEntered();
+
 
                 int time = iTimeIndex;
                 int inext = 1;
@@ -433,8 +434,8 @@ public class LSTMHelpers {
                 }
 
 
-                //Store for use in next iteration, and since we're in workspace, we need to push it out of current workspace
-                nablaCellStateNext = nablaCellState.leverage();
+                //Store for use in next iteration, and IF we're in workspace, we need to push it out of current workspace
+                nablaCellStateNext = workspace == null ? nablaCellState : nablaCellState.leverage();
 
 
                 //Forget gate delta:
