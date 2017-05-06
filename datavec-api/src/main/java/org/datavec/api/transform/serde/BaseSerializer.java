@@ -228,10 +228,10 @@ public abstract class BaseSerializer {
     }
 
     /**
-     * Deserialize an IReducer serialized using {@link #serialize(Object)}
+     * Deserialize an IStringReducer serialized using {@link #serialize(Object)}
      *
-     * @param str String representation (YAML/JSON) of the IReducer
-     * @return IReducer
+     * @param str String representation (YAML/JSON) of the IStringReducer
+     * @return IStringReducer
      */
     public IReducer deserializeReducer(String str) {
         return load(str, IReducer.class);
@@ -311,11 +311,11 @@ public abstract class BaseSerializer {
     }
 
     /**
-     * Deserialize an IReducer List serialized using {@link #serializeReducerList(List)}, or
+     * Deserialize an IStringReducer List serialized using {@link #serializeReducerList(List)}, or
      * an array serialized using {@link #serialize(IReducer[])}
      *
-     * @param str String representation (YAML/JSON) of the IReducer list
-     * @return {@code List<IReducer>}
+     * @param str String representation (YAML/JSON) of the IStringReducer list
+     * @return {@code List<IStringReducer>}
      */
     public List<IReducer> deserializeReducerList(String str) {
         return load(str, ListWrappers.ReducerList.class).getList();
