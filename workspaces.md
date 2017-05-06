@@ -47,7 +47,7 @@ ParallelWrapper wrapper = new ParallelWrapper.Builder(model)
 ```
 
 ## Iterators:
-We provide asynchronous prefetch iterators, AsyncDataSetIterator and AsyncMultiDataSetIterator, which are usually used internally. These iterators are optionally using a special, cyclic workspace mode for a smaller memory footprint. The size of the workspace, in this case, will be determined by the memory requirements of the first DataSet coming out of the underlying iterator whereas the buffer size is defined by the user. However, the workspace will be adjusted if memory requirements change over time (i.e. if you’re using variable length time series).
+We provide asynchronous prefetch iterators, AsyncDataSetIterator and AsyncMultiDataSetIterator, which are usually used internally. These iterators optionally use a special, cyclic workspace mode for a smaller memory footprint. The size of the workspace, in this case, will be determined by the memory requirements of the first DataSet coming out of the underlying iterator whereas the buffer size is defined by the user. However, the workspace will be adjusted if memory requirements change over time (i.e. if you’re using variable length time series).
 
 ***Caution***: If you’re using a custom iterator or the RecordReader, please make sure you’re not initializing something huge within the first next() call. Do that in your constructor to avoid undesired workspace growth.
 
