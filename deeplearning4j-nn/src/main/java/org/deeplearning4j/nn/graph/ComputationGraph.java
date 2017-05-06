@@ -2376,11 +2376,11 @@ public class ComputationGraph implements Serializable, Model {
         workspaceConfigurationExternal.setPolicyLearning(LearningPolicy.OVER_TIME);
 
         MemoryWorkspace workspaceT = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationTBPTT, workspaceTBPTT);
-        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace workspaceE = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
-        try(MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
+        try(MemoryWorkspace wsE = workspaceE.notifyScopeEntered()) {
             for (int i = 0; i < nSubsets; i++) {
-                try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
+                try (MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
                     int startTimeIdx = i * fwdLen;
                     int endTimeIdx = startTimeIdx + fwdLen;
                     if (endTimeIdx > timeSeriesLength)
@@ -2437,7 +2437,7 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         if (configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE) {
-            workspace.initializeWorkspace();
+            workspaceE.initializeWorkspace();
             workspaceT.initializeWorkspace();
         }
 
