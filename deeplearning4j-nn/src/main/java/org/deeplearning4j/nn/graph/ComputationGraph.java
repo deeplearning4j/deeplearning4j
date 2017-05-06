@@ -2671,7 +2671,7 @@ public class ComputationGraph implements Serializable, Model {
         if (labelsList == null)
             labelsList = iterator.getLabels();
 
-        return doEvaluation(iterator, new Evaluation(labelsList, topN));
+        return doEvaluation(iterator, new Evaluation(labelsList, topN))[0];
     }
 
     /**
@@ -2684,7 +2684,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
      */
     public Evaluation evaluate(MultiDataSetIterator iterator, List<String> labelsList, int topN) {
-        return doEvaluation(iterator, new Evaluation(labelsList, topN));
+        return doEvaluation(iterator, new Evaluation(labelsList, topN))[0];
     }
 
     /**
@@ -2711,7 +2711,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return Regression evaluation
      */
     public RegressionEvaluation evaluateRegression(DataSetIterator iterator, List<String> columnNames) {
-        return doEvaluation(iterator, new RegressionEvaluation(columnNames));
+        return doEvaluation(iterator, new RegressionEvaluation(columnNames))[0];
     }
 
     /**
@@ -2720,7 +2720,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return Regression evaluation
      */
     public RegressionEvaluation evaluateRegression(MultiDataSetIterator iterator, List<String> columnNames) {
-        return doEvaluation(iterator, new RegressionEvaluation(columnNames));
+        return doEvaluation(iterator, new RegressionEvaluation(columnNames))[0];
     }
 
     /**
@@ -2731,7 +2731,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return ROC evaluation on the given dataset
      */
     public ROC evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
-        return doEvaluation(iterator, new ROC(rocThresholdSteps));
+        return doEvaluation(iterator, new ROC(rocThresholdSteps))[0];
     }
 
     /**
@@ -2742,7 +2742,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return ROC evaluation on the given dataset
      */
     public ROC evaluateROC(MultiDataSetIterator iterator, int rocThresholdSteps) {
-        return doEvaluation(iterator, new ROC(rocThresholdSteps));
+        return doEvaluation(iterator, new ROC(rocThresholdSteps))[0];
     }
 
     /**
@@ -2753,7 +2753,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
-        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps));
+        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps))[0];
     }
 
     /**
@@ -2764,7 +2764,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public ROCMultiClass evaluateROCMultiClass(MultiDataSetIterator iterator, int rocThresholdSteps) {
-        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps));
+        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps))[0];
     }
 
     /**
@@ -2775,7 +2775,7 @@ public class ComputationGraph implements Serializable, Model {
      * @param <T>        Type of the IEvaluation instance
      * @return           The input IEvaluation instance, after performing evaluation on the test data
      */
-    public <T extends IEvaluation> T doEvaluation(DataSetIterator iterator, T evaluation) {
+    public <T extends IEvaluation> T[] doEvaluation(DataSetIterator iterator, T... evaluations) {
         if (layers == null || !(getOutputLayer(0) instanceof IOutputLayer)) {
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
@@ -2809,7 +2809,9 @@ public class ComputationGraph implements Serializable, Model {
                         featuresMask == null ? null : new INDArray[]{featuresMask},
                         labelMask == null ? null : new INDArray[]{labelMask});
                 INDArray[] out = silentOutput(false, features);
-                evaluation.eval(labels, out[0], labelMask);
+
+                for(T evaluation: evaluations)
+                    evaluation.eval(labels, out[0], labelMask);
             }
 
             clearLayerMaskArrays();
@@ -2818,7 +2820,7 @@ public class ComputationGraph implements Serializable, Model {
         if (iterator.asyncSupported())
             ((AsyncDataSetIterator) iter).shutdown();
 
-        return evaluation;
+        return evaluations;
     }
 
     /**
@@ -2829,7 +2831,7 @@ public class ComputationGraph implements Serializable, Model {
      * @param <T>        Type of the IEvaluation instance
      * @return           The input IEvaluation instance, after performing evaluation on the test data
      */
-    public <T extends IEvaluation> T doEvaluation(MultiDataSetIterator iterator, T evaluation) {
+    public <T extends IEvaluation> T[] doEvaluation(MultiDataSetIterator iterator, T... evaluations) {
         if (layers == null || !(getOutputLayer(0) instanceof IOutputLayer)) {
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
@@ -2863,7 +2865,9 @@ public class ComputationGraph implements Serializable, Model {
 
                 setLayerMaskArrays(featuresMasks, labelMasks);
                 INDArray[] out = silentOutput(false, features);
-                evaluation.eval(labels, out[0], labelMask);
+
+                for (T evaluation: evaluations)
+                    evaluation.eval(labels, out[0], labelMask);
             }
 
             clearLayerMaskArrays();
@@ -2872,7 +2876,7 @@ public class ComputationGraph implements Serializable, Model {
         if (iterator.asyncSupported())
             ((AsyncMultiDataSetIterator) iter).shutdown();
 
-        return evaluation;
+        return evaluations;
     }
 
     /**

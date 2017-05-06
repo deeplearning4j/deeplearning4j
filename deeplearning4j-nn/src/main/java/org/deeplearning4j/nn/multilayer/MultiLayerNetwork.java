@@ -2610,7 +2610,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return
      */
     public RegressionEvaluation evaluateRegression(DataSetIterator iterator) {
-        return doEvaluation(iterator, new RegressionEvaluation(iterator.totalOutcomes()));
+        return doEvaluation(iterator, new RegressionEvaluation(iterator.totalOutcomes()))[0];
     }
 
     /**
@@ -2621,7 +2621,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return ROC evaluation on the given dataset
      */
     public ROC evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
-        return doEvaluation(iterator, new ROC(rocThresholdSteps));
+        return doEvaluation(iterator, new ROC(rocThresholdSteps))[0];
     }
 
     /**
@@ -2632,7 +2632,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
-        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps));
+        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps))[0];
     }
 
     /**
@@ -2641,7 +2641,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @param iterator   data to evaluate on
      * @param evaluation IEvaluation instance to perform evaluation with
      */
-    public <T extends IEvaluation> T doEvaluation(DataSetIterator iterator, T evaluation) {
+    public <T extends IEvaluation> T[] doEvaluation(DataSetIterator iterator, T... evaluations) {
         if (!iterator.hasNext() && iterator.resetSupported()) {
             iterator.reset();
         }
@@ -2670,6 +2670,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     out = this.silentOutput(features, false);
                 }
 
+                for(T evaluation: evaluations)
                 evaluation.eval(labels, out, lMask);
             }
 
@@ -2679,7 +2680,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (iterator.asyncSupported())
             ((AsyncDataSetIterator) iter).shutdown();
 
-        return evaluation;
+        return evaluations;
     }
 
     /**
