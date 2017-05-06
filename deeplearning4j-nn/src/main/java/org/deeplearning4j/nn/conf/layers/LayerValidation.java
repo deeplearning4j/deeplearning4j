@@ -43,11 +43,11 @@ public class LayerValidation {
             log.warn("Layer \"" + layerName
                             + "\" momentum schedule has been set but will not be applied unless the updater is set to NESTEROVS.");
         if ((!Double.isNaN(adamVarDecay) || (!Double.isNaN(layer.getAdamVarDecay())))
-                        && layer.getUpdater() != Updater.ADAM)
+                        && layer.getUpdater() != Updater.ADAM && layer.getUpdater() != Updater.ADAMAX)
             log.warn("Layer \"" + layerName
                             + "\" adamVarDecay is set but will not be applied unless the updater is set to Adam.");
         if ((!Double.isNaN(adamMeanDecay) || !Double.isNaN(layer.getAdamMeanDecay()))
-                        && layer.getUpdater() != Updater.ADAM)
+                        && layer.getUpdater() != Updater.ADAM && layer.getUpdater() != Updater.ADAMAX)
             log.warn("Layer \"" + layerName
                             + "\" adamMeanDecay is set but will not be applied unless the updater is set to Adam.");
         if ((!Double.isNaN(rho) || !Double.isNaN(layer.getRho())) && layer.getUpdater() != Updater.ADADELTA)
@@ -72,6 +72,7 @@ public class LayerValidation {
                     layer.setMomentumSchedule(new HashMap<Integer, Double>());
                 break;
             case ADAM:
+            case ADAMAX:
                 if (Double.isNaN(adamMeanDecay) && Double.isNaN(layer.getAdamMeanDecay())) {
                     layer.setAdamMeanDecay(Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY);
                     log.warn("Layer \"" + layerName + "\" adamMeanDecay is automatically set to "
