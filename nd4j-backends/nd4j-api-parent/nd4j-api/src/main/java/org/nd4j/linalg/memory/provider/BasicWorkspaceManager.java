@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * Workspace manager implementation. Please note, this class is supposed to be used via Nd4j.getWorkspaceManager(), to provide consistency between different threads within given JVM process
  * @author raver119@gmail.com
  */
 @Slf4j
@@ -44,11 +45,19 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         thread.start();
     }
 
+    /**
+     * This method allows to specify "Default" configuration, that will be used in signatures which do not have WorkspaceConfiguration argument
+     * @param configuration
+     */
     @Override
     public void setDefaultWorkspaceConfiguration(@NonNull WorkspaceConfiguration configuration) {
         this.defaultConfiguration = configuration;
     }
 
+    /**
+     * This method will return workspace with default configuration and default id.
+     * @return
+     */
     @Override
     public MemoryWorkspace getWorkspaceForCurrentThread() {
         return getWorkspaceForCurrentThread(MemoryWorkspace.DEFAULT_ID);
@@ -91,6 +100,11 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         backingMap.get().put(id, workspace);
     }
 
+    /**
+     * This method destroys given workspace
+     *
+     * @param workspace
+     */
     @Override
     public void destroyWorkspace(MemoryWorkspace workspace) {
         if (workspace == null || workspace instanceof DummyWorkspace)
@@ -100,6 +114,9 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         backingMap.get().remove(workspace.getId());
     }
 
+    /**
+     * This method destroy default workspace, if any
+     */
     @Override
     public void destroyWorkspace() {
         ensureThreadExistense();
@@ -111,6 +128,9 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         backingMap.get().remove(MemoryWorkspace.DEFAULT_ID);
     }
 
+    /**
+     * This method destorys all workspaces allocated in current thread
+     */
     @Override
     public void destroyAllWorkspacesForCurrentThread() {
         ensureThreadExistense();
@@ -254,11 +274,14 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         }
     }
 
-
+    /**
+     * This method prints out basic statistics for workspaces allocated in current thread
+     */
     public synchronized void printAllocationStatisticsForCurrentThread() {
         ensureThreadExistense();
         Map<String, MemoryWorkspace> map = backingMap.get();
         log.info("Workspace statistics: ---------------------------------");
+        log.info("Number of workspaces in current thread: {}", map.size());
         for (String key : map.keySet()) {
             log.info("Workspace: {}", key);
             log.info("Allocated amount: {} bytes", ((Nd4jWorkspace)map.get(key)).getCurrentSize());
