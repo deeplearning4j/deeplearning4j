@@ -335,7 +335,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         // we can reallocate this workspace to larger size if that's needed and allowed by configuration
         if ((currentSize.get() < maxCycle.get() || currentSize.get() < cycleAllocations.get()) && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE && (workspaceConfiguration.getMaxSize() == 0 || (maxCycle.get() < workspaceConfiguration.getMaxSize()))) {
             if (workspaceConfiguration.getPolicyReset() != ResetPolicy.ENDOFBUFFER_REACHED)
-                destroyWorkspace();
+                destroyWorkspace(true);
             isInit.set(false);
         }
 
@@ -370,8 +370,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                 // purge spilled allocations
                 if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT || resetPlanned.get())) {
                     clearExternalAllocations();
-                    spilledAllocationsSize.set(0);
-                    externalCount.set(0);
                     resetPlanned.set(false);
                 }
 
@@ -418,10 +416,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         currentSize.set(0);
         reset();
 
-        externalCount.set(0);
-
-        if (extended)
+        if (extended) {
             clearExternalAllocations();
+        }
 
         //cycleAllocations.set(0);
         //maxCycle.set(0);
@@ -587,7 +584,6 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         // if we have any spilled allocations left from last cycle - purge them.
         if (externalCount.get() > 0 && (workspaceConfiguration.getPolicyReset() == ResetPolicy.BLOCK_LEFT || resetPlanned.get())) {
             clearExternalAllocations();
-            externalCount.set(0);
             resetPlanned.set(false);
         }
 
