@@ -11,7 +11,7 @@ import org.nd4j.linalg.learning.NesterovsUpdater;
  */
 @AllArgsConstructor
 @Data
-public class Nesterovs implements Updater {
+public class Nesterovs implements IUpdater {
     public static final double DEFAULT_NESTEROV_MOMENTUM = 0.9;
     public static final double DEFAULT_NESTEROV_LEARNING_RATE = 0.1;
 

@@ -15,9 +15,14 @@ import org.nd4j.linalg.learning.SgdUpdater;
 @Data
 @EqualsAndHashCode
 @Builder
-public class Sgd implements Updater {
+public class Sgd implements IUpdater {
+    public static final double DEFAULT_SGD_LR = 1e-3;
 
     private double learningRate;
+
+    public Sgd(){
+        this(DEFAULT_SGD_LR);
+    }
 
     @Override
     public long stateSize(long numParams) {

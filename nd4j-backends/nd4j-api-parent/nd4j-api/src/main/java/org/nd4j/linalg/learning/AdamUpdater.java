@@ -1,16 +1,12 @@
 package org.nd4j.linalg.learning;
 
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Adam;
-import org.nd4j.linalg.learning.config.Updater;
 import org.nd4j.linalg.ops.transforms.Transforms;
-
-import java.io.Serializable;
 
 /**
  * The Adam updater.

@@ -6,7 +6,7 @@ import org.nd4j.linalg.learning.GradientUpdater;
 /**
  * Created by Alex on 06/05/2017.
  */
-public interface Updater {
+public interface IUpdater {
 
     long stateSize(long numParams);
 

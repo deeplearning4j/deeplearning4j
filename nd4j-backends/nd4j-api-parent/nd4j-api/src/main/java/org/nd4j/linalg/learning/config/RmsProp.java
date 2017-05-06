@@ -11,7 +11,7 @@ import org.nd4j.linalg.learning.RmsPropUpdater;
  */
 @Data
 @AllArgsConstructor
-public class RmsProp implements Updater {
+public class RmsProp implements IUpdater {
     public static final double DEFAULT_RMSPROP_LEARNING_RATE = 1e-1;
     public static final double DEFAULT_RMSPROP_EPSILON = 1e-8;
     public static final double DEFAULT_RMSPROP_RMSDECAY = 0.95;

@@ -13,7 +13,7 @@ import org.nd4j.linalg.learning.GradientUpdater;
 @Builder
 @AllArgsConstructor
 @Data
-public class AdaGrad implements Updater {
+public class AdaGrad implements IUpdater {
 
     public static final double DEFAULT_ADAGRAD_LEARNING_RATE = 1e-1;
     public static final double DEFAULT_ADAGRAD_EPSILON = 1e-6;

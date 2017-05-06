@@ -2,9 +2,7 @@
 package org.nd4j.linalg.learning;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.learning.config.Updater;
-
-import java.io.Serializable;
+import org.nd4j.linalg.learning.config.IUpdater;
 
 /**
  * Gradient modifications:
@@ -14,7 +12,7 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
-public interface GradientUpdater<T extends Updater> {
+public interface GradientUpdater<T extends IUpdater> {
 
     T getConfig();
 

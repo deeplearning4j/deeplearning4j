@@ -7,7 +7,7 @@ import org.nd4j.linalg.learning.NoOpUpdater;
 /**
  * Created by Alex on 06/05/2017.
  */
-public class NoOp implements Updater {
+public class NoOp implements IUpdater {
     @Override
     public long stateSize(long numParams) {
         return 0;

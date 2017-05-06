@@ -11,7 +11,7 @@ import org.nd4j.linalg.learning.GradientUpdater;
  */
 @Data
 @Builder
-public class Adam implements Updater {
+public class Adam implements IUpdater {
 
     public static final double DEFAULT_LEARNING_RATE = 1e-3;
     public static final double DEFAULT_ADAM_EPSILON = 1e-8;

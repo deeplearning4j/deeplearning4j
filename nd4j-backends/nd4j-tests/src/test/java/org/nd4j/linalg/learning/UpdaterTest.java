@@ -26,6 +26,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.learning.config.AdaDelta;
+import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +39,6 @@ import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 public class UpdaterTest extends BaseNd4jTest {
-
-    private static final Logger log = LoggerFactory.getLogger(UpdaterTest.class);
 
 
 
@@ -53,33 +55,9 @@ public class UpdaterTest extends BaseNd4jTest {
 
         AdaGradUpdater grad = new AdaGradUpdater(rows, cols, 1e-3);
         grad.setStateViewArray(Nd4j.zeros(1, rows * cols), new int[] {rows, cols}, 'c', true);
-        INDArray W = Nd4j.ones(rows, cols);
-        assertEquals(1e-1, grad.applyUpdater(W, 0).getDouble(0), 1e-1);
-    }
-
-
-    @Test
-    public void testEnsureInPlace() {
-        //All updaters MUST execute in-place operations on the arrays. This is important for how DL4J works
-
-        GradientUpdater[] updaters = new GradientUpdater[] {new AdaDeltaUpdater(0.95), new AdaGradUpdater(0.1), new AdamUpdater(0.9),
-                        new NesterovsUpdater(0.9), new RmsPropUpdater(0.1, 0.95), new SgdUpdater(0.1),};
-        int[] m = new int[] {2, 1, 2, 1, 1, 1};
-
-        Nd4j.getRandom().setSeed(12345);
-        for (int i = 0; i < updaters.length; i++) {
-            GradientUpdater u = updaters[i];
-            System.out.println(u);
-            u.setStateViewArray(Nd4j.zeros(1, m[i] * 10 * 10), new int[] {10, 10}, 'c', true);
-
-            String msg = u.getClass().toString();
-
-            INDArray input = Nd4j.rand(10, 10);
-            for (int j = 0; j < 3; j++) {
-                INDArray out = u.applyUpdater(input, j);
-                assertTrue(msg, input == out); //Needs to be exact same object, not merely equal
-            }
-        }
+        INDArray w = Nd4j.ones(rows, cols);
+        grad.applyUpdater(w, 0);
+        assertEquals(1e-1, w.getDouble(0), 1e-1);
     }
 
     @Test
@@ -88,7 +66,7 @@ public class UpdaterTest extends BaseNd4jTest {
         int cols = 2;
 
 
-        NesterovsUpdater grad = new NesterovsUpdater(0.5);
+        NesterovsUpdater grad = new NesterovsUpdater(new Nesterovs(0.5, 0.9));
         grad.setStateViewArray(Nd4j.zeros(1, rows * cols), new int[] {rows, cols}, 'c', true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1, 1);
@@ -96,8 +74,8 @@ public class UpdaterTest extends BaseNd4jTest {
             W.putRow(i, Nd4j.create(dist.sample(W.columns())));
 
         for (int i = 0; i < 5; i++) {
-            String learningRates = String.valueOf("\nAdagrad\n " + grad.applyUpdater(W, i)).replaceAll(";", "\n");
-            System.out.println(learningRates);
+//            String learningRates = String.valueOf("\nAdagrad\n " + grad.applyUpdater(W, i)).replaceAll(";", "\n");
+//            System.out.println(learningRates);
             W.addi(Nd4j.randn(rows, cols));
         }
     }
@@ -109,7 +87,7 @@ public class UpdaterTest extends BaseNd4jTest {
         int cols = 2;
 
 
-        AdaGradUpdater grad = new AdaGradUpdater(rows, cols, 0.1);
+        AdaGradUpdater grad = new AdaGradUpdater(new AdaGrad(0.1,AdaGrad.DEFAULT_ADAGRAD_EPSILON));
         grad.setStateViewArray(Nd4j.zeros(1, rows * cols), new int[] {rows, cols}, 'c', true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1, 1);
@@ -117,8 +95,8 @@ public class UpdaterTest extends BaseNd4jTest {
             W.putRow(i, Nd4j.create(dist.sample(W.columns())));
 
         for (int i = 0; i < 5; i++) {
-            String learningRates = String.valueOf("\nAdagrad\n " + grad.applyUpdater(W, i)).replaceAll(";", "\n");
-            System.out.println(learningRates);
+//            String learningRates = String.valueOf("\nAdagrad\n " + grad.applyUpdater(W, i)).replaceAll(";", "\n");
+//            System.out.println(learningRates);
             W.addi(Nd4j.randn(rows, cols));
         }
 
@@ -130,7 +108,7 @@ public class UpdaterTest extends BaseNd4jTest {
         int cols = 2;
 
 
-        AdaDeltaUpdater grad = new AdaDeltaUpdater();
+        AdaDeltaUpdater grad = new AdaDeltaUpdater(new AdaDelta());
         grad.setStateViewArray(Nd4j.zeros(1, 2 * rows * cols), new int[] {rows, cols}, 'c', true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1e-3, 1e-3);
@@ -138,8 +116,8 @@ public class UpdaterTest extends BaseNd4jTest {
             W.putRow(i, Nd4j.create(dist.sample(W.columns())));
 
         for (int i = 0; i < 5; i++) {
-            String learningRates = String.valueOf("\nAdaelta\n " + grad.applyUpdater(W, i)).replaceAll(";", "\n");
-            System.out.println(learningRates);
+//            String learningRates = String.valueOf("\nAdaelta\n " + grad.applyUpdater(W, i)).replaceAll(";", "\n");
+//            System.out.println(learningRates);
             W.addi(Nd4j.randn(rows, cols));
         }
     }
@@ -150,7 +128,7 @@ public class UpdaterTest extends BaseNd4jTest {
         int cols = 2;
 
 
-        AdamUpdater grad = new AdamUpdater();
+        AdamUpdater grad = new AdamUpdater(new Adam());
         grad.setStateViewArray(Nd4j.zeros(1, 2 * rows * cols), new int[] {rows, cols}, 'c', true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1e-3, 1e-3);
@@ -158,8 +136,8 @@ public class UpdaterTest extends BaseNd4jTest {
             W.putRow(i, Nd4j.create(dist.sample(W.columns())));
 
         for (int i = 0; i < 5; i++) {
-            String learningRates = String.valueOf("\nAdamUpdater\n " + grad.applyUpdater(W, i)).replaceAll(";", "\n");
-            System.out.println(learningRates);
+//            String learningRates = String.valueOf("\nAdamUpdater\n " + grad.applyUpdater(W, i)).replaceAll(";", "\n");
+//            System.out.println(learningRates);
             W.addi(Nd4j.randn(rows, cols));
         }
     }

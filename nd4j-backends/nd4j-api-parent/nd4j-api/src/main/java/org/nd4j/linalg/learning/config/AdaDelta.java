@@ -3,7 +3,6 @@ package org.nd4j.linalg.learning.config;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaDeltaUpdater;
 import org.nd4j.linalg.learning.GradientUpdater;
@@ -14,7 +13,7 @@ import org.nd4j.linalg.learning.GradientUpdater;
 @Data
 @AllArgsConstructor
 @Builder
-public class AdaDelta implements Updater {
+public class AdaDelta implements IUpdater {
     public static final double DEFAULT_ADADELTA_EPSILON = 1e-6;
     public static final double DEFAULT_ADADELTA_RHO = 0.95;
 
