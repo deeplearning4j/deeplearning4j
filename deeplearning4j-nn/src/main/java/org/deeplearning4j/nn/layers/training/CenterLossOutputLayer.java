@@ -69,7 +69,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     @Override
     public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
         if (input == null || labels == null)
-            throw new IllegalStateException("Cannot calculate score without input and labels");
+            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
         INDArray preOut = preOutput2d(training);
@@ -119,7 +119,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
     @Override
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
         if (input == null || labels == null)
-            throw new IllegalStateException("Cannot calculate score without input and labels");
+            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         INDArray preOut = preOutput2d(false);
 
         // calculate the intra-class score component
@@ -155,8 +155,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
     @Override
     protected void setScoreWithZ(INDArray z) {
-        //        setScore(z, null);
-        throw new RuntimeException("Not yet implemented");
+        throw new RuntimeException("Not supported " + layerId());
     }
 
     @Override
@@ -195,7 +194,8 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         INDArray labels2d = getLabels2d();
         if (labels2d.size(1) != preOut.size(1)) {
             throw new DL4JInvalidInputException("Labels array numColumns (size(1) = " + labels2d.size(1)
-                            + ") does not match output layer" + " number of outputs (nOut = " + preOut.size(1) + ")");
+                            + ") does not match output layer" + " number of outputs (nOut = " + preOut.size(1)
+                    + ") " + layerId());
         }
 
         INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), maskArray);

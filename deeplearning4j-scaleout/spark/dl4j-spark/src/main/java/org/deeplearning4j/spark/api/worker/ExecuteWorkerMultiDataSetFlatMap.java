@@ -122,13 +122,12 @@ class ExecuteWorkerMultiDataSetFlatMapAdapter<R extends TrainingResult>
                 return Collections.singletonList(worker.getFinalResult(net));
             }
         } finally {
+            Nd4j.getExecutioner().commit();
+
             //Make sure we shut down the async thread properly...
             if (batchedIterator instanceof AsyncMultiDataSetIterator) {
                 ((AsyncMultiDataSetIterator) batchedIterator).shutdown();
             }
-
-            if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
         }
     }
 }

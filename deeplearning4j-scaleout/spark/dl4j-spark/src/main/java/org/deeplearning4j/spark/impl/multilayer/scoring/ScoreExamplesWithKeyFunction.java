@@ -140,8 +140,7 @@ class ScoreExamplesWithKeyFunctionAdapter<K>
             }
         }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         if (log.isDebugEnabled()) {
             log.debug("Scored {} examples ", totalCount);

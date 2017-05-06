@@ -62,9 +62,7 @@ public class InterleavedDataSetCallback implements DataSetCallback {
         if (!isInitialized)
             initializeWorkspaces(dataSet.getMemoryFootprint());
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
-
+        Nd4j.getExecutioner().commit();
 
         int currIdx = (int) (counterInput.getAndIncrement() % numWorkspaces);
         MemoryWorkspace currWs = Nd4j.getMemoryManager().getCurrentWorkspace();
@@ -80,8 +78,7 @@ public class InterleavedDataSetCallback implements DataSetCallback {
         if (!isInitialized)
             initializeWorkspaces(multiDataSet.getMemoryFootprint());
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         int currIdx = (int) (counterInput.getAndIncrement() % numWorkspaces);
         MemoryWorkspace currWs = Nd4j.getMemoryManager().getCurrentWorkspace();

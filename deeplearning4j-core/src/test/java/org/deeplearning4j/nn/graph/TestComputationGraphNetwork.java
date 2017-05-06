@@ -931,8 +931,8 @@ public class TestComputationGraphNetwork {
 
         cg.setInputs(Nd4j.ones(5));
 
-        Map<String, INDArray> layersOnly = cg.feedForward(true, false);
-        Map<String, INDArray> alsoVertices = cg.feedForward(true, true);
+        Map<String, INDArray> layersOnly = cg.feedForward(true, false, false);
+        Map<String, INDArray> alsoVertices = cg.feedForward(true, false, true);
 
         assertEquals(4, layersOnly.size()); //3 layers + 1 input
         assertEquals(5, alsoVertices.size()); //3 layers + 1 input + merge vertex

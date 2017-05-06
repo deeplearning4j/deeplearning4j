@@ -4,23 +4,34 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.graph.*;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.graph.PreprocessorVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
+import org.deeplearning4j.nn.conf.layers.EmbeddingLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.*;
+import org.deeplearning4j.nn.graph.vertex.impl.L2Vertex;
+import org.deeplearning4j.nn.graph.vertex.impl.MergeVertex;
+import org.deeplearning4j.nn.graph.vertex.impl.StackVertex;
+import org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex;
+import org.deeplearning4j.nn.graph.vertex.impl.UnstackVertex;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.transforms.Pow;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -262,6 +273,46 @@ public class TestGraphNodes {
         assertEquals(in1, b.getSecond()[0]);
         assertEquals(in2, b.getSecond()[1]);
         assertEquals(in3, b.getSecond()[2]);
+    }
+
+    @Test
+    public void testStackVertexEmbedding() {
+        Nd4j.getRandom().setSeed(12345);
+        GraphVertex unstack = new StackVertex(null, "", -1);
+
+        INDArray in1 = Nd4j.zeros(5, 1);
+        INDArray in2 = Nd4j.zeros(5, 1);
+        for( int i=0; i<5; i++ ){
+            in1.putScalar(i,0,i);
+            in2.putScalar(i,0,i);
+        }
+
+        INDArray l = Nd4j.rand(5, 5);
+        MultiDataSet ds = new org.nd4j.linalg.dataset.MultiDataSet(new INDArray[]{in1,in2},
+                new INDArray[]{l,l},null,null);
+
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in1", "in2")
+                .addVertex("stack", new org.deeplearning4j.nn.conf.graph.StackVertex(), "in1", "in2")
+                .addLayer("1", new EmbeddingLayer.Builder().nIn(5).nOut(5).build(), "stack")
+                .addVertex("unstack1", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0,2), "1")
+                .addVertex("unstack2", new org.deeplearning4j.nn.conf.graph.UnstackVertex(0,2), "1")
+                .addLayer("out1", new OutputLayer.Builder().activation(Activation.TANH)
+                        .lossFunction(LossFunctions.LossFunction.L2).nIn(5).nOut(5).build(), "unstack1")
+                .addLayer("out2", new OutputLayer.Builder().activation(Activation.TANH)
+                        .lossFunction(LossFunctions.LossFunction.L2).nIn(5).nOut(5).build(), "unstack2" )
+                .setOutputs("out1", "out2")
+                .build();
+
+        ComputationGraph g = new ComputationGraph(conf);
+        g.init();
+
+        g.feedForward(new INDArray[]{in1, in2}, false);
+
+        g.fit(ds);
+
     }
 
     @Test

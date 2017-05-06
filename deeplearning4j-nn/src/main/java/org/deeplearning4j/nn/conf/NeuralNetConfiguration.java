@@ -860,6 +860,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * Dropout probability. This is the probability of <it>retaining</it> an activation. So dropOut(x) will keep an
          * activation with probability x, and set to 0 with probability 1-x.<br>
          * dropOut(0.0) is disabled (default).
+         * <p>
+         * Note: This sets the probability per-layer. Care should be taken when setting lower values for complex networks.
+         * </p>
          *
          * @param dropOut    Dropout probability (probability of retaining an activation)
          */

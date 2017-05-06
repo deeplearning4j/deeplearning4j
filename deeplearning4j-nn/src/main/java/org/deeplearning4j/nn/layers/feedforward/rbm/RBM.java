@@ -258,7 +258,7 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
             }
             default:
                 throw new IllegalStateException(
-                                "Hidden unit type must either be Binary, Gaussian, SoftMax or Rectified");
+                                "Hidden unit type must either be Binary, Gaussian, SoftMax or Rectified " + layerId());
         }
 
         return new Pair<>(hProb, hSample);
@@ -297,7 +297,8 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
                 break;
             }
             default: {
-                throw new IllegalStateException("Visible type must be one of Binary, Gaussian, SoftMax or Linear");
+                throw new IllegalStateException("Visible type must be one of Binary, Gaussian, SoftMax or Linear "
+                        + layerId());
             }
         }
 
@@ -349,7 +350,7 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
                 return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", preSig));
             default:
                 throw new IllegalStateException(
-                                "Hidden unit type should either be binary, gaussian, or rectified linear");
+                                "Hidden unit type should either be binary, gaussian, or rectified linear " + layerId());
         }
 
     }
@@ -375,7 +376,7 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
                                 .execAndReturn(Nd4j.getOpFactory().createTransform("softmax", z).derivative());
             default:
                 throw new IllegalStateException(
-                                "Hidden unit type should either be binary, gaussian, or rectified linear");
+                                "Hidden unit type should either be binary, gaussian, or rectified linear " + layerId());
         }
 
     }
@@ -406,7 +407,7 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
             case SOFTMAX:
                 return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("softmax", vMean));
             default:
-                throw new IllegalStateException("Visible unit type should either be binary or gaussian");
+                throw new IllegalStateException("Visible unit type should either be binary or gaussian " + layerId());
         }
 
     }

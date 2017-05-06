@@ -104,8 +104,9 @@ public class ComputationGraph implements Serializable, Model {
     public final static String workspaceFeedForward = "LOOP_FF";
     public final static String workspaceBackProp = "LOOP_BP";
     public final static String workspaceTBPTT = "LOOP_TBPTT";
+    public final static String workspaceLSTM = "LOOP_LSTM";
 
-    protected final static WorkspaceConfiguration workspaceConfigurationFeedForward = WorkspaceConfiguration.builder()
+    public final static WorkspaceConfiguration workspaceConfigurationFeedForward = WorkspaceConfiguration.builder()
             .initialSize(0)
             .overallocationLimit(0.2)
             .policyReset(ResetPolicy.BLOCK_LEFT)
@@ -114,7 +115,7 @@ public class ComputationGraph implements Serializable, Model {
             .policyLearning(LearningPolicy.OVER_TIME)
             .build();
 
-    protected final static WorkspaceConfiguration workspaceConfigurationTBPTT = WorkspaceConfiguration.builder()
+    public final static WorkspaceConfiguration workspaceConfigurationTBPTT = WorkspaceConfiguration.builder()
             .initialSize(0)
             .overallocationLimit(0.2)
             .policyReset(ResetPolicy.BLOCK_LEFT)
@@ -123,7 +124,16 @@ public class ComputationGraph implements Serializable, Model {
             .policyLearning(LearningPolicy.OVER_TIME)
             .build();
 
-    protected final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
+    public final static WorkspaceConfiguration workspaceConfigurationLSTM = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.2)
+            .policyReset(ResetPolicy.BLOCK_LEFT)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyLearning(LearningPolicy.FIRST_LOOP)
+            .build();
+
+    public final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
             .overallocationLimit(0.2)
             .policyReset(ResetPolicy.BLOCK_LEFT)
             .cyclesBeforeInitialization(3)
@@ -259,6 +269,10 @@ public class ComputationGraph implements Serializable, Model {
      * Set the specified input for the ComputationGraph
      */
     public void setInput(int inputNum, INDArray input) {
+        if(inputs == null){
+            //May be null after clear()
+            inputs = new INDArray[numInputArrays];
+        }
         inputs[inputNum] = input;
     }
 
@@ -1244,7 +1258,17 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     public Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers) {
-        return feedForward(true, excludeOutputLayers, false, true);
+        return feedForward(train, excludeOutputLayers, false, true);
+    }
+
+    /**
+     * @param train                            True: training time. False: test time
+     * @param excludeOutputLayers              Should we exclude the output layers during forward pass? (usually: false)
+     * @param includeNonLayerVertexActivations Include non-layer vertices in the output may?
+     * @return Map of activations. Key: vertex name. Value: activations.
+     */
+    public Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers, boolean includeNonLayerVertexActivations) {
+        return feedForward(train, excludeOutputLayers, includeNonLayerVertexActivations, true);
     }
 
     /**
@@ -1256,7 +1280,7 @@ public class ComputationGraph implements Serializable, Model {
      * @param publicApi
      * @return
      */
-    public Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers, boolean includeNonLayerVertexActivations, boolean publicApi) {
+    protected Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers, boolean includeNonLayerVertexActivations, boolean publicApi) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
         MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy :
@@ -1377,6 +1401,8 @@ public class ComputationGraph implements Serializable, Model {
      * @return Output activations (order: same as defined in network configuration)
      */
     public INDArray[] output(boolean train, INDArray... input) {
+        WorkspaceMode cMode = configuration.getTrainingWorkspaceMode();
+        configuration.setTrainingWorkspaceMode(configuration.getInferenceWorkspaceMode());
         MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
 
         try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
@@ -1384,14 +1410,12 @@ public class ComputationGraph implements Serializable, Model {
             for (int x = 0; x < tmp.length; x++)
                 tmp[x] = tmp[x].detach();
 
+            configuration.setTrainingWorkspaceMode(cMode);
             return tmp;
         }
     }
 
     protected INDArray[] silentOutput(boolean train, INDArray... input) {
-        WorkspaceMode cMode = configuration.getTrainingWorkspaceMode();
-        configuration.setTrainingWorkspaceMode(configuration.getInferenceWorkspaceMode());
-
         setInputs(input);
         Map<String, INDArray> activations = feedForward(false, false, false, false);
         INDArray[] outputs = new INDArray[numOutputArrays];
@@ -1399,8 +1423,6 @@ public class ComputationGraph implements Serializable, Model {
         for (String s : configuration.getNetworkOutputs()) {
             outputs[i++] = activations.get(s);
         }
-
-        configuration.setTrainingWorkspaceMode(cMode);
         return outputs;
     }
 
@@ -1763,6 +1785,7 @@ public class ComputationGraph implements Serializable, Model {
             setLayerMaskArrays(dataSet.getFeaturesMaskArrays(), dataSet.getLabelsMaskArrays());
         }
 
+        double score = 0.0;
         MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
@@ -1774,7 +1797,6 @@ public class ComputationGraph implements Serializable, Model {
             double l1 = calcL1();
             double l2 = calcL2();
 
-            double score = 0.0;
             int i = 0;
             for (String s : configuration.getNetworkOutputs()) {
                 Layer outLayer = verticesMap.get(s).getLayer();
@@ -2659,14 +2681,7 @@ public class ComputationGraph implements Serializable, Model {
         if (labelsList == null)
             labelsList = iterator.getLabels();
 
-        DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
-
-        Evaluation evaluation = doEvaluation(adsi, new Evaluation(labelsList, topN));
-
-        if (iterator.asyncSupported())
-            ((AsyncDataSetIterator) adsi).shutdown();
-
-        return evaluation;
+        return doEvaluation(iterator, new Evaluation(labelsList, topN))[0];
     }
 
     /**
@@ -2679,15 +2694,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
      */
     public Evaluation evaluate(MultiDataSetIterator iterator, List<String> labelsList, int topN) {
-        MultiDataSetIterator amdsi =
-                        iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 8, true) : iterator;
-
-        Evaluation evaluation = doEvaluation(amdsi, new Evaluation(labelsList, topN));
-
-        if (iterator.asyncSupported())
-            ((AsyncMultiDataSetIterator) amdsi).shutdown();
-
-        return evaluation;
+        return doEvaluation(iterator, new Evaluation(labelsList, topN))[0];
     }
 
     /**
@@ -2711,15 +2718,11 @@ public class ComputationGraph implements Serializable, Model {
     /**
      * Evaluate the (single output layer only) network for regression performance
      * @param iterator Data to evaluate on
+     * @param columnNames Column names for the regression evaluation. May be null.
      * @return Regression evaluation
      */
     public RegressionEvaluation evaluateRegression(DataSetIterator iterator, List<String> columnNames) {
-        DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
-
-        if (iterator.asyncSupported())
-            ((AsyncDataSetIterator) adsi).shutdown();
-
-        return doEvaluation(adsi, new RegressionEvaluation(columnNames));
+        return doEvaluation(iterator, new RegressionEvaluation(columnNames))[0];
     }
 
     /**
@@ -2728,15 +2731,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return Regression evaluation
      */
     public RegressionEvaluation evaluateRegression(MultiDataSetIterator iterator, List<String> columnNames) {
-        MultiDataSetIterator amdsi =
-                        iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 8, true) : iterator;
-
-        RegressionEvaluation evaluation = doEvaluation(amdsi, new RegressionEvaluation(columnNames));;
-
-        if (iterator.asyncSupported())
-            ((AsyncMultiDataSetIterator) amdsi).shutdown();
-
-        return evaluation;
+        return doEvaluation(iterator, new RegressionEvaluation(columnNames))[0];
     }
 
     /**
@@ -2747,14 +2742,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return ROC evaluation on the given dataset
      */
     public ROC evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
-        DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
-
-        ROC evaluation = doEvaluation(adsi, new ROC(rocThresholdSteps));
-
-        if (iterator.asyncSupported())
-            ((AsyncDataSetIterator) adsi).shutdown();
-
-        return evaluation;
+        return doEvaluation(iterator, new ROC(rocThresholdSteps))[0];
     }
 
     /**
@@ -2765,15 +2753,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return ROC evaluation on the given dataset
      */
     public ROC evaluateROC(MultiDataSetIterator iterator, int rocThresholdSteps) {
-        MultiDataSetIterator amdsi =
-                        iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 8, true) : iterator;
-
-        ROC evaluation = doEvaluation(amdsi, new ROC(rocThresholdSteps));
-
-        if (iterator.asyncSupported())
-            ((AsyncMultiDataSetIterator) amdsi).shutdown();
-
-        return evaluation;
+        return doEvaluation(iterator, new ROC(rocThresholdSteps))[0];
     }
 
     /**
@@ -2784,14 +2764,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
-        DataSetIterator adsi = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 8, true) : iterator;
-
-        ROCMultiClass evaluation = doEvaluation(adsi, new ROCMultiClass(rocThresholdSteps));
-
-        if (iterator.asyncSupported())
-            ((AsyncDataSetIterator) adsi).shutdown();
-
-        return evaluation;
+        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps))[0];
     }
 
     /**
@@ -2802,15 +2775,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public ROCMultiClass evaluateROCMultiClass(MultiDataSetIterator iterator, int rocThresholdSteps) {
-        MultiDataSetIterator amdsi =
-                        iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 8, true) : iterator;
-
-        ROCMultiClass evaluation = doEvaluation(amdsi, new ROCMultiClass(rocThresholdSteps));
-
-        if (iterator.asyncSupported())
-            ((AsyncMultiDataSetIterator) amdsi).shutdown();
-
-        return evaluation;
+        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps))[0];
     }
 
     /**
@@ -2821,7 +2786,7 @@ public class ComputationGraph implements Serializable, Model {
      * @param <T>        Type of the IEvaluation instance
      * @return           The input IEvaluation instance, after performing evaluation on the test data
      */
-    public <T extends IEvaluation> T doEvaluation(DataSetIterator iterator, T evaluation) {
+    public <T extends IEvaluation> T[] doEvaluation(DataSetIterator iterator, T... evaluations) {
         if (layers == null || !(getOutputLayer(0) instanceof IOutputLayer)) {
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
@@ -2833,10 +2798,12 @@ public class ComputationGraph implements Serializable, Model {
         if (!iterator.hasNext())
             iterator.reset();
 
+        DataSetIterator iter = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 2, true) : iterator;
+
         MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
-        while (iterator.hasNext()) {
-            DataSet next = iterator.next();
+        while (iter.hasNext()) {
+            DataSet next = iter.next();
 
             if (next.getFeatures() == null || next.getLabels() == null)
                 break;
@@ -2853,13 +2820,18 @@ public class ComputationGraph implements Serializable, Model {
                         featuresMask == null ? null : new INDArray[]{featuresMask},
                         labelMask == null ? null : new INDArray[]{labelMask});
                 INDArray[] out = silentOutput(false, features);
-                evaluation.eval(labels, out[0], labelMask);
+
+                for(T evaluation: evaluations)
+                    evaluation.eval(labels, out[0], labelMask);
             }
 
             clearLayerMaskArrays();
         }
 
-        return evaluation;
+        if (iterator.asyncSupported())
+            ((AsyncDataSetIterator) iter).shutdown();
+
+        return evaluations;
     }
 
     /**
@@ -2870,7 +2842,7 @@ public class ComputationGraph implements Serializable, Model {
      * @param <T>        Type of the IEvaluation instance
      * @return           The input IEvaluation instance, after performing evaluation on the test data
      */
-    public <T extends IEvaluation> T doEvaluation(MultiDataSetIterator iterator, T evaluation) {
+    public <T extends IEvaluation> T[] doEvaluation(MultiDataSetIterator iterator, T... evaluations) {
         if (layers == null || !(getOutputLayer(0) instanceof IOutputLayer)) {
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
@@ -2882,11 +2854,13 @@ public class ComputationGraph implements Serializable, Model {
         if (!iterator.hasNext())
             iterator.reset();
 
+        MultiDataSetIterator iter = iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 2, true) : iterator;
+
         MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
 
-        while (iterator.hasNext()) {
-            MultiDataSet next = iterator.next();
+        while (iter.hasNext()) {
+            MultiDataSet next = iter.next();
 
             if (next.getFeatures() == null || next.getLabels() == null)
                 break;
@@ -2902,13 +2876,18 @@ public class ComputationGraph implements Serializable, Model {
 
                 setLayerMaskArrays(featuresMasks, labelMasks);
                 INDArray[] out = silentOutput(false, features);
-                evaluation.eval(labels, out[0], labelMask);
+
+                for (T evaluation: evaluations)
+                    evaluation.eval(labels, out[0], labelMask);
             }
 
             clearLayerMaskArrays();
         }
 
-        return evaluation;
+        if (iterator.asyncSupported())
+            ((AsyncMultiDataSetIterator) iter).shutdown();
+
+        return evaluations;
     }
 
     /**

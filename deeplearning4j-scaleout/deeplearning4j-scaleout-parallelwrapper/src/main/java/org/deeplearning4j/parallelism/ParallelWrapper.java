@@ -198,6 +198,9 @@ public class ParallelWrapper implements AutoCloseable {
             time1 = System.currentTimeMillis();
         }
 
+        if (prefetchSize > 0 && source.asyncSupported())
+            ((AsyncMultiDataSetIterator) iterator).shutdown();
+
         // sanity checks, or the dataset may never average
         if (!wasAveraged)
             log.warn("Parameters were never averaged on current fit(). Ratios of batch size, num workers, and averaging frequency may be responsible.");
@@ -210,31 +213,22 @@ public class ParallelWrapper implements AutoCloseable {
     private double getScore(AtomicInteger locker) {
         wasAveraged = true;
         double score = 0.0;
-        if (!legacyAveraging || Nd4j.getAffinityManager().getNumberOfDevices() == 1) {
-            List<INDArray> params = new ArrayList<>();
-            for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                params.add(zoo[cnt].getModel().params());
-                score += zoo[cnt].getModel().score();
-            }
 
-            Nd4j.averageAndPropagate(model.params(), params);
-        } else {
-            INDArray params = Nd4j.zeros(model.params().shape());
-            int cnt = 0;
-            for (; cnt < workers && cnt < locker.get(); cnt++) {
-                params.addi(zoo[cnt].getModel().params());
-                score += zoo[cnt].getModel().score();
-            }
-
-            params.divi(cnt);
-            model.setParams(params);
+        List<INDArray> params = new ArrayList<>();
+        for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+            params.add(zoo[cnt].getModel().params());
+            score += zoo[cnt].getModel().score();
         }
+
+        Nd4j.averageAndPropagate(model.params(), params);
+
 
         score /= Math.min(workers, locker.get());
 
         // TODO: improve this
         if (reportScore)
             log.info("Averaged score: " + score);
+
         return score;
     }
 
@@ -244,25 +238,13 @@ public class ParallelWrapper implements AutoCloseable {
             int batchSize = 0;
 
             if (updater != null && updater.getStateViewArray() != null) {
-                if (!legacyAveraging || Nd4j.getAffinityManager().getNumberOfDevices() == 1) {
-                    List<INDArray> updaters = new ArrayList<>();
-                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                        ComputationGraph workerModel = (ComputationGraph) zoo[cnt].getModel();
-                        updaters.add(workerModel.getUpdater().getStateViewArray());
-                        batchSize += workerModel.batchSize();
-                    }
-                    Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
-                } else {
-                    INDArray state = Nd4j.zeros(updater.getStateViewArray().shape());
-                    int cnt = 0;
-                    for (; cnt < workers && cnt < locker.get(); cnt++) {
-                        ComputationGraph workerModel = (ComputationGraph) zoo[cnt].getModel();
-                        state.addi(workerModel.getUpdater().getStateViewArray());
-                        batchSize += workerModel.batchSize();
-                    }
-                    state.divi(cnt);
-                    updater.setStateViewArray(state);
+                List<INDArray> updaters = new ArrayList<>();
+                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                    ComputationGraph workerModel = (ComputationGraph) zoo[cnt].getModel();
+                    updaters.add(workerModel.getUpdater().getStateViewArray());
+                    batchSize += workerModel.batchSize();
                 }
+                Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
             }
         }
 
@@ -351,6 +333,7 @@ public class ParallelWrapper implements AutoCloseable {
 
         DataSetIterator iterator;
         if (prefetchSize > 0 && source.asyncSupported()) {
+            log.info("Creating asynchronous prefetcher...");
             if (isMQ) {
                 if (workers % Nd4j.getAffinityManager().getNumberOfDevices() != 0)
                     log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
@@ -360,19 +343,21 @@ public class ParallelWrapper implements AutoCloseable {
                //     mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL).setType(MagicQueue.Type.DS)
                //         .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
 
+
                 iterator = new AsyncDataSetIterator(source, prefetchSize, new LinkedBlockingQueue<>(prefetchSize * workers), true, new InterleavedDataSetCallback(prefetchSize * 2));
 
             } else
                 iterator = new AsyncDataSetIterator(source, prefetchSize);
-        } else
+        } else {
             iterator = source;
+        }
         List<Long> nanos = new ArrayList<>();
         AtomicInteger locker = new AtomicInteger(0);
         long time1 = System.currentTimeMillis();
         while (iterator.hasNext() && !stopFit.get()) {
         //int intcnt = 0;
         //while (intcnt < 1000) {
-            //intcnt++;
+          //  intcnt++;
             DataSet dataSet = iterator.next();
             long time2 = System.currentTimeMillis();
             long lastEtlTime = time2 - time1;
@@ -420,26 +405,14 @@ public class ParallelWrapper implements AutoCloseable {
                             int batchSize = 0;
 
                             if (updater != null && updater.getStateViewArray() != null) {
-                                if (!legacyAveraging || Nd4j.getAffinityManager().getNumberOfDevices() == 1) {
-                                    List<INDArray> updaters = new ArrayList<>();
-                                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                                        MultiLayerNetwork workerModel = (MultiLayerNetwork) zoo[cnt].getModel();
-                                        updaters.add(workerModel.getUpdater().getStateViewArray());
-                                        batchSize += workerModel.batchSize();
-                                    }
-
-                                    Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
-                                } else {
-                                    INDArray state = Nd4j.zeros(updater.getStateViewArray().shape());
-                                    int cnt = 0;
-                                    for (; cnt < workers && cnt < locker.get(); cnt++) {
-                                        MultiLayerNetwork workerModel = (MultiLayerNetwork) zoo[cnt].getModel();
-                                        state.addi(workerModel.getUpdater().getStateViewArray().dup());
-                                        batchSize += workerModel.batchSize();
-                                    }
-                                    state.divi(cnt);
-                                    updater.setStateViewArray((MultiLayerNetwork) model, state, false);
+                                List<INDArray> updaters = new ArrayList<>();
+                                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                                    MultiLayerNetwork workerModel = (MultiLayerNetwork) zoo[cnt].getModel();
+                                    updaters.add(workerModel.getUpdater().getStateViewArray());
+                                    batchSize += workerModel.batchSize();
                                 }
+
+                                Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
                             }
                         }
 
@@ -447,18 +420,15 @@ public class ParallelWrapper implements AutoCloseable {
                     } else if (model instanceof ComputationGraph) {
                         averageUpdatersState(locker, score);
                     }
-
-                    if (legacyAveraging && Nd4j.getAffinityManager().getNumberOfDevices() > 1) {
-                        for (int cnt = 0; cnt < workers; cnt++) {
-                            zoo[cnt].updateModel(model);
-                        }
-                    }
                 }
                 locker.set(0);
             }
 
             time1 = System.currentTimeMillis();
         }
+
+        if (prefetchSize > 0 && source.asyncSupported())
+            ((AsyncDataSetIterator) iterator).shutdown();
 
         //Collections.sort(nanos);
         //int pos = (int) (nanos.size() * 0.85);
