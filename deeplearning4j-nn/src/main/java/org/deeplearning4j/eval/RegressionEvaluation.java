@@ -2,9 +2,7 @@ package org.deeplearning4j.eval;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Abs;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +28,6 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     private boolean initialized;
     private List<String> columnNames;
     private int precision;
-//    private long exampleCount = 0;
     private INDArray exampleCountPerColumn; //Necessary to account for per-output masking
     private INDArray labelsSumPerColumn; //sum(actual) per column -> used to calculate mean
     private INDArray sumSquaredErrorsPerColumn; //(predicted - actual)^2
@@ -172,9 +169,6 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
         int nRows = labels.size(0);
 
-//        currentMean.muli(exampleCount).addi(labels.sum(0)).divi(exampleCount + nRows);
-//        currentPredictionMean.muli(exampleCount).addi(predictions.sum(0)).divi(exampleCount + nRows);
-
         INDArray newExampleCountPerColumn;
         if(maskArray == null){
             newExampleCountPerColumn = exampleCountPerColumn.add(nRows);
@@ -183,8 +177,6 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         }
         currentMean.muliRowVector(exampleCountPerColumn).addi(labels.sum(0)).diviRowVector(newExampleCountPerColumn);
         currentPredictionMean.muliRowVector(exampleCountPerColumn).addi(predictions.sum(0)).divi(newExampleCountPerColumn);
-
-//        exampleCount += nRows;
         exampleCountPerColumn = newExampleCountPerColumn;
     }
 
@@ -215,8 +207,6 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         this.labelsSumPerColumn.addi(other.labelsSumPerColumn);
         this.sumSquaredErrorsPerColumn.addi(other.sumSquaredErrorsPerColumn);
         this.sumAbsErrorsPerColumn.addi(other.sumAbsErrorsPerColumn);
-//        this.currentMean.muli(exampleCount).addi(other.currentMean.mul(other.exampleCount))
-//                        .divi(exampleCount + other.exampleCount);
         this.currentMean.muliRowVector(exampleCountPerColumn).addi(other.currentMean.mulRowVector(other.exampleCountPerColumn))
                 .diviRowVector(exampleCountPerColumn.add(other.exampleCountPerColumn));
         this.currentPredictionMean.muliRowVector(exampleCountPerColumn).addi(other.currentPredictionMean.mulRowVector(other.exampleCountPerColumn))
@@ -225,7 +215,6 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         this.sumSquaredLabels.addi(other.sumSquaredLabels);
         this.sumSquaredPredicted.addi(other.sumSquaredPredicted);
 
-//        this.exampleCount += other.exampleCount;
         this.exampleCountPerColumn.addi(other.exampleCountPerColumn);
     }
 

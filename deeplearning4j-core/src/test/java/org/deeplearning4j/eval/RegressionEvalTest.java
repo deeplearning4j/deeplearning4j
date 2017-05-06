@@ -201,10 +201,20 @@ public class RegressionEvalTest {
                 (2*2 + 20*20 + 10*10)/3,
                 (3*3)/1.0};
 
+        double[] mae = new double[]{
+                10.0,
+                (2 + 20 + 10) / 3.0,
+                3.0};
+
+        double[] rmse = new double[]{
+                10.0,
+                Math.sqrt((2*2 + 20*20 + 10*10) / 3.0),
+                3.0};
+
         for( int i=0; i<3; i++ ){
             assertEquals(mse[i], re.meanSquaredError(i), 1e-6);
+            assertEquals(mae[i], re.meanAbsoluteError(i), 1e-6);
+            assertEquals(rmse[i], re.rootMeanSquaredError(i), 1e-6);
         }
-
     }
-
 }
