@@ -1262,11 +1262,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         workspaceConfigurationExternal.setPolicyLearning(LearningPolicy.OVER_TIME);
 
         MemoryWorkspace workspaceT = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationTBPTT, workspaceTBPTT);
-        MemoryWorkspace workspaceE = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
-        try(MemoryWorkspace wsE = workspaceE.notifyScopeEntered()) {
+        try(MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
             for (int i = 0; i < nSubsets; i++) {
-                try (MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
+                try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
                     int startTimeIdx = i * fwdLen;
                     int endTimeIdx = startTimeIdx + fwdLen;
                     if (endTimeIdx > timeSeriesLength)
@@ -1307,7 +1307,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
         if (layerWiseConfigurations.getTrainingWorkspaceMode() != WorkspaceMode.NONE) {
-            workspaceE.initializeWorkspace();
+            workspace.initializeWorkspace();
             workspaceT.initializeWorkspace();
         }
 
