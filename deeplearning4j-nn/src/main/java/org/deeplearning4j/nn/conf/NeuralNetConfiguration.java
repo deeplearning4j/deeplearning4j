@@ -507,7 +507,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected double dropOut = 0;
         @Deprecated
         protected Updater updater = Updater.SGD;
-        protected IUpdater iupdater = new Sgd();
+        protected IUpdater iUpdater = new Sgd();
         @Deprecated
         protected double momentum = Double.NaN;
         @Deprecated
@@ -909,7 +909,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         public Builder updater(IUpdater updater){
-            this.iupdater = updater;
+            this.iUpdater = updater;
             return this;
         }
 
@@ -1123,6 +1123,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 if (layer.getUpdater() == null)
                     layer.setUpdater(updater);
                 //                updaterValidation(layerName);
+                if (layer.getIUpdater() == null){
+                    layer.setIUpdater(iUpdater.clone());
+                }
                 LayerValidation.updaterValidation(layerName, layer, momentum, momentumSchedule, adamMeanDecay,
                                 adamVarDecay, rho, rmsDecay, epsilon);
                 if (layer.getGradientNormalization() == null)

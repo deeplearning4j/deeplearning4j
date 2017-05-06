@@ -32,7 +32,6 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo.As;
@@ -90,7 +89,7 @@ public abstract class Layer implements Serializable, Cloneable {
     protected double dropOut;
     @Deprecated
     protected Updater updater;
-    protected IUpdater iupdater;
+    protected IUpdater iUpdater;
     //adadelta - weight for how much to consider previous history
     protected double rho;
     //Epsilon value for adagrad and adadelta
@@ -264,7 +263,7 @@ public abstract class Layer implements Serializable, Cloneable {
     }
 
     public IUpdater getIUpdaterByParam(String paramName){
-        return iupdater;
+        return iUpdater;
     }
 
     @SuppressWarnings("unchecked")

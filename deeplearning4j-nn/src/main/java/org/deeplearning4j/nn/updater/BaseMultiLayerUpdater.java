@@ -1,7 +1,6 @@
 package org.deeplearning4j.nn.updater;
 
 import lombok.Getter;
-import org.apache.commons.math3.util.FastMath;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
@@ -72,7 +71,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             for (int j = 0; j < variables.size(); j++) {
                 String var = variables.get(j);
                 int paramSizeThisVariable = layerParamTable.get(var).length();
-                int updaterStateSizeThisVariable = (int)layers[i].conf().getLayer().getIupdater().stateSize(paramSizeThisVariable);
+                int updaterStateSizeThisVariable = (int)layers[i].conf().getLayer().getIUpdaterByParam(var).stateSize(paramSizeThisVariable);
 
                 INDArray gradientViewSubset = null;
                 INDArray paramsViewSubset = null;
