@@ -34,8 +34,9 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     private Gradient zeroGradient;
 
     public FrozenLayer(LayerT insideLayer) {
+        this.insideLayer = insideLayer;
         if (insideLayer instanceof OutputLayer) {
-            throw new IllegalArgumentException("Output Layers are not allowed to be frozen");
+            throw new IllegalArgumentException("Output Layers are not allowed to be frozen " + layerId());
         }
         this.insideLayer = insideLayer;
         this.zeroGradient = new DefaultGradient(insideLayer.params());
@@ -43,6 +44,11 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
             //save memory??
             zeroGradient.setGradientFor(paramType, null);
         }
+    }
+
+    protected String layerId(){
+        String name = insideLayer.conf().getLayer().getLayerName();
+        return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + insideLayer.getIndex() + ")";
     }
 
     @Override

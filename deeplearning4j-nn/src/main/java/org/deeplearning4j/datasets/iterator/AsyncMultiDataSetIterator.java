@@ -22,6 +22,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * Async prefetching iterator wrapper for MultiDataSetIterator implementations
@@ -43,6 +44,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     private String workspaceId;
     private DataSetCallback callback;
     private Integer deviceId;
+    private AtomicBoolean hasDepleted = new AtomicBoolean(false);
 
 
     public AsyncMultiDataSetIterator(MultiDataSetIterator baseIterator) {
@@ -89,7 +91,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         if (iterator.resetSupported())
             this.backedIterator.reset();
 
-        this.thread = new AsyncPrefetchThread(buffer, iterator, terminator, null);
+        this.thread = new AsyncPrefetchThread(buffer, iterator, terminator);
 
         /**
          * We want to ensure, that background thread will have the same thread->device affinity, as master thread
@@ -174,11 +176,12 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        thread.shutdown();
         buffer.clear();
 
         backedIterator.reset();
         shouldWork.set(true);
-        this.thread = new AsyncPrefetchThread(buffer, backedIterator, terminator, null);
+        this.thread = new AsyncPrefetchThread(buffer, backedIterator, terminator);
 
         /**
          * We want to ensure, that background thread will have the same thread->device affinity, as master thread
@@ -187,6 +190,8 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
         thread.setDaemon(true);
         thread.start();
+
+        hasDepleted.set(false);
 
         nextElement = null;
     }
@@ -211,6 +216,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        thread.shutdown();
         buffer.clear();
     }
 
@@ -228,6 +234,9 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             throw throwable;
 
         try {
+            if (hasDepleted.get())
+                return false;
+
             if (nextElement != null && nextElement != terminator) {
                 return true;
             } else if(nextElement == terminator)
@@ -236,8 +245,10 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
             nextElement = buffer.take();
 
-            if (nextElement == terminator)
+            if (nextElement == terminator) {
+                hasDepleted.set(true);
                 return false;
+            }
 
             return true;
         } catch (Exception e) {
@@ -255,6 +266,9 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
     public MultiDataSet next() {
         if (throwable != null)
             throw throwable;
+
+        if (hasDepleted.get())
+            return null;
 
         MultiDataSet temp = nextElement;
         nextElement = null;
@@ -287,6 +301,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         private BlockingQueue<MultiDataSet> queue;
         private MultiDataSetIterator iterator;
         private MultiDataSet terminator;
+        private AtomicBoolean isShutdown = new AtomicBoolean(false);
         private AtomicLong internalCounter = new AtomicLong(0);
         private WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
                 .minSize(10 * 1024L * 1024L)
@@ -297,8 +312,10 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                 .policySpill(SpillPolicy.REALLOCATE)
                 .build();
 
+        private MemoryWorkspace workspace;
 
-        protected AsyncPrefetchThread(@NonNull BlockingQueue<MultiDataSet> queue, @NonNull MultiDataSetIterator iterator, @NonNull MultiDataSet terminator, MemoryWorkspace workspace) {
+
+        protected AsyncPrefetchThread(@NonNull BlockingQueue<MultiDataSet> queue, @NonNull MultiDataSetIterator iterator, @NonNull MultiDataSet terminator) {
             this.queue = queue;
             this.iterator = iterator;
             this.terminator = terminator;
@@ -311,26 +328,35 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         @Override
         public void run() {
             try {
+                if (useWorkspaces) {
+                    workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, workspaceId);
+                    //workspace.enableDebug(true);
+                }
+
                 while (iterator.hasNext() && shouldWork.get()) {
                     MultiDataSet smth = null;
 
                     if (useWorkspaces) {
-                        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, workspaceId)) {
+                        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
                             smth = iterator.next();
-                        }
-                    } else smth = iterator.next();
 
-                    if (callback != null)
-                        callback.call(smth);
+                            if (callback != null)
+                                callback.call(smth);
+                        }
+                    } else {
+                        smth = iterator.next();
+
+                        if (callback != null)
+                            callback.call(smth);
+                    }
 
                     if (smth != null)
                         queue.put(smth);
 
-                    if (internalCounter.incrementAndGet() % 100 == 0)
-                        Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
+//                    if (internalCounter.incrementAndGet() % 100 == 0)
+//                        Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
                 }
                 queue.put(terminator);
-                Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
             } catch (InterruptedException e) {
                 // do nothing
                 shouldWork.set(false);
@@ -340,6 +366,22 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             } catch (Exception e) {
                 throwable = new RuntimeException(e);
                 throw new RuntimeException(e);
+            } finally {
+                //log.info("Trying destroy...");
+                //if (useWorkspaces)
+                    //Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).destroyWorkspace();
+                isShutdown.set(true);
+            }
+        }
+
+        public void shutdown() {
+            while (!isShutdown.get())
+                LockSupport.parkNanos(100L);
+
+            if (workspace != null) {
+                log.debug("Manually destroying AMDSI workspace");
+                workspace.destroyWorkspace(true);
+                workspace = null;
             }
         }
     }

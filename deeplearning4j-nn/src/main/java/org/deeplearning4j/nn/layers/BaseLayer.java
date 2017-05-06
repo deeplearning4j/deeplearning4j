@@ -78,6 +78,11 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         return (LayerConfT) this.conf.getLayer();
     }
 
+    protected String layerId(){
+        String name = this.conf().getLayer().getLayerName();
+        return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + index + ")";
+    }
+
     public INDArray getInput() {
         return input;
     }
@@ -131,12 +136,9 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         return nextLayerGradient;
     }
 
-    @Override
+    @Override @Deprecated
     public INDArray derivativeActivation(INDArray input) {
-        //INDArray deriv = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), input).derivative());
-        //        INDArray deriv = conf().getLayer().getActivationFn().getGradient(input);
-        //        return deriv;
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Deprecated - " + layerId());
     }
 
     @Override
@@ -303,7 +305,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         for (String s : parameterList)
             length += getParam(s).length();
         if (params.length() != length)
-            throw new IllegalArgumentException("Unable to set parameters: must be of length " + length);
+            throw new IllegalArgumentException("Unable to set parameters: must be of length " + length
+                    + ", got params of length " + params.length() + " - " + layerId());
         int idx = 0;
         Set<String> paramKeySet = this.params.keySet();
         for (String s : paramKeySet) {
@@ -311,7 +314,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             INDArray get = params.get(NDArrayIndex.point(0), NDArrayIndex.interval(idx, idx + param.length()));
             if (param.length() != get.length())
                 throw new IllegalStateException("Parameter " + s + " should have been of length " + param.length()
-                                + " but was " + get.length());
+                                + " but was " + get.length() + " - " + layerId());
             param.assign(get.reshape(order, param.shape())); //Use assign due to backprop params being a view of a larger array
             idx += param.length();
         }
@@ -321,7 +324,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     public void setParamsViewArray(INDArray params) {
         if (this.params != null && params.length() != numParams())
             throw new IllegalArgumentException("Invalid input: expect params of length " + numParams()
-                            + ", got params of length " + params.length());
+                            + ", got params of length " + params.length() + " - " + layerId());
 
         this.paramsFlattened = params;
     }
@@ -335,7 +338,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     public void setBackpropGradientsViewArray(INDArray gradients) {
         if (this.params != null && gradients.length() != numParams())
             throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams(true)
-                            + ", got array of length " + gradients.length());
+                            + ", got array of length " + gradients.length() + " - " + layerId());
 
         this.gradientsFlattened = gradients;
         this.gradientViews = conf.getLayer().initializer().getGradientsFromFlattened(conf, gradients);
@@ -348,8 +351,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public void initParams() {
-        //        paramInitializer.init(paramTable(), conf());
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Deprecated - no longer used - " + layerId());
     }
 
     @Override
@@ -364,8 +366,9 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     @Override
     public INDArray preOutput(INDArray x, boolean training) {
-        if (x == null)
-            throw new IllegalArgumentException("No null input allowed");
+        if (x == null) {
+            throw new IllegalArgumentException("Cannot do forward pass with null input " + layerId());
+        }
         setInput(x);
         return preOutput(training);
     }
@@ -379,11 +382,13 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         if (input.rank() != 2 || input.columns() != W.rows()) {
             if (input.rank() != 2) {
                 throw new DL4JInvalidInputException("Input that is not a matrix; expected matrix (rank 2), got rank "
-                                + input.rank() + " array with shape " + Arrays.toString(input.shape()));
+                                + input.rank() + " array with shape " + Arrays.toString(input.shape())
+                        + ". Missing preprocessor or wrong input type? " + layerId());
             }
             throw new DL4JInvalidInputException("Input size (" + input.columns() + " columns; shape = "
                             + Arrays.toString(input.shape())
-                            + ") is invalid: does not match layer input size (layer # inputs = " + W.size(0) + ")");
+                            + ") is invalid: does not match layer input size (layer # inputs = " + W.size(0)
+                    + ") " + layerId());
         }
 
         if (conf.isUseDropConnect() && training && conf.getLayer().getDropOut() > 0) {
@@ -615,28 +620,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     }
 
-    /**
-     * Create a gradient list based on the passed in parameters.
-     * Will throw an IllegalArgumentException if the number of gradient matrices
-     * isn't equal to the number of keys in the parameter list
-     * @param gradients the gradients to create from
-     * @return the create based on the passed in ndarrays
-     */
-    protected Gradient createGradient(INDArray... gradients) {
-        Gradient ret = new DefaultGradient();
-        if (gradients.length != conf.variables().size())
-            throw new IllegalArgumentException("Unable to create gradients...not equal to number of parameters");
-        for (int i = 0; i < gradients.length; i++) {
-            INDArray paramI = getParam(conf.variables().get(i));
-            if (!Arrays.equals(paramI.shape(), gradients[i].shape()))
-                throw new IllegalArgumentException("Gradient at index " + i + " had wrong gradient size of "
-                                + Arrays.toString(gradients[i].shape()) + " when should have been "
-                                + Arrays.toString(paramI.shape()));
-            ret.gradientForVariable().put(conf.variables().get(i), gradients[i]);
-        }
-        return ret;
-    }
-
     @Override
     public String toString() {
         return getClass().getName() + "{" + "conf=" + conf + ", dropoutMask=" + dropoutMask + ", score=" + score
@@ -646,7 +629,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public Layer transpose() {
         if (!(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.FeedForwardLayer))
-            throw new UnsupportedOperationException("unsupported layer type: " + conf.getLayer().getClass().getName());
+            throw new UnsupportedOperationException("Unsupported layer type: " + conf.getLayer().getClass().getName()
+                    + " - " + layerId());
 
         INDArray w = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
@@ -684,7 +668,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             if (vb != null)
                 layer.setParam(PretrainParamInitializer.VISIBLE_BIAS_KEY, newVB);
         } catch (Exception e) {
-            throw new RuntimeException("unable to construct transposed layer", e);
+            throw new RuntimeException("Unable to construct transposed layer: " + layerId(), e);
         }
 
         return layer;
@@ -718,14 +702,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public INDArray getMaskArray() {
         return maskArray;
-    }
-
-    protected String layerNameAndIndex() {
-        String name = layerConf().getLayerName();
-        if (name == null) {
-            name = "(not named)";
-        }
-        return "layerName=" + name + ", layerIndex=" + index;
     }
 
 

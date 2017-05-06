@@ -225,7 +225,8 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             case NONE:
                 return new Pair<>(retGradient, epsilon);
             default:
-                throw new IllegalStateException("Unknown or unsupported pooling type: " + layerConf().getPoolingType());
+                throw new IllegalStateException("Unknown or unsupported pooling type: " + layerConf().getPoolingType()
+                        + " "  + layerId());
         }
 
         //Finally: we want the output strides for the epsilons to match the strides in the activations from the layer below
@@ -253,7 +254,8 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()
                             + " array as input to SubsamplingLayer with shape " + Arrays.toString(input.shape())
-                            + ". Expected rank 4 array with shape [minibatchSize, depth, inputHeight, inputWidth].");
+                            + ". Expected rank 4 array with shape [minibatchSize, depth, inputHeight, inputWidth]. "
+                            + layerId());
         }
 
         int miniBatch = input.size(0);
@@ -315,25 +317,26 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             case NONE:
                 return input;
             default:
-                throw new IllegalStateException("Unknown/not supported pooling type: " + layerConf().getPoolingType());
+                throw new IllegalStateException("Unknown/not supported pooling type: " + layerConf().getPoolingType()
+                        + " " + layerId());
         }
         return reduced.reshape('c', miniBatch, inDepth, outH, outW);
     }
 
     @Override
     public Gradient error(INDArray input) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(layerId());
     }
 
     @Override
     public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(layerId());
     }
 
 
     @Override
     public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(layerId());
     }
 
     @Override
@@ -343,7 +346,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public Layer transpose() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(layerId());
     }
 
     @Override
@@ -353,7 +356,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public void iterate(INDArray input) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(layerId());
     }
 
     @Override
@@ -381,7 +384,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public void accumulateScore(double accum) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(layerId());
     }
 
 

@@ -89,7 +89,8 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
             //Assume shape is [numExamples,1], and each entry is an integer index
             throw new DL4JInvalidInputException(
                             "Cannot do forward pass for embedding layer with input more than one column. "
-                                            + "Expected input shape: [numExamples,1] with each entry being an integer index");
+                            + "Expected input shape: [numExamples,1] with each entry being an integer index "
+                            + layerId());
         }
 
         int[] indexes = new int[input.length()];
@@ -131,7 +132,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
 
     @Override
     protected void applyDropOutIfNecessary(boolean training) {
-        throw new UnsupportedOperationException("Dropout not supported with EmbeddingLayer");
+        throw new UnsupportedOperationException("Dropout not supported with EmbeddingLayer " + layerId());
     }
 
 }

@@ -57,7 +57,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         if (input.rank() != 3)
-            throw new UnsupportedOperationException("Input is not rank 3");
+            throw new UnsupportedOperationException("Input is not rank 3. Got input with rank " + input.rank() + " "
+                    + layerId());
         INDArray inputTemp = input;
         this.input = TimeSeriesUtils.reshape3dTo2d(input);
         Pair<Gradient, INDArray> gradAndEpsilonNext = super.backpropGradient(epsilon);
@@ -119,7 +120,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     @Override
     public INDArray output(INDArray input) {
         if (input.rank() != 3)
-            throw new IllegalArgumentException("Input must be rank 3 (is: " + input.rank());
+            throw new IllegalArgumentException("Input must be rank 3 (is: " + input.rank() + ") " + layerId());
         //Returns 3d activations from 3d input
         setInput(input);
         return output(false);
@@ -129,7 +130,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     public INDArray output(boolean training) {
         //Assume that input is 3d
         if (input.rank() != 3)
-            throw new IllegalArgumentException("input must be rank 3");
+            throw new IllegalArgumentException("input must be rank 3. Got input with rank " + input.rank() + " "
+                    + layerId());
         INDArray preOutput2d = preOutput2d(training);
 
         //if(conf.getLayer().getActivationFunction().equals("softmax")) {
@@ -156,7 +158,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     @Override
     public INDArray activate(boolean training) {
         if (input.rank() != 3)
-            throw new UnsupportedOperationException("Input must be rank 3");
+            throw new UnsupportedOperationException("Input must be rank 3. Got input with rank " + input.rank()
+                    + " " + layerId());
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         if (conf.isUseDropConnect() && training) {
@@ -186,7 +189,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
                 this.maskArray = TimeSeriesUtils.reshape3dTo2d(maskArray);
             } else {
                 throw new UnsupportedOperationException("Invalid mask array: must be rank 2 or 3 (got: rank "
-                                + maskArray.rank() + ", shape = " + Arrays.toString(maskArray.shape()) + ")");
+                                + maskArray.rank() + ", shape = " + Arrays.toString(maskArray.shape()) + ") "
+                        + layerId());
             }
         } else {
             this.maskArray = null;
@@ -220,7 +224,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         //For RNN: need to sum up the score over each time step before returning.
 
         if (input == null || labels == null)
-            throw new IllegalStateException("Cannot calculate score without input and labels");
+            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         INDArray preOut = preOutput2d(false);
 
         ILossFunction lossFunction = layerConf().getLossFn();

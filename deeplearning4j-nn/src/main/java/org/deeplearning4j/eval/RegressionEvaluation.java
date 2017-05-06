@@ -2,9 +2,7 @@ package org.deeplearning4j.eval;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Abs;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,9 +25,10 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
     public static final int DEFAULT_PRECISION = 5;
 
+    private boolean initialized;
     private List<String> columnNames;
     private int precision;
-    private long exampleCount = 0;
+    private INDArray exampleCountPerColumn; //Necessary to account for per-output masking
     private INDArray labelsSumPerColumn; //sum(actual) per column -> used to calculate mean
     private INDArray sumSquaredErrorsPerColumn; //(predicted - actual)^2
     private INDArray sumAbsErrorsPerColumn; //abs(predicted-actial)
@@ -39,6 +38,10 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     private INDArray sumOfProducts;
     private INDArray sumSquaredLabels;
     private INDArray sumSquaredPredicted;
+
+    public RegressionEvaluation(){
+        this(null, DEFAULT_PRECISION);
+    }
 
     /** Create a regression evaluation object with the specified number of columns, and default precision
      * for the stats() method.
@@ -60,7 +63,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
      * @param columnNames Names of the columns
      */
     public RegressionEvaluation(String... columnNames) {
-        this(Arrays.asList(columnNames), DEFAULT_PRECISION);
+        this(columnNames == null ? null : Arrays.asList(columnNames), DEFAULT_PRECISION);
     }
 
     /** Create a regression evaluation object with default precision for the stats() method
@@ -74,14 +77,21 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
      * @param columnNames Names of the columns
      */
     public RegressionEvaluation(List<String> columnNames, int precision) {
-        if (columnNames == null || columnNames.size() == 0) {
-            throw new IllegalArgumentException(
-                            "Column names (or integer number of columns) must be specified (got: " + columnNames + ")");
-        }
-        this.columnNames = columnNames;
         this.precision = precision;
 
-        int n = columnNames.size();
+        if (columnNames == null || columnNames.size() == 0) {
+            initialized = false;
+        } else {
+            this.columnNames = columnNames;
+            initialize(columnNames.size());
+        }
+    }
+
+    private void initialize(int n){
+        if(columnNames == null || columnNames.size() != n){
+            columnNames = createDefaultColumnNames(n);
+        }
+        exampleCountPerColumn = Nd4j.zeros(n);
         labelsSumPerColumn = Nd4j.zeros(n);
         sumSquaredErrorsPerColumn = Nd4j.zeros(n);
         sumAbsErrorsPerColumn = Nd4j.zeros(n);
@@ -91,6 +101,8 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         sumOfProducts = Nd4j.zeros(n);
         sumSquaredLabels = Nd4j.zeros(n);
         sumSquaredPredicted = Nd4j.zeros(n);
+
+        initialized = true;
     }
 
     private static List<String> createDefaultColumnNames(int nColumns) {
@@ -102,6 +114,27 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
     @Override
     public void eval(INDArray labels, INDArray predictions) {
+        eval(labels, predictions, (INDArray)null);
+    }
+
+    @Override
+    public void eval(INDArray labels, INDArray predictions, INDArray maskArray) {
+        if (labels.rank() == 3) {
+            //Time series data
+            evalTimeSeries(labels, predictions, maskArray);
+            return;
+        }
+
+        if(maskArray != null && !Arrays.equals(maskArray.shape(), labels.shape())){
+            //Time series (per time step) masks are handled in evalTimeSeries by extracting the relevant steps
+            // and flattening to 2d
+            throw new RuntimeException("Per output masking detected, but mask array and labels have different shapes: "
+                    + Arrays.toString(maskArray.shape()) + " vs. labels shape " + Arrays.toString(labels.shape()));
+        }
+
+        if(!initialized){
+            initialize(labels.size(1));
+        }
         //References for the calculations is this section:
         //https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance#Online_algorithm
         //https://en.wikipedia.org/wiki/Pearson_product-moment_correlation_coefficient#For_a_sample
@@ -113,6 +146,13 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
                                             + columnNames.size() + "). Got " + labels.size(1) + " and "
                                             + predictions.size(1));
         }
+
+        if(maskArray != null){
+            //Handle per-output masking. We are assuming *binary* masks here
+            labels = labels.mul(maskArray);
+            predictions = predictions.mul(maskArray);
+        }
+
         labelsSumPerColumn.addi(labels.sum(0));
 
         INDArray error = predictions.sub(labels);
@@ -129,10 +169,15 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
         int nRows = labels.size(0);
 
-        currentMean.muli(exampleCount).addi(labels.sum(0)).divi(exampleCount + nRows);
-        currentPredictionMean.muli(exampleCount).addi(predictions.sum(0)).divi(exampleCount + nRows);
-
-        exampleCount += nRows;
+        INDArray newExampleCountPerColumn;
+        if(maskArray == null){
+            newExampleCountPerColumn = exampleCountPerColumn.add(nRows);
+        } else {
+            newExampleCountPerColumn = exampleCountPerColumn.add(maskArray.sum(0));
+        }
+        currentMean.muliRowVector(exampleCountPerColumn).addi(labels.sum(0)).diviRowVector(newExampleCountPerColumn);
+        currentPredictionMean.muliRowVector(exampleCountPerColumn).addi(predictions.sum(0)).divi(newExampleCountPerColumn);
+        exampleCountPerColumn = newExampleCountPerColumn;
     }
 
     @Override
@@ -146,7 +191,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
             //This RegressionEvaluation is empty -> just copy over from the other one...
             this.columnNames = other.columnNames;
             this.precision = other.precision;
-            this.exampleCount = other.exampleCount;
+            this.exampleCountPerColumn = other.exampleCountPerColumn;
             this.labelsSumPerColumn = other.labelsSumPerColumn.dup();
             this.sumSquaredErrorsPerColumn = other.sumSquaredErrorsPerColumn.dup();
             this.sumAbsErrorsPerColumn = other.sumAbsErrorsPerColumn.dup();
@@ -162,15 +207,15 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         this.labelsSumPerColumn.addi(other.labelsSumPerColumn);
         this.sumSquaredErrorsPerColumn.addi(other.sumSquaredErrorsPerColumn);
         this.sumAbsErrorsPerColumn.addi(other.sumAbsErrorsPerColumn);
-        this.currentMean.muli(exampleCount).addi(other.currentMean.mul(other.exampleCount))
-                        .divi(exampleCount + other.exampleCount);
-        this.currentPredictionMean.muli(exampleCount).addi(other.currentPredictionMean.mul(other.exampleCount))
-                        .divi(exampleCount + other.exampleCount);
+        this.currentMean.muliRowVector(exampleCountPerColumn).addi(other.currentMean.mulRowVector(other.exampleCountPerColumn))
+                .diviRowVector(exampleCountPerColumn.add(other.exampleCountPerColumn));
+        this.currentPredictionMean.muliRowVector(exampleCountPerColumn).addi(other.currentPredictionMean.mulRowVector(other.exampleCountPerColumn))
+                        .diviRowVector(exampleCountPerColumn.add(other.exampleCountPerColumn));
         this.sumOfProducts.addi(other.sumOfProducts);
         this.sumSquaredLabels.addi(other.sumSquaredLabels);
         this.sumSquaredPredicted.addi(other.sumSquaredPredicted);
 
-        this.exampleCount += other.exampleCount;
+        this.exampleCountPerColumn.addi(other.exampleCountPerColumn);
     }
 
     public String stats() {
@@ -219,17 +264,17 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
     public double meanSquaredError(int column) {
         //mse per column: 1/n * sum((predicted-actual)^2)
-        return sumSquaredErrorsPerColumn.getDouble(column) / exampleCount;
+        return sumSquaredErrorsPerColumn.getDouble(column) / exampleCountPerColumn.getDouble(column);
     }
 
     public double meanAbsoluteError(int column) {
         //mse per column: 1/n * |predicted-actual|
-        return sumAbsErrorsPerColumn.getDouble(column) / exampleCount;
+        return sumAbsErrorsPerColumn.getDouble(column) / exampleCountPerColumn.getDouble(column);
     }
 
     public double rootMeanSquaredError(int column) {
         //rmse per column: sqrt(1/n * sum((predicted-actual)^2)
-        return Math.sqrt(sumSquaredErrorsPerColumn.getDouble(column) / exampleCount);
+        return Math.sqrt(sumSquaredErrorsPerColumn.getDouble(column) / exampleCountPerColumn.getDouble(column));
     }
 
     public double correlationR2(int column) {
@@ -242,6 +287,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         double sumSquaredLabels = this.sumSquaredLabels.getDouble(column);
         double sumSquaredPredicted = this.sumSquaredPredicted.getDouble(column);
 
+        double exampleCount = exampleCountPerColumn.getDouble(column);
         double r2 = sumxiyi - exampleCount * predictionMean * labelMean;
         r2 /= Math.sqrt(sumSquaredLabels - exampleCount * labelMean * labelMean)
                         * Math.sqrt(sumSquaredPredicted - exampleCount * predictionMean * predictionMean);
@@ -255,7 +301,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         double numerator = sumSquaredPredicted.getDouble(column) - 2 * sumOfProducts.getDouble(column)
                         + sumSquaredLabels.getDouble(column);
         double denominator = sumSquaredLabels.getDouble(column)
-                        - exampleCount * currentMean.getDouble(column) * currentMean.getDouble(column);
+                        - exampleCountPerColumn.getDouble(column) * currentMean.getDouble(column) * currentMean.getDouble(column);
 
         if (Math.abs(denominator) > Nd4j.EPS_THRESHOLD) {
             return numerator / denominator;

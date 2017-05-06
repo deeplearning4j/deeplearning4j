@@ -89,6 +89,11 @@ public class VariationalAutoencoder implements Layer {
                         .getNumSamples();
     }
 
+    protected String layerId(){
+        String name = this.conf().getLayer().getLayerName();
+        return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + index + ")";
+    }
+
     /**
      * Init the model
      */
@@ -99,12 +104,12 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public void update(Gradient gradient) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
     public void update(INDArray gradient, String paramType) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
@@ -427,7 +432,8 @@ public class VariationalAutoencoder implements Layer {
     public void setParams(INDArray params) {
         if (params.length() != this.paramsFlattened.length()) {
             throw new IllegalArgumentException("Cannot set parameters: expected parameters vector of length "
-                            + this.paramsFlattened.length() + " but got parameters array of length " + params.length());
+                            + this.paramsFlattened.length() + " but got parameters array of length " + params.length()
+                            + " " + layerId());
         }
         this.paramsFlattened.assign(params);
     }
@@ -436,7 +442,7 @@ public class VariationalAutoencoder implements Layer {
     public void setParamsViewArray(INDArray params) {
         if (this.params != null && params.length() != numParams())
             throw new IllegalArgumentException("Invalid input: expect params of length " + numParams()
-                            + ", got params of length " + params.length());
+                            + ", got params of length " + params.length() + " " + layerId());
         this.paramsFlattened = params;
     }
 
@@ -449,7 +455,7 @@ public class VariationalAutoencoder implements Layer {
     public void setBackpropGradientsViewArray(INDArray gradients) {
         if (this.params != null && gradients.length() != numParams()) {
             throw new IllegalArgumentException("Invalid input: expect gradients array of length " + numParams()
-                            + ", got gradient array of length of length " + gradients.length());
+                            + ", got gradient array of length of length " + gradients.length() + " " + layerId());
         }
 
         this.gradientsFlattened = gradients;
@@ -504,7 +510,7 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public void validateInput() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
@@ -519,7 +525,7 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public void initParams() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Deprecated " + layerId());
     }
 
     @Override
@@ -545,7 +551,11 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public void setParam(String key, INDArray val) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        if(paramTable().containsKey(key)){
+            paramTable().get(key).assign(val);
+        } else {
+            throw new IllegalArgumentException("Unknown parameter: " + key + " - " + layerId());
+        }
     }
 
     @Override
@@ -601,17 +611,17 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public Gradient error(INDArray input) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
     public INDArray derivativeActivation(INDArray input) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
     public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
@@ -679,12 +689,12 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
     public INDArray activationMean() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
@@ -719,7 +729,7 @@ public class VariationalAutoencoder implements Layer {
 
     private VAEFwdHelper doForward(boolean training, boolean forBackprop) {
         if (input == null) {
-            throw new IllegalStateException("Cannot do forward pass with null input");
+            throw new IllegalStateException("Cannot do forward pass with null input " + layerId());
         }
 
         //TODO input validation
@@ -791,12 +801,12 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public Layer transpose() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
     public Layer clone() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not yet implemented " + layerId());
     }
 
     @Override
@@ -877,14 +887,14 @@ public class VariationalAutoencoder implements Layer {
                     int minibatchSize) {
 
 
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not yet implemented " + layerId());
     }
 
 
     @Override
     public void fit() {
         if (input == null) {
-            throw new IllegalStateException("Cannot fit layer: layer input is null (not set)");
+            throw new IllegalStateException("Cannot fit layer: layer input is null (not set) " + layerId());
         }
 
         if (solver == null) {
@@ -936,12 +946,14 @@ public class VariationalAutoencoder implements Layer {
      */
     public INDArray reconstructionLogProbability(INDArray data, int numSamples) {
         if (numSamples <= 0) {
-            throw new IllegalArgumentException("Invalid input: numSamples must be > 0. Got: " + numSamples);
+            throw new IllegalArgumentException("Invalid input: numSamples must be > 0. Got: " + numSamples
+                    + " " + layerId());
         }
         if (reconstructionDistribution instanceof LossFunctionWrapper) {
             throw new UnsupportedOperationException("Cannot calculate reconstruction log probability when using "
                             + "a LossFunction (via LossFunctionWrapper) instead of a ReconstructionDistribution: ILossFunction "
-                            + "instances are not in general probabilistic, hence it is not possible to calculate reconstruction probability");
+                            + "instances are not in general probabilistic, hence it is not possible to calculate reconstruction probability "
+                            + layerId());
         }
 
         //Forward pass through the encoder and mean for P(Z|X)
@@ -1036,7 +1048,7 @@ public class VariationalAutoencoder implements Layer {
         if (latentSpaceValues.size(1) != params.get(VariationalAutoencoderParamInitializer.PZX_MEAN_W).size(1)) {
             throw new IllegalArgumentException("Invalid latent space values: expected size "
                             + params.get(VariationalAutoencoderParamInitializer.PZX_MEAN_W).size(1)
-                            + ", got size (dimension 1) = " + latentSpaceValues.size(1));
+                            + ", got size (dimension 1) = " + latentSpaceValues.size(1) + " " + layerId());
         }
 
         //Do forward pass through decoder
@@ -1085,7 +1097,8 @@ public class VariationalAutoencoder implements Layer {
             throw new IllegalStateException(
                             "Cannot use reconstructionError method unless the variational autoencoder is "
                                             + "configured with a standard loss function (via LossFunctionWrapper). For VAEs utilizing a reconstruction "
-                                            + "distribution, use the reconstructionProbability or reconstructionLogProbability methods");
+                                            + "distribution, use the reconstructionProbability or reconstructionLogProbability methods "
+                                            + layerId());
         }
 
         INDArray pZXMean = activate(data, false);

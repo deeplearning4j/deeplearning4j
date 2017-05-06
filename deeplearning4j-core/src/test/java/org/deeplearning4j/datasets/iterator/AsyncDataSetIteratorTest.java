@@ -1,10 +1,14 @@
 package org.deeplearning4j.datasets.iterator;
 
+import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.datasets.iterator.tools.VariableMultiTimeseriesGenerator;
+import org.deeplearning4j.datasets.iterator.tools.VariableTimeseriesGenerator;
 import org.deeplearning4j.util.TestDataSetConsumer;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
@@ -18,6 +22,7 @@ import static org.junit.Assert.assertNotEquals;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class AsyncDataSetIteratorTest {
     private ExistingDataSetIterator backIterator;
     private static final int TEST_SIZE = 100;
@@ -135,6 +140,30 @@ public class AsyncDataSetIteratorTest {
 
                 }
             };
+        }
+    }
+
+
+    @Test
+    public void testVariableTimeSeries1() throws Exception {
+        AsyncDataSetIterator adsi = new AsyncDataSetIterator(new VariableTimeseriesGenerator(1192, 1000, 32, 128, 10, 500, 10), 2, true);
+
+        for (int e = 0; e < 10; e++) {
+            int cnt = 0;
+            while (adsi.hasNext()) {
+                DataSet ds = adsi.next();
+
+                //log.info("Features ptr: {}", AtomicAllocator.getInstance().getPointer(mds.getFeatures()[0].data()).address());
+                assertEquals("Failed on epoch " + e + "; iteration: " + cnt + ";", (double) cnt, ds.getFeatures().meanNumber().doubleValue(), 1e-10);
+                assertEquals("Failed on epoch " + e + "; iteration: " + cnt + ";", (double) cnt + 0.25, ds.getLabels().meanNumber().doubleValue(), 1e-10);
+                assertEquals("Failed on epoch " + e + "; iteration: " + cnt + ";", (double) cnt + 0.5, ds.getFeaturesMaskArray().meanNumber().doubleValue(), 1e-10);
+                assertEquals("Failed on epoch " + e + "; iteration: " + cnt + ";", (double) cnt + 0.75, ds.getLabelsMaskArray().meanNumber().doubleValue(), 1e-10);
+
+                cnt++;
+            }
+
+            adsi.reset();
+            log.info("Epoch {} finished...", e);
         }
     }
 }

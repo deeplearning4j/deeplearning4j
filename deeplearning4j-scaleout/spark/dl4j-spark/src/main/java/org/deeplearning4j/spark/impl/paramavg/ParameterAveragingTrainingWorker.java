@@ -107,8 +107,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
             net.setUpdater(new MultiLayerUpdater(net, tuple.getUpdaterState().unsafeDuplication())); //Can't have shared updater state
         }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         configureListeners(net, tuple.getCounter().getAndIncrement());
 
@@ -138,8 +137,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
             net.setUpdater(new ComputationGraphUpdater(net, tuple.getUpdaterState().unsafeDuplication())); //Again: can't have shared updater state
         }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         configureListeners(net, tuple.getCounter().getAndIncrement());
 
@@ -192,8 +190,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
         if (configuration.isCollectTrainingStats())
             stats.logFitEnd(dataSet.numExamples());
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         if (isLast)
             return getFinalResult(network);
@@ -231,8 +228,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
         if (configuration.isCollectTrainingStats())
             stats.logFitEnd(dataSet.getFeatures(0).size(0));
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         if (isLast)
             return getFinalResult(graph);
@@ -278,8 +274,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
                 updaterState = u.getStateViewArray();
         }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         Collection<StorageMetaData> storageMetaData = null;
         Collection<Persistable> listenerStaticInfo = null;
@@ -306,8 +301,7 @@ public class ParameterAveragingTrainingWorker implements TrainingWorker<Paramete
                 updaterState = u.getStateViewArray();
         }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         Collection<StorageMetaData> storageMetaData = null;
         Collection<Persistable> listenerStaticInfo = null;

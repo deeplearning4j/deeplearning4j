@@ -197,8 +197,7 @@ class GraphFeedForwardWithKeyFunctionAdapter<K>
             currentArrayIndex += (nextIdx - firstIdx);
         }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         return output;
     }
