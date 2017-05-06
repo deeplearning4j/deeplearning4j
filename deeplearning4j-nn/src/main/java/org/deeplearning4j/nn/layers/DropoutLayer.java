@@ -53,8 +53,9 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
 
     @Override
     public INDArray preOutput(boolean training) {
-        if (input == null)
-            throw new IllegalArgumentException("No null input allowed");
+        if (input == null) {
+            throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
+        }
         INDArray dummy = input;
         applyDropOutIfNecessary(training);
 
@@ -81,7 +82,7 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
 
     @Override
     public Layer transpose() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported - " + layerId());
     }
 
     @Override
@@ -92,12 +93,12 @@ public class DropoutLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Dr
 
     @Override
     public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
     public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException("Not supported - " + layerId());
     }
 
     @Override

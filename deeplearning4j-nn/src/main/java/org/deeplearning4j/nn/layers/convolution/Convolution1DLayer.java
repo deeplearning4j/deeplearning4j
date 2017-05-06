@@ -43,7 +43,8 @@ public class Convolution1DLayer extends ConvolutionLayer {
             throw new DL4JInvalidInputException("Got rank " + epsilon.rank()
                             + " array as epsilon for Convolution1DLayer backprop with shape "
                             + Arrays.toString(epsilon.shape())
-                            + ". Expected rank 3 array with shape [minibatchSize, features, length].");
+                            + ". Expected rank 3 array with shape [minibatchSize, features, length]. "
+                            + layerId());
 
         // add singleton fourth dimension to input and next layer's epsilon
         epsilon = epsilon.reshape(epsilon.size(0), epsilon.size(1), epsilon.size(2), 1);

@@ -62,12 +62,12 @@ public class GravesBidirectionalLSTM
 
     @Override
     public Gradient gradient() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
     public Gradient calcGradient(Gradient layerError, INDArray activation) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
@@ -86,7 +86,8 @@ public class GravesBidirectionalLSTM
 
         if (truncatedBPTT) {
             throw new UnsupportedOperationException(
-                            "you can not time step a bidirectional RNN, it has to run on a batch of data all at once");
+                            "Time step for bidirectional RNN not supported: it has to run on a batch of data all at once "
+                            + layerId());
         }
 
         final FwdPassReturn fwdPass = activateHelperDirectional(true, null, null, true, true);
@@ -237,7 +238,7 @@ public class GravesBidirectionalLSTM
 
     @Override
     public Layer transpose() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
@@ -283,14 +284,16 @@ public class GravesBidirectionalLSTM
     @Override
     public INDArray rnnTimeStep(INDArray input) {
         throw new UnsupportedOperationException(
-                        "you can not time step a bidirectional RNN, it has to run on a batch of data all at once");
+                        "you can not time step a bidirectional RNN, it has to run on a batch of data all at once "
+                        + layerId());
     }
 
 
 
     @Override
     public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
-        throw new UnsupportedOperationException("Cannot set stored state: bidirectional RNNs don't have stored state");
+        throw new UnsupportedOperationException("Cannot set stored state: bidirectional RNNs don't have stored state "
+                + layerId());
     }
 
 

@@ -268,7 +268,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                             + "Expected rank 4 array with shape [minibatchSize, layerInputDepth, inputHeight, inputWidth]."
                             + (input.rank() == 2
                                             ? " (Wrong input type (see InputType.convolutionalFlat()) or wrong data type?)"
-                                            : ""));
+                                            : "") + " "  + layerId());
         }
 
         int miniBatch = input.size(0);
@@ -282,7 +282,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             throw new DL4JInvalidInputException("Cannot do forward pass in Convolution layer (layer name = " + layerName
                             + ", layer index = " + index + "): input array depth does not match CNN layer configuration"
                             + " (data input depth = " + input.size(1) + ", [minibatch,inputDepth,height,width]="
-                            + Arrays.toString(input.shape()) + "; expected" + " input depth = " + inDepth + ")");
+                            + Arrays.toString(input.shape()) + "; expected" + " input depth = " + inDepth + ") "
+                            + layerId());
         }
         int kH = weights.size(2);
         int kW = weights.size(3);
@@ -353,8 +354,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public INDArray activate(boolean training) {
-        if (input == null)
-            throw new IllegalArgumentException("No null input allowed");
+        if (input == null) {
+            throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
+        }
         applyDropOutIfNecessary(training);
 
         INDArray z = preOutput(training);
@@ -374,7 +376,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public Layer transpose() {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported - " + layerId());
     }
 
     @Override
@@ -385,7 +387,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public Gradient calcGradient(Gradient layerError, INDArray indArray) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        throw new UnsupportedOperationException("Not supported " + layerId());
     }
 
     @Override
@@ -393,7 +395,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(layerId());
     }
 
     @Override

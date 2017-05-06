@@ -1248,7 +1248,17 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     public Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers) {
-        return feedForward(true, excludeOutputLayers, false, true);
+        return feedForward(train, excludeOutputLayers, false, true);
+    }
+
+    /**
+     * @param train                            True: training time. False: test time
+     * @param excludeOutputLayers              Should we exclude the output layers during forward pass? (usually: false)
+     * @param includeNonLayerVertexActivations Include non-layer vertices in the output may?
+     * @return Map of activations. Key: vertex name. Value: activations.
+     */
+    public Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers, boolean includeNonLayerVertexActivations) {
+        return feedForward(train, excludeOutputLayers, includeNonLayerVertexActivations, true);
     }
 
     /**
@@ -1260,7 +1270,7 @@ public class ComputationGraph implements Serializable, Model {
      * @param publicApi
      * @return
      */
-    public Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers, boolean includeNonLayerVertexActivations, boolean publicApi) {
+    protected Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers, boolean includeNonLayerVertexActivations, boolean publicApi) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
         MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy :
@@ -2698,6 +2708,7 @@ public class ComputationGraph implements Serializable, Model {
     /**
      * Evaluate the (single output layer only) network for regression performance
      * @param iterator Data to evaluate on
+     * @param columnNames Column names for the regression evaluation. May be null.
      * @return Regression evaluation
      */
     public RegressionEvaluation evaluateRegression(DataSetIterator iterator, List<String> columnNames) {

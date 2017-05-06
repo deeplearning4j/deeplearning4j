@@ -210,7 +210,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         } else {
             // TODO setup BatchNorm for RNN http://arxiv.org/pdf/1510.01378v1.pdf
             throw new IllegalStateException(
-                            "The layer prior to BatchNorm in the configuration is not currently supported.");
+                            "The layer prior to BatchNorm in the configuration is not currently supported. " + layerId());
         }
 
         return new Pair<>(retGradient, nextEpsilon);
@@ -218,7 +218,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public void merge(Layer layer, int batchSize) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(layerId());
     }
 
     @Override
@@ -269,7 +269,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                     break;
                 default:
                     throw new IllegalStateException(
-                                    "Batch normalization on activations of rank " + x.rank() + " not supported");
+                                    "Batch normalization on activations of rank " + x.rank() + " not supported "
+                                            + layerId());
             }
 
 
@@ -360,7 +361,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         } else {
             // TODO setup BatchNorm for RNN http://arxiv.org/pdf/1510.01378v1.pdf
             throw new IllegalStateException(
-                            "The layer prior to BatchNorm in the configuration is not currently supported.");
+                            "The layer prior to BatchNorm in the configuration is not currently supported. " + layerId());
         }
 
         // store mean and var if using batch mean while training
@@ -398,7 +399,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public INDArray activate(TrainingMode training) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(layerId());
     }
 
     @Override
@@ -413,13 +414,13 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
     @Override
     public Layer transpose() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(layerId());
 
     }
 
     @Override
     public Layer clone() {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(layerId());
 
     }
 
@@ -455,10 +456,10 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             int wDim = x.size(1);
             int hdim = x.size(2);
             if (x.size(0) > 1 && wDim * hdim == x.length())
-                throw new IllegalArgumentException("Illegal input for batch size");
+                throw new IllegalArgumentException("Illegal input for batch size " + layerId());
             return new int[] {1, wDim * hdim};
         } else
-            throw new IllegalStateException("Unable to process input of rank " + x.rank());
+            throw new IllegalStateException("Unable to process input of rank " + x.rank() + " " + layerId());
     }
 
 }

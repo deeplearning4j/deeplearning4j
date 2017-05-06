@@ -89,7 +89,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     @Override
     public double computeScore(double fullNetworkL1, double fullNetworkL2, boolean training) {
         if (input == null || labels == null)
-            throw new IllegalStateException("Cannot calculate score without input and labels");
+            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         this.fullNetworkL1 = fullNetworkL1;
         this.fullNetworkL2 = fullNetworkL2;
         INDArray preOut = preOutput2d(training);
@@ -116,7 +116,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
     @Override
     public INDArray computeScoreForExamples(double fullNetworkL1, double fullNetworkL2) {
         if (input == null || labels == null)
-            throw new IllegalStateException("Cannot calculate score without input and labels");
+            throw new IllegalStateException("Cannot calculate score without input and labels " + layerId());
         INDArray preOut = preOutput2d(false);
 
         ILossFunction lossFunction = layerConf().getLossFn();
@@ -143,8 +143,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     @Override
     protected void setScoreWithZ(INDArray z) {
-        //        setScore(z, null);
-        throw new RuntimeException("Not yet implemented");
+        throw new RuntimeException("Not supported - " + layerId());
     }
 
     @Override
@@ -176,7 +175,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         INDArray labels2d = getLabels2d();
         if (labels2d.size(1) != preOut.size(1)) {
             throw new DL4JInvalidInputException("Labels array numColumns (size(1) = " + labels2d.size(1)
-                            + ") does not match output layer" + " number of outputs (nOut = " + preOut.size(1) + ")");
+                            + ") does not match output layer" + " number of outputs (nOut = " + preOut.size(1)
+                            + ") " + layerId() );
         }
         //INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFunction(), maskArray);
         INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), maskArray);
@@ -233,8 +233,9 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      * @return a probability distribution for each row
      */
     public INDArray output(boolean training) {
-        if (input == null)
-            throw new IllegalArgumentException("No null input allowed");
+        if (input == null) {
+            throw new IllegalArgumentException("Cannot perform forward pass with null input - " + layerId());
+        }
         return super.activate(training);
     }
 
@@ -395,7 +396,7 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
 
     @Override
     public void iterate(INDArray input) {
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(layerId());
     }
 
     @Override
@@ -421,7 +422,8 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
         } else {
             throw new IllegalStateException("Invalid mask array: per-example masking should be a column vector, "
                             + "per output masking arrays should be the same shape as the output/labels arrays. Mask shape: "
-                            + Arrays.toString(maskArray.shape()) + ", output shape: " + Arrays.toString(to.shape()));
+                            + Arrays.toString(maskArray.shape()) + ", output shape: " + Arrays.toString(to.shape())
+                            + layerId());
         }
     }
 
