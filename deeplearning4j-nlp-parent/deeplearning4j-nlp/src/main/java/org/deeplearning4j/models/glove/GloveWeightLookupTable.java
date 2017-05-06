@@ -28,7 +28,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.AdaGradUpdater;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,8 +46,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryLookupTable<T> {
 
 
-    private AdaGrad weightAdaGrad;
-    private AdaGrad biasAdaGrad;
+    private AdaGradUpdater weightAdaGrad;
+    private AdaGradUpdater biasAdaGrad;
     private INDArray bias;
     //also known as alpha
     private double xMax = 0.75;
@@ -73,7 +73,7 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
             putVector(Word2Vec.DEFAULT_UNK, randUnk);
         }
         if (weightAdaGrad == null || reset) {
-            weightAdaGrad = new AdaGrad(new int[] {vocab.numWords() + 1, vectorLength}, lr.get());
+            weightAdaGrad = new AdaGradUpdater(new int[] {vocab.numWords() + 1, vectorLength}, lr.get());
         }
 
 
@@ -82,7 +82,7 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
             bias = Nd4j.create(syn0.rows());
 
         if (biasAdaGrad == null || reset) {
-            biasAdaGrad = new AdaGrad(bias.shape(), lr.get());
+            biasAdaGrad = new AdaGradUpdater(bias.shape(), lr.get());
         }
 
 
@@ -152,12 +152,12 @@ public class GloveWeightLookupTable<T extends SequenceElement> extends InMemoryL
         bias.putScalar(w1.getIndex(), update2);
     }
 
-    public AdaGrad getWeightAdaGrad() {
+    public AdaGradUpdater getWeightAdaGrad() {
         return weightAdaGrad;
     }
 
 
-    public AdaGrad getBiasAdaGrad() {
+    public AdaGradUpdater getBiasAdaGrad() {
         return biasAdaGrad;
     }
 

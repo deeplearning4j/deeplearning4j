@@ -11,7 +11,7 @@ import com.google.common.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.Setter;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.AdaGradUpdater;
 
 import java.io.Serializable;
 import java.util.ArrayList;

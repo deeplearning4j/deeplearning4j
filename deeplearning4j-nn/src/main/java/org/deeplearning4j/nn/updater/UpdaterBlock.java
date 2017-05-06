@@ -114,7 +114,7 @@ public class UpdaterBlock {
         }
 
         //Apply the updater itself
-        gradientUpdater.getGradient(gradientView, iteration);
+        gradientUpdater.applyUpdater(gradientView, iteration);
 
         //Post apply: l1 and l2 by params
         for (ParamState p : layersAndVariablesInBlock) {
@@ -220,10 +220,14 @@ public class UpdaterBlock {
             }
         }
 
-        if (layer.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS) {
-            gradientUpdater.update(newLr, newMomentum);
-        } else {
-            gradientUpdater.update(newLr);
-        }
+//        if (layer.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS) {
+//            gradientUpdater.update(newLr, newMomentum);
+//        } else {
+//            gradientUpdater.update(newLr);
+//        }
+
+        //Apply the new LR
+        //TODO momentum
+        gradientUpdater.getConfig().applySchedules(iteration, newLr);
     }
 }

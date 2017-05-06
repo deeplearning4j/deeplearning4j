@@ -2,7 +2,9 @@ package org.deeplearning4j.nn.updater;
 
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.LearningRatePolicy;
+import org.deeplearning4j.nn.conf.Updater;
 import org.nd4j.linalg.learning.*;
+import org.nd4j.linalg.learning.config.*;
 
 import java.util.Objects;
 
@@ -13,30 +15,31 @@ public class UpdaterUtils {
 
     public static GradientUpdater getGradientUpdater(Layer layer, String variable) {
         org.deeplearning4j.nn.conf.Updater u = layer.conf().getLayer().getUpdaterByParam(variable);
-        switch (u) {
-            case SGD:
-                return new org.nd4j.linalg.learning.Sgd(layer.conf().getLearningRateByParam(variable));
-            case ADAM:
-                return new Adam(layer.conf().getLearningRateByParam(variable),
-                                layer.conf().getLayer().getAdamMeanDecay(), layer.conf().getLayer().getAdamVarDecay(),
-                                layer.conf().getLayer().getEpsilon());
-            case ADADELTA:
-                return new AdaDelta(layer.conf().getLayer().getRho(), layer.conf().getLayer().getEpsilon());
-            case NESTEROVS:
-                return new Nesterovs(layer.conf().getLayer().getMomentum(),
-                                layer.conf().getLearningRateByParam(variable));
-            case ADAGRAD:
-                return new AdaGrad(layer.conf().getLearningRateByParam(variable), layer.conf().getLayer().getEpsilon());
-            case RMSPROP:
-                return new org.nd4j.linalg.learning.RmsProp(layer.conf().getLearningRateByParam(variable),
-                                layer.conf().getLayer().getRmsDecay(), layer.conf().getLayer().getEpsilon());
-            case NONE:
-                return new NoOpUpdater();
-            case CUSTOM:
-                throw new UnsupportedOperationException("Custom updaters: not yet implemented");
-            default:
-                throw new IllegalArgumentException("Unknown updater: " + u);
-        }
+//        switch (u) {
+//            case SGD:
+//                return new org.nd4j.linalg.learning.SgdUpdater(layer.conf().getLearningRateByParam(variable));
+//            case ADAM:
+//                return new AdamUpdater(layer.conf().getLearningRateByParam(variable),
+//                                layer.conf().getLayer().getAdamMeanDecay(), layer.conf().getLayer().getAdamVarDecay(),
+//                                layer.conf().getLayer().getEpsilon());
+//            case ADADELTA:
+//                return new AdaDeltaUpdater(layer.conf().getLayer().getRho(), layer.conf().getLayer().getEpsilon());
+//            case NESTEROVS:
+//                return new NesterovsUpdater(layer.conf().getLayer().getMomentum(),
+//                                layer.conf().getLearningRateByParam(variable));
+//            case ADAGRAD:
+//                return new AdaGradUpdater(layer.conf().getLearningRateByParam(variable), layer.conf().getLayer().getEpsilon());
+//            case RMSPROP:
+//                return new org.nd4j.linalg.learning.RmsProp(layer.conf().getLearningRateByParam(variable),
+//                                layer.conf().getLayer().getRmsDecay(), layer.conf().getLayer().getEpsilon());
+//            case NONE:
+//                return new NoOpUpdater();
+//            case CUSTOM:
+//                throw new UnsupportedOperationException("Custom updaters: not yet implemented");
+//            default:
+//                throw new IllegalArgumentException("Unknown updater: " + u);
+//        }
+        throw new UnsupportedOperationException();
     }
 
     public static int stateSizeForLayerVariable(Layer layer, String variable) {
@@ -191,4 +194,25 @@ public class UpdaterUtils {
         return lrConfigEqual;
     }
 
+    public static IUpdater enumToConfigWithDefaults(Updater updater){
+        switch (updater){
+            case SGD:
+                return new Sgd();
+            case ADAM:
+                return new Adam();
+            case ADADELTA:
+                return new AdaDelta();
+            case NESTEROVS:
+                return new Nesterovs();
+            case ADAGRAD:
+                return new AdaGrad();
+            case RMSPROP:
+                return new RmsProp();
+            case NONE:
+                return new NoOp();
+            case CUSTOM:
+            default:
+                throw new UnsupportedOperationException();
+        }
+    }
 }

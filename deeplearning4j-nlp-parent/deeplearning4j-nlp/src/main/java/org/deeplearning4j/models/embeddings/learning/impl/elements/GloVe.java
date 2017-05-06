@@ -14,7 +14,7 @@ import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.AdaGradUpdater;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,8 +50,8 @@ public class GloVe<T extends SequenceElement> implements ElementsLearningAlgorit
     protected int maxmemory = 0;
     protected int batchSize = 1000;
 
-    private AdaGrad weightAdaGrad;
-    private AdaGrad biasAdaGrad;
+    private AdaGradUpdater weightAdaGrad;
+    private AdaGradUpdater biasAdaGrad;
     private INDArray bias;
 
     private int workers = Runtime.getRuntime().availableProcessors();
@@ -87,9 +87,9 @@ public class GloVe<T extends SequenceElement> implements ElementsLearningAlgorit
 
 
 
-        weightAdaGrad = new AdaGrad(new int[] {this.vocabCache.numWords() + 1, vectorLength}, learningRate);
+        weightAdaGrad = new AdaGradUpdater(new int[] {this.vocabCache.numWords() + 1, vectorLength}, learningRate);
         bias = Nd4j.create(syn0.rows());
-        biasAdaGrad = new AdaGrad(bias.shape(), this.learningRate);
+        biasAdaGrad = new AdaGradUpdater(bias.shape(), this.learningRate);
 
         //  maxmemory = Runtime.getRuntime().maxMemory() - (vocabCache.numWords() * vectorLength * 2 * 8);
 

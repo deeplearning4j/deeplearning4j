@@ -25,11 +25,13 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.nn.updater.UpdaterUtils;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -86,7 +88,9 @@ public abstract class Layer implements Serializable, Cloneable {
     protected double l1Bias;
     protected double l2Bias;
     protected double dropOut;
+    @Deprecated
     protected Updater updater;
+    protected IUpdater iupdater;
     //adadelta - weight for how much to consider previous history
     protected double rho;
     //Epsilon value for adagrad and adadelta
@@ -275,7 +279,9 @@ public abstract class Layer implements Serializable, Cloneable {
         protected double l1Bias = Double.NaN;
         protected double l2Bias = Double.NaN;
         protected double dropOut = Double.NaN;
+        @Deprecated
         protected Updater updater = null;
+        protected IUpdater iupdater = null;
         protected double rho = Double.NaN;
         protected double epsilon = Double.NaN;
         protected double rmsDecay = Double.NaN;
@@ -411,6 +417,7 @@ public abstract class Layer implements Serializable, Cloneable {
         /**
          * Momentum rate.
          */
+        @Deprecated
         public T momentum(double momentum) {
             this.momentum = momentum;
             return (T) this;
@@ -419,6 +426,7 @@ public abstract class Layer implements Serializable, Cloneable {
         /**
          * Momentum schedule. Map of the iteration to the momentum rate to apply at that iteration.
          */
+        @Deprecated
         public T momentumAfter(Map<Integer, Double> momentumAfter) {
             this.momentumAfter = momentumAfter;
             return (T) this;
@@ -431,7 +439,13 @@ public abstract class Layer implements Serializable, Cloneable {
          * @see Updater
          */
         public T updater(Updater updater) {
-            this.updater = updater;
+//            this.updater = updater;
+//            return (T) this;
+            return updater(UpdaterUtils.enumToConfigWithDefaults(updater));
+        }
+
+        public T updater(IUpdater updater){
+            this.iupdater = updater;
             return (T) this;
         }
 
@@ -440,6 +454,7 @@ public abstract class Layer implements Serializable, Cloneable {
          *
          * @param rho
          */
+        @Deprecated
         public T rho(double rho) {
             this.rho = rho;
             return (T) this;
@@ -448,6 +463,7 @@ public abstract class Layer implements Serializable, Cloneable {
         /**
          * Decay rate for RMSProp. Only applies if using .updater(Updater.RMSPROP)
          */
+        @Deprecated
         public T rmsDecay(double rmsDecay) {
             this.rmsDecay = rmsDecay;
             return (T) this;
@@ -458,6 +474,7 @@ public abstract class Layer implements Serializable, Cloneable {
          *
          * @param epsilon    Epsilon value to use for adagrad and adadelta
          */
+        @Deprecated
         public T epsilon(double epsilon) {
             this.epsilon = epsilon;
             return (T) this;
@@ -466,6 +483,7 @@ public abstract class Layer implements Serializable, Cloneable {
         /**
          * Mean decay rate for Adam updater. Only applies if using .updater(Updater.ADAM)
          */
+        @Deprecated
         public T adamMeanDecay(double adamMeanDecay) {
             this.adamMeanDecay = adamMeanDecay;
             return (T) this;
@@ -474,6 +492,7 @@ public abstract class Layer implements Serializable, Cloneable {
         /**
          * Variance decay rate for Adam updater. Only applies if using .updater(Updater.ADAM)
          */
+        @Deprecated
         public T adamVarDecay(double adamVarDecay) {
             this.adamVarDecay = adamVarDecay;
             return (T) this;

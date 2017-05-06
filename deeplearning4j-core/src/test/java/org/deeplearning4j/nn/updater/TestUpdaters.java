@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.*;
+import org.nd4j.linalg.learning.config.*;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -427,16 +428,16 @@ public class TestUpdaters {
             GradientUpdater gu = u.getGradientUpdater();
             switch (count) {
                 case 0:
-                    assertTrue(gu instanceof Sgd);
+                    assertTrue(gu instanceof SgdUpdater);
                     break;
                 case 1:
                     assertTrue(gu instanceof org.nd4j.linalg.learning.NoOpUpdater);
                     break;
                 case 2:
-                    assertTrue(gu instanceof AdaGrad);
+                    assertTrue(gu instanceof AdaGradUpdater);
                     break;
                 case 3:
-                    assertTrue(gu instanceof Nesterovs);
+                    assertTrue(gu instanceof NesterovsUpdater);
                     break;
                 default:
                     throw new RuntimeException();
@@ -446,13 +447,13 @@ public class TestUpdaters {
 
 
         GradientUpdater[] uArr = new GradientUpdater[4];
-        uArr[0] = new Sgd(lr);
-        uArr[1] = new NoOpUpdater();
-        uArr[2] = new AdaGrad(lr);
+        uArr[0] = new SgdUpdater(new Sgd(lr));
+        uArr[1] = new NoOpUpdater(new NoOp());
+        uArr[2] = new AdaGradUpdater(new AdaGrad(lr, AdaGrad.DEFAULT_ADAGRAD_EPSILON));
         INDArray updaterState = Nd4j.create(1, 6 * 7 + 7, 'f');
         uArr[2].setStateViewArray(updaterState, new int[] {1, 6 * 7 + 7}, 'f', true);
 
-        uArr[3] = new Nesterovs(0.6, lr);
+        uArr[3] = new NesterovsUpdater(new Nesterovs(lr, 0.6));
         //        updaterStateSize = uArr[3].stateSizeForLayer(net.getLayer(3));
         updaterState = Nd4j.create(1, 7 * 8 + 8, 'f');
         uArr[3].setStateViewArray(updaterState, new int[] {1, 7 * 8 + 8}, 'f', true);
@@ -480,7 +481,7 @@ public class TestUpdaters {
                 layerGradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wGrad.dup());
                 layerGradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, bGrad.dup());
 
-                uArr[j].update(net.getLayer(j).conf().getLearningRateByParam("W"), 0.6);
+                uArr[j].getConfig().applySchedules(0, net.getLayer(j).conf().getLearningRateByParam("W"));
                 for (String s : layerGradient.gradientForVariable().keySet()) {
                     expectedGradient.put(j + "_" + s, layerGradient.getGradientFor(s));
                 }
