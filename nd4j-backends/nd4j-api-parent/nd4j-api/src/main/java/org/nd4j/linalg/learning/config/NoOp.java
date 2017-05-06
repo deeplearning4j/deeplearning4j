@@ -1,5 +1,6 @@
 package org.nd4j.linalg.learning.config;
 
+import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.NoOpUpdater;
@@ -7,6 +8,7 @@ import org.nd4j.linalg.learning.NoOpUpdater;
 /**
  * Created by Alex on 06/05/2017.
  */
+@Data
 public class NoOp implements IUpdater {
     @Override
     public long stateSize(long numParams) {
@@ -24,5 +26,10 @@ public class NoOp implements IUpdater {
             throw new IllegalStateException("Cannot use view array with NoOp updater");
         }
         return new NoOpUpdater(this);
+    }
+
+    @Override
+    public NoOp clone() {
+        return new NoOp();
     }
 }

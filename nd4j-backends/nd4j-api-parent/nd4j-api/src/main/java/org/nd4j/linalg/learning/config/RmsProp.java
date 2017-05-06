@@ -40,4 +40,9 @@ public class RmsProp implements IUpdater {
         u.setStateViewArray(viewArray, viewArray.shape(), viewArray.ordering(), initializeViewArray);
         return u;
     }
+
+    @Override
+    public RmsProp clone() {
+        return new RmsProp(learningRate, rmsDecay, epsilon);
+    }
 }

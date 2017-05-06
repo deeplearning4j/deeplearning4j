@@ -50,4 +50,9 @@ public class Adam implements IUpdater {
         u.setStateViewArray(viewArray, viewArray.shape(), viewArray.ordering(), initializeViewArray);
         return u;
     }
+
+    @Override
+    public Adam clone() {
+        return new Adam(learningRate, beta1, beta2, epsilon);
+    }
 }

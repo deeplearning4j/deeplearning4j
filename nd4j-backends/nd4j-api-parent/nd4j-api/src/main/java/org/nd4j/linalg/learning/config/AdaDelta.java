@@ -40,4 +40,9 @@ public class AdaDelta implements IUpdater {
 
         return null;
     }
+
+    @Override
+    public AdaDelta clone() {
+        return new AdaDelta(rho, epsilon);
+    }
 }

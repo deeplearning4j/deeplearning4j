@@ -38,4 +38,9 @@ public class Nesterovs implements IUpdater {
         u.setStateViewArray(viewArray, viewArray.shape(), viewArray.ordering(), initializeViewArray);
         return u;
     }
+
+    @Override
+    public Nesterovs clone() {
+        return new Nesterovs(learningRate, momentum);
+    }
 }

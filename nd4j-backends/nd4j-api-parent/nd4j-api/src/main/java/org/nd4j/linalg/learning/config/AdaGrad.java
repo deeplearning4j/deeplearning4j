@@ -41,4 +41,9 @@ public class AdaGrad implements IUpdater {
         u.setStateViewArray(viewArray, viewArray.shape(), viewArray.ordering(), initializeViewArray);
         return u;
     }
+
+    @Override
+    public AdaGrad clone() {
+        return new AdaGrad(learningRate, epsilon);
+    }
 }

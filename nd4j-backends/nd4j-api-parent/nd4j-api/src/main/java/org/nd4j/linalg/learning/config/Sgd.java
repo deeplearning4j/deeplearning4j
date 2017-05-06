@@ -41,4 +41,9 @@ public class Sgd implements IUpdater {
         }
         return new SgdUpdater(this);
     }
+
+    @Override
+    public Sgd clone() {
+        return new Sgd(learningRate);
+    }
 }
