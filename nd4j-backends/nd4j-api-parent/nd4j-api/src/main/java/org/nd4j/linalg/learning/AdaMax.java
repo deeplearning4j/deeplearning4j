@@ -4,7 +4,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -92,15 +94,14 @@ public class AdaMax implements Serializable, GradientUpdater {
         if (m == null || u == null)
             throw new IllegalStateException("Updater has not been initialized with view state");
 
-        INDArray oneMinusBeta1Grad = gradient.mul(1.0 - beta1);
-        m.muli(beta1).addi(oneMinusBeta1Grad);
-
-        u.assign(Transforms.max(u.muli(beta2), Transforms.abs(gradient)));
+        u.muli(beta2);
+        Transforms.abs(gradient,false);   //In-place should be OK here, original gradient values aren't used again later
+        Nd4j.getExecutioner().exec(new Max(u,gradient,u,u.length()));
 
         double beta1t = FastMath.pow(beta1, iteration + 1);
-        double beta2t = FastMath.pow(beta2, iteration + 1);
+//        double beta2t = FastMath.pow(beta2, iteration + 1);
 
-        double alphat = learningRate * FastMath.sqrt(1 - beta2t) / (1 - beta1t);
+        double alphat = learningRate / (1 - beta1t);
         if (Double.isNaN(alphat) || alphat == 0.0)
             alphat = epsilon;
 
