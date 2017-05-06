@@ -25,6 +25,7 @@ import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.config.AdaGrad;
 
 import java.io.Serializable;
 
@@ -40,22 +41,22 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
  * @author Adam Gibson
  */
 @Data
-@NoArgsConstructor
-public class AdaGrad implements Serializable, GradientUpdater {
-    public static final double DEFAULT_ADAGRAD_EPSILON = 1e-6;
+public class AdaGradUpdater implements GradientUpdater<AdaGrad> {
+
 
     //protected double squaredGradientSum = 0;
     public INDArray historicalGradient;
     public int[] shape;
     protected double learningRate = 1e-1; // learning rate
     protected int numIterations = 0;
-    private double epsilon = DEFAULT_ADAGRAD_EPSILON;
+    private double epsilon = AdaGrad.DEFAULT_ADAGRAD_EPSILON;
 
     private char gradientReshapeOrder;
 
-    @Override
-    public int stateSizeForInputSize(int inputSize) {
-        return inputSize;
+    private AdaGrad config;
+
+    public AdaGradUpdater(AdaGrad config){
+        this.config = config;
     }
 
     @Override
@@ -78,34 +79,27 @@ public class AdaGrad implements Serializable, GradientUpdater {
      * @param cols
      * @param learningRate
      */
-    public AdaGrad(int rows, int cols, double learningRate) {
+    public AdaGradUpdater(int rows, int cols, double learningRate) {
         this.shape = new int[] {rows, cols};
         this.learningRate = learningRate;
     }
 
-    public AdaGrad(int rows, int cols) {
+    public AdaGradUpdater(int rows, int cols) {
         this(rows, cols, 0.1);
     }
 
-    public AdaGrad(int[] shape, double learningRate) {
+    public AdaGradUpdater(int[] shape, double learningRate) {
         this.shape = shape;
         this.learningRate = learningRate;
     }
 
-    public AdaGrad(double learningRate) {
+    public AdaGradUpdater(double learningRate) {
         this.learningRate = learningRate;
     }
 
-    public AdaGrad(double learningRate, double epsilon) {
+    public AdaGradUpdater(double learningRate, double epsilon) {
         this.learningRate = learningRate;
         this.epsilon = epsilon;
-    }
-
-    @Override
-    public void update(Object... args) {
-        if (args.length > 0) {
-            learningRate = (Double) args[0];
-        }
     }
 
     /**
@@ -119,19 +113,21 @@ public class AdaGrad implements Serializable, GradientUpdater {
      * @return the feature specific learning rates
      */
     @Override
-    public INDArray getGradient(INDArray gradient, int iteration) {
+    public void applyUpdater(INDArray gradient, int iteration) {
         if (historicalGradient == null)
             throw new IllegalStateException("Updater has not been initialized with view state");
+
+        double learningRate = config.getLearningRate();
+        double epsilon = config.getEpsilon();
 
         historicalGradient.addi(gradient.mul(gradient));
 
         INDArray sqrtHistory = sqrt(historicalGradient.dup(gradientReshapeOrder), false).addi(epsilon);
         // lr * gradient / (sqrt(sumSquaredGradients) + epsilon)
-        INDArray ret = gradient.muli(sqrtHistory.rdivi(learningRate));
-        numIterations++;
-        return ret;
+        gradient.muli(sqrtHistory.rdivi(learningRate));
     }
 
+    @Deprecated
     public double getGradient(double gradient, int column, int[] shape) {
         boolean historicalInitialized = false;
         if (this.historicalGradient == null) {
@@ -151,6 +147,7 @@ public class AdaGrad implements Serializable, GradientUpdater {
         return adjustedGradient;
     }
 
+    @Deprecated
     public INDArray getGradient(INDArray gradient, int slice, int[] shape) {
         boolean historicalInitialized = false;
         INDArray sqrtHistory;
@@ -184,19 +181,20 @@ public class AdaGrad implements Serializable, GradientUpdater {
         return gradient;
     }
 
-    public AdaGrad createSubset(int index) {
+    @Deprecated
+    public AdaGradUpdater createSubset(int index) {
         if (historicalGradient == null)
             this.historicalGradient = Nd4j.ones(shape);
 
         if (Shape.isMatrix(shape)) {
-            AdaGrad a = new AdaGrad(1, historicalGradient.columns());
+            AdaGradUpdater a = new AdaGradUpdater(1, historicalGradient.columns());
             //grab only the needed elements
             INDArray slice = historicalGradient.slice(index).dup();
             a.historicalGradient = slice;
             a.setLearningRate(learningRate);
             return a;
         } else {
-            AdaGrad a = new AdaGrad(1, 1);
+            AdaGradUpdater a = new AdaGradUpdater(1, 1);
             //grab only the needed elements
             INDArray slice = Nd4j.scalar(historicalGradient.getDouble(index));
             a.historicalGradient = slice;

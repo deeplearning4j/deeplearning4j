@@ -1,15 +1,20 @@
 package org.nd4j.linalg.learning;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.learning.config.NoOp;
 
 /**
  * Created by Alex on 08/09/2016.
  */
-public class NoOpUpdater implements GradientUpdater {
-    @Override
-    public int stateSizeForInputSize(int inputSize) {
-        return 0;
+@Data
+public class NoOpUpdater implements GradientUpdater<NoOp> {
+
+    private final NoOp config;
+
+    public NoOpUpdater(NoOp config){
+        this.config = config;
     }
 
     @Override
@@ -18,12 +23,7 @@ public class NoOpUpdater implements GradientUpdater {
     }
 
     @Override
-    public void update(Object... args) {
+    public void applyUpdater(INDArray gradient, int iteration) {
         //No op
-    }
-
-    @Override
-    public INDArray getGradient(INDArray gradient, int iteration) {
-        return gradient;
     }
 }

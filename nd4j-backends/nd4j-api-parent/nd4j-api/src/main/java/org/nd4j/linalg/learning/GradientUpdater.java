@@ -2,6 +2,7 @@
 package org.nd4j.linalg.learning;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.learning.config.Updater;
 
 import java.io.Serializable;
 
@@ -13,16 +14,9 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
-public interface GradientUpdater extends Serializable {
+public interface GradientUpdater<T extends Updater> {
 
-    /**
-     * For a give input size (length) array, how big is the internal state?
-     * Typically 0, 1 or 2x the input size, depending on the type of updater
-     *
-     * @param inputSize Length of the input array
-     * @return Number of elements in the internal state
-     */
-    int stateSizeForInputSize(int inputSize);
+    T getConfig();
 
     /**
      * For the internal updater state (if any): set this to use the provided array.
@@ -35,19 +29,11 @@ public interface GradientUpdater extends Serializable {
     void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize);
 
     /**
-     * update(learningRate,momentum)
-     *
-     * @param args
-     */
-    void update(Object... args);
-
-    /**
-     * Modify the gradient
-     * to be an update
+     * Modify the gradient to be an update. Note that this must be done in-place
      *
      * @param gradient  the gradient to modify
      * @param iteration
      * @return the modified gradient
      */
-    INDArray getGradient(INDArray gradient, int iteration);
+    void applyUpdater(INDArray gradient, int iteration);
 }
