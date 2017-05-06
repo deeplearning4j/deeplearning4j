@@ -26,7 +26,7 @@ public class Sgd implements IUpdater {
 
     @Override
     public long stateSize(long numParams) {
-        return numParams;
+        return 0;
     }
 
     @Override
