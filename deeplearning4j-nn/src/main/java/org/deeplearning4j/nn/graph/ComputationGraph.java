@@ -104,8 +104,9 @@ public class ComputationGraph implements Serializable, Model {
     public final static String workspaceFeedForward = "LOOP_FF";
     public final static String workspaceBackProp = "LOOP_BP";
     public final static String workspaceTBPTT = "LOOP_TBPTT";
+    public final static String workspaceLSTM = "LOOP_LSTM";
 
-    protected final static WorkspaceConfiguration workspaceConfigurationFeedForward = WorkspaceConfiguration.builder()
+    public final static WorkspaceConfiguration workspaceConfigurationFeedForward = WorkspaceConfiguration.builder()
             .initialSize(0)
             .overallocationLimit(0.2)
             .policyReset(ResetPolicy.BLOCK_LEFT)
@@ -114,7 +115,7 @@ public class ComputationGraph implements Serializable, Model {
             .policyLearning(LearningPolicy.OVER_TIME)
             .build();
 
-    protected final static WorkspaceConfiguration workspaceConfigurationTBPTT = WorkspaceConfiguration.builder()
+    public final static WorkspaceConfiguration workspaceConfigurationTBPTT = WorkspaceConfiguration.builder()
             .initialSize(0)
             .overallocationLimit(0.2)
             .policyReset(ResetPolicy.BLOCK_LEFT)
@@ -123,7 +124,16 @@ public class ComputationGraph implements Serializable, Model {
             .policyLearning(LearningPolicy.OVER_TIME)
             .build();
 
-    protected final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
+    public final static WorkspaceConfiguration workspaceConfigurationLSTM = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.2)
+            .policyReset(ResetPolicy.BLOCK_LEFT)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyLearning(LearningPolicy.FIRST_LOOP)
+            .build();
+
+    public final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
             .overallocationLimit(0.2)
             .policyReset(ResetPolicy.BLOCK_LEFT)
             .cyclesBeforeInitialization(3)
