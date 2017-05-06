@@ -146,9 +146,9 @@ public class AsyncDataSetIteratorTest {
 
     @Test
     public void testVariableTimeSeries1() throws Exception {
-        AsyncDataSetIterator adsi = new AsyncDataSetIterator(new VariableTimeseriesGenerator(1192, 10000, 32, 128, 10, 500, 10), 2, true);
+        AsyncDataSetIterator adsi = new AsyncDataSetIterator(new VariableTimeseriesGenerator(1192, 1000, 32, 128, 10, 500, 10), 2, true);
 
-        for (int e = 0; e < 100; e++) {
+        for (int e = 0; e < 10; e++) {
             int cnt = 0;
             while (adsi.hasNext()) {
                 DataSet ds = adsi.next();
