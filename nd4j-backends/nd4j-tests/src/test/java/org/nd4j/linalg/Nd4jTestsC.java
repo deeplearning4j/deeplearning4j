@@ -3272,6 +3272,31 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testAssign3D_3() {
+        int[] shape3 = {8, 4, 8};
+
+        int length = ArrayUtil.prod(shape3);
+
+        INDArray arr = Nd4j.linspace(1, length, length).reshape('c', shape3);
+        INDArray arr3c = Nd4j.create(shape3, 'c');
+        INDArray arr3f = Nd4j.create(shape3, 'f');
+    //    assertEquals(arr3c,arr3f);
+    //    Nd4j.getExecutioner().exec(new Set(arr, arr3f, arr3c.length()));
+        Nd4j.getExecutioner().exec(new Set(arr , arr3c, arr3c.length()));
+
+        Nd4j.getExecutioner().commit();
+
+
+
+
+        INDArray exp = Nd4j.linspace(1, length, length).reshape('c', shape3);
+
+        assertEquals(exp, arr3c);
+        assertEquals(exp, arr3f);
+    }
+
+
+    @Test
     public void testAssign3D_2() {
         int[] shape3 = {8, 4, 8};
 
@@ -3280,13 +3305,14 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(1, length, length).reshape('c', shape3).dup('f');
         INDArray arr3c = Nd4j.create(shape3, 'c');
         INDArray arr3f = Nd4j.create(shape3, 'f');
-
-        Nd4j.getExecutioner().exec(new Set(arr3c, arr, arr3f, arr3c.length()));
+        assertEquals(arr3c,arr3f);
+        Nd4j.getExecutioner().exec(new Set(arr, arr3f, arr3c.length()));
+        Nd4j.getExecutioner().exec(new Set(arr , arr3c, arr3c.length()));
 
         Nd4j.getExecutioner().commit();
 
 
-        Nd4j.getExecutioner().exec(new Set(arr3f, arr, arr3c, arr3c.length()));
+
 
         INDArray exp = Nd4j.linspace(1, length, length).reshape('c', shape3);
 

@@ -30,6 +30,7 @@ public class Set extends BaseTransformOp {
 
     @Override
     public int opNum() {
+        //return 63 when this libnd4j PR is merged
         return 16;
     }
 

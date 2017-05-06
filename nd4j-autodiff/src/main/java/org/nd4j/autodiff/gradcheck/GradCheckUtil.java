@@ -2,6 +2,7 @@ package org.nd4j.autodiff.gradcheck;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.tensorgrad.TensorGrad;
+import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 import org.nd4j.autodiff.tensorgrad.impl.TensorGradFunction;
 import org.nd4j.autodiff.tensorgrad.impl.TensorGradVariable;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -68,13 +69,23 @@ public class GradCheckUtil {
 
 
         TensorGrad tensorGrad = wrt.getTensorGrad();
-        TensorGradVariable variable = tensorGrad.grad(function,wrt);
+        //get just the subgraph for the graph
+        TensorGradGraph gradGraph = new TensorGradGraph();
+        tensorGrad.graph().setGraphApply(gradGraph);
+        //set the graph back to normal
+        tensorGrad.graph().setGraphApply(null);
+        TensorGrad opExec = TensorGrad.create(gradGraph);
+        INDArray[] eval = opExec.eval(inputParameters);
         int totalNFailures = 0;
         double maxError = 0.0;
+
         for(Map.Entry<String,INDArray> entry : inputParameters.entrySet()) {
             int nParams = entry.getValue().length();
             INDArray params = entry.getValue().dup();
             for (int i = 0; i < nParams; i++) {
+                INDArray zeros = Nd4j.create(nParams);
+                zeros.putScalar(i,epsilon / 2.0);
+
                 //(w+epsilon): Do forward pass and score
                 double origValue = params.getDouble(i);
                 params.putScalar(i, origValue + epsilon);
@@ -95,12 +106,8 @@ public class GradCheckUtil {
                 INDArray[] plusParams = tensorGrad.eval(evalParams);
 
 
-                //(w-epsilon): Do forward pass and score
-                params.putScalar(i, origValue - epsilon);
                 INDArray[] minusParams = tensorGrad.eval(evalParams);
 
-
-                Nd4j.getRandom().setSeed(rngSeed);
 
                 /**
                  * Difference between new params and old
@@ -110,17 +117,12 @@ public class GradCheckUtil {
                     newDifferences[i] = plusParams[i].subi(minusParams[i]).divi(epsilon);
                 }
 
-                double scoreDelta = 0.0;
-                for (INDArray arr : newDifferences)
-                    scoreDelta += arr.sumNumber().doubleValue();
-
-                //Reset original param value
-                params.putScalar(i, origValue);
-
-                double numericalGradient = scoreDelta / (2 * epsilon);
-                if (Double.isNaN(numericalGradient))
-                    throw new IllegalStateException("Numerical gradient was NaN for parameter " + i + " of " + nParams);
-
+                double diff = plusParams[plusParams.length - 1].sumNumber().doubleValue() - minusParams[minusParams.length - 1].sumNumber().doubleValue();
+                double eps = diff / epsilon;
+                double correctVal = eval[eval.length - 1].sumNumber().doubleValue();
+                double gradDiff = Math.abs(correctVal - eps);
+                if(gradDiff > maxRelError)
+                    totalNFailures++;
                 if (print) {
                     int nPass = nParams - totalNFailures;
                     log.info("GradientCheckUtil.checkGradients(): " + nParams + " params checked, " + nPass + " passed, "

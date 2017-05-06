@@ -7,6 +7,7 @@ import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
+import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpExecAction;
@@ -43,6 +44,20 @@ public class TensorGrad {
 
     public TensorGradGraph graph() {
         return graph;
+    }
+
+
+    public static TensorGrad create(TensorGradGraph graph) {
+        ArrayFactory arrayFactory = new ArrayFactory(graph);
+        TensorGrad ret = TensorGrad.builder()
+                .variableMap(new HashMap<>())
+                .arrayFactory(arrayFactory)
+                .tensorGradVariables(new ArrayList<>())
+                .arrayFieldDifferentialFunctionFactory(new DifferentialFunctionFactory<>(graph,arrayFactory))
+                .graph(graph)
+                .build();
+
+        return ret;
     }
 
     public static TensorGrad create() {
@@ -906,6 +921,12 @@ public class TensorGrad {
         throw new IllegalStateException("");
     }
 
+
+
+    public INDArray execAndEndResult() {
+        List<Op> exec = exec();
+        return exec.get(exec.size() - 1).z();
+    }
 
     public List<Op> exec() {
         allocate();

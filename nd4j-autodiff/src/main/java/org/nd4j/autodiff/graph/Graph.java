@@ -4,9 +4,8 @@ import guru.nidi.graphviz.engine.Format;
 import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.model.Label;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.graph.api.BaseGraph;
 import org.nd4j.autodiff.graph.api.Edge;
 import org.nd4j.autodiff.graph.api.IGraph;
@@ -39,12 +38,15 @@ import static guru.nidi.graphviz.model.Link.to;
  */
 @Data
 @AllArgsConstructor
+@Slf4j
 public class Graph<V, E> extends BaseGraph<V, E> {
     private boolean allowMultipleEdges = true;
     private Map<Integer,List<Edge<E>>> edges; //edge[i].get(j).to = k, then edge from i -> k
     private Map<Integer,Vertex<V>> vertices;
     private boolean frozen = false;
     private Map<Integer,List<Edge<E>>> incomingEdges;
+    private Graph<V,E> graphApply;
+
     public Graph() {
         this(true);
     }
@@ -60,9 +62,18 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
 
     public void addVertex(Vertex<V> vVertex) {
-        if(frozen)
+        if(frozen) {
+            log.trace("Attempted to add vertex to frozen graph " + vVertex);
             return;
-        this.vertices.put(vVertex.getIdx(),vVertex);
+        }
+        //this is for a temporary substitution of
+        // the graph
+        if(graphApply != null) {
+            log.trace("Adding to another graph instead " + vVertex);
+            graphApply.addVertex(vVertex);
+        }
+        else
+            this.vertices.put(vVertex.getIdx(),vVertex);
 
     }
 
@@ -132,9 +143,15 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
     @Override
     public void addEdge(Edge<E> edge) {
-        if(frozen)
+        if(frozen) {
+            log.trace("Attempted to add edge to frozen graph " + edge);
             return;
-
+        }
+        else if(graphApply != null) {
+            log.trace("Adding edge to apply graph rather than this one " + edge);
+            graphApply.addEdge(edge);
+            return;
+        }
         if(edge.getFrom() == edge.getTo())
             throw new IllegalArgumentException("No cycles allowed");
 
