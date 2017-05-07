@@ -40,7 +40,8 @@ public class CpuWorkspace extends Nd4jWorkspace {
             isInit.set(true);
 
 
-            log.debug("Allocating [{}] workspace of {} bytes...", id, currentSize.get());
+            if (isDebug.get())
+                log.info("Allocating [{}] workspace of {} bytes...", id, currentSize.get());
 
             workspace.setHostPointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, true)));
         }
@@ -92,6 +93,8 @@ public class CpuWorkspace extends Nd4jWorkspace {
 
     @Override
     public synchronized void destroyWorkspace(boolean extended) {
+        log.info("Destroying workspace...");
+
         currentSize.set(0);
         hostOffset.set(0);
         deviceOffset.set(0);
