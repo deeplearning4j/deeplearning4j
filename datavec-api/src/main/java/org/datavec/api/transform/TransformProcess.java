@@ -954,7 +954,7 @@ public class TransformProcess implements Serializable {
          * Reduce (i.e., aggregate/combine) a set of examples (typically by key).
          * <b>Note</b>: In the current implementation, reduction operations can be performed only on standard (i.e., non-sequence) data
          *
-         * @param reducer Reducer to use
+         * @param reducer StringReducer to use
          */
         public Builder reduce(IReducer reducer) {
             actionList.add(new DataAction(reducer));
@@ -966,7 +966,7 @@ public class TransformProcess implements Serializable {
          * For example, take all records/examples in each 24-hour period (i.e., using window function), and convert them into
          * a singe value (using the reducer). In this example, the output is a sequence, with time period of 24 hours.
          *
-         * @param reducer        Reducer to use to reduce each window
+         * @param reducer        StringReducer to use to reduce each window
          * @param windowFunction Window function to find apply on each sequence individually
          */
         public Builder reduceSequenceByWindow(IReducer reducer, WindowFunction windowFunction) {

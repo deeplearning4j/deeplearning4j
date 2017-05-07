@@ -40,9 +40,9 @@ import java.io.Serializable;
 import java.util.*;
 
 /**
- * A Reducer is used to take a set of examples and reduce them.
+ * A StringReducer is used to take a set of examples and reduce them.
  * The idea: suppose you have a large number of columns, and you want to combine/reduce the values in each column.<br>
- * Reducer allows you to specify different reductions for differently for different columns: min, max, sum, mean etc.
+ * StringReducer allows you to specify different reductions for differently for different columns: min, max, sum, mean etc.
  * See {@link Builder} and {@link ReduceOp} for the full list.<br>
  * <p>
  * Uses are:
@@ -595,7 +595,7 @@ public class Reducer implements IReducer {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("Reducer(");
+        StringBuilder sb = new StringBuilder("StringReducer(");
         if (keyColumns != null) {
             sb.append("keyColumns=").append(keyColumns).append(",");
         }
@@ -628,7 +628,7 @@ public class Reducer implements IReducer {
 
 
         /**
-         * Create a Reducer builder, and set the default column reduction operation.
+         * Create a StringReducer builder, and set the default column reduction operation.
          * For any columns that aren't specified explicitly, they will use the default reduction operation.
          * If a column does have a reduction operation explicitly specified, then it will override
          * the default specified here.
