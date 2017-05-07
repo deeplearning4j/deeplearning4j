@@ -24,6 +24,7 @@ import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.StringReduceOp;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.metadata.ColumnMetaData;
+import org.datavec.api.transform.metadata.StringMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.*;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
@@ -50,31 +51,31 @@ import java.util.*;
 public class StringReducer implements IStringReducer {
 
     private Schema schema;
-    private final List<String> keyColumns;
-    private final Set<String> keyColumnsSet;
-    private final StringReduceOp defaultOp;
-    private final Map<String, StringReduceOp> opMap;
+    private final List<String> inputColumns;
+    private final Set<String> inputColumnsSet;
+    private String outputColumnName;
+    private final StringReduceOp stringReduceOp;
     private Map<String, ColumnReduction> customReductions;
     private Map<String, ConditionalReduction> conditionalReductions;
-    private Set<String> ignoreInvalidInColumns;
 
     private StringReducer(Builder builder) {
-        this((builder.keyColumns == null ? null : Arrays.asList(builder.keyColumns)), builder.defaultOp, builder.opMap,
-                builder.customReductions, builder.conditionalReductions, builder.ignoreInvalidInColumns);
+        this(builder.inputColumns,
+                builder.defaultOp,
+                builder.customReductions,builder.conditionalReductions,
+                builder.outputColumnName);
     }
 
-    public StringReducer(@JsonProperty("keyColumns") List<String> keyColumns, @JsonProperty("defaultOp") StringReduceOp defaultOp,
-                         @JsonProperty("opMap") Map<String, StringReduceOp> opMap,
+    public StringReducer(@JsonProperty("inputColumns") List<String> inputColumns,
+                         @JsonProperty("op") StringReduceOp stringReduceOp,
                          @JsonProperty("customReductions") Map<String, ColumnReduction> customReductions,
                          @JsonProperty("conditionalReductions") Map<String, ConditionalReduction> conditionalReductions,
-                         @JsonProperty("ignoreInvalidInColumns") Set<String> ignoreInvalidInColumns) {
-        this.keyColumns = keyColumns;
-        this.keyColumnsSet = (keyColumns == null ? null : new HashSet<>(keyColumns));
-        this.defaultOp = defaultOp;
-        this.opMap = opMap;
+                         @JsonProperty("outputColumnName") String outputColumnName) {
+        this.inputColumns = inputColumns;
+        this.inputColumnsSet = (inputColumns == null ? null : new HashSet<>(inputColumns));
+        this.stringReduceOp = stringReduceOp;
         this.customReductions = customReductions;
         this.conditionalReductions = conditionalReductions;
-        this.ignoreInvalidInColumns = ignoreInvalidInColumns;
+        this.outputColumnName = outputColumnName;
     }
 
     @Override
@@ -92,8 +93,8 @@ public class StringReducer implements IStringReducer {
     }
 
     @Override
-    public List<String> getKeyColumns() {
-        return keyColumns;
+    public List<String> getInputColumns() {
+        return inputColumns;
     }
 
     /**
@@ -102,52 +103,10 @@ public class StringReducer implements IStringReducer {
     @Override
     public Schema transform(Schema schema) {
         int nCols = schema.numColumns();
-        List<String> colNames = schema.getColumnNames();
         List<ColumnMetaData> meta = schema.getColumnMetaData();
         List<ColumnMetaData> newMeta = new ArrayList<>(nCols);
-
-        for (int i = 0; i < nCols; i++) {
-            String name = colNames.get(i);
-            ColumnMetaData inMeta = meta.get(i);
-
-            if (keyColumnsSet != null && keyColumnsSet.contains(name)) {
-                //No change to key columns
-                newMeta.add(inMeta);
-                continue;
-            }
-
-            //First: check for a custom reductions on this column
-            if (customReductions != null && customReductions.containsKey(name)) {
-                ColumnReduction reduction = customReductions.get(name);
-
-                String outName = reduction.getColumnOutputName(name);
-                ColumnMetaData outMeta = reduction.getColumnOutputMetaData(outName, inMeta);
-
-                newMeta.add(outMeta);
-
-                continue;
-            }
-
-            //Second: check for conditional reductions on this column:
-            if (conditionalReductions != null && conditionalReductions.containsKey(name)) {
-                ConditionalReduction reduction = conditionalReductions.get(name);
-
-                String outName = reduction.getOutputName();
-                ColumnMetaData m = getMetaForColumn(reduction.getReduction(), name, inMeta);
-                m.setName(outName);
-                newMeta.add(m);
-
-                continue;
-            }
-
-            //Otherwise: get the specified (built-in) reduction op
-            //If no reduction op is specified for that column: use the default
-            StringReduceOp op = opMap.get(name);
-            if (op == null)
-                op = defaultOp;
-            newMeta.add(getMetaForColumn(op, name, inMeta));
-        }
-
+        newMeta.addAll(meta);
+        newMeta.add(new StringMetaData(outputColumnName));
         return schema.newSchema(newMeta);
     }
 
@@ -160,8 +119,8 @@ public class StringReducer implements IStringReducer {
             case APPEND:
                 inMeta.setName("append(" + name + ")");
                 return inMeta;
-            case FORMAT:
-                inMeta.setName("format(" + name + ")");
+            case REPLACE:
+                inMeta.setName("replace(" + name + ")");
                 return inMeta;
             case MERGE:
                 inMeta.setName("merge(" + name + ")");
@@ -178,185 +137,45 @@ public class StringReducer implements IStringReducer {
         if (schema == null)
             throw new IllegalStateException("Error: Schema has not been set");
 
-        int nCols = schema.numColumns();
-        List<String> colNames = schema.getColumnNames();
 
-        List<Writable> out = new ArrayList<>(nCols);
-        List<Writable> tempColumnValues = new ArrayList<>(examplesList.size());
-        for (int i = 0; i < nCols; i++) {
-            String colName = colNames.get(i);
-            if (keyColumnsSet != null && keyColumnsSet.contains(colName)) {
-                //This is a key column -> all values should be identical
-                //Therefore just take the first one
-                out.add(examplesList.get(0).get(i));
-                continue;
-            }
-
-            //First: Extract out the Writables for the column we are considering here...
-            for (List<Writable> list : examplesList) {
-                tempColumnValues.add(list.get(i));
-            }
-
-            //Second: is this a *custom* reduction column?
-            if (customReductions != null && customReductions.containsKey(colName)) {
-                ColumnReduction reduction = customReductions.get(colName);
-                Writable reducedColumn = reduction.reduceColumn(tempColumnValues);
-                out.add(reducedColumn);
-                tempColumnValues.clear();
-                continue;
-            }
-
-            //Third: is this a *conditional* reduction column?
-            //Only practical difference with conditional reductions is we filter the input based on a condition first
-            boolean conditionalOp = false;
-            if (conditionalReductions != null && conditionalReductions.containsKey(colName)) {
-                ConditionalReduction reduction = conditionalReductions.get(colName);
-                Condition c = reduction.getCondition();
-                List<Writable> filteredColumnValues = new ArrayList<>();
-
-                int j = 0;
-                for (List<Writable> example : examplesList) {
-                    if (c.condition(example)) {
-                        filteredColumnValues.add(tempColumnValues.get(j));
-                    }
-                    j++;
-                }
-
-                tempColumnValues = filteredColumnValues;
-                conditionalOp = true;
-            }
-
-            //What type of column is this?
-            ColumnType type = schema.getType(i);
-
-            //What op are we performing on this column?
-            StringReduceOp op = (conditionalOp ? conditionalReductions.get(colName).getReduction() : opMap.get(colName));
-            if (op == null)
-                op = defaultOp;
-
-            //Execute the reduction, store the result
-            out.add(reduceColumn(op, type, tempColumnValues, ignoreInvalidInColumns.contains(colName),
-                    schema.getMetaData(i)));
-
-            tempColumnValues.clear();
+        List<Writable> out = new ArrayList<>(examplesList.size());
+        for(int i = 0; i < examplesList.size(); i++) {
+            out.add(reduceStringOrCategoricalColumn(stringReduceOp,examplesList.get(i)));
         }
 
         return out;
     }
 
-    public static Writable reduceColumn(StringReduceOp op, ColumnType type, List<Writable> values, boolean ignoreInvalid,
-                                        ColumnMetaData metaData) {
-        switch (type) {
-            case String:
-            case Categorical:
-                return reduceStringOrCategoricalColumn(op, values, ignoreInvalid, metaData);
-            default:
-                throw new UnsupportedOperationException("Unknown or not implemented column type: " + type);
-        }
-    }
 
 
-    public static Writable reduceStringOrCategoricalColumn(StringReduceOp op, List<Writable> values, boolean ignoreInvalid,
-                                                           ColumnMetaData metaData) {
+    public static Writable reduceStringOrCategoricalColumn(StringReduceOp op,
+                                                           List<Writable> values) {
         switch (op) {
-            case APPEND:
-                if (ignoreInvalid) {
-                    int countValid = 0;
-                    for (Writable w : values) {
-                        if (!metaData.isValid(w))
-                            continue;
-                        countValid++;
-                    }
-                    return new IntWritable(countValid);
-                }
-                return new IntWritable(values.size());
-            case PREPEND:
-                Set<String> set = new HashSet<>();
-                for (Writable w : values) {
-                    if (ignoreInvalid && !metaData.isValid(w))
-                        continue;
-                    set.add(w.toString());
-                }
-                return new IntWritable(set.size());
             case MERGE:
-                if (values.size() > 0)
-                    return values.get(0);
-                return new Text("");
-            case FORMAT:
-                if (values.size() > 0)
-                    return values.get(values.size() - 1);
-                return new Text("");
+            case APPEND:
+                StringBuilder stringBuilder = new StringBuilder();
+                for (Writable w : values) {
+                    stringBuilder.append(w.toString());
+                }
+                return new Text(stringBuilder.toString());
+            case REPLACE:
+                if(values.size() > 2) {
+                    throw new IllegalArgumentException("Unable to run replace on columns > 2");
+                }
+                return new Text(values.get(1).toString());
+            case PREPEND:
+                List<Writable> reverse = new ArrayList<>(values);
+                Collections.reverse(reverse);
+                StringBuilder stringBuilder2 = new StringBuilder();
+                for (Writable w : reverse) {
+                    stringBuilder2.append(w.toString());
+                }
+
+                return new Text(stringBuilder2.toString());
             default:
                 throw new UnsupportedOperationException("Cannot execute op \"" + op + "\" on String/Categorical column "
                         + "(can only perform Count, CountUnique, TakeFirst and TakeLast ops on categorical columns)");
         }
-    }
-
-    public static Writable reduceTimeColumn(ReduceOp op, List<Writable> values, boolean ignoreInvalid,
-                                            ColumnMetaData metaData) {
-
-        switch (op) {
-            case Min:
-                long min = Long.MAX_VALUE;
-                for (Writable w : values) {
-                    if (ignoreInvalid && !metaData.isValid(w))
-                        continue;
-                    min = Math.min(min, w.toLong());
-                }
-                return new LongWritable(min);
-            case Max:
-                long max = Long.MIN_VALUE;
-                for (Writable w : values) {
-                    if (ignoreInvalid && !metaData.isValid(w))
-                        continue;
-                    max = Math.max(max, w.toLong());
-                }
-                return new LongWritable(max);
-            case Mean:
-                long sum = 0L;
-                int count = 0;
-                for (Writable w : values) {
-                    if (ignoreInvalid && !metaData.isValid(w))
-                        continue;
-                    sum += w.toLong();
-                    count++;
-                }
-                return (count > 0 ? new LongWritable(sum / count) : new LongWritable(0));
-            case Count:
-                if (ignoreInvalid) {
-                    int countValid = 0;
-                    for (Writable w : values) {
-                        if (!metaData.isValid(w))
-                            continue;
-                        countValid++;
-                    }
-                    return new IntWritable(countValid);
-                }
-                return new IntWritable(values.size());
-            case CountUnique:
-                Set<Long> set = new HashSet<>();
-                for (Writable w : values) {
-                    if (ignoreInvalid && !metaData.isValid(w))
-                        continue;
-                    set.add(w.toLong());
-                }
-                return new IntWritable(set.size());
-            case TakeFirst:
-                if (values.size() > 0)
-                    return values.get(0);
-                return new LongWritable(0);
-            case TakeLast:
-                if (values.size() > 0)
-                    return values.get(values.size() - 1);
-                return new LongWritable(0);
-            case Range:
-            case Sum:
-            case Stdev:
-                throw new UnsupportedOperationException("Reduction op \"" + op + "\" not supported on time columns");
-        }
-
-
-        throw new UnsupportedOperationException("Reduce ops for time columns: not yet implemented");
     }
 
 
@@ -364,22 +183,16 @@ public class StringReducer implements IStringReducer {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder("StringReducer(");
-        if (keyColumns != null) {
-            sb.append("keyColumns=").append(keyColumns).append(",");
-        }
-        sb.append("defaultOp=").append(defaultOp);
-        if (opMap != null) {
-            sb.append(",opMap=").append(opMap);
-        }
+
+        sb.append("defaultOp=").append(stringReduceOp);
+
         if (customReductions != null) {
             sb.append(",customReductions=").append(customReductions);
         }
         if (conditionalReductions != null) {
             sb.append(",conditionalReductions=").append(conditionalReductions);
         }
-        if (ignoreInvalidInColumns != null) {
-            sb.append(",ignoreInvalidInColumns=").append(ignoreInvalidInColumns);
-        }
+
         sb.append(")");
         return sb.toString();
     }
@@ -392,8 +205,15 @@ public class StringReducer implements IStringReducer {
         private Map<String, ColumnReduction> customReductions = new HashMap<>();
         private Map<String, ConditionalReduction> conditionalReductions = new HashMap<>();
         private Set<String> ignoreInvalidInColumns = new HashSet<>();
-        private String[] keyColumns;
+        private String outputColumnName;
+        private List<String> inputColumns;
 
+
+
+        public Builder inputColumns(List<String> inputColumns) {
+            this.inputColumns = inputColumns;
+            return this;
+        }
 
         /**
          * Create a StringReducer builder, and set the default column reduction operation.
@@ -407,17 +227,11 @@ public class StringReducer implements IStringReducer {
             this.defaultOp = defaultOp;
         }
 
-        /**
-         * Specify the key columns. The idea here is to be able to create a (potentially compound) key
-         * out of multiple columns, using the toString representation of the values in these columns
-         *
-         * @param keyColumns Columns that will make up the key
-         * @return
-         */
-        public Builder keyColumns(String... keyColumns) {
-            this.keyColumns = keyColumns;
+        public Builder outputColumnName(String outputColumnName) {
+            this.outputColumnName = outputColumnName;
             return this;
         }
+
 
         private Builder add(StringReduceOp op, String[] cols) {
             for (String s : cols) {
@@ -450,8 +264,8 @@ public class StringReducer implements IStringReducer {
         /**
          * Reduce the specified columns by taking the mean of the values
          */
-        public Builder formatColumns(String... columns) {
-            return add(StringReduceOp.FORMAT, columns);
+        public Builder replaceColumn(String... columns) {
+            return add(StringReduceOp.REPLACE, columns);
         }
 
         /**

@@ -65,6 +65,6 @@ public interface IStringReducer extends Serializable {
      *
      * @return
      */
-    List<String> getKeyColumns();
+    List<String> getInputColumns();
 
 }

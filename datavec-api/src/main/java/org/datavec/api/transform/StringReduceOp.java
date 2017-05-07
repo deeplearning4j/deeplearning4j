@@ -12,5 +12,5 @@ package org.datavec.api.transform;
  * @author Adam Gibson
  */
 public enum StringReduceOp {
-    PREPEND,APPEND,MERGE,FORMAT
+    PREPEND,APPEND,MERGE,REPLACE
 }
