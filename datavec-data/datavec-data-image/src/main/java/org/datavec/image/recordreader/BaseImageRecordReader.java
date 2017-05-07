@@ -236,19 +236,9 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     @Override
     public boolean hasNext() {
         if (iter != null) {
-            boolean hasNext = iter.hasNext();
-            if (!hasNext && imageTransform != null) {
-                imageTransform.transform(null);
-            }
-            return hasNext;
+            return iter.hasNext();
         } else if (record != null) {
-            if (hitImage && imageTransform != null) {
-                imageTransform.transform(null);
-            }
             return !hitImage;
-        }
-        if (imageTransform != null) {
-            imageTransform.transform(null);
         }
         throw new IllegalStateException("Indeterminant state: record must not be null, or a file iterator must exist");
     }
