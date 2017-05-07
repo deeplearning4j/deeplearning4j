@@ -7,8 +7,10 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.lang.reflect.Constructor;
 import java.util.List;
 
 @Data
@@ -17,7 +19,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
     protected DifferentialFunction<X> m_x;
     protected int[] shape;
 
-    public AbstractUnaryFunction(Graph<NDArrayInformation,OpState> graph,
+    public AbstractUnaryFunction(TensorGradGraph graph,
                                  DifferentialFunction<X> i_v,
                                  int[] shape,
                                  Object[] extraArgs) {
@@ -31,7 +33,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
     }
 
 
-    public AbstractUnaryFunction(Graph<NDArrayInformation,OpState> graph,
+    public AbstractUnaryFunction(TensorGradGraph graph,
                                  DifferentialFunction<X> i_v,
                                  Object[] extraArgs) {
         super(graph,extraArgs);
@@ -123,7 +125,8 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
     @Override
     public DifferentialFunction<X> dup() {
         try {
-            return getClass().getConstructor(graph.getClass(),arg().getClass(),int[].class).newInstance(graph,arg(),shape);
+            return getClass().getConstructor(graph.getClass(),arg().getClass(),int[].class,Object[].class)
+                    .newInstance(graph,arg(),shape,extraArgs);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

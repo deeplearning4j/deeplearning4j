@@ -10,6 +10,7 @@ import org.nd4j.autodiff.functions.Variable;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
@@ -29,7 +30,7 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
     private DifferentialFunctionFactory<X> differentialFunctionFactory;
     private boolean addedEdges = false;
 
-    public TensorMmul(Graph<NDArrayInformation, OpState> graph,
+    public TensorMmul(TensorGradGraph graph,
                       DifferentialFunction<X> i_v1,
                       DifferentialFunction<X> i_v2,
                       DifferentialFunctionFactory<X> differentialFunctionFactory,

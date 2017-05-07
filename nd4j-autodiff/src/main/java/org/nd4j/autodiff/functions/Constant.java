@@ -6,11 +6,7 @@ import lombok.Data;
 import org.nd4j.autodiff.AbstractIdentityFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.graph.Graph;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
-import org.nd4j.autodiff.opstate.NDArrayVertex;
-import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 
 @Data
 public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
@@ -18,7 +14,7 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
     protected X m_x;
     private AbstractIdentityFactory<X> m_factory;
 
-    protected Constant(Graph<NDArrayInformation,OpState> graph,
+    protected Constant(TensorGradGraph graph,
                        X i_v,
                        AbstractIdentityFactory<X> i_factory) {
         super(graph,new Object[]{i_v});

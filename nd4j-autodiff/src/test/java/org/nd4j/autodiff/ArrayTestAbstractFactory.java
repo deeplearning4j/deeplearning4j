@@ -12,6 +12,7 @@ import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpExecOrder;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.TensorGrad;
+import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 import org.nd4j.autodiff.tensorgrad.impl.TensorGradVariable;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
@@ -40,7 +41,7 @@ public class ArrayTestAbstractFactory
 
     @Test
     public void testAutoDiff() {
-        Graph<NDArrayInformation,OpState> graph = new Graph<>();
+        TensorGradGraph graph = new TensorGradGraph();
         ArrayFactory arrayFactory = new ArrayFactory(graph);
         DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
         NDArrayInformation xInfo = NDArrayInformation.
@@ -65,7 +66,7 @@ public class ArrayTestAbstractFactory
 
     @Test
     public void testVariables() {
-        Graph<NDArrayInformation,OpState> graph = new Graph<>();
+       TensorGradGraph graph = new TensorGradGraph();
         ArrayFactory arrayFactory = new ArrayFactory(graph);
         DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
         NDArrayInformation xInfo = NDArrayInformation.
@@ -83,7 +84,7 @@ public class ArrayTestAbstractFactory
 
     @Test
     public void testPairWiseOp() throws Exception {
-        Graph<NDArrayInformation,OpState> graph = new Graph<>();
+       TensorGradGraph graph = new TensorGradGraph();
         ArrayFactory arrayFactory = new ArrayFactory(graph);
 
         DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
@@ -110,7 +111,7 @@ public class ArrayTestAbstractFactory
 
     @Test
     public void testConstant() {
-        Graph<NDArrayInformation,OpState> graph = new Graph<>();
+       TensorGradGraph graph = new TensorGradGraph();
         ArrayFactory arrayFactory = new ArrayFactory(graph);
 
         DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
@@ -148,7 +149,7 @@ public class ArrayTestAbstractFactory
 
     @Test
     public void testSingleTransformOp() throws Exception {
-        Graph<NDArrayInformation,OpState> graph = new Graph<>();
+       TensorGradGraph graph = new TensorGradGraph();
         ArrayFactory arrayFactory = new ArrayFactory(graph);
 
         DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
@@ -178,7 +179,7 @@ public class ArrayTestAbstractFactory
 
     @Test
     public void testAutoDiffSimple() throws Exception {
-        Graph<NDArrayInformation,OpState> graph = new Graph<>();
+       TensorGradGraph graph = new TensorGradGraph();
         ArrayFactory arrayFactory = new ArrayFactory(graph);
 
         DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);

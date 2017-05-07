@@ -7,9 +7,8 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.linalg.util.ReflectionUtil;
+import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,10 +19,10 @@ import java.util.Map;
 @Data
 public class ArrayFactory implements AbstractFactory<ArrayField> {
 
-    private Graph<NDArrayInformation,OpState> graph;
+    private TensorGradGraph graph;
     private Map<String,Method> methodNames;
 
-    public ArrayFactory(Graph<NDArrayInformation, OpState> graph) {
+    public ArrayFactory(TensorGradGraph graph) {
         this.graph = graph;
         methodNames = new HashMap<>();
         Method[] methods = getClass().getDeclaredMethods();
@@ -32,12 +31,12 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     public ArrayFactory() {
-        this(new Graph<>());
+        this(new TensorGradGraph());
     }
 
 
     @Override
-    public Graph<NDArrayInformation, OpState> graph() {
+    public TensorGradGraph graph() {
         return graph;
     }
 

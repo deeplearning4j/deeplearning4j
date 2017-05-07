@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.tensorgrad;
 
 import lombok.Builder;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.graph.api.Edge;
@@ -17,16 +18,28 @@ import java.util.*;
  * Created by agibsonccc on 4/11/17.
  */
 @NoArgsConstructor
+@Data
 public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
 
+    protected TensorGrad tensorGrad;
+
+    public TensorGradGraph(TensorGradGraph gradGraph) {
+        setEdges(gradGraph.getEdges());
+        setVertices(gradGraph.getVertices());
+        setFrozen(gradGraph.isFrozen());
+        setIncomingEdges(gradGraph.getIncomingEdges());
+        setGraphApply(gradGraph.getGraphApply());
+    }
 
     @Builder
     private TensorGradGraph(boolean allowMultipleEdges,
                             Map<Integer, List<Edge<OpState>>> edges,
                             Map<Integer, Vertex<NDArrayInformation>> vertices,
                             boolean frozen,
-                            Map<Integer, List<Edge<OpState>>> incomingEdges) {
-        super(allowMultipleEdges, edges, vertices, frozen, incomingEdges);
+                            Map<Integer, List<Edge<OpState>>> incomingEdges,
+                            TensorGrad tensorGrad) {
+        super(allowMultipleEdges, edges, vertices, frozen, incomingEdges,null);
+        this.tensorGrad = tensorGrad;
     }
 
     public List<NDArrayInformation> getOutputs() {

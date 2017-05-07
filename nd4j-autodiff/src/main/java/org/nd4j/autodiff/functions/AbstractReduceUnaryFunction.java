@@ -7,6 +7,7 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
@@ -20,7 +21,7 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
     protected int[] dimensions;
     protected OpState opState;
 
-    public AbstractReduceUnaryFunction(Graph<NDArrayInformation,OpState> graph,
+    public AbstractReduceUnaryFunction(TensorGradGraph graph,
                                        DifferentialFunction<X> i_v,
                                        int[] dimensions) {
         super(graph,new Object[]{dimensions});

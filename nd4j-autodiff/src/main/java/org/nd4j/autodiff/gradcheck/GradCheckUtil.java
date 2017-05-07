@@ -18,7 +18,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by agibsonccc on 5/1/17.
+ * Gradient check utility
+ *
+ * @author Adam Gibson
  */
 @Slf4j
 public class GradCheckUtil {
@@ -26,25 +28,20 @@ public class GradCheckUtil {
 
     /**
      *
-     * @param wrt
+     * @param function
      * @param epsilon
      * @param maxRelError
-     * @param minAbsoluteError
      * @param print
-     * @param exitOnFirstError
      * @param inputParameters
-     * @param rngSeed
      * @return
      */
-    public static boolean checkGradients(TensorGradVariable wrt,
+    public static boolean checkGradients(
                                          TensorGradVariable function,
+                                         TensorGradVariable wrt,
                                          double epsilon,
                                          double maxRelError,
-                                         double minAbsoluteError,
                                          boolean print,
-                                         boolean exitOnFirstError,
-                                         Map<String,INDArray> inputParameters,
-                                         int rngSeed) {
+                                         Map<String,INDArray> inputParameters) {
         //Basic sanity checks on input:
         if (epsilon <= 0.0 || epsilon > 0.1)
             throw new IllegalArgumentException("Invalid epsilon: expect epsilon in range (0,0.1], usually 1e-4 or so");
@@ -68,13 +65,15 @@ public class GradCheckUtil {
          */
 
 
-        TensorGrad tensorGrad = wrt.getTensorGrad();
+        TensorGrad tensorGrad = function.getTensorGrad();
         //get just the subgraph for the graph
         TensorGradGraph gradGraph = new TensorGradGraph();
         tensorGrad.graph().setGraphApply(gradGraph);
         //set the graph back to normal
+        tensorGrad.grad(function,wrt);
         tensorGrad.graph().setGraphApply(null);
-        TensorGrad opExec = TensorGrad.create(gradGraph);
+        TensorGrad opExec = TensorGrad.create(tensorGrad,gradGraph);
+
         INDArray[] eval = opExec.eval(inputParameters);
         int totalNFailures = 0;
         double maxError = 0.0;

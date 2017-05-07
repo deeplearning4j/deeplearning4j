@@ -6,6 +6,7 @@ import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -20,7 +21,7 @@ public abstract class AbstractBinaryReduceFunction<X extends  Field<X>> extends 
     protected int[] dimensions;
 
 
-    public AbstractBinaryReduceFunction(Graph<NDArrayInformation, OpState> graph, DifferentialFunction<X> i_v1, DifferentialFunction<X> i_v2,int...dimensions) {
+    public AbstractBinaryReduceFunction(TensorGradGraph graph, DifferentialFunction<X> i_v1, DifferentialFunction<X> i_v2, int...dimensions) {
         super(graph, i_v1, i_v2);
         this.dimensions = dimensions;
     }

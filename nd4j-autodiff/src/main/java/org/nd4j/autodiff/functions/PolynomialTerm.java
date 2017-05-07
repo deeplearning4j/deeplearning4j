@@ -3,16 +3,14 @@ package org.nd4j.autodiff.functions;
 import java.util.List;
 
 import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.graph.Graph;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
-import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 
 public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X> {
 
     protected double m_scale;
     protected int m_exponent;
 
-    public PolynomialTerm(Graph<NDArrayInformation,OpState> graph,
+    public PolynomialTerm(TensorGradGraph graph,
                           double i_scale,
                           DifferentialFunction<X> i_v,
                           int i_exponent) {

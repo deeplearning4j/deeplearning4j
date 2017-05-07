@@ -7,6 +7,7 @@ import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 import org.nd4j.linalg.api.shape.Shape;
 
 /**
@@ -16,7 +17,7 @@ import org.nd4j.linalg.api.shape.Shape;
 public class Mmul<X extends Field<X>> extends TensorMmul<X> {
 
 
-    public Mmul(Graph<NDArrayInformation, OpState> graph,
+    public Mmul(TensorGradGraph graph,
                 DifferentialFunction<X> i_v1,
                 DifferentialFunction<X> i_v2,
                 DifferentialFunctionFactory<X> differentialFunctionFactory,

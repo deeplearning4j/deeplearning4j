@@ -6,6 +6,7 @@ import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 
@@ -13,7 +14,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 public class Zero<X extends Field<X>> extends Constant<X> {
 
 
-    public Zero(Graph<NDArrayInformation,OpState> graph,AbstractIdentityFactory<X> i_factory) {
+    public Zero(TensorGradGraph graph, AbstractIdentityFactory<X> i_factory) {
         super(graph,i_factory.zero(), i_factory);
     }
 

@@ -36,6 +36,7 @@ public class TensorGrad {
 
     private TensorGrad() {
         graph = new TensorGradGraph();
+        graph.setTensorGrad(this);
         arrayFactory = new ArrayFactory(graph);
         arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
         tensorGradVariables = new ArrayList<>();
@@ -47,15 +48,18 @@ public class TensorGrad {
     }
 
 
-    public static TensorGrad create(TensorGradGraph graph) {
+    public static TensorGrad create(TensorGrad originalTensorGrad,TensorGradGraph graph) {
         ArrayFactory arrayFactory = new ArrayFactory(graph);
+        TensorGradGraph clone = new TensorGradGraph(graph);
         TensorGrad ret = TensorGrad.builder()
-                .variableMap(new HashMap<>())
+                .variableMap(originalTensorGrad.getVariableMap())
                 .arrayFactory(arrayFactory)
-                .tensorGradVariables(new ArrayList<>())
+                .tensorGradVariables(originalTensorGrad.getTensorGradVariables())
                 .arrayFieldDifferentialFunctionFactory(new DifferentialFunctionFactory<>(graph,arrayFactory))
-                .graph(graph)
+                .graph(clone)
                 .build();
+        //ensuring proper tensorgrad reference
+        clone.setTensorGrad(ret);
 
         return ret;
     }

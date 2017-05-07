@@ -6,11 +6,7 @@ import lombok.Data;
 import org.nd4j.autodiff.AbstractIdentityFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.graph.Graph;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
-import org.nd4j.autodiff.opstate.NDArrayVertex;
-import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 
 @Data
 public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
@@ -20,14 +16,14 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     private String m_name;
     private PreEvaluator<X> preEvaluator;
 
-    protected Variable(Graph<NDArrayInformation,OpState> graph,
+    protected Variable(TensorGradGraph graph,
                        String i_name,
                        X i_v,
                        AbstractIdentityFactory<X> i_factory) {
         this(graph,i_name, i_v, i_factory, null);
     }
 
-    protected Variable(Graph<NDArrayInformation,OpState> graph,
+    protected Variable(TensorGradGraph graph,
                        String i_name,
                        X i_v,
                        AbstractIdentityFactory<X> i_factory,
@@ -138,5 +134,6 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     public DifferentialFunction<X> dup() {
         return new Variable<>(graph, getName(), m_x, m_factory);
     }
+
 
 }

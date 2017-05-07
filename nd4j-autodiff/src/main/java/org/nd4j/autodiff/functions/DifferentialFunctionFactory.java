@@ -14,6 +14,7 @@ import org.nd4j.autodiff.functions.mmul.TensorMmul;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
+import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.shape.Shape;
@@ -27,10 +28,10 @@ import org.nd4j.linalg.util.ArrayUtil;
 public class DifferentialFunctionFactory<X extends Field<X>> implements FunctionFactory<X> {
 
     protected AbstractFactory<X> mFactory;
-    protected Graph<NDArrayInformation,OpState> graph;
+    protected TensorGradGraph graph;
     private Map<String,Method> methodNames;
 
-    public DifferentialFunctionFactory(Graph<NDArrayInformation,OpState> graph,
+    public DifferentialFunctionFactory(TensorGradGraph graph,
                                        AbstractFactory<X> mFactory) {
         if (mFactory != null) {
             this.mFactory = mFactory;
