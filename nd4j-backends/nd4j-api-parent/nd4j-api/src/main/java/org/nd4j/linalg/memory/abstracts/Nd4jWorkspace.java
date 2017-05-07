@@ -269,10 +269,10 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             long prevOffset = hostOffset.getAndAdd(requiredMemory);
             deviceOffset.set(hostOffset.get());
 
-            if (isDebug.get())
-                log.info("Workspace [{}]: Allocating array of {} bytes, capacity of {} elements, prevOffset: {}", id, requiredMemory, numElements, prevOffset);
-
             PagedPointer ptr = workspace.getHostPointer().withOffset(prevOffset, numElements);
+
+            if (isDebug.get())
+                log.info("Workspace [{}]: Allocating array of {} bytes, capacity of {} elements, prevOffset: {}; currentOffset: {}; address: {}", id, requiredMemory, numElements, prevOffset, hostOffset.get(), ptr.address());
 
             if (initialize)
                 Pointer.memset(ptr, 0, requiredMemory);
@@ -334,9 +334,10 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     public void initializeWorkspace() {
         // we can reallocate this workspace to larger size if that's needed and allowed by configuration
         if ((currentSize.get() < maxCycle.get() || currentSize.get() < cycleAllocations.get()) && workspaceConfiguration.getPolicySpill() == SpillPolicy.REALLOCATE && (workspaceConfiguration.getMaxSize() == 0 || (maxCycle.get() < workspaceConfiguration.getMaxSize()))) {
-            if (workspaceConfiguration.getPolicyReset() != ResetPolicy.ENDOFBUFFER_REACHED)
+            if (workspaceConfiguration.getPolicyReset() != ResetPolicy.ENDOFBUFFER_REACHED) {
                 destroyWorkspace(true);
-            isInit.set(false);
+                isInit.set(false);
+            }
         }
 
         // if we're in cyclic mode, we do reallocations only after 2 full cycles, to avoid race conditions
@@ -352,6 +353,13 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
                     currentSize.set(Math.min(maxCycle.get(), workspaceConfiguration.getMaxSize()));
                 else
                     currentSize.set(maxCycle.get());
+
+                // if we're on cyclic mode, let's add 30% to size, just to reduce number of reallocations
+                if (workspaceConfiguration.getPolicyReset() == ResetPolicy.ENDOFBUFFER_REACHED) {
+                    currentSize.set((long) (currentSize.get() * 1.3));
+                    currentSize.addAndGet(8 - (currentSize.get() % 8));
+                    maxCycle.set(currentSize.get());
+                }
 
                 // we're updating single block size for circular mode, will be used for alignment later
                 initialBlockSize.set(currentSize.get());
@@ -486,7 +494,9 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
         // if during this cycle we've used more memory then before - increase max count. we'll use it in future for optional reallocation
         if (cycleAllocations.get() > maxCycle.get()) {
-            log.debug("Workspace [{}], current cycle: {}; max cycle: {}", id, cycleAllocations.get(), maxCycle.get());
+            if (isDebug.get())
+                log.info("Workspace [{}], current cycle: {}; max cycle: {}", id, cycleAllocations.get(), maxCycle.get());
+
             maxCycle.set(cycleAllocations.get());
         }
 
@@ -541,10 +551,12 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             // for variable input we want to ensure alignment to max block, to avoid accidental buffer overruns
             long diff = initialBlockSize.get() - cycleAllocations.get();
 
-            //log.info("Align to [{}]; diff: [{}]; block size: [{}]; currentOffset: [{}]; workspaceSize: [{}]; trimmedMode: {}", initialBlockSize.get(), diff, cycleAllocations.get(), deviceOffset.get(), currentSize.get(), trimmedMode.get());
-
             // we don't care about offsets if that's trimmed mode, offsets will be reset anyway upon reallocation
             if (diff > 0 && !trimmedMode.get() && deviceOffset.get() > 0) {
+
+                if (isDebug.get())
+                    log.info("Align to [{}]; diff: [{}]; block size: [{}]; currentOffset: [{}]; workspaceSize: [{}]; trimmedMode: {}", initialBlockSize.get(), diff, cycleAllocations.get(), deviceOffset.get(), currentSize.get(), trimmedMode.get());
+
                 deviceOffset.getAndAdd(diff);
                 hostOffset.getAndAdd(diff);
             }
