@@ -5,10 +5,11 @@
   <parent>
     <artifactId>deeplearning4j-parent</artifactId>
     <groupId>org.deeplearning4j</groupId>
-    <version>0.8.1-SNAPSHOT</version>
+    <version>0.8.0</version>
   </parent>
 
   <artifactId>deeplearning4j-keras</artifactId>
+  <version>0.8.0-1</version>
   <packaging>jar</packaging>
 
   <name>DL4J Keras support</name>
@@ -47,7 +48,7 @@
     <dependency>
       <groupId>org.deeplearning4j</groupId>
       <artifactId>deeplearning4j-core</artifactId>
-      <version>${project.version}</version>
+      <version>${deeplearning4j.version}</version>
       <exclusions>
         <exclusion>
           <groupId>org.slf4j</groupId>
