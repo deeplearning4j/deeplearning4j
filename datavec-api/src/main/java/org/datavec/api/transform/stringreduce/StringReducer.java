@@ -56,35 +56,28 @@ public class StringReducer implements IStringReducer {
     private String outputColumnName;
     private final StringReduceOp stringReduceOp;
     private Map<String, ColumnReduction> customReductions;
-    private Map<String, ConditionalReduction> conditionalReductions;
 
     private StringReducer(Builder builder) {
         this(builder.inputColumns,
                 builder.defaultOp,
-                builder.customReductions,builder.conditionalReductions,
+                builder.customReductions,
                 builder.outputColumnName);
     }
 
     public StringReducer(@JsonProperty("inputColumns") List<String> inputColumns,
                          @JsonProperty("op") StringReduceOp stringReduceOp,
                          @JsonProperty("customReductions") Map<String, ColumnReduction> customReductions,
-                         @JsonProperty("conditionalReductions") Map<String, ConditionalReduction> conditionalReductions,
                          @JsonProperty("outputColumnName") String outputColumnName) {
         this.inputColumns = inputColumns;
         this.inputColumnsSet = (inputColumns == null ? null : new HashSet<>(inputColumns));
         this.stringReduceOp = stringReduceOp;
         this.customReductions = customReductions;
-        this.conditionalReductions = conditionalReductions;
         this.outputColumnName = outputColumnName;
     }
 
     @Override
     public void setInputSchema(Schema schema) {
         this.schema = schema;
-        //Conditions (if any) also need the input schema:
-        for (ConditionalReduction cr : conditionalReductions.values()) {
-            cr.getCondition().setInputSchema(schema);
-        }
     }
 
     @Override
@@ -189,9 +182,7 @@ public class StringReducer implements IStringReducer {
         if (customReductions != null) {
             sb.append(",customReductions=").append(customReductions);
         }
-        if (conditionalReductions != null) {
-            sb.append(",conditionalReductions=").append(conditionalReductions);
-        }
+
 
         sb.append(")");
         return sb.toString();
@@ -203,7 +194,6 @@ public class StringReducer implements IStringReducer {
         private StringReduceOp defaultOp;
         private Map<String, StringReduceOp> opMap = new HashMap<>();
         private Map<String, ColumnReduction> customReductions = new HashMap<>();
-        private Map<String, ConditionalReduction> conditionalReductions = new HashMap<>();
         private Set<String> ignoreInvalidInColumns = new HashSet<>();
         private String outputColumnName;
         private List<String> inputColumns;
@@ -312,13 +302,5 @@ public class StringReducer implements IStringReducer {
         }
     }
 
-    @AllArgsConstructor
-    @Data
-    public static class ConditionalReduction implements Serializable {
-        private final String columnName;
-        private final String outputName;
-        private final StringReduceOp reduction;
-        private final Condition condition;
-    }
 
 }
