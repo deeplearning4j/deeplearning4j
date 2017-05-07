@@ -97,7 +97,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
             if (e >= 2) {
                 assertEquals("Failed on iteration " + e,0, workspace.getNumberOfPinnedAllocations());
             } else {
-                assertEquals(1, workspace.getNumberOfPinnedAllocations());
+                assertEquals("Failed on iteration " + e,1, workspace.getNumberOfPinnedAllocations());
             }
         }
 

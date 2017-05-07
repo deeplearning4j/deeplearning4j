@@ -6174,6 +6174,11 @@ public class Nd4j {
         return fallbackMode.get();
     }
 
+    /**
+     * This method returns WorkspaceManager implementation to be used within this JVM process
+     *
+     * @return
+     */
     public static MemoryWorkspaceManager getWorkspaceManager() {
         return workspaceManager;
     }

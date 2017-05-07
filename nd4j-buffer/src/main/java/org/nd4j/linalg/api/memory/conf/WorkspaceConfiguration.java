@@ -51,6 +51,11 @@ public class WorkspaceConfiguration implements Serializable {
      */
     protected double overallocationLimit;
 
+    /**
+     * This value is used only for circular workspaces
+     */
+    protected int stepsNumber;
+
     public static class WorkspaceConfigurationBuilder {
         private AllocationPolicy policyAllocation = AllocationPolicy.OVERALLOCATE;
         private SpillPolicy policySpill = SpillPolicy.EXTERNAL;
@@ -65,5 +70,6 @@ public class WorkspaceConfiguration implements Serializable {
         protected int cyclesBeforeInitialization = 0;
 
         private double overallocationLimit = 0.3;
+        private int stepsNumber = 2;
     }
 }
