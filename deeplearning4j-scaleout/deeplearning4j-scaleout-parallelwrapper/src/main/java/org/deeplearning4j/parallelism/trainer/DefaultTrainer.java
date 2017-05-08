@@ -279,10 +279,13 @@ public class DefaultTrainer extends Thread implements Trainer {
 
                             if (replicatedModel instanceof MultiLayerNetwork) {
                                 Updater updaterReplica = ((MultiLayerNetwork) replicatedModel).getUpdater();
-                                Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
+                                if (updaterReplica.getStateViewArray() != null)
+                                    Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
                             } else {
                                 ComputationGraphUpdater updaterReplica = ((ComputationGraph) replicatedModel).getUpdater();
-                                Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
+
+                                if (updaterReplica.getStateViewArray() != null)
+                                    Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
                             }
                         }
 
@@ -311,7 +314,9 @@ public class DefaultTrainer extends Thread implements Trainer {
                             Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(), AffinityManager.Location.HOST);
 
                             ComputationGraphUpdater updaterReplica = ((ComputationGraph) replicatedModel).getUpdater();
-                            Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
+
+                            if (updaterReplica.getStateViewArray() != null)
+                                Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
                         }
 
                         running.decrementAndGet();
