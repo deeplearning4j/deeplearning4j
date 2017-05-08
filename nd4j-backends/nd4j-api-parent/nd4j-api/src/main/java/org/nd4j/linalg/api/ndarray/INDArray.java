@@ -1645,6 +1645,17 @@ public interface INDArray extends Serializable {
      */
     INDArray sum(int... dimension);
 
+
+
+    /**
+     * Returns the sum along the last dimension of this ndarray
+     *
+     * @param result result of this operation will be stored here
+     * @param dimension the dimension to getScalar the sum along
+     * @return the sum along the specified dimension of this ndarray
+     */
+    INDArray sum(INDArray result, int... dimension);
+
     /**
      * Sum the entire array
      * @return

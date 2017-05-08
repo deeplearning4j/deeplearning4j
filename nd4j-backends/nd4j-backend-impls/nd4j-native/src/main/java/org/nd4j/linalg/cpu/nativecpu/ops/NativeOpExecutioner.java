@@ -261,14 +261,30 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         /**
          * This is the result array.
+         * We create it only if we hadn't provided it before
          */
         INDArray ret;
-        if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
-            ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-        else
-            ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
+        if (op.z() == null || op.z() == op.x()) {
 
-        op.setZ(ret);
+            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
+                ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+            else
+                ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
+
+            op.setZ(ret);
+        } else {
+            // compare length
+            if (op.z().lengthLong() != ArrayUtil.prodLong(retShape))
+                throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
+
+            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+                op.z().assign(op.zeroDouble());
+            } else {
+                op.z().assign(op.zeroFloat());
+            }
+
+            ret = op.z();
+        }
 
         /**
          * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}

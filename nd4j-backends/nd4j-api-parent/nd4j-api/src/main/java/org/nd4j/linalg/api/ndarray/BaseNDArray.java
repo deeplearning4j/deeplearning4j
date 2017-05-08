@@ -3772,6 +3772,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
 
+    @Override
+    public INDArray sum(INDArray result, int... dimension) {
+        return Nd4j.getExecutioner().exec(new Sum(this, null, result), dimension);
+    }
+
+
     /**
      * Returns the norm1 along the specified dimension
      *

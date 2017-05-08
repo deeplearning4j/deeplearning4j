@@ -4097,6 +4097,20 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testZ1() throws Exception {
+        INDArray matrix = Nd4j.create(10, 10).assign(1.0);
+
+        INDArray exp = Nd4j.create(10).assign(10.0);
+
+        INDArray res = Nd4j.create(10);
+        INDArray sums = matrix.sum(res, 0);
+
+        assertTrue(res == sums);
+
+        assertEquals(exp, res);
+    }
+
     @Override
     public char ordering() {
         return 'c';
