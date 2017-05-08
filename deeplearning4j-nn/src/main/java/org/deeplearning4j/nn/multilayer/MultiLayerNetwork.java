@@ -933,11 +933,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public void setParams(INDArray params) {
-        if (flattenedParams == params)
+        if (flattenedParams == params) {
             return; //No op
+        }
 
         if (flattenedParams != null && params.length() == flattenedParams.length()) {
-            flattenedParams.assign(params);
+            if (params != flattenedParams) {
+                flattenedParams.assign(params);
+            }
         } else {
             if (flattenedParams == null)
                 flattenedParams = params.dup();
