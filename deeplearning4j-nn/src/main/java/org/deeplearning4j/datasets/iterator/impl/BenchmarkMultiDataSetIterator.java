@@ -35,6 +35,8 @@ public class BenchmarkMultiDataSetIterator implements MultiDataSetIterator {
             baseLabels[i] = Nd4j.create(featuresShape[i][0], numLabels[i]);
             baseLabels[i].getColumn(1).assign(1.0);
         }
+
+        Nd4j.getExecutioner().commit();
         this.limit = totalIterations;
     }
 
@@ -47,6 +49,8 @@ public class BenchmarkMultiDataSetIterator implements MultiDataSetIterator {
         for(int i = 0; i < example.getLabels().length; i++) {
             baseFeatures[i] = example.getLabels()[i].dup();
         }
+
+        Nd4j.getExecutioner().commit();
         this.limit = totalIterations;
     }
 

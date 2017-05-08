@@ -27,12 +27,16 @@ public class BenchmarkDataSetIterator implements DataSetIterator {
         this.baseFeatures = Nd4j.rand(featuresShape);
         this.baseLabels = Nd4j.create(featuresShape[0], numLabels);
         this.baseLabels.getColumn(1).assign(1.0);
+
+        Nd4j.getExecutioner().commit();
         this.limit = totalIterations;
     }
 
     public BenchmarkDataSetIterator(DataSet example, int totalIterations) {
         this.baseFeatures = example.getFeatures().dup();
         this.baseLabels = example.getLabels().dup();
+
+        Nd4j.getExecutioner().commit();
         this.limit = totalIterations;
     }
 
