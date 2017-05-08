@@ -34,7 +34,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.AdaGradUpdater;
+import org.nd4j.linalg.learning.legacy.AdaGrad;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +73,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
 
 
 
-    protected AdaGradUpdater adaGrad;
+    protected AdaGrad adaGrad;
 
     @Getter
     @Setter
@@ -103,7 +103,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     }
 
     protected void initAdaGrad() {
-        adaGrad = new AdaGradUpdater(new int[] {vocab.numWords() + 1, vectorLength}, lr.get());
+        adaGrad = new AdaGrad(new int[] {vocab.numWords() + 1, vectorLength}, lr.get());
     }
 
     public double[] getExpTable() {
