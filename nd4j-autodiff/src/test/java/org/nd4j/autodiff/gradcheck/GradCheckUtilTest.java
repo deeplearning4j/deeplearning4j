@@ -10,6 +10,8 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 
+import static org.junit.Assert.assertTrue;
+
 /**
  * Created by agibsonccc on 5/7/17.
  */
@@ -24,7 +26,8 @@ public class GradCheckUtilTest {
         INDArray scalar = Nd4j.ones(1);
         TensorGradVariable var = tensorGrad.var("x",scalar);
         TensorGradVariable sigmooid = tensorGrad.sigmoid(var);
-        GradCheckUtil.checkGradients(sigmooid,var,1e-6,1e-6,false, Collections.singletonMap("x",scalar));
+        assertTrue(GradCheckUtil.checkGradients(sigmooid,var,1e-6,1e-6,false,
+                Collections.singletonMap("x",scalar)));
 
 
     }

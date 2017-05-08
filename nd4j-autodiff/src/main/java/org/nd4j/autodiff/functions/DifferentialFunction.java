@@ -12,6 +12,7 @@ import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 
 
@@ -202,6 +203,8 @@ public abstract class DifferentialFunction<X extends Field<X>>
                     .shape(shape).build();
             //result
             NDArrayVertex newVertex = new NDArrayVertex(graph.numVertices(),arrInfo);
+            if(newVertex.vertexID() == v2VertexId || newVertex.vertexID() == v1VertexId)
+                throw new ND4JIllegalStateException("Illegal vertex id specified in new vertex. Perhaps a mismatched graph call? Another likely cause is applyGraph");
             this.vertexId = newVertex.vertexID();
             //add the result vertex
             graph.addVertex(newVertex);

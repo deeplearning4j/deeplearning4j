@@ -1,6 +1,8 @@
 package org.nd4j.autodiff.functions;
 
+import com.rits.cloning.Cloner;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.graph.Graph;
@@ -14,6 +16,7 @@ import java.lang.reflect.Constructor;
 import java.util.List;
 
 @Data
+@NoArgsConstructor
 public abstract class AbstractUnaryFunction<X extends Field<X>> extends DifferentialFunction<X> {
 
     protected DifferentialFunction<X> m_x;
@@ -124,12 +127,8 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
 
     @Override
     public DifferentialFunction<X> dup() {
-        try {
-            return getClass().getConstructor(graph.getClass(),arg().getClass(),int[].class,Object[].class)
-                    .newInstance(graph,arg(),shape,extraArgs);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        Cloner cloner = new Cloner();
+        return cloner.deepClone(this);
     }
 }
 

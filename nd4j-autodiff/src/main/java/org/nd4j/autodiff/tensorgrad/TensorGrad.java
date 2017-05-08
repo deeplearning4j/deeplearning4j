@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.tensorgrad;
 
+import com.rits.cloning.Cloner;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -94,10 +95,8 @@ public class TensorGrad {
             if(!variableMap.containsKey(s))
                 throw new IllegalArgumentException("Illegal key for variables " + s);
         }
+
         TensorGrad execPipeline = dup();
-        for(Map.Entry<String,INDArray> variableEntry : inputs.entrySet()) {
-            execPipeline.updateNDArray(variableEntry.getKey(),variableEntry.getValue());
-        }
 
         List<Op> opExecAction = execPipeline.exec();
         if(opExecAction.isEmpty())
@@ -110,21 +109,8 @@ public class TensorGrad {
     }
 
     public TensorGrad dup() {
-        TensorGradGraph tensorGradGraph = TensorGradGraph.builder()
-                .allowMultipleEdges(graph.isAllowMultipleEdges())
-                .frozen(graph.isFrozen())
-                .edges(new HashMap<>(graph.getEdges()))
-                .incomingEdges(new HashMap<>(graph.getIncomingEdges()))
-                .vertices(new HashMap<>(graph.getVertices()))
-                .build();
-        TensorGrad ret = TensorGrad.builder()
-                .arrayFactory(new ArrayFactory(tensorGradGraph))
-                .graph(tensorGradGraph)
-                .tensorGradVariables(new ArrayList<>(tensorGradVariables))
-                .variableMap(new HashMap<>(variableMap))
-                .arrayFieldDifferentialFunctionFactory(arrayFieldDifferentialFunctionFactory)
-                .build();
-        return ret;
+        Cloner cloner = new Cloner();
+        return cloner.deepClone(this);
     }
 
 
@@ -935,6 +921,9 @@ public class TensorGrad {
     public List<Op> exec() {
         allocate();
         List<Op> ops = new ArrayList<>();
+        if(graph().numVertices() == 0)
+            throw new ND4JIllegalStateException("Unable to run exec pipeline. No vertices in graph");
+
         for(OpExecAction opExecAction : graph().getOpOrder().getActions()) {
             Op op = createOp(opExecAction.getOpState().getOpType(),
                     opExecAction);

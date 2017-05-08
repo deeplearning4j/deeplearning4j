@@ -70,9 +70,9 @@ public class GradCheckUtil {
         TensorGradGraph gradGraph = new TensorGradGraph();
         tensorGrad.graph().setGraphApply(gradGraph);
         //set the graph back to normal
-        tensorGrad.grad(function,wrt);
         tensorGrad.graph().setGraphApply(null);
-        TensorGrad opExec = TensorGrad.create(tensorGrad,gradGraph);
+        tensorGrad.grad(function,wrt);
+        TensorGrad opExec = TensorGrad.create(tensorGrad,tensorGrad.graph());
 
         INDArray[] eval = opExec.eval(inputParameters);
         int totalNFailures = 0;
