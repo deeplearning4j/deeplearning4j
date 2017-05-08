@@ -2,57 +2,50 @@ package org.deeplearning4j.datasets.iterator.impl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.MultiDataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Dataset iterator for simulated inputs, or input derived from a DataSet example. Primarily
+ * MultiDataset iterator for simulated inputs, or input derived from a MultiDataSet example. Primarily
  * used for benchmarking.
  *
  * @author Justin Long (crockpotveggies)
  */
 @Slf4j
-public class BenchmarkDataSetIterator implements DataSetIterator {
-    private INDArray baseFeatures;
-    private INDArray baseLabels;
+public class BenchmarkMultiDataSetIterator implements MultiDataSetIterator {
+    private INDArray[] baseFeatures;
+    private INDArray[] baseLabels;
     private long limit;
     private AtomicLong counter = new AtomicLong(0);
 
-    public BenchmarkDataSetIterator(int[] featuresShape, int numLabels, int totalIterations) {
-        this.baseFeatures = Nd4j.rand(featuresShape);
-        this.baseLabels = Nd4j.rand(featuresShape[0], numLabels);
+    public BenchmarkMultiDataSetIterator(int[][] featuresShape, int[] numLabels, int totalIterations) {
+        if(featuresShape.length != numLabels.length)
+            throw new IllegalArgumentException("Number of input features must match length of input labels.");
+
+        this.baseFeatures = new INDArray[featuresShape.length];
+        for(int i = 0; i < featuresShape.length; i++) {
+            baseFeatures[i] = Nd4j.rand(featuresShape[i]);
+        }
+        this.baseLabels = new INDArray[featuresShape.length];
+        for(int i = 0; i < featuresShape.length; i++) {
+            baseLabels[i] = Nd4j.rand(featuresShape[i][0], numLabels[i]);
+        }
         this.limit = totalIterations;
     }
 
-    public BenchmarkDataSetIterator(DataSet example, int totalIterations) {
+    public BenchmarkMultiDataSetIterator(MultiDataSet example, int totalIterations) {
         this.baseFeatures = example.getFeatures();
         this.baseLabels = example.getLabels();
         this.limit = totalIterations;
     }
 
     @Override
-    public DataSet next(int i) {
+    public MultiDataSet next(int i) {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int totalExamples() {
-        return 0;
-    }
-
-    @Override
-    public int inputColumns() {
-        return 0;
-    }
-
-    @Override
-    public int totalOutcomes() {
-        return 0;
     }
 
     @Override
@@ -71,32 +64,12 @@ public class BenchmarkDataSetIterator implements DataSetIterator {
     }
 
     @Override
-    public int batch() {
-        return 0;
-    }
-
-    @Override
-    public int cursor() {
-        return 0;
-    }
-
-    @Override
-    public int numExamples() {
-        return 0;
-    }
-
-    @Override
-    public void setPreProcessor(DataSetPreProcessor dataSetPreProcessor) {
+    public void setPreProcessor(MultiDataSetPreProcessor dataSetPreProcessor) {
 
     }
 
     @Override
-    public DataSetPreProcessor getPreProcessor() {
-        return null;
-    }
-
-    @Override
-    public List<String> getLabels() {
+    public MultiDataSetPreProcessor getPreProcessor() {
         return null;
     }
 
@@ -118,12 +91,19 @@ public class BenchmarkDataSetIterator implements DataSetIterator {
      * @return the next element in the iteration
      */
     @Override
-    public DataSet next() {
+    public MultiDataSet next() {
         counter.incrementAndGet();
 
-        INDArray features = baseFeatures.dup();
-        INDArray labels = baseLabels.dup();
-        DataSet ds = new DataSet(features, labels);
+        INDArray[] features = new INDArray[baseFeatures.length];
+        for(int i = 0; i < baseFeatures.length; i++) {
+            features[i] = baseFeatures[i].dup();
+        }
+        INDArray[] labels = new INDArray[baseLabels.length];
+        for(int i = 0; i < baseLabels.length; i++) {
+            labels[i] = baseLabels[i].dup();
+        }
+
+        MultiDataSet ds = new MultiDataSet(features, labels);
 
         return ds;
     }
