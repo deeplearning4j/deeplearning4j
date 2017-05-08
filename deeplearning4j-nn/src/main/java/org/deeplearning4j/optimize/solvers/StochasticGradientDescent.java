@@ -63,7 +63,7 @@ public class StochasticGradientDescent extends BaseOptimizer {
             Gradient gradient = pair.getFirst();
 
             INDArray params = model.params();
-            //log.info("STEP: {}", stepFunction.getClass().getSimpleName());
+            log.info("STEP: {}", stepFunction.getClass().getSimpleName());
             stepFunction.step(params, gradient.gradient());
 
             //Nd4j.getExecutioner().commit();
