@@ -1572,6 +1572,14 @@ public interface INDArray extends Serializable {
      */
     INDArray mean(int... dimension);
 
+    /**
+     * Returns the overall mean of this ndarray
+     *
+     * @param dimension the dimension to getScalar the mean along
+     * @return the mean along the specified dimension of this ndarray
+     */
+    INDArray mean(INDArray result, int... dimension);
+
     Number meanNumber();
 
     IComplexNumber meanComplex();

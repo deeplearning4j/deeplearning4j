@@ -3715,6 +3715,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.getExecutioner().exec(new Mean(this), dimension);
     }
 
+    @Override
+    public INDArray mean(INDArray result, int... dimension) {
+        return Nd4j.getExecutioner().exec(new Mean(this, null, result), dimension);
+    }
+
     /**
      * Returns the overall variance of this ndarray
      *
