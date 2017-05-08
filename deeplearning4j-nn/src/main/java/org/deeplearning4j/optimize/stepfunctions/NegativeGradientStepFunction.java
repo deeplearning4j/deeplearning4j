@@ -38,7 +38,7 @@ public class NegativeGradientStepFunction implements StepFunction {
 
     @Override
     public void step(INDArray x, INDArray line) {
-        x.subi(line.transpose());
+        x.subi(line);
     }
 
     @Override
