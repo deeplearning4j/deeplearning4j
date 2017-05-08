@@ -25,7 +25,9 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TerminationCondition;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collection;
 
@@ -64,8 +66,10 @@ public class StochasticGradientDescent extends BaseOptimizer {
             model.setParams(params);
 
             int iterationCount = BaseOptimizer.getIterationCount(model);
-            for (IterationListener listener : iterationListeners)
-                listener.iterationDone(model, iterationCount);
+            try(MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                for (IterationListener listener : iterationListeners)
+                    listener.iterationDone(model, iterationCount);
+            }
 
             checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, i);
 

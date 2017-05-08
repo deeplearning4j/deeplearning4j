@@ -234,8 +234,11 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
             //invoke listeners
             int iterationCount = BaseOptimizer.getIterationCount(model);
-            for (IterationListener listener : iterationListeners)
-                listener.iterationDone(model, iterationCount);
+            try(MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                for (IterationListener listener : iterationListeners)
+                    listener.iterationDone(model, iterationCount);
+            }
+
 
             //check for termination conditions based on absolute change in score
             checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, i);
