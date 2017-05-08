@@ -49,6 +49,10 @@ public class Sum extends BaseAccumulation {
         super(x, y);
     }
 
+    public Sum(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.lengthLong());
+    }
+
     @Override
     public double update(double accum, double x) {
         return accum + x;

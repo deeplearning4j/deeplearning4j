@@ -162,6 +162,9 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
         Nd4jWorkspace ws1 = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ITER");
 
+        long requiredMemory = 100 * Nd4j.sizeOfDataType();
+        long shiftedSize = ((long)(requiredMemory * 1.3)) + (8 -(((long)(requiredMemory * 1.3)) % 8));
+
         for (int x = 0; x < 100; x++) {
             try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, "ITER").notifyScopeEntered()) {
                 INDArray array = Nd4j.create(100);
@@ -169,13 +172,8 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
             // only checking after workspace is initialized
             if (x > 4) {
-                assertEquals(5 * 100 * Nd4j.sizeOfDataType(), ws1.getCurrentSize());
-
-                // if we've passed 5 iterations - workspace is initialized, and now offset mechanics works
-  //              if (x % 5 == 0)
-//                    assertEquals(2000, ws1.getHostOffset());
-  //              else
-//                    assertEquals((x % 5) * 100 * Nd4j.sizeOfDataType(), ws1.getHostOffset());
+                assertEquals(shiftedSize, ws1.getInitialBlockSize());
+                assertEquals(5 * shiftedSize, ws1.getCurrentSize());
             } else if (x < 4) {
                 // we're making sure we're not initialize early
                 assertEquals("Failed on iteration " + x,0, ws1.getCurrentSize());
@@ -183,7 +181,7 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         }
 
         // maximum allocation amount is 100 elements during learning, and additional coefficient is 4.0. result is workspace of 500 elements
-        assertEquals(5 * 100 * Nd4j.sizeOfDataType(), ws1.getCurrentSize());
+        assertEquals(5 * shiftedSize, ws1.getCurrentSize());
 
         assertNull(Nd4j.getMemoryManager().getCurrentWorkspace());
     }
@@ -433,10 +431,12 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
                 Nd4j.create(10000);
             }
 
+         /*
             if (i < 10480000)
                 assertEquals("I: " + i,1, workspace.getNumberOfExternalAllocations());
             else
                 assertEquals(0, workspace.getNumberOfExternalAllocations());
+                */
         }
 
         assertEquals(0, workspace.getNumberOfExternalAllocations());
@@ -455,7 +455,10 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             array1 = Nd4j.create(8, 128, 100);
         }
 
-        assertEquals(8 * 128 * 100 * 4 * 4, workspace.getCurrentSize());
+        long requiredMemory = 8 * 128 * 100 * Nd4j.sizeOfDataType();
+        long shiftedSize = ((long)(requiredMemory * 1.3))+ (8 -(((long)(requiredMemory * 1.3)) % 8));
+        assertEquals(shiftedSize, workspace.getInitialBlockSize());
+        assertEquals(shiftedSize * 4, workspace.getCurrentSize());
         assertEquals(0, workspace.getHostOffset());
         assertEquals(0, workspace.getDeviceOffset());
 
@@ -468,8 +471,8 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
             array1 = Nd4j.create(8, 128, 100);
         }
 
-        assertEquals(8 * 128 * 100 * 4, workspace.getHostOffset());
-        assertEquals(8 * 128 * 100 * 4, workspace.getDeviceOffset());
+        assertEquals(workspace.getInitialBlockSize(), workspace.getHostOffset());
+        assertEquals(workspace.getInitialBlockSize(), workspace.getDeviceOffset());
 
         assertEquals(2, workspace.getCyclesCount());
         assertEquals(0, workspace.getStepNumber());
@@ -481,8 +484,8 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         }
 
         // offsets should be intact, allocation happened as pinned
-        assertEquals(8 * 128 * 100 * 4, workspace.getHostOffset());
-        assertEquals(8 * 128 * 100 * 4, workspace.getDeviceOffset());
+        assertEquals(workspace.getInitialBlockSize(), workspace.getHostOffset());
+        assertEquals(workspace.getInitialBlockSize(), workspace.getDeviceOffset());
 
         assertEquals(1, workspace.getNumberOfPinnedAllocations());
 
@@ -517,9 +520,13 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
         // Now we know that workspace was reallocated and offset was shifted to the end of workspace
         assertEquals(4, workspace.getStepNumber());
-        assertEquals(8 * 128 * 200 * 4 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
-        assertEquals(8 * 128 * 200 * 4 * Nd4j.sizeOfDataType(), workspace.getHostOffset());
-        assertEquals(8 * 128 * 200 * 4 * Nd4j.sizeOfDataType(), workspace.getDeviceOffset());
+
+        requiredMemory = 8 * 128 * 200 * Nd4j.sizeOfDataType();
+        shiftedSize = ((long)(requiredMemory * 1.3))+ (8 -(((long)(requiredMemory * 1.3)) % 8));
+
+        assertEquals(shiftedSize * 4, workspace.getCurrentSize());
+        assertEquals(workspace.getCurrentSize(), workspace.getHostOffset());
+        assertEquals(workspace.getCurrentSize(), workspace.getDeviceOffset());
 
     }
 
@@ -577,11 +584,11 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
 
             Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(circularConfiguration, "WSX");
             assertEquals(10 * 1024 * 1024L, workspace.getCurrentSize());
-            log.info("Step number: {}", workspace.getStepNumber());
+            log.info("Current step number: {}", workspace.getStepNumber());
             if (i == 0)
                 assertEquals(0, workspace.getHostOffset());
             else if (i == 1)
-                assertEquals(10 * Nd4j.sizeOfDataType(), workspace.getHostOffset());
+                assertEquals(workspace.getInitialBlockSize(), workspace.getHostOffset());
         }
 
     }

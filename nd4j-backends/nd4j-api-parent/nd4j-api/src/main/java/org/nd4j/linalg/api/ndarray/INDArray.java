@@ -735,12 +735,6 @@ public interface INDArray extends Serializable {
     INDArray divi(Number n, INDArray result);
 
 
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
     INDArray mul(Number n, INDArray result);
 
 
@@ -754,14 +748,6 @@ public interface INDArray extends Serializable {
     INDArray muli(Number n, INDArray result);
 
 
-    /**
-     * Sub the given number from this array
-     * putting it in the specified
-     * result array
-     * @param n
-     * @param result
-     * @return
-     */
     INDArray sub(Number n, INDArray result);
 
     /**
@@ -773,12 +759,6 @@ public interface INDArray extends Serializable {
      */
     INDArray subi(Number n, INDArray result);
 
-    /**
-     *
-     * @param n
-     * @param result
-     * @return
-     */
     INDArray add(Number n, INDArray result);
 
     /**
@@ -1593,9 +1573,13 @@ public interface INDArray extends Serializable {
     INDArray mean(int... dimension);
 
     /**
+     * Returns the overall mean of this ndarray
      *
-     * @return
+     * @param dimension the dimension to getScalar the mean along
+     * @return the mean along the specified dimension of this ndarray
      */
+    INDArray mean(INDArray result, int... dimension);
+
     Number meanNumber();
 
     IComplexNumber meanComplex();
@@ -1668,6 +1652,17 @@ public interface INDArray extends Serializable {
      * @return the sum along the specified dimension of this ndarray
      */
     INDArray sum(int... dimension);
+
+
+
+    /**
+     * Returns the sum along the last dimension of this ndarray
+     *
+     * @param result result of this operation will be stored here
+     * @param dimension the dimension to getScalar the sum along
+     * @return the sum along the specified dimension of this ndarray
+     */
+    INDArray sum(INDArray result, int... dimension);
 
     /**
      * Sum the entire array

@@ -55,7 +55,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
         init();
         if (y != null)
             LinAlgExceptions.assertSameLength(x, y);
-        LinAlgExceptions.assertSameLength(x, z);
+        //LinAlgExceptions.assertSameLength(x, z);
 
     }
 
@@ -74,7 +74,10 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     }
 
     private void init() {
-        init(x, y, x, x.lengthLong());
+        if (z == null || x == z)
+            init(x, y, x, x.lengthLong());
+        else
+            init(x, y, z, x.lengthLong());
     }
 
     @Override

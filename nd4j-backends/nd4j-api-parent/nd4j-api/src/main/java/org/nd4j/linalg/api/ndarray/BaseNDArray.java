@@ -23,7 +23,6 @@ package org.nd4j.linalg.api.ndarray;
 import com.google.common.primitives.Ints;
 import net.ericaro.neoitertools.Generator;
 import org.apache.commons.math3.util.Pair;
-import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.blas.BlasBufferUtil;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
@@ -31,7 +30,6 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.instrumentation.Instrumentation;
 import org.nd4j.linalg.api.iter.FirstAxisIterator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.Max;
@@ -45,7 +43,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.Negative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -100,7 +97,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected boolean cleanedUp = false;
     protected int numLeadingOnes = -1;
     protected int numTrailingOnes = -1;
-    protected Boolean isVector = null;
     protected Boolean isMatrix = null;
     protected Boolean isScalar = null;
     protected boolean isWrapAround = false;
@@ -3719,6 +3715,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.getExecutioner().exec(new Mean(this), dimension);
     }
 
+    @Override
+    public INDArray mean(INDArray result, int... dimension) {
+        return Nd4j.getExecutioner().exec(new Mean(this, null, result), dimension);
+    }
+
     /**
      * Returns the overall variance of this ndarray
      *
@@ -3773,6 +3774,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray sum(int... dimension) {
         return Nd4j.getExecutioner().exec(new Sum(this), dimension);
+    }
+
+
+    @Override
+    public INDArray sum(INDArray result, int... dimension) {
+        return Nd4j.getExecutioner().exec(new Sum(this, null, result), dimension);
     }
 
 
