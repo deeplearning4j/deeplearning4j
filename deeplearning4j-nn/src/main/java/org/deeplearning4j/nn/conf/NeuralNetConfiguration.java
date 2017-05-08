@@ -1122,11 +1122,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     layer.setDropOut(dropOut);
                 if (layer.getUpdater() == null)
                     layer.setUpdater(updater);
-                //                updaterValidation(layerName);
                 if (layer.getIUpdater() == null){
                     layer.setIUpdater(iUpdater.clone());
                 }
-                LayerValidation.updaterValidation(layerName, layer, momentum, momentumSchedule, adamMeanDecay,
+                LayerValidation.updaterValidation(layerName, layer, learningRate, momentum, momentumSchedule, adamMeanDecay,
                                 adamVarDecay, rho, rmsDecay, epsilon);
                 if (layer.getGradientNormalization() == null)
                     layer.setGradientNormalization(gradientNormalization);

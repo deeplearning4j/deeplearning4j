@@ -79,8 +79,10 @@ public abstract class Layer implements Serializable, Cloneable {
     protected double biasLearningRate;
     //learning rate after n iterations
     protected Map<Integer, Double> learningRateSchedule;
+    @Deprecated
     protected double momentum;
     //momentum after n iterations
+    @Deprecated
     protected Map<Integer, Double> momentumSchedule;
     protected double l1;
     protected double l2;
@@ -91,11 +93,16 @@ public abstract class Layer implements Serializable, Cloneable {
     protected Updater updater;
     protected IUpdater iUpdater;
     //adadelta - weight for how much to consider previous history
+    @Deprecated
     protected double rho;
     //Epsilon value for adagrad and adadelta
+    @Deprecated
     protected double epsilon;
+    @Deprecated
     protected double rmsDecay;
+    @Deprecated
     protected double adamMeanDecay;
+    @Deprecated
     protected double adamVarDecay;
     protected GradientNormalization gradientNormalization = GradientNormalization.None; //Clipping, rescale based on l2 norm, etc
     protected double gradientNormalizationThreshold = 1.0; //Threshold for l2 and element-wise gradient clipping
@@ -118,6 +125,7 @@ public abstract class Layer implements Serializable, Cloneable {
         this.l2Bias = builder.l2Bias;
         this.dropOut = builder.dropOut;
         this.updater = builder.updater;
+        this.iUpdater = builder.iupdater;
         this.rho = builder.rho;
         this.epsilon = builder.epsilon;
         this.rmsDecay = builder.rmsDecay;
@@ -276,7 +284,9 @@ public abstract class Layer implements Serializable, Cloneable {
         protected double learningRate = Double.NaN;
         protected double biasLearningRate = Double.NaN;
         protected Map<Integer, Double> learningRateSchedule = null;
+        @Deprecated
         protected double momentum = Double.NaN;
+        @Deprecated
         protected Map<Integer, Double> momentumAfter = null;
         protected double l1 = Double.NaN;
         protected double l2 = Double.NaN;
@@ -286,10 +296,15 @@ public abstract class Layer implements Serializable, Cloneable {
         @Deprecated
         protected Updater updater = null;
         protected IUpdater iupdater = null;
+        @Deprecated
         protected double rho = Double.NaN;
+        @Deprecated
         protected double epsilon = Double.NaN;
+        @Deprecated
         protected double rmsDecay = Double.NaN;
+        @Deprecated
         protected double adamMeanDecay = Double.NaN;
+        @Deprecated
         protected double adamVarDecay = Double.NaN;
         protected GradientNormalization gradientNormalization = null;
         protected double gradientNormalizationThreshold = Double.NaN;
@@ -443,8 +458,6 @@ public abstract class Layer implements Serializable, Cloneable {
          * @see Updater
          */
         public T updater(Updater updater) {
-//            this.updater = updater;
-//            return (T) this;
             return updater(UpdaterUtils.enumToConfigWithDefaults(updater));
         }
 

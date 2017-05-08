@@ -887,4 +887,80 @@ public class TestUpdaters {
         }
         assertEquals(expParams, actParams);
     }
+
+
+    @Test
+    public void testUpdaterConfigDeprecatedMethods(){
+        //.momentum(), .epsilon() etc - these are now deprecated, but we still want them to work as expected
+        // until they are actually removed
+
+        double lr = 0.75;
+        double eps = 0.65;
+        double adamMean = 0.1;
+        double adamVar = 0.2;
+        double momentum = 0.3;
+        Map<Integer,Double> momentumSchedule = new HashMap<>();
+        momentumSchedule.put(0, 0.35);
+        momentumSchedule.put(10, 0.34);
+        double rmsDecay = 0.4;
+
+        for( boolean useEnum : new boolean[]{true, false}) {
+            NeuralNetConfiguration.ListBuilder listBuilder = new NeuralNetConfiguration.Builder()
+                    //Multiple updaters
+                    .learningRate(lr)
+                    .epsilon(eps)
+                    //Adam
+                    .adamMeanDecay(adamMean)
+                    .adamVarDecay(adamVar)
+                    //Momentum
+                    .momentum(momentum)
+                    .momentumAfter(momentumSchedule)
+                    //RMSProp
+                    .rmsDecay(rmsDecay)
+                    .list();
+            if(useEnum){
+                listBuilder.layer(0, new DenseLayer.Builder().nIn(10).nOut(10).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+                        .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).updater(org.deeplearning4j.nn.conf.Updater.ADAM).build())
+                        .layer(2, new DenseLayer.Builder().nIn(10).nOut(10).updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
+                        .layer(3, new DenseLayer.Builder().nIn(10).nOut(10).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
+                        .layer(4, new DenseLayer.Builder().nIn(10).nOut(10).updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
+                        .layer(5, new DenseLayer.Builder().nIn(10).nOut(10).updater(org.deeplearning4j.nn.conf.Updater.RMSPROP).build());
+            } else {
+                listBuilder.layer(0, new DenseLayer.Builder().nIn(10).nOut(10).updater(new Sgd()).build())
+                        .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).updater(new Adam()).build())
+                        .layer(2, new DenseLayer.Builder().nIn(10).nOut(10).updater(new AdaDelta()).build())
+                        .layer(3, new DenseLayer.Builder().nIn(10).nOut(10).updater(new Nesterovs()).build())
+                        .layer(4, new DenseLayer.Builder().nIn(10).nOut(10).updater(new AdaGrad()).build())
+                        .layer(5, new DenseLayer.Builder().nIn(10).nOut(10).updater(new RmsProp()).build());
+            }
+
+
+            MultiLayerConfiguration conf = listBuilder.build();
+
+            Sgd sgd = (Sgd) conf.getConf(0).getLayer().getIUpdater();
+            assertEquals(lr, sgd.getLearningRate(), 1e-6);
+
+            Adam adam = (Adam) conf.getConf(1).getLayer().getIUpdater();
+            assertEquals(lr, adam.getLearningRate(), 1e-6);
+            assertEquals(eps, adam.getEpsilon(), 1e-6);
+            assertEquals(adamMean, adam.getBeta1(), 1e-6);
+            assertEquals(adamVar, adam.getBeta2(), 1e-6);
+
+            //Adadelta: no params
+
+            Nesterovs nesterovs = (Nesterovs) conf.getConf(3).getLayer().getIUpdater();
+            assertEquals(lr, nesterovs.getLearningRate(), 1e-6 );
+            assertEquals(momentum, nesterovs.getMomentum(), 1e-6);
+            assertEquals(momentumSchedule, nesterovs.getMomentumSchedule());
+
+            AdaGrad adagrad = (AdaGrad) conf.getConf(4).getLayer().getIUpdater();
+            assertEquals(lr, adagrad.getLearningRate(), 1e-6);
+            assertEquals(eps, adagrad.getEpsilon(), 1e-6);
+
+            RmsProp rmsProp = (RmsProp) conf.getConf(5).getLayer().getIUpdater();
+            assertEquals(lr, rmsProp.getLearningRate(), 1e-6);
+            assertEquals(rmsDecay, rmsProp.getRmsDecay(), 1e-6);
+            assertEquals(eps, rmsProp.getEpsilon(), 1e-6);
+        }
+    }
 }

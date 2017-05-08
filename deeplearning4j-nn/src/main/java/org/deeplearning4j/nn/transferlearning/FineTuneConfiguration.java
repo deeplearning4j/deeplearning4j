@@ -253,7 +253,7 @@ public class FineTuneConfiguration {
 
         //Perform validation. This also sets the defaults for updaters. For example, Updater.RMSProp -> set rmsDecay
         if (l != null) {
-            LayerValidation.updaterValidation(l.getLayerName(), l, momentum, momentumSchedule, adamMeanDecay,
+            LayerValidation.updaterValidation(l.getLayerName(), l, learningRate, momentum, momentumSchedule, adamMeanDecay,
                             adamVarDecay, rho, rmsDecay, epsilon);
 
             boolean useDropCon = (useDropConnect == null ? nnc.isUseDropConnect() : useDropConnect);

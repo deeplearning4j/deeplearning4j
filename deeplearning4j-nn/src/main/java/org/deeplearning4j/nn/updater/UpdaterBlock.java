@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.GradientUpdater;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
@@ -198,7 +199,7 @@ public class UpdaterBlock {
 
         //Handle momentum schedules
         double newMomentum = 0.0;
-        if (layer.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS) {
+        if (layer.conf().getLayer().getIUpdater() instanceof Nesterovs) {
             if (conf.getLayer().getMomentumSchedule().containsKey(iteration)) {
                 newMomentum = conf.getLayer().getMomentumSchedule().get(iteration);
             } else {
@@ -210,19 +211,13 @@ public class UpdaterBlock {
         // same block) share the same LR schedule
         for (ParamState vs : layersAndVariablesInBlock) {
             vs.getLayer().conf().setLearningRateByParam(vs.getParamName(), newLr);
-            if (layer.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS) {
+            if (layer.conf().getLayer().getIUpdater() instanceof Nesterovs) {
                 vs.getLayer().conf().getLayer().setMomentum(newMomentum);
             }
         }
 
-//        if (layer.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS) {
-//            gradientUpdater.update(newLr, newMomentum);
-//        } else {
-//            gradientUpdater.update(newLr);
-//        }
-
-        //Apply the new LR
-        //TODO momentum
+        //Apply the new LR according to the schedule.
+        //Note: momentum schedules are applied internally in the Nesterov config object applySchedules method
         gradientUpdater.getConfig().applySchedules(iteration, newLr);
     }
 }
