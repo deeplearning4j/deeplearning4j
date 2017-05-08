@@ -78,6 +78,11 @@ Nd4j.getMemoryManager().togglePeriodicGc(false);
 
 You can put that somewhere before your `model.fit(...)` call.
 
+## Workspaces destruction
+There are possible situations, where you're tight in RAM, and might want do release all workspaces created during out of your control, i.e. during evaluation, or training.
+That could be done using this: `Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();`
+
+Basically this method will destroy all workspaces that were created within calling thread. If you've created workspaces in some external threads on your own - you can use the same method in that thread, after workspaces aren't needed anymore.
 
 
 
