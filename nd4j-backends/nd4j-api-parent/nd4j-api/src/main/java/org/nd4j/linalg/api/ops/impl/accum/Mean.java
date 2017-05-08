@@ -48,6 +48,10 @@ public class Mean extends Sum {
         super(x, y);
     }
 
+    public Mean(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z, x.lengthLong());
+    }
+
     @Override
     public int opNum() {
         return 0;
