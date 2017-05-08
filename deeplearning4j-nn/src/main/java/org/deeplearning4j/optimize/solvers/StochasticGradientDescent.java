@@ -76,6 +76,8 @@ public class StochasticGradientDescent extends BaseOptimizer {
                     listener.iterationDone(model, iterationCount);
             }
 
+            Nd4j.getExecutioner().commit();
+
             long time4 = System.currentTimeMillis();
 
             checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, i);
