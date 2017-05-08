@@ -3,6 +3,7 @@ package org.nd4j.linalg.api.ndarray;
 import com.google.common.primitives.Ints;
 import net.ericaro.neoitertools.Generator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -52,8 +53,6 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         this.columnsPointers = Nd4j.getDataBufferFactory().createInt(valuesSpace);
         this.columnsPointers.setData(columnsPointers);
         nnz = columnsPointers.length;
-        System.out.println("nnz set for data[]");
-        // The size of these pointers are constant
         int pointersSpace = rows;
         this.pointerB = Nd4j.getDataBufferFactory().createInt(pointersSpace);
         this.pointerB.setData(pointerB);
@@ -282,6 +281,11 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     }
 
     @Override
+    public char ordering() {
+        return 'c';
+    }
+
+    @Override
     public INDArray toDense() {
         // Dummy way - going to use the conversion routines in level2 (?)
         INDArray result = Nd4j.zeros(shape());
@@ -307,6 +311,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
 
         int[] offsets = resolution.getOffsets();
         int[] shape = resolution.getShapes();
+        System.out.println("offset " + offsets[0] + " " + offsets[1] + " shape " + shape[0] + " " + shape[1]);
 
         List<Integer> accuColumns = new ArrayList<>();
         List<Integer> accuPointerB = new ArrayList<>();
@@ -319,8 +324,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
             int firstElement = 0;
             int lastElement = 0;
 
-            if(resolution.getOffset() != 0) {
-                //System.out.println("resolution offset " + (int)resolution.getOffset() + " length row "+ shape[1]);
+            if(resolution.getOffset() != 0 && offsets[0] == 0 && offsets[1] == 0) {
                 firstRow = (int)resolution.getOffset() / shape()[1];
                 lastRow = firstRow + shape[0];
                 firstElement = (int)resolution.getOffset() % shape()[1];
@@ -330,23 +334,25 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
                 lastRow = firstRow + shape[0];
                 firstElement = offsets [1];
                 lastElement = firstElement + shape[1];
+                if(resolution.getOffset() != 0) {
+                    //offsets[0] = (int)resolution.getOffset() / shape()[1]
+                    offsets[1] = (int) resolution.getOffset() % shape()[1];
+                    firstElement = offsets[1];
+                    lastElement = firstElement + shape[1];
+                    //System.out.println("2: offset " + offsets[0] + " " + offsets[1] + " shape " + shape[0] + " " + shape[1]);
+
+                }
             }
-
-            System.out.println(firstRow + " to " + lastRow);
-
-            for(int rowIdx = firstRow; rowIdx < lastRow; rowIdx++){
-                //System.out.println("Row : " + rowIdx);
+            
+            for(int rowIdx = firstRow, i = 0; rowIdx < lastRow; rowIdx++, i++){
                 boolean isFirstInRow = true;
                 for(int idx = pointerB.getInt(rowIdx); idx < pointerE.getInt(rowIdx); idx++){
-                    //System.out.println("Idx: " + idx);
                     int colIdx = columnsPointers.getInt(idx);
 
                     // add the element in the subarray it it belongs to the view
                     if(colIdx >= firstElement && colIdx < lastElement){
 
                         // add the new column pointer for this element
-                        //System.out.println("row " + rowIdx + " idx " + idx + "colidx " + colIdx);
-                        //System.out.println("value " + values.getNumber(idx) +" - add " + colIdx + " " + offsets[1]);
                         accuColumns.add(colIdx - offsets[1]);
 
                         if(isFirstInRow){
@@ -366,7 +372,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
 
                 // If the row doesn't contain any element
                 if(isFirstInRow){
-                    int lastIdx = rowIdx == 0 ? 0 : accuPointerE.get(rowIdx-1);
+                    int lastIdx = i == 0 ? 0 : accuPointerE.get(i-1);
                     accuPointerB.add(lastIdx);
                     accuPointerE.add(lastIdx);
                 }

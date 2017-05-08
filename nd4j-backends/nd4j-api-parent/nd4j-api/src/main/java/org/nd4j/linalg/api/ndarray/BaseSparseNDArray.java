@@ -29,7 +29,8 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     protected long length = -1;
     public static final boolean isSparse = true;
     protected transient volatile DataBuffer shapeInformation;
-    protected DataBuffer shape;
+    protected transient DataBuffer shape;
+    protected transient DataBuffer stride;
 
     protected DataBuffer reallocate(DataBuffer buffer) {
         int newSize = (int) buffer.length() * 2; // should be bound to max(nnz, size*2)
@@ -121,7 +122,15 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public int stride(int dimension) {
-        return stride()[dimension];
+        int rank = Shape.rank(shapeInformation);
+        if (dimension < 0)
+            return strideOf().getInt(dimension + rank);
+        return strideOf().getInt(dimension);
+    }
+    protected DataBuffer strideOf() {
+        if (stride == null)
+            stride = Shape.stride(shapeInfoDataBuffer());
+        return stride;
     }
 
     @Override

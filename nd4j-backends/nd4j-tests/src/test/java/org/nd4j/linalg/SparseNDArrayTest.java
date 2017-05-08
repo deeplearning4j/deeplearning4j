@@ -9,6 +9,8 @@ import org.nd4j.linalg.api.ndarray.ISparseNDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.*;
 
 
@@ -135,8 +137,6 @@ public class SparseNDArrayTest {
 
         INDArray array = Nd4j.create(data, new int[]{5,5}, 0, 'c');
         INDArray denseView = array.get(NDArrayIndex.interval(1,3), NDArrayIndex.interval(1,3));
-        //System.out.println(denseView);
-
 
         // test with sparse :
         INDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
@@ -171,20 +171,35 @@ public class SparseNDArrayTest {
 
 
         // get a row in the middle
-        sparseView = (BaseSparseNDArrayCSR) sparseNDArray.get(NDArrayIndex.point(2), NDArrayIndex.all());
+         sparseView = (BaseSparseNDArrayCSR) sparseNDArray.get(NDArrayIndex.point(2), NDArrayIndex.all());
         assertArrayEquals(new int[]{2, 3, 4}, sparseView.getMinorPointer().asInt());
         assertArrayEquals(new int[]{5}, sparseView.getPointerBArray());
         assertArrayEquals(new int[]{8}, sparseView.getPointerEArray());
 
 
+        // get the first column
+        sparseView = (BaseSparseNDArrayCSR) sparseNDArray.get(NDArrayIndex.all(), NDArrayIndex.point(0));
+        assertArrayEquals(new int[]{0, 0, 0}, sparseView.getMinorPointer().asInt());
+        assertArrayEquals(new int[]{0, 3, 4, 8, 9}, sparseView.getPointerBArray());
+        assertArrayEquals(new int[]{1, 4, 4, 9, 9}, sparseView.getPointerEArray());
 
-        // get a column
-        // fixme - resolution.offset() = 10 ?!
+        // get a column in the middle
         sparseView = (BaseSparseNDArrayCSR) sparseNDArray.get(NDArrayIndex.all(), NDArrayIndex.point(2));
+        assertArrayEquals(new int[]{2, 2}, sparseView.getMinorPointer().asInt());
+        assertArrayEquals(new int[]{0, 0, 5, 9, 10}, sparseView.getPointerBArray());
+        assertArrayEquals(new int[]{0, 0, 6, 10, 10}, sparseView.getPointerEArray());
 
-        assertArrayEquals(new int[]{2, 3, 4}, sparseView.getMinorPointer().asInt());
-        assertArrayEquals(new int[]{0, 0, 5, 8, 8}, sparseView.getPointerBArray());
-        assertArrayEquals(new int[]{0, 0, 8, 8, 8}, sparseView.getPointerEArray());
+        // get a part of the column in the middle
+
+        sparseView = (BaseSparseNDArrayCSR) sparseNDArray.get(NDArrayIndex.interval(1, 4), NDArrayIndex.point(2));
+
+        System.out.println(sparseView.getMinorPointer().toString());
+        System.out.println(sparseView.getPointerB().toString());
+        System.out.println(sparseView.getPointerE().toString());
+        assertArrayEquals(new int[]{0, 0}, sparseView.getMinorPointer().asInt());
+        assertArrayEquals(new int[]{0, 5, 9}, sparseView.getPointerBArray());
+        assertArrayEquals(new int[]{0, 6, 10}, sparseView.getPointerEArray());
+
 
     }
 }
