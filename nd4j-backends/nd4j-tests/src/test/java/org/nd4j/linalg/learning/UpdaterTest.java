@@ -64,7 +64,7 @@ public class UpdaterTest extends BaseNd4jTest {
     public void testEnsureInPlace() {
         //All updaters MUST execute in-place operations on the arrays. This is important for how DL4J works
 
-        GradientUpdater[] updaters = new GradientUpdater[] {new AdaDelta(0.95), new AdaGrad(0.1), new Adam(0.9),
+        GradientUpdater[] updaters = new GradientUpdater[] {new AdaDelta(0.95), new AdaGrad(0.1), new Adam(0.9), new AdaMax(0.9),
                         new Nesterovs(0.9), new RmsProp(0.1, 0.95), new Sgd(0.1),};
         int[] m = new int[] {2, 1, 2, 1, 1, 1};
 
@@ -161,6 +161,26 @@ public class UpdaterTest extends BaseNd4jTest {
 
         for (int i = 0; i < 5; i++) {
             String learningRates = String.valueOf("\nAdam\n " + grad.getGradient(W, i)).replaceAll(";", "\n");
+            System.out.println(learningRates);
+            W.addi(Nd4j.randn(rows, cols));
+        }
+    }
+
+    @Test
+    public void testAdaMax() {
+        int rows = 10;
+        int cols = 2;
+
+
+        AdaMax grad = new AdaMax();
+        grad.setStateViewArray(Nd4j.zeros(1, 2 * rows * cols), new int[] {rows, cols}, 'c', true);
+        INDArray W = Nd4j.zeros(rows, cols);
+        Distribution dist = Nd4j.getDistributions().createNormal(1e-3, 1e-3);
+        for (int i = 0; i < W.rows(); i++)
+            W.putRow(i, Nd4j.create(dist.sample(W.columns())));
+
+        for (int i = 0; i < 5; i++) {
+            String learningRates = String.valueOf("\nAdaMax\n " + grad.getGradient(W, i)).replaceAll(";", "\n");
             System.out.println(learningRates);
             W.addi(Nd4j.randn(rows, cols));
         }
