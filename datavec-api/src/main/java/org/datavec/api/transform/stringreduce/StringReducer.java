@@ -16,21 +16,18 @@
 
 package org.datavec.api.transform.stringreduce;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.StringReduceOp;
-import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.StringMetaData;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.writable.*;
+import org.datavec.api.writable.Text;
+import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.io.Serializable;
 import java.util.*;
 
 /**
@@ -266,21 +263,6 @@ public class StringReducer implements IStringReducer {
          */
         public Builder customReduction(String column, ColumnReduction columnReduction) {
             customReductions.put(column, columnReduction);
-            return this;
-        }
-
-        /**
-         * Conditional reduction: apply the reduce on a specified column, where the reduction occurs *only* on those
-         * examples where the condition returns true. Examples where the condition does not apply (returns false) are
-         * ignored/excluded.
-         *
-         * @param column     Name of the column to execute the conditional reduction on
-         * @param outputName Name of the column, after the reduction has been executed
-         * @param reduction  Reduction to execute
-         * @param condition  Condition to use in the reductions
-         */
-        public Builder conditionalReduction(String column, String outputName, StringReduceOp reduction, Condition condition) {
-            this.conditionalReductions.put(column, new ConditionalReduction(column, outputName, reduction, condition));
             return this;
         }
 
