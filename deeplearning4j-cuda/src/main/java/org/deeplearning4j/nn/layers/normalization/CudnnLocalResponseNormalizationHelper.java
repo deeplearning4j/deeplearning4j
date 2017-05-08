@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
@@ -179,6 +180,9 @@ public class CudnnLocalResponseNormalizationHelper implements LocalResponseNorma
 
         allocator.getFlowController().registerActionAllWrite(context, input, epsilon, activations, nextEpsilon);
 
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            context.syncOldStream();
+
         return new Pair<>(retGradient, nextEpsilon);
     }
 
@@ -228,6 +232,9 @@ public class CudnnLocalResponseNormalizationHelper implements LocalResponseNorma
                         dstData));
 
         allocator.getFlowController().registerActionAllWrite(context, input, activations);
+
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            context.syncOldStream();
 
         return activations;
     }

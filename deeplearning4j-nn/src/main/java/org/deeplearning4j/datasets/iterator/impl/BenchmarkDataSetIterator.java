@@ -25,13 +25,18 @@ public class BenchmarkDataSetIterator implements DataSetIterator {
 
     public BenchmarkDataSetIterator(int[] featuresShape, int numLabels, int totalIterations) {
         this.baseFeatures = Nd4j.rand(featuresShape);
-        this.baseLabels = Nd4j.rand(featuresShape[0], numLabels);
+        this.baseLabels = Nd4j.create(featuresShape[0], numLabels);
+        this.baseLabels.getColumn(1).assign(1.0);
+
+        Nd4j.getExecutioner().commit();
         this.limit = totalIterations;
     }
 
     public BenchmarkDataSetIterator(DataSet example, int totalIterations) {
-        this.baseFeatures = example.getFeatures();
-        this.baseLabels = example.getLabels();
+        this.baseFeatures = example.getFeatures().dup();
+        this.baseLabels = example.getLabels().dup();
+
+        Nd4j.getExecutioner().commit();
         this.limit = totalIterations;
     }
 
@@ -121,9 +126,7 @@ public class BenchmarkDataSetIterator implements DataSetIterator {
     public DataSet next() {
         counter.incrementAndGet();
 
-        INDArray features = baseFeatures.dup();
-        INDArray labels = baseLabels.dup();
-        DataSet ds = new DataSet(features, labels);
+        DataSet ds = new DataSet(baseFeatures, baseLabels);
 
         return ds;
     }

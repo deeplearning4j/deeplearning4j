@@ -18,14 +18,18 @@
 
 package org.deeplearning4j.optimize.stepfunctions;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Arrays;
 
 /**
  * Subtract the line
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class NegativeGradientStepFunction implements StepFunction {
     @Override
     public void step(INDArray x, INDArray line, double step) {

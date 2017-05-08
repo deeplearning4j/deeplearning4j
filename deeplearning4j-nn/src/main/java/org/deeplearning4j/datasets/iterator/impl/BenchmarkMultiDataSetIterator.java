@@ -32,14 +32,25 @@ public class BenchmarkMultiDataSetIterator implements MultiDataSetIterator {
         }
         this.baseLabels = new INDArray[featuresShape.length];
         for(int i = 0; i < featuresShape.length; i++) {
-            baseLabels[i] = Nd4j.rand(featuresShape[i][0], numLabels[i]);
+            baseLabels[i] = Nd4j.create(featuresShape[i][0], numLabels[i]);
+            baseLabels[i].getColumn(1).assign(1.0);
         }
+
+        Nd4j.getExecutioner().commit();
         this.limit = totalIterations;
     }
 
     public BenchmarkMultiDataSetIterator(MultiDataSet example, int totalIterations) {
-        this.baseFeatures = example.getFeatures();
-        this.baseLabels = example.getLabels();
+        this.baseFeatures = new INDArray[example.getFeatures().length];
+        for(int i = 0; i < example.getFeatures().length; i++) {
+            baseFeatures[i] = example.getFeatures()[i].dup();
+        }
+        this.baseLabels = new INDArray[example.getLabels().length];
+        for(int i = 0; i < example.getLabels().length; i++) {
+            baseFeatures[i] = example.getLabels()[i].dup();
+        }
+
+        Nd4j.getExecutioner().commit();
         this.limit = totalIterations;
     }
 
@@ -96,11 +107,11 @@ public class BenchmarkMultiDataSetIterator implements MultiDataSetIterator {
 
         INDArray[] features = new INDArray[baseFeatures.length];
         for(int i = 0; i < baseFeatures.length; i++) {
-            features[i] = baseFeatures[i].dup();
+            features[i] = baseFeatures[i];
         }
         INDArray[] labels = new INDArray[baseLabels.length];
         for(int i = 0; i < baseLabels.length; i++) {
-            labels[i] = baseLabels[i].dup();
+            labels[i] = baseLabels[i];
         }
 
         MultiDataSet ds = new MultiDataSet(features, labels);
