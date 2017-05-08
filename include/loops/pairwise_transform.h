@@ -222,22 +222,54 @@ template<typename OpType>
 			T *extraParams, int *allocationPointer, UnifiedSharedMemory *manager, int *tadOnlyShapeInfo) {
 		int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-		int xRank = shape::rank(xShapeBuffer);
-		int yRank = shape::rank(yShapeBuffer);
-		int resultRank = shape::rank(resultShapeBuffer);
+		__shared__ int xRank;
+		__shared__ int yRank;
+		__shared__ int resultRank;
+
+		__shared__ int xEWS;
+		__shared__ int yEWS;
+		__shared__ int zEWS;
+
+		__shared__ char xOrder;
+		__shared__ char yOrder;
+		__shared__ char zOrder;
+
+		__shared__ bool xRow;
+		__shared__ bool yRow;
+		__shared__ bool zRow;
+
+		if (threadIdx.x == 0) {
+		    xRank = shape::rank(xShapeBuffer);
+		    yRank = shape::rank(yShapeBuffer);
+		    resultRank = shape::rank(resultShapeBuffer);
+
+		    xEWS = shape::elementWiseStride(xShapeBuffer);
+		    yEWS = shape::elementWiseStride(yShapeBuffer);
+		    zEWS = shape::elementWiseStride(resultShapeBuffer);
+
+		    xOrder = shape::order(xShapeBuffer);
+		    yOrder = shape::order(yShapeBuffer);
+		    zOrder = shape::order(resultShapeBuffer);
+
+		    xRow = shape::isRowVector(xShapeBuffer);
+		    yRow = shape::isRowVector(yShapeBuffer);
+		    zRow = shape::isRowVector(resultShapeBuffer);
+
+		}
+		__syncthreads();
 
 		Nd4jIndex n = shape::length(xShapeBuffer);
-		if(shape::elementWiseStride(xShapeBuffer) >= 1 && shape::elementWiseStride(yShapeBuffer) == shape::elementWiseStride(xShapeBuffer) && shape::elementWiseStride(yShapeBuffer) >= 1 && shape::elementWiseStride(resultShapeBuffer) >= 1 && shape::order(xShapeBuffer) == shape::order(yShapeBuffer) && shape::order(resultShapeBuffer) == shape::order(xShapeBuffer)) {
+		if((xEWS >= 1 && yEWS == xEWS && zEWS == xEWS &&  xOrder == yOrder && zOrder == xOrder) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
 			// TODO: this is wrong, and should be moved to host side
 			transformCuda<OpType>(
 					n,
 					dx,
 					y,
-					shape::elementWiseStride(xShapeBuffer),
-					shape::elementWiseStride(yShapeBuffer),
+					xEWS,
+					yEWS,
 					extraParams,
 					result,
-					shape::elementWiseStride(resultShapeBuffer), allocationPointer, manager, tadOnlyShapeInfo);
+					zEWS, allocationPointer, manager, tadOnlyShapeInfo);
 
 		}
 
