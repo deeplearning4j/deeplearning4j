@@ -55,7 +55,10 @@ public class StochasticGradientDescent extends BaseOptimizer {
     @Override
     public boolean optimize() {
         for (int i = 0; i < conf.getNumIterations(); i++) {
+            long time1 = System.currentTimeMillis();
             Pair<Gradient, Double> pair = gradientAndScore();
+            long time2 = System.currentTimeMillis();
+
             Gradient gradient = pair.getFirst();
 
             INDArray params = model.params();
@@ -65,15 +68,25 @@ public class StochasticGradientDescent extends BaseOptimizer {
             //But setParams should be a no-op for MLN and CG
             model.setParams(params);
 
+            long time3 = System.currentTimeMillis();
+
             int iterationCount = BaseOptimizer.getIterationCount(model);
             try(MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 for (IterationListener listener : iterationListeners)
                     listener.iterationDone(model, iterationCount);
             }
 
+            long time4 = System.currentTimeMillis();
+
             checkTerminalConditions(pair.getFirst().gradient(), oldScore, score, i);
 
+            long time5 = System.currentTimeMillis();
+
             BaseOptimizer.incrementIterationCount(model, 1);
+
+            long time6 = System.currentTimeMillis();
+
+            log.info("GradientAndScore time: {} ms; Step time: {} ms; Listeners time: {} ms; Stuff time: {} ms; Increment time: {} ms;", time2 - time1, time3 - time2, time4 - time3, time5 - time4, time6 - time5);
         }
         return true;
     }
