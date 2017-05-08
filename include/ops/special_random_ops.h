@@ -318,7 +318,6 @@ namespace randomOps {
 
                 tZ[threadIdx.x] = buffer->relativeT<T>(e, epsilon, (T) 1.0f);
 
-
                 // fix for "next rng value"
                 if (e + 1 >= zLength && e % 2 == 0) {
                     tZ[threadIdx.x+1] = buffer->relativeT<T>(e+1, epsilon, (T) 1.0f);
@@ -354,6 +353,9 @@ namespace randomOps {
             _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
             int span = (zLength / _threads) + 8;
+
+            // we're enforcing even chunks, since it's mandatory for this algorithm
+            span -= span % 2;
 
             nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
 
