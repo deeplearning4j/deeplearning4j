@@ -12,10 +12,10 @@ import org.nd4j.linalg.learning.GradientUpdater;
  */
 @Data
 @AllArgsConstructor
-@Builder
+@Builder(builderClassName = "Builder")
 public class AdaDelta implements IUpdater {
-    public static final double DEFAULT_ADADELTA_EPSILON = 1e-6;
     public static final double DEFAULT_ADADELTA_RHO = 0.95;
+    public static final double DEFAULT_ADADELTA_EPSILON = 1e-6;
 
     private double rho;
     private double epsilon;
@@ -44,5 +44,15 @@ public class AdaDelta implements IUpdater {
     @Override
     public AdaDelta clone() {
         return new AdaDelta(rho, epsilon);
+    }
+
+    //Partial builder class implementation for default values & public no-arg constructor
+    //https://reinhard.codes/2016/07/13/using-lomboks-builder-annotation-with-default-values/
+    public static class Builder {
+        private double rho = DEFAULT_ADADELTA_RHO;
+        private double epsilon = DEFAULT_ADADELTA_EPSILON;
+
+        public Builder() {
+        }
     }
 }

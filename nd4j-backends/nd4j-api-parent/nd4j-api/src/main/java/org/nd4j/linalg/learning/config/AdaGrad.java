@@ -10,9 +10,9 @@ import org.nd4j.linalg.learning.GradientUpdater;
 /**
  * Created by Alex on 06/05/2017.
  */
-@Builder
 @AllArgsConstructor
 @Data
+@Builder(builderClassName = "Builder")
 public class AdaGrad implements IUpdater {
 
     public static final double DEFAULT_ADAGRAD_LEARNING_RATE = 1e-1;
@@ -45,5 +45,15 @@ public class AdaGrad implements IUpdater {
     @Override
     public AdaGrad clone() {
         return new AdaGrad(learningRate, epsilon);
+    }
+
+    //Partial builder class implementation for default values & public no-arg constructor
+    //https://reinhard.codes/2016/07/13/using-lomboks-builder-annotation-with-default-values/
+    public static class Builder {
+        private double learningRate = DEFAULT_ADAGRAD_LEARNING_RATE;
+        private double epsilon = DEFAULT_ADAGRAD_EPSILON;
+
+        public Builder() {
+        }
     }
 }

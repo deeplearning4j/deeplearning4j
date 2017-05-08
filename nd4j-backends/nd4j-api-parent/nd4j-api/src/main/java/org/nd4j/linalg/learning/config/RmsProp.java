@@ -1,6 +1,7 @@
 package org.nd4j.linalg.learning.config;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.GradientUpdater;
@@ -11,6 +12,7 @@ import org.nd4j.linalg.learning.RmsPropUpdater;
  */
 @Data
 @AllArgsConstructor
+@Builder(builderClassName = "Builder")
 public class RmsProp implements IUpdater {
     public static final double DEFAULT_RMSPROP_LEARNING_RATE = 1e-1;
     public static final double DEFAULT_RMSPROP_EPSILON = 1e-8;
@@ -44,5 +46,16 @@ public class RmsProp implements IUpdater {
     @Override
     public RmsProp clone() {
         return new RmsProp(learningRate, rmsDecay, epsilon);
+    }
+
+    //Partial builder class implementation for default values & public no-arg constructor
+    //https://reinhard.codes/2016/07/13/using-lomboks-builder-annotation-with-default-values/
+    public static class Builder {
+        private double learningRate = DEFAULT_RMSPROP_LEARNING_RATE;
+        private double rmsDecay = DEFAULT_RMSPROP_RMSDECAY;
+        private double epsilon = DEFAULT_RMSPROP_EPSILON;
+
+        public Builder() {
+        }
     }
 }

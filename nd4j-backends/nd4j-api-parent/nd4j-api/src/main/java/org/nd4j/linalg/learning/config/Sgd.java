@@ -14,7 +14,7 @@ import org.nd4j.linalg.learning.SgdUpdater;
 @AllArgsConstructor
 @Data
 @EqualsAndHashCode
-@Builder
+@Builder(builderClassName = "Builder")
 public class Sgd implements IUpdater {
     public static final double DEFAULT_SGD_LR = 1e-3;
 
@@ -45,5 +45,12 @@ public class Sgd implements IUpdater {
     @Override
     public Sgd clone() {
         return new Sgd(learningRate);
+    }
+
+    public static class Builder {
+        private double learningRate = DEFAULT_SGD_LR;
+
+        public Builder() {
+        }
     }
 }
