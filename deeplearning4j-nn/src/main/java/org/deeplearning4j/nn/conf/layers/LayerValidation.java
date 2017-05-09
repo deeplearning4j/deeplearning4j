@@ -66,13 +66,14 @@ public class LayerValidation {
 
         IUpdater u = layer.getIUpdater();
 
-        if( u instanceof Sgd){
-            Sgd sgd = (Sgd)u;
-            if(!Double.isNaN(learningRate)){
-                sgd.setLearningRate(learningRate);
-            }
+        //Note that for LRs, if user specifies .learningRate(x).updater(Updater.SGD) (for example), we need to set the
+        // LR in the Sgd object. We can do this using the schedules method, which also works for custom updaters
 
-        } else if(u instanceof Adam ){
+        if(!Double.isNaN(learningRate)){
+            u.applySchedules(0, learningRate);
+        }
+
+        if(u instanceof Adam ){
             Adam a = (Adam)u;
             if(!Double.isNaN(epsilon)){
                 a.setEpsilon(epsilon);
@@ -83,9 +84,6 @@ public class LayerValidation {
             if(!Double.isNaN(adamVarDecay)){
                 a.setBeta2(adamVarDecay);
             }
-            if(!Double.isNaN(learningRate)){
-                a.setLearningRate(learningRate);
-            }
 
         } else if(u instanceof AdaDelta) {
             AdaDelta a = (AdaDelta)u;
@@ -95,8 +93,6 @@ public class LayerValidation {
             if(!Double.isNaN(epsilon)){
                 a.setEpsilon(epsilon);
             }
-            //No LR for AdaDelta
-
         } else if(u instanceof Nesterovs ){
             Nesterovs n = (Nesterovs)u;
             if(!Double.isNaN(momentum)){
@@ -105,18 +101,11 @@ public class LayerValidation {
             if(momentumSchedule != null){
                 n.setMomentumSchedule(momentumSchedule);
             }
-            if(!Double.isNaN(learningRate)){
-                n.setLearningRate(learningRate);
-            }
         } else if(u instanceof AdaGrad){
             AdaGrad a = (AdaGrad)u;
             if(!Double.isNaN(epsilon)){
                 a.setEpsilon(epsilon);
             }
-            if(!Double.isNaN(learningRate)){
-                a.setLearningRate(learningRate);
-            }
-
         } else if(u instanceof RmsProp){
             RmsProp r = (RmsProp)u;
             if(!Double.isNaN(epsilon)){
@@ -124,9 +113,6 @@ public class LayerValidation {
             }
             if(!Double.isNaN(rmsDecay)){
                 r.setRmsDecay(rmsDecay);
-            }
-            if(!Double.isNaN(learningRate)){
-                r.setLearningRate(learningRate);
             }
         }
     }
