@@ -65,6 +65,8 @@ public class DefaultTrainer extends Thread implements Trainer {
     protected AtomicBoolean nullMode = new AtomicBoolean(false);
     protected DataSet nullDataSet;
 
+    protected AtomicBoolean isStopped = new AtomicBoolean(false);
+
 
 
     @Override
@@ -152,6 +154,8 @@ public class DefaultTrainer extends Thread implements Trainer {
             shouldStop = new AtomicBoolean(false);
         if (shouldUpdate == null)
             shouldUpdate = new AtomicBoolean(false);
+        if (isStopped == null)
+            isStopped = new AtomicBoolean(false);
     }
 
     @Override
@@ -166,6 +170,11 @@ public class DefaultTrainer extends Thread implements Trainer {
     @Override
     public void shutdown() {
         shouldStop.set(true);
+        while (!isStopped.get())
+            LockSupport.parkNanos(1000L);
+
+        shouldStop.set(false);
+        isStopped.set(false);
     }
 
     @Override
@@ -279,10 +288,13 @@ public class DefaultTrainer extends Thread implements Trainer {
 
                             if (replicatedModel instanceof MultiLayerNetwork) {
                                 Updater updaterReplica = ((MultiLayerNetwork) replicatedModel).getUpdater();
-                                Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
+                                if (updaterReplica.getStateViewArray() != null)
+                                    Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
                             } else {
                                 ComputationGraphUpdater updaterReplica = ((ComputationGraph) replicatedModel).getUpdater();
-                                Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
+
+                                if (updaterReplica.getStateViewArray() != null)
+                                    Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
                             }
                         }
 
@@ -311,7 +323,9 @@ public class DefaultTrainer extends Thread implements Trainer {
                             Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(), AffinityManager.Location.HOST);
 
                             ComputationGraphUpdater updaterReplica = ((ComputationGraph) replicatedModel).getUpdater();
-                            Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
+
+                            if (updaterReplica.getStateViewArray() != null)
+                                Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
                         }
 
                         running.decrementAndGet();
@@ -320,6 +334,10 @@ public class DefaultTrainer extends Thread implements Trainer {
             }
         } catch (Exception e) {
             this.thrownException = e;
+        } finally {
+            log.debug("Terminating all workspaces for trainer_{}", threadId);
+            Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+            isStopped.set(true);
         }
     }
 
@@ -330,7 +348,7 @@ public class DefaultTrainer extends Thread implements Trainer {
             if (thrownException != null)
                 throw new RuntimeException(thrownException);
 
-            LockSupport.parkNanos(50000L);
+            LockSupport.parkNanos(1000L);
         }
     }
 

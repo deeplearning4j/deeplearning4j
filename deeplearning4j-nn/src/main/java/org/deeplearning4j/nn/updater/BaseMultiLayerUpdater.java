@@ -16,7 +16,10 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * BaseMultiLayerUpdater - core functionality for applying updaters to MultiLayerNetwork and ComputationGraph.
@@ -328,5 +331,22 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 throw new RuntimeException(
                                 "Unknown (or not implemented) gradient normalization strategy: " + normalization);
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        BaseMultiLayerUpdater<?> that = (BaseMultiLayerUpdater<?>) o;
+        return updaterStateViewArray != null ? updaterStateViewArray.equals(that.updaterStateViewArray) : that.updaterStateViewArray == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = layersByName != null ? layersByName.hashCode() : 0;
+        result = 31 * result + (updaterBlocks != null ? updaterBlocks.hashCode() : 0);
+        result = 31 * result + (updaterStateViewArray != null ? updaterStateViewArray.hashCode() : 0);
+        return result;
     }
 }

@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
@@ -230,6 +231,10 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
 
         retGradient.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGammaView);
         retGradient.setGradientFor(BatchNormalizationParamInitializer.BETA, dBetaView);
+
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            context.syncOldStream();
+
         return new Pair<>(retGradient, nextEpsilon);
     }
 
@@ -293,6 +298,9 @@ public class CudnnBatchNormalizationHelper implements BatchNormalizationHelper {
         }
 
         allocator.getFlowController().registerActionAllWrite(context, x, activations, gamma, beta, mean, var);
+
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            context.syncOldStream();
 
         return activations;
     }

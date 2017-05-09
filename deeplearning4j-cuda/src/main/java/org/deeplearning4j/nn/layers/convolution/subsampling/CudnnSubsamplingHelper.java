@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -209,6 +210,9 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
 
         allocator.registerAction(context, outEpsilon, input, epsilon, reduced);
 
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            context.syncOldStream();
+
         return new Pair<>(retGradient, outEpsilon);
     }
 
@@ -276,6 +280,9 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
                         srcData, beta, cudnnContext.dstTensorDesc, dstData));
 
         allocator.registerAction(context, reduced, input);
+
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            context.syncOldStream();
 
         return reduced;
     }

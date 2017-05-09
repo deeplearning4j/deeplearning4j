@@ -933,11 +933,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     @Override
     public void setParams(INDArray params) {
-        if (flattenedParams == params)
+        if (flattenedParams == params) {
             return; //No op
+        }
 
         if (flattenedParams != null && params.length() == flattenedParams.length()) {
-            flattenedParams.assign(params);
+            if (params != flattenedParams) {
+                flattenedParams.assign(params);
+            }
         } else {
             if (flattenedParams == null)
                 flattenedParams = params.dup();
@@ -2610,7 +2613,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return
      */
     public RegressionEvaluation evaluateRegression(DataSetIterator iterator) {
-        return doEvaluation(iterator, new RegressionEvaluation(iterator.totalOutcomes()));
+        return doEvaluation(iterator, new RegressionEvaluation(iterator.totalOutcomes()))[0];
     }
 
     /**
@@ -2621,7 +2624,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return ROC evaluation on the given dataset
      */
     public ROC evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
-        return doEvaluation(iterator, new ROC(rocThresholdSteps));
+        return doEvaluation(iterator, new ROC(rocThresholdSteps))[0];
     }
 
     /**
@@ -2632,7 +2635,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
-        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps));
+        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps))[0];
     }
 
     /**
@@ -2641,7 +2644,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * @param iterator   data to evaluate on
      * @param evaluation IEvaluation instance to perform evaluation with
      */
-    public <T extends IEvaluation> T doEvaluation(DataSetIterator iterator, T evaluation) {
+    public <T extends IEvaluation> T[] doEvaluation(DataSetIterator iterator, T... evaluations) {
         if (!iterator.hasNext() && iterator.resetSupported()) {
             iterator.reset();
         }
@@ -2670,6 +2673,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     out = this.silentOutput(features, false);
                 }
 
+                for(T evaluation: evaluations)
                 evaluation.eval(labels, out, lMask);
             }
 
@@ -2679,7 +2683,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (iterator.asyncSupported())
             ((AsyncDataSetIterator) iter).shutdown();
 
-        return evaluation;
+        return evaluations;
     }
 
     /**
@@ -2788,4 +2792,63 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
     }
 
+    /**
+     * Indicates whether some other object is "equal to" this one.
+     * <p>
+     * The {@code equals} method implements an equivalence relation
+     * on non-null object references:
+     * <ul>
+     * <li>It is <i>reflexive</i>: for any non-null reference value
+     * {@code x}, {@code x.equals(x)} should return
+     * {@code true}.
+     * <li>It is <i>symmetric</i>: for any non-null reference values
+     * {@code x} and {@code y}, {@code x.equals(y)}
+     * should return {@code true} if and only if
+     * {@code y.equals(x)} returns {@code true}.
+     * <li>It is <i>transitive</i>: for any non-null reference values
+     * {@code x}, {@code y}, and {@code z}, if
+     * {@code x.equals(y)} returns {@code true} and
+     * {@code y.equals(z)} returns {@code true}, then
+     * {@code x.equals(z)} should return {@code true}.
+     * <li>It is <i>consistent</i>: for any non-null reference values
+     * {@code x} and {@code y}, multiple invocations of
+     * {@code x.equals(y)} consistently return {@code true}
+     * or consistently return {@code false}, provided no
+     * information used in {@code equals} comparisons on the
+     * objects is modified.
+     * <li>For any non-null reference value {@code x},
+     * {@code x.equals(null)} should return {@code false}.
+     * </ul>
+     * <p>
+     * The {@code equals} method for class {@code Object} implements
+     * the most discriminating possible equivalence relation on objects;
+     * that is, for any non-null reference values {@code x} and
+     * {@code y}, this method returns {@code true} if and only
+     * if {@code x} and {@code y} refer to the same object
+     * ({@code x == y} has the value {@code true}).
+     * <p>
+     * Note that it is generally necessary to override the {@code hashCode}
+     * method whenever this method is overridden, so as to maintain the
+     * general contract for the {@code hashCode} method, which states
+     * that equal objects must have equal hash codes.
+     *
+     * @param obj the reference object with which to compare.
+     * @return {@code true} if this object is the same as the obj
+     * argument; {@code false} otherwise.
+     * @see #hashCode()
+     * @see HashMap
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if(obj == null)
+            return false;
+        if(obj instanceof MultiLayerNetwork) {
+            MultiLayerNetwork network = (MultiLayerNetwork) obj;
+            boolean paramsEquals = network.params().equals(params());
+            boolean confEquals = getLayerWiseConfigurations().equals(network.getLayerWiseConfigurations());
+            boolean updaterEquals = getUpdater().equals(network.getUpdater());
+            return paramsEquals && confEquals && updaterEquals;
+        }
+        return false;
+    }
 }

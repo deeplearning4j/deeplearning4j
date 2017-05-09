@@ -549,60 +549,64 @@ public class VocabConstructor<T extends SequenceElement> {
 
         @Override
         public void run() {
-            Map<String, AtomicLong> seqMap = new HashMap<>();
-            //  log.info("Sequence length: ["+ document.getElements().size()+"]");
+            try {
+                Map<String, AtomicLong> seqMap = new HashMap<>();
+                //  log.info("Sequence length: ["+ document.getElements().size()+"]");
 
-            if (fetchLabels && document.getSequenceLabels() != null) {
-                for (T labelWord : document.getSequenceLabels()) {
-                    if (!targetVocab.hasToken(labelWord.getLabel())) {
-                        labelWord.setSpecial(true);
-                        labelWord.markAsLabel(true);
-                        labelWord.setElementFrequency(1);
+                if (fetchLabels && document.getSequenceLabels() != null) {
+                    for (T labelWord : document.getSequenceLabels()) {
+                        if (!targetVocab.hasToken(labelWord.getLabel())) {
+                            labelWord.setSpecial(true);
+                            labelWord.markAsLabel(true);
+                            labelWord.setElementFrequency(1);
 
-                        targetVocab.addToken(labelWord);
-                    }
-                }
-            }
-
-            List<String> tokens = document.asLabels();
-            for (String token : tokens) {
-                if (stopWords != null && stopWords.contains(token))
-                    continue;
-                if (token == null || token.isEmpty())
-                    continue;
-
-                if (!targetVocab.containsWord(token)) {
-                    T element = document.getElementByLabel(token);
-                    element.setElementFrequency(1);
-                    element.setSequencesCount(1);
-                    targetVocab.addToken(element);
-                    //                    elementsCounter.incrementAndGet();
-                    loopCounter.incrementAndGet();
-
-                    // if there's no such element in tempHolder, it's safe to set seqCount to 1
-                    seqMap.put(token, new AtomicLong(0));
-                } else {
-                    targetVocab.incrementWordCount(token);
-
-                    // if element exists in tempHolder, we should update it seqCount, but only once per sequence
-                    if (!seqMap.containsKey(token)) {
-                        seqMap.put(token, new AtomicLong(1));
-                        T element = targetVocab.wordFor(token);
-                        element.incrementSequencesCount();
-                    }
-
-                    if (index != null) {
-                        if (document.getSequenceLabel() != null) {
-                            index.addWordsToDoc(index.numDocuments(), document.getElements(),
-                                            document.getSequenceLabel());
-                        } else {
-                            index.addWordsToDoc(index.numDocuments(), document.getElements());
+                            targetVocab.addToken(labelWord);
                         }
                     }
                 }
-            }
 
-            finalCounter.incrementAndGet();
+                List<String> tokens = document.asLabels();
+                for (String token : tokens) {
+                    if (stopWords != null && stopWords.contains(token))
+                        continue;
+                    if (token == null || token.isEmpty())
+                        continue;
+
+                    if (!targetVocab.containsWord(token)) {
+                        T element = document.getElementByLabel(token);
+                        element.setElementFrequency(1);
+                        element.setSequencesCount(1);
+                        targetVocab.addToken(element);
+                        //                    elementsCounter.incrementAndGet();
+                        loopCounter.incrementAndGet();
+
+                        // if there's no such element in tempHolder, it's safe to set seqCount to 1
+                        seqMap.put(token, new AtomicLong(0));
+                    } else {
+                        targetVocab.incrementWordCount(token);
+
+                        // if element exists in tempHolder, we should update it seqCount, but only once per sequence
+                        if (!seqMap.containsKey(token)) {
+                            seqMap.put(token, new AtomicLong(1));
+                            T element = targetVocab.wordFor(token);
+                            element.incrementSequencesCount();
+                        }
+
+                        if (index != null) {
+                            if (document.getSequenceLabel() != null) {
+                                index.addWordsToDoc(index.numDocuments(), document.getElements(),
+                                        document.getSequenceLabel());
+                            } else {
+                                index.addWordsToDoc(index.numDocuments(), document.getElements());
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            } finally {
+                finalCounter.incrementAndGet();
+            }
         }
     }
 }

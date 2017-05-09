@@ -104,8 +104,9 @@ public class ComputationGraph implements Serializable, Model {
     public final static String workspaceFeedForward = "LOOP_FF";
     public final static String workspaceBackProp = "LOOP_BP";
     public final static String workspaceTBPTT = "LOOP_TBPTT";
+    public final static String workspaceLSTM = "LOOP_LSTM";
 
-    protected final static WorkspaceConfiguration workspaceConfigurationFeedForward = WorkspaceConfiguration.builder()
+    public final static WorkspaceConfiguration workspaceConfigurationFeedForward = WorkspaceConfiguration.builder()
             .initialSize(0)
             .overallocationLimit(0.2)
             .policyReset(ResetPolicy.BLOCK_LEFT)
@@ -114,7 +115,7 @@ public class ComputationGraph implements Serializable, Model {
             .policyLearning(LearningPolicy.OVER_TIME)
             .build();
 
-    protected final static WorkspaceConfiguration workspaceConfigurationTBPTT = WorkspaceConfiguration.builder()
+    public final static WorkspaceConfiguration workspaceConfigurationTBPTT = WorkspaceConfiguration.builder()
             .initialSize(0)
             .overallocationLimit(0.2)
             .policyReset(ResetPolicy.BLOCK_LEFT)
@@ -123,7 +124,16 @@ public class ComputationGraph implements Serializable, Model {
             .policyLearning(LearningPolicy.OVER_TIME)
             .build();
 
-    protected final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
+    public final static WorkspaceConfiguration workspaceConfigurationLSTM = WorkspaceConfiguration.builder()
+            .initialSize(0)
+            .overallocationLimit(0.2)
+            .policyReset(ResetPolicy.BLOCK_LEFT)
+            .policyAllocation(AllocationPolicy.OVERALLOCATE)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyLearning(LearningPolicy.FIRST_LOOP)
+            .build();
+
+    public final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
             .overallocationLimit(0.2)
             .policyReset(ResetPolicy.BLOCK_LEFT)
             .cyclesBeforeInitialization(3)
@@ -2671,7 +2681,7 @@ public class ComputationGraph implements Serializable, Model {
         if (labelsList == null)
             labelsList = iterator.getLabels();
 
-        return doEvaluation(iterator, new Evaluation(labelsList, topN));
+        return doEvaluation(iterator, new Evaluation(labelsList, topN))[0];
     }
 
     /**
@@ -2684,7 +2694,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return Evaluation object, summarizing the results of the evaluation on the provided DataSetIterator
      */
     public Evaluation evaluate(MultiDataSetIterator iterator, List<String> labelsList, int topN) {
-        return doEvaluation(iterator, new Evaluation(labelsList, topN));
+        return doEvaluation(iterator, new Evaluation(labelsList, topN))[0];
     }
 
     /**
@@ -2712,7 +2722,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return Regression evaluation
      */
     public RegressionEvaluation evaluateRegression(DataSetIterator iterator, List<String> columnNames) {
-        return doEvaluation(iterator, new RegressionEvaluation(columnNames));
+        return doEvaluation(iterator, new RegressionEvaluation(columnNames))[0];
     }
 
     /**
@@ -2721,7 +2731,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return Regression evaluation
      */
     public RegressionEvaluation evaluateRegression(MultiDataSetIterator iterator, List<String> columnNames) {
-        return doEvaluation(iterator, new RegressionEvaluation(columnNames));
+        return doEvaluation(iterator, new RegressionEvaluation(columnNames))[0];
     }
 
     /**
@@ -2732,7 +2742,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return ROC evaluation on the given dataset
      */
     public ROC evaluateROC(DataSetIterator iterator, int rocThresholdSteps) {
-        return doEvaluation(iterator, new ROC(rocThresholdSteps));
+        return doEvaluation(iterator, new ROC(rocThresholdSteps))[0];
     }
 
     /**
@@ -2743,7 +2753,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return ROC evaluation on the given dataset
      */
     public ROC evaluateROC(MultiDataSetIterator iterator, int rocThresholdSteps) {
-        return doEvaluation(iterator, new ROC(rocThresholdSteps));
+        return doEvaluation(iterator, new ROC(rocThresholdSteps))[0];
     }
 
     /**
@@ -2754,7 +2764,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public ROCMultiClass evaluateROCMultiClass(DataSetIterator iterator, int rocThresholdSteps) {
-        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps));
+        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps))[0];
     }
 
     /**
@@ -2765,7 +2775,7 @@ public class ComputationGraph implements Serializable, Model {
      * @return Multi-class ROC evaluation on the given dataset
      */
     public ROCMultiClass evaluateROCMultiClass(MultiDataSetIterator iterator, int rocThresholdSteps) {
-        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps));
+        return doEvaluation(iterator, new ROCMultiClass(rocThresholdSteps))[0];
     }
 
     /**
@@ -2776,7 +2786,7 @@ public class ComputationGraph implements Serializable, Model {
      * @param <T>        Type of the IEvaluation instance
      * @return           The input IEvaluation instance, after performing evaluation on the test data
      */
-    public <T extends IEvaluation> T doEvaluation(DataSetIterator iterator, T evaluation) {
+    public <T extends IEvaluation> T[] doEvaluation(DataSetIterator iterator, T... evaluations) {
         if (layers == null || !(getOutputLayer(0) instanceof IOutputLayer)) {
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
@@ -2810,7 +2820,9 @@ public class ComputationGraph implements Serializable, Model {
                         featuresMask == null ? null : new INDArray[]{featuresMask},
                         labelMask == null ? null : new INDArray[]{labelMask});
                 INDArray[] out = silentOutput(false, features);
-                evaluation.eval(labels, out[0], labelMask);
+
+                for(T evaluation: evaluations)
+                    evaluation.eval(labels, out[0], labelMask);
             }
 
             clearLayerMaskArrays();
@@ -2819,7 +2831,7 @@ public class ComputationGraph implements Serializable, Model {
         if (iterator.asyncSupported())
             ((AsyncDataSetIterator) iter).shutdown();
 
-        return evaluation;
+        return evaluations;
     }
 
     /**
@@ -2830,7 +2842,7 @@ public class ComputationGraph implements Serializable, Model {
      * @param <T>        Type of the IEvaluation instance
      * @return           The input IEvaluation instance, after performing evaluation on the test data
      */
-    public <T extends IEvaluation> T doEvaluation(MultiDataSetIterator iterator, T evaluation) {
+    public <T extends IEvaluation> T[] doEvaluation(MultiDataSetIterator iterator, T... evaluations) {
         if (layers == null || !(getOutputLayer(0) instanceof IOutputLayer)) {
             throw new IllegalStateException("Cannot evaluate network with no output layer");
         }
@@ -2864,7 +2876,9 @@ public class ComputationGraph implements Serializable, Model {
 
                 setLayerMaskArrays(featuresMasks, labelMasks);
                 INDArray[] out = silentOutput(false, features);
-                evaluation.eval(labels, out[0], labelMask);
+
+                for (T evaluation: evaluations)
+                    evaluation.eval(labels, out[0], labelMask);
             }
 
             clearLayerMaskArrays();
@@ -2873,7 +2887,7 @@ public class ComputationGraph implements Serializable, Model {
         if (iterator.asyncSupported())
             ((AsyncMultiDataSetIterator) iter).shutdown();
 
-        return evaluation;
+        return evaluations;
     }
 
     /**
@@ -2956,5 +2970,65 @@ public class ComputationGraph implements Serializable, Model {
         for (int f = 0; f < vertices.length; f++) {
             vertices[f].clearVertex();
         }
+    }
+
+    /**
+     * Indicates whether some other object is "equal to" this one.
+     * <p>
+     * The {@code equals} method implements an equivalence relation
+     * on non-null object references:
+     * <ul>
+     * <li>It is <i>reflexive</i>: for any non-null reference value
+     * {@code x}, {@code x.equals(x)} should return
+     * {@code true}.
+     * <li>It is <i>symmetric</i>: for any non-null reference values
+     * {@code x} and {@code y}, {@code x.equals(y)}
+     * should return {@code true} if and only if
+     * {@code y.equals(x)} returns {@code true}.
+     * <li>It is <i>transitive</i>: for any non-null reference values
+     * {@code x}, {@code y}, and {@code z}, if
+     * {@code x.equals(y)} returns {@code true} and
+     * {@code y.equals(z)} returns {@code true}, then
+     * {@code x.equals(z)} should return {@code true}.
+     * <li>It is <i>consistent</i>: for any non-null reference values
+     * {@code x} and {@code y}, multiple invocations of
+     * {@code x.equals(y)} consistently return {@code true}
+     * or consistently return {@code false}, provided no
+     * information used in {@code equals} comparisons on the
+     * objects is modified.
+     * <li>For any non-null reference value {@code x},
+     * {@code x.equals(null)} should return {@code false}.
+     * </ul>
+     * <p>
+     * The {@code equals} method for class {@code Object} implements
+     * the most discriminating possible equivalence relation on objects;
+     * that is, for any non-null reference values {@code x} and
+     * {@code y}, this method returns {@code true} if and only
+     * if {@code x} and {@code y} refer to the same object
+     * ({@code x == y} has the value {@code true}).
+     * <p>
+     * Note that it is generally necessary to override the {@code hashCode}
+     * method whenever this method is overridden, so as to maintain the
+     * general contract for the {@code hashCode} method, which states
+     * that equal objects must have equal hash codes.
+     *
+     * @param obj the reference object with which to compare.
+     * @return {@code true} if this object is the same as the obj
+     * argument; {@code false} otherwise.
+     * @see #hashCode()
+     * @see HashMap
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if(obj == null)
+            return false;
+        if(obj instanceof ComputationGraph) {
+            ComputationGraph network = (ComputationGraph) obj;
+            boolean paramsEquals = network.params().equals(params());
+            boolean confEquals = getConfiguration().equals(network.getConfiguration());
+            boolean updaterEquals = getUpdater().equals(network.getUpdater());
+            return paramsEquals && confEquals && updaterEquals;
+        }
+        return false;
     }
 }

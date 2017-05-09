@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
+import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -293,6 +294,9 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, biasGradView);
         retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
 
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            context.syncOldStream();
+
         return new Pair<>(retGradient, epsNext);
     }
 
@@ -377,6 +381,9 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
 
         allocator.registerAction(context, z, input, weights, bias);
 
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            context.syncOldStream();
+
         return z;
     }
 
@@ -426,6 +433,9 @@ public class CudnnConvolutionHelper implements ConvolutionHelper {
         }
 
         allocator.registerAction(context, activation);
+
+        if (CudaEnvironment.getInstance().getConfiguration().isDebug())
+            context.syncOldStream();
 
         return activation;
     }
