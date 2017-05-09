@@ -549,6 +549,11 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     @Override
+    public void push() {
+        // no-op
+    }
+
+    @Override
     public void commit() {
         // no-op
     }

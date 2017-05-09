@@ -82,7 +82,10 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
 
     @Override
     public INDArray noOp() {
-        return x().dup(x().ordering());
+        if (z != null && x != z)
+            return z().assign(x);
+        else
+            return x().dup(x().ordering());
     }
 
     @Override
