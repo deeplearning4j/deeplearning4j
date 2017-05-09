@@ -311,7 +311,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
 
         int[] offsets = resolution.getOffsets();
         int[] shape = resolution.getShapes();
-        System.out.println("offset " + offsets[0] + " " + offsets[1] + " shape " + shape[0] + " " + shape[1]);
+        //System.out.println("offset " + offsets[0] + " " + offsets[1] + " shape " + shape[0] + " " + shape[1]);
 
         List<Integer> accuColumns = new ArrayList<>();
         List<Integer> accuPointerB = new ArrayList<>();
@@ -329,6 +329,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
                 lastRow = firstRow + shape[0];
                 firstElement = (int)resolution.getOffset() % shape()[1];
                 lastElement = firstElement + shape[1];
+                //offsets[1] = (int) resolution.getOffset() % shape()[1];
             } else {
                 firstRow = offsets [0];
                 lastRow = firstRow + shape[0];
@@ -339,21 +340,25 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
                     offsets[1] = (int) resolution.getOffset() % shape()[1];
                     firstElement = offsets[1];
                     lastElement = firstElement + shape[1];
-                    //System.out.println("2: offset " + offsets[0] + " " + offsets[1] + " shape " + shape[0] + " " + shape[1]);
-
+                    //System.out.println("After adjusting: offset " + offsets[0] + " " + offsets[1] + " shape " + shape[0] + " " + shape[1]);
                 }
             }
-            
-            for(int rowIdx = firstRow, i = 0; rowIdx < lastRow; rowIdx++, i++){
+            //System.out.println("from row " + firstRow + " to row " + lastRow);
+            //System.out.println("from col " + firstElement + " to col " + lastElement);
+            int count = 0;
+            int i  = 0;
+            for(int rowIdx = 0; rowIdx < lastRow; rowIdx++){
+
                 boolean isFirstInRow = true;
                 for(int idx = pointerB.getInt(rowIdx); idx < pointerE.getInt(rowIdx); idx++){
-                    int colIdx = columnsPointers.getInt(idx);
+
+                    int colIdx = columnsPointers.getInt(count);
 
                     // add the element in the subarray it it belongs to the view
-                    if(colIdx >= firstElement && colIdx < lastElement){
+                    if(colIdx >= firstElement && colIdx < lastElement && rowIdx >= firstRow && rowIdx < lastRow){
 
                         // add the new column pointer for this element
-                        accuColumns.add(colIdx - offsets[1]);
+                        accuColumns.add(colIdx - firstElement); // fixme - difference with offsets[1]
 
                         if(isFirstInRow){
                             // Add the index of the first element of the row in the pointer array
@@ -365,18 +370,18 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
                             accuPointerE.set(rowIdx - firstRow,idx + 1);
                         }
                     }
-                    if(colIdx > lastElement){
-                        break;
-                    }
+                     count++;
                 }
 
-                // If the row doesn't contain any element
-                if(isFirstInRow){
+                // If the row doesn't contain any element and is included in the selected rows
+                if(isFirstInRow && rowIdx >= firstRow && rowIdx < lastRow){
                     int lastIdx = i == 0 ? 0 : accuPointerE.get(i-1);
                     accuPointerB.add(lastIdx);
                     accuPointerE.add(lastIdx);
                 }
-                isFirstInRow = true;
+                if(rowIdx >= firstRow && rowIdx <= lastRow){
+                    i++;
+                }
             }
 
             int[] newColumns = Ints.toArray(accuColumns);
