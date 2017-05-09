@@ -258,6 +258,11 @@ public interface OpExecutioner {
     void printEnvironmentInformation();
 
     /**
+     * This method ensures all operations that supposed to be executed at this moment, are executed.
+     */
+    void push();
+
+    /**
      * This method ensures all operations that supposed to be executed at this moment, are executed and finished.
      */
     void commit();

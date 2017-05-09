@@ -1042,6 +1042,11 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
 
     @Override
+    public void push() {
+        flushQueue();
+    }
+
+    @Override
     public void commit() {
         flushQueueBlocking();
     }

@@ -41,6 +41,9 @@ import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
+import org.nd4j.linalg.api.ops.impl.accum.Norm1;
+import org.nd4j.linalg.api.ops.impl.accum.Norm2;
+import org.nd4j.linalg.api.ops.impl.accum.Sum;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
@@ -4133,6 +4136,18 @@ public class Nd4jTestsC extends BaseNd4jTest {
         for (int i = 0; i < out.size(); i++) {
             assertEquals(out.get(i), comp.get(i));
         }
+    }
+
+    @Test
+    public void testScalarReduction1() {
+        Accumulation op = new Norm2(Nd4j.create(1).assign(1.0));
+        double norm2 = Nd4j.getExecutioner().execAndReturn(op).getFinalResult().doubleValue();
+        double norm1 = Nd4j.getExecutioner().execAndReturn(new Norm1(Nd4j.create(1).assign(1.0))).getFinalResult().doubleValue();
+        double sum = Nd4j.getExecutioner().execAndReturn(new Sum(Nd4j.create(1).assign(1.0))).getFinalResult().doubleValue();
+
+        assertEquals(1.0, norm2, 0.001);
+        assertEquals(1.0, norm1, 0.001);
+        assertEquals(1.0, sum, 0.001);
     }
 
     @Override
