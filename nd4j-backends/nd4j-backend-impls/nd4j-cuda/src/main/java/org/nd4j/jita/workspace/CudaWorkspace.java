@@ -148,7 +148,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
                     int ret = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, requiredMemory, 0, context.getSpecialStream());
                     if (ret == 0)
-                        throw new ND4JIllegalStateException("memset failed.");
+                        throw new ND4JIllegalStateException("memset failed device_" + Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
                     context.syncSpecialStream();
                 }
