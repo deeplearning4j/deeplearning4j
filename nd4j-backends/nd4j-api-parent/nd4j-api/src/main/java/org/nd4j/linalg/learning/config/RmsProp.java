@@ -26,6 +26,10 @@ public class RmsProp implements IUpdater {
         this(DEFAULT_RMSPROP_LEARNING_RATE, DEFAULT_RMSPROP_RMSDECAY, DEFAULT_RMSPROP_EPSILON);
     }
 
+    public RmsProp(double rmsDecay){
+        this(DEFAULT_RMSPROP_LEARNING_RATE, rmsDecay, DEFAULT_RMSPROP_EPSILON);
+    }
+
     @Override
     public long stateSize(long numParams) {
         return numParams;

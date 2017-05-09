@@ -28,6 +28,10 @@ public class Nesterovs implements IUpdater {
         this(DEFAULT_NESTEROV_LEARNING_RATE, DEFAULT_NESTEROV_MOMENTUM, null);
     }
 
+    public Nesterovs(double momentum){
+        this(DEFAULT_NESTEROV_LEARNING_RATE, momentum);
+    }
+
     public Nesterovs(double learningRate, double momentum){
         this(learningRate, momentum, null);
     }
