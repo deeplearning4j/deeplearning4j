@@ -4097,6 +4097,44 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testZ1() throws Exception {
+        INDArray matrix = Nd4j.create(10, 10).assign(1.0);
+
+        INDArray exp = Nd4j.create(10).assign(10.0);
+
+        INDArray res = Nd4j.create(10);
+        INDArray sums = matrix.sum(res, 0);
+
+        assertTrue(res == sums);
+
+        assertEquals(exp, res);
+    }
+
+    @Test
+    public void testDupDelayed() {
+        INDArray in = Nd4j.zeros(10);
+
+        List<INDArray> out = new ArrayList<>();
+        List<INDArray> comp = new ArrayList<>();
+
+        for (int i = 0; i < in.length(); i++) {
+            in.putScalar(i, 1);
+            out.add(in.dup());
+            in.putScalar(i, 0);
+        }
+
+        for (int i = 0; i < in.length(); i++) {
+            in.putScalar(i, 1);
+            comp.add(Nd4j.create(in.data().dup()));
+            in.putScalar(i, 0);
+        }
+
+        for (int i = 0; i < out.size(); i++) {
+            assertEquals(out.get(i), comp.get(i));
+        }
+    }
+
     @Override
     public char ordering() {
         return 'c';

@@ -501,17 +501,33 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             return op.noOp();
 
         INDArray ret = null;
-        if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
-            ret = Nd4j.zeros(retShape);
+        if (op.z() == null || op.z() == op.x()) {
+            if (0.0 + Math.abs(op.zeroDouble()) <= Nd4j.EPS_THRESHOLD) {
+                ret = Nd4j.zeros(retShape);
+            } else {
+                if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
+                    ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+                else if (op.x().data().dataType() == DataBuffer.Type.FLOAT)
+                    ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
+                else if (op.x().data().dataType() == DataBuffer.Type.HALF)
+                    ret = Nd4j.valueArrayOf(retShape, op.zeroHalf());
+            }
+            op.setZ(ret);
         } else {
-            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
-                ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-            else if (op.x().data().dataType() == DataBuffer.Type.FLOAT)
-                ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
-            else if (op.x().data().dataType() == DataBuffer.Type.HALF)
-                ret = Nd4j.valueArrayOf(retShape, op.zeroHalf());
+            // compare length
+            if (op.z().lengthLong() != ArrayUtil.prodLong(retShape))
+                throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
+
+            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+                op.z().assign(op.zeroDouble());
+            } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+                op.z().assign(op.zeroFloat());
+            } else if (op.x().data().dataType() == DataBuffer.Type.HALF) {
+                op.z().assign(op.zeroHalf());
+            }
+
+            ret = op.z();
         }
-        op.setZ(ret);
 
         naiveExec(op, dimension);
 

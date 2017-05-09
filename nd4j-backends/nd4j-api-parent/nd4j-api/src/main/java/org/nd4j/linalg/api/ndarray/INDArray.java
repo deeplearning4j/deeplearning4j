@@ -1572,6 +1572,14 @@ public interface INDArray extends Serializable {
      */
     INDArray mean(int... dimension);
 
+    /**
+     * Returns the overall mean of this ndarray
+     *
+     * @param dimension the dimension to getScalar the mean along
+     * @return the mean along the specified dimension of this ndarray
+     */
+    INDArray mean(INDArray result, int... dimension);
+
     Number meanNumber();
 
     IComplexNumber meanComplex();
@@ -1644,6 +1652,17 @@ public interface INDArray extends Serializable {
      * @return the sum along the specified dimension of this ndarray
      */
     INDArray sum(int... dimension);
+
+
+
+    /**
+     * Returns the sum along the last dimension of this ndarray
+     *
+     * @param result result of this operation will be stored here
+     * @param dimension the dimension to getScalar the sum along
+     * @return the sum along the specified dimension of this ndarray
+     */
+    INDArray sum(INDArray result, int... dimension);
 
     /**
      * Sum the entire array

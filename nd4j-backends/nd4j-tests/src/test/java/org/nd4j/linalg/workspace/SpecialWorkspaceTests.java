@@ -61,18 +61,20 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
 
         assertEquals(0, workspace.getStepNumber());
 
-        assertEquals(1000 * Nd4j.sizeOfDataType(), workspace.getSpilledSize());
-        assertEquals(1000 * Nd4j.sizeOfDataType(), workspace.getInitialBlockSize());
-        assertEquals((1000 + (1000*3)) * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+        long requiredMemory = 1000 * Nd4j.sizeOfDataType();
+        long shiftedSize = ((long)(requiredMemory * 1.3)) + (8 -(((long)(requiredMemory * 1.3)) % 8));
+        assertEquals(requiredMemory, workspace.getSpilledSize());
+        assertEquals(shiftedSize, workspace.getInitialBlockSize());
+        assertEquals(workspace.getInitialBlockSize() * 4, workspace.getCurrentSize());
 
         try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace("WS1")) {
-            Nd4j.create(1100);
+            Nd4j.create(2000);
         }
 
         assertEquals(0, workspace.getStepNumber());
 
         assertEquals(1000 * Nd4j.sizeOfDataType(), workspace.getSpilledSize());
-        assertEquals(1100 * Nd4j.sizeOfDataType(), workspace.getPinnedSize());
+        assertEquals(2000 * Nd4j.sizeOfDataType(), workspace.getPinnedSize());
 
         assertEquals(0, workspace.getDeviceOffset());
 
@@ -91,7 +93,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
                     Nd4j.create(500);
                 }
 
-                assertEquals("Failed on iteration " + i, (i + 1) * 1000 * Nd4j.sizeOfDataType(), workspace.getDeviceOffset());
+                assertEquals("Failed on iteration " + i, (i + 1) * workspace.getInitialBlockSize(), workspace.getDeviceOffset());
             }
 
             if (e >= 2) {
@@ -171,9 +173,11 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
 
         assertEquals(0, workspace.getStepNumber());
 
-        assertEquals(1000 * Nd4j.sizeOfDataType(), workspace.getSpilledSize());
-        assertEquals(1000 * Nd4j.sizeOfDataType(), workspace.getInitialBlockSize());
-        assertEquals((1000 + (1000*3)) * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+        long requiredMemory = 1000 * Nd4j.sizeOfDataType();
+        long shiftedSize = ((long)(requiredMemory * 1.3)) + (8 -(((long)(requiredMemory * 1.3)) % 8));
+        assertEquals(requiredMemory, workspace.getSpilledSize());
+        assertEquals(shiftedSize, workspace.getInitialBlockSize());
+        assertEquals(workspace.getInitialBlockSize() * 4, workspace.getCurrentSize());
 
 
         for (int i = 0; i < 100; i++) {
@@ -185,7 +189,7 @@ public class SpecialWorkspaceTests extends BaseNd4jTest {
         }
 
 
-        assertEquals((1500 + (1500*3)) * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
+        assertEquals(workspace.getInitialBlockSize() * 4, workspace.getCurrentSize());
 
         assertEquals(0, workspace.getNumberOfPinnedAllocations());
         assertEquals(0, workspace.getNumberOfExternalAllocations());

@@ -30,12 +30,8 @@ import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.learning.config.AdaGrad;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 @RunWith(Parameterized.class)
 public class UpdaterTest extends BaseNd4jTest {
@@ -137,6 +133,26 @@ public class UpdaterTest extends BaseNd4jTest {
 
         for (int i = 0; i < 5; i++) {
 //            String learningRates = String.valueOf("\nAdamUpdater\n " + grad.applyUpdater(W, i)).replaceAll(";", "\n");
+//            System.out.println(learningRates);
+            W.addi(Nd4j.randn(rows, cols));
+        }
+    }
+
+    @Test
+    public void testAdaMax() {
+        int rows = 10;
+        int cols = 2;
+
+
+        AdaMax grad = new AdaMax();
+        grad.setStateViewArray(Nd4j.zeros(1, 2 * rows * cols), new int[] {rows, cols}, 'c', true);
+        INDArray W = Nd4j.zeros(rows, cols);
+        Distribution dist = Nd4j.getDistributions().createNormal(1e-3, 1e-3);
+        for (int i = 0; i < W.rows(); i++)
+            W.putRow(i, Nd4j.create(dist.sample(W.columns())));
+
+        for (int i = 0; i < 5; i++) {
+//            String learningRates = String.valueOf("\nAdaMax\n " + grad.getGradient(W, i)).replaceAll(";", "\n");
 //            System.out.println(learningRates);
             W.addi(Nd4j.randn(rows, cols));
         }
