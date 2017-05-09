@@ -69,7 +69,7 @@ public class UpdaterBlock {
         if (gradientUpdater == null) {
             ParamState varState = layersAndVariablesInBlock.get(0);
             String varName = varState.getParamName();
-            gradientUpdater = varState.getLayer().conf().getLayer().getIUpdaterByParam(varName).instantiate(updaterView, false); //UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getParamName());
+            gradientUpdater = varState.getLayer().conf().getLayer().getIUpdaterByParam(varName).instantiate(updaterView, updaterViewRequiresInitialization); //UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getParamName());
         }
     }
 
@@ -84,6 +84,13 @@ public class UpdaterBlock {
             return false;
         ParamState vs = layersAndVariablesInBlock.get(0);
         return !vs.getLayer().conf().isPretrain(); //Skip if not pretrain
+    }
+
+    public GradientUpdater getGradientUpdater(){
+        if(gradientUpdater == null){
+            init();
+        }
+        return gradientUpdater;
     }
 
     /**

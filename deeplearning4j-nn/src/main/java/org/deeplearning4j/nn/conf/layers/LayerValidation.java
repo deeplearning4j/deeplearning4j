@@ -198,66 +198,84 @@ public class LayerValidation {
         //Finally: Let's set the legacy momentum, epsilon, rmsDecay fields on the layer
         //At this point, it's purely cosmetic, to avoid NaNs etc there that might confuse users
         //The *true* values are now in the IUpdater instances
-        switch (layer.getUpdater()) {
-            case NESTEROVS:
-                if (Double.isNaN(momentum) && Double.isNaN(layer.getMomentum())) {
-                    layer.setMomentum(Nesterovs.DEFAULT_NESTEROV_MOMENTUM);
-                } else if (Double.isNaN(layer.getMomentum()))
-                    layer.setMomentum(momentum);
-                if (momentumSchedule != null && layer.getMomentumSchedule() == null)
-                    layer.setMomentumSchedule(momentumSchedule);
-                else if (momentumSchedule == null && layer.getMomentumSchedule() == null)
-                    layer.setMomentumSchedule(new HashMap<Integer, Double>());
-                break;
-            case ADAM:
-                if (Double.isNaN(adamMeanDecay) && Double.isNaN(layer.getAdamMeanDecay())) {
-                    layer.setAdamMeanDecay(Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY);
-                } else if (Double.isNaN(layer.getAdamMeanDecay()))
-                    layer.setAdamMeanDecay(adamMeanDecay);
+        if(layer.getUpdater() != null) {    //May be null with custom updaters etc
+            switch (layer.getUpdater()) {
+                case NESTEROVS:
+                    if (Double.isNaN(momentum) && Double.isNaN(layer.getMomentum())) {
+                        layer.setMomentum(Nesterovs.DEFAULT_NESTEROV_MOMENTUM);
+                    } else if (Double.isNaN(layer.getMomentum()))
+                        layer.setMomentum(momentum);
+                    if (momentumSchedule != null && layer.getMomentumSchedule() == null)
+                        layer.setMomentumSchedule(momentumSchedule);
+                    else if (momentumSchedule == null && layer.getMomentumSchedule() == null)
+                        layer.setMomentumSchedule(new HashMap<Integer, Double>());
+                    break;
+                case ADAM:
+                    if (Double.isNaN(adamMeanDecay) && Double.isNaN(layer.getAdamMeanDecay())) {
+                        layer.setAdamMeanDecay(Adam.DEFAULT_ADAM_BETA1_MEAN_DECAY);
+                    } else if (Double.isNaN(layer.getAdamMeanDecay()))
+                        layer.setAdamMeanDecay(adamMeanDecay);
 
-                if (Double.isNaN(adamVarDecay) && Double.isNaN(layer.getAdamVarDecay())) {
-                    layer.setAdamVarDecay(Adam.DEFAULT_ADAM_BETA2_VAR_DECAY);
-                } else if (Double.isNaN(layer.getAdamVarDecay()))
-                    layer.setAdamVarDecay(adamVarDecay);
+                    if (Double.isNaN(adamVarDecay) && Double.isNaN(layer.getAdamVarDecay())) {
+                        layer.setAdamVarDecay(Adam.DEFAULT_ADAM_BETA2_VAR_DECAY);
+                    } else if (Double.isNaN(layer.getAdamVarDecay()))
+                        layer.setAdamVarDecay(adamVarDecay);
 
-                if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())) {
-                    layer.setEpsilon(Adam.DEFAULT_ADAM_EPSILON);
-                } else if (Double.isNaN(layer.getEpsilon())) {
-                    layer.setEpsilon(epsilon);
-                }
-                break;
-            case ADADELTA:
-                if (Double.isNaN(rho) && Double.isNaN(layer.getRho())) {
-                    layer.setRho(AdaDelta.DEFAULT_ADADELTA_RHO);
-                } else if (Double.isNaN(layer.getRho())) {
-                    layer.setRho(rho);
-                }
+                    if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())) {
+                        layer.setEpsilon(Adam.DEFAULT_ADAM_EPSILON);
+                    } else if (Double.isNaN(layer.getEpsilon())) {
+                        layer.setEpsilon(epsilon);
+                    }
+                    break;
+                case ADADELTA:
+                    if (Double.isNaN(rho) && Double.isNaN(layer.getRho())) {
+                        layer.setRho(AdaDelta.DEFAULT_ADADELTA_RHO);
+                    } else if (Double.isNaN(layer.getRho())) {
+                        layer.setRho(rho);
+                    }
 
-                if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())) {
-                    layer.setEpsilon(AdaDelta.DEFAULT_ADADELTA_EPSILON);
-                } else if (Double.isNaN(layer.getEpsilon())) {
-                    layer.setEpsilon(epsilon);
-                }
-                break;
-            case ADAGRAD:
-                if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())) {
-                    layer.setEpsilon(AdaGrad.DEFAULT_ADAGRAD_EPSILON);
-                } else if (Double.isNaN(layer.getEpsilon())) {
-                    layer.setEpsilon(epsilon);
-                }
-                break;
-            case RMSPROP:
-                if (Double.isNaN(rmsDecay) && Double.isNaN(layer.getRmsDecay())) {
-                    layer.setRmsDecay(RmsProp.DEFAULT_RMSPROP_RMSDECAY);
-                } else if (Double.isNaN(layer.getRmsDecay()))
-                    layer.setRmsDecay(rmsDecay);
+                    if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())) {
+                        layer.setEpsilon(AdaDelta.DEFAULT_ADADELTA_EPSILON);
+                    } else if (Double.isNaN(layer.getEpsilon())) {
+                        layer.setEpsilon(epsilon);
+                    }
+                    break;
+                case ADAGRAD:
+                    if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())) {
+                        layer.setEpsilon(AdaGrad.DEFAULT_ADAGRAD_EPSILON);
+                    } else if (Double.isNaN(layer.getEpsilon())) {
+                        layer.setEpsilon(epsilon);
+                    }
+                    break;
+                case RMSPROP:
+                    if (Double.isNaN(rmsDecay) && Double.isNaN(layer.getRmsDecay())) {
+                        layer.setRmsDecay(RmsProp.DEFAULT_RMSPROP_RMSDECAY);
+                    } else if (Double.isNaN(layer.getRmsDecay()))
+                        layer.setRmsDecay(rmsDecay);
 
-                if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())) {
-                    layer.setEpsilon(RmsProp.DEFAULT_RMSPROP_EPSILON);
-                } else if (Double.isNaN(layer.getEpsilon())) {
-                    layer.setEpsilon(epsilon);
-                }
-                break;
+                    if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())) {
+                        layer.setEpsilon(RmsProp.DEFAULT_RMSPROP_EPSILON);
+                    } else if (Double.isNaN(layer.getEpsilon())) {
+                        layer.setEpsilon(epsilon);
+                    }
+                    break;
+                case ADAMAX:
+                    if (Double.isNaN(adamMeanDecay) && Double.isNaN(layer.getAdamMeanDecay())) {
+                        layer.setAdamMeanDecay(AdaMax.DEFAULT_ADAMAX_BETA1_MEAN_DECAY);
+                    } else if (Double.isNaN(layer.getAdamMeanDecay()))
+                        layer.setAdamMeanDecay(adamMeanDecay);
+
+                    if (Double.isNaN(adamVarDecay) && Double.isNaN(layer.getAdamVarDecay())) {
+                        layer.setAdamVarDecay(AdaMax.DEFAULT_ADAMAX_BETA2_VAR_DECAY);
+                    } else if (Double.isNaN(layer.getAdamVarDecay()))
+                        layer.setAdamVarDecay(adamVarDecay);
+
+                    if (Double.isNaN(epsilon) && Double.isNaN(layer.getEpsilon())) {
+                        layer.setEpsilon(AdaMax.DEFAULT_ADAMAX_EPSILON);
+                    } else if (Double.isNaN(layer.getEpsilon())) {
+                        layer.setEpsilon(epsilon);
+                    }
+            }
         }
     }
 

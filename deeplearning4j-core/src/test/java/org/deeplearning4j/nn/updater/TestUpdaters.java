@@ -632,13 +632,13 @@ public class TestUpdaters {
         MultiLayerUpdater updater = (MultiLayerUpdater) net.getUpdater();
         List<UpdaterBlock> l = updater.getUpdaterBlocks();
 
-        AdaGrad adaGrad = (AdaGrad) l.get(0).getGradientUpdater();
+        AdaGrad adaGrad = (AdaGrad) l.get(0).getGradientUpdater().getConfig();
         assertEquals(1e-6, adaGrad.getEpsilon(), 0.0);
 
-        AdaGrad adaGrad1 = (AdaGrad) l.get(1).getGradientUpdater();
+        AdaGrad adaGrad1 = (AdaGrad) l.get(1).getGradientUpdater().getConfig();
         assertEquals(0.123, adaGrad1.getEpsilon(), 0.0);
 
-        AdaGrad adaGrad2 = (AdaGrad) l.get(2).getGradientUpdater();
+        AdaGrad adaGrad2 = (AdaGrad) l.get(2).getGradientUpdater().getConfig();
         assertEquals(0.456, adaGrad2.getEpsilon(), 0.0);
 
 
@@ -657,13 +657,13 @@ public class TestUpdaters {
         updater = (MultiLayerUpdater) net.getUpdater();
         l = updater.getUpdaterBlocks();
 
-        AdaDelta adaDelta = (AdaDelta) l.get(0).getGradientUpdater();
+        AdaDelta adaDelta = (AdaDelta) l.get(0).getGradientUpdater().getConfig();
         assertEquals(1e-6, adaDelta.getEpsilon(), 0.0);
 
-        AdaDelta adaDelta1 = (AdaDelta) l.get(1).getGradientUpdater();
+        AdaDelta adaDelta1 = (AdaDelta) l.get(1).getGradientUpdater().getConfig();
         assertEquals(0.123, adaDelta1.getEpsilon(), 0.0);
 
-        AdaDelta adaDelta2 = (AdaDelta) l.get(2).getGradientUpdater();
+        AdaDelta adaDelta2 = (AdaDelta) l.get(2).getGradientUpdater().getConfig();
         assertEquals(0.456, adaDelta2.getEpsilon(), 0.0);
     }
 
@@ -769,7 +769,7 @@ public class TestUpdaters {
                                         .updater(org.deeplearning4j.nn.conf.Updater.RMSPROP).build())
                         .layer(2, new DenseLayer.Builder().nIn(2).nOut(2)
                                         .updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
-                        .layer(3, new OutputLayer.Builder().nIn(2).nOut(2)
+                        .layer(3, new DenseLayer.Builder().nIn(2).nOut(2)
                                         .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
                         .layer(4, new OutputLayer.Builder().nIn(2).nOut(2)
                                         .updater(org.deeplearning4j.nn.conf.Updater.ADAMAX).build())
@@ -784,19 +784,19 @@ public class TestUpdaters {
         MultiLayerUpdater updater = (MultiLayerUpdater) net.getUpdater();
         List<UpdaterBlock> l = updater.getUpdaterBlocks();
 
-        Adam adam = (Adam) l.get(0).getGradientUpdater(); //u0.updaterForVariable.get("W");
+        Adam adam = (Adam) l.get(0).getGradientUpdater().getConfig(); //u0.updaterForVariable.get("W");
         assertEquals(e, adam.getEpsilon(), 0.0);
 
-        RmsProp rmsProp = (RmsProp) l.get(1).getGradientUpdater(); //u1.updaterForVariable.get("W");
+        RmsProp rmsProp = (RmsProp) l.get(1).getGradientUpdater().getConfig(); //u1.updaterForVariable.get("W");
         assertEquals(e, rmsProp.getEpsilon(), 0.0);
 
-        AdaDelta adaDelta = (AdaDelta) l.get(2).getGradientUpdater(); //u2.updaterForVariable.get("W");
+        AdaDelta adaDelta = (AdaDelta) l.get(2).getGradientUpdater().getConfig(); //u2.updaterForVariable.get("W");
         assertEquals(e, adaDelta.getEpsilon(), 0.0);
 
-        AdaGrad adaGrad = (AdaGrad) l.get(3).getGradientUpdater(); //u3.updaterForVariable.get("W");
+        AdaGrad adaGrad = (AdaGrad) l.get(3).getGradientUpdater().getConfig(); //u3.updaterForVariable.get("W");
         assertEquals(e, adaGrad.getEpsilon(), 0.0);
 
-        AdaMax adaMax = (AdaMax) l.get(3).getGradientUpdater(); //u3.updaterForVariable.get("W");
+        AdaMax adaMax = (AdaMax) l.get(4).getGradientUpdater().getConfig(); //u3.updaterForVariable.get("W");
         assertEquals(e, adaMax.getEpsilon(), 0.0);
     }
 
@@ -814,8 +814,10 @@ public class TestUpdaters {
                                                 .build())
                                 .layer(2, new DenseLayer.Builder().nIn(10).nOut(10).name("l2")
                                                 .updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
-                                .layer(3, new OutputLayer.Builder().nIn(10).nOut(10).name("l3")
+                                .layer(3, new DenseLayer.Builder().nIn(10).nOut(10).name("l3")
                                                 .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
+                                .layer(4, new OutputLayer.Builder().nIn(10).nOut(10).name("l4")
+                                        .updater(org.deeplearning4j.nn.conf.Updater.ADAMAX).build())
                                 .build();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -833,7 +835,7 @@ public class TestUpdaters {
                                                 .build(), "l0")
                                 .addLayer("l2", new DenseLayer.Builder().nIn(10).nOut(10)
                                                 .updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build(), "l1")
-                                .addLayer("l3", new OutputLayer.Builder().nIn(10).nOut(10)
+                                .addLayer("l3", new DenseLayer.Builder().nIn(10).nOut(10)
                                                 .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build(), "l2")
                                 .addLayer("l4", new OutputLayer.Builder().nIn(10).nOut(10)
                                                 .updater(org.deeplearning4j.nn.conf.Updater.ADAMAX).build(), "l3")

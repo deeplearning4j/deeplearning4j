@@ -24,14 +24,19 @@ import org.junit.Before;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.Nesterovs;
+import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -61,10 +66,12 @@ public class TestDecayPolicies {
 
     @Before
     public void beforeDo() {
+        Nd4j.getRandom().setSeed(12345);
         int nLayers = 2;
         String wKey, bKey;
 
         gradient = Nd4j.ones(1, nIn * nOut + nOut);
+        gradient.addi(Nd4j.rand(gradient.shape()));
         weightGradient = gradient.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
         biasGradient = gradient.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
 
@@ -295,6 +302,8 @@ public class TestDecayPolicies {
         int iterations = 2;
 
         for (org.deeplearning4j.nn.conf.Updater updaterFunc : updaters) {
+            beforeDo();
+
             gradient.assign(1);
 
             double lr = 1e-2;
@@ -348,6 +357,8 @@ public class TestDecayPolicies {
         int[] nOuts = {2, 3};
 
         for (org.deeplearning4j.nn.conf.Updater updaterFunc : updaters) {
+            beforeDo();
+
             double lr = 1e-2;
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr)
@@ -477,15 +488,15 @@ public class TestDecayPolicies {
     @Test
     public void testMomentumScheduleSingleLayer() {
         double lr = 1e-2;
-        double mu = 0.6;
+        double mu = 0.9;
         Map<Integer, Double> momentumAfter = new HashMap<>();
         momentumAfter.put(1, 0.2);
         int iterations = 2;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr).momentum(mu)
-                        .momentumAfter(momentumAfter).iterations(iterations).layer(new DenseLayer.Builder().nIn(nIn)
-                                        .nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
-                        .build();
+                .momentumAfter(momentumAfter).iterations(iterations).layer(new DenseLayer.Builder().nIn(nIn)
+                        .nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
+                .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
@@ -677,6 +688,8 @@ public class TestDecayPolicies {
     public double testAdaGradComputation(Gradient gradientActual, Gradient gradientExpected, double lr,
                     Map<Integer, Double> learningRateAfter, int i) {
 
+        double epsilon = AdaGrad.DEFAULT_ADAGRAD_EPSILON;
+
         for (Map.Entry<String, INDArray> entry : gradientExpected.gradientForVariable().entrySet()) {
             if (learningRateAfter != null)
                 lr = (learningRateAfter.containsKey(i)) ? learningRateAfter.get(i) : lr;
@@ -702,6 +715,7 @@ public class TestDecayPolicies {
                     Map<Integer, Double> learningRateAfter, int i) {
         double beta1 = 0.9;
         double beta2 = 0.999;
+        double epsilon = Adam.DEFAULT_ADAM_EPSILON;
 
         for (Map.Entry<String, INDArray> entry : gradientExpected.gradientForVariable().entrySet()) {
             if (learningRateAfter != null)
@@ -736,35 +750,9 @@ public class TestDecayPolicies {
         return lr;
     }
 
-    public double testRMSPropComputation(Gradient gradientActual, Gradient gradientExpected, double lr,
-                    Map<Integer, Double> learningRateAfter, int i) {
-        double rmsDecay = 0.95;
-        double epsilon = 1e-8;
-
-        for (Map.Entry<String, INDArray> entry : gradientExpected.gradientForVariable().entrySet()) {
-            if (learningRateAfter != null)
-                lr = (learningRateAfter.containsKey(i)) ? learningRateAfter.get(i) : lr;
-            key = entry.getKey();
-            val = entry.getValue();
-            INDArray lastGTmp = tmpStorage4.get(key);
-
-            if (lastGTmp == null)
-                lastGTmp = Nd4j.zeros(val.shape());
-
-            lastGTmp.muli(rmsDecay).addi(val.mul(val).muli(1 - rmsDecay));
-            gradExpected = val.mul(lr).div(Transforms.sqrt(lastGTmp.add(epsilon)));
-            gradientExpected.setGradientFor(key, gradExpected);
-
-            assertEquals(gradExpected, gradientActual.getGradientFor(key));
-            tmpStorage4.put(key, lastGTmp);
-        }
-
-        return lr;
-    }
-
-
     public double testAdaMaxComputation(Gradient gradientActual, Gradient gradientExpected, double lr,
                                         Map<Integer, Double> learningRateAfter, int i) {
+
         double beta1 = 0.9;
         double beta2 = 0.999;
 
@@ -783,11 +771,10 @@ public class TestDecayPolicies {
                 uTmp = Nd4j.zeros(val.shape());
 
             mTmp.muli(beta1).addi(val.mul(1.0 - beta1));
-            uTmp.muli(Transforms.max(val.muli(val), Transforms.abs(gradExpected)));
+            uTmp.assign(Transforms.max(uTmp.mul(beta2), Transforms.abs(val)));
 
             double beta1t = FastMath.pow(beta1, i + 1);
-            double beta2t = FastMath.pow(beta2, i + 1);
-            double alphat = lr * FastMath.sqrt(1 - beta2t) / (1 - beta1t);
+            double alphat = lr / (1 - beta1t);
             if (Double.isNaN(alphat) || alphat == 0.0)
                 alphat = epsilon;
 
@@ -798,6 +785,32 @@ public class TestDecayPolicies {
             tmpStorage2.put(key, mTmp);
             tmpStorage3.put(key, uTmp);
         }
+        return lr;
+    }
+
+    public double testRMSPropComputation(Gradient gradientActual, Gradient gradientExpected, double lr,
+                    Map<Integer, Double> learningRateAfter, int i) {
+        double rmsDecay = RmsProp.DEFAULT_RMSPROP_RMSDECAY;
+        double epsilon = RmsProp.DEFAULT_RMSPROP_EPSILON;
+
+        for (Map.Entry<String, INDArray> entry : gradientExpected.gradientForVariable().entrySet()) {
+            if (learningRateAfter != null)
+                lr = (learningRateAfter.containsKey(i)) ? learningRateAfter.get(i) : lr;
+            key = entry.getKey();
+            val = entry.getValue();
+            INDArray lastGTmp = tmpStorage4.get(key);
+
+            if (lastGTmp == null)
+                lastGTmp = Nd4j.valueArrayOf(val.shape(), epsilon);
+
+            lastGTmp.muli(rmsDecay).addi(val.mul(val).muli(1 - rmsDecay));
+            gradExpected = val.mul(lr).div(Transforms.sqrt(lastGTmp.add(epsilon)));
+            gradientExpected.setGradientFor(key, gradExpected);
+
+            assertEquals(gradExpected, gradientActual.getGradientFor(key));
+            tmpStorage4.put(key, lastGTmp);
+        }
+
         return lr;
     }
 
