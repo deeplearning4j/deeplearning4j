@@ -227,6 +227,66 @@ public class TestUpdaters {
     }
 
     @Test
+    public void testAdaMaxUpdater() {
+        INDArray m, v;
+        double lr = 0.01;
+        int iteration = 0;
+        double beta1 = 0.8;
+        double beta2 = 0.888;
+        double epsilon = AdaMax.DEFAULT_ADAMAX_EPSILON;
+
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr)
+                .iterations(iteration).adamMeanDecay(beta1).adamVarDecay(beta2).layer(new DenseLayer.Builder()
+                        .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADAMAX).build())
+                .build();
+
+        int numParams = conf.getLayer().initializer().numParams(conf);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer.setBackpropGradientsViewArray(gradients);
+        Updater updater = UpdaterCreator.getUpdater(layer);
+        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
+        INDArray updaterState = Nd4j.create(1, updaterStateSize);
+        updater.setStateViewArray(layer, updaterState, true);
+
+        updater.update(layer, gradient, iteration, 1);
+
+        double beta1t = FastMath.pow(beta1, iteration + 1);
+        double beta2t = FastMath.pow(beta2, iteration + 1);
+        double alphat = lr * FastMath.sqrt(1 - beta2t) / (1 - beta1t);
+        if (Double.isNaN(alphat) || alphat == 0.0)
+            alphat = epsilon;
+
+        Gradient gradientCopyPreUpdate = new DefaultGradient();
+        INDArray g = gradients.dup();
+        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
+        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
+
+        int count = 0;
+        for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
+            val = entry.getValue();
+            m = Nd4j.zeros(val.shape());
+            v = Nd4j.zeros(val.shape());
+
+            m.muli(beta1).addi(val.mul(1.0 - beta1));
+            v.muli(beta2).addi(val.mul(val).mul(1.0 - beta2));
+            gradExpected = m.mul(alphat).divi(Transforms.sqrt(v).addi(epsilon));
+            if (!gradExpected.equals(gradient.getGradientFor(entry.getKey()))) {
+                System.out.println(Arrays.toString(gradExpected.dup().data().asFloat()));
+                System.out.println(Arrays.toString(gradient.getGradientFor(entry.getKey()).dup().data().asFloat()));
+            }
+            assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
+            count++;
+        }
+
+        assertEquals(beta1, layer.conf().getLayer().getAdamMeanDecay(), 1e-4);
+        assertEquals(beta2, layer.conf().getLayer().getAdamVarDecay(), 1e-4);
+        assertEquals(2, count);
+    }
+
+    @Test
     public void testNestorovsUpdater() {
         double lr = 1e-2;
         double mu = 0.6;
@@ -711,6 +771,8 @@ public class TestUpdaters {
                                         .updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
                         .layer(3, new OutputLayer.Builder().nIn(2).nOut(2)
                                         .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
+                        .layer(4, new OutputLayer.Builder().nIn(2).nOut(2)
+                                        .updater(org.deeplearning4j.nn.conf.Updater.ADAMAX).build())
                         .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -733,6 +795,9 @@ public class TestUpdaters {
 
         AdaGrad adaGrad = (AdaGrad) l.get(3).getGradientUpdater(); //u3.updaterForVariable.get("W");
         assertEquals(e, adaGrad.getEpsilon(), 0.0);
+
+        AdaMax adaMax = (AdaMax) l.get(3).getGradientUpdater(); //u3.updaterForVariable.get("W");
+        assertEquals(e, adaMax.getEpsilon(), 0.0);
     }
 
     @Test
@@ -770,7 +835,9 @@ public class TestUpdaters {
                                                 .updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build(), "l1")
                                 .addLayer("l3", new OutputLayer.Builder().nIn(10).nOut(10)
                                                 .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build(), "l2")
-                                .setOutputs("l3").build();
+                                .addLayer("l4", new OutputLayer.Builder().nIn(10).nOut(10)
+                                                .updater(org.deeplearning4j.nn.conf.Updater.ADAMAX).build(), "l3")
+                                .setOutputs("l4").build();
 
                 ComputationGraph net = new ComputationGraph(conf);
                 net.init();
@@ -780,8 +847,9 @@ public class TestUpdaters {
             }
 
 
-            //Expect 4 blocks: (layer0 W, layer0 B, layer 1 W], [layer 1 B], [layer 2 W, layer 2 B], [layer 3 W, layer 3 B]
-            assertEquals(4, blocks.size());
+            //Expect 4 blocks: (layer0 W, layer0 B, layer 1 W], [layer 1 B], [layer 2 W, layer 2 B],
+            // [layer 3 W, layer 3 B], [layer 4 W, layer 4 B]
+            assertEquals(5, blocks.size());
 
 
             //Check first updater block:
@@ -843,6 +911,21 @@ public class TestUpdaters {
             int nUpdaterVals3 = nParams3; //1x for AdaGrad
             assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2, ub3.getUpdaterViewOffsetStart());
             assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2 + nUpdaterVals3, ub3.getUpdaterViewOffsetEnd());
+
+            //Check fifth updater black
+            UpdaterBlock ub4 = blocks.get(4);
+            assertEquals(2, ub4.getLayersAndVariablesInBlock().size());
+            assertEquals("l4", ub4.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
+            assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub4.getLayersAndVariablesInBlock().get(0).getParamName());
+            assertEquals("l4", ub4.getLayersAndVariablesInBlock().get(1).getLayer().conf().getLayer().getLayerName());
+            assertEquals(DefaultParamInitializer.BIAS_KEY, ub4.getLayersAndVariablesInBlock().get(1).getParamName());
+
+            int nParams4 = 10 * 10 + 10;
+            assertEquals(nParams0 + nParams1 + nParams2 + nParams3, ub4.getParamOffsetStart());
+            assertEquals(nParams0 + nParams1 + nParams2 + nParams3 + nParams4, ub4.getParamOffsetEnd());
+            int nUpdaterVals4 = 2*nParams4; //2x for AdaGrad
+            assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2 + nUpdaterVals3, ub4.getUpdaterViewOffsetStart());
+            assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2 + nUpdaterVals3 + nUpdaterVals4, ub4.getUpdaterViewOffsetEnd());
         }
     }
 

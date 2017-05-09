@@ -38,7 +38,7 @@ import org.deeplearning4j.spark.text.functions.TextPipeline;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.AdaGradUpdater;
+import org.nd4j.linalg.learning.legacy.AdaGrad;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
@@ -90,7 +90,7 @@ public class Glove implements Serializable {
     }
 
 
-    private Pair<INDArray, Double> update(AdaGradUpdater weightAdaGrad, AdaGradUpdater biasAdaGrad, INDArray syn0, INDArray bias,
+    private Pair<INDArray, Double> update(AdaGrad weightAdaGrad, AdaGrad biasAdaGrad, INDArray syn0, INDArray bias,
                     VocabWord w1, INDArray wordVector, INDArray contextVector, double gradient) {
         //gradient for word vectors
         INDArray grad1 = contextVector.mul(gradient);

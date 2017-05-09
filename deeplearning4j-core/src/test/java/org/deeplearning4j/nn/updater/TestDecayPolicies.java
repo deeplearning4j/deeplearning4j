@@ -57,7 +57,7 @@ public class TestDecayPolicies {
     Map<String, INDArray> tmpStorage, tmpStorage2, tmpStorage3, tmpStorage4 = new HashMap<>();
     org.deeplearning4j.nn.conf.Updater[] updaters = {org.deeplearning4j.nn.conf.Updater.SGD,
                     org.deeplearning4j.nn.conf.Updater.ADAGRAD, org.deeplearning4j.nn.conf.Updater.ADAM,
-                    org.deeplearning4j.nn.conf.Updater.RMSPROP,};
+                    org.deeplearning4j.nn.conf.Updater.RMSPROP, org.deeplearning4j.nn.conf.Updater.ADAMAX};
 
     @Before
     public void beforeDo() {
@@ -331,6 +331,8 @@ public class TestDecayPolicies {
                     lr = testAdamComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
                 else if (updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.RMSPROP))
                     lr = testRMSPropComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
+                else if (updaterFunc.equals(org.deeplearning4j.nn.conf.Updater.ADAMAX))
+                    lr = testAdaMaxComputation(gradientActual, gradientExpected, lr, learningRateAfter, i);
                 assertEquals(lr, layer.conf().getLearningRateByParam("W"), 1e-4);
             }
         }
@@ -757,6 +759,45 @@ public class TestDecayPolicies {
             tmpStorage4.put(key, lastGTmp);
         }
 
+        return lr;
+    }
+
+
+    public double testAdaMaxComputation(Gradient gradientActual, Gradient gradientExpected, double lr,
+                                        Map<Integer, Double> learningRateAfter, int i) {
+        double beta1 = 0.9;
+        double beta2 = 0.999;
+
+        for (Map.Entry<String, INDArray> entry : gradientExpected.gradientForVariable().entrySet()) {
+            if (learningRateAfter != null)
+                lr = (learningRateAfter.containsKey(i)) ? learningRateAfter.get(i) : lr;
+            key = entry.getKey();
+            val = entry.getValue();
+
+            INDArray mTmp = tmpStorage2.get(key);
+            INDArray uTmp = tmpStorage3.get(key);
+
+            if (mTmp == null)
+                mTmp = Nd4j.zeros(val.shape());
+            if (uTmp == null)
+                uTmp = Nd4j.zeros(val.shape());
+
+            mTmp.muli(beta1).addi(val.mul(1.0 - beta1));
+            uTmp.muli(Transforms.max(val.muli(val), Transforms.abs(gradExpected)));
+
+            double beta1t = FastMath.pow(beta1, i + 1);
+            double beta2t = FastMath.pow(beta2, i + 1);
+            double alphat = lr * FastMath.sqrt(1 - beta2t) / (1 - beta1t);
+            if (Double.isNaN(alphat) || alphat == 0.0)
+                alphat = epsilon;
+
+            gradExpected = mTmp.mul(alphat).divi(uTmp);
+            gradientExpected.setGradientFor(key, gradExpected);
+            assertEquals(gradExpected, gradientActual.getGradientFor(key));
+
+            tmpStorage2.put(key, mTmp);
+            tmpStorage3.put(key, uTmp);
+        }
         return lr;
     }
 

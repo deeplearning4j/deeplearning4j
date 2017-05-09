@@ -100,26 +100,4 @@ public class UpdaterUtils {
 
         return lrConfigEqual;
     }
-
-    public static IUpdater enumToConfigWithDefaults(Updater updater){
-        switch (updater){
-            case SGD:
-                return new Sgd();
-            case ADAM:
-                return new Adam();
-            case ADADELTA:
-                return new AdaDelta();
-            case NESTEROVS:
-                return new Nesterovs();
-            case ADAGRAD:
-                return new AdaGrad();
-            case RMSPROP:
-                return new RmsProp();
-            case NONE:
-                return new NoOp();
-            case CUSTOM:
-            default:
-                throw new UnsupportedOperationException();
-        }
-    }
 }

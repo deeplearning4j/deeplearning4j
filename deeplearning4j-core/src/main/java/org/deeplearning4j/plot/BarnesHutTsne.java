@@ -38,7 +38,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
-import org.nd4j.linalg.learning.AdaGradUpdater;
+import org.nd4j.linalg.learning.legacy.AdaGrad;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -75,7 +75,7 @@ public class BarnesHutTsne implements Model {
     protected int stopLyingIteration = 250;
     protected double tolerance = 1e-5;
     protected double learningRate = 500;
-    protected AdaGradUpdater adaGrad;
+    protected AdaGrad adaGrad;
     protected boolean useAdaGrad = true;
     protected double perplexity = 30;
     //protected INDArray gains,yIncs;
@@ -510,9 +510,8 @@ public class BarnesHutTsne implements Model {
 
         if (useAdaGrad) {
             if (adaGrad == null)
-                adaGrad = new AdaGradUpdater(null);
-//            gradChange = adaGrad.getGradient(gradChange, 0);
-            adaGrad.applyUpdater(gradChange, 0);
+                adaGrad = new AdaGrad();
+            gradChange = adaGrad.getGradient(gradChange, 0);
 
         }
 

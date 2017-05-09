@@ -924,7 +924,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          * @see Updater
          */
         public Builder updater(Updater updater) {
-            return updater(UpdaterUtils.enumToConfigWithDefaults(updater));
+            return updater(updater.getIUpdaterWithDefaultConfig());
         }
 
         public Builder updater(IUpdater updater){

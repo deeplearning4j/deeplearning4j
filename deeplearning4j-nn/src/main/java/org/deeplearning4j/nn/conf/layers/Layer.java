@@ -25,7 +25,6 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
-import org.deeplearning4j.nn.updater.UpdaterUtils;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.activations.Activation;
@@ -458,7 +457,7 @@ public abstract class Layer implements Serializable, Cloneable {
          * @see Updater
          */
         public T updater(Updater updater) {
-            return updater(UpdaterUtils.enumToConfigWithDefaults(updater));
+            return updater(updater.getIUpdaterWithDefaultConfig());
         }
 
         public T updater(IUpdater updater){

@@ -11,7 +11,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
-import org.nd4j.linalg.learning.AdaGradUpdater;
+import org.nd4j.linalg.learning.legacy.AdaGrad;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +46,7 @@ public class Tsne {
     protected int stopLyingIteration = 250;
     protected double tolerance = 1e-5;
     protected double learningRate = 500;
-    protected AdaGradUpdater adaGrad;
+    protected AdaGrad adaGrad;
     protected boolean useAdaGrad = true;
     protected double perplexity = 30;
     //protected INDArray gains,yIncs;
