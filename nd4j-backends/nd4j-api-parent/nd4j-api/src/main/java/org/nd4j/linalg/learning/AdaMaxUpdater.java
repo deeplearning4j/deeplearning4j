@@ -62,6 +62,10 @@ public class AdaMaxUpdater implements GradientUpdater<AdaMax> {
         if (m == null || u == null)
             throw new IllegalStateException("Updater has not been initialized with view state");
 
+        //m = B_1 * m + (1-B_1)*grad
+        m.muli(config.getBeta1()).addi(gradient.mul(1-config.getBeta1()));
+
+        //u = max(B_2 * u, |grad|)
         u.muli(config.getBeta2());
         Transforms.abs(gradient,false);   //In-place should be OK here, original gradient values aren't used again later
         Nd4j.getExecutioner().exec(new Max(u,gradient,u,u.length()));
