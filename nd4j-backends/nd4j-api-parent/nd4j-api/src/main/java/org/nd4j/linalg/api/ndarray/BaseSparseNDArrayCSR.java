@@ -175,7 +175,8 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
      * Return the minor pointers. (columns for CSR, rows for CSC,...)
      * */
     public DataBuffer getMinorPointer(){
-       return Nd4j.getDataBufferFactory().create(columnsPointers, 0, length());
+        return Nd4j.getDataBufferFactory().create(columnsPointers, 0, length());
+
     }
 
     public double[] getDoubleValues(){
@@ -311,7 +312,6 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
 
         int[] offsets = resolution.getOffsets();
         int[] shape = resolution.getShapes();
-        //System.out.println("offset " + offsets[0] + " " + offsets[1] + " shape " + shape[0] + " " + shape[1]);
 
         List<Integer> accuColumns = new ArrayList<>();
         List<Integer> accuPointerB = new ArrayList<>();
@@ -319,32 +319,15 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
 
         if(shape.length == 2) {
 
-            int firstRow = 0;
-            int lastRow = 0;
-            int firstElement = 0;
-            int lastElement = 0;
-
-            if(resolution.getOffset() != 0 && offsets[0] == 0 && offsets[1] == 0) {
-                firstRow = (int)resolution.getOffset() / shape()[1];
-                lastRow = firstRow + shape[0];
-                firstElement = (int)resolution.getOffset() % shape()[1];
-                lastElement = firstElement + shape[1];
-                //offsets[1] = (int) resolution.getOffset() % shape()[1];
-            } else {
-                firstRow = offsets [0];
-                lastRow = firstRow + shape[0];
-                firstElement = offsets [1];
-                lastElement = firstElement + shape[1];
-                if(resolution.getOffset() != 0) {
-                    //offsets[0] = (int)resolution.getOffset() / shape()[1]
-                    offsets[1] = (int) resolution.getOffset() % shape()[1];
-                    firstElement = offsets[1];
-                    lastElement = firstElement + shape[1];
-                    //System.out.println("After adjusting: offset " + offsets[0] + " " + offsets[1] + " shape " + shape[0] + " " + shape[1]);
-                }
+            if(resolution.getOffset() != 0 ) {
+                offsets[0] = (int) resolution.getOffset() / shape()[1];
+                offsets[1] = (int) resolution.getOffset() % shape()[1];
             }
-            //System.out.println("from row " + firstRow + " to row " + lastRow);
-            //System.out.println("from col " + firstElement + " to col " + lastElement);
+            int firstRow = offsets [0];
+            int lastRow = firstRow + shape[0];
+            int firstElement = offsets [1];
+            int lastElement = firstElement + shape[1];
+
             int count = 0;
             int i  = 0;
             for(int rowIdx = 0; rowIdx < lastRow; rowIdx++){
@@ -358,7 +341,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
                     if(colIdx >= firstElement && colIdx < lastElement && rowIdx >= firstRow && rowIdx < lastRow){
 
                         // add the new column pointer for this element
-                        accuColumns.add(colIdx - firstElement); // fixme - difference with offsets[1]
+                        accuColumns.add(colIdx - firstElement);
 
                         if(isFirstInRow){
                             // Add the index of the first element of the row in the pointer array
