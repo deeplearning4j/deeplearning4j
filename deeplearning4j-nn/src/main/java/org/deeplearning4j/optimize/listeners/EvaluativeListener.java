@@ -2,8 +2,7 @@ package org.deeplearning4j.optimize.listeners;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.eval.Evaluation;
-import org.deeplearning4j.eval.IEvaluation;
+import org.deeplearning4j.eval.*;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -126,6 +125,23 @@ public class EvaluativeListener implements IterationListener {
             }
         } else throw new DL4JInvalidInputException("Model is unknown: " + model.getClass().getCanonicalName());
 
-        // TODO: need to print out something now. Callback probably
+        // TODO: maybe something better should be used here?
+        log.info("Reporting evaluation results:");
+        for (IEvaluation evaluation: evaluations)
+            printEvalResults(evaluation);
+    }
+
+
+    protected void printEvalResults(IEvaluation evaluation) {
+        if (evaluation instanceof Evaluation)
+            log.info("{}:\n{}", evaluation.getClass().getSimpleName(), ((Evaluation) evaluation).stats());
+        else if (evaluation instanceof ROC)
+            log.info("{}:\n{}", evaluation.getClass().getSimpleName(), ((ROC) evaluation).calculateAUC());
+        else if (evaluation instanceof ROCMultiClass)
+            log.info("{}:\n{}", evaluation.getClass().getSimpleName(), ((ROCMultiClass) evaluation).calculateAverageAUC());
+        else if (evaluation instanceof ROCBinary)
+            log.info("{}:\n{}", evaluation.getClass().getSimpleName(), ((ROCBinary) evaluation).stats());
+        else if (evaluation instanceof RegressionEvaluation)
+            log.info("{}:\n{}", evaluation.getClass().getSimpleName(), ((RegressionEvaluation) evaluation).stats());
     }
 }
