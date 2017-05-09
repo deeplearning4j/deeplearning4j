@@ -38,8 +38,38 @@ public class EvaluativeListener implements IterationListener {
         this(iterator, frequency, new Evaluation());
     }
 
+    public EvaluativeListener(@NonNull MultiDataSetIterator iterator, int frequency) {
+        this(iterator, frequency, new Evaluation());
+    }
+
     public EvaluativeListener(@NonNull DataSetIterator iterator, int frequency, IEvaluation... evaluations) {
         this.dsIterator = iterator;
+        this.frequency = frequency;
+        this.evaluations = evaluations;
+    }
+
+    public EvaluativeListener(@NonNull MultiDataSetIterator iterator, int frequency, IEvaluation... evaluations) {
+        this.mdsIterator = iterator;
+        this.frequency = frequency;
+        this.evaluations = evaluations;
+    }
+
+    public EvaluativeListener(@NonNull DataSet dataSet, int frequency) {
+        this(dataSet, frequency, new Evaluation());
+    }
+
+    public EvaluativeListener(@NonNull MultiDataSet multiDataSet, int frequency) {
+        this(multiDataSet, frequency, new Evaluation());
+    }
+
+    public EvaluativeListener(@NonNull DataSet dataSet, int frequency, IEvaluation... evaluations) {
+        this.ds = dataSet;
+        this.frequency = frequency;
+        this.evaluations = evaluations;
+    }
+
+    public EvaluativeListener(@NonNull MultiDataSet multiDataSet, int frequency, IEvaluation... evaluations) {
+        this.mds = multiDataSet;
         this.frequency = frequency;
         this.evaluations = evaluations;
     }
