@@ -1469,37 +1469,46 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             Pointer y = allocator.getPointer(op.y(), context);
             Pointer yShapeInfo = allocator.getPointer(op.y().shapeInfoDataBuffer(), context);
 
+            int xEWS = op.x().elementWiseStride();
+            int yEWS = op.y().elementWiseStride();
+            int zEWS = op.z().elementWiseStride();
+
+            boolean xRow = op.x().isRowVector();
+            boolean yRow = op.y().isRowVector();
+            boolean zRow = op.z().isRowVector();
+
+
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                if (op.x().elementWiseStride() >= 1 && op.y().elementWiseStride() >= 1 && !op.isExecSpecial()
-                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+                if ((xEWS >= 1 && yEWS >= 1 && zEWS >= 1 && !op.isExecSpecial()
+                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
 
                     nativeOps.execPairwiseTransformDouble(xShapeInfoHostPointer, op.opNum(), (DoublePointer) x,
-                                    op.x().elementWiseStride(), (DoublePointer) y, op.y().elementWiseStride(),
-                                    (DoublePointer) z, op.z().elementWiseStride(), (DoublePointer) extraArgs, op.n());
+                                    xEWS, (DoublePointer) y, yEWS,
+                                    (DoublePointer) z, zEWS, (DoublePointer) extraArgs, op.n());
                 } else {
                     nativeOps.execPairwiseTransformDouble(xShapeInfoHostPointer, op.opNum(), (DoublePointer) x,
                                     (IntPointer) xShapeInfo, (DoublePointer) y, (IntPointer) yShapeInfo,
                                     (DoublePointer) z, (IntPointer) zShapeInfo, (DoublePointer) extraArgs);
                 }
             } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
-                if (op.x().elementWiseStride() >= 1 && op.y().elementWiseStride() >= 1
-                                && op.x().elementWiseStride() == op.y().elementWiseStride() && !op.isExecSpecial()
-                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+                if ((xEWS >= 1 && yEWS >= 1
+                                && xEWS == yEWS && !op.isExecSpecial()
+                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
                     nativeOps.execPairwiseTransformFloat(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x,
-                                    op.x().elementWiseStride(), (FloatPointer) y, op.y().elementWiseStride(),
-                                    (FloatPointer) z, op.z().elementWiseStride(), (FloatPointer) extraArgs, op.n());
+                                    xEWS, (FloatPointer) y, yEWS,
+                                    (FloatPointer) z, zEWS, (FloatPointer) extraArgs, op.n());
                 } else {
                     nativeOps.execPairwiseTransformFloat(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x,
                                     (IntPointer) xShapeInfo, (FloatPointer) y, (IntPointer) yShapeInfo,
                                     (FloatPointer) z, (IntPointer) zShapeInfo, (FloatPointer) extraArgs);
                 }
             } else {
-                if (op.x().elementWiseStride() >= 1 && op.y().elementWiseStride() >= 1
-                                && op.x().elementWiseStride() == op.y().elementWiseStride() && !op.isExecSpecial()
-                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+                if ((xEWS >= 1 && yEWS >= 1
+                                && xEWS == op.y().elementWiseStride() && !op.isExecSpecial()
+                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
                     nativeOps.execPairwiseTransformHalf(xShapeInfoHostPointer, op.opNum(), (ShortPointer) x,
-                                    op.x().elementWiseStride(), (ShortPointer) y, op.y().elementWiseStride(),
-                                    (ShortPointer) z, op.z().elementWiseStride(), (ShortPointer) extraArgs, op.n());
+                                    xEWS, (ShortPointer) y, yEWS,
+                                    (ShortPointer) z, zEWS, (ShortPointer) extraArgs, op.n());
                 } else {
                     nativeOps.execPairwiseTransformHalf(xShapeInfoHostPointer, op.opNum(), (ShortPointer) x,
                                     (IntPointer) xShapeInfo, (ShortPointer) y, (IntPointer) yShapeInfo,

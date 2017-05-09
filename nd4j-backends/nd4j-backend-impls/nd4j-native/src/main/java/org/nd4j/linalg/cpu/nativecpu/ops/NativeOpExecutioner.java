@@ -594,13 +594,22 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if (op.y() != null) {
-                if (op.x().elementWiseStride() >= 1 && op.y().elementWiseStride() >= 1
-                                && op.x().elementWiseStride() == op.y().elementWiseStride() && !op.isExecSpecial()
-                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+
+                int xEWS = op.x().elementWiseStride();
+                int yEWS = op.y().elementWiseStride();
+                int zEWS = op.z().elementWiseStride();
+
+                boolean xRow = op.x().isRowVector();
+                boolean yRow = op.y().isRowVector();
+                boolean zRow = op.z().isRowVector();
+
+                if ((xEWS >= 1 && yEWS >= 1
+                                && xEWS == yEWS && !op.isExecSpecial()
+                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
                     loop.execPairwiseTransformDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                                    op.x().elementWiseStride(), (DoublePointer) op.y().data().addressPointer(),
-                                    op.y().elementWiseStride(), (DoublePointer) op.z().data().addressPointer(),
-                                    op.z().elementWiseStride(), (DoublePointer) getPointerForExtraArgs(op), op.n());
+                                    xEWS, (DoublePointer) op.y().data().addressPointer(),
+                                    yEWS, (DoublePointer) op.z().data().addressPointer(),
+                                    zEWS, (DoublePointer) getPointerForExtraArgs(op), op.n());
 
                 } else {
                     loop.execPairwiseTransformDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
@@ -629,13 +638,21 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         } else {
             if (op.y() != null) {
-                if (op.x().elementWiseStride() >= 1 && op.y().elementWiseStride() >= 1
-                                && op.x().elementWiseStride() == op.y().elementWiseStride() && !op.isExecSpecial()
-                                && op.x().ordering() == op.y().ordering()) {
+                int xEWS = op.x().elementWiseStride();
+                int yEWS = op.y().elementWiseStride();
+                int zEWS = op.z().elementWiseStride();
+
+                boolean xRow = op.x().isRowVector();
+                boolean yRow = op.y().isRowVector();
+                boolean zRow = op.z().isRowVector();
+
+                if ((xEWS >= 1 && yEWS >= 1
+                                && xEWS == yEWS && !op.isExecSpecial()
+                                && op.x().ordering() == op.y().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
                     loop.execPairwiseTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                                    op.x().elementWiseStride(), (FloatPointer) op.y().data().addressPointer(),
-                                    op.y().elementWiseStride(), (FloatPointer) op.z().data().addressPointer(),
-                                    op.z().elementWiseStride(), (FloatPointer) getPointerForExtraArgs(op), op.n());
+                                    xEWS, (FloatPointer) op.y().data().addressPointer(),
+                                    yEWS, (FloatPointer) op.z().data().addressPointer(),
+                                    zEWS, (FloatPointer) getPointerForExtraArgs(op), op.n());
 
                 } else {
                     loop.execPairwiseTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
