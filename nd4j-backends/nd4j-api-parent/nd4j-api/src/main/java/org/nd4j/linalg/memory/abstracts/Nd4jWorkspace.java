@@ -72,7 +72,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
 
     protected AtomicInteger tagScope = new AtomicInteger(0);
 
-    protected AtomicBoolean isDebug = new AtomicBoolean(false);
+    protected AtomicBoolean isDebug = new AtomicBoolean(true);
     protected AtomicInteger externalCount = new AtomicInteger(0);
     protected AtomicInteger pinnedCount = new AtomicInteger(0);
 
