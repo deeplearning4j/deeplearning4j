@@ -6,6 +6,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdamUpdater;
 import org.nd4j.linalg.learning.GradientUpdater;
 
+import java.util.Arrays;
+
 /**
  * Created by Alex on 06/05/2017.
  */
@@ -47,7 +49,10 @@ public class Adam implements IUpdater {
     @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         AdamUpdater u =  new AdamUpdater(this);
-        u.setStateViewArray(viewArray, viewArray.shape(), viewArray.ordering(), initializeViewArray);
+        int[] gradientShape = viewArray.shape();
+        gradientShape = Arrays.copyOf(gradientShape, gradientShape.length);
+        gradientShape[1] /= 2;
+        u.setStateViewArray(viewArray, gradientShape, viewArray.ordering(), initializeViewArray);
         return u;
     }
 

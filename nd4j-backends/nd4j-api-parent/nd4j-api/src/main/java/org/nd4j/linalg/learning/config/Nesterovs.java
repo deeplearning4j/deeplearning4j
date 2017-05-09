@@ -54,7 +54,7 @@ public class Nesterovs implements IUpdater {
 
     @Override
     public Nesterovs clone() {
-        return new Nesterovs(learningRate, momentum, new HashMap<>(momentumSchedule));
+        return new Nesterovs(learningRate, momentum, momentumSchedule == null ? null : new HashMap<>(momentumSchedule));
     }
 
     //Partial builder class implementation for default values & public no-arg constructor

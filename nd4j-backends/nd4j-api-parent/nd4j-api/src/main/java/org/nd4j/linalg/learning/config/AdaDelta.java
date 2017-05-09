@@ -7,6 +7,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaDeltaUpdater;
 import org.nd4j.linalg.learning.GradientUpdater;
 
+import java.util.Arrays;
+
 /**
  * Created by Alex on 06/05/2017.
  */
@@ -37,8 +39,11 @@ public class AdaDelta implements IUpdater {
     @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         AdaDeltaUpdater u = new AdaDeltaUpdater(this);
-
-        return null;
+        int[] gradientShape = viewArray.shape();
+        gradientShape = Arrays.copyOf(gradientShape, gradientShape.length);
+        gradientShape[1] /= 2;
+        u.setStateViewArray(viewArray, gradientShape, viewArray.ordering(), initializeViewArray);
+        return u;
     }
 
     @Override

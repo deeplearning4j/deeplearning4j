@@ -8,6 +8,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.AdaMaxUpdater;
 import org.nd4j.linalg.learning.GradientUpdater;
 
+import java.util.Arrays;
+
 /**
  * The AdaMax updater, a variant of Adam.
  * http://arxiv.org/abs/1412.6980
@@ -43,7 +45,10 @@ public class AdaMax implements IUpdater {
     @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
         AdaMaxUpdater a = new AdaMaxUpdater(this);
-        a.setStateViewArray(viewArray, viewArray.shape(), viewArray.ordering(), initializeViewArray);
+        int[] gradientShape = viewArray.shape();
+        gradientShape = Arrays.copyOf(gradientShape, gradientShape.length);
+        gradientShape[1] /= 2;
+        a.setStateViewArray(viewArray, gradientShape, viewArray.ordering(), initializeViewArray);
         return a;
     }
 
