@@ -229,7 +229,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
 
         // other standard calculations
         Nd4j.gemm(input, delta, weightGradView, true, false, 1.0, 0.0); //Equivalent to:  weightGradView.assign(input.transpose().mmul(delta));
-        biasGradView.assign(delta.sum(0));
+        delta.sum(biasGradView, 0); //biasGradView is initialized/zeroed first in sum op
 
         gradient.gradientForVariable().put(CenterLossParamInitializer.WEIGHT_KEY, weightGradView);
         gradient.gradientForVariable().put(CenterLossParamInitializer.BIAS_KEY, biasGradView);

@@ -444,7 +444,7 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
         INDArray weightGrad = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY); //f order
         Nd4j.gemm(input, delta, weightGrad, true, false, 1.0, 0.0);
         INDArray biasGrad = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
-        biasGrad.assign(delta.sum(0));
+        delta.sum(biasGrad, 0); //biasGrad is initialized/zeroed first in sum op
         INDArray vBiasGradient = gradientViews.get(PretrainParamInitializer.VISIBLE_BIAS_KEY);
 
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGrad);

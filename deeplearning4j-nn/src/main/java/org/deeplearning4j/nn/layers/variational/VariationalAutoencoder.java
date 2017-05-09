@@ -219,7 +219,7 @@ public class VariationalAutoencoder implements Layer {
             INDArray lastDecActivations = decoderActivations[decoderActivations.length - 1];
             Nd4j.gemm(lastDecActivations, dpdpxz, dLdxzw, true, false, scaleFactor, gemmCConstant);
             if (l == 0) {
-                dLdxzb.assign(dpdpxz.sum(0)); //TODO: do this without the assign
+                dpdpxz.sum(dLdxzb, 0);  //dLdxzb array is initialized/zeroed first in sum op
                 if (numSamples > 1) {
                     dLdxzb.muli(scaleFactor);
                 }
@@ -253,7 +253,7 @@ public class VariationalAutoencoder implements Layer {
                 Nd4j.gemm(actInput, currentDelta, dLdW, true, false, scaleFactor, gemmCConstant);
 
                 if (l == 0) {
-                    dLdB.assign(currentDelta.sum(0)); //TODO: do this without the assign
+                    currentDelta.sum(dLdB, 0);
                     if (numSamples > 1) {
                         dLdB.muli(scaleFactor);
                     }
@@ -297,7 +297,7 @@ public class VariationalAutoencoder implements Layer {
                 dLdZXMeanb.assign(pzxActivationFn.backprop(fwd.getPzxMeanPreOut().dup(), dLdz.add(meanZ)).getFirst()
                                 .sum(0));
 
-                dLdZXLogStdev2b.assign(dLdPreLogSigma2.sum(0));
+                dLdPreLogSigma2.sum(dLdZXLogStdev2b, 0);
                 if (numSamples > 1) {
                     dLdZXMeanb.muli(scaleFactor);
                     dLdZXLogStdev2b.muli(scaleFactor);
@@ -355,7 +355,7 @@ public class VariationalAutoencoder implements Layer {
                 }
                 Nd4j.gemm(actInput, currentDelta, dLdW, true, false, scaleFactor, gemmCConstant);
                 if (l == 0) {
-                    dLdB.assign(currentDelta.sum(0)); //TODO: do this without the assign
+                    currentDelta.sum(dLdB, 0);
                     if (numSamples > 1) {
                         dLdB.muli(scaleFactor);
                     }
@@ -646,7 +646,7 @@ public class VariationalAutoencoder implements Layer {
         INDArray lastEncoderActivation = fwd.encoderActivations[fwd.encoderActivations.length - 1];
         Nd4j.gemm(lastEncoderActivation, currentDelta, dLdMeanW, true, false, 1.0, 0.0);
         INDArray dLdMeanB = gradientViews.get(VariationalAutoencoderParamInitializer.PZX_MEAN_B);
-        dLdMeanB.assign(currentDelta.sum(0)); //TODO: do this without the assign
+        currentDelta.sum(dLdMeanB, 0);  //dLdMeanB is initialized/zeroed first in sum op
 
         gradient.gradientForVariable().put(VariationalAutoencoderParamInitializer.PZX_MEAN_W, dLdMeanW);
         gradient.gradientForVariable().put(VariationalAutoencoderParamInitializer.PZX_MEAN_B, dLdMeanB);
@@ -676,7 +676,7 @@ public class VariationalAutoencoder implements Layer {
                 actInput = fwd.encoderActivations[i - 1];
             }
             Nd4j.gemm(actInput, currentDelta, dLdW, true, false, 1.0, 0.0);
-            dLdB.assign(currentDelta.sum(0)); //TODO: do this without the assign
+            currentDelta.sum(dLdB, 0);  //dLdB is initialized/zeroed first in sum op
 
             gradient.gradientForVariable().put(wKey, dLdW);
             gradient.gradientForVariable().put(bKey, dLdB);

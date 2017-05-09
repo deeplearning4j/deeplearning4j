@@ -218,8 +218,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         Convolution.col2im(eps6d, epsNext, strides[0], strides[1], pad[0], pad[1], inH, inW);
 
         Gradient retGradient = new DefaultGradient();
-        INDArray biasGradTemp = delta2d.sum(1);
-        biasGradView.assign(biasGradTemp); //TODO do this properly, without the assign
+        delta2d.sum(biasGradView, 1);   //biasGradView is initialized/zeroed first in sum op
 
         retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, biasGradView);
         retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
