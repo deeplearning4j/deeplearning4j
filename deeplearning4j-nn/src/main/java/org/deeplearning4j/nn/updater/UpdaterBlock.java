@@ -197,10 +197,11 @@ public class UpdaterBlock {
                 throw new RuntimeException("Unknown Learning rate decay value: " + decay);
         }
 
-        //Handle momentum schedules
+        //Handle momentum schedules. Given the new updater design, this change is purely cosmetic
         double newMomentum = 0.0;
         if (layer.conf().getLayer().getIUpdater() instanceof Nesterovs) {
-            if (conf.getLayer().getMomentumSchedule().containsKey(iteration)) {
+            if (conf.getLayer().getMomentumSchedule() != null
+                    && conf.getLayer().getMomentumSchedule().containsKey(iteration)) {
                 newMomentum = conf.getLayer().getMomentumSchedule().get(iteration);
             } else {
                 newMomentum = conf.getLayer().getMomentum();
