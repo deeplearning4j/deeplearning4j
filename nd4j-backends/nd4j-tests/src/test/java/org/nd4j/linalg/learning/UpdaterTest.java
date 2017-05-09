@@ -26,17 +26,12 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.learning.config.AdaDelta;
-import org.nd4j.linalg.learning.config.AdaGrad;
-import org.nd4j.linalg.learning.config.Adam;
-import org.nd4j.linalg.learning.config.Nesterovs;
+import org.nd4j.linalg.learning.config.*;
 
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
 public class UpdaterTest extends BaseNd4jTest {
-
-
 
     public UpdaterTest(Nd4jBackend backend) {
         super(backend);
@@ -144,7 +139,7 @@ public class UpdaterTest extends BaseNd4jTest {
         int cols = 2;
 
 
-        AdaMax grad = new AdaMax();
+        AdaMaxUpdater grad = new AdaMaxUpdater(new AdaMax());
         grad.setStateViewArray(Nd4j.zeros(1, 2 * rows * cols), new int[] {rows, cols}, 'c', true);
         INDArray W = Nd4j.zeros(rows, cols);
         Distribution dist = Nd4j.getDistributions().createNormal(1e-3, 1e-3);
