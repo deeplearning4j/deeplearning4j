@@ -53,6 +53,16 @@ public class ROC extends BaseEvaluation<ROC> {
         }
     }
 
+    @Override
+    public void reset() {
+        countActualPositive = 0L;
+        countActualNegative = 0L;
+    }
+
+    @Override
+    public String stats() {
+        return "AUC: [" + calculateAUC() + "]";
+    }
 
     /**
      * Evaluate (collect statistics for) the given minibatch of data.

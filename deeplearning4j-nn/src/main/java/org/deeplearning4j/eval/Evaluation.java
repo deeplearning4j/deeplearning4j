@@ -119,6 +119,19 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         this.topN = topN;
     }
 
+    @Override
+    public void reset() {
+        confusion = null;
+        truePositives = new Counter<>();
+        falsePositives = new Counter<>();
+        trueNegatives = new Counter<>();
+        falseNegatives = new Counter<>();
+
+        topNCorrectCount = 0;
+        topNTotalCount = 0;
+        numRowCounter = 0;
+    }
+
     private static List<String> createLabels(int numClasses) {
         if (numClasses == 1)
             numClasses = 2; //Binary (single output variable) case...

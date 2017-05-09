@@ -103,6 +103,16 @@ public class EvaluativeListener implements IterationListener {
         if (iterationCount.get().getAndIncrement() % frequency != 0)
             return;
 
+        for (IEvaluation evaluation : evaluations)
+            evaluation.reset();
+
+        if (dsIterator != null && dsIterator.resetSupported())
+            dsIterator.reset();
+        else if (mdsIterator != null && mdsIterator.resetSupported())
+            mdsIterator.reset();
+
+
+
         log.info("Starting evaluation on iteration {}", iteration);
         if (model instanceof MultiLayerNetwork) {
             if (dsIterator != null) {
@@ -128,20 +138,6 @@ public class EvaluativeListener implements IterationListener {
         // TODO: maybe something better should be used here?
         log.info("Reporting evaluation results:");
         for (IEvaluation evaluation: evaluations)
-            printEvalResults(evaluation);
-    }
-
-
-    protected void printEvalResults(IEvaluation evaluation) {
-        if (evaluation instanceof Evaluation)
-            log.info("{}:\n{}", evaluation.getClass().getSimpleName(), ((Evaluation) evaluation).stats());
-        else if (evaluation instanceof ROC)
-            log.info("{}:\n{}", evaluation.getClass().getSimpleName(), ((ROC) evaluation).calculateAUC());
-        else if (evaluation instanceof ROCMultiClass)
-            log.info("{}:\n{}", evaluation.getClass().getSimpleName(), ((ROCMultiClass) evaluation).calculateAverageAUC());
-        else if (evaluation instanceof ROCBinary)
-            log.info("{}:\n{}", evaluation.getClass().getSimpleName(), ((ROCBinary) evaluation).stats());
-        else if (evaluation instanceof RegressionEvaluation)
-            log.info("{}:\n{}", evaluation.getClass().getSimpleName(), ((RegressionEvaluation) evaluation).stats());
+            log.info("{}:\n{}", evaluation.getClass().getSimpleName(), evaluation.stats());
     }
 }
