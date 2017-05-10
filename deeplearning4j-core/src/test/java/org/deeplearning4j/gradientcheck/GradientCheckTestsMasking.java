@@ -32,7 +32,7 @@ public class GradientCheckTestsMasking {
     private static final boolean RETURN_ON_FIRST_FAILURE = false;
     private static final double DEFAULT_EPS = 1e-6;
     private static final double DEFAULT_MAX_REL_ERROR = 1e-3;
-    private static final double DEFAULT_MIN_ABS_ERROR = 1e-10;
+    private static final double DEFAULT_MIN_ABS_ERROR = 1e-7;
 
     static {
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
@@ -348,7 +348,8 @@ public class GradientCheckTestsMasking {
 
                 Nd4j.getRandom().setSeed(12345);
                 ComputationGraphConfiguration cg = new NeuralNetConfiguration.Builder().updater(Updater.NONE)
-                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 2)).seed(12345)
+                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 2))
+                                .seed(12345)
                                 .graphBuilder().addInputs("in")
                                 .addLayer("0", new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
                                                 .activation(Activation.TANH).build(), "in")
