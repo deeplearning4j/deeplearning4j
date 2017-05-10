@@ -9,7 +9,10 @@ import org.nd4j.linalg.learning.GradientUpdater;
 import java.util.Arrays;
 
 /**
- * Created by Alex on 06/05/2017.
+ * The Adam updater.
+ * http://arxiv.org/abs/1412.6980
+ *
+ * @author Adam Gibson
  */
 @Data
 @Builder(builderClassName = "Builder")

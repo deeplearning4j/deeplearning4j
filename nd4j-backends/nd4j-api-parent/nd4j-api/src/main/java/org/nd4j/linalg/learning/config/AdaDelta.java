@@ -10,7 +10,15 @@ import org.nd4j.linalg.learning.GradientUpdater;
 import java.util.Arrays;
 
 /**
- * Created by Alex on 06/05/2017.
+ * http://www.matthewzeiler.com/pubs/googleTR2012/googleTR2012.pdf
+ * https://arxiv.org/pdf/1212.5701v1.pdf
+ * <p>
+ * Ada delta updater. More robust adagrad that keeps track of a moving window
+ * average of the gradient rather than the every decaying learning rates of adagrad
+ * <p>
+ * Note: AdaDelta is unique in that it doesn't require manual setting of a learning rate
+ *
+ * @author Adam Gibson
  */
 @Data
 @AllArgsConstructor

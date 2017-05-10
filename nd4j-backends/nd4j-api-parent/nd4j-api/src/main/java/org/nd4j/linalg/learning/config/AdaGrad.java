@@ -8,7 +8,12 @@ import org.nd4j.linalg.learning.AdaGradUpdater;
 import org.nd4j.linalg.learning.GradientUpdater;
 
 /**
- * Created by Alex on 06/05/2017.
+ * Vectorized Learning Rate used per Connection Weight
+ * <p/>
+ * Adapted from: http://xcorr.net/2014/01/23/adagrad-eliminating-learning-rates-in-stochastic-gradient-descent/
+ * See also http://cs231n.github.io/neural-networks-3/#ada
+ *
+ * @author Adam Gibson
  */
 @AllArgsConstructor
 @Data

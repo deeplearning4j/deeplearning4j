@@ -8,7 +8,12 @@ import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.RmsPropUpdater;
 
 /**
- * Created by Alex on 06/05/2017.
+ * RMS Prop updates:
+ * <p>
+ * http://www.cs.toronto.edu/~tijmen/csc321/slides/lecture_slides_lec6.pdf
+ * http://cs231n.github.io/neural-networks-3/#ada
+ *
+ * @author Adam Gibson
  */
 @Data
 @AllArgsConstructor

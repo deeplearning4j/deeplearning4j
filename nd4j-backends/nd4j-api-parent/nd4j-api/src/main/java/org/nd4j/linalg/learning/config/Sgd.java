@@ -9,7 +9,8 @@ import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.SgdUpdater;
 
 /**
- * Created by Alex on 06/05/2017.
+ * SGD updater applies a learning rate only
+ * @author Adam Gibson
  */
 @AllArgsConstructor
 @Data

@@ -6,7 +6,9 @@ import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.NoOpUpdater;
 
 /**
- * Created by Alex on 06/05/2017.
+ * NoOp updater: gradient updater that makes no changes to the gradient
+ *
+ * @author Alex Black
  */
 @Data
 public class NoOp implements IUpdater {

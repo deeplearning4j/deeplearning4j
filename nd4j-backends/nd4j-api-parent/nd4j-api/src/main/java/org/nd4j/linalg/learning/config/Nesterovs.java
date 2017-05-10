@@ -11,7 +11,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created by Alex on 06/05/2017.
+ * Nesterov's momentum.
+ * Keep track of the previous layer's gradient
+ * and use it as a way of updating the gradient.
+ *
+ * @author Adam Gibson
  */
 @AllArgsConstructor
 @Data

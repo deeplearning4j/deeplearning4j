@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.Sgd;
 
 /**
+ * SGD updater applies a learning rate only
  * @author Adam Gibson
  */
 @Data

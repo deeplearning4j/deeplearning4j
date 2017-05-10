@@ -42,7 +42,7 @@ public interface GradientUpdater<T extends IUpdater> {
     void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize);
 
     /**
-     * Modify the gradient to be an update. Note that this must be done in-place
+     * Modify the gradient to be an update. Note that this is be done in-place
      *
      * @param gradient  the gradient to modify
      * @param iteration

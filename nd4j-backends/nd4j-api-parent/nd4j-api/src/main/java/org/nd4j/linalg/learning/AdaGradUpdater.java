@@ -38,9 +38,6 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
  */
 @Data
 public class AdaGradUpdater implements GradientUpdater<AdaGrad> {
-
-
-    //protected double squaredGradientSum = 0;
     public INDArray historicalGradient;
     public int[] shape;
     protected double learningRate = 1e-1; // learning rate
@@ -71,42 +68,12 @@ public class AdaGradUpdater implements GradientUpdater<AdaGrad> {
     }
 
     /**
-     * @param rows
-     * @param cols
-     * @param learningRate
-     */
-    public AdaGradUpdater(int rows, int cols, double learningRate) {
-        this.shape = new int[] {rows, cols};
-        this.learningRate = learningRate;
-    }
-
-    public AdaGradUpdater(int rows, int cols) {
-        this(rows, cols, 0.1);
-    }
-
-    public AdaGradUpdater(int[] shape, double learningRate) {
-        this.shape = shape;
-        this.learningRate = learningRate;
-    }
-
-    public AdaGradUpdater(double learningRate) {
-        this.learningRate = learningRate;
-    }
-
-    public AdaGradUpdater(double learningRate, double epsilon) {
-        this.learningRate = learningRate;
-        this.epsilon = epsilon;
-    }
-
-    /**
      * Gets feature specific learning rates
      * Adagrad keeps a history of gradients being passed in.
-     * Note that each gradient passed in becomes adapted over time, hence
-     * the name adagrad
+     * Note that each gradient passed in becomes adapted over time, hence the name adagrad
      *
      * @param gradient  the gradient to get learning rates for
      * @param iteration
-     * @return the feature specific learning rates
      */
     @Override
     public void applyUpdater(INDArray gradient, int iteration) {
