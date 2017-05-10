@@ -1,12 +1,14 @@
 package org.deeplearning4j.datasets.iterator;
 
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.datasets.iterator.callbacks.InterleavedDataSetCallback;
 import org.deeplearning4j.datasets.iterator.tools.VariableMultiTimeseriesGenerator;
 import org.deeplearning4j.datasets.iterator.tools.VariableTimeseriesGenerator;
 import org.deeplearning4j.util.TestDataSetConsumer;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -152,6 +154,33 @@ public class AsyncDataSetIteratorTest {
             int cnt = 0;
             while (adsi.hasNext()) {
                 DataSet ds = adsi.next();
+
+                //log.info("Features ptr: {}", AtomicAllocator.getInstance().getPointer(mds.getFeatures()[0].data()).address());
+                assertEquals("Failed on epoch " + e + "; iteration: " + cnt + ";", (double) cnt, ds.getFeatures().meanNumber().doubleValue(), 1e-10);
+                assertEquals("Failed on epoch " + e + "; iteration: " + cnt + ";", (double) cnt + 0.25, ds.getLabels().meanNumber().doubleValue(), 1e-10);
+                assertEquals("Failed on epoch " + e + "; iteration: " + cnt + ";", (double) cnt + 0.5, ds.getFeaturesMaskArray().meanNumber().doubleValue(), 1e-10);
+                assertEquals("Failed on epoch " + e + "; iteration: " + cnt + ";", (double) cnt + 0.75, ds.getLabelsMaskArray().meanNumber().doubleValue(), 1e-10);
+
+                cnt++;
+            }
+
+            adsi.reset();
+            log.info("Epoch {} finished...", e);
+        }
+    }
+
+
+    @Test
+    public void testVariableTimeSeries2() throws Exception {
+        AsyncDataSetIterator adsi = new AsyncDataSetIterator(new VariableTimeseriesGenerator(1192, 100, 32, 128, 100, 100, 100), 2, true, new InterleavedDataSetCallback(2 * 2));
+
+
+        for (int e = 0; e < 5; e++) {
+            int cnt = 0;
+            while (adsi.hasNext()) {
+
+                DataSet ds = adsi.next();
+                ds.detach();
 
                 //log.info("Features ptr: {}", AtomicAllocator.getInstance().getPointer(mds.getFeatures()[0].data()).address());
                 assertEquals("Failed on epoch " + e + "; iteration: " + cnt + ";", (double) cnt, ds.getFeatures().meanNumber().doubleValue(), 1e-10);

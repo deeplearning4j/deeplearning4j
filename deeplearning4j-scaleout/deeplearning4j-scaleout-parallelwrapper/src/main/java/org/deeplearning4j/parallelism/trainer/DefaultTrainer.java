@@ -261,7 +261,7 @@ public class DefaultTrainer extends Thread implements Trainer {
                         dataSet = queue.poll(100, TimeUnit.MILLISECONDS);
                     else {
                         if (nullDataSet == null)
-                            nullDataSet = new org.nd4j.linalg.dataset.DataSet(Nd4j.create(32, 3, 224, 224), Nd4j.create(32, 200));
+                            nullDataSet = new org.nd4j.linalg.dataset.DataSet(Nd4j.create(64, 28 * 28), Nd4j.create(64, 10));
 
                         dataSet = nullDataSet;
                     }
