@@ -49,22 +49,23 @@ public class CudaWorkspace extends Nd4jWorkspace {
             //log.info("Allocating {} bytes at DEVICE & HOST space...", currentSize.get());
             isInit.set(true);
 
+            long bytes = currentSize.get();
 
             if (isDebug.get())
-                log.info("Allocating [{}] workspace on device_{}, {} bytes...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), currentSize.get());
+                log.info("Allocating [{}] workspace on device_{}, {} bytes...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), bytes);
 
             if (isDebug.get()) {
                 Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
             }
 
-            Pointer ptr = memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.HOST, false);
+            Pointer ptr = memoryManager.allocate((bytes + SAFETY_OFFSET), MemoryKind.HOST, true);
             if (ptr == null)
                 throw new ND4JIllegalStateException("Can't allocate memory for workspace");
 
             workspace.setHostPointer(new PagedPointer(ptr));
 
 
-            workspace.setDevicePointer(new PagedPointer(memoryManager.allocate(currentSize.get() + SAFETY_OFFSET, MemoryKind.DEVICE, false)));
+            workspace.setDevicePointer(new PagedPointer(memoryManager.allocate((bytes + SAFETY_OFFSET), MemoryKind.DEVICE, true)));
 
             //log.info("Workspace [{}] initialized successfully", id);
         }

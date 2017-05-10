@@ -37,7 +37,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     @Getter protected int deviceId;
     @Getter protected Long threadId;
 
-    protected static final long SAFETY_OFFSET = 1024;
+    protected static final long SAFETY_OFFSET = 1024L;
 
     @Getter protected String id;
 
