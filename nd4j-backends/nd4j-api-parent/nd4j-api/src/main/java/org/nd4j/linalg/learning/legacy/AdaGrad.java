@@ -1,6 +1,6 @@
 /*-
  *
- *  * Copyright 2015 Skymind,Inc.
+ *  * Copyright 2017 Skymind,Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -17,8 +17,7 @@
  *
  */
 
-package org.nd4j.linalg.learning;
-
+package org.nd4j.linalg.learning.legacy;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -32,19 +31,13 @@ import static org.nd4j.linalg.ops.transforms.Transforms.sqrt;
 
 
 /**
- * Vectorized Learning Rate used per Connection Weight
- * <p/>
- * Adapted from: http://xcorr.net/2014/01/23/adagrad-eliminating-learning-rates-in-stochastic-gradient-descent/
- * See also http://cs231n.github.io/neural-networks-3/#ada
- *
- * @author Adam Gibson
+ * Legacy AdaGrad implementation for use in NLP etc applications
  */
 @Data
 @NoArgsConstructor
-public class AdaGrad implements Serializable, GradientUpdater {
+public class AdaGrad implements Serializable {
     public static final double DEFAULT_ADAGRAD_EPSILON = 1e-6;
 
-    //protected double squaredGradientSum = 0;
     public INDArray historicalGradient;
     public int[] shape;
     protected double learningRate = 1e-1; // learning rate
@@ -53,12 +46,12 @@ public class AdaGrad implements Serializable, GradientUpdater {
 
     private char gradientReshapeOrder;
 
-    @Override
+
     public int stateSizeForInputSize(int inputSize) {
         return inputSize;
     }
 
-    @Override
+
     public void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize) {
         if (!viewArray.isRowVector())
             throw new IllegalArgumentException("Invalid input: expect row vector input");
@@ -101,7 +94,6 @@ public class AdaGrad implements Serializable, GradientUpdater {
         this.epsilon = epsilon;
     }
 
-    @Override
     public void update(Object... args) {
         if (args.length > 0) {
             learningRate = (Double) args[0];
@@ -118,7 +110,6 @@ public class AdaGrad implements Serializable, GradientUpdater {
      * @param iteration
      * @return the feature specific learning rates
      */
-    @Override
     public INDArray getGradient(INDArray gradient, int iteration) {
         if (historicalGradient == null)
             throw new IllegalStateException("Updater has not been initialized with view state");
@@ -140,7 +131,7 @@ public class AdaGrad implements Serializable, GradientUpdater {
         }
 
         double sqrtHistory = !historicalInitialized ? Math.sqrt(historicalGradient.getDouble(column))
-                        : historicalGradient.getDouble(column);
+                : historicalGradient.getDouble(column);
         double learningRates = learningRate / (sqrtHistory + epsilon);
         double adjustedGradient = gradient * (learningRates);
 
@@ -159,7 +150,7 @@ public class AdaGrad implements Serializable, GradientUpdater {
             this.historicalGradient = Nd4j.zeros(shape).add(epsilon);
             historicalInitialized = true;
         } else if (!this.historicalGradient.isVector()
-                        && this.historicalGradient.slice(slice).length() != gradient.length())
+                && this.historicalGradient.slice(slice).length() != gradient.length())
             throw new IllegalArgumentException("Illegal gradient");
 
         if (historicalGradient.isVector())

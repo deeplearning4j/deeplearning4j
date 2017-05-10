@@ -1,14 +1,31 @@
+/*-
+ *
+ *  * Copyright 2017 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
+ *
+ *
+ */
+
 package org.nd4j.linalg.learning;
 
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.ops.transforms.Transforms;
-
-import java.io.Serializable;
 
 /**
  * The Adam updater.
@@ -17,24 +34,15 @@ import java.io.Serializable;
  * @author Adam Gibson
  */
 @Data
-@NoArgsConstructor
-public class Adam implements Serializable, GradientUpdater {
-    public static final double DEFAULT_ADAM_EPSILON = 1e-8;
-    public static final double DEFAULT_ADAM_BETA1_MEAN_DECAY = 0.9;
-    public static final double DEFAULT_ADAM_BETA2_VAR_DECAY = 0.999;
+public class AdamUpdater implements GradientUpdater<Adam> {
 
-
-    private double learningRate = 1e-3; // learning rate
-    private double beta1 = DEFAULT_ADAM_BETA1_MEAN_DECAY; // gradient moving avg decay rate
-    private double beta2 = DEFAULT_ADAM_BETA2_VAR_DECAY; // gradient sqrd decay rate
-    private double epsilon = DEFAULT_ADAM_EPSILON;
+    private Adam config;
     private INDArray m, v; // moving avg & sqrd gradients
 
     private char gradientReshapeOrder;
 
-    @Override
-    public int stateSizeForInputSize(int inputSize) {
-        return 2 * inputSize;
+    public AdamUpdater(Adam config){
+        this.config = config;
     }
 
     @Override
@@ -56,30 +64,6 @@ public class Adam implements Serializable, GradientUpdater {
         this.gradientReshapeOrder = gradientOrder;
     }
 
-    public Adam(double alpha, double beta1, double beta2, double epsilon) {
-        this.learningRate = alpha;
-        this.beta1 = beta1;
-        this.beta2 = beta2;
-        this.epsilon = epsilon; // fudge factor to avoid zeros
-    }
-
-    public Adam(double alpha, double beta1, double beta2) {
-        this.learningRate = alpha;
-        this.beta1 = beta1;
-        this.beta2 = beta2;
-    }
-
-    public Adam(double alpha) {
-        this.learningRate = alpha;
-    }
-
-    @Override
-    public void update(Object... args) {
-        if (args.length > 0) {
-            learningRate = (Double) args[0];
-        }
-    }
-
     /**
      * Calculate the update based on the given gradient
      *
@@ -88,9 +72,14 @@ public class Adam implements Serializable, GradientUpdater {
      * @return the gradient
      */
     @Override
-    public INDArray getGradient(INDArray gradient, int iteration) {
+    public void applyUpdater(INDArray gradient, int iteration) {
         if (m == null || v == null)
             throw new IllegalStateException("Updater has not been initialized with view state");
+
+        double beta1 = config.getBeta1();
+        double beta2 = config.getBeta2();
+        double learningRate = config.getLearningRate();
+        double epsilon = config.getEpsilon();
 
         INDArray oneMinusBeta1Grad = gradient.mul(1.0 - beta1);
         m.muli(beta1).addi(oneMinusBeta1Grad);
@@ -107,6 +96,5 @@ public class Adam implements Serializable, GradientUpdater {
         INDArray sqrtV = Transforms.sqrt(v.dup(gradientReshapeOrder), false).addi(epsilon);
 
         gradient.assign(m).muli(alphat).divi(sqrtV);
-        return gradient;
     }
 }

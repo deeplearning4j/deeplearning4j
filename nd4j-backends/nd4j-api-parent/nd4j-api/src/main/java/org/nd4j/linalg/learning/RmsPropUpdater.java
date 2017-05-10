@@ -1,9 +1,28 @@
+/*-
+ *
+ *  * Copyright 2017 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
+ *
+ *
+ */
+
 package org.nd4j.linalg.learning;
 
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
@@ -15,31 +34,15 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  * @author Adam Gibson
  */
 @Data
-@NoArgsConstructor
-public class RmsProp implements GradientUpdater {
-    public static final double DEFAULT_RMSPROP_EPSILON = 1e-8;
-    public static final double DEFAULT_RMSPROP_RMSDECAY = 0.95;
+public class RmsPropUpdater implements GradientUpdater<RmsProp> {
+
+    private final RmsProp config;
 
     private INDArray lastGradient;
-    private double rmsDecay = DEFAULT_RMSPROP_RMSDECAY;
-    private double learningRate = 1e-1;
-    private double epsilon = DEFAULT_RMSPROP_EPSILON;
-
     private char gradientReshapeOrder;
 
-    public RmsProp(double learningRate, double rmsDecay) {
-        this(learningRate, rmsDecay, DEFAULT_RMSPROP_EPSILON);
-    }
-
-    public RmsProp(double learningRate, double rmsDecay, double epsilon) {
-        this.learningRate = learningRate;
-        this.rmsDecay = rmsDecay;
-        this.epsilon = epsilon;
-    }
-
-    @Override
-    public int stateSizeForInputSize(int inputSize) {
-        return inputSize;
+    public RmsPropUpdater(RmsProp config) {
+        this.config = config;
     }
 
     @Override
@@ -47,7 +50,7 @@ public class RmsProp implements GradientUpdater {
         if (!viewArray.isRowVector())
             throw new IllegalArgumentException("Invalid input: expect row vector input");
         if (initialize)
-            viewArray.assign(epsilon);
+            viewArray.assign(config.getEpsilon());
         this.lastGradient = viewArray;
 
         //Reshape to match the expected shape of the input gradient arrays
@@ -59,19 +62,16 @@ public class RmsProp implements GradientUpdater {
     }
 
     @Override
-    public void update(Object... args) {
-        if (args.length > 0) {
-            learningRate = (Double) args[0];
-        }
-    }
-
-    @Override
-    public INDArray getGradient(INDArray gradient, int iteration) {
+    public void applyUpdater(INDArray gradient, int iteration) {
         if (lastGradient == null)
             throw new IllegalStateException("Updater has not been initialized with view state");
 
+        double learningRate = config.getLearningRate();
+        double rmsDecay = config.getRmsDecay();
+        double epsilon = config.getEpsilon();
+
         lastGradient.muli(rmsDecay).addi(gradient.mul(gradient).muli(1 - rmsDecay));
         // lr * gradient / (sqrt(cache) + 1e-8)
-        return gradient.muli(learningRate).divi(Transforms.sqrt(lastGradient.dup(gradientReshapeOrder), false).addi(epsilon));
+        gradient.muli(learningRate).divi(Transforms.sqrt(lastGradient.dup(gradientReshapeOrder), false).addi(epsilon));
     }
 }

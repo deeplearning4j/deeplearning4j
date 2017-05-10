@@ -1,14 +1,30 @@
+/*-
+ *
+ *  * Copyright 2017 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
+ *
+ *
+ */
+
 package org.nd4j.linalg.learning;
 
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-
-import java.io.Serializable;
+import org.nd4j.linalg.learning.config.Nesterovs;
 
 /**
  * Nesterov's momentum.
@@ -18,20 +34,15 @@ import java.io.Serializable;
  * @author Adam Gibson
  */
 @Data
-@NoArgsConstructor
-@Slf4j
-public class Nesterovs implements Serializable, GradientUpdater {
-    public static final double DEFAULT_NESTEROV_MOMENTUM = 0.9;
+public class NesterovsUpdater implements GradientUpdater<Nesterovs> {
 
-    private double momentum = DEFAULT_NESTEROV_MOMENTUM;
-    private volatile INDArray v;
-    private double learningRate = 0.1;
+    private final Nesterovs config;
 
+    private INDArray v;
     private char gradientReshapeOrder;
 
-    @Override
-    public int stateSizeForInputSize(int inputSize) {
-        return inputSize;
+    public NesterovsUpdater(Nesterovs config) {
+        this.config = config;
     }
 
     @Override
@@ -50,26 +61,6 @@ public class Nesterovs implements Serializable, GradientUpdater {
         this.gradientReshapeOrder = gradientOrder;
     }
 
-    public Nesterovs(double momentum, double learningRate) {
-        this.momentum = momentum;
-        this.learningRate = learningRate;
-    }
-
-    public Nesterovs(double momentum) {
-        this.momentum = momentum;
-
-    }
-
-    @Override
-    public void update(Object... args) {
-        if (args.length > 0) {
-            learningRate = (Double) args[0];
-            momentum = (Double) args[1];
-        }
-
-    }
-
-
     /**
      * Get the nesterov update
      *
@@ -78,9 +69,12 @@ public class Nesterovs implements Serializable, GradientUpdater {
      * @return
      */
     @Override
-    public INDArray getGradient(INDArray gradient, int iteration) {
+    public void applyUpdater(INDArray gradient, int iteration) {
         if (v == null)
             throw new IllegalStateException("Updater has not been initialized with view state");
+
+        double momentum = config.getMomentum();
+        double learningRate = config.getLearningRate();
 
         //reference https://cs231n.github.io/neural-networks-3/#sgd 2nd equation
         //DL4J default is negative step function thus we flipped the signs:
@@ -97,7 +91,5 @@ public class Nesterovs implements Serializable, GradientUpdater {
         gradient.assign(ret);
         */
         Nd4j.getExecutioner().exec(new AddOp(vPrev.muli(momentum), v.mul(-momentum - 1), gradient));
-
-        return gradient;
     }
 }
