@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.GradientUpdater;
+import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.ArrayList;
@@ -67,13 +68,8 @@ public class UpdaterBlock {
     public void init() {
         if (gradientUpdater == null) {
             ParamState varState = layersAndVariablesInBlock.get(0);
-            gradientUpdater = UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getParamName());
-            if (updaterView != null) {
-                //May be null for SGD and no-op updaters
-                int[] gradientViewShape = gradientView.shape();
-                gradientUpdater.setStateViewArray(updaterView, gradientViewShape, 'c',
-                                updaterViewRequiresInitialization);
-            }
+            String varName = varState.getParamName();
+            gradientUpdater = varState.getLayer().conf().getLayer().getIUpdaterByParam(varName).instantiate(updaterView, updaterViewRequiresInitialization); //UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getParamName());
         }
     }
 
@@ -88,6 +84,13 @@ public class UpdaterBlock {
             return false;
         ParamState vs = layersAndVariablesInBlock.get(0);
         return !vs.getLayer().conf().isPretrain(); //Skip if not pretrain
+    }
+
+    public GradientUpdater getGradientUpdater(){
+        if(gradientUpdater == null){
+            init();
+        }
+        return gradientUpdater;
     }
 
     /**
@@ -114,7 +117,7 @@ public class UpdaterBlock {
         }
 
         //Apply the updater itself
-        gradientUpdater.getGradient(gradientView, iteration);
+        gradientUpdater.applyUpdater(gradientView, iteration);
 
         //Post apply: l1 and l2 by params
         for (ParamState p : layersAndVariablesInBlock) {
@@ -201,10 +204,11 @@ public class UpdaterBlock {
                 throw new RuntimeException("Unknown Learning rate decay value: " + decay);
         }
 
-        //Handle momentum schedules
+        //Handle momentum schedules. Given the new updater design, this change is purely cosmetic
         double newMomentum = 0.0;
-        if (layer.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS) {
-            if (conf.getLayer().getMomentumSchedule().containsKey(iteration)) {
+        if (layer.conf().getLayer().getIUpdater() instanceof Nesterovs) {
+            if (conf.getLayer().getMomentumSchedule() != null
+                    && conf.getLayer().getMomentumSchedule().containsKey(iteration)) {
                 newMomentum = conf.getLayer().getMomentumSchedule().get(iteration);
             } else {
                 newMomentum = conf.getLayer().getMomentum();
@@ -215,15 +219,13 @@ public class UpdaterBlock {
         // same block) share the same LR schedule
         for (ParamState vs : layersAndVariablesInBlock) {
             vs.getLayer().conf().setLearningRateByParam(vs.getParamName(), newLr);
-            if (layer.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS) {
+            if (layer.conf().getLayer().getIUpdater() instanceof Nesterovs) {
                 vs.getLayer().conf().getLayer().setMomentum(newMomentum);
             }
         }
 
-        if (layer.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS) {
-            gradientUpdater.update(newLr, newMomentum);
-        } else {
-            gradientUpdater.update(newLr);
-        }
+        //Apply the new LR according to the schedule.
+        //Note: momentum schedules are applied internally in the Nesterov config object applySchedules method
+        gradientUpdater.getConfig().applySchedules(iteration, newLr);
     }
 }

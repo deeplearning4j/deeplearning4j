@@ -8,6 +8,7 @@ function whatchanged() {
 	cd $BASEDIR
     done
 }
+function beep(){ echo -e '\a';}
 
 set -eu
 ./change-scala-versions.sh 2.11 # should be idempotent, this is the default
@@ -18,3 +19,8 @@ mvn -Dmaven.clean.skip=true -pl $(whatchanged| tr '\n' ',') -amd "$@"
 ./change-spark-versions.sh 1
 mvn -Dmaven.clean.skip=true -pl $(whatchanged| tr '\n' ',') -amd "$@"
 ./change-scala-versions.sh 2.11 # back to the default
+
+# notify user the build is done
+beep
+sleep 1; beep
+sleep 1; beep

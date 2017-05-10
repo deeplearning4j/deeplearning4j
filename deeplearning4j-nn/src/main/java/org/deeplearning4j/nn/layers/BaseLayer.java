@@ -171,7 +171,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         INDArray weightGrad = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY); //f order
         Nd4j.gemm(input, delta, weightGrad, true, false, 1.0, 0.0);
         INDArray biasGrad = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
-        biasGrad.assign(delta.sum(0)); //TODO: do this without the assign
+        delta.sum(biasGrad, 0); //biasGrad is initialized/zeroed first
 
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGrad);
         ret.gradientForVariable().put(DefaultParamInitializer.BIAS_KEY, biasGrad);
@@ -595,7 +595,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();
             //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
             Updater updater = solver.getOptimizer().getUpdater();
-            int updaterStateSize = updater.stateSizeForLayer(this);
+            int updaterStateSize = (int)conf().getLayer().getIUpdater().stateSize(numParams());
             if (updaterStateSize > 0)
                 updater.setStateViewArray(this, Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order()),
                                 true);

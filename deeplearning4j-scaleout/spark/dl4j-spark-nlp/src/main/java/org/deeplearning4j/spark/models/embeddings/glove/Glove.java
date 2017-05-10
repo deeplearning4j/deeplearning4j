@@ -38,7 +38,7 @@ import org.deeplearning4j.spark.text.functions.TextPipeline;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.DefaultTokenizerFactory;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.legacy.AdaGrad;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;

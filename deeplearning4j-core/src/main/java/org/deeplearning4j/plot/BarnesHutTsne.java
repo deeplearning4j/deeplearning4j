@@ -38,7 +38,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
-import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.legacy.AdaGrad;
 
 import java.io.BufferedWriter;
 import java.io.File;

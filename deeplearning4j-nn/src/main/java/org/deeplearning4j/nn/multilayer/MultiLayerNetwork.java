@@ -118,7 +118,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     protected final static String workspaceFeedForward = "LOOP_FF";
     protected final static String workspaceBackProp = "LOOP_BP";
     public final static String workspaceTBPTT = "LOOP_TBPTT";
-    protected final static MemoryWorkspace dummy = new DummyWorkspace();
 
     protected final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
             .initialSize(0)
@@ -780,7 +779,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         activations.add(currInput);
 
 
-        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy :
+        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() :
                 layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
 
@@ -1049,7 +1048,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
 
-        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
         if (layerWiseConfigurations.isBackprop()) {
             update(TaskUtils.buildTask(iter));
@@ -1187,7 +1186,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             layerFrom = numLayers - 1;
         }
 
-        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy :
+        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() :
                 layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
                         //: Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceBackProp);
                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
@@ -1264,8 +1263,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         workspaceConfigurationExternal.setCyclesBeforeInitialization(0);
         workspaceConfigurationExternal.setPolicyLearning(LearningPolicy.OVER_TIME);
 
-        MemoryWorkspace workspaceT = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationTBPTT, workspaceTBPTT);
-        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace workspaceT = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationTBPTT, workspaceTBPTT);
+        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
         try(MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
             for (int i = 0; i < nSubsets; i++) {
@@ -1561,7 +1560,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
 
 
-        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
         if (layerWiseConfigurations.isBackprop()) {
             if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
@@ -1684,7 +1683,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public INDArray output(INDArray input, boolean train) {
         WorkspaceMode cMode = layerWiseConfigurations.getTrainingWorkspaceMode();
         layerWiseConfigurations.setTrainingWorkspaceMode(layerWiseConfigurations.getInferenceWorkspaceMode());
-        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
+        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
 
         try(MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
             INDArray ret = silentOutput(input, train).detach();
@@ -1708,7 +1707,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
     public INDArray output(INDArray input, boolean train, INDArray featuresMask, INDArray labelsMask) {
         WorkspaceMode cMode = layerWiseConfigurations.getTrainingWorkspaceMode();
         layerWiseConfigurations.setTrainingWorkspaceMode(layerWiseConfigurations.getInferenceWorkspaceMode());
-        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
+        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
 
         try(MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
             INDArray ret = silentOutput(input, train, featuresMask, labelsMask).detach();
@@ -1896,7 +1895,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (hasMaskArray)
             setLayerMaskArrays(data.getFeaturesMaskArray(), data.getLabelsMaskArray());
 
-        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
             // activation for output layer is calculated in computeScore
@@ -2651,7 +2650,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         DataSetIterator iter = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 2, true) : iterator;
 
-        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? dummy : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
         while (iter.hasNext()) {
             DataSet next = iter.next();

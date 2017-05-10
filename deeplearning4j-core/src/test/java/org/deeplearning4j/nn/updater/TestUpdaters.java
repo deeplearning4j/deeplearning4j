@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.*;
+import org.nd4j.linalg.learning.config.*;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -73,7 +74,7 @@ public class TestUpdaters {
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
-        int updaterStateSize = updater.stateSizeForLayer(layer);
+        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
@@ -140,7 +141,7 @@ public class TestUpdaters {
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
-        int updaterStateSize = updater.stateSizeForLayer(layer);
+        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
@@ -184,7 +185,67 @@ public class TestUpdaters {
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
-        int updaterStateSize = updater.stateSizeForLayer(layer);
+        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
+        INDArray updaterState = Nd4j.create(1, updaterStateSize);
+        updater.setStateViewArray(layer, updaterState, true);
+
+        updater.update(layer, gradient, iteration, 1);
+
+        double beta1t = FastMath.pow(beta1, iteration + 1);
+        double beta2t = FastMath.pow(beta2, iteration + 1);
+        double alphat = lr * FastMath.sqrt(1 - beta2t) / (1 - beta1t);
+        if (Double.isNaN(alphat) || alphat == 0.0)
+            alphat = epsilon;
+
+        Gradient gradientCopyPreUpdate = new DefaultGradient();
+        INDArray g = gradients.dup();
+        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
+        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
+
+        int count = 0;
+        for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
+            val = entry.getValue();
+            m = Nd4j.zeros(val.shape());
+            v = Nd4j.zeros(val.shape());
+
+            m.muli(beta1).addi(val.mul(1.0 - beta1));
+            v.muli(beta2).addi(val.mul(val).mul(1.0 - beta2));
+            gradExpected = m.mul(alphat).divi(Transforms.sqrt(v).addi(epsilon));
+            if (!gradExpected.equals(gradient.getGradientFor(entry.getKey()))) {
+                System.out.println(Arrays.toString(gradExpected.dup().data().asFloat()));
+                System.out.println(Arrays.toString(gradient.getGradientFor(entry.getKey()).dup().data().asFloat()));
+            }
+            assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
+            count++;
+        }
+
+        assertEquals(beta1, layer.conf().getLayer().getAdamMeanDecay(), 1e-4);
+        assertEquals(beta2, layer.conf().getLayer().getAdamVarDecay(), 1e-4);
+        assertEquals(2, count);
+    }
+
+    @Test
+    public void testAdaMaxUpdater() {
+        INDArray m, v;
+        double lr = 0.01;
+        int iteration = 0;
+        double beta1 = 0.8;
+        double beta2 = 0.888;
+        double epsilon = AdaMax.DEFAULT_ADAMAX_EPSILON;
+
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr)
+                .iterations(iteration).adamMeanDecay(beta1).adamVarDecay(beta2).layer(new DenseLayer.Builder()
+                        .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADAMAX).build())
+                .build();
+
+        int numParams = conf.getLayer().initializer().numParams(conf);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer.setBackpropGradientsViewArray(gradients);
+        Updater updater = UpdaterCreator.getUpdater(layer);
+        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
@@ -241,7 +302,7 @@ public class TestUpdaters {
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
-        int updaterStateSize = updater.stateSizeForLayer(layer);
+        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
@@ -289,7 +350,7 @@ public class TestUpdaters {
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
-        int updaterStateSize = updater.stateSizeForLayer(layer);
+        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
@@ -427,16 +488,16 @@ public class TestUpdaters {
             GradientUpdater gu = u.getGradientUpdater();
             switch (count) {
                 case 0:
-                    assertTrue(gu instanceof Sgd);
+                    assertTrue(gu instanceof SgdUpdater);
                     break;
                 case 1:
                     assertTrue(gu instanceof org.nd4j.linalg.learning.NoOpUpdater);
                     break;
                 case 2:
-                    assertTrue(gu instanceof AdaGrad);
+                    assertTrue(gu instanceof AdaGradUpdater);
                     break;
                 case 3:
-                    assertTrue(gu instanceof Nesterovs);
+                    assertTrue(gu instanceof NesterovsUpdater);
                     break;
                 default:
                     throw new RuntimeException();
@@ -446,13 +507,13 @@ public class TestUpdaters {
 
 
         GradientUpdater[] uArr = new GradientUpdater[4];
-        uArr[0] = new Sgd(lr);
-        uArr[1] = new NoOpUpdater();
-        uArr[2] = new AdaGrad(lr);
+        uArr[0] = new SgdUpdater(new Sgd(lr));
+        uArr[1] = new NoOpUpdater(new NoOp());
+        uArr[2] = new AdaGradUpdater(new AdaGrad(lr, AdaGrad.DEFAULT_ADAGRAD_EPSILON));
         INDArray updaterState = Nd4j.create(1, 6 * 7 + 7, 'f');
         uArr[2].setStateViewArray(updaterState, new int[] {1, 6 * 7 + 7}, 'f', true);
 
-        uArr[3] = new Nesterovs(0.6, lr);
+        uArr[3] = new NesterovsUpdater(new Nesterovs(lr, 0.6));
         //        updaterStateSize = uArr[3].stateSizeForLayer(net.getLayer(3));
         updaterState = Nd4j.create(1, 7 * 8 + 8, 'f');
         uArr[3].setStateViewArray(updaterState, new int[] {1, 7 * 8 + 8}, 'f', true);
@@ -480,7 +541,7 @@ public class TestUpdaters {
                 layerGradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wGrad.dup());
                 layerGradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, bGrad.dup());
 
-                uArr[j].update(net.getLayer(j).conf().getLearningRateByParam("W"), 0.6);
+                uArr[j].getConfig().applySchedules(0, net.getLayer(j).conf().getLearningRateByParam("W"));
                 for (String s : layerGradient.gradientForVariable().keySet()) {
                     expectedGradient.put(j + "_" + s, layerGradient.getGradientFor(s));
                 }
@@ -571,13 +632,13 @@ public class TestUpdaters {
         MultiLayerUpdater updater = (MultiLayerUpdater) net.getUpdater();
         List<UpdaterBlock> l = updater.getUpdaterBlocks();
 
-        AdaGrad adaGrad = (AdaGrad) l.get(0).getGradientUpdater();
+        AdaGrad adaGrad = (AdaGrad) l.get(0).getGradientUpdater().getConfig();
         assertEquals(1e-6, adaGrad.getEpsilon(), 0.0);
 
-        AdaGrad adaGrad1 = (AdaGrad) l.get(1).getGradientUpdater();
+        AdaGrad adaGrad1 = (AdaGrad) l.get(1).getGradientUpdater().getConfig();
         assertEquals(0.123, adaGrad1.getEpsilon(), 0.0);
 
-        AdaGrad adaGrad2 = (AdaGrad) l.get(2).getGradientUpdater();
+        AdaGrad adaGrad2 = (AdaGrad) l.get(2).getGradientUpdater().getConfig();
         assertEquals(0.456, adaGrad2.getEpsilon(), 0.0);
 
 
@@ -596,13 +657,13 @@ public class TestUpdaters {
         updater = (MultiLayerUpdater) net.getUpdater();
         l = updater.getUpdaterBlocks();
 
-        AdaDelta adaDelta = (AdaDelta) l.get(0).getGradientUpdater();
+        AdaDelta adaDelta = (AdaDelta) l.get(0).getGradientUpdater().getConfig();
         assertEquals(1e-6, adaDelta.getEpsilon(), 0.0);
 
-        AdaDelta adaDelta1 = (AdaDelta) l.get(1).getGradientUpdater();
+        AdaDelta adaDelta1 = (AdaDelta) l.get(1).getGradientUpdater().getConfig();
         assertEquals(0.123, adaDelta1.getEpsilon(), 0.0);
 
-        AdaDelta adaDelta2 = (AdaDelta) l.get(2).getGradientUpdater();
+        AdaDelta adaDelta2 = (AdaDelta) l.get(2).getGradientUpdater().getConfig();
         assertEquals(0.456, adaDelta2.getEpsilon(), 0.0);
     }
 
@@ -708,8 +769,10 @@ public class TestUpdaters {
                                         .updater(org.deeplearning4j.nn.conf.Updater.RMSPROP).build())
                         .layer(2, new DenseLayer.Builder().nIn(2).nOut(2)
                                         .updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
-                        .layer(3, new OutputLayer.Builder().nIn(2).nOut(2)
+                        .layer(3, new DenseLayer.Builder().nIn(2).nOut(2)
                                         .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
+                        .layer(4, new OutputLayer.Builder().nIn(2).nOut(2)
+                                        .updater(org.deeplearning4j.nn.conf.Updater.ADAMAX).build())
                         .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -721,17 +784,20 @@ public class TestUpdaters {
         MultiLayerUpdater updater = (MultiLayerUpdater) net.getUpdater();
         List<UpdaterBlock> l = updater.getUpdaterBlocks();
 
-        Adam adam = (Adam) l.get(0).getGradientUpdater(); //u0.updaterForVariable.get("W");
+        Adam adam = (Adam) l.get(0).getGradientUpdater().getConfig(); //u0.updaterForVariable.get("W");
         assertEquals(e, adam.getEpsilon(), 0.0);
 
-        RmsProp rmsProp = (RmsProp) l.get(1).getGradientUpdater(); //u1.updaterForVariable.get("W");
+        RmsProp rmsProp = (RmsProp) l.get(1).getGradientUpdater().getConfig(); //u1.updaterForVariable.get("W");
         assertEquals(e, rmsProp.getEpsilon(), 0.0);
 
-        AdaDelta adaDelta = (AdaDelta) l.get(2).getGradientUpdater(); //u2.updaterForVariable.get("W");
+        AdaDelta adaDelta = (AdaDelta) l.get(2).getGradientUpdater().getConfig(); //u2.updaterForVariable.get("W");
         assertEquals(e, adaDelta.getEpsilon(), 0.0);
 
-        AdaGrad adaGrad = (AdaGrad) l.get(3).getGradientUpdater(); //u3.updaterForVariable.get("W");
+        AdaGrad adaGrad = (AdaGrad) l.get(3).getGradientUpdater().getConfig(); //u3.updaterForVariable.get("W");
         assertEquals(e, adaGrad.getEpsilon(), 0.0);
+
+        AdaMax adaMax = (AdaMax) l.get(4).getGradientUpdater().getConfig(); //u3.updaterForVariable.get("W");
+        assertEquals(e, adaMax.getEpsilon(), 0.0);
     }
 
     @Test
@@ -748,8 +814,10 @@ public class TestUpdaters {
                                                 .build())
                                 .layer(2, new DenseLayer.Builder().nIn(10).nOut(10).name("l2")
                                                 .updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
-                                .layer(3, new OutputLayer.Builder().nIn(10).nOut(10).name("l3")
+                                .layer(3, new DenseLayer.Builder().nIn(10).nOut(10).name("l3")
                                                 .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
+                                .layer(4, new OutputLayer.Builder().nIn(10).nOut(10).name("l4")
+                                        .updater(org.deeplearning4j.nn.conf.Updater.ADAMAX).build())
                                 .build();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -767,9 +835,11 @@ public class TestUpdaters {
                                                 .build(), "l0")
                                 .addLayer("l2", new DenseLayer.Builder().nIn(10).nOut(10)
                                                 .updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build(), "l1")
-                                .addLayer("l3", new OutputLayer.Builder().nIn(10).nOut(10)
+                                .addLayer("l3", new DenseLayer.Builder().nIn(10).nOut(10)
                                                 .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build(), "l2")
-                                .setOutputs("l3").build();
+                                .addLayer("l4", new OutputLayer.Builder().nIn(10).nOut(10)
+                                                .updater(org.deeplearning4j.nn.conf.Updater.ADAMAX).build(), "l3")
+                                .setOutputs("l4").build();
 
                 ComputationGraph net = new ComputationGraph(conf);
                 net.init();
@@ -779,8 +849,9 @@ public class TestUpdaters {
             }
 
 
-            //Expect 4 blocks: (layer0 W, layer0 B, layer 1 W], [layer 1 B], [layer 2 W, layer 2 B], [layer 3 W, layer 3 B]
-            assertEquals(4, blocks.size());
+            //Expect 4 blocks: (layer0 W, layer0 B, layer 1 W], [layer 1 B], [layer 2 W, layer 2 B],
+            // [layer 3 W, layer 3 B], [layer 4 W, layer 4 B]
+            assertEquals(5, blocks.size());
 
 
             //Check first updater block:
@@ -842,6 +913,21 @@ public class TestUpdaters {
             int nUpdaterVals3 = nParams3; //1x for AdaGrad
             assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2, ub3.getUpdaterViewOffsetStart());
             assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2 + nUpdaterVals3, ub3.getUpdaterViewOffsetEnd());
+
+            //Check fifth updater black
+            UpdaterBlock ub4 = blocks.get(4);
+            assertEquals(2, ub4.getLayersAndVariablesInBlock().size());
+            assertEquals("l4", ub4.getLayersAndVariablesInBlock().get(0).getLayer().conf().getLayer().getLayerName());
+            assertEquals(DefaultParamInitializer.WEIGHT_KEY, ub4.getLayersAndVariablesInBlock().get(0).getParamName());
+            assertEquals("l4", ub4.getLayersAndVariablesInBlock().get(1).getLayer().conf().getLayer().getLayerName());
+            assertEquals(DefaultParamInitializer.BIAS_KEY, ub4.getLayersAndVariablesInBlock().get(1).getParamName());
+
+            int nParams4 = 10 * 10 + 10;
+            assertEquals(nParams0 + nParams1 + nParams2 + nParams3, ub4.getParamOffsetStart());
+            assertEquals(nParams0 + nParams1 + nParams2 + nParams3 + nParams4, ub4.getParamOffsetEnd());
+            int nUpdaterVals4 = 2*nParams4; //2x for AdaGrad
+            assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2 + nUpdaterVals3, ub4.getUpdaterViewOffsetStart());
+            assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2 + nUpdaterVals3 + nUpdaterVals4, ub4.getUpdaterViewOffsetEnd());
         }
     }
 
@@ -885,5 +971,81 @@ public class TestUpdaters {
             actParams.add(vs.getParamName());
         }
         assertEquals(expParams, actParams);
+    }
+
+
+    @Test
+    public void testUpdaterConfigDeprecatedMethods(){
+        //.momentum(), .epsilon() etc - these are now deprecated, but we still want them to work as expected
+        // until they are actually removed
+
+        double lr = 0.75;
+        double eps = 0.65;
+        double adamMean = 0.1;
+        double adamVar = 0.2;
+        double momentum = 0.3;
+        Map<Integer,Double> momentumSchedule = new HashMap<>();
+        momentumSchedule.put(0, 0.35);
+        momentumSchedule.put(10, 0.34);
+        double rmsDecay = 0.4;
+
+        for( boolean useEnum : new boolean[]{true, false}) {
+            NeuralNetConfiguration.ListBuilder listBuilder = new NeuralNetConfiguration.Builder()
+                    //Multiple updaters
+                    .learningRate(lr)
+                    .epsilon(eps)
+                    //Adam
+                    .adamMeanDecay(adamMean)
+                    .adamVarDecay(adamVar)
+                    //Momentum
+                    .momentum(momentum)
+                    .momentumAfter(momentumSchedule)
+                    //RMSProp
+                    .rmsDecay(rmsDecay)
+                    .list();
+            if(useEnum){
+                listBuilder.layer(0, new DenseLayer.Builder().nIn(10).nOut(10).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+                        .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).updater(org.deeplearning4j.nn.conf.Updater.ADAM).build())
+                        .layer(2, new DenseLayer.Builder().nIn(10).nOut(10).updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
+                        .layer(3, new DenseLayer.Builder().nIn(10).nOut(10).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
+                        .layer(4, new DenseLayer.Builder().nIn(10).nOut(10).updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
+                        .layer(5, new DenseLayer.Builder().nIn(10).nOut(10).updater(org.deeplearning4j.nn.conf.Updater.RMSPROP).build());
+            } else {
+                listBuilder.layer(0, new DenseLayer.Builder().nIn(10).nOut(10).updater(new Sgd()).build())
+                        .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).updater(new Adam()).build())
+                        .layer(2, new DenseLayer.Builder().nIn(10).nOut(10).updater(new AdaDelta()).build())
+                        .layer(3, new DenseLayer.Builder().nIn(10).nOut(10).updater(new Nesterovs()).build())
+                        .layer(4, new DenseLayer.Builder().nIn(10).nOut(10).updater(new AdaGrad()).build())
+                        .layer(5, new DenseLayer.Builder().nIn(10).nOut(10).updater(new RmsProp()).build());
+            }
+
+
+            MultiLayerConfiguration conf = listBuilder.build();
+
+            Sgd sgd = (Sgd) conf.getConf(0).getLayer().getIUpdater();
+            assertEquals(lr, sgd.getLearningRate(), 1e-6);
+
+            Adam adam = (Adam) conf.getConf(1).getLayer().getIUpdater();
+            assertEquals(lr, adam.getLearningRate(), 1e-6);
+            assertEquals(eps, adam.getEpsilon(), 1e-6);
+            assertEquals(adamMean, adam.getBeta1(), 1e-6);
+            assertEquals(adamVar, adam.getBeta2(), 1e-6);
+
+            //Adadelta: no params
+
+            Nesterovs nesterovs = (Nesterovs) conf.getConf(3).getLayer().getIUpdater();
+            assertEquals(lr, nesterovs.getLearningRate(), 1e-6 );
+            assertEquals(momentum, nesterovs.getMomentum(), 1e-6);
+            assertEquals(momentumSchedule, nesterovs.getMomentumSchedule());
+
+            AdaGrad adagrad = (AdaGrad) conf.getConf(4).getLayer().getIUpdater();
+            assertEquals(lr, adagrad.getLearningRate(), 1e-6);
+            assertEquals(eps, adagrad.getEpsilon(), 1e-6);
+
+            RmsProp rmsProp = (RmsProp) conf.getConf(5).getLayer().getIUpdater();
+            assertEquals(lr, rmsProp.getLearningRate(), 1e-6);
+            assertEquals(rmsDecay, rmsProp.getRmsDecay(), 1e-6);
+            assertEquals(eps, rmsProp.getEpsilon(), 1e-6);
+        }
     }
 }

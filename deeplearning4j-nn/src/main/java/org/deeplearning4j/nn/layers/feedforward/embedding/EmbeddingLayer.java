@@ -73,8 +73,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         }
 
         INDArray biasGradientsView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
-        INDArray biasGradients = delta.sum(0);
-        biasGradientsView.assign(biasGradients); //TODO do this without the assign...
+        delta.sum(biasGradientsView, 0);    //biasGradientView is initialized/zeroed first in sum op
 
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradients);

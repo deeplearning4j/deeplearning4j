@@ -337,9 +337,12 @@ public class ParallelWrapper implements AutoCloseable {
     public synchronized void fit(@NonNull DataSetIterator source) {
         stopFit.set(false);
         createZooIfNeccessary(false);
-        source.reset();
 
-        DataSetIterator iterator;
+        if (source.asyncSupported())
+            source.reset();
+
+        DataSetIterator iterator = source;
+
         if (prefetchSize > 0 && source.asyncSupported()) {
             log.info("Creating asynchronous prefetcher...");
             if (isMQ) {
@@ -356,16 +359,15 @@ public class ParallelWrapper implements AutoCloseable {
 
             } else
                 iterator = new AsyncDataSetIterator(source, prefetchSize);
-        } else {
-            iterator = source;
         }
+
         List<Long> nanos = new ArrayList<>();
         AtomicInteger locker = new AtomicInteger(0);
         long time1 = System.currentTimeMillis();
         while (iterator.hasNext() && !stopFit.get()) {
         //int intcnt = 0;
         //while (intcnt < 1000) {
-          //  intcnt++;
+            //intcnt++;
             DataSet dataSet = iterator.next();
             long time2 = System.currentTimeMillis();
             long lastEtlTime = time2 - time1;

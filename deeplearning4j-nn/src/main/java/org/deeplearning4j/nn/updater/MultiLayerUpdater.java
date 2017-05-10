@@ -54,14 +54,6 @@ public class MultiLayerUpdater extends BaseMultiLayerUpdater<MultiLayerNetwork> 
     }
 
     @Override
-    public int stateSizeForLayer(Layer layer) {
-        if (!(layer instanceof MultiLayerNetwork))
-            throw new IllegalArgumentException("Expected MultiLayerNetwork");
-
-        return updaterStateViewArray.length();
-    }
-
-    @Override
     public Updater clone() {
         return new MultiLayerUpdater(network, null);
     }
