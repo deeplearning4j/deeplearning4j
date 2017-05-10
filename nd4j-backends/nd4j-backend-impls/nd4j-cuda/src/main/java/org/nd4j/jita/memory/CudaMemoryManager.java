@@ -33,7 +33,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
      * @param initialize
      */
     @Override
-    public Pointer allocate(long bytes, MemoryKind kind, boolean initialize) {
+    public synchronized Pointer allocate(long bytes, MemoryKind kind, boolean initialize) {
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
         //log.info("Allocating {} bytes in {} memory...", bytes, kind);

@@ -3711,6 +3711,18 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                      int maxReals,
                                      Pointer ptrToArguments);
 
+
+    public native void execAggregateBatchReduceFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                     int numAggregates,
+                                     int opNum,
+                                     int maxArgs,
+                                     int maxShapes,
+                                     int maxIntArrays,
+                                     int maxIntArraySize,
+                                     int maxIdx,
+                                     int maxReals,
+                                     Pointer ptrToArguments);
+
     /**
      *
      * @param extraPointers
