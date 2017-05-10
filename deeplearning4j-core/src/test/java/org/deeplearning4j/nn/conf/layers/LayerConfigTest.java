@@ -7,6 +7,10 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.learning.config.AdaDelta;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.Nesterovs;
+import org.nd4j.linalg.learning.config.RmsProp;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -199,8 +203,12 @@ public class LayerConfigTest {
 
         assertEquals(1.0, conf.getConf(0).getLayer().getMomentum(), 0.0);
         assertEquals(2.0, conf.getConf(1).getLayer().getMomentum(), 0.0);
+        assertEquals(1.0, ((Nesterovs)conf.getConf(0).getLayer().getIUpdater()).getMomentum(), 0.0);
+        assertEquals(2.0, ((Nesterovs)conf.getConf(1).getLayer().getIUpdater()).getMomentum(), 0.0);
         assertEquals(0.1, conf.getConf(0).getLayer().getMomentumSchedule().get(0), 0.0);
         assertEquals(0.2, conf.getConf(1).getLayer().getMomentumSchedule().get(0), 0.0);
+        assertEquals(0.1, ((Nesterovs)conf.getConf(0).getLayer().getIUpdater()).getMomentumSchedule().get(0), 0.0);
+        assertEquals(0.2, ((Nesterovs)conf.getConf(1).getLayer().getIUpdater()).getMomentumSchedule().get(0), 0.0);
 
     }
 
@@ -227,16 +235,20 @@ public class LayerConfigTest {
 
         assertEquals("RMSPROP", conf.getConf(0).getLayer().getUpdater().toString());
         assertEquals("ADADELTA", conf.getConf(1).getLayer().getUpdater().toString());
-        assertEquals(0.5, conf.getConf(1).getLayer().getRho(), 0.0);
         assertEquals(1.0, conf.getConf(0).getLayer().getRmsDecay(), 0.0);
+        assertEquals(0.5, conf.getConf(1).getLayer().getRho(), 0.0);
+        assertEquals(1.0, ((RmsProp)conf.getConf(0).getLayer().getIUpdater()).getRmsDecay(), 0.0);
+        assertEquals(0.5, ((AdaDelta)conf.getConf(1).getLayer().getIUpdater()).getRho(), 0.0);
     }
 
 
     @Test
     public void testUpdaterAdamParamsLayerwiseOverride() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().updater(Updater.ADAM).adamMeanDecay(0.5)
-                        .adamVarDecay(0.5).list().layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
-                        .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).adamMeanDecay(0.6).adamVarDecay(0.7).build())
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .updater(Updater.ADAM).adamMeanDecay(0.5).adamVarDecay(0.5)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).build())
+                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).adamMeanDecay(0.6).adamVarDecay(0.7).build())
                         .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -248,22 +260,10 @@ public class LayerConfigTest {
         assertEquals(0.5, conf.getConf(0).getLayer().getAdamVarDecay(), 0.0);
         assertEquals(0.7, conf.getConf(1).getLayer().getAdamVarDecay(), 0.0);
 
-        //        conf = new NeuralNetConfiguration.Builder()
-        //                .updater(Updater.ADAM)
-        //                .adamMeanDecay(0.5)
-        //                .adamVarDecay(0.5)
-        //                .list()
-        //                .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).adamMeanDecay(1.0).build())
-        //                .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).updater(Updater.ADADELTA).rho(0.5).build())
-        //                .build();
-        //
-        //        net = new MultiLayerNetwork(conf);
-        //        net.init();
-        //
-        //        assertEquals("ADAM", conf.getConf(0).getLayer().getUpdater().toString());
-        //        assertEquals("ADADELTA", conf.getConf(1).getLayer().getUpdater().toString());
-        //        assertEquals(1.0, conf.getConf(0).getLayer().getAdamMeanDecay(), 0.0);
-        //        assertEquals(0.5, conf.getConf(0).getLayer().getAdamVarDecay(), 0.0);
+        assertEquals(0.5, ((Adam)conf.getConf(0).getLayer().getIUpdater()).getBeta1(), 0.0);
+        assertEquals(0.6, ((Adam)conf.getConf(1).getLayer().getIUpdater()).getBeta1(), 0.0);
+        assertEquals(0.5, ((Adam)conf.getConf(0).getLayer().getIUpdater()).getBeta2(), 0.0);
+        assertEquals(0.7, ((Adam)conf.getConf(1).getLayer().getIUpdater()).getBeta2(), 0.0);
     }
 
     @Test

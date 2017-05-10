@@ -11,7 +11,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.indexing.functions.Value;
-import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.legacy.AdaGrad;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

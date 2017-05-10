@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -95,6 +96,9 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public DataSet next(int num) {
+        if(!hasNext()){
+            throw new NoSuchElementException("No next element");
+        }
         DataSet next;
         batch++;
         iterationsCounter.incrementAndGet();
@@ -117,7 +121,10 @@ public class MultipleEpochsIterator implements DataSetIterator {
                 }
             }
         } else {
-            next = num == -1 ? iter.next() : iter.next(num);
+            next = (num == -1 ? iter.next() : iter.next(num));
+            if(next == null){
+                throw new IllegalStateException("Iterator returned null DataSet");
+            }
             if (!iter.hasNext()) {
                 trackEpochs();
                 // track number of epochs and won't reset if it's over
@@ -188,6 +195,9 @@ public class MultipleEpochsIterator implements DataSetIterator {
      */
     @Override
     public void reset() {
+        if(!iter.resetSupported()){
+            throw new IllegalStateException("Cannot reset MultipleEpochsIterator with base iter that does not support reset");
+        }
         epochs = 0;
         lastBatch = batch;
         batch = 0;

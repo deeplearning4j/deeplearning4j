@@ -235,6 +235,8 @@ public class TransferLearning {
             //instantiate dummy layer to get the params
 
             //Build a nn config builder with settings from finetune. Set layer with the added layer
+            //Issue: fine tune config has .learningRate(x), then I add a layer with .learningRate(y)...
+            //We don't want that to be overridden
             NeuralNetConfiguration layerConf =
                             finetuneConfiguration.appliedNeuralNetConfigurationBuilder().layer(layer).build();
 

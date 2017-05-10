@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
@@ -46,13 +47,22 @@ public class FineTuneConfiguration {
     protected Double l1Bias;
     protected Double l2Bias;
     protected Double dropOut;
+    @Deprecated
     protected Updater updater;
+    protected IUpdater iUpdater;
+    @Deprecated
     protected Double momentum;
+    @Deprecated
     protected Map<Integer, Double> momentumSchedule;
+    @Deprecated
     protected Double epsilon;
+    @Deprecated
     protected Double rho;
+    @Deprecated
     protected Double rmsDecay;
+    @Deprecated
     protected Double adamMeanDecay;
+    @Deprecated
     protected Double adamVarDecay;
     protected Boolean miniBatch;
     protected Integer numIterations;
@@ -108,6 +118,15 @@ public class FineTuneConfiguration {
             this.activationFn = activation.getActivationFunction();
             return this;
         }
+
+        public Builder updater(IUpdater updater){
+            return iUpdater(updater);
+        }
+
+        public Builder updater(Updater updater){
+            this.updater = updater;
+            return updater(updater.getIUpdaterWithDefaultConfig());
+        }
     }
 
 
@@ -138,6 +157,7 @@ public class FineTuneConfiguration {
                 //so always overwrite the learning rate to both?
                 l.setLearningRate(learningRate);
                 l.setBiasLearningRate(learningRate);
+
             }
             if (biasLearningRate != null)
                 l.setBiasLearningRate(biasLearningRate);
@@ -156,6 +176,8 @@ public class FineTuneConfiguration {
                 l.setDropOut(dropOut);
             if (updater != null)
                 l.setUpdater(updater);
+            if (iUpdater != null)
+                l.setIUpdater(iUpdater);
             if (momentum != null)
                 l.setMomentum(momentum);
             if (momentumSchedule != null)
@@ -211,6 +233,7 @@ public class FineTuneConfiguration {
         if (l != null && updater != null && originalUpdater != null && updater != originalUpdater) {
             switch (originalUpdater) {
                 case ADAM:
+                case ADAMAX:
                     if (adamMeanDecay == null)
                         l.setAdamMeanDecay(Double.NaN);
                     if (adamVarDecay == null)
@@ -253,7 +276,7 @@ public class FineTuneConfiguration {
 
         //Perform validation. This also sets the defaults for updaters. For example, Updater.RMSProp -> set rmsDecay
         if (l != null) {
-            LayerValidation.updaterValidation(l.getLayerName(), l, momentum, momentumSchedule, adamMeanDecay,
+            LayerValidation.updaterValidation(l.getLayerName(), l, learningRate, momentum, momentumSchedule, adamMeanDecay,
                             adamVarDecay, rho, rmsDecay, epsilon);
 
             boolean useDropCon = (useDropConnect == null ? nnc.isUseDropConnect() : useDropConnect);
@@ -307,9 +330,8 @@ public class FineTuneConfiguration {
             confBuilder.setDist(dist);
         if (learningRate != null) {
             //usually the same learning rate is applied to both bias and weights
-            //so always overwrite the learning rate to both?
+            //HOWEVER: this is set elsewhere. in the NNC, we only want to override the normal LR
             confBuilder.setLearningRate(learningRate);
-            confBuilder.setBiasLearningRate(learningRate);
         }
         if (biasLearningRate != null)
             confBuilder.setBiasLearningRate(biasLearningRate);
@@ -326,6 +348,8 @@ public class FineTuneConfiguration {
             confBuilder.setL2Bias(l2Bias);
         if (dropOut != null)
             confBuilder.setDropOut(dropOut);
+        if (iUpdater != null)
+            confBuilder.updater(iUpdater);
         if (updater != null)
             confBuilder.setUpdater(updater);
         if (momentum != null)

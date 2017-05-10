@@ -484,7 +484,7 @@ public class BatchNormalizationTest {
                                 || BatchNormalizationParamInitializer.GLOBAL_VAR.equals(v.getParamName())) {
                     assertTrue(ub.getGradientUpdater() instanceof NoOpUpdater);
                 } else {
-                    assertTrue(ub.getGradientUpdater() instanceof RmsProp);
+                    assertTrue(ub.getGradientUpdater() instanceof RmsPropUpdater);
                 }
             }
         }

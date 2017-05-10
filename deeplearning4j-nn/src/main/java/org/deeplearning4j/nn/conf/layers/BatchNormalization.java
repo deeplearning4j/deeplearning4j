@@ -11,6 +11,8 @@ import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.config.NoOp;
 
 import java.util.Collection;
 import java.util.Map;
@@ -156,6 +158,20 @@ public class BatchNormalization extends FeedForwardLayer {
             case BatchNormalizationParamInitializer.GLOBAL_MEAN:
             case BatchNormalizationParamInitializer.GLOBAL_VAR:
                 return Updater.NONE;
+            default:
+                throw new IllegalArgumentException("Unknown parameter: \"" + paramName + "\"");
+        }
+    }
+
+    @Override
+    public IUpdater getIUpdaterByParam(String paramName){
+        switch (paramName) {
+            case BatchNormalizationParamInitializer.BETA:
+            case BatchNormalizationParamInitializer.GAMMA:
+                return iUpdater;
+            case BatchNormalizationParamInitializer.GLOBAL_MEAN:
+            case BatchNormalizationParamInitializer.GLOBAL_VAR:
+                return new NoOp();
             default:
                 throw new IllegalArgumentException("Unknown parameter: \"" + paramName + "\"");
         }

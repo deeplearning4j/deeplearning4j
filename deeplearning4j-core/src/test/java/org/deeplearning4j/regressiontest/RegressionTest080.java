@@ -10,8 +10,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
-import org.nd4j.linalg.activations.impl.ActivationIdentity;
-import org.nd4j.linalg.activations.impl.ActivationLReLU;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Nesterovs;
@@ -33,12 +33,12 @@ import static org.junit.Assert.*;
  *
  * @author Alex Black
  */
-public class RegressionTest071 {
+public class RegressionTest080 {
 
     @Test
     public void regressionTestMLP1() throws Exception {
 
-        File f = new ClassPathResource("regression_testing/071/071_ModelSerializer_Regression_MLP_1.zip")
+        File f = new ClassPathResource("regression_testing/080/080_ModelSerializer_Regression_MLP_1.zip")
                         .getTempFileFromArchive();
 
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(f, true);
@@ -50,24 +50,28 @@ public class RegressionTest071 {
         assertFalse(conf.isPretrain());
 
         DenseLayer l0 = (DenseLayer) conf.getConf(0).getLayer();
-        assertEquals("relu", l0.getActivationFn().toString());
+        assertTrue(l0.getActivationFn() instanceof ActivationReLU);
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
         assertEquals(WeightInit.XAVIER, l0.getWeightInit());
-        assertEquals(Updater.NESTEROVS, l0.getUpdater());
-        assertEquals(0.9, l0.getMomentum(), 1e-6);
+        assertTrue(l0.getIUpdater() instanceof Nesterovs);
+        Nesterovs n = (Nesterovs)l0.getIUpdater();
+        assertEquals(0.9, n.getMomentum(), 1e-6);
         assertEquals(0.15, l0.getLearningRate(), 1e-6);
+        assertEquals(0.15, n.getLearningRate(), 1e-6);
+
 
         OutputLayer l1 = (OutputLayer) conf.getConf(1).getLayer();
-        assertEquals("softmax", l1.getActivationFn().toString());
-        assertEquals(LossFunctions.LossFunction.MCXENT, l1.getLossFunction());
+        assertTrue(l1.getActivationFn() instanceof ActivationSoftmax);
         assertTrue(l1.getLossFn() instanceof LossMCXENT);
         assertEquals(4, l1.getNIn());
         assertEquals(5, l1.getNOut());
         assertEquals(WeightInit.XAVIER, l1.getWeightInit());
-        assertEquals(Updater.NESTEROVS, l1.getUpdater());
-        assertEquals(0.9, l1.getMomentum(), 1e-6);
+        assertTrue(l1.getIUpdater() instanceof Nesterovs);
+        n = (Nesterovs) l1.getIUpdater();
+        assertEquals(0.9, n.getMomentum(), 1e-6);
         assertEquals(0.15, l1.getLearningRate(), 1e-6);
+        assertEquals(0.15, n.getLearningRate(), 1e-6);
 
         int numParams = net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
@@ -78,7 +82,7 @@ public class RegressionTest071 {
     @Test
     public void regressionTestMLP2() throws Exception {
 
-        File f = new ClassPathResource("regression_testing/071/071_ModelSerializer_Regression_MLP_2.zip")
+        File f = new ClassPathResource("regression_testing/080/080_ModelSerializer_Regression_MLP_2.zip")
                         .getTempFileFromArchive();
 
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(f, true);
@@ -95,8 +99,10 @@ public class RegressionTest071 {
         assertEquals(4, l0.getNOut());
         assertEquals(WeightInit.DISTRIBUTION, l0.getWeightInit());
         assertEquals(new NormalDistribution(0.1, 1.2), l0.getDist());
-        assertEquals(Updater.RMSPROP, l0.getUpdater());
-        assertEquals(0.96, l0.getRmsDecay(), 1e-6);
+        assertTrue(l0.getIUpdater() instanceof RmsProp);
+        RmsProp r = (RmsProp)l0.getIUpdater();
+        assertEquals(0.96, r.getRmsDecay(), 1e-6);
+        assertEquals(0.15, r.getLearningRate(), 1e-6);
         assertEquals(0.15, l0.getLearningRate(), 1e-6);
         assertEquals(0.6, l0.getDropOut(), 1e-6);
         assertEquals(0.1, l0.getL1(), 1e-6);
@@ -106,14 +112,15 @@ public class RegressionTest071 {
 
         OutputLayer l1 = (OutputLayer) conf.getConf(1).getLayer();
         assertTrue(l1.getActivationFn() instanceof ActivationIdentity);
-        assertEquals(LossFunctions.LossFunction.MSE, l1.getLossFunction());
         assertTrue(l1.getLossFn() instanceof LossMSE);
         assertEquals(4, l1.getNIn());
         assertEquals(5, l1.getNOut());
-        assertEquals(WeightInit.DISTRIBUTION, l0.getWeightInit());
-        assertEquals(new NormalDistribution(0.1, 1.2), l0.getDist());
-        assertEquals(Updater.RMSPROP, l0.getUpdater());
-        assertEquals(0.96, l1.getRmsDecay(), 1e-6);
+        assertEquals(WeightInit.DISTRIBUTION, l1.getWeightInit());
+        assertEquals(new NormalDistribution(0.1, 1.2), l1.getDist());
+        assertTrue(l1.getIUpdater() instanceof RmsProp);
+        r = (RmsProp)l1.getIUpdater();
+        assertEquals(0.96, r.getRmsDecay(), 1e-6);
+        assertEquals(0.15, r.getLearningRate(), 1e-6);
         assertEquals(0.15, l1.getLearningRate(), 1e-6);
         assertEquals(0.6, l1.getDropOut(), 1e-6);
         assertEquals(0.1, l1.getL1(), 1e-6);
@@ -130,7 +137,7 @@ public class RegressionTest071 {
     @Test
     public void regressionTestCNN1() throws Exception {
 
-        File f = new ClassPathResource("regression_testing/071/071_ModelSerializer_Regression_CNN_1.zip")
+        File f = new ClassPathResource("regression_testing/080/080_ModelSerializer_Regression_CNN_1.zip")
                         .getTempFileFromArchive();
 
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(f, true);
@@ -142,12 +149,14 @@ public class RegressionTest071 {
         assertFalse(conf.isPretrain());
 
         ConvolutionLayer l0 = (ConvolutionLayer) conf.getConf(0).getLayer();
-        assertEquals("tanh", l0.getActivationFn().toString());
+        assertTrue(l0.getActivationFn() instanceof ActivationTanH);
         assertEquals(3, l0.getNIn());
         assertEquals(3, l0.getNOut());
         assertEquals(WeightInit.RELU, l0.getWeightInit());
-        assertEquals(Updater.RMSPROP, l0.getUpdater());
-        assertEquals(0.96, l0.getRmsDecay(), 1e-6);
+        assertTrue(l0.getIUpdater() instanceof RmsProp);
+        RmsProp r = (RmsProp) l0.getIUpdater();
+        assertEquals(0.96, r.getRmsDecay(), 1e-6);
+        assertEquals(0.15, r.getLearningRate(), 1e-6);
         assertEquals(0.15, l0.getLearningRate(), 1e-6);
         assertArrayEquals(new int[] {2, 2}, l0.getKernelSize());
         assertArrayEquals(new int[] {1, 1}, l0.getStride());
@@ -162,15 +171,15 @@ public class RegressionTest071 {
         assertEquals(l1.getConvolutionMode(), ConvolutionMode.Same);
 
         OutputLayer l2 = (OutputLayer) conf.getConf(2).getLayer();
-        assertEquals("sigmoid", l1.getActivationFn().toString());
-        assertEquals(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, l2.getLossFunction());
-        assertTrue(l2.getLossFn() instanceof LossNegativeLogLikelihood); //TODO
+        assertTrue(l2.getActivationFn() instanceof ActivationSigmoid);
+        assertTrue(l2.getLossFn() instanceof LossNegativeLogLikelihood);
         assertEquals(26 * 26 * 3, l2.getNIn());
         assertEquals(5, l2.getNOut());
-        assertEquals(WeightInit.RELU, l0.getWeightInit());
-        assertEquals(Updater.RMSPROP, l0.getUpdater());
-        assertEquals(0.96, l0.getRmsDecay(), 1e-6);
-        assertEquals(0.15, l0.getLearningRate(), 1e-6);
+        assertEquals(WeightInit.RELU, l2.getWeightInit());
+        assertTrue(l2.getIUpdater() instanceof RmsProp);
+        r = (RmsProp)l2.getIUpdater();
+        assertEquals(0.96, r.getRmsDecay(), 1e-6);
+        assertEquals(0.15, r.getLearningRate(), 1e-6);
 
         assertTrue(conf.getInputPreProcess(2) instanceof CnnToFeedForwardPreProcessor);
 
@@ -183,7 +192,7 @@ public class RegressionTest071 {
     @Test
     public void regressionTestLSTM1() throws Exception {
 
-        File f = new ClassPathResource("regression_testing/071/071_ModelSerializer_Regression_LSTM_1.zip")
+        File f = new ClassPathResource("regression_testing/080/080_ModelSerializer_Regression_LSTM_1.zip")
                         .getTempFileFromArchive();
 
         MultiLayerNetwork net = ModelSerializer.restoreMultiLayerNetwork(f, true);
@@ -195,14 +204,14 @@ public class RegressionTest071 {
         assertFalse(conf.isPretrain());
 
         GravesLSTM l0 = (GravesLSTM) conf.getConf(0).getLayer();
-        assertEquals("tanh", l0.getActivationFn().toString());
+        assertTrue(l0.getActivationFn() instanceof ActivationTanH);
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l0.getGradientNormalization());
         assertEquals(1.5, l0.getGradientNormalizationThreshold(), 1e-5);
 
         GravesBidirectionalLSTM l1 = (GravesBidirectionalLSTM) conf.getConf(1).getLayer();
-        assertEquals("softsign", l1.getActivationFn().toString());
+        assertTrue(l1.getActivationFn() instanceof ActivationSoftSign);
         assertEquals(4, l1.getNIn());
         assertEquals(4, l1.getNOut());
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l1.getGradientNormalization());
@@ -211,14 +220,14 @@ public class RegressionTest071 {
         RnnOutputLayer l2 = (RnnOutputLayer) conf.getConf(2).getLayer();
         assertEquals(4, l2.getNIn());
         assertEquals(5, l2.getNOut());
-        assertEquals("softmax", l2.getActivationFn().toString());
+        assertTrue(l2.getActivationFn() instanceof ActivationSoftmax);
         assertTrue(l2.getLossFn() instanceof LossMCXENT);
     }
 
     @Test
     public void regressionTestCGLSTM1() throws Exception {
 
-        File f = new ClassPathResource("regression_testing/071/071_ModelSerializer_Regression_CG_LSTM_1.zip")
+        File f = new ClassPathResource("regression_testing/080/080_ModelSerializer_Regression_CG_LSTM_1.zip")
                         .getTempFileFromArchive();
 
         ComputationGraph net = ModelSerializer.restoreComputationGraph(f, true);
@@ -230,7 +239,7 @@ public class RegressionTest071 {
         assertFalse(conf.isPretrain());
 
         GravesLSTM l0 = (GravesLSTM) ((LayerVertex) conf.getVertices().get("0")).getLayerConf().getLayer();
-        assertEquals("tanh", l0.getActivationFn().toString());
+        assertTrue(l0.getActivationFn() instanceof ActivationTanH);
         assertEquals(3, l0.getNIn());
         assertEquals(4, l0.getNOut());
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l0.getGradientNormalization());
@@ -238,7 +247,7 @@ public class RegressionTest071 {
 
         GravesBidirectionalLSTM l1 =
                         (GravesBidirectionalLSTM) ((LayerVertex) conf.getVertices().get("1")).getLayerConf().getLayer();
-        assertEquals("softsign", l1.getActivationFn().toString());
+        assertTrue(l1.getActivationFn() instanceof ActivationSoftSign);
         assertEquals(4, l1.getNIn());
         assertEquals(4, l1.getNOut());
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue, l1.getGradientNormalization());
@@ -247,7 +256,7 @@ public class RegressionTest071 {
         RnnOutputLayer l2 = (RnnOutputLayer) ((LayerVertex) conf.getVertices().get("2")).getLayerConf().getLayer();
         assertEquals(4, l2.getNIn());
         assertEquals(5, l2.getNOut());
-        assertEquals("softmax", l2.getActivationFn().toString());
+        assertTrue(l2.getActivationFn() instanceof ActivationSoftmax);
         assertTrue(l2.getLossFn() instanceof LossMCXENT);
     }
 }
