@@ -1,6 +1,8 @@
 package org.deeplearning4j.optimize.listeners;
 
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.eval.*;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
@@ -10,6 +12,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.InvocationType;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.optimize.listeners.callbacks.EvaluationCallback;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
@@ -29,19 +32,28 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 @Slf4j
 public class EvaluativeListener implements TrainingListener {
-    protected ThreadLocal<AtomicLong> iterationCount = new ThreadLocal<>();
+    protected transient ThreadLocal<AtomicLong> iterationCount = new ThreadLocal<>();
     protected int frequency;
 
     protected AtomicLong invocationCount = new AtomicLong(0);
 
-    protected DataSetIterator dsIterator;
-    protected MultiDataSetIterator mdsIterator;
+    protected transient DataSetIterator dsIterator;
+    protected transient MultiDataSetIterator mdsIterator;
     protected DataSet ds;
     protected MultiDataSet mds;
 
+    @Getter
     protected IEvaluation[] evaluations;
 
+    @Getter
     protected InvocationType invocationType;
+
+    /**
+     * This callback will be invoked after evaluation finished
+     */
+    @Getter
+    @Setter
+    protected transient EvaluationCallback callback;
 
     /**
      * Evaluation will be launched after each *frequency* iteration
@@ -203,9 +215,9 @@ public class EvaluativeListener implements TrainingListener {
         else if (mdsIterator != null && mdsIterator.resetSupported())
             mdsIterator.reset();
 
-        // FIXME: we need to save/restore inputs, if we're
+        // FIXME: we need to save/restore inputs, if we're being invoked with iterations > 1
 
-        log.info("Starting evaluation nr. {}", iterationCount.get());
+        log.info("Starting evaluation nr. {}", invocationCount.incrementAndGet());
         if (model instanceof MultiLayerNetwork) {
             if (dsIterator != null) {
                 ((MultiLayerNetwork) model).doEvaluation(dsIterator, evaluations);
@@ -231,9 +243,14 @@ public class EvaluativeListener implements TrainingListener {
         log.info("Reporting evaluation results:");
         for (IEvaluation evaluation: evaluations)
             log.info("{}:\n{}", evaluation.getClass().getSimpleName(), evaluation.stats());
+
+
+        if (callback != null)
+            callback.call(this, model, invocationCount.get(), evaluations);
     }
 
     protected void evalAtIndex(IEvaluation evaluation, INDArray[] labels, INDArray[] predictions, int index) {
         evaluation.eval(labels[index], predictions[index]);
     }
+
 }
