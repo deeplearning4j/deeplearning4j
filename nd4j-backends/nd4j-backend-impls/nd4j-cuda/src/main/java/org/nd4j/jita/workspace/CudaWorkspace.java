@@ -50,7 +50,8 @@ public class CudaWorkspace extends Nd4jWorkspace {
             isInit.set(true);
 
 
-            log.debug("Allocating [{}] workspace on device_{}, {} bytes...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), currentSize.get());
+            if (isDebug.get())
+                log.info("Allocating [{}] workspace on device_{}, {} bytes...", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), currentSize.get());
 
             if (isDebug.get()) {
                 Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
@@ -146,11 +147,11 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
                     CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
-                    int ret = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, requiredMemory, 0, context.getSpecialStream());
+                    int ret = NativeOpsHolder.getInstance().getDeviceNativeOps().memset(ptr, 0, requiredMemory, 0, null);
                     if (ret == 0)
                         throw new ND4JIllegalStateException("memset failed device_" + Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
-                    context.syncSpecialStream();
+                    //context.syncSpecialStream();
                 }
 
                 return ptr;
