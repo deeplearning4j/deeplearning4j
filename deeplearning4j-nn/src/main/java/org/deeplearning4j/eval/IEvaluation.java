@@ -26,4 +26,7 @@ public interface IEvaluation<T extends IEvaluation> extends Serializable {
 
     void merge(T other);
 
+    void reset();
+
+    String stats();
 }

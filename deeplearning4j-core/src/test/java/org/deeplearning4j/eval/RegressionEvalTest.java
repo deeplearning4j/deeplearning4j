@@ -76,15 +76,19 @@ public class RegressionEvalTest {
 
         RegressionEvaluation eval = new RegressionEvaluation(3);
 
-        eval.eval(labels, predicted);
+        for (int xe = 0; xe < 2; xe++) {
+            eval.eval(labels, predicted);
 
-        for (int i = 0; i < 3; i++) {
-            assertEquals(expMSE[i], eval.meanSquaredError(i), 1e-5);
-            assertEquals(expMAE[i], eval.meanAbsoluteError(i), 1e-5);
-            assertEquals(Math.sqrt(expMSE[i]), eval.rootMeanSquaredError(i), 1e-5);
-            assertEquals(expRSE[i], eval.relativeSquaredError(i), 1e-5);
-            assertEquals(expCorrs[i], eval.correlationR2(i), 1e-5);
+            for (int i = 0; i < 3; i++) {
+                assertEquals(expMSE[i], eval.meanSquaredError(i), 1e-5);
+                assertEquals(expMAE[i], eval.meanAbsoluteError(i), 1e-5);
+                assertEquals(Math.sqrt(expMSE[i]), eval.rootMeanSquaredError(i), 1e-5);
+                assertEquals(expRSE[i], eval.relativeSquaredError(i), 1e-5);
+                assertEquals(expCorrs[i], eval.correlationR2(i), 1e-5);
 
+            }
+
+            eval.reset();
         }
     }
 

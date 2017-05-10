@@ -98,6 +98,12 @@ public class ROCTest {
         //Expect AUC == 1.0 here
         double auc = roc.calculateAUC();
         assertEquals(1.0, auc, 1e-6);
+
+        // testing reset now
+        roc.reset();
+        roc.eval(actual, predictions);
+        auc = roc.calculateAUC();
+        assertEquals(1.0, auc, 1e-6);
     }
 
     @Test

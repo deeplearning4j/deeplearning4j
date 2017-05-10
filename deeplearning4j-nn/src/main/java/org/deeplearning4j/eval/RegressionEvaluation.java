@@ -87,6 +87,11 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         }
     }
 
+    @Override
+    public void reset() {
+        initialized = false;
+    }
+
     private void initialize(int n){
         if(columnNames == null || columnNames.size() != n){
             columnNames = createDefaultColumnNames(n);

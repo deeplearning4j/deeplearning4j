@@ -416,23 +416,27 @@ public class EvalTest {
 
         Evaluation eval = new Evaluation(1);
 
-        INDArray zero = Nd4j.create(1);
-        INDArray one = Nd4j.ones(1);
+        for (int xe = 0; xe < 3; xe++) {
+            INDArray zero = Nd4j.create(1);
+            INDArray one = Nd4j.ones(1);
 
-        //One incorrect, three correct
-        eval.eval(one, zero);
-        eval.eval(one, one);
-        eval.eval(one, one);
-        eval.eval(zero, zero);
+            //One incorrect, three correct
+            eval.eval(one, zero);
+            eval.eval(one, one);
+            eval.eval(one, one);
+            eval.eval(zero, zero);
 
-        System.out.println(eval.stats());
+            System.out.println(eval.stats());
 
-        assertEquals(0.75, eval.accuracy(), 1e-6);
-        assertEquals(4, eval.getNumRowCounter());
+            assertEquals(0.75, eval.accuracy(), 1e-6);
+            assertEquals(4, eval.getNumRowCounter());
 
-        assertEquals(1, (int) eval.truePositives().get(0));
-        assertEquals(2, (int) eval.truePositives().get(1));
-        assertEquals(1, (int) eval.falseNegatives().get(1));
+            assertEquals(1, (int) eval.truePositives().get(0));
+            assertEquals(2, (int) eval.truePositives().get(1));
+            assertEquals(1, (int) eval.falseNegatives().get(1));
+
+            eval.reset();
+        }
     }
 
     @Test

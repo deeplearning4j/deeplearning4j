@@ -40,6 +40,17 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
         this.thresholdSteps = thresholdSteps;
     }
 
+    @Override
+    public void reset() {
+        countActualPositive = null;
+        countActualNegative = null;
+    }
+
+
+    @Override
+    public String stats() {
+        return "Average AUC: [" + calculateAverageAUC() + "]";
+    }
 
     /**
      * Evaluate (collect statistics for) the given minibatch of data.
