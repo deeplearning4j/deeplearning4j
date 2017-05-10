@@ -18,6 +18,7 @@ package org.datavec.api.transform.transform;
 
 import org.datavec.api.transform.MathFunction;
 import org.datavec.api.transform.schema.SequenceSchema;
+import org.datavec.api.transform.transform.categorical.*;
 import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.transform.transform.sequence.SequenceDifferenceTransform;
 import org.datavec.api.writable.*;
@@ -27,8 +28,6 @@ import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.transform.transform.categorical.CategoricalToIntegerTransform;
-import org.datavec.api.transform.transform.categorical.IntegerToCategoricalTransform;
 import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
 import org.datavec.api.transform.transform.integer.ReplaceEmptyIntegerWithValueTransform;
 import org.datavec.api.transform.transform.integer.ReplaceInvalidWithIntegerTransform;
@@ -45,8 +44,6 @@ import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.condition.ConditionOp;
 import org.datavec.api.transform.condition.column.StringColumnCondition;
 import org.datavec.api.transform.metadata.LongMetaData;
-import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
-import org.datavec.api.transform.transform.categorical.StringToCategoricalTransform;
 import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
 import org.datavec.api.transform.transform.integer.IntegerColumnsMathOpTransform;
 import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
@@ -148,6 +145,43 @@ public class TestTransforms {
                         transform.map(Collections.singletonList((Writable) new Text("one"))));
         assertEquals(Arrays.asList(new IntWritable(0), new IntWritable(0), new IntWritable(1)),
                         transform.map(Collections.singletonList((Writable) new Text("two"))));
+    }
+
+    @Test
+    public void testPivotTransform(){
+        Schema schema = new Schema.Builder()
+                .addColumnString("otherCol")
+                .addColumnCategorical("key", Arrays.asList("first","second","third"))
+                .addColumnDouble("value")
+                .addColumnDouble("otherCol2")
+                .build();
+
+        Transform t = new PivotTransform("key","value");
+        t.setInputSchema(schema);
+        Schema out = t.transform(schema);
+
+        List<String> expNames = Arrays.asList("otherCol", "key[first]", "key[second]", "key[third]", "otherCol2");
+        List<String> actNames = out.getColumnNames();
+
+        assertEquals(expNames, actNames);
+
+        List<ColumnType> columnTypesExp = Arrays.asList(ColumnType.String, ColumnType.Double, ColumnType.Double,
+                ColumnType.Double, ColumnType.Double);
+        assertEquals(columnTypesExp, out.getColumnTypes());
+
+        //Expand (second,100) into (0,100,0). Leave the remaining columns as is
+        List<Writable> e1 = Arrays.<Writable>asList(new DoubleWritable(1), new DoubleWritable(0), new DoubleWritable(100),
+                new DoubleWritable(0), new DoubleWritable(-1));
+        List<Writable> a1 = t.map(Arrays.<Writable>asList(new DoubleWritable(1), new Text("second"), new DoubleWritable(100),
+                new DoubleWritable(-1)));
+        assertEquals(e1,a1);
+
+        //Expand (third,200) into (0,0,200). Leave the remaining columns as is
+        List<Writable> e2 = Arrays.<Writable>asList(new DoubleWritable(1), new DoubleWritable(0), new DoubleWritable(0),
+                new DoubleWritable(200), new DoubleWritable(-1));
+        List<Writable> a2 = t.map(Arrays.<Writable>asList(new DoubleWritable(1), new Text("third"), new DoubleWritable(200),
+                new DoubleWritable(-1)));
+        assertEquals(e2,a2);
     }
 
     @Test
