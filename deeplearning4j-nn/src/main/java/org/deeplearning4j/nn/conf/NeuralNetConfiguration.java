@@ -903,6 +903,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         /** Momentum rate
          *  Used only when Updater is set to {@link Updater#NESTEROVS}
+         *  @deprecated Use {@code .updater(new Nesterov(momentum))} instead
          */
         @Deprecated
         public Builder momentum(double momentum) {
@@ -912,6 +913,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         /** Momentum schedule. Map of the iteration to the momentum rate to apply at that iteration
          *  Used only when Updater is set to {@link Updater#NESTEROVS}
+         *  @deprecated Use {@code .updater(Nesterov.builder().momentumSchedule(schedule).build())} instead
          */
         @Deprecated
         public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
@@ -920,13 +922,21 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /** Gradient updater. For example, Updater.SGD for standard stochastic gradient descent,
-         * Updater.NESTEROV for Nesterov momentum, Updater.RSMPROP for RMSProp, etc.
+         * Updater.NESTEROV for Nesterov momentum, Updater.RSMPROP for RMSProp, etc.<br>
+         * Note: default hyperparameters are used with this method. Use {@link #updater(IUpdater)} to configure
+         * the updater-specific hyperparameters.
          * @see Updater
          */
         public Builder updater(Updater updater) {
             return updater(updater.getIUpdaterWithDefaultConfig());
         }
 
+        /**
+         * Gradient updater. For example, {@link org.nd4j.linalg.learning.config.Adam}
+         * or {@link org.nd4j.linalg.learning.config.Nesterovs}
+         *
+         * @param updater Updater to use
+         */
         public Builder updater(IUpdater updater){
             this.iUpdater = updater;
             return this;
@@ -935,6 +945,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         /**
          * Ada delta coefficient
          * @param rho
+         * @deprecated use {@code .updater(new AdaDelta(rho,epsilon))} intead
          */
         @Deprecated
         public Builder rho(double rho) {
@@ -945,10 +956,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         /**
          * Epsilon value for updaters: Adam, RMSProp, Adagrad, Adadelta
-         * Default values: {@link Adam#DEFAULT_ADAM_EPSILON}, {@link RmsProp#DEFAULT_RMSPROP_EPSILON}, {@link AdaGrad#DEFAULT_ADAGRAD_EPSILON},
-         * {@link AdaDelta#DEFAULT_ADADELTA_EPSILON}
          *
          * @param epsilon    Epsilon value to use for adagrad or
+         * @deprecated Use use {@code .updater(Adam.builder().epsilon(epsilon).build())} or similar instead
          */
         @Deprecated
         public Builder epsilon(double epsilon) {
@@ -957,6 +967,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         }
 
         /** Decay rate for RMSProp. Only applies if using .updater(Updater.RMSPROP)
+         * @deprecated use {@code .updater(new RmsProp(rmsDecay))} intead
          */
         @Deprecated
         public Builder rmsDecay(double rmsDecay) {
@@ -964,14 +975,18 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        /** Mean decay rate for Adam updater. Only applies if using .updater(Updater.ADAM) */
+        /** Mean decay rate for Adam updater. Only applies if using .updater(Updater.ADAM)
+         * @deprecated use {@code .updater(Adam.builder().beta1(adamMeanDecay).build())} intead
+         */
         @Deprecated
         public Builder adamMeanDecay(double adamMeanDecay) {
             this.adamMeanDecay = adamMeanDecay;
             return this;
         }
 
-        /** Variance decay rate for Adam updater. Only applies if using .updater(Updater.ADAM) */
+        /** Variance decay rate for Adam updater. Only applies if using .updater(Updater.ADAM)
+         * @deprecated use {@code .updater(Adam.builder().beta2(adamVarDecay).build())} intead
+         */
         @Deprecated
         public Builder adamVarDecay(double adamVarDecay) {
             this.adamVarDecay = adamVarDecay;

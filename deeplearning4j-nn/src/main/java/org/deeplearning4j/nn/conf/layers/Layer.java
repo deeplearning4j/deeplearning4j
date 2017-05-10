@@ -263,12 +263,20 @@ public abstract class Layer implements Serializable, Cloneable {
      *
      * @param paramName    Parameter name
      * @return             Updater for the parameter
+     * @deprecated Use {@link #getIUpdaterByParam(String)}
      */
     @Deprecated
     public Updater getUpdaterByParam(String paramName) {
         return updater;
     }
 
+    /**
+     * Get the updater for the given parameter. Typically the same updater will be used for all updaters, but this
+     * is not necessarily the case
+     *
+     * @param paramName    Parameter name
+     * @return             IUpdater for the parameter
+     */
     public IUpdater getIUpdaterByParam(String paramName){
         return iUpdater;
     }
@@ -434,6 +442,7 @@ public abstract class Layer implements Serializable, Cloneable {
 
         /**
          * Momentum rate.
+         * @deprecated Use {@code .updater(new Nesterov(momentum))} instead
          */
         @Deprecated
         public T momentum(double momentum) {
@@ -443,6 +452,7 @@ public abstract class Layer implements Serializable, Cloneable {
 
         /**
          * Momentum schedule. Map of the iteration to the momentum rate to apply at that iteration.
+         * @deprecated Use {@code .updater(Nesterov.builder().momentumSchedule(schedule).build())} instead
          */
         @Deprecated
         public T momentumAfter(Map<Integer, Double> momentumAfter) {
@@ -460,6 +470,12 @@ public abstract class Layer implements Serializable, Cloneable {
             return updater(updater.getIUpdaterWithDefaultConfig());
         }
 
+        /**
+         * Gradient updater. For example, {@link org.nd4j.linalg.learning.config.Adam}
+         * or {@link org.nd4j.linalg.learning.config.Nesterovs}
+         *
+         * @param updater Updater to use
+         */
         public T updater(IUpdater updater){
             this.iupdater = updater;
             return (T) this;
@@ -469,6 +485,7 @@ public abstract class Layer implements Serializable, Cloneable {
          * Ada delta coefficient, rho. Only applies if using .updater(Updater.ADADELTA)
          *
          * @param rho
+         * @deprecated use {@code .updater(new AdaDelta(rho,epsilon))} intead
          */
         @Deprecated
         public T rho(double rho) {
@@ -478,6 +495,7 @@ public abstract class Layer implements Serializable, Cloneable {
 
         /**
          * Decay rate for RMSProp. Only applies if using .updater(Updater.RMSPROP)
+         * @deprecated use {@code .updater(new RmsProp(rmsDecay))} instead
          */
         @Deprecated
         public T rmsDecay(double rmsDecay) {
@@ -486,9 +504,10 @@ public abstract class Layer implements Serializable, Cloneable {
         }
 
         /**
-         * Epsilon value for updaters: Adagrad and Adadelta. Only used if using Updater.ADAGRAD or Updater.ADADELTA
+         * Epsilon value for updaters: Adam, RMSProp, Adagrad, Adadelta
          *
-         * @param epsilon    Epsilon value to use for adagrad and adadelta
+         * @param epsilon    Epsilon value to use
+         * @deprecated Use use {@code .updater(Adam.builder().epsilon(epsilon).build())} or similar instead
          */
         @Deprecated
         public T epsilon(double epsilon) {
@@ -498,6 +517,7 @@ public abstract class Layer implements Serializable, Cloneable {
 
         /**
          * Mean decay rate for Adam updater. Only applies if using .updater(Updater.ADAM)
+         * @deprecated use {@code .updater(Adam.builder().beta1(adamMeanDecay).build())} intead
          */
         @Deprecated
         public T adamMeanDecay(double adamMeanDecay) {
@@ -507,6 +527,7 @@ public abstract class Layer implements Serializable, Cloneable {
 
         /**
          * Variance decay rate for Adam updater. Only applies if using .updater(Updater.ADAM)
+         * @deprecated use {@code .updater(Adam.builder().beta2(adamVarDecay).build())} intead
          */
         @Deprecated
         public T adamVarDecay(double adamVarDecay) {
