@@ -148,11 +148,13 @@ public class CudaWorkspace extends Nd4jWorkspace {
 
                     CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
-                    int ret = NativeOpsHolder.getInstance().getDeviceNativeOps().memset(ptr, 0, requiredMemory, 0, null);
-                    if (ret == 0)
-                        throw new ND4JIllegalStateException("memset failed device_" + Nd4j.getAffinityManager().getDeviceForCurrentThread());
+                    synchronized (Nd4j.getShapeInfoProvider()) {
+                        int ret = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, requiredMemory, 0, context.getSpecialStream());
+                        if (ret == 0)
+                            throw new ND4JIllegalStateException("memset failed device_" + Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
-                    //context.syncSpecialStream();
+                        context.syncSpecialStream();
+                    }
                 }
 
                 return ptr;
