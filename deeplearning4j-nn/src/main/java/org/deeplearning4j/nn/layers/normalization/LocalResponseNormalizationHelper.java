@@ -27,6 +27,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author saudet
  */
 public interface LocalResponseNormalizationHelper {
+    boolean checkSupported(double k, double n, double alpha, double beta);
+
     Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, double k, double n, double alpha,
                     double beta);
 

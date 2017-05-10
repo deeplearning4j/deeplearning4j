@@ -69,6 +69,9 @@ public class LocalResponseNormalization
             helper = Class.forName("org.deeplearning4j.nn.layers.normalization.CudnnLocalResponseNormalizationHelper")
                             .asSubclass(LocalResponseNormalizationHelper.class).newInstance();
             log.debug("CudnnLocalResponseNormalizationHelper successfully initialized");
+            if (!helper.checkSupported(layerConf().getK(), layerConf().getN(), layerConf().getAlpha(), layerConf().getBeta())) {
+                helper = null;
+            }
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
                 log.warn("Could not initialize CudnnLocalResponseNormalizationHelper", t);
