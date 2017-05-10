@@ -20,6 +20,10 @@ public class UpdaterUtils {
                 return new Adam(layer.conf().getLearningRateByParam(variable),
                                 layer.conf().getLayer().getAdamMeanDecay(), layer.conf().getLayer().getAdamVarDecay(),
                                 layer.conf().getLayer().getEpsilon());
+            case ADAMAX:
+                return new AdaMax(layer.conf().getLearningRateByParam(variable),
+                        layer.conf().getLayer().getAdamMeanDecay(), layer.conf().getLayer().getAdamVarDecay(),
+                        layer.conf().getLayer().getEpsilon());
             case ADADELTA:
                 return new AdaDelta(layer.conf().getLayer().getRho(), layer.conf().getLayer().getEpsilon());
             case NESTEROVS:
@@ -51,6 +55,7 @@ public class UpdaterUtils {
                 return layer.getParam(variable).length();
 
             case ADAM:
+            case ADAMAX:
             case ADADELTA:
                 return 2 * layer.getParam(variable).length();
 
@@ -96,6 +101,7 @@ public class UpdaterUtils {
                 updaterConfigEqual = true;
                 break;
             case ADAM:
+            case ADAMAX:
                 //Mean decay, var decay, epsilon
                 updaterConfigEqual = l1.getAdamMeanDecay() == l2.getAdamMeanDecay()
                                 && l1.getAdamVarDecay() == l2.getAdamVarDecay() && l1.getEpsilon() == l2.getEpsilon();

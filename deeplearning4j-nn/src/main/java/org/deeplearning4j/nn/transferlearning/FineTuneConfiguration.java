@@ -211,6 +211,7 @@ public class FineTuneConfiguration {
         if (l != null && updater != null && originalUpdater != null && updater != originalUpdater) {
             switch (originalUpdater) {
                 case ADAM:
+                case ADAMAX:
                     if (adamMeanDecay == null)
                         l.setAdamMeanDecay(Double.NaN);
                     if (adamVarDecay == null)
