@@ -46,6 +46,12 @@ public class ModelSavingCallback implements EvaluationCallback {
     public ModelSavingCallback(@NonNull File rootFolder, @NonNull String fileNameTemplate) {
         if (!rootFolder.isDirectory())
             throw new DL4JInvalidConfigException("rootFolder argument should point to valid folder");
+
+        if (fileNameTemplate.isEmpty())
+            throw new DL4JInvalidConfigException("Filename template can't be empty String");
+
+        this.rootFolder = rootFolder;
+        this.template = fileNameTemplate;
     }
 
     @Override
