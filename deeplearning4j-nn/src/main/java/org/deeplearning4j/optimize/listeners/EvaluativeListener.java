@@ -7,70 +7,125 @@ import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.optimize.api.InvocationType;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * This TrainingListener implementation provides simple way for model evaluation during training.
+ * It can be launched every Xth Iteration/Epoch, depending on frequency and InvocationType constructor arguments
  *
  *
  * @author raver119@gmail.com
  */
 @Slf4j
-public class EvaluativeListener implements IterationListener {
-    private ThreadLocal<AtomicLong> iterationCount = new ThreadLocal<>();
-    private int frequency;
+public class EvaluativeListener implements TrainingListener {
+    protected ThreadLocal<AtomicLong> iterationCount = new ThreadLocal<>();
+    protected int frequency;
 
-    private DataSetIterator dsIterator;
-    private MultiDataSetIterator mdsIterator;
-    private DataSet ds;
-    private MultiDataSet mds;
+    protected AtomicLong invocationCount = new AtomicLong(0);
 
-    private IEvaluation[] evaluations;
+    protected DataSetIterator dsIterator;
+    protected MultiDataSetIterator mdsIterator;
+    protected DataSet ds;
+    protected MultiDataSet mds;
 
+    protected IEvaluation[] evaluations;
+
+    protected InvocationType invocationType;
+
+    /**
+     * Evaluation will be launched after each *frequency* iteration
+     * @param iterator
+     * @param frequency
+     */
     public EvaluativeListener(@NonNull DataSetIterator iterator, int frequency) {
-        this(iterator, frequency, new Evaluation());
+        this(iterator, frequency, InvocationType.ITERATION_END, new Evaluation());
     }
 
+    public EvaluativeListener(@NonNull DataSetIterator iterator, int frequency, @NonNull InvocationType type) {
+        this(iterator, frequency, type, new Evaluation());
+    }
+
+    /**
+     * Evaluation will be launched after each *frequency* iteration
+     * @param iterator
+     * @param frequency
+     */
     public EvaluativeListener(@NonNull MultiDataSetIterator iterator, int frequency) {
-        this(iterator, frequency, new Evaluation());
+        this(iterator, frequency, InvocationType.ITERATION_END, new Evaluation());
     }
 
+    public EvaluativeListener(@NonNull MultiDataSetIterator iterator, int frequency, @NonNull InvocationType type) {
+        this(iterator, frequency, type, new Evaluation());
+    }
+
+    /**
+     * Evaluation will be launched after each *frequency* iteration
+     *
+     * @param iterator
+     * @param frequency
+     */
     public EvaluativeListener(@NonNull DataSetIterator iterator, int frequency, IEvaluation... evaluations) {
+        this(iterator, frequency, InvocationType.ITERATION_END, evaluations);
+    }
+
+    public EvaluativeListener(@NonNull DataSetIterator iterator, int frequency, @NonNull InvocationType type, IEvaluation... evaluations) {
         this.dsIterator = iterator;
         this.frequency = frequency;
         this.evaluations = evaluations;
+
+        this.invocationType = type;
     }
 
+    /**
+     * Evaluation will be launched after each *frequency* iteration
+     * @param iterator
+     * @param frequency
+     */
     public EvaluativeListener(@NonNull MultiDataSetIterator iterator, int frequency, IEvaluation... evaluations) {
+        this(iterator, frequency, InvocationType.ITERATION_END, evaluations);
+    }
+
+    public EvaluativeListener(@NonNull MultiDataSetIterator iterator, int frequency, @NonNull InvocationType type, IEvaluation... evaluations) {
         this.mdsIterator = iterator;
         this.frequency = frequency;
         this.evaluations = evaluations;
+
+        this.invocationType = type;
     }
 
-    public EvaluativeListener(@NonNull DataSet dataSet, int frequency) {
-        this(dataSet, frequency, new Evaluation());
+    public EvaluativeListener(@NonNull DataSet dataSet, int frequency, @NonNull InvocationType type) {
+        this(dataSet, frequency, type, new Evaluation());
     }
 
-    public EvaluativeListener(@NonNull MultiDataSet multiDataSet, int frequency) {
-        this(multiDataSet, frequency, new Evaluation());
+    public EvaluativeListener(@NonNull MultiDataSet multiDataSet, int frequency, @NonNull InvocationType type) {
+        this(multiDataSet, frequency, type,  new Evaluation());
     }
 
-    public EvaluativeListener(@NonNull DataSet dataSet, int frequency, IEvaluation... evaluations) {
+    public EvaluativeListener(@NonNull DataSet dataSet, int frequency, @NonNull InvocationType type,  IEvaluation... evaluations) {
         this.ds = dataSet;
         this.frequency = frequency;
         this.evaluations = evaluations;
+
+        this.invocationType = type;
     }
 
-    public EvaluativeListener(@NonNull MultiDataSet multiDataSet, int frequency, IEvaluation... evaluations) {
+    public EvaluativeListener(@NonNull MultiDataSet multiDataSet, int frequency, @NonNull InvocationType type, IEvaluation... evaluations) {
         this.mds = multiDataSet;
         this.frequency = frequency;
         this.evaluations = evaluations;
+
+        this.invocationType = type;
     }
 
     /**
@@ -97,6 +152,43 @@ public class EvaluativeListener implements IterationListener {
      */
     @Override
     public void iterationDone(Model model, int iteration) {
+        // no-op
+    }
+
+    @Override
+    public void onEpochStart(Model model) {
+        if (invocationType == InvocationType.EPOCH_START)
+            invokeListener(model);
+    }
+
+    @Override
+    public void onEpochEnd(Model model) {
+        if (invocationType == InvocationType.EPOCH_END)
+            invokeListener(model);
+    }
+
+    @Override
+    public void onForwardPass(Model model, List<INDArray> activations) {
+        // no-op
+    }
+
+    @Override
+    public void onForwardPass(Model model, Map<String, INDArray> activations) {
+        // no-op
+    }
+
+    @Override
+    public void onGradientCalculation(Model model) {
+        // no-op
+    }
+
+    @Override
+    public void onBackwardPass(Model model) {
+        if (invocationType == InvocationType.ITERATION_END)
+            invokeListener(model);
+    }
+
+    protected void invokeListener(Model model) {
         if (iterationCount.get() == null)
             iterationCount.set(new AtomicLong(0));
 
@@ -111,9 +203,9 @@ public class EvaluativeListener implements IterationListener {
         else if (mdsIterator != null && mdsIterator.resetSupported())
             mdsIterator.reset();
 
+        // FIXME: we need to save/restore inputs, if we're
 
-
-        log.info("Starting evaluation on iteration {}", iteration);
+        log.info("Starting evaluation nr. {}", iterationCount.get());
         if (model instanceof MultiLayerNetwork) {
             if (dsIterator != null) {
                 ((MultiLayerNetwork) model).doEvaluation(dsIterator, evaluations);
@@ -128,10 +220,10 @@ public class EvaluativeListener implements IterationListener {
                 ((ComputationGraph) model).doEvaluation(mdsIterator, evaluations);
             } else if (ds != null) {
                 for (IEvaluation evaluation : evaluations)
-                    evaluation.eval(ds.getLabels(), ((ComputationGraph) model).output(ds.getFeatureMatrix())[0]);
+                    evalAtIndex(evaluation, new INDArray[]{ds.getLabels()},((ComputationGraph) model).output(ds.getFeatureMatrix()), 0);
             } else if (mds != null) {
                 for (IEvaluation evaluation : evaluations)
-                    evaluation.eval(mds.getLabels()[0], ((ComputationGraph) model).output(mds.getFeatures())[0]);
+                    evalAtIndex(evaluation, mds.getLabels(), ((ComputationGraph) model).output(mds.getFeatures()), 0);
             }
         } else throw new DL4JInvalidInputException("Model is unknown: " + model.getClass().getCanonicalName());
 
@@ -139,5 +231,9 @@ public class EvaluativeListener implements IterationListener {
         log.info("Reporting evaluation results:");
         for (IEvaluation evaluation: evaluations)
             log.info("{}:\n{}", evaluation.getClass().getSimpleName(), evaluation.stats());
+    }
+
+    protected void evalAtIndex(IEvaluation evaluation, INDArray[] labels, INDArray[] predictions, int index) {
+        evaluation.eval(labels[index], predictions[index]);
     }
 }
