@@ -142,6 +142,7 @@ public abstract class Layer implements Serializable, Cloneable {
     public void resetLayerDefaultConfig() {
         //clear the learning related params for all layers in the origConf and set to defaults
         this.setUpdater(null);
+        this.setIUpdater(null);
         this.setMomentum(Double.NaN);
         this.setWeightInit(null);
         this.setBiasInit(Double.NaN);
