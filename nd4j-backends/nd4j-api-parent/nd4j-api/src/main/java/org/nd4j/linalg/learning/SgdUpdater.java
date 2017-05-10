@@ -21,29 +21,28 @@ package org.nd4j.linalg.learning;
 
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.learning.config.Sgd;
 
 /**
- * NoOp updater: gradient updater that makes no changes to the gradient
- *
- * @author Alex Black
+ * SGD updater applies a learning rate only
+ * @author Adam Gibson
  */
 @Data
-public class NoOpUpdater implements GradientUpdater<NoOp> {
+public class SgdUpdater implements GradientUpdater<Sgd> {
 
-    private final NoOp config;
+    private final Sgd config;
 
-    public NoOpUpdater(NoOp config){
+    public SgdUpdater(Sgd config){
         this.config = config;
     }
 
     @Override
-    public void setStateViewArray(INDArray viewArray, int[] shape, char order, boolean initialize) {
+    public void setStateViewArray(INDArray viewArray, int[] gradientShape, char gradientOrder, boolean initialize) {
         //No op
     }
 
     @Override
     public void applyUpdater(INDArray gradient, int iteration) {
-        //No op
+        gradient.muli(config.getLearningRate());
     }
 }
