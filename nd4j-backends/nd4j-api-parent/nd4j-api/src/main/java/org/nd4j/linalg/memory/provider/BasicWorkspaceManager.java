@@ -28,7 +28,6 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
     protected WorkspaceConfiguration defaultConfiguration;
     protected ThreadLocal<Map<String, MemoryWorkspace>> backingMap = new ThreadLocal<>();
-    private DummyWorkspace dummyWorkspace = new DummyWorkspace();
     private ReferenceQueue<MemoryWorkspace> queue;
     private WorkspaceDeallocatorThread thread;
     private Map<String, Nd4jWorkspace.GarbageWorkspaceReference> referenceMap = new ConcurrentHashMap<>();
@@ -207,7 +206,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     public MemoryWorkspace scopeOutOfWorkspaces() {
         MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         if (workspace == null)
-            return dummyWorkspace;
+            return new DummyWorkspace();
         else {
             Nd4j.getMemoryManager().setCurrentWorkspace(null);
             return workspace.tagOutOfScopeUse();

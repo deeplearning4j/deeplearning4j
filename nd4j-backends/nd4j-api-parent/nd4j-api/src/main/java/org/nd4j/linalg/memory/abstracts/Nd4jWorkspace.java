@@ -37,7 +37,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     @Getter protected int deviceId;
     @Getter protected Long threadId;
 
-    protected static final long SAFETY_OFFSET = 1024;
+    protected static final long SAFETY_OFFSET = 1024L;
 
     @Getter protected String id;
 
@@ -495,7 +495,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         // if during this cycle we've used more memory then before - increase max count. we'll use it in future for optional reallocation
         if (cycleAllocations.get() > maxCycle.get()) {
             if (isDebug.get())
-                log.info("Workspace [{}], current cycle: {}; max cycle: {}", id, cycleAllocations.get(), maxCycle.get());
+                log.info("Workspace [{}] device_{}, current cycle: {}; max cycle: {}", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), cycleAllocations.get(), maxCycle.get());
 
             maxCycle.set(cycleAllocations.get());
         }
