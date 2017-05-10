@@ -57,6 +57,13 @@ public class ROC extends BaseEvaluation<ROC> {
     public void reset() {
         countActualPositive = 0L;
         countActualNegative = 0L;
+        counts.clear();
+
+        double step = 1.0 / thresholdSteps;
+        for (int i = 0; i <= thresholdSteps; i++) {
+            double currThreshold = i * step;
+            counts.put(currThreshold, new CountsForThreshold(currThreshold));
+        }
     }
 
     @Override
