@@ -27,6 +27,8 @@ import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.*;
+import org.nd4j.linalg.learning.config.AdaGrad;
+import org.nd4j.linalg.learning.legacy.*;
 
 import static org.junit.Assert.assertEquals;
 
@@ -39,15 +41,15 @@ public class UpdaterTest extends BaseNd4jTest {
 
 
     @Test
-    public void testAdaGrad1() {
+    public void testAdaGradLegacy() {
         int rows = 1;
         int cols = 1;
 
 
-        AdaGradUpdater grad = new AdaGradUpdater(rows, cols, 1e-3);
+        org.nd4j.linalg.learning.legacy.AdaGrad grad = new org.nd4j.linalg.learning.legacy.AdaGrad(rows, cols, 1e-3);
         grad.setStateViewArray(Nd4j.zeros(1, rows * cols), new int[] {rows, cols}, 'c', true);
         INDArray w = Nd4j.ones(rows, cols);
-        grad.applyUpdater(w, 0);
+        grad.getGradient(w, 0);
         assertEquals(1e-1, w.getDouble(0), 1e-1);
     }
 
