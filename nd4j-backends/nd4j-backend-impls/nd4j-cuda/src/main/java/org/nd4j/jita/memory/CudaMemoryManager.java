@@ -33,7 +33,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
      * @param initialize
      */
     @Override
-    public synchronized Pointer allocate(long bytes, MemoryKind kind, boolean initialize) {
+    public Pointer allocate(long bytes, MemoryKind kind, boolean initialize) {
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
         //log.info("Allocating {} bytes in {} memory...", bytes, kind);
@@ -52,7 +52,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
             Pointer ptr = NativeOpsHolder.getInstance().getDeviceNativeOps().mallocDevice(bytes, null, 0);
 
 
-            log.info("Allocating {} bytes for device_{}", bytes, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+            //log.info("Allocating {} bytes for device_{}", bytes, Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
             if (ptr == null)
                 throw new RuntimeException("Failed to allocate " + bytes + " bytes from DEVICE [" + Nd4j.getAffinityManager().getDeviceForCurrentThread() + "] memory");
@@ -62,7 +62,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
                 int i = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, bytes, 0, context.getSpecialStream());
                 if (i == 0)
-                    throw new ND4JIllegalStateException("memset failed");
+                    throw new ND4JIllegalStateException("memset failed on device_" + Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
                 context.getSpecialStream().synchronize();
             }
