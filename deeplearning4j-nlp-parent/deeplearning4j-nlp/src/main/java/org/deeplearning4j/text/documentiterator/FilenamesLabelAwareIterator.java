@@ -51,7 +51,7 @@ public class FilenamesLabelAwareIterator implements LabelAwareIterator {
             StringBuilder builder = new StringBuilder();
             String line = "";
             while ((line = reader.readLine()) != null)
-                builder.append(line);
+                builder.append(line).append(" ");
 
             document.setContent(builder.toString());
             document.addLabel(label);

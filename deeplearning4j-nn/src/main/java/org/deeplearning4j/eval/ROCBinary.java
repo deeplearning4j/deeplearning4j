@@ -44,6 +44,13 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
 
 
     @Override
+    public void reset() {
+        countActualPositive = null;
+        countActualNegative = null;
+        countsForThresholdMap = null;
+    }
+
+    @Override
     public void eval(INDArray labels, INDArray networkPredictions) {
         eval(labels, networkPredictions, (INDArray) null);
     }

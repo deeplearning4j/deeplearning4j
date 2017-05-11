@@ -34,51 +34,56 @@ public class ROCBinaryTest {
         INDArray binaryPredicted = predicted.gt(0.5);
 
         ROCBinary rb = new ROCBinary(thresholdSteps);
-        rb.eval(labels, predicted);
 
-        System.out.println(rb.stats());
+        for (int xe = 0; xe < 2; xe++) {
+            rb.eval(labels, predicted);
 
-        double eps = 1e-6;
-        for (int i = 0; i < nOut; i++) {
-            INDArray lCol = labels.getColumn(i);
-            INDArray pCol = predicted.getColumn(i);
+            System.out.println(rb.stats());
+
+            double eps = 1e-6;
+            for (int i = 0; i < nOut; i++) {
+                INDArray lCol = labels.getColumn(i);
+                INDArray pCol = predicted.getColumn(i);
 
 
-            ROC r = new ROC(thresholdSteps);
-            r.eval(lCol, pCol);
+                ROC r = new ROC(thresholdSteps);
+                r.eval(lCol, pCol);
 
-            double aucExp = r.calculateAUC();
-            double auc = rb.calculateAUC(i);
+                double aucExp = r.calculateAUC();
+                double auc = rb.calculateAUC(i);
 
-            assertEquals(aucExp, auc, eps);
+                assertEquals(aucExp, auc, eps);
 
-            long apExp = r.getCountActualPositive();
-            long ap = rb.getCountActualPositive(i);
-            assertEquals(ap, apExp);
+                long apExp = r.getCountActualPositive();
+                long ap = rb.getCountActualPositive(i);
+                assertEquals(ap, apExp);
 
-            long anExp = r.getCountActualNegative();
-            long an = rb.getCountActualNegative(i);
-            assertEquals(anExp, an);
+                long anExp = r.getCountActualNegative();
+                long an = rb.getCountActualNegative(i);
+                assertEquals(anExp, an);
 
-            List<ROC.PrecisionRecallPoint> pExp = r.getPrecisionRecallCurve();
-            List<ROCBinary.PrecisionRecallPoint> p = rb.getPrecisionRecallCurve(i);
-            assertEquals(pExp.size(), p.size());
+                List<ROC.PrecisionRecallPoint> pExp = r.getPrecisionRecallCurve();
+                List<ROCBinary.PrecisionRecallPoint> p = rb.getPrecisionRecallCurve(i);
+                assertEquals(pExp.size(), p.size());
 
-            for (int j = 0; j < pExp.size(); j++) {
-                ROC.PrecisionRecallPoint a = pExp.get(j);
-                ROCBinary.PrecisionRecallPoint b = p.get(j);
-                assertEquals(a.getClassiferThreshold(), b.getClassiferThreshold(), eps);
-                assertEquals(a.getPrecision(), b.getPrecision(), eps);
-                assertEquals(a.getRecall(), b.getRecall(), eps);
+                for (int j = 0; j < pExp.size(); j++) {
+                    ROC.PrecisionRecallPoint a = pExp.get(j);
+                    ROCBinary.PrecisionRecallPoint b = p.get(j);
+                    assertEquals(a.getClassiferThreshold(), b.getClassiferThreshold(), eps);
+                    assertEquals(a.getPrecision(), b.getPrecision(), eps);
+                    assertEquals(a.getRecall(), b.getRecall(), eps);
+                }
+
+                double[][] d1 = r.getResultsAsArray();
+                double[][] d2 = rb.getResultsAsArray(i);
+
+                assertEquals(d1.length, d2.length);
+                for (int j = 0; j < d1.length; j++) {
+                    assertArrayEquals(d1[j], d2[j], eps);
+                }
             }
 
-            double[][] d1 = r.getResultsAsArray();
-            double[][] d2 = rb.getResultsAsArray(i);
-
-            assertEquals(d1.length, d2.length);
-            for (int j = 0; j < d1.length; j++) {
-                assertArrayEquals(d1[j], d2[j], eps);
-            }
+            rb.reset();
         }
     }
 

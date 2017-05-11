@@ -19,7 +19,9 @@
 package org.deeplearning4j.nn.conf;
 
 import com.google.common.collect.Sets;
-import lombok.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.apache.commons.lang3.ClassUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -29,21 +31,24 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.LayerValidation;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
+import org.deeplearning4j.nn.conf.serde.ComputationGraphConfigurationDeserializer;
+import org.deeplearning4j.nn.conf.serde.MultiLayerConfigurationDeserializer;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
-import org.deeplearning4j.util.reflections.DL4JSubTypesScanner;
+import org.deeplearning4j.nn.updater.UpdaterUtils;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.util.reflections.DL4JSubTypesScanner;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.activations.impl.*;
+import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.*;
+import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
-import org.nd4j.shade.jackson.databind.DeserializationFeature;
-import org.nd4j.shade.jackson.databind.MapperFeature;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.nd4j.shade.jackson.databind.SerializationFeature;
+import org.nd4j.shade.jackson.databind.*;
+import org.nd4j.shade.jackson.databind.deser.BeanDeserializerModifier;
 import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
 import org.nd4j.shade.jackson.databind.jsontype.NamedType;
+import org.nd4j.shade.jackson.databind.module.SimpleModule;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import org.reflections.ReflectionUtils;
 import org.reflections.Reflections;
@@ -380,6 +385,22 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
         ret.enable(SerializationFeature.INDENT_OUTPUT);
 
+        SimpleModule customDeserializerModule = new SimpleModule();
+        customDeserializerModule.setDeserializerModifier(new BeanDeserializerModifier() {
+            @Override
+            public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc, JsonDeserializer<?> deserializer){
+                //Use our custom deserializers to handle backward compatibility for updaters -> IUpdater
+                if (beanDesc.getBeanClass() == MultiLayerConfiguration.class) {
+                    return new MultiLayerConfigurationDeserializer(deserializer);
+                } else if(beanDesc.getBeanClass() == ComputationGraphConfiguration.class){
+                    return new ComputationGraphConfigurationDeserializer(deserializer);
+                }
+                return deserializer;
+            }
+        });
+
+        ret.registerModule(customDeserializerModule);
+
         registerSubtypes(ret);
     }
 
@@ -503,13 +524,22 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected double l1Bias = Double.NaN;
         protected double l2Bias = Double.NaN;
         protected double dropOut = 0;
+        @Deprecated
         protected Updater updater = Updater.SGD;
+        protected IUpdater iUpdater = new Sgd();
+        @Deprecated
         protected double momentum = Double.NaN;
+        @Deprecated
         protected Map<Integer, Double> momentumSchedule = null;
+        @Deprecated
         protected double epsilon = Double.NaN;
+        @Deprecated
         protected double rho = Double.NaN;
+        @Deprecated
         protected double rmsDecay = Double.NaN;
+        @Deprecated
         protected double adamMeanDecay = Double.NaN;
+        @Deprecated
         protected double adamVarDecay = Double.NaN;
         protected Layer layer;
         @Deprecated
@@ -873,7 +903,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         /** Momentum rate
          *  Used only when Updater is set to {@link Updater#NESTEROVS}
+         *  @deprecated Use {@code .updater(new Nesterov(momentum))} instead
          */
+        @Deprecated
         public Builder momentum(double momentum) {
             this.momentum = momentum;
             return this;
@@ -881,25 +913,41 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         /** Momentum schedule. Map of the iteration to the momentum rate to apply at that iteration
          *  Used only when Updater is set to {@link Updater#NESTEROVS}
+         *  @deprecated Use {@code .updater(Nesterov.builder().momentumSchedule(schedule).build())} instead
          */
+        @Deprecated
         public Builder momentumAfter(Map<Integer, Double> momentumAfter) {
             this.momentumSchedule = momentumAfter;
             return this;
         }
 
         /** Gradient updater. For example, Updater.SGD for standard stochastic gradient descent,
-         * Updater.NESTEROV for Nesterov momentum, Updater.RSMPROP for RMSProp, etc.
+         * Updater.NESTEROV for Nesterov momentum, Updater.RSMPROP for RMSProp, etc.<br>
+         * Note: default hyperparameters are used with this method. Use {@link #updater(IUpdater)} to configure
+         * the updater-specific hyperparameters.
          * @see Updater
          */
         public Builder updater(Updater updater) {
-            this.updater = updater;
+            return updater(updater.getIUpdaterWithDefaultConfig());
+        }
+
+        /**
+         * Gradient updater. For example, {@link org.nd4j.linalg.learning.config.Adam}
+         * or {@link org.nd4j.linalg.learning.config.Nesterovs}
+         *
+         * @param updater Updater to use
+         */
+        public Builder updater(IUpdater updater){
+            this.iUpdater = updater;
             return this;
         }
 
         /**
          * Ada delta coefficient
          * @param rho
+         * @deprecated use {@code .updater(new AdaDelta(rho,epsilon))} intead
          */
+        @Deprecated
         public Builder rho(double rho) {
             this.rho = rho;
             return this;
@@ -908,30 +956,38 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
         /**
          * Epsilon value for updaters: Adam, RMSProp, Adagrad, Adadelta
-         * Default values: {@link Adam#DEFAULT_ADAM_EPSILON}, {@link RmsProp#DEFAULT_RMSPROP_EPSILON}, {@link AdaGrad#DEFAULT_ADAGRAD_EPSILON},
-         * {@link AdaDelta#DEFAULT_ADADELTA_EPSILON}
          *
          * @param epsilon    Epsilon value to use for adagrad or
+         * @deprecated Use use {@code .updater(Adam.builder().epsilon(epsilon).build())} or similar instead
          */
+        @Deprecated
         public Builder epsilon(double epsilon) {
             this.epsilon = epsilon;
             return this;
         }
 
         /** Decay rate for RMSProp. Only applies if using .updater(Updater.RMSPROP)
+         * @deprecated use {@code .updater(new RmsProp(rmsDecay))} intead
          */
+        @Deprecated
         public Builder rmsDecay(double rmsDecay) {
             this.rmsDecay = rmsDecay;
             return this;
         }
 
-        /** Mean decay rate for Adam updater. Only applies if using .updater(Updater.ADAM) */
+        /** Mean decay rate for Adam updater. Only applies if using .updater(Updater.ADAM)
+         * @deprecated use {@code .updater(Adam.builder().beta1(adamMeanDecay).build())} intead
+         */
+        @Deprecated
         public Builder adamMeanDecay(double adamMeanDecay) {
             this.adamMeanDecay = adamMeanDecay;
             return this;
         }
 
-        /** Variance decay rate for Adam updater. Only applies if using .updater(Updater.ADAM) */
+        /** Variance decay rate for Adam updater. Only applies if using .updater(Updater.ADAM)
+         * @deprecated use {@code .updater(Adam.builder().beta2(adamVarDecay).build())} intead
+         */
+        @Deprecated
         public Builder adamVarDecay(double adamVarDecay) {
             this.adamVarDecay = adamVarDecay;
             return this;
@@ -1100,8 +1156,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     layer.setDropOut(dropOut);
                 if (layer.getUpdater() == null)
                     layer.setUpdater(updater);
-                //                updaterValidation(layerName);
-                LayerValidation.updaterValidation(layerName, layer, momentum, momentumSchedule, adamMeanDecay,
+                if (layer.getIUpdater() == null){
+                    layer.setIUpdater(iUpdater.clone());
+                }
+                LayerValidation.updaterValidation(layerName, layer, learningRate, momentum, momentumSchedule, adamMeanDecay,
                                 adamVarDecay, rho, rmsDecay, epsilon);
                 if (layer.getGradientNormalization() == null)
                     layer.setGradientNormalization(gradientNormalization);

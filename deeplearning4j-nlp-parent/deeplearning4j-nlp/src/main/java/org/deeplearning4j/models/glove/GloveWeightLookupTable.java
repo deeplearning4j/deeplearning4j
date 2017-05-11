@@ -28,7 +28,7 @@ import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.learning.AdaGrad;
+import org.nd4j.linalg.learning.legacy.AdaGrad;
 
 import java.io.IOException;
 import java.io.InputStream;

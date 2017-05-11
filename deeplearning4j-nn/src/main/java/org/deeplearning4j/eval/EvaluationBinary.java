@@ -168,6 +168,11 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         }
     }
 
+    @Override
+    public void reset() {
+        countTruePositive = null;
+    }
+
     private static void addInPlace(int[] addTo, int[] toAdd) {
         for (int i = 0; i < addTo.length; i++) {
             addTo[i] += toAdd[i];

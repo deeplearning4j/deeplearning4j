@@ -42,6 +42,8 @@ public class PerformanceListener implements IterationListener {
     public PerformanceListener(int frequency, boolean reportScore) {
         this.frequency = frequency;
         this.reportScore = reportScore;
+
+        lastTime.set(System.currentTimeMillis());
     }
 
     @Override
@@ -90,9 +92,9 @@ public class PerformanceListener implements IterationListener {
                 input = model.input();
             }
 
-            long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1, input.rank()));
+//            long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1, input.rank()));
 
-            long numSamples = input.lengthLong() / tadLength;
+            long numSamples = input.size(0);
 
             samplesPerSec.set((double) (numSamples / timeSec));
             batchesPerSec.set((double) (1 / timeSec));

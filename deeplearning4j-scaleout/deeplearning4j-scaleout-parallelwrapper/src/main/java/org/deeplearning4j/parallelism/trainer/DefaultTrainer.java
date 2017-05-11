@@ -65,6 +65,8 @@ public class DefaultTrainer extends Thread implements Trainer {
     protected AtomicBoolean nullMode = new AtomicBoolean(false);
     protected DataSet nullDataSet;
 
+    protected AtomicBoolean isStopped = new AtomicBoolean(false);
+
 
 
     @Override
@@ -152,6 +154,8 @@ public class DefaultTrainer extends Thread implements Trainer {
             shouldStop = new AtomicBoolean(false);
         if (shouldUpdate == null)
             shouldUpdate = new AtomicBoolean(false);
+        if (isStopped == null)
+            isStopped = new AtomicBoolean(false);
     }
 
     @Override
@@ -166,6 +170,11 @@ public class DefaultTrainer extends Thread implements Trainer {
     @Override
     public void shutdown() {
         shouldStop.set(true);
+        while (!isStopped.get())
+            LockSupport.parkNanos(1000L);
+
+        shouldStop.set(false);
+        isStopped.set(false);
     }
 
     @Override
@@ -252,7 +261,7 @@ public class DefaultTrainer extends Thread implements Trainer {
                         dataSet = queue.poll(100, TimeUnit.MILLISECONDS);
                     else {
                         if (nullDataSet == null)
-                            nullDataSet = new org.nd4j.linalg.dataset.DataSet(Nd4j.create(32, 3, 224, 224), Nd4j.create(32, 200));
+                            nullDataSet = new org.nd4j.linalg.dataset.DataSet(Nd4j.create(64, 28 * 28), Nd4j.create(64, 10));
 
                         dataSet = nullDataSet;
                     }
@@ -325,6 +334,10 @@ public class DefaultTrainer extends Thread implements Trainer {
             }
         } catch (Exception e) {
             this.thrownException = e;
+        } finally {
+            log.debug("Terminating all workspaces for trainer_{}", threadId);
+            Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+            isStopped.set(true);
         }
     }
 
@@ -335,7 +348,7 @@ public class DefaultTrainer extends Thread implements Trainer {
             if (thrownException != null)
                 throw new RuntimeException(thrownException);
 
-            LockSupport.parkNanos(50000L);
+            LockSupport.parkNanos(1000L);
         }
     }
 
