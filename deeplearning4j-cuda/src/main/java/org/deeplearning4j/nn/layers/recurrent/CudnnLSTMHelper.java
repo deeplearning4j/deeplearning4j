@@ -18,24 +18,23 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.*;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.BaseCudnnHelper;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.bytedeco.javacpp.cuda.*;
 import static org.bytedeco.javacpp.cudnn.*;
@@ -45,25 +44,13 @@ import static org.bytedeco.javacpp.cudnn.*;
  *
  * @author saudet
  */
-public class CudnnLSTMHelper implements LSTMHelper {
-    protected static final Logger log = LoggerFactory.getLogger(CudnnLSTMHelper.class);
+@Slf4j
+public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
 
-    static void checkCuda(int error) {
-        if (error != cudaSuccess) {
-            throw new RuntimeException("CUDA error = " + error + ": " + cudaGetErrorString(error).getString());
-        }
-    }
+    private static class CudnnLSTMContext extends CudnnContext {
 
-    static void checkCudnn(int status) {
-        if (status != CUDNN_STATUS_SUCCESS) {
-            throw new RuntimeException("cuDNN status = " + status + ": " + cudnnGetErrorString(status).getString());
-        }
-    }
-
-    static class CudnnContext extends cudnnContext {
-
-        static class Deallocator extends CudnnContext implements Pointer.Deallocator {
-            Deallocator(CudnnContext c) {
+        private static class Deallocator extends CudnnLSTMContext implements Pointer.Deallocator {
+            Deallocator(CudnnLSTMContext c) {
                 super(c);
             }
 
@@ -73,27 +60,24 @@ public class CudnnLSTMHelper implements LSTMHelper {
             }
         }
 
-        cudnnTensorStruct hxDesc = new cudnnTensorStruct(), cxDesc = new cudnnTensorStruct();
-        cudnnTensorStruct hyDesc = new cudnnTensorStruct(), cyDesc = new cudnnTensorStruct();
-        cudnnTensorStruct dhxDesc = new cudnnTensorStruct(), dcxDesc = new cudnnTensorStruct();
-        cudnnTensorStruct dhyDesc = new cudnnTensorStruct(), dcyDesc = new cudnnTensorStruct();
+        private cudnnTensorStruct hxDesc = new cudnnTensorStruct(), cxDesc = new cudnnTensorStruct();
+        private cudnnTensorStruct hyDesc = new cudnnTensorStruct(), cyDesc = new cudnnTensorStruct();
+        private cudnnTensorStruct dhxDesc = new cudnnTensorStruct(), dcxDesc = new cudnnTensorStruct();
+        private cudnnTensorStruct dhyDesc = new cudnnTensorStruct(), dcyDesc = new cudnnTensorStruct();
 
-        cudnnFilterStruct wDesc = new cudnnFilterStruct(), dwDesc = new cudnnFilterStruct();
-        cudnnFilterStruct linLayerMatDesc = new cudnnFilterStruct(), linLayerBiasDesc = new cudnnFilterStruct();
+        private cudnnFilterStruct wDesc = new cudnnFilterStruct(), dwDesc = new cudnnFilterStruct();
+        private cudnnFilterStruct linLayerMatDesc = new cudnnFilterStruct(), linLayerBiasDesc = new cudnnFilterStruct();
 
-        cudnnRNNStruct rnnDesc = new cudnnRNNStruct();
-        cudnnDropoutStruct dropoutDesc = new cudnnDropoutStruct();
-        cudnnActivationStruct activationDesc = new cudnnActivationStruct();
+        private cudnnRNNStruct rnnDesc = new cudnnRNNStruct();
+        private cudnnDropoutStruct dropoutDesc = new cudnnDropoutStruct();
+        private cudnnActivationStruct activationDesc = new cudnnActivationStruct();
 
-        CudnnContext() {
-            // insure that cuDNN initializes on the same device as ND4J for this thread
-            Nd4j.create(1);
-            AtomicAllocator.getInstance();
+        public CudnnLSTMContext() {
             createHandles();
             deallocator(new Deallocator(this));
         }
 
-        CudnnContext(CudnnContext c) {
+        public CudnnLSTMContext(CudnnLSTMContext c) {
             super(c);
             hxDesc = new cudnnTensorStruct(c.hxDesc);
             cxDesc = new cudnnTensorStruct(c.cxDesc);
@@ -114,8 +98,9 @@ public class CudnnLSTMHelper implements LSTMHelper {
             activationDesc = new cudnnActivationStruct(c.activationDesc);
         }
 
-        void createHandles() {
-            checkCudnn(cudnnCreate(this));
+        @Override
+        protected void createHandles() {
+            super.createHandles();
 
             checkCudnn(cudnnCreateTensorDescriptor(hxDesc));
             checkCudnn(cudnnCreateTensorDescriptor(cxDesc));
@@ -136,7 +121,8 @@ public class CudnnLSTMHelper implements LSTMHelper {
             checkCudnn(cudnnCreateActivationDescriptor(activationDesc));
         }
 
-        void destroyHandles() {
+        @Override
+        protected void destroyHandles() {
             checkCudnn(cudnnDestroyActivationDescriptor(activationDesc));
             checkCudnn(cudnnDestroyDropoutDescriptor(dropoutDesc));
             checkCudnn(cudnnDestroyRNNDescriptor(rnnDesc));
@@ -155,124 +141,44 @@ public class CudnnLSTMHelper implements LSTMHelper {
             checkCudnn(cudnnDestroyTensorDescriptor(dhyDesc));
             checkCudnn(cudnnDestroyTensorDescriptor(dcyDesc));
 
-            checkCudnn(cudnnDestroy(this));
-        }
-    }
-
-    static class DataCache extends Pointer {
-
-        static class Deallocator extends DataCache implements Pointer.Deallocator {
-            Deallocator(DataCache c) {
-                super(c);
-            }
-
-            @Override
-            public void deallocate() {
-                checkCuda(cudaFree(this));
-                setNull();
-            }
-        }
-
-        static class HostDeallocator extends DataCache implements Pointer.Deallocator {
-            HostDeallocator(DataCache c) {
-                super(c);
-            }
-
-            @Override
-            public void deallocate() {
-                checkCuda(cudaFreeHost(this));
-                setNull();
-            }
-        }
-
-        DataCache() {}
-
-        DataCache(long size) {
-            position = 0;
-            limit = capacity = size;
-            int error = cudaMalloc(this, size);
-            if (error != cudaSuccess) {
-                log.warn("Cannot allocate " + size + " bytes of device memory (CUDA error = " + error
-                                + "), proceeding with host memory");
-                checkCuda(cudaMallocHost(this, size));
-                deallocator(new HostDeallocator(this));
-            } else {
-                deallocator(new Deallocator(this));
-            }
-        }
-
-        DataCache(DataCache c) {
-            super(c);
-        }
-    }
-
-    static class TensorArray extends PointerPointer<cudnnTensorStruct> {
-
-        static class Deallocator extends TensorArray implements Pointer.Deallocator {
-            Pointer owner;
-
-            Deallocator(TensorArray a, Pointer owner) {
-                this.address = a.address;
-                this.capacity = a.capacity;
-                this.owner = owner;
-            }
-
-            @Override
-            public void deallocate() {
-                for (int i = 0; i < capacity; i++) {
-                    cudnnTensorStruct t = this.get(cudnnTensorStruct.class, i);
-                    checkCudnn(cudnnDestroyTensorDescriptor(t));
-                }
-                owner.deallocate();
-                owner = null;
-                setNull();
-            }
-        }
-
-        TensorArray() {}
-
-        TensorArray(long size) {
-            PointerPointer p = new PointerPointer(size);
-            p.deallocate(false);
-            this.address = p.address();
-            this.limit = p.limit();
-            this.capacity = p.capacity();
-
-            cudnnTensorStruct t = new cudnnTensorStruct();
-            for (int i = 0; i < capacity; i++) {
-                checkCudnn(cudnnCreateTensorDescriptor(t));
-                this.put(i, t);
-            }
-            deallocator(new Deallocator(this, p));
-        }
-
-        TensorArray(TensorArray a) {
-            super(a);
+            super.destroyHandles();
         }
     }
 
     // These constants might eventually become variable parameters...
-    static final int numLayers = 1;
-    static final float dropout = 0;
-    static final boolean bidirectional = false;
-    static final int RNNMode = CUDNN_LSTM;
-    static final int numLinearLayers = 8; // CUDNN_LSTM
+    protected static final int numLayers = 1;
+    protected static final float dropout = 0;
+    protected static final boolean bidirectional = false;
+    protected static final int RNNMode = CUDNN_LSTM;
+    protected static final int numLinearLayers = 8; // CUDNN_LSTM
 
-    static int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE
-                        : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
-    static int dataTypeSize = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8
-                            : Nd4j.dataType() == DataBuffer.Type.FLOAT ? 4 : 2;
+    private CudnnLSTMContext cudnnContext = new CudnnLSTMContext();
+    private TensorArray xDesc = new TensorArray();
+    private TensorArray yDesc = new TensorArray();
+    private TensorArray dxDesc = new TensorArray();
+    private TensorArray dyDesc = new TensorArray();
+    private DataCache stateSpace = new DataCache();
+    private DataCache workSpace = new DataCache();
+    private DataCache reserveSpace = new DataCache();
+    private DataCache weightsSpace = new DataCache();
 
-    CudnnContext cudnnContext = new CudnnContext();
-    TensorArray xDesc = new TensorArray();
-    TensorArray yDesc = new TensorArray();
-    TensorArray dxDesc = new TensorArray();
-    TensorArray dyDesc = new TensorArray();
-    DataCache stateSpace = new DataCache();
-    DataCache workSpace = new DataCache();
-    DataCache reserveSpace = new DataCache();
-    DataCache weightsSpace = new DataCache();
-    SizeTPointer sizeInBytes = new SizeTPointer(1);
+    @Override
+    public boolean checkSupported(IActivation gateActivationFn, IActivation activationFn, boolean hasPeepholeConnections) {
+        boolean supported = checkSupported();
+        if (!(gateActivationFn instanceof ActivationSigmoid)) {
+            supported = false;
+            log.warn("Not supported: Gate activation functions != ActivationSigmoid");
+        }
+        if (!(activationFn instanceof ActivationTanH)) {
+            supported = false;
+            log.warn("Not supported: Layer activation functions != ActivationTanH");
+        }
+        if (hasPeepholeConnections) {
+            supported = false;
+            log.warn("Not supported: LSTM layers with peephole connections");
+        }
+        return supported;
+    }
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(final NeuralNetConfiguration conf,
@@ -283,16 +189,6 @@ public class CudnnLSTMHelper implements LSTMHelper {
                     final String recurrentWeightKey, final String biasWeightKey,
                     final Map<String, INDArray> gradientViews, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
                     final boolean hasPeepholeConnections) {            //True for GravesLSTM, false for LSTM
-
-        if (!(gateActivationFn instanceof ActivationSigmoid)) {
-            throw new IllegalArgumentException("Error: Gate activation functions != ActivationSigmoid are not supported.");
-        }
-        if (!(conf.getLayer().getActivationFn() instanceof ActivationTanH)) {
-            throw new IllegalArgumentException("Error: Layer activation functions != ActivationTanH are not supported.");
-        }
-        if (hasPeepholeConnections) {
-            throw new IllegalArgumentException("Error: LSTM layers with peephole connections are not supported.");
-        }
 
         //Expect errors to have shape: [miniBatchSize,n^(L+1),timeSeriesLength]
         int hiddenLayerSize = recurrentWeights.size(0); //i.e., n^L
@@ -425,16 +321,6 @@ public class CudnnLSTMHelper implements LSTMHelper {
                     final INDArray prevMemCellState, boolean forBackprop, boolean forwards,
                     final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
                     final boolean hasPeepholeConnections) {            //True for GravesLSTM, false for LSTM
-
-        if (!(gateActivationFn instanceof ActivationSigmoid)) {
-            throw new IllegalArgumentException("Error: Gate activation functions != ActivationSigmoid are not supported.");
-        }
-        if (!(conf.getLayer().getActivationFn() instanceof ActivationTanH)) {
-            throw new IllegalArgumentException("Error: Layer activation functions != ActivationTanH are not supported.");
-        }
-        if (hasPeepholeConnections) {
-            throw new IllegalArgumentException("Error: LSTM layers with peephole connections are not supported.");
-        }
 
         boolean is2dInput = input.rank() < 3; //Edge case of T=1, may have shape [m,nIn], equiv. to [m,nIn,1]
         int timeSeriesLength = (is2dInput ? 1 : input.size(2));

@@ -61,6 +61,9 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
             helper = Class.forName("org.deeplearning4j.nn.layers.recurrent.CudnnLSTMHelper")
                     .asSubclass(LSTMHelper.class).newInstance();
             log.debug("CudnnLSTMHelper successfully initialized");
+            if (!helper.checkSupported(layerConf().getGateActivationFn(), layerConf().getActivationFn(), false)) {
+                helper = null;
+            }
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
                 log.warn("Could not initialize CudnnLSTMHelper", t);

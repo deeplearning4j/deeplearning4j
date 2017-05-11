@@ -12,7 +12,6 @@ import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.blas.Level1;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.TimesOneMinus;
@@ -171,7 +170,7 @@ public class LSTMHelpers {
             prevOutputActivations = Nd4j.zeros(new int[] {miniBatchSize, hiddenLayerSize});
         }
 
-        if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
+        if (helper != null) {
             FwdPassReturn ret = helper.activate(layer, conf, gateActivationFn, input, recurrentWeights, inputWeights,
                     biases, training, prevOutputActivations, prevMemCellState, forBackprop, forwards, inputWeightKey,
                     maskArray, hasPeepholeConnections);
@@ -370,7 +369,7 @@ public class LSTMHelpers {
             rwGradientsGG = rwGradientsOut.get(NDArrayIndex.all(), NDArrayIndex.point(4 * hiddenLayerSize + 2));
         }
 
-        if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
+        if (helper != null) {
             Pair<Gradient, INDArray> ret = helper.backpropGradient(conf, gateActivationFn, input,
                     recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength,
                     fwdPass, forwards, inputWeightKey, recurrentWeightKey, biasWeightKey, gradientViews,
