@@ -46,6 +46,8 @@ public abstract class BaseParallelDataSetIterator implements ParallelDataSetIter
 
         boolean hasNext = hasNextFor(curIdx);
 
+        log.info("Result of hasNext({})", hasNext);
+
         if (hasNext)
             return true;
         else
