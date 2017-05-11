@@ -42,11 +42,7 @@ public abstract class BaseParallelDataSetIterator implements ParallelDataSetIter
 
         int curIdx = getCurrentProducerIndex();
 
-        log.info("Going for hasNext({})", curIdx);
-
         boolean hasNext = hasNextFor(curIdx);
-
-        log.info("Result of hasNext({})", hasNext);
 
         if (hasNext)
             return true;

@@ -73,7 +73,6 @@ public class FileSplitParallelDataSetIterator extends BaseParallelDataSetIterato
         for (List<File> part: Lists.partition(files, files.size() / numThreads)) {
             int cDev = cnt % numDevices;
             asyncIterators.add(new AsyncDataSetIterator(new FileSplitDataSetIterator(part, callback), bufferPerThread, true, cDev));
-            log.info("Split {} initialized...", cnt);
             cnt++;
         }
 

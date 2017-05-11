@@ -472,7 +472,7 @@ public class ParallelWrapper implements AutoCloseable {
             for (int cnt = 0; cnt < workers; cnt++) {
                 // we pass true here, to tell Trainer to use MultiDataSet queue for training
                 zoo[cnt] = trainerContext.create(cnt, model, Nd4j.getAffinityManager().getDeviceForCurrentThread(),
-                                useMDS, this, workspaceMode);
+                                useMDS, this, workspaceMode, averagingFrequency);
                 zoo[cnt].setUncaughtExceptionHandler(handler);
                 if (zoo[cnt] instanceof Thread) {
                     Nd4j.getAffinityManager().attachThreadToDevice((Thread) zoo[cnt], cnt % numDevices);
