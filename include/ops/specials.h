@@ -335,7 +335,7 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
 
 //div step
     if (length > ELEMENT_THRESHOLD) {
-#pragma omp parallel for num_threads(4) simd schedule(guided) default(shared)
+#pragma omp parallel for simd num_threads(4) schedule(guided) default(shared)
         for (Nd4jIndex i = 0; i < length; i++) {
             z[i] /= n;
         }
