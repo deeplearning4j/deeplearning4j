@@ -28,6 +28,7 @@
 
     <properties>
         <cuda.version>8.0</cuda.version>
+        <cudnn.version>6.0</cudnn.version>
     </properties>
 
     <dependencyManagement>
@@ -75,7 +76,7 @@
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>cuda-platform</artifactId>
-            <version>${cuda.version}-${javacpp-presets.version}</version>
+            <version>${cuda.version}-${cudnn.version}-${javacpp-presets.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -84,9 +85,10 @@
         </dependency>
     </dependencies>
 
-<!-- Uncomment to run the full test suite using cuDNN.
     <build>
+<!-- Uncomment to run the full test suite using cuDNN.
         <testSourceDirectory>../deeplearning4j-core/src/test/java</testSourceDirectory>
+-->
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -99,7 +101,6 @@
             </plugins>
         </pluginManagement>
     </build>
--->
 
     <profiles>
         <profile>

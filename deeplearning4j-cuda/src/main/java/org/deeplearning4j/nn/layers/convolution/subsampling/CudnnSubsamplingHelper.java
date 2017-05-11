@@ -17,22 +17,19 @@
  */
 package org.deeplearning4j.nn.layers.convolution.subsampling;
 
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.ShortPointer;
-import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.layers.BaseCudnnHelper;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
@@ -48,24 +45,13 @@ import static org.bytedeco.javacpp.cudnn.*;
  *
  * @author saudet
  */
-public class CudnnSubsamplingHelper implements SubsamplingHelper {
+@Slf4j
+public class CudnnSubsamplingHelper extends BaseCudnnHelper implements SubsamplingHelper {
 
-    static void checkCuda(int error) {
-        if (error != cudaSuccess) {
-            throw new RuntimeException("CUDA error = " + error + ": " + cudaGetErrorString(error).getString());
-        }
-    }
+    private static class CudnnSubsamplingContext extends CudnnContext {
 
-    static void checkCudnn(int status) {
-        if (status != CUDNN_STATUS_SUCCESS) {
-            throw new RuntimeException("cuDNN status = " + status + ": " + cudnnGetErrorString(status).getString());
-        }
-    }
-
-    static class CudnnContext extends cudnnContext {
-
-        static class Deallocator extends CudnnContext implements Pointer.Deallocator {
-            Deallocator(CudnnContext c) {
+        private static class Deallocator extends CudnnSubsamplingContext implements Pointer.Deallocator {
+            Deallocator(CudnnSubsamplingContext c) {
                 super(c);
             }
 
@@ -75,19 +61,16 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
             }
         }
 
-        cudnnTensorStruct srcTensorDesc = new cudnnTensorStruct(), dstTensorDesc = new cudnnTensorStruct(),
+        private cudnnTensorStruct srcTensorDesc = new cudnnTensorStruct(), dstTensorDesc = new cudnnTensorStruct(),
                         deltaTensorDesc = new cudnnTensorStruct();
-        cudnnPoolingStruct poolingDesc = new cudnnPoolingStruct();
+        private cudnnPoolingStruct poolingDesc = new cudnnPoolingStruct();
 
-        CudnnContext() {
-            // insure that cuDNN initializes on the same device as ND4J for this thread
-            Nd4j.create(1);
-            AtomicAllocator.getInstance();
+        public CudnnSubsamplingContext() {
             createHandles();
             deallocator(new Deallocator(this));
         }
 
-        CudnnContext(CudnnContext c) {
+        public CudnnSubsamplingContext(CudnnSubsamplingContext c) {
             super(c);
             srcTensorDesc = new cudnnTensorStruct(c.srcTensorDesc);
             dstTensorDesc = new cudnnTensorStruct(c.dstTensorDesc);
@@ -95,34 +78,27 @@ public class CudnnSubsamplingHelper implements SubsamplingHelper {
             poolingDesc = new cudnnPoolingStruct(c.poolingDesc);
         }
 
-        void createHandles() {
-            checkCudnn(cudnnCreate(this));
+        @Override
+        protected void createHandles() {
+            super.createHandles();
             checkCudnn(cudnnCreateTensorDescriptor(srcTensorDesc));
             checkCudnn(cudnnCreateTensorDescriptor(dstTensorDesc));
             checkCudnn(cudnnCreateTensorDescriptor(deltaTensorDesc));
             checkCudnn(cudnnCreatePoolingDescriptor(poolingDesc));
         }
 
-        void destroyHandles() {
+        @Override
+        protected void destroyHandles() {
             checkCudnn(cudnnDestroyPoolingDescriptor(poolingDesc));
             checkCudnn(cudnnDestroyTensorDescriptor(srcTensorDesc));
             checkCudnn(cudnnDestroyTensorDescriptor(dstTensorDesc));
             checkCudnn(cudnnDestroyTensorDescriptor(deltaTensorDesc));
-            checkCudnn(cudnnDestroy(this));
+            super.destroyHandles();
         }
     }
 
-    CudnnContext cudnnContext = new CudnnContext();
-    int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE
-                    : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
-    int tensorFormat = CUDNN_TENSOR_NCHW;
-    Pointer alpha = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(1.0)
-                    : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(1.0f)
-                                    : new ShortPointer(new short[] {(short) HalfIndexer.fromFloat(1.0f)});
-    Pointer beta = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(0.0)
-                    : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(0.0f)
-                                    : new ShortPointer(new short[] {(short) HalfIndexer.fromFloat(0.0f)});;
-    INDArray reduced = null;
+    private CudnnSubsamplingContext cudnnContext = new CudnnSubsamplingContext();
+    private INDArray reduced = null;
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides,
