@@ -68,6 +68,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             helper = Class.forName("org.deeplearning4j.nn.layers.convolution.CudnnConvolutionHelper")
                             .asSubclass(ConvolutionHelper.class).newInstance();
             log.debug("CudnnConvolutionHelper successfully initialized");
+            if (!helper.checkSupported()) {
+                helper = null;
+            }
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
                 log.warn("Could not initialize CudnnConvolutionHelper", t);
@@ -156,9 +159,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         Pair<INDArray,INDArray> p = preOutput4d(true, true);
         delta = conf().getLayer().getActivationFn().backprop(p.getFirst(), epsilon).getFirst(); //TODO handle activation function params
 
-        if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
+        if (helper != null) {
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad,
-                            biasGradView, weightGradView, afn, layerConf().getCudnnAlgoMode(), convolutionMode);
+                            biasGradView, weightGradView, afn, layerConf().getCudnnAlgoMode(),
+                            layerConf().getCudnnBwdFilterAlgo(), layerConf().getCudnnBwdDataAlgo(), convolutionMode);
             if (ret != null) {
                 return ret;
             }
@@ -305,9 +309,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int outW = outSize[1];
 
 
-        if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
+        if (helper != null) {
             INDArray ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(),
-                            convolutionMode);
+                            layerConf().getCudnnFwdAlgo(), convolutionMode);
             if (ret != null) {
                 return new Pair<>(ret,null);
             }
@@ -362,7 +366,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //String afn = conf.getLayer().getActivationFunction();
         IActivation afn = conf.getLayer().getActivationFn();
 
-        if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
+        if (helper != null) {
             INDArray ret = helper.activate(z, conf.getLayer().getActivationFn());
             if (ret != null) {
                 return ret;

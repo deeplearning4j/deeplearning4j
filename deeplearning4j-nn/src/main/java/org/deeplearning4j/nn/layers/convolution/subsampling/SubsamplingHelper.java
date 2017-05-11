@@ -29,6 +29,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author saudet
  */
 public interface SubsamplingHelper {
+    boolean checkSupported();
+
     Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] kernel, int[] strides, int[] pad,
                     PoolingType poolingType, ConvolutionMode convolutionMode);
 
