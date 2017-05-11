@@ -31,7 +31,6 @@ public class AdaMax implements IUpdater {
     private double beta2 = DEFAULT_ADAMAX_BETA2_VAR_DECAY; // gradient sqrd decay rate
     private double epsilon = DEFAULT_ADAMAX_EPSILON;
 
-
     @Override
     public long stateSize(long numParams) {
         return 2*numParams;

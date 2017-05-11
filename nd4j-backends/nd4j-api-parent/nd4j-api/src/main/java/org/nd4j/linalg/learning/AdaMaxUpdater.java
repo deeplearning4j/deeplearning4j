@@ -7,7 +7,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Max;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.learning.config.AdaMax;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -73,10 +75,11 @@ public class AdaMaxUpdater implements GradientUpdater<AdaMax> {
         double beta1t = FastMath.pow(config.getBeta1(), iteration + 1);
 
         double alphat = config.getLearningRate() / (1.0 - beta1t);
-        if (Double.isNaN(alphat) || alphat == 0.0) {
+        if (Double.isNaN(alphat) || Double.isInfinite(alphat) || alphat == 0.0) {
             alphat = config.getEpsilon();
         }
 
+        u.addi(1e-32); // prevent NaNs in params
         gradient.assign(m).muli(alphat).divi(u);
     }
 }
