@@ -406,6 +406,7 @@ public class ParallelWrapper implements AutoCloseable {
                     average model, and propagate it to whole
                 */
                 if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers) {
+                    long timeA1 = System.currentTimeMillis();
                     double score = getScore(locker);
 
                     // averaging updaters state
@@ -430,6 +431,10 @@ public class ParallelWrapper implements AutoCloseable {
                     } else if (model instanceof ComputationGraph) {
                         averageUpdatersState(locker, score);
                     }
+
+                    long timeA2 = System.currentTimeMillis();
+                    if (reportScore)
+                        log.info("Averaging time: {} ms", timeA2 - timeA1);
                 }
                 locker.set(0);
             }
