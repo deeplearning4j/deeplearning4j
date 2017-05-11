@@ -31,6 +31,8 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.LayerValidation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
@@ -86,6 +88,7 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
     }
 
     @Override
+    @Deprecated
     public Updater getUpdaterByParam(String paramName) {
         // center loss utilizes alpha directly for this so any updater can be used for other layers
         switch (paramName) {
@@ -93,6 +96,17 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
                 return Updater.NONE;
             default:
                 return updater;
+        }
+    }
+
+    @Override
+    public IUpdater getIUpdaterByParam(String paramName) {
+        // center loss utilizes alpha directly for this so any updater can be used for other layers
+        switch (paramName) {
+            case CenterLossParamInitializer.CENTER_KEY:
+                return new NoOp();
+            default:
+                return iUpdater;
         }
     }
 
