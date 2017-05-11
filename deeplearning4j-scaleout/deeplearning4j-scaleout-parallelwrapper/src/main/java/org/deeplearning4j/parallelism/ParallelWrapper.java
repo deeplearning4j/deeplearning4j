@@ -364,13 +364,11 @@ public class ParallelWrapper implements AutoCloseable {
         List<Long> nanos = new ArrayList<>();
         AtomicInteger locker = new AtomicInteger(0);
         long time1 = System.currentTimeMillis();
-        AtomicLong datasetsCounter = new AtomicLong(0);
         while (iterator.hasNext() && !stopFit.get()) {
         //int intcnt = 0;
         //while (intcnt < 1000) {
             //intcnt++;
             DataSet dataSet = iterator.next();
-            log.info("DataSets fetched: {}", datasetsCounter.incrementAndGet());
             long time2 = System.currentTimeMillis();
             long lastEtlTime = time2 - time1;
             //nanos.add((time2 - time1));
@@ -437,7 +435,6 @@ public class ParallelWrapper implements AutoCloseable {
             }
 
             time1 = System.currentTimeMillis();
-            log.info("DataSets passed through: {}", datasetsCounter.get());
         }
 
         if (prefetchSize > 0 && source.asyncSupported())
