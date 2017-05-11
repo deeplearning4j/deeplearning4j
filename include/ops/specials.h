@@ -334,6 +334,11 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
     int span = length;
 #endif
 
+    // memset before propagation
+    if (!tempZ)
+        memset(z, 0, length * sizeof(T));
+
+
 // TODO: this step should be improved, to exploit SIMD
     for (int ar = 0; ar < n; ar++ ) {
         T *lX = x[ar];
@@ -350,19 +355,28 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
 
 #pragma omp simd
             for (int i = start; i < end; i++) {
-                if (ar == 0)
-                    z[i] = 0.0;
-
                 z[i] += lX[i];
             }
         }
     }
 
 //div step
+    /*
     if (length > ELEMENT_THRESHOLD) {
-#pragma omp parallel for simd num_threads(6) schedule(guided) default(shared) proc_bind(close)
-        for (Nd4jIndex i = 0; i < length; i++) {
-            z[i] /= n;
+#pragma omp parallel num_threads(6) schedule(guided) default(shared) proc_bind(close)
+        {
+#ifdef _OPENMP
+            int tid = omp_get_thread_num();
+#else
+            int tid = 0;
+#endif
+            int start = span * tid;
+            int end = span * (tid + 1);
+            if (end > length) end = length;
+
+            for (int i = start; i < end; i++) {
+                z[i] /= n;
+            }
         }
     } else {
 #pragma omp simd
@@ -370,6 +384,7 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
             z[i] /= n;
         }
     }
+    */
 
 //propagation step
     if (propagate) {
@@ -379,7 +394,7 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
 
 #pragma omp simd
             for (Nd4jIndex i = 0; i < length; i++) {
-                lX[i] = z[i];
+                lX[i] = z[i] / n;
             }
         }
     }
