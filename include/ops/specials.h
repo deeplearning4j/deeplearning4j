@@ -323,7 +323,7 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
 
 // aggregation step
 // TODO: this step should be improved, to exploit SIMD
-#pragma omp parallel for schedule(guided) default(shared)
+#pragma omp parallel for num_threads(4) schedule(guided) default(shared)
     for (Nd4jIndex i = 0; i < length; i++) {
         z[i] = 0.0;
 
@@ -335,7 +335,7 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
 
 //div step
     if (length > ELEMENT_THRESHOLD) {
-#pragma omp parallel for simd schedule(guided) default(shared)
+#pragma omp parallel for num_threads(4) simd schedule(guided) default(shared)
         for (Nd4jIndex i = 0; i < length; i++) {
             z[i] /= n;
         }
@@ -348,7 +348,7 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
 
 //propagation step
     if (propagate) {
-#pragma omp parallel for if (n > 4 || length > ELEMENT_THRESHOLD) default(shared)
+#pragma omp parallel for if (n > 4 || length > ELEMENT_THRESHOLD) num_threads(4) default(shared)
         for(int ar = 0; ar < n; ar++) {
 
 #pragma omp simd
