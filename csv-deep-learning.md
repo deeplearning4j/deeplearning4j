@@ -18,6 +18,6 @@ It’s useful to know how to load data from CSV files into neural nets, especial
         Nd4j.MAX_SLICES_TO_PRINT = 10;
         Nd4j.MAX_ELEMENTS_PER_SLICE = 10;
 
-Then configure the neural network and train it on the dataset. [This example shows how](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/CSVExample.java). 
+Then configure the neural network and train it on the dataset. [This example shows how](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataexamples/CSVExample.java). 
 
-And here is the [CSVRecordReader class](https://github.com/deeplearning4j/Canova/blob/master/canova-api/src/main/java/org/canova/api/records/reader/impl/CSVRecordReader.java).
+And here is the [CSVRecordReader class](https://github.com/deeplearning4j/DataVec/blob/master/datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVRecordReader.java).
