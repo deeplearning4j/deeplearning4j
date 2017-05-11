@@ -270,6 +270,8 @@ public class DefaultTrainer extends Thread implements Trainer {
                         //if (Nd4j.getAffinityManager().getDeviceForCurrentThread() != Nd4j.getAffinityManager().getDeviceForArray(dataSet.getFeatures()))
                         //    log.debug("Thread: {}; Bad align for data: {}/{}", Thread.currentThread().getId(), Nd4j.getAffinityManager().getDeviceForCurrentThread(), Nd4j.getAffinityManager().getDeviceForArray(dataSet.getFeatures()));
 
+                        log.info("Starting fitting trainer_{}", threadId);
+
                         if (replicatedModel instanceof MultiLayerNetwork) {
                             ((MultiLayerNetwork) replicatedModel).setLastEtlTime(lastEtlTime.get());
                             ((MultiLayerNetwork) replicatedModel).fit(dataSet);
@@ -278,13 +280,20 @@ public class DefaultTrainer extends Thread implements Trainer {
                             ((ComputationGraph) replicatedModel).fit(dataSet);
                         }
 
+                        log.info("Ended fitting trainer_{}", threadId);
+
                         // we ensure all operations are finished in this training round
                         Nd4j.getExecutioner().commit();
+
+                        log.info("Committed trainer_{}", threadId);
 
                         // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
                         if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported()) {
                             // we ensure memory is updated on host side
                             Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(), AffinityManager.Location.HOST);
+
+
+                            log.info("Params synchronized trainer_{}", threadId);
 
                             if (replicatedModel instanceof MultiLayerNetwork) {
                                 Updater updaterReplica = ((MultiLayerNetwork) replicatedModel).getUpdater();
@@ -297,6 +306,8 @@ public class DefaultTrainer extends Thread implements Trainer {
                                     Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
                             }
                         }
+
+                        log.info("Finished copyback at trainer_{}", threadId);
 
                         running.decrementAndGet();
                     }
@@ -334,6 +345,7 @@ public class DefaultTrainer extends Thread implements Trainer {
             }
         } catch (Exception e) {
             this.thrownException = e;
+            throw new RuntimeException(e);
         } finally {
             log.debug("Terminating all workspaces for trainer_{}", threadId);
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
