@@ -412,7 +412,7 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
 
 #pragma omp parallel for num_threads(6) default(shared) proc_bind(close)
     for(int ar = 0; ar < n; ar++) {
-        memcpy(x[ar], z, length * sizeof(float));
+        memcpy(x[ar], z, length * sizeof(T));
     }
 
     if (tempZ)
