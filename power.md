@@ -24,11 +24,10 @@ We use an automated build tool rather than an OS-level package manager because J
 
 If you are trying to build an application that is going to run on a Power server, we recommend using the uber JAR approach instead. One thing that might make things easier is using an uber JAR as part of an RPM or DEB package. This decouples deployment from application development.
 
-Other examples
+Other Examples
 ----------------------
 
-We have similar instructions for running on [GPUs](https://deeplearning4j.org/gpu)
-and [Android](https://deeplearning4j.org/android).
+We have similar instructions for running on [GPUs](https://deeplearning4j.org/gpu) and [Android](https://deeplearning4j.org/android).
 
 Running any of our [examples](https://github.com/deeplearning4j/dl4j-examples) should work out of the box. This is due to the fact `nd4j-native-platform` bundles all native dependencies (including Power). For more information running our examples, please see our [Quickstart](http://deeplearning4j.org/quickstart).
 
