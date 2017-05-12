@@ -99,7 +99,6 @@ public class AsyncDataSetIterator implements DataSetIterator {
          */
 
         Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
-
         thread.setDaemon(true);
         thread.start();
     }

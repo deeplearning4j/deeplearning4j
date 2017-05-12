@@ -34,6 +34,6 @@ public interface TrainerContext {
      * @return the created training instance
      */
     Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper,
-                    WorkspaceMode workspaceMode);
+                    WorkspaceMode workspaceMode, int averagingFrequency);
 
 }

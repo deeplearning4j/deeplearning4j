@@ -1,5 +1,6 @@
 package org.deeplearning4j.datasets.iterator.parallel;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.ParallelDataSetIterator;
@@ -13,6 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public abstract class BaseParallelDataSetIterator implements ParallelDataSetIterator {
     protected AtomicLong counter = new AtomicLong(0);
 
