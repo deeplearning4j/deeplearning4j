@@ -36,9 +36,9 @@ import java.util.Set;
  */
 public class CounterMap<K, V> implements java.io.Serializable {
     private static final long serialVersionUID = 1L;
-    MapFactory<V, Double> mf;
-    Map<K, Counter<V>> counterMap;
-    double defltVal = 0.0;
+    private MapFactory<V, Double> mf;
+    private Map<K, Counter<V>> counterMap;
+    private double defltVal = 0.0;
 
     protected Counter<V> ensureCounter(K key) {
         Counter<V> valueCounter = counterMap.get(key);
