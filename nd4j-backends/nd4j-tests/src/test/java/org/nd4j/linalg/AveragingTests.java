@@ -51,7 +51,7 @@ public class AveragingTests extends BaseNd4jTest {
 
 
     @Test
-    public void testSingleDeviceAveraging() throws Exception {
+    public void testSingleDeviceAveraging1() throws Exception {
         INDArray array1 = Nd4j.valueArrayOf(LENGTH, 1.0);
         INDArray array2 = Nd4j.valueArrayOf(LENGTH, 2.0);
         INDArray array3 = Nd4j.valueArrayOf(LENGTH, 3.0);
@@ -95,6 +95,22 @@ public class AveragingTests extends BaseNd4jTest {
 
         assertEquals(arrayMean, array16);
     }
+
+    @Test
+    public void testSingleDeviceAveraging2() throws Exception {
+        INDArray exp = Nd4j.linspace(1, LENGTH, LENGTH);
+        List<INDArray> arrays = new ArrayList<>();
+        for (int i = 0; i < THREADS; i++)
+            arrays.add(exp.dup());
+
+        INDArray mean = Nd4j.averageAndPropagate(arrays);
+
+        assertEquals(exp, mean);
+
+        for (int i = 0; i < THREADS; i++)
+            assertEquals(exp, arrays.get(i));
+    }
+
 
     @Override
     public char ordering() {

@@ -856,8 +856,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         // we do averaging on GPU only if ALL devices have p2p links
         if (nativeOps.isP2PAvailable() && CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed()) {
 
-            if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+            Nd4j.getExecutioner().push();
 
             long len = target.lengthLong();
 
