@@ -360,13 +360,11 @@ public class ParallelWrapper implements AutoCloseable {
         List<Long> nanos = new ArrayList<>();
         AtomicInteger locker = new AtomicInteger(0);
         long time1 = System.currentTimeMillis();
-        AtomicLong datasetsCounter = new AtomicLong(0);
         while (iterator.hasNext() && !stopFit.get()) {
         //int intcnt = 0;
         //while (intcnt < 1000) {
             //intcnt++;
             DataSet dataSet = iterator.next();
-            log.info("DataSets fetched: {}", datasetsCounter.incrementAndGet());
             long time2 = System.currentTimeMillis();
             long lastEtlTime = time2 - time1;
             //nanos.add((time2 - time1));
@@ -404,6 +402,7 @@ public class ParallelWrapper implements AutoCloseable {
                     average model, and propagate it to whole
                 */
                 if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers) {
+                    long timeA1 = System.currentTimeMillis();
                     double score = getScore(locker);
 
                     // averaging updaters state
@@ -428,12 +427,15 @@ public class ParallelWrapper implements AutoCloseable {
                     } else if (model instanceof ComputationGraph) {
                         averageUpdatersState(locker, score);
                     }
+
+                    long timeA2 = System.currentTimeMillis();
+                    if (reportScore)
+                        log.info("Averaging time: {} ms", timeA2 - timeA1);
                 }
                 locker.set(0);
             }
 
             time1 = System.currentTimeMillis();
-            log.info("DataSets passed through: {}", datasetsCounter.get());
         }
 
         if (prefetchSize > 0 && source.asyncSupported())

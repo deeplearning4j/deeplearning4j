@@ -279,11 +279,11 @@ public class DefaultTrainer extends Thread implements Trainer {
                             ((ComputationGraph) replicatedModel).fit(dataSet);
                         }
 
-                        // we ensure all operations are finished in this training round
-                        Nd4j.getExecutioner().commit();
-
                         // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
                         if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported() && iterationsCounter.incrementAndGet() % averagingFrequency == 0) {
+                            // we ensure all operations are finished in this training round
+                            Nd4j.getExecutioner().commit();
+
                             // we ensure memory is updated on host side
                             Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(), AffinityManager.Location.HOST);
 
@@ -313,12 +313,10 @@ public class DefaultTrainer extends Thread implements Trainer {
                         } else
                             throw new RuntimeException("MultiDataSet can be fit into ComputationGraph only");
 
-                        // we ensure all operations are finished in this training round
-                        Nd4j.getExecutioner().commit();
-
-
                         // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
                         if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported() && iterationsCounter.incrementAndGet() % averagingFrequency == 0) {
+                            // we ensure all operations are finished in this training round
+                            Nd4j.getExecutioner().commit();
 
                             // we ensure memory is updated on host side
                             Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(), AffinityManager.Location.HOST);
