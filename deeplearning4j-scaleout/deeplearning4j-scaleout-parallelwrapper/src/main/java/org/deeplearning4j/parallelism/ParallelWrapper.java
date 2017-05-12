@@ -123,24 +123,20 @@ public class ParallelWrapper implements AutoCloseable {
     public synchronized void fit(@NonNull MultiDataSetIterator source) {
         stopFit.set(false);
         createZooIfNeccessary(true);
-        source.reset();
 
-        MultiDataSetIterator iterator;
+        if (source.resetSupported())
+            source.reset();
+
+        MultiDataSetIterator iterator = source;
         if (prefetchSize > 0 && source.asyncSupported()) {
             if (isMQ) {
                 if (workers % Nd4j.getAffinityManager().getNumberOfDevices() != 0)
                     log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
                                     Nd4j.getAffinityManager().getNumberOfDevices());
 
-                //if (mq == null)
-                    //mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL).setType(MagicQueue.Type.MDS)
-                    //        .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
-
-                //iterator = new AsyncMultiDataSetIterator(source, prefetchSize * workers, mq );
                 iterator = new AsyncMultiDataSetIterator(source, prefetchSize, new LinkedBlockingQueue<>(prefetchSize * workers), true, new InterleavedDataSetCallback(prefetchSize * 2));
             } else iterator = new AsyncMultiDataSetIterator(source, prefetchSize);
-        } else
-            iterator = source;
+        }
 
         AtomicInteger locker = new AtomicInteger(0);
 
@@ -161,7 +157,7 @@ public class ParallelWrapper implements AutoCloseable {
             /*
                 if all workers are dispatched now, join till all are finished
             */
-            if (pos + 1 == workers || !iterator.hasNext()) {
+            if (pos + 1 == workers) {
                 iterationsCounter.incrementAndGet();
 
                 for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
