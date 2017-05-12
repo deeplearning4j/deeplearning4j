@@ -24,6 +24,7 @@ Python Frameworks
 * <a href="#theano">Theano & Ecosystem</a>
 * <a href="#tensorflow">TensorFlow</a>
 * <a href="#caffe">Caffe</a>
+* <a href="#caffe2">Caffe2</a>
 * <a href="#chainer">Chainer</a>
 * <a href="#cntk">CNTK</a>
 * <a href="#dsstne">DSSTNE</a>
@@ -122,7 +123,9 @@ Pros and Cons
 
 [**Caffe**](http://caffe.berkeleyvision.org/) is a well-known and widely used machine-vision library that ported Matlab's implementation of fast convolutional nets to C and C++ ([see Steve Yegge's rant about porting C++ from chip to chip if you want to consider the tradeoffs between speed and this particular form of technical debt](https://sites.google.com/site/steveyegge2/google-at-delphi)). Caffe is not intended for other deep-learning applications such as text, sound or time series data. Like other frameworks mentioned here, Caffe has chosen Python for its API. 
 
-Both Deeplearning4j and Caffe perform image classification with convolutional nets, which represent the state of the art. In contrast to Caffe, Deeplearning4j offers parallel GPU *support* for an arbitrary number of chips, as well as many, seemingly trivial, features that make deep learning run more smoothly on multiple GPU clusters in parallel. While it is widely cited in papers, Caffe is chiefly used as a source of pre-trained models hosted on its Model Zoo site. Deeplearning4j is [building a parser](https://github.com/deeplearning4j/deeplearning4j/pull/480) to import Caffe models to Spark.
+Both Deeplearning4j and Caffe perform image classification with convolutional nets, which represent the state of the art. In contrast to Caffe, Deeplearning4j offers parallel GPU *support* for an arbitrary number of chips, as well as many, seemingly trivial, features that make deep learning run more smoothly on multiple GPU clusters in parallel. While it is widely cited in papers, Caffe is chiefly used as a source of pre-trained models hosted on its Model Zoo site. 
+
+* [Caffe's GitHub repository](https://github.com/BVLC/caffe)
 
 Pros and Cons:
 
@@ -136,6 +139,17 @@ Pros and Cons:
 * (-) Not extensible, bit of a hairball
 * (-) No commercial support
 * (-) Probably dying; slow development
+
+### <a name="caffe2">Caffe2</a>
+
+[**Caffe2**](https://caffe2.ai/) is the long-awaited successor to the original Caffe, whose creator now works at Facebook. Caffe2 is the second deep-learning framework to be [backed by Facebook](https://techcrunch.com/2017/04/18/facebook-open-sources-caffe2-its-flexible-deep-learning-framework-of-choice/) after Torch/PyTorch. The main difference seems to be the claim that Caffe2 is more scalable and light-weight. Like Caffe and PyTorch, Caffe2 offers a Python API running on a C++ engine. 
+
+* [Caffe2's GitHub repository](https://github.com/caffe2/caffe2)
+
+Pros and Cons:
+
+* (+) BSD License
+* (-) No commercial support
 
 ### <a name="cntk">CNTK</a>
 
