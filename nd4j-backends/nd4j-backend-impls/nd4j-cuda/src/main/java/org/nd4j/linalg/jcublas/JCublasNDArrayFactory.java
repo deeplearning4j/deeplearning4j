@@ -874,8 +874,11 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             long[] xPointers = new long[arrays.length];
 
             for (int i = 0; i < arrays.length; i++) {
+                if (arrays[i].elementWiseStride() != 1)
+                    throw new ND4JIllegalStateException("Native averaging is applicable only to continuous INDArrays");
+
                 if (arrays[i].lengthLong() != len)
-                    throw new RuntimeException("All arrays should have equal length for averaging");
+                    throw new ND4JIllegalStateException("All arrays should have equal length for averaging");
 
                 AllocationPoint point = allocator.getAllocationPoint(arrays[i]);
                 xPointers[i] = point.getPointers().getDevicePointer().address();
@@ -917,8 +920,11 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             for (int i = 0; i < arrays.length; i++) {
                 Nd4j.getCompressor().autoDecompress(arrays[i]);
 
+                if (arrays[i].elementWiseStride() != 1)
+                    throw new ND4JIllegalStateException("Native averaging is applicable only to continuous INDArrays");
+
                 if (arrays[i].lengthLong() != len)
-                    throw new RuntimeException("All arrays should have equal length for averaging");
+                    throw new ND4JIllegalStateException("All arrays should have equal length for averaging");
 
                 dataPointers.put(i, AtomicAllocator.getInstance().getHostPointer(arrays[i]));
             }
