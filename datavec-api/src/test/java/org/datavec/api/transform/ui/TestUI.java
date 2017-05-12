@@ -23,11 +23,17 @@ import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.analysis.columns.IntegerAnalysis;
 import org.datavec.api.transform.analysis.columns.StringAnalysis;
 import org.apache.commons.io.FilenameUtils;
+import org.datavec.api.transform.schema.SequenceSchema;
+import org.datavec.api.writable.DoubleWritable;
+import org.datavec.api.writable.Text;
+import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -36,6 +42,7 @@ import java.util.List;
 public class TestUI {
 
     @Test
+    @Ignore
     public void testUI() throws Exception {
         Schema schema = new Schema.Builder().addColumnString("StringColumn").addColumnInteger("IntColumn")
                         .addColumnInteger("IntColumn2").addColumnInteger("IntColumn3")
@@ -74,5 +81,30 @@ public class TestUI {
         File f = new File(outPath);
         f.deleteOnExit();
         HtmlAnalysis.createHtmlAnalysisFile(da, f);
+    }
+
+
+    @Test
+    @Ignore
+    public void testSequencePlot() throws Exception{
+
+        Schema schema = new SequenceSchema.Builder()
+                .addColumnDouble("sinx")
+                .addColumnCategorical("cat", "s0", "s1", "s2")
+                .addColumnString("stringcol")
+                .build();
+
+        int nSteps = 100;
+        List<List<Writable>> sequence = new ArrayList<>(nSteps);
+        for( int i=0; i<nSteps; i++ ){
+            String c = "s" + i%3;
+            sequence.add(
+                    Arrays.<Writable>asList(new DoubleWritable(Math.sin(i/10.0)), new Text(c), new Text(String.valueOf(i))));
+        }
+
+        File f = new File("seqHtml.html");
+        HtmlSequencePlotting.createHtmlSequencePlotFile("Title!", schema, sequence, f);
+
+
     }
 }

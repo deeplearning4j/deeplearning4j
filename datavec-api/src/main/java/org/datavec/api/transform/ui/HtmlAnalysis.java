@@ -43,6 +43,10 @@ import java.util.*;
  */
 public class HtmlAnalysis {
 
+    private HtmlAnalysis(){
+
+    }
+
     public static String createHtmlAnalysisString(DataAnalysis analysis) throws Exception {
         Configuration cfg = new Configuration(new Version(2, 3, 23));
 
