@@ -43,6 +43,14 @@ GPU options:
 - CUDA
 - JOCL (coming soon)
 
+IDE-specific requirements:
+
+- IntelliJ Lombok plugin
+
+DL4J testing dependencies:
+
+- dl4j-test-resources
+
 ### Installing Prerequisite Tools
 
 #### Linux
@@ -201,6 +209,22 @@ But first, set the system environment variable `SET_FULL_PATH` to `true`, so all
 4. `./buildnativeoperations.sh -c cuda`
 
 This builds the CUDA nd4j.dll.
+
+#### IDE Requirements
+
+If you are building Deeplearning4j through an IDE such as IntelliJ, you will need to install certain plugins to ensure your IDE renders code highlighting appropriately. You will need to install a plugin for Lombok:
+
+* IntelliJ Lombok Plugin: https://plugins.jetbrains.com/plugin/6317-lombok-plugin
+* Eclipse Lombok Plugin: Follow instructions at https://projectlombok.org/download.html
+
+If you want to work on ScalNet, the Scala API, or on certain modules such as the DL4J UI, you will need to ensure your IDE has Scala support installed and available to you.
+
+#### Testing Dependencies
+
+Deeplearning4j uses a separate repository that contains all resources necessary for testing. This is to keep the central DL4J repository lightweight and avoid large blobs in the GIT history. If you wish to run tests in the DL4J stack:
+
+1. Clone https://github.com/deeplearning4j/dl4j-test-resources on your local machine.
+2. `cd dl4j-test-resources; mvn install`
 
 ## Installing the DL4J Stack
 
