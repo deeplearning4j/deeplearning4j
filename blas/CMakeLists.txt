@@ -69,6 +69,13 @@ if(CUDA_BLAS)
         endif()
     endif()
 
+    # we want OpenMP to be available for hybrid operations
+    find_package(OpenMP)
+    if (OPENMP_FOUND)
+        set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    endif()
+
     if (CUDA_FOUND)
         message("CUDA found!")
         set( CUDA_ARCHITECTURE_MINIMUM "3.5" CACHE STRING "Minimum required CUDA compute capability" )

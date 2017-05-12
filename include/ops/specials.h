@@ -321,41 +321,30 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
         tempZ = true;
     }
 
-// aggregation step
-// TODO: this step should be improved, to exploit SIMD
-#pragma omp parallel for num_threads(4) schedule(guided) default(shared)
-    for (Nd4jIndex i = 0; i < length; i++) {
-        z[i] = 0.0;
+    // memset before propagation
+    memset(z, 0, length * sizeof(T));
 
-#pragma omp simd
+    // aggregation step
+#ifdef _OPENNMP
+    int _threads = nd4j::math::nd4j_min<int>(omp_get_max_threads() / 2, 4);
+#else
+    // we can use whatever we want here, this value won't be used if there's no omp
+    int _threads = 4;
+#endif
+
+#pragma omp parallel for simd num_threads(_threads) schedule(guided) default(shared) proc_bind(close)
+    for (int i = 0; i < length; i++) {
+
         for (int ar = 0; ar < n; ar++) {
-            z[i] += x[ar][i];
+            z[i] += x[ar][i] / n;
         }
     }
 
-//div step
-    if (length > ELEMENT_THRESHOLD) {
-#pragma omp parallel for simd num_threads(4) schedule(guided) default(shared)
-        for (Nd4jIndex i = 0; i < length; i++) {
-            z[i] /= n;
-        }
-    } else {
-#pragma omp simd
-        for (Nd4jIndex i = 0; i < length; i++) {
-            z[i] /= n;
-        }
-    }
 
-//propagation step
-    if (propagate) {
-#pragma omp parallel for if (n > 4 || length > ELEMENT_THRESHOLD) num_threads(4) default(shared)
-        for(int ar = 0; ar < n; ar++) {
-
-#pragma omp simd
-            for (Nd4jIndex i = 0; i < length; i++) {
-                x[ar][i] = z[i];
-            }
-        }
+    // instead of doing element-wise propagation, we just issue memcpy to propagate data
+#pragma omp parallel for num_threads(_threads) default(shared) proc_bind(close)
+    for(int ar = 0; ar < n; ar++) {
+        memcpy(x[ar], z, length * sizeof(T));
     }
 
     if (tempZ)
