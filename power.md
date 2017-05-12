@@ -3,7 +3,7 @@ title: Deeplearning4j on Power
 layout: default
 ---
 
-Deep Learning on Power 
+Deep Learning on Power Chips
 ----------------------
 
 The [Power architecture](https://en.wikipedia.org/wiki/POWER8) is a widely used hardware architecture
