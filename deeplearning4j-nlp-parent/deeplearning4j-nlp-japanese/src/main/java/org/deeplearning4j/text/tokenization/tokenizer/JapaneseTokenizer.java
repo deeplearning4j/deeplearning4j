@@ -21,10 +21,11 @@ package org.deeplearning4j.text.tokenization.tokenizer;
 import com.atilika.kuromoji.ipadic.Token;
 import com.atilika.kuromoji.ipadic.Tokenizer;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
 
 /**
- * modified by kepricon on 16. 10. 28.
  * A thin wrapper for Japanese Morphological Analyzer Kuromoji (ver.0.9.0),
  * it tokenizes texts which is written in languages
  * that words are not separated by whitespaces.
@@ -41,6 +42,15 @@ public class JapaneseTokenizer implements org.deeplearning4j.text.tokenization.t
     private int currentToken;
     private TokenPreProcess preProcessor;
 
+
+    /**
+     * Tokenize the string with Kuromoji, optionally using baseForms.
+     *
+     * Note: It is safe to create new instances from multiple threads.
+     * @param kuromoji The kuromoji instance.
+     * @param toTokenize The string to tokenize.
+     * @param useBaseForm normalize conjugations "走った" -> "走る" instead of "走っ"
+     */
     public JapaneseTokenizer(Tokenizer kuromoji, String toTokenize, boolean useBaseForm) {
         this.useBaseForm = useBaseForm;
         this.tokens = kuromoji.tokenize(toTokenize);
@@ -59,7 +69,7 @@ public class JapaneseTokenizer implements org.deeplearning4j.text.tokenization.t
     }
 
     private String getToken(int i) {
-        Token t = this.tokens.get(i);
+        Token t = tokens.get(i);
         String ret = (useBaseForm) ? t.getBaseForm() : t.getSurface();
         return (preProcessor == null) ? ret : preProcessor.preProcess(ret);
     }
@@ -74,9 +84,9 @@ public class JapaneseTokenizer implements org.deeplearning4j.text.tokenization.t
 
     @Override
     public List<String> getTokens() {
-        ArrayList<String> ret = new ArrayList<>(this.tokenCount);
+        List<String> ret = new ArrayList<String>(tokenCount);
 
-        for (int i = 0; i < this.tokenCount; i++) {
+        for (int i = 0; i < tokenCount; i++) {
             ret.add(getToken(i));
         }
 
