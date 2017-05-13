@@ -28,7 +28,7 @@ public class JapaneseTokenizerTest {
 
     @Test
     public void testBaseForm() throws Exception {
-        JapaneseTokenizerFactory tf = new JapaneseTokenizerFactory(true);
+        TokenizerFactory tf = new JapaneseTokenizerFactory(true);
 
         Tokenizer tokenizer1 = tf.create(toTokenize);
         Tokenizer tokenizer2 = tf.create(baseString);
@@ -40,7 +40,7 @@ public class JapaneseTokenizerTest {
 
     @Test
     public void testGetTokens() throws Exception {
-        JapaneseTokenizerFactory tf = new JapaneseTokenizerFactory();
+        TokenizerFactory tf = new JapaneseTokenizerFactory();
 
         Tokenizer tokenizer = tf.create(toTokenize);
 
