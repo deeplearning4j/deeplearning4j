@@ -18,14 +18,10 @@
 
 package org.deeplearning4j.text.tokenization.tokenizer;
 
-import com.atilika.kuromoji.TokenizerBase;
 import com.atilika.kuromoji.ipadic.Token;
 import com.atilika.kuromoji.ipadic.Tokenizer;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
  * modified by kepricon on 16. 10. 28.
@@ -39,52 +35,57 @@ import java.util.NoSuchElementException;
  */
 public class JapaneseTokenizer implements org.deeplearning4j.text.tokenization.tokenizer.Tokenizer {
 
-    private Iterator<String> tokenIter;
-    private List<String> tokens;
+    private final List<Token> tokens;
+    private final boolean useBaseForm;
+    private final int tokenCount;
+    private int currentToken;
+    private TokenPreProcess preProcessor;
 
-    private TokenPreProcess preProcess;
-
-    public JapaneseTokenizer(String toTokenize) {
-        Tokenizer tokenizer = new Tokenizer();
-        Iterator<Token> iter = tokenizer.tokenize(toTokenize).iterator();
-
-        tokens = new ArrayList<String>();
-
-        while (iter.hasNext()) {
-            //      tokens.add(iter.next().getBaseForm());
-            tokens.add(iter.next().getSurface());
-        }
-
-        tokenIter = this.tokens.iterator();
+    public JapaneseTokenizer(Tokenizer kuromoji, String toTokenize, boolean useBaseForm) {
+        this.useBaseForm = useBaseForm;
+        this.tokens = kuromoji.tokenize(toTokenize);
+        this.tokenCount = this.tokens.size();
+        this.currentToken = 0;
     }
 
     @Override
     public boolean hasMoreTokens() {
-        return tokenIter.hasNext();
+        return currentToken < tokenCount;
     }
 
     @Override
     public int countTokens() {
-        return tokens.size();
+        return tokenCount;
+    }
+
+    private String getToken(int i) {
+        Token t = this.tokens.get(i);
+        String ret = (useBaseForm) ? t.getBaseForm() : t.getSurface();
+        return (preProcessor == null) ? ret : preProcessor.preProcess(ret);
     }
 
     @Override
     public String nextToken() {
-        if (hasMoreTokens() == false) {
+        if (!hasMoreTokens()) {
             throw new NoSuchElementException();
         }
-        return this.preProcess != null ? this.preProcess.preProcess(tokenIter.next()) : tokenIter.next();
+        return getToken(currentToken++);
     }
 
     @Override
     public List<String> getTokens() {
-        return tokens;
+        ArrayList<String> ret = new ArrayList<>(this.tokenCount);
+
+        for (int i = 0; i < this.tokenCount; i++) {
+            ret.add(getToken(i));
+        }
+
+        return ret;
     }
 
     @Override
     public void setTokenPreProcessor(TokenPreProcess tokenPreProcessor) {
-        this.preProcess = tokenPreProcessor;
+        this.preProcessor = tokenPreProcessor;
     }
-
 }
 
