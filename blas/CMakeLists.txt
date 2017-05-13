@@ -69,11 +69,13 @@ if(CUDA_BLAS)
         endif()
     endif()
 
-    # we want OpenMP to be available for hybrid operations
-    find_package(OpenMP)
-    if (OPENMP_FOUND)
-        set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    # we want OpenMP to be available for hybrid operations, at least for GCC
+    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+        find_package(OpenMP)
+        if (OPENMP_FOUND)
+            set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+            set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+        endif()
     endif()
 
     if (CUDA_FOUND)
