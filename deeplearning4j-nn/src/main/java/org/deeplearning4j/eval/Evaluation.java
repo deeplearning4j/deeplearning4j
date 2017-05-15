@@ -498,7 +498,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     /**
      * Precision based on guesses so far
-     * Takes into account all known classes and outputs average precision across all of them
+     * Takes into account all known classes and outputs average precision across all of them.
+     * i.e., is macro-averaged precision, equivalent to {@code precision(EvaluationAveraging.Macro)}
      *
      * @return the total precision based on guesses so far
      */
@@ -506,6 +507,12 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         return precision(EvaluationAveraging.Macro);
     }
 
+    /**
+     * Calculate the average precision for all classes. Can specify whether macro or micro averaging should be used
+     *
+     * @param averaging Averaging method - macro or micro
+     * @return Average precision
+     */
     public double precision(EvaluationAveraging averaging){
         int nClasses = confusion.getClasses().size();
         if(averaging == EvaluationAveraging.Macro){
@@ -562,6 +569,12 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         return recall(EvaluationAveraging.Macro);
     }
 
+    /**
+     * Calculate the average recall for all classes - can specify whether macro or micro averaging should be used
+     *
+     * @param averaging Averaging method - macro or micro
+     * @return Average recall
+     */
     public double recall(EvaluationAveraging averaging){
         int nClasses = confusion.getClasses().size();
         if(averaging == EvaluationAveraging.Macro){
@@ -591,8 +604,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param classLabel the label
      * @return fpr as a double
      */
-    public double falsePositiveRate(Integer classLabel) {
-        return recall(classLabel, DEFAULT_EDGE_VALUE);
+    public double falsePositiveRate(int classLabel) {
+        return falsePositiveRate(classLabel, DEFAULT_EDGE_VALUE);
     }
 
     /**
@@ -602,16 +615,11 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param edgeCase   What to output in case of 0/0
      * @return fpr as a double
      */
-    public double falsePositiveRate(Integer classLabel, double edgeCase) {
+    public double falsePositiveRate(int classLabel, double edgeCase) {
         double fpCount = falsePositives.getCount(classLabel);
         double tnCount = trueNegatives.getCount(classLabel);
 
-        //Edge case
-        if (fpCount == 0 && tnCount == 0) {
-            return edgeCase;
-        }
-
-        return fpCount / (fpCount + tnCount);
+        return EvaluationUtils.falsePositiveRate((long)fpCount, (long)tnCount, edgeCase);
     }
 
     /**
@@ -621,17 +629,35 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return the fpr for the outcomes
      */
     public double falsePositiveRate() {
-        double fprAlloc = 0.0;
-        int classCount = 0;
-        for (Integer classLabel : confusion.getClasses()) {
-            double fpr = falsePositiveRate(classLabel, -1.0);
-            if (fpr != -1.0) {
-                fprAlloc += falsePositiveRate(classLabel);
-                classCount++;
-            }
-        }
-        return fprAlloc / (double) classCount;
+        return falsePositiveRate(EvaluationAveraging.Macro);
+    }
 
+    /**
+     * Calculate the average false positive rate across all classes. Can specify whether macro or micro averaging should be used
+     *
+     * @param averaging Averaging method - macro or micro
+     * @return Average false positive rate
+     */
+    public double falsePositiveRate(EvaluationAveraging averaging){
+        int nClasses = confusion.getClasses().size();
+        if(averaging == EvaluationAveraging.Macro){
+            double macroFPR = 0.0;
+            for( int i=0; i<nClasses; i++ ){
+                macroFPR += falsePositiveRate(i);
+            }
+            macroFPR /= nClasses;
+            return macroFPR;
+        } else if(averaging == EvaluationAveraging.Micro){
+            long fpCount = 0;
+            long tnCount = 0;
+            for( int i=0; i<nClasses; i++ ){
+                fpCount += falsePositives.getCount(i);
+                tnCount += trueNegatives.getCount(i);
+            }
+            return EvaluationUtils.falsePositiveRate(fpCount, tnCount, DEFAULT_EDGE_VALUE);
+        } else {
+            throw new UnsupportedOperationException("Unknown averaging approach: " + averaging);
+        }
     }
 
     /**
@@ -641,7 +667,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return fnr as a double
      */
     public double falseNegativeRate(Integer classLabel) {
-        return recall(classLabel, DEFAULT_EDGE_VALUE);
+        return falseNegativeRate(classLabel, DEFAULT_EDGE_VALUE);
     }
 
     /**
@@ -655,12 +681,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         double fnCount = falseNegatives.getCount(classLabel);
         double tpCount = truePositives.getCount(classLabel);
 
-        //Edge case
-        if (fnCount == 0 && tpCount == 0) {
-            return edgeCase;
-        }
-
-        return fnCount / (fnCount + tpCount);
+        return EvaluationUtils.falseNegativeRate((long)fnCount, (long)tpCount, edgeCase);
     }
 
     /**
@@ -670,16 +691,35 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return the fnr for the outcomes
      */
     public double falseNegativeRate() {
-        double fnrAlloc = 0.0;
-        int classCount = 0;
-        for (Integer classLabel : confusion.getClasses()) {
-            double fnr = falseNegativeRate(classLabel, -1.0);
-            if (fnr != -1.0) {
-                fnrAlloc += falseNegativeRate(classLabel);
-                classCount++;
+        return falseNegativeRate(EvaluationAveraging.Macro);
+    }
+
+    /**
+     * Calculate the average false negative rate for all classes - can specify whether macro or micro averaging should be used
+     *
+     * @param averaging Averaging method - macro or micro
+     * @return Average false negative rate
+     */
+    public double falseNegativeRate(EvaluationAveraging averaging){
+        int nClasses = confusion.getClasses().size();
+        if(averaging == EvaluationAveraging.Macro){
+            double macroFNR = 0.0;
+            for( int i=0; i<nClasses; i++ ){
+                macroFNR += falseNegativeRate(i);
             }
+            macroFNR /= nClasses;
+            return macroFNR;
+        } else if(averaging == EvaluationAveraging.Micro){
+            long fnCount = 0;
+            long tnCount = 0;
+            for( int i=0; i<nClasses; i++ ){
+                fnCount += falseNegatives.getCount(i);
+                tnCount += trueNegatives.getCount(i);
+            }
+            return EvaluationUtils.falseNegativeRate(fnCount, tnCount, DEFAULT_EDGE_VALUE);
+        } else {
+            throw new UnsupportedOperationException("Unknown averaging approach: " + averaging);
         }
-        return fnrAlloc / (double) classCount;
     }
 
     /**
@@ -702,6 +742,15 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         return fBeta(1.0, classLabel);
     }
 
+    /**
+     * Calculate the f_beta for a given class, where f_beta is defined as:<br>
+     * (1+beta^2) * (precision * recall) / (beta^2 * precision + recall).<br>
+     * F1 is a special case of f_beta, with beta=1.0
+     *
+     * @param beta       Beta value to use
+     * @param classLabel Class label
+     * @return F_beta
+     */
     public double fBeta(double beta, int classLabel){
         double precision = precision(classLabel);
         double recall = recall(classLabel);
@@ -709,26 +758,34 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     }
 
     /**
+     * Calculate the (macro) average F1 score across all classes
+     *
      * TP: true positive
      * FP: False Positive
      * FN: False Negative
      * F1 score: 2 * TP / (2TP + FP + FN)
      *
-     * @return the f1 score or harmonic mean based on current guesses
+     * @return the f1 score or harmonic mean of precision and recall based on current guesses
      */
     public double f1() {
-//        double precision = precision();
-//        double recall = recall();
-//        if (precision == 0 || recall == 0)
-//            return 0;
-//        return 2.0 * ((precision * recall / (precision + recall)));
         return f1(EvaluationAveraging.Macro);
     }
 
+    /**
+     * Calculate the average F1 score across all classes, using macro or micro averaging
+     *
+     * @param averaging Averaging method to use
+     */
     public double f1(EvaluationAveraging averaging){
         return fBeta(1.0, averaging);
     }
 
+    /**
+     * Calculate the average F_beta score across all classes, using macro or micro averaging
+     *
+     * @param beta Beta value to use
+     * @param averaging Averaging method to use
+     */
     public double fBeta(double beta, EvaluationAveraging averaging){
         int nClasses = confusion.getClasses().size();
         if(averaging == EvaluationAveraging.Macro){
@@ -742,19 +799,60 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             long tpCount = 0;
             long fpCount = 0;
             long fnCount = 0;
-            long tnCount = 0;
             for( int i=0; i<nClasses; i++ ){
                 tpCount += truePositives.getCount(i);
                 fpCount += falsePositives.getCount(i);
                 fnCount += falseNegatives.getCount(i);
-                tnCount += trueNegatives.getCount(i);
             }
-            return EvaluationUtils.fBeta(beta, tpCount, fpCount, fnCount, tnCount);
+            return EvaluationUtils.fBeta(beta, tpCount, fpCount, fnCount);
         } else {
             throw new UnsupportedOperationException("Unknown averaging approach: " + averaging);
         }
     }
 
+    /**
+     * Calculate the G-measure for the given output
+     *
+     * @param output The specified output
+     * @return The G-measure for the specified output
+     */
+    public double gMeasure(int output){
+        double precision = precision(output);
+        double recall = recall(output);
+        return EvaluationUtils.gMeasure(precision, recall);
+    }
+
+    /**
+     * Calculates the average G measure for all outputs using micro or macro averaging
+     *
+     * @param averaging Averaging method to use
+     * @return Average G measure
+     */
+    public double gMeasure(EvaluationAveraging averaging){
+        int nClasses = confusion.getClasses().size();
+        if(averaging == EvaluationAveraging.Macro){
+            double macroGMeasure = 0.0;
+            for( int i=0; i<nClasses; i++ ){
+                macroGMeasure += gMeasure(i);
+            }
+            macroGMeasure /= nClasses;
+            return macroGMeasure;
+        } else if(averaging == EvaluationAveraging.Micro){
+            long tpCount = 0;
+            long fpCount = 0;
+            long fnCount = 0;
+            for( int i=0; i<nClasses; i++ ){
+                tpCount += truePositives.getCount(i);
+                fpCount += falsePositives.getCount(i);
+                fnCount += falseNegatives.getCount(i);
+            }
+            double precision = EvaluationUtils.precision(tpCount, fpCount, DEFAULT_EDGE_VALUE);
+            double recall = EvaluationUtils.recall(tpCount, fnCount, DEFAULT_EDGE_VALUE);
+            return EvaluationUtils.gMeasure(precision, recall);
+        } else {
+            throw new UnsupportedOperationException("Unknown averaging approach: " + averaging);
+        }
+    }
 
     /**
      * Accuracy:
@@ -785,7 +883,12 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         return topNCorrectCount / (double) topNTotalCount;
     }
 
-
+    /**
+     * Calculate the binary Mathews correlation coefficient, for the specified class.<br>
+     * MCC = (TP*TN - FP*FN) / sqrt((TP+FP)(TP+FN)(TN+FP)(TN+FN))<br>
+     *
+     * @param classIdx Class index to calculate Matthews correlation coefficient for
+     */
     public double matthewsCorrelation(int classIdx){
         return EvaluationUtils.matthewsCorrelation(
                 (long)truePositives.getCount(classIdx),
@@ -794,6 +897,14 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 (long)trueNegatives.getCount(classIdx));
     }
 
+    /**
+     * Calculate the average binary Mathews correlation coefficient, using macro or micro averaging.<br>
+     * MCC = (TP*TN - FP*FN) / sqrt((TP+FP)(TP+FN)(TN+FP)(TN+FN))<br>
+     * Note: This is NOT the same as the multi-class Matthews correlation coefficient
+     *
+     * @param averaging Averaging approach
+     * @return Average
+     */
     public double matthewsCorrelation(EvaluationAveraging averaging){
         int nClasses = confusion.getClasses().size();
         if(averaging == EvaluationAveraging.Macro){
@@ -1226,10 +1337,4 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         }
         return out;
     }
-
-
-
-
-
-
 }
