@@ -1,7 +1,8 @@
 package org.deeplearning4j.zoo.model;
 
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.zoo.ModelMetaData;
-import org.deeplearning4j.zoo.ModelType;
+import org.deeplearning4j.zoo.ZooType;
 import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -14,6 +15,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.zoo.ZooType;
 import org.deeplearning4j.zoo.model.helper.FaceNetHelper;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.Adam;
@@ -41,8 +43,12 @@ public class FaceNetNN4Small2 extends ZooModel {
       this.iterations = iterations;
     }
 
-    public ModelType modelType() {
-        return ModelType.FACENETNN4SMALL2;
+    public ZooType zooType() {
+        return ZooType.FACENETNN4SMALL2;
+    }
+
+    public Class<? extends Model> modelType() {
+        return ComputationGraph.class;
     }
 
     public ComputationGraphConfiguration conf() {
@@ -225,7 +231,7 @@ public class FaceNetNN4Small2 extends ZooModel {
       return new ModelMetaData(
               new int[][]{inputShape},
               1,
-              ModelType.CNN
+              ZooType.CNN
       );
     }
 

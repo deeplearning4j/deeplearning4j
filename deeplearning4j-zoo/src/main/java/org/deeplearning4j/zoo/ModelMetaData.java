@@ -12,7 +12,7 @@ import lombok.Getter;
 public class ModelMetaData {
     private int[][] inputShape;
     private int numOutputs;
-    private ModelType modelType;
+    private ZooType zooType;
 
     /**
      * If number of inputs are greater than 1, this states that the

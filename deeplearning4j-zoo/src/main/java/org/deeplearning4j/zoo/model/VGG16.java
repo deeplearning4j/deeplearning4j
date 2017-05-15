@@ -1,7 +1,8 @@
 package org.deeplearning4j.zoo.model;
 
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.zoo.ModelMetaData;
-import org.deeplearning4j.zoo.ModelType;
+import org.deeplearning4j.zoo.ZooType;
 import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -13,6 +14,7 @@ import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.zoo.ZooType;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -32,8 +34,12 @@ public class VGG16 extends ZooModel {
         this.iterations = iterations;
     }
 
-    public ModelType modelType() {
-        return ModelType.VGG16;
+    public ZooType zooType() {
+        return ZooType.VGG16;
+    }
+
+    public Class<? extends Model> modelType() {
+        return MultiLayerNetwork.class;
     }
 
     public MultiLayerConfiguration conf() {
@@ -138,7 +144,7 @@ public class VGG16 extends ZooModel {
         return new ModelMetaData(
             new int[][]{inputShape},
             1,
-            ModelType.CNN
+            ZooType.CNN
         );
     }
 

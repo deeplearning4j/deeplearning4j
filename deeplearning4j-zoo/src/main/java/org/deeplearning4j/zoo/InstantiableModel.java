@@ -12,5 +12,7 @@ public interface InstantiableModel {
 
     public ModelMetaData metaData();
 
-    public ModelType modelType();
+    public ZooType zooType();
+
+    public Class<? extends Model> modelType();
 }

@@ -3,7 +3,7 @@ package org.deeplearning4j.zoo;
 /**
  * Enumerator for choosing which CNN models to benchmark.
  */
-public enum ModelType {
+public enum ZooType {
     ALL,
     CNN,
     ALEXNET,
