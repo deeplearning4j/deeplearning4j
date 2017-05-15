@@ -1,7 +1,8 @@
 package org.deeplearning4j.zoo.model;
 
+import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.zoo.ModelMetaData;
-import org.deeplearning4j.zoo.ModelType;
+import org.deeplearning4j.zoo.ZooType;
 import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -14,6 +15,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.zoo.ZooType;
 import org.deeplearning4j.zoo.model.helper.InceptionResNetHelper;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.RmsProp;
@@ -39,8 +41,12 @@ public class InceptionResNetV1 extends ZooModel {
       this.iterations = iterations;
     }
 
-    public ModelType modelType() {
-        return ModelType.INCEPTIONRESNETV1;
+    public ZooType zooType() {
+        return ZooType.INCEPTIONRESNETV1;
+    }
+
+    public Class<? extends Model> modelType() {
+        return ComputationGraph.class;
     }
 
     public ComputationGraph init() {
@@ -172,7 +178,7 @@ public class InceptionResNetV1 extends ZooModel {
         return new ModelMetaData(
                 new int[][]{inputShape},
                 1,
-                ModelType.CNN
+                ZooType.CNN
         );
     }
 
