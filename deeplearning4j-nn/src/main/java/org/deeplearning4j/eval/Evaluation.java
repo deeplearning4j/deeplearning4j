@@ -36,8 +36,6 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * Evaluation metrics:
@@ -432,20 +430,33 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         builder.append("\n");
         builder.append(warnings);
 
+        int nClasses = confusion.getClasses().size();
         DecimalFormat df = new DecimalFormat("#.####");
         double acc = accuracy();
-        double prec = precision();
-        double rec = recall();
-        double f1 = f1();
+        double precisionMacro = precision(EvaluationAveraging.Macro);
+        double recallMacro = recall(EvaluationAveraging.Macro);
+        double precisionMicro = precision(EvaluationAveraging.Micro);
+        double recallMicro = recall(EvaluationAveraging.Micro);
+        double f1Macro = f1(EvaluationAveraging.Macro);
+        double f1Micro = f1(EvaluationAveraging.Micro);
         builder.append("\n==========================Scores========================================");
-        builder.append("\n Accuracy:        ").append(format(df, acc));
+        builder.append("\n Accuracy:          ").append(format(df, acc));
         if (topN > 1) {
             double topNAcc = topNAccuracy();
             builder.append("\n Top ").append(topN).append(" Accuracy:  ").append(format(df, topNAcc));
         }
-        builder.append("\n Precision:       ").append(format(df, prec));
-        builder.append("\n Recall:          ").append(format(df, rec));
-        builder.append("\n F1 Score:        ").append(format(df, f1));
+        if(nClasses > 2){
+            builder.append("\nMacro-averaged binary metrics (equally weighted per class)");
+        }
+        builder.append("\n Precision:       ").append(format(df, precisionMacro));
+        builder.append("\n Recall:          ").append(format(df, recallMacro));
+        builder.append("\n F1 Score:        ").append(format(df, f1Macro));
+        if(nClasses > 2){
+            builder.append("\nMicro-averaged binary metrics (equally weighted per example)");
+            builder.append("\n Precision:       ").append(format(df, precisionMicro));
+            builder.append("\n Recall:          ").append(format(df, recallMicro));
+            builder.append("\n F1 Score:        ").append(format(df, f1Micro));
+        }
         builder.append("\n========================================================================");
         return builder.toString();
     }
@@ -482,13 +493,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     public double precision(Integer classLabel, double edgeCase) {
         double tpCount = truePositives.getCount(classLabel);
         double fpCount = falsePositives.getCount(classLabel);
-
-        //Edge case
-        if (tpCount == 0 && fpCount == 0) {
-            return edgeCase;
-        }
-
-        return tpCount / (tpCount + fpCount);
+        return EvaluationUtils.precision((long)tpCount, (long)fpCount, edgeCase);
     }
 
     /**
@@ -498,16 +503,29 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return the total precision based on guesses so far
      */
     public double precision() {
-        double precisionAcc = 0.0;
-        int classCount = 0;
-        for (Integer classLabel : confusion.getClasses()) {
-            double precision = precision(classLabel, -1);
-            if (precision != -1) {
-                precisionAcc += precision(classLabel);
-                classCount++;
+        return precision(EvaluationAveraging.Macro);
+    }
+
+    public double precision(EvaluationAveraging averaging){
+        int nClasses = confusion.getClasses().size();
+        if(averaging == EvaluationAveraging.Macro){
+            double macroPrecision = 0.0;
+            for( int i=0; i<nClasses; i++ ){
+                macroPrecision += precision(i);
             }
+            macroPrecision /= nClasses;
+            return macroPrecision;
+        } else if(averaging == EvaluationAveraging.Micro){
+            long tpCount = 0;
+            long fpCount = 0;
+            for( int i=0; i<nClasses; i++ ){
+                tpCount += truePositives.getCount(i);
+                fpCount += falsePositives.getCount(i);
+            }
+            return EvaluationUtils.precision(tpCount, fpCount, DEFAULT_EDGE_VALUE);
+        } else {
+            throw new UnsupportedOperationException("Unknown averaging approach: " + averaging);
         }
-        return precisionAcc / (double) classCount;
     }
 
     /**
@@ -516,7 +534,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param classLabel the label
      * @return Recall rate as a double
      */
-    public double recall(Integer classLabel) {
+    public double recall(int classLabel) {
         return recall(classLabel, DEFAULT_EDGE_VALUE);
     }
 
@@ -527,16 +545,11 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param edgeCase   What to output in case of 0/0
      * @return Recall rate as a double
      */
-    public double recall(Integer classLabel, double edgeCase) {
+    public double recall(int classLabel, double edgeCase) {
         double tpCount = truePositives.getCount(classLabel);
         double fnCount = falseNegatives.getCount(classLabel);
 
-        //Edge case
-        if (tpCount == 0 && fnCount == 0) {
-            return edgeCase;
-        }
-
-        return tpCount / (tpCount + fnCount);
+        return EvaluationUtils.recall((long)tpCount, (long)fnCount, edgeCase);
     }
 
     /**
@@ -546,16 +559,29 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return the recall for the outcomes
      */
     public double recall() {
-        double recallAcc = 0.0;
-        int classCount = 0;
-        for (Integer classLabel : confusion.getClasses()) {
-            double recall = recall(classLabel, -1.0);
-            if (recall != -1.0) {
-                recallAcc += recall(classLabel);
-                classCount++;
+        return recall(EvaluationAveraging.Macro);
+    }
+
+    public double recall(EvaluationAveraging averaging){
+        int nClasses = confusion.getClasses().size();
+        if(averaging == EvaluationAveraging.Macro){
+            double macroRecall = 0.0;
+            for( int i=0; i<nClasses; i++ ){
+                macroRecall += recall(i);
             }
+            macroRecall /= nClasses;
+            return macroRecall;
+        } else if(averaging == EvaluationAveraging.Micro){
+            long tpCount = 0;
+            long fnCount = 0;
+            for( int i=0; i<nClasses; i++ ){
+                tpCount += truePositives.getCount(i);
+                fnCount += falseNegatives.getCount(i);
+            }
+            return EvaluationUtils.recall(tpCount, fnCount, DEFAULT_EDGE_VALUE);
+        } else {
+            throw new UnsupportedOperationException("Unknown averaging approach: " + averaging);
         }
-        return recallAcc / (double) classCount;
     }
 
 
@@ -673,11 +699,13 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return the f1 score for the given label
      */
     public double f1(Integer classLabel) {
+        return fBeta(1.0, classLabel);
+    }
+
+    public double fBeta(double beta, int classLabel){
         double precision = precision(classLabel);
         double recall = recall(classLabel);
-        if (precision == 0 || recall == 0)
-            return 0;
-        return 2.0 * ((precision * recall / (precision + recall)));
+        return EvaluationUtils.fBeta(beta, precision, recall);
     }
 
     /**
@@ -689,12 +717,44 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return the f1 score or harmonic mean based on current guesses
      */
     public double f1() {
-        double precision = precision();
-        double recall = recall();
-        if (precision == 0 || recall == 0)
-            return 0;
-        return 2.0 * ((precision * recall / (precision + recall)));
+//        double precision = precision();
+//        double recall = recall();
+//        if (precision == 0 || recall == 0)
+//            return 0;
+//        return 2.0 * ((precision * recall / (precision + recall)));
+        return f1(EvaluationAveraging.Macro);
     }
+
+    public double f1(EvaluationAveraging averaging){
+        return fBeta(1.0, averaging);
+    }
+
+    public double fBeta(double beta, EvaluationAveraging averaging){
+        int nClasses = confusion.getClasses().size();
+        if(averaging == EvaluationAveraging.Macro){
+            double macroFBeta = 0.0;
+            for( int i=0; i<nClasses; i++ ){
+                macroFBeta += fBeta(beta,i);
+            }
+            macroFBeta /= nClasses;
+            return macroFBeta;
+        } else if(averaging == EvaluationAveraging.Micro){
+            long tpCount = 0;
+            long fpCount = 0;
+            long fnCount = 0;
+            long tnCount = 0;
+            for( int i=0; i<nClasses; i++ ){
+                tpCount += truePositives.getCount(i);
+                fpCount += falsePositives.getCount(i);
+                fnCount += falseNegatives.getCount(i);
+                tnCount += trueNegatives.getCount(i);
+            }
+            return EvaluationUtils.fBeta(beta, tpCount, fpCount, fnCount, tnCount);
+        } else {
+            throw new UnsupportedOperationException("Unknown averaging approach: " + averaging);
+        }
+    }
+
 
     /**
      * Accuracy:
@@ -723,6 +783,41 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         if (topNTotalCount == 0)
             return 0.0;
         return topNCorrectCount / (double) topNTotalCount;
+    }
+
+
+    public double matthewsCorrelation(int classIdx){
+        return EvaluationUtils.matthewsCorrelation(
+                (long)truePositives.getCount(classIdx),
+                (long)falsePositives.getCount(classIdx),
+                (long)falseNegatives.getCount(classIdx),
+                (long)trueNegatives.getCount(classIdx));
+    }
+
+    public double matthewsCorrelation(EvaluationAveraging averaging){
+        int nClasses = confusion.getClasses().size();
+        if(averaging == EvaluationAveraging.Macro){
+            double macroMatthewsCorrelation = 0.0;
+            for( int i=0; i<nClasses; i++ ){
+                macroMatthewsCorrelation += matthewsCorrelation(i);
+            }
+            macroMatthewsCorrelation /= nClasses;
+            return macroMatthewsCorrelation;
+        } else if(averaging == EvaluationAveraging.Micro){
+            long tpCount = 0;
+            long fpCount = 0;
+            long fnCount = 0;
+            long tnCount = 0;
+            for( int i=0; i<nClasses; i++ ){
+                tpCount += truePositives.getCount(i);
+                fpCount += falsePositives.getCount(i);
+                fnCount += falseNegatives.getCount(i);
+                tnCount += trueNegatives.getCount(i);
+            }
+            return EvaluationUtils.matthewsCorrelation(tpCount, fpCount, fnCount, tnCount);
+        } else {
+            throw new UnsupportedOperationException("Unknown averaging approach: " + averaging);
+        }
     }
 
 
@@ -1131,4 +1226,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         }
         return out;
     }
+
+
+
+
+
+
 }

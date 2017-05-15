@@ -267,16 +267,28 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         return countTruePositive[outputNum] / (double) (countTruePositive[outputNum] + countFalseNegative[outputNum]);
     }
 
+    public double fBeta(double beta, int outputNum){
+        assertIndex(outputNum);
+        double precision = precision(outputNum);
+        double recall = recall(outputNum);
+        return EvaluationUtils.fBeta(beta, precision, recall);
+    }
+
     /**
      * Get the F1 score for the specified output
      */
     public double f1(int outputNum) {
+        return fBeta(1.0, outputNum);
+    }
+
+    public double matthewsCorrelation(int outputNum){
         assertIndex(outputNum);
 
-        double precision = precision(outputNum);
-        double recall = recall(outputNum);
-
-        return 2.0 * (precision * recall) / (precision + recall);
+        return EvaluationUtils.matthewsCorrelation(
+                truePositives(outputNum),
+                falsePositives(outputNum),
+                falseNegatives(outputNum),
+                trueNegatives(outputNum));
     }
 
     /**
@@ -292,7 +304,8 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
                             "EvaluationBinary does not have any stats: eval must be called first");
         }
         if (outputNum < 0 || outputNum >= countTruePositive.length) {
-            throw new IllegalArgumentException("Invalid input: output number must be between 0 and " + (outputNum - 1));
+            throw new IllegalArgumentException("Invalid input: output number must be between 0 and "
+                    + (outputNum - 1) + ". Got index: " + outputNum);
         }
     }
 

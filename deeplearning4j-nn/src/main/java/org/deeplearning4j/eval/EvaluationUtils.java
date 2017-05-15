@@ -14,6 +14,51 @@ import java.util.Arrays;
  */
 public class EvaluationUtils {
 
+    public static double precision(long tpCount, long fpCount, double edgeCase){
+        //Edge case
+        if (tpCount == 0 && fpCount == 0) {
+            return edgeCase;
+        }
+
+        return tpCount / (double)(tpCount + fpCount);
+    }
+
+    public static double recall(long tpCount, long fnCount, double edgeCase){
+        //Edge case
+        if (tpCount == 0 && fnCount == 0) {
+            return edgeCase;
+        }
+
+        return tpCount / (double)(tpCount + fnCount);
+    }
+
+    public static double fBeta(double beta, long tp, long fp, long fn, long tn) {
+        double prec = tp / ((double) tp + fp);
+        double recall = tp / ((double) tp + fn);
+        return fBeta(beta, prec, recall);
+    }
+
+    public static double fBeta(double beta, double precision, double recall){
+        if (precision == 0.0 || recall == 0.0)
+            return 0;
+
+        double numerator = (1 + beta*beta) * precision * recall;
+        double denominator = beta*beta*precision + recall;
+
+        return numerator / denominator;
+    }
+
+    public static double gMeasure(double precision, double recall){
+        return Math.sqrt(precision * recall);
+    }
+
+    public static double matthewsCorrelation(long tp, long fp, long fn, long tn){
+        double numerator = ((double)tp)*tn - ((double)fp)*fn;
+        double denominator = Math.sqrt(((double)tp + fp) * (tp+fn) * (tn+fp) * (tn+fn));
+        return numerator / denominator;
+    }
+
+
     public static INDArray reshapeTimeSeriesTo2d(INDArray labels) {
         int[] labelsShape = labels.shape();
         INDArray labels2d;
