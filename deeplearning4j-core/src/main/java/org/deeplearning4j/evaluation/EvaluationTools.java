@@ -113,7 +113,7 @@ public class EvaluationTools {
         double[][] points = roc.getResultsAsArray();
 
         Component c = getRocFromPoints(ROC_TITLE, points, roc.getCountActualPositive(), roc.getCountActualNegative(),
-                        roc.calculateAUC());
+                        roc.calculateAUC(), roc.calculateAUCPR());
         Component c2 = getPRCharts(PR_TITLE, PR_THRESHOLD_TITLE, roc.getPrecisionRecallCurve());
 
         return StaticPageUtil.renderHTML(c, c2);
@@ -152,7 +152,7 @@ public class EvaluationTools {
             Component headerDivLeft = new ComponentDiv(HEADER_DIV_TEXT_PAD_STYLE);
             Component headerDiv = new ComponentDiv(HEADER_DIV_STYLE, new ComponentText(headerText, HEADER_TEXT_STYLE));
             Component c = getRocFromPoints(ROC_TITLE, points, actualCountPositive[i], actualCountNegative[i],
-                            rocMultiClass.calculateAUC(i));
+                            rocMultiClass.calculateAUC(i), rocMultiClass.calculateAUCPR(i));
             Component c2 = getPRCharts(PR_TITLE, PR_THRESHOLD_TITLE, rocMultiClass.getPrecisionRecallCurve(i));
             components.add(headerDivLeft);
             components.add(headerDiv);
@@ -164,7 +164,7 @@ public class EvaluationTools {
     }
 
     private static Component getRocFromPoints(String title, double[][] points, long positiveCount, long negativeCount,
-                    double auc) {
+                    double auc, double aucpr) {
         double[] zeroOne = new double[] {0.0, 1.0};
 
         ChartLine chartLine = new ChartLine.Builder(title, CHART_STYLE).setXMin(0.0).setXMax(1.0).setYMin(0.0)
@@ -172,7 +172,8 @@ public class EvaluationTools {
                         .addSeries("", zeroOne, zeroOne).build();
 
         ComponentTable ct = new ComponentTable.Builder(TABLE_STYLE).header("Field", "Value")
-                        .content(new String[][] {{"AUC", String.format("%.5f", auc)},
+                        .content(new String[][] {{"AUROC: Area under ROC:", String.format("%.5f", auc)},
+                                        {"AUPRC: Area under P/R:", String.format("%.5f", aucpr)},
                                         {"Total Data Positive Count", String.valueOf(positiveCount)},
                                         {"Total Data Negative Count", String.valueOf(negativeCount)}})
                         .build();
