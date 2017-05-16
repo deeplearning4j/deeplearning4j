@@ -1,9 +1,6 @@
 package org.deeplearning4j.zoo.model;
 
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.zoo.ModelMetaData;
-import org.deeplearning4j.zoo.ZooType;
-import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.GaussianDistribution;
@@ -15,6 +12,8 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.zoo.ModelMetaData;
+import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.zoo.ZooType;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
