@@ -8,11 +8,9 @@ public enum ZooType {
     CNN,
     ALEXNET,
     LENET,
-    GOOGLELENET,
     VGG16,
+    RESNET50,
     INCEPTIONRESNETV1,
     FACENETNN4SMALL2,
     RNN,
-    MLP_SMALL,
-    RNN_SMALL
 }
