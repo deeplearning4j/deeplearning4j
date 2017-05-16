@@ -164,28 +164,17 @@ public class CollectionSequenceRecordReader extends BaseRecordReader implements 
         }
 
         List<SequenceRecord> out = new ArrayList<>();
-        if (original instanceof List) {
-            List<Collection<? extends Collection<Writable>>> asList =
-                            (List<Collection<? extends Collection<Writable>>>) original;
-            for (Integer i : toLoad) {
-                List<List<Writable>> l = toList(asList.get(i));
-                SequenceRecord r = new org.datavec.api.records.impl.SequenceRecord(l,
-                                new RecordMetaDataIndex(i, null, CollectionSequenceRecordReader.class));
-                out.add(r);
+        Iterator<? extends Collection<? extends Collection<Writable>>> iter = original.iterator();
+        int i = 0;
+        while (iter.hasNext()) {
+            Collection<? extends Collection<Writable>> c = iter.next();
+            if (!toLoad.contains(i++)) {
+                continue;
             }
-        } else {
-            Iterator<? extends Collection<? extends Collection<Writable>>> iter = original.iterator();
-            int i = 0;
-            while (iter.hasNext()) {
-                Collection<? extends Collection<Writable>> c = iter.next();
-                if (!toLoad.contains(i++)) {
-                    continue;
-                }
-                List<List<Writable>> record = toList(c);
-                SequenceRecord r = new org.datavec.api.records.impl.SequenceRecord(record,
-                                new RecordMetaDataIndex(i - 1, null, CollectionSequenceRecordReader.class));
-                out.add(r);
-            }
+            List<List<Writable>> record = toList(c);
+            SequenceRecord r = new org.datavec.api.records.impl.SequenceRecord(record,
+                            new RecordMetaDataIndex(i - 1, null, CollectionSequenceRecordReader.class));
+            out.add(r);
         }
         return out;
     }
