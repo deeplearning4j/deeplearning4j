@@ -302,21 +302,36 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 // if actual == predicted, then it's a true positive, assign true negative to every other label
                 if(actual == predicted) {
                     truePositives.incrementCount(actual, 1);
-                    for (int col = 0; col < actual; col++) trueNegatives.incrementCount(col, 1); // all cols prior
-                    for (int col = actual+1; col < nCols-actual; col++) trueNegatives.incrementCount(col, 1); // all cols after
+                    for (int col = 0; col < nCols; col++) {
+                        if(col == actual){
+                            continue;
+                        }
+                        trueNegatives.incrementCount(col, 1); // all cols prior
+                    }
                 } else {
                     falsePositives.incrementCount(predicted, 1);
                     falseNegatives.incrementCount(actual, 1);
 
                     // first determine intervals for adding true negatives
                     int lesserIndex, greaterIndex;
-                    if(actual < predicted) { lesserIndex = actual; greaterIndex = predicted; }
-                    else { lesserIndex = predicted; greaterIndex = actual; }
+                    if (actual < predicted) {
+                        lesserIndex = actual;
+                        greaterIndex = predicted;
+                    } else {
+                        lesserIndex = predicted;
+                        greaterIndex = actual;
+                    }
 
                     // now loop through intervals
-                    for (int col = 0; col < lesserIndex; col++) trueNegatives.incrementCount(col, 1); // all cols prior
-                    for (int col = lesserIndex+1; col < greaterIndex; col++) trueNegatives.incrementCount(col, 1); // all cols after
-                    for (int col = greaterIndex+1; col < nCols-greaterIndex; col++) trueNegatives.incrementCount(col, 1); // all cols after
+                    for (int col = 0; col < lesserIndex; col++){
+                        trueNegatives.incrementCount(col, 1); // all cols prior
+                    }
+                    for (int col = lesserIndex+1; col < greaterIndex; col++){
+                        trueNegatives.incrementCount(col, 1); // all cols after
+                    }
+                    for (int col = greaterIndex+1; col < nCols; col++){
+                        trueNegatives.incrementCount(col, 1); // all cols after
+                    }
                 }
             }
         }
