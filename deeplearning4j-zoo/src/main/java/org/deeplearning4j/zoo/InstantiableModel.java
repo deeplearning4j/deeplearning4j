@@ -15,4 +15,6 @@ public interface InstantiableModel {
     public ZooType zooType();
 
     public Class<? extends Model> modelType();
+
+    public String pretrainedUrl();
 }
