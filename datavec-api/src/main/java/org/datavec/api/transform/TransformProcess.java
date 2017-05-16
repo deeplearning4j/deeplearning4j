@@ -967,6 +967,7 @@ public class TransformProcess implements Serializable {
          */
         public Builder reduceSequence(IReducer reducer) {
             actionList.add(new DataAction(new ReduceSequenceTransform(reducer)));
+            convertFromSequence();
             return this;
         }
 
