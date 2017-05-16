@@ -2,6 +2,8 @@ package org.deeplearning4j.eval;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -10,6 +12,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
 
 import java.io.Serializable;
 import java.util.*;
@@ -29,10 +32,11 @@ import java.util.*;
  * ROCBinary supports per-example and per-output masking: for per-output masking, any particular output may be absent
  * (mask value 0) and hence won't be included in the calculated ROC.
  */
+@EqualsAndHashCode(callSuper = true)
 public class ROCBinary extends BaseEvaluation<ROCBinary> {
     public static final int DEFAULT_PRECISION = 4;
 
-    private final int thresholdSteps;
+    private  int thresholdSteps;
     private long[] countActualPositive;
     private long[] countActualNegative;
     private Map<Double, CountsForThreshold> countsForThresholdMap;
@@ -40,8 +44,15 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
 
     public ROCBinary(int thresholdSteps) {
         this.thresholdSteps = thresholdSteps;
+        countActualNegative = new long[0];
+        countActualPositive = new long[0];
     }
 
+    public ROCBinary() {
+        this.countsForThresholdMap = new HashMap<>();
+        countActualNegative = new long[0];
+        countActualPositive = new long[0];
+    }
 
     @Override
     public void reset() {
@@ -289,6 +300,7 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
      *
      * @return ROC curve as double[][]
      */
+    @JsonIgnore
     public double[][] getResultsAsArray(int outputNum) {
         assertIndex(outputNum);
 
@@ -346,6 +358,7 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
         this.labels = new ArrayList<>(labels);
     }
 
+    @Override
     public String stats() {
         return stats(DEFAULT_PRECISION);
     }

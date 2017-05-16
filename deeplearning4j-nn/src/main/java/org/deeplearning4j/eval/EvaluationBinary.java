@@ -1,5 +1,6 @@
 package org.deeplearning4j.eval;
 
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
@@ -23,6 +24,7 @@ import java.util.List;
  * @author Alex Black
  */
 @NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     public static final int DEFAULT_PRECISION = 4;
 

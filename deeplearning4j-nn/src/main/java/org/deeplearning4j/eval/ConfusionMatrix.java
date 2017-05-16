@@ -36,7 +36,10 @@ public class ConfusionMatrix<T extends Comparable<? super T>> implements Seriali
         this.classes = classes;
     }
 
-    public ConfusionMatrix() {}
+    public ConfusionMatrix() {
+        this.matrix = Collections.synchronizedMap(new HashMap<T, Multiset<T>>());
+        this.classes = new ArrayList<>();
+    }
 
     /**
      * Creates a new ConfusionMatrix initialized with the contents of another ConfusionMatrix.
@@ -83,6 +86,8 @@ public class ConfusionMatrix<T extends Comparable<? super T>> implements Seriali
      * Gives the applyTransformToDestination of all classes in the confusion matrix.
      */
     public List<T> getClasses() {
+        if(classes == null)
+            classes = new ArrayList<>();
         return classes;
     }
 

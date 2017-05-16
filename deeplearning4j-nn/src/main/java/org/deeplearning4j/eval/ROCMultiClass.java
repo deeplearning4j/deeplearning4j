@@ -1,5 +1,6 @@
 package org.deeplearning4j.eval;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -24,6 +25,7 @@ import java.util.*;
  * @author Alex Black
  */
 @Getter
+@EqualsAndHashCode(callSuper = true)
 public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
 
     private final int thresholdSteps;
