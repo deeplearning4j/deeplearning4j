@@ -113,7 +113,7 @@ ND4JやDeeplearning4jは、`NDArray`とテンソルを同義語として扱い�
 
 画像の最初の3行の上に重なったフィルターは左へスライド移動し、同じ画像の4～6行目で同じ作業を開始します。スライド移動回数が3つの場合は、産出するドット積の行列は10x10となります。横線を表す同じフィルターは、赤、緑、青3つすべてのチャンネルに適用することができます。そしてこれらの3つの10x10の活性化マップを足して、画像の3つのチャンネルの横線を総計した活性化マップも10x10になるようにします。
 
-ところで、画像にはあらゆる方向を向いた線が含まれており、形状や画素のパターンも様々なため、異なるフィルターをスライド移動させてこれらのパターンをサーチする、ということになるのです。例えば、一つの画素にパターンが96個あることもあります。これらの96個のパターンは活性化マップを作成し、新しいボリュームの10x10x96が生み出されます。ここまでご説明した畳み込みネットワークをできるだけ明確に理解していただくために、以下にラベルを再度付与された入力画像、カーネル、出力マップをお見せしましょう。  
+ところで、画像にはあらゆる方向を向いた線が含まれており、形状や画素のパターンも様々なため、異なるフィルターをスライド移動させてこれらのパターンをサーチする、ということになるのです。例えば、一つの画素にパターンが96個あることもあります。これらの96個のパターンは活性化マップを作成し、新しいボリュームの10x10x96が生み出されます。ここまでご説明した畳み込みネットワークをできるだけ明確に理解していただくために、以下にラベルを再度付与された入力画像、カーネル、出力マップをお見せしましょう。
 
 ![Alt text](../img/karpathy-convnet-labels.png)
 
@@ -143,7 +143,7 @@ ND4JやDeeplearning4jは、`NDArray`とテンソルを同義語として扱い�
 このプロセスは下図の左から右に向かって以下のような処理が行われます。
 
 * 実際の入力画像から特徴がスキャンされます。明るい色の長方形は、画像の上を通過するフィルターです。
-* 適用したそれぞれのフィルターの活性化マップが積まれていきます。大きいフィルターの長方形のサイズは、ダウンサンプリングされていきます。  
+* 適用したそれぞれのフィルターの活性化マップが積まれていきます。大きいフィルターの長方形のサイズは、ダウンサンプリングされていきます。
 * ダウンサンプリングを通じて活性化マップは縮小されていきます。
 * 最初にダウンサンプリングされた活性化マップにフィルターをかけて新しい活性化マップが作成されていきます。
 * 2回目のダウンサンプリングによって、2つ目の活性化マップを縮小させます。
@@ -155,7 +155,7 @@ ND4JやDeeplearning4jは、`NDArray`とテンソルを同義語として扱い�
 
 以下は、Deeplearning4jで畳み込みネットワークを構成する方法の一例です。
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/LenetMnistExample.java?slice=43:87"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/LenetMnistExample.java?slice=43:87"></script>
 
 ### <a name="beginner">その他のDeeplearning4jのチュートリアル</a>
 * [Introduction to Neural Networks（ディープニューラルネットワークについて）](neuralnet-overview)
@@ -169,4 +169,4 @@ ND4JやDeeplearning4jは、`NDArray`とテンソルを同義語として扱い�
 
 * [Yann LeCun](http://yann.lecun.com/exdb/publis/pdf/lecun-iscas-10.pdf)。ニューヨーク大学（New York University）の教授であり、フェイスブックのリサーチ部門のディレクター。機械ビジョン作業で多く使用される畳み込みネットワークの使用を促進させるための多大なる貢献をして来られました。
 * [Andrej Karpathy氏によるスタンフォード大学の畳み込みネットワークに関するコース](https://cs231n.github.io/)は非常に素晴らしいので、畳み込みネットワークの基礎を学びたい方々にはかなりおすすめです。（*Pythonでの練習*）
-* DL4Jの畳み込みネットワークを見たい方は、[Quickstart page（クイックスタートページ）](quickstart)の指示に従った後、弊社の[examples](https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/)をご覧ください。
+* DL4Jの畳み込みネットワークを見たい方は、[Quickstart page（クイックスタートページ）](quickstart)の指示に従った後、弊社の[examples](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution)をご覧ください。

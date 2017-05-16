@@ -61,7 +61,7 @@ DataSetIterator对输入数据集进行迭代，每次迭代均抓取一个或�
 
 以下是一个神经网络的配置示例。本例的许多超参数都已在[鸢尾花数据集教程](./iris-flower-dataset-tutorial.html)中介绍过，所以此处仅对部分特殊属性作一概述。
 
-<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DeepAutoEncoderExample.java?slice=29:71"></script>
+<script src="http://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/unsupervised/deepbelief/DeepAutoEncoderExample.java?slice=29:71"></script>
 
 * *optimizationAlgo*依赖LINE_GRADIENT_DESCENT，而不是LBFGS。
 * *nIn*设定为784，让每个图像像素成为一个输入节点。如果你的图像尺寸改变（即总像素数发生变化），则nIn也应当改变。
