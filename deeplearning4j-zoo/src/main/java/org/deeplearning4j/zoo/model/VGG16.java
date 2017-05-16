@@ -35,7 +35,7 @@ public class VGG16 extends ZooModel {
     }
 
     public String pretrainedUrl() {
-        return "https://deeplearning4jblob.blob.core.windows.net/models/vgg16_dl4j_inference.zip";
+        return "http://blob.deeplearning4j.org/models/vgg16_dl4j_inference.zip";
     }
 
     public ZooType zooType() {

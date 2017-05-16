@@ -36,6 +36,9 @@ public class ModelSelector {
             case FACENETNN4SMALL2:
                 netmap.put(ZooType.FACENETNN4SMALL2, new FaceNetNN4Small2(numLabels, seed, iterations));
                 break;
+            case RESNET50:
+                netmap.put(ZooType.RESNET50, new ResNet50(numLabels, seed, iterations));
+                break;
             case VGG16:
                 netmap.put(ZooType.VGG16, new VGG16(numLabels, seed, iterations));
                 break;
