@@ -16,13 +16,15 @@
 
 package org.datavec.api.transform.transform;
 
-import org.datavec.api.transform.MathFunction;
+import org.datavec.api.transform.*;
+import org.datavec.api.transform.reduce.IReducer;
+import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.SequenceSchema;
+import org.datavec.api.transform.sequence.ReduceSequenceTransform;
 import org.datavec.api.transform.transform.categorical.*;
 import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.transform.transform.sequence.SequenceDifferenceTransform;
 import org.datavec.api.writable.*;
-import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.condition.column.IntegerColumnCondition;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
@@ -38,8 +40,6 @@ import org.datavec.api.transform.transform.string.*;
 import org.datavec.api.transform.transform.time.DeriveColumnsFromTimeTransform;
 import org.datavec.api.transform.transform.time.StringToTimeTransform;
 import org.datavec.api.transform.transform.time.TimeMathOpTransform;
-import org.datavec.api.transform.MathOp;
-import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.condition.ConditionOp;
 import org.datavec.api.transform.condition.column.StringColumnCondition;
@@ -1058,4 +1058,37 @@ public class TestTransforms {
             transform.map(Collections.singletonList((Writable) new Text("  4.25 "))));
     }
 
+    @Test
+    public void testReduceSequenceTransform(){
+
+        Schema schema = new SequenceSchema.Builder()
+                .addColumnsDouble("col%d",0,2)
+                .build();
+
+        IReducer reducer = new Reducer.Builder(ReduceOp.Mean)
+                .countColumns("col1")
+                .maxColumn("col2")
+                .build();
+
+        ReduceSequenceTransform t = new ReduceSequenceTransform(reducer);
+        t.setInputSchema(schema);
+
+        List<List<Writable>> seq = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)),
+                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)));
+
+        List<List<Writable>> exp = Collections.singletonList(
+                Arrays.<Writable>asList(new DoubleWritable(3), new IntWritable(3), new DoubleWritable(8)));
+        List<List<Writable>> act = t.mapSequence(seq);
+        assertEquals(exp, act);
+
+        Schema expOutSchema = new SequenceSchema.Builder()
+                .addColumnDouble("mean(col0)")
+                .addColumn(new IntegerMetaData("count",0,null))
+                .addColumnDouble("max(col2)")
+                .build();
+
+        assertEquals(expOutSchema, t.transform(schema));
+    }
 }

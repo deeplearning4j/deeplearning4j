@@ -50,8 +50,6 @@ public class SequenceDifferenceTransform implements Transform {
         Default, SpecifiedValue
     }
 
-    ;
-
     private final String columnName;
     private final String newColumnName;
     private final int lookback;
