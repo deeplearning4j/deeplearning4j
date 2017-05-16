@@ -1,9 +1,13 @@
 package org.deeplearning4j.eval;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,6 +27,8 @@ import java.util.List;
  * @author Alex Black
  */
 @NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
+@Data
 public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     public static final int DEFAULT_PRECISION = 4;
 
@@ -32,6 +38,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     private int[] countFalsePositive; //P=1, Act=0
     private int[] countTrueNegative; //P=0, Act=0
     private int[] countFalseNegative; //P=0, Act=1
+    @JsonProperty(value = "rocbinary")
     private ROCBinary rocBinary;
 
     private List<String> labels;
@@ -84,7 +91,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
         if (countTruePositive != null && countTruePositive.length != labels.size(1)) {
             throw new IllegalStateException("Labels array does not match stored state size. Expected labels array with "
-                            + "size " + countTruePositive.length + ", got labels array with size " + labels.size(1));
+                    + "size " + countTruePositive.length + ", got labels array with size " + labels.size(1));
         }
 
         if (labels.rank() == 3) {
@@ -152,8 +159,8 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         } else {
             if (this.countTruePositive.length != other.countTruePositive.length) {
                 throw new IllegalStateException("Cannot merge EvaluationBinary instances with different sizes. This "
-                                + "size: " + this.countTruePositive.length + ", other size: "
-                                + other.countTruePositive.length);
+                        + "size: " + this.countTruePositive.length + ", other size: "
+                        + other.countTruePositive.length);
             }
 
             //Both have stats
@@ -207,7 +214,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     public int totalCount(int outputNum) {
         assertIndex(outputNum);
         return countTruePositive[outputNum] + countTrueNegative[outputNum] + countFalseNegative[outputNum]
-                        + countFalsePositive[outputNum];
+                + countFalsePositive[outputNum];
     }
 
     /**
@@ -289,7 +296,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     private void assertIndex(int outputNum) {
         if (countTruePositive == null) {
             throw new UnsupportedOperationException(
-                            "EvaluationBinary does not have any stats: eval must be called first");
+                    "EvaluationBinary does not have any stats: eval must be called first");
         }
         if (outputNum < 0 || outputNum >= countTruePositive.length) {
             throw new IllegalArgumentException("Invalid input: output number must be between 0 and " + (outputNum - 1));
@@ -323,15 +330,15 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
         String subPattern = "%-12." + printPrecision + "f";
         String pattern = "%-" + (maxLabelsLength + 5) + "s" //Label
-                        + subPattern + subPattern + subPattern + subPattern //Accuracy, f1, precision, recall
-                        + "%-8d%-7d%-7d%-7d%-7d"; //Total count, TP, TN, FP, FN
+                + subPattern + subPattern + subPattern + subPattern //Accuracy, f1, precision, recall
+                + "%-8d%-7d%-7d%-7d%-7d"; //Total count, TP, TN, FP, FN
 
         String patternHeader = "%-" + (maxLabelsLength + 5) + "s%-12s%-12s%-12s%-12s%-8s%-7s%-7s%-7s%-7s";
 
 
 
         List<String> headerNames = Arrays.asList("Label", "Accuracy", "F1", "Precision", "Recall", "Total", "TP", "TN",
-                        "FP", "FN");
+                "FP", "FN");
 
         if (rocBinary != null) {
             patternHeader += "%-12s";
@@ -357,7 +364,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
             String label = (labels == null ? String.valueOf(i) : labels.get(i));
 
             List<Object> args = Arrays.<Object>asList(label, acc, f1, precision, recall, totalCount, truePositives(i),
-                            trueNegatives(i), falsePositives(i), falseNegatives(i));
+                    trueNegatives(i), falsePositives(i), falseNegatives(i));
             if (rocBinary != null) {
                 args = new ArrayList<>(args);
                 args.add(rocBinary.calculateAUC(i));

@@ -1,6 +1,8 @@
 package org.deeplearning4j.eval;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
@@ -24,9 +26,11 @@ import java.util.*;
  * @author Alex Black
  */
 @Getter
+@EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor
 public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
 
-    private final int thresholdSteps;
+    private  int thresholdSteps;
 
     private long[] countActualPositive;
     private long[] countActualNegative;
