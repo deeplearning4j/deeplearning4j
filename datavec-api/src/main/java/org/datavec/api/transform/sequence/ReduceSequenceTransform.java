@@ -1,4 +1,4 @@
-/*-
+/*
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,40 +14,39 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.api.transform.sequence.window;
+package org.datavec.api.transform.sequence;
 
+import lombok.EqualsAndHashCode;
+import org.datavec.api.transform.Transform;
+import org.datavec.api.transform.metadata.ColumnMetaData;
+import org.datavec.api.transform.reduce.IReducer;
+import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.schema.SequenceSchema;
+import org.datavec.api.transform.sequence.window.WindowFunction;
+import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
-import lombok.EqualsAndHashCode;
-import org.datavec.api.transform.metadata.ColumnMetaData;
-import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.writable.Writable;
-import org.datavec.api.transform.Transform;
-import org.datavec.api.transform.reduce.IReducer;
-import org.datavec.api.transform.schema.SequenceSchema;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Idea: do two things.
- * First, apply a window function to the sequence data.
- * Second: Reduce that window of data into a single value by using a Reduce function
+ * Reduce The values in each column in the sequence to a single value using a reducer.
+ * Note: after applying ReduceSequenceTransform, you have sequences of length 1. Consequently, this transform
+ * is often used in conjunction with {@link ConvertFromSequence}
  *
  * @author Alex Black
  */
 @JsonIgnoreProperties({"inputSchema"})
 @EqualsAndHashCode(exclude = {"inputSchema"})
-public class ReduceSequenceByWindowTransform implements Transform {
+public class ReduceSequenceTransform implements Transform {
 
     private IReducer reducer;
-    private WindowFunction windowFunction;
     private Schema inputSchema;
 
-    public ReduceSequenceByWindowTransform(@JsonProperty("reducer") IReducer reducer,
-                    @JsonProperty("windowFunction") WindowFunction windowFunction) {
+    public ReduceSequenceTransform(@JsonProperty("reducer") IReducer reducer) {
         this.reducer = reducer;
-        this.windowFunction = windowFunction;
     }
 
 
@@ -56,9 +55,6 @@ public class ReduceSequenceByWindowTransform implements Transform {
         if (inputSchema != null && !(inputSchema instanceof SequenceSchema)) {
             throw new IllegalArgumentException("Invalid input: input schema must be a SequenceSchema");
         }
-
-        //Some window functions may make changes to the schema (adding window start/end times, for example)
-        inputSchema = windowFunction.transform(inputSchema);
 
         //Approach here: The reducer gives us a schema for one time step -> simply convert this to a sequence schema...
         Schema oneStepSchema = reducer.transform(inputSchema);
@@ -70,8 +66,7 @@ public class ReduceSequenceByWindowTransform implements Transform {
     @Override
     public void setInputSchema(Schema inputSchema) {
         this.inputSchema = inputSchema;
-        this.windowFunction.setInputSchema(inputSchema);
-        reducer.setInputSchema(windowFunction.transform(inputSchema));
+        reducer.setInputSchema(inputSchema);
     }
 
     @Override
@@ -81,22 +76,12 @@ public class ReduceSequenceByWindowTransform implements Transform {
 
     @Override
     public List<Writable> map(List<Writable> writables) {
-        throw new UnsupportedOperationException("ReduceSequenceByWindownTransform can only be applied on sequences");
+        throw new UnsupportedOperationException("ReduceSequenceTransform can only be applied on sequences");
     }
 
     @Override
     public List<List<Writable>> mapSequence(List<List<Writable>> sequence) {
-        //List of windows, which are all small sequences...
-        List<List<List<Writable>>> sequenceAsWindows = windowFunction.applyToSequence(sequence);
-
-        List<List<Writable>> out = new ArrayList<>();
-
-        for (List<List<Writable>> window : sequenceAsWindows) {
-            List<Writable> reduced = reducer.reduce(window);
-            out.add(reduced);
-        }
-
-        return out;
+        return Collections.singletonList(reducer.reduce(sequence));
     }
 
     /**
@@ -108,7 +93,7 @@ public class ReduceSequenceByWindowTransform implements Transform {
      */
     @Override
     public Object map(Object input) {
-        throw new UnsupportedOperationException("ReduceSequenceByWindownTransform can only be applied on sequences");
+        throw new UnsupportedOperationException("ReduceSequenceTransform can only be applied on sequences");
     }
 
     /**
@@ -123,7 +108,7 @@ public class ReduceSequenceByWindowTransform implements Transform {
 
     @Override
     public String toString() {
-        return "ReduceSequenceByWindowTransform(reducer=" + reducer + ",windowFunction=" + windowFunction + ")";
+        return "ReduceSequenceTransform(reducer=" + reducer + ")";
     }
 
     /**

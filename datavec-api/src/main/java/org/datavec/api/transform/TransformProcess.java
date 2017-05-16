@@ -20,6 +20,7 @@ import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ClassUtils;
 import org.datavec.api.transform.filter.ConditionFilter;
+import org.datavec.api.transform.sequence.*;
 import org.datavec.api.transform.transform.string.AppendStringColumnTransform;
 import org.datavec.api.transform.transform.string.ConvertToString;
 import org.datavec.api.transform.transform.string.ReplaceStringTransform;
@@ -47,9 +48,6 @@ import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.filter.Filter;
 import org.datavec.api.transform.rank.CalculateSortedRank;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.transform.sequence.ConvertFromSequence;
-import org.datavec.api.transform.sequence.ConvertToSequence;
-import org.datavec.api.transform.sequence.SequenceSplit;
 import org.datavec.api.transform.sequence.window.ReduceSequenceByWindowTransform;
 import org.datavec.api.transform.sequence.window.WindowFunction;
 import org.datavec.api.transform.transform.categorical.CategoricalToIntegerTransform;
@@ -68,7 +66,6 @@ import org.datavec.api.transform.transform.string.StringMapTransform;
 import org.datavec.api.transform.transform.time.StringToTimeTransform;
 import org.datavec.api.transform.transform.time.TimeMathOpTransform;
 import org.datavec.api.transform.analysis.columns.NumericalColumnAnalysis;
-import org.datavec.api.transform.sequence.SequenceComparator;
 import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
 import lombok.Data;
 import org.datavec.api.transform.analysis.DataAnalysis;
@@ -954,10 +951,22 @@ public class TransformProcess implements Serializable {
          * Reduce (i.e., aggregate/combine) a set of examples (typically by key).
          * <b>Note</b>: In the current implementation, reduction operations can be performed only on standard (i.e., non-sequence) data
          *
-         * @param reducer StringReducer to use
+         * @param reducer Reducer to use
          */
         public Builder reduce(IReducer reducer) {
             actionList.add(new DataAction(reducer));
+            return this;
+        }
+
+        /**
+         * Reduce (i.e., aggregate/combine) a set of sequence examples - for each sequence individually.
+         * <b>Note</b>: This method results in non-sequence data. If you would instead prefer sequences of length 1
+         * after the reduction, use {@code transform(new ReduceSequenceTransform(reducer))}.
+         *
+         * @param reducer        Reducer to use to reduce each window
+         */
+        public Builder reduceSequence(IReducer reducer) {
+            actionList.add(new DataAction(new ReduceSequenceTransform(reducer)));
             return this;
         }
 
@@ -966,7 +975,7 @@ public class TransformProcess implements Serializable {
          * For example, take all records/examples in each 24-hour period (i.e., using window function), and convert them into
          * a singe value (using the reducer). In this example, the output is a sequence, with time period of 24 hours.
          *
-         * @param reducer        StringReducer to use to reduce each window
+         * @param reducer        Reducer to use to reduce each window
          * @param windowFunction Window function to find apply on each sequence individually
          */
         public Builder reduceSequenceByWindow(IReducer reducer, WindowFunction windowFunction) {
