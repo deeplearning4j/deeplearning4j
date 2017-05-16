@@ -9,7 +9,7 @@ DataVec is an Apache 2.0-licensed library for machine-learning ETL (Extract, Tra
 ## Why Would I Use DataVec?
 
 Data handling is sometimes messy, and we believe it should be distinct from high-performance algebra libraries (such
-as[nd4j](https://nd4j.org) or [Deeplearning4j](https://deeplearning4j.org)).
+as [nd4j](https://nd4j.org) or [Deeplearning4j](https://deeplearning4j.org)).
 
 DataVec allows a practitioner to take raw data and produce open standard compliant vectorized data (svmLight, etc)
 quickly. Current input data types supported out of the box:
