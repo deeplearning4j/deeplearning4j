@@ -61,7 +61,7 @@ public class ParameterServerTrainerContext implements TrainerContext {
      */
     @Override
     public Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper,
-                    WorkspaceMode mode) {
+                    WorkspaceMode mode, int averagingFrequency) {
         return ParameterServerTrainer.builder().originalModel(model).parameterServerClient(ParameterServerClient
                         .builder().aeron(parameterServerNode.getAeron())
                         .ndarrayRetrieveUrl(

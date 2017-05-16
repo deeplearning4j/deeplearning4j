@@ -27,6 +27,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  * @author saudet
  */
 public interface BatchNormalizationHelper {
+    boolean checkSupported(double eps);
+
     Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
                     INDArray dGammaView, INDArray dBetaView, double eps);
 

@@ -48,24 +48,25 @@ import java.util.concurrent.locks.LockSupport;
 public class DefaultTrainer extends Thread implements Trainer {
     protected Model originalModel;
     protected Model replicatedModel;
-    protected LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>();
-    protected LinkedBlockingQueue<MultiDataSet> queueMDS = new LinkedBlockingQueue<>();
-    protected AtomicInteger running = new AtomicInteger(0);
+    @Builder.Default protected LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>();
+    @Builder.Default protected LinkedBlockingQueue<MultiDataSet> queueMDS = new LinkedBlockingQueue<>();
+    @Builder.Default protected AtomicInteger running = new AtomicInteger(0);
     protected int threadId;
-    protected AtomicBoolean shouldUpdate = new AtomicBoolean(false);
-    protected AtomicBoolean shouldStop = new AtomicBoolean(false);
+    @Builder.Default protected AtomicBoolean shouldUpdate = new AtomicBoolean(false);
+    @Builder.Default protected AtomicBoolean shouldStop = new AtomicBoolean(false);
     protected Exception thrownException;
-    protected volatile boolean useMDS = false;
+    @Builder.Default protected volatile boolean useMDS = false;
     protected final String uuid = UUID.randomUUID().toString();
-    protected boolean onRootModel = false;
+    @Builder.Default protected boolean onRootModel = false;
     protected ParallelWrapper parallelWrapper;
     protected WorkspaceMode workspaceMode;
-    protected AtomicLong lastEtlTime = new AtomicLong(0);
+    @Builder.Default protected AtomicLong lastEtlTime = new AtomicLong(0);
 
-    protected AtomicBoolean nullMode = new AtomicBoolean(false);
+    @Builder.Default protected AtomicBoolean nullMode = new AtomicBoolean(false);
     protected DataSet nullDataSet;
 
-    protected AtomicBoolean isStopped = new AtomicBoolean(false);
+    @Builder.Default protected AtomicBoolean isStopped = new AtomicBoolean(false);
+    protected int averagingFrequency;
 
 
 
@@ -180,7 +181,7 @@ public class DefaultTrainer extends Thread implements Trainer {
     @Override
     public void run() {
         setupIfNeccessary();
-
+        AtomicInteger iterationsCounter = new AtomicInteger(0);
         try {
             // we create fresh network, with the same configuration, as initially created by user
             // however, we don't need clone or anything here
@@ -278,11 +279,11 @@ public class DefaultTrainer extends Thread implements Trainer {
                             ((ComputationGraph) replicatedModel).fit(dataSet);
                         }
 
-                        // we ensure all operations are finished in this training round
-                        Nd4j.getExecutioner().commit();
-
                         // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
-                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported()) {
+                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported() && iterationsCounter.incrementAndGet() % averagingFrequency == 0) {
+                            // we ensure all operations are finished in this training round
+                            Nd4j.getExecutioner().commit();
+
                             // we ensure memory is updated on host side
                             Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(), AffinityManager.Location.HOST);
 
@@ -312,12 +313,10 @@ public class DefaultTrainer extends Thread implements Trainer {
                         } else
                             throw new RuntimeException("MultiDataSet can be fit into ComputationGraph only");
 
-                        // we ensure all operations are finished in this training round
-                        Nd4j.getExecutioner().commit();
-
-
                         // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
-                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported()) {
+                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported() && iterationsCounter.incrementAndGet() % averagingFrequency == 0) {
+                            // we ensure all operations are finished in this training round
+                            Nd4j.getExecutioner().commit();
 
                             // we ensure memory is updated on host side
                             Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(), AffinityManager.Location.HOST);
@@ -334,6 +333,7 @@ public class DefaultTrainer extends Thread implements Trainer {
             }
         } catch (Exception e) {
             this.thrownException = e;
+            throw new RuntimeException(e);
         } finally {
             log.debug("Terminating all workspaces for trainer_{}", threadId);
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();

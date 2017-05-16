@@ -76,6 +76,9 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             helper = Class.forName("org.deeplearning4j.nn.layers.convolution.subsampling.CudnnSubsamplingHelper")
                             .asSubclass(SubsamplingHelper.class).newInstance();
             log.debug("CudnnSubsamplingHelper successfully initialized");
+            if (!helper.checkSupported()) {
+                helper = null;
+            }
         } catch (Throwable t) {
             if (!(t instanceof ClassNotFoundException)) {
                 log.warn("Could not initialize CudnnSubsamplingHelper", t);
@@ -122,7 +125,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int outW = outSize[1];
 
 
-        if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
+        if (helper != null) {
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
                             layerConf().getPoolingType(), convolutionMode);
             if (ret != null) {
@@ -277,7 +280,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         int outH = outSize[0];
         int outW = outSize[1];
 
-        if (helper != null && Nd4j.dataType() != DataBuffer.Type.HALF) {
+        if (helper != null) {
             INDArray ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(),
                             convolutionMode);
             if (ret != null) {

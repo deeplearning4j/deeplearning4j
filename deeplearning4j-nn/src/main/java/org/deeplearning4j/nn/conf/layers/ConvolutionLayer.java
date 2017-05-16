@@ -33,12 +33,68 @@ public class ConvolutionLayer extends FeedForwardLayer {
     protected int[] stride; // Default is 2. Down-sample by a factor of 2
     protected int[] padding;
 
+    /** The "PREFER_FASTEST" mode will pick the fastest algorithm for the specified parameters
+     * from the {@link FwdAlgo}, {@link BwdFilterAlgo}, and {@link BwdDataAlgo} lists, but they
+     * may be very memory intensive, so if weird errors occur when using cuDNN, please try the
+     * "NO_WORKSPACE" mode. Alternatively, it is possible to specify the algorithm manually by
+     * setting the "USER_SPECIFIED" mode, but this is not recommended.
+     *
+     * Note: Currently only supported with cuDNN.
+     */
     public enum AlgoMode {
-        NO_WORKSPACE, PREFER_FASTEST
+        NO_WORKSPACE, PREFER_FASTEST, USER_SPECIFIED
+    }
+
+    /** The forward algorithm to use when {@link AlgoMode} is set to "USER_SPECIFIED".
+     *
+     * Note: Currently only supported with cuDNN.
+     */
+    public enum FwdAlgo {
+        IMPLICIT_GEMM,
+        IMPLICIT_PRECOMP_GEMM,
+        GEMM,
+        DIRECT,
+        FFT,
+        FFT_TILING,
+        WINOGRAD,
+        WINOGRAD_NONFUSED,
+        COUNT
+    }
+
+    /** The backward filter algorithm to use when {@link AlgoMode} is set to "USER_SPECIFIED".
+     *
+     * Note: Currently only supported with cuDNN.
+     */
+    public enum BwdFilterAlgo {
+        ALGO_0,
+        ALGO_1,
+        FFT,
+        ALGO_3,
+        WINOGRAD,
+        WINOGRAD_NONFUSED,
+        FFT_TILING,
+        COUNT
+    }
+
+    /** The backward data algorithm to use when {@link AlgoMode} is set to "USER_SPECIFIED".
+     *
+     * Note: Currently only supported with cuDNN.
+     */
+    public enum BwdDataAlgo {
+        ALGO_0,
+        ALGO_1,
+        FFT,
+        FFT_TILING,
+        WINOGRAD,
+        WINOGRAD_NONFUSED,
+        COUNT
     }
 
     /** Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory. */
     protected AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
+    protected FwdAlgo cudnnFwdAlgo;
+    protected BwdFilterAlgo cudnnBwdFilterAlgo;
+    protected BwdDataAlgo cudnnBwdDataAlgo;
 
     /**
      * ConvolutionLayer
@@ -60,6 +116,9 @@ public class ConvolutionLayer extends FeedForwardLayer {
             throw new IllegalArgumentException("Padding should include padding for rows and columns (a 2d array)");
         this.padding = builder.padding;
         this.cudnnAlgoMode = builder.cudnnAlgoMode;
+        this.cudnnFwdAlgo = builder.cudnnFwdAlgo;
+        this.cudnnBwdFilterAlgo = builder.cudnnBwdFilterAlgo;
+        this.cudnnBwdDataAlgo = builder.cudnnBwdDataAlgo;
     }
 
     @Override
@@ -518,6 +577,9 @@ public class ConvolutionLayer extends FeedForwardLayer {
         protected int[] stride = new int[] {1, 1};
         protected int[] padding = new int[] {0, 0};
         protected AlgoMode cudnnAlgoMode = AlgoMode.PREFER_FASTEST;
+        protected FwdAlgo cudnnFwdAlgo;
+        protected BwdFilterAlgo cudnnBwdFilterAlgo;
+        protected BwdDataAlgo cudnnBwdDataAlgo;
 
 
         protected BaseConvBuilder(int[] kernelSize, int[] stride, int[] padding) {
@@ -551,6 +613,21 @@ public class ConvolutionLayer extends FeedForwardLayer {
         /** Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory. */
         public T cudnnAlgoMode(AlgoMode cudnnAlgoMode) {
             this.cudnnAlgoMode = cudnnAlgoMode;
+            return (T) this;
+        }
+
+        public T cudnnFwdMode(FwdAlgo cudnnFwdAlgo) {
+            this.cudnnFwdAlgo = cudnnFwdAlgo;
+            return (T) this;
+        }
+
+        public T cudnnBwdFilterMode(BwdFilterAlgo cudnnBwdFilterAlgo) {
+            this.cudnnBwdFilterAlgo = cudnnBwdFilterAlgo;
+            return (T) this;
+        }
+
+        public T cudnnBwdDataMode(BwdDataAlgo cudnnBwdDataAlgo) {
+            this.cudnnBwdDataAlgo = cudnnBwdDataAlgo;
             return (T) this;
         }
     }

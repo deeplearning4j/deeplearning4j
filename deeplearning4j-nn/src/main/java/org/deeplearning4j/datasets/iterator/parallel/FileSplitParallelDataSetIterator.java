@@ -71,6 +71,10 @@ public class FileSplitParallelDataSetIterator extends BaseParallelDataSetIterato
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         int cnt = 0;
         for (List<File> part: Lists.partition(files, files.size() / numThreads)) {
+            // discard remainder
+            if (cnt >= numThreads)
+                break;
+
             int cDev = cnt % numDevices;
             asyncIterators.add(new AsyncDataSetIterator(new FileSplitDataSetIterator(part, callback), bufferPerThread, true, cDev));
             cnt++;

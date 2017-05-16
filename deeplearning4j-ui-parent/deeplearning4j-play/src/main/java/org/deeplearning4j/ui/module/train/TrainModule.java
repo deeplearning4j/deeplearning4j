@@ -31,6 +31,7 @@ import org.deeplearning4j.ui.views.html.training.TrainingHelp;
 import org.deeplearning4j.ui.views.html.training.TrainingModel;
 import org.deeplearning4j.ui.views.html.training.TrainingOverview;
 import org.deeplearning4j.ui.views.html.training.TrainingSystem;
+import org.nd4j.linalg.learning.config.IUpdater;
 import play.libs.Json;
 import play.mvc.Result;
 import play.mvc.Results;
@@ -926,8 +927,8 @@ public class TrainModule implements UIModule {
                         layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerWeightInit"),
                                         str});
 
-                        Updater u = layer.getUpdater();
-                        String us = (u == null ? "" : u.toString());
+                        IUpdater u = layer.getIUpdater();
+                        String us = (u == null ? "" : u.getClass().getSimpleName());
                         layerInfoRows.add(
                                         new String[] {i18N.getMessage("train.model.layerinfotable.layerUpdater"), us});
 
