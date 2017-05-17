@@ -22,6 +22,8 @@ import org.datavec.api.transform.metadata.*;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.writable.*;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +45,8 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties({"inputSchema", "columnType"})
 public class SequenceDifferenceTransform implements Transform {
 
 

@@ -30,7 +30,8 @@ import java.util.List;
 /**
  * Split a sequence into a number of smaller sequences of length 'maxSequenceLength'.
  * If the sequence length is smaller than maxSequenceLength, the sequence is unchanged
- * Created by Alex on 16/03/2016.
+ *
+ * @author Alex Black
  */
 @EqualsAndHashCode(exclude = {"inputSchema"})
 @JsonIgnoreProperties({"inputSchema"})
