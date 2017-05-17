@@ -16,9 +16,11 @@
 
 package org.datavec.api.transform;
 
+import org.datavec.api.transform.sequence.ReduceSequenceTransform;
 import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.transform.transform.parse.ParseDoubleTransform;
 import org.datavec.api.transform.transform.sequence.SequenceDifferenceTransform;
+import org.datavec.api.transform.transform.sequence.SequenceMovingWindowReduceTransform;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -97,7 +99,11 @@ import java.util.List;
                 @JsonSubTypes.Type(value = ParseDoubleTransform.class, name = "ParseDoubleTransform"),
                 @JsonSubTypes.Type(value = ConvertToString.class, name = "ConvertToStringTransform"),
                 @JsonSubTypes.Type(value = AppendStringColumnTransform.class, name = "AppendStringColumnTransform"),
-                @JsonSubTypes.Type(value = SequenceDifferenceTransform.class, name = "SequenceDifferenceTransform")})
+                @JsonSubTypes.Type(value = SequenceDifferenceTransform.class, name = "SequenceDifferenceTransform"),
+                @JsonSubTypes.Type(value = ReduceSequenceTransform.class, name = "ReduceSequenceTransform"),
+                @JsonSubTypes.Type(value = SequenceMovingWindowReduceTransform.class, name = "SequenceMovingWindowReduceTransform"),
+
+})
 public interface Transform extends Serializable, ColumnOp {
 
     /**
