@@ -24,6 +24,7 @@ import org.datavec.api.transform.sequence.ReduceSequenceTransform;
 import org.datavec.api.transform.transform.categorical.*;
 import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.transform.transform.sequence.SequenceDifferenceTransform;
+import org.datavec.api.transform.transform.sequence.SequenceMovingWindowReduceTransform;
 import org.datavec.api.writable.*;
 import org.datavec.api.transform.condition.column.IntegerColumnCondition;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
@@ -1090,5 +1091,46 @@ public class TestTransforms {
                 .build();
 
         assertEquals(expOutSchema, t.transform(schema));
+    }
+
+    @Test
+    public void testSequenceMovingWindowReduceTransform(){
+        List<List<Writable>> seq = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)),
+                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)),
+                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11)));
+
+        List<List<Writable>> exp1 = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2), new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5), new DoubleWritable((2+5)/2.0)),
+                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8), new DoubleWritable((2+5+8)/3.0)),
+                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11), new DoubleWritable((5+8+11)/3.0)));
+
+        List<List<Writable>> exp2 = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2), NullWritable.INSTANCE),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5), NullWritable.INSTANCE),
+                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8), new DoubleWritable((2+5+8)/3.0)),
+                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11), new DoubleWritable((5+8+11)/3.0)));
+
+        Schema schema = new SequenceSchema.Builder().addColumnsDouble("col%d",0,2).build();
+        Schema expOutSchema1 = new SequenceSchema.Builder().addColumnsDouble("col%d",0,2).addColumnDouble("mean(3,col2)").build();
+        Schema expOutSchema2 = new SequenceSchema.Builder().addColumnsDouble("col%d",0,2).addColumnDouble("newCol").build();
+
+        SequenceMovingWindowReduceTransform t1 = new SequenceMovingWindowReduceTransform("col2",3,ReduceOp.Mean);
+        SequenceMovingWindowReduceTransform t2 = new SequenceMovingWindowReduceTransform("col2","newCol",
+                3,ReduceOp.Mean, SequenceMovingWindowReduceTransform.EdgeCaseHandling.SpecifiedValue, NullWritable.INSTANCE);
+
+        t1.setInputSchema(schema);
+        assertEquals(expOutSchema1, t1.transform(schema));
+
+        t2.setInputSchema(schema);
+        assertEquals(expOutSchema2, t2.transform(schema));
+
+        List<List<Writable>> act1 = t1.mapSequence(seq);
+        List<List<Writable>> act2 = t2.mapSequence(seq);
+
+        assertEquals(exp1, act1);
+        assertEquals(exp2, act2);
     }
 }

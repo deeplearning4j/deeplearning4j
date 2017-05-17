@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ClassUtils;
 import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.sequence.*;
+import org.datavec.api.transform.transform.sequence.SequenceMovingWindowReduceTransform;
 import org.datavec.api.transform.transform.string.AppendStringColumnTransform;
 import org.datavec.api.transform.transform.string.ConvertToString;
 import org.datavec.api.transform.transform.string.ReplaceStringTransform;
@@ -981,6 +982,24 @@ public class TransformProcess implements Serializable {
          */
         public Builder reduceSequenceByWindow(IReducer reducer, WindowFunction windowFunction) {
             actionList.add(new DataAction(new ReduceSequenceByWindowTransform(reducer, windowFunction)));
+            return this;
+        }
+
+        /**
+         * SequenceMovingWindowReduceTransform: Adds a new column, where the value is derived by:<br>
+         * (a) using a window of the last N values in a single column,<br>
+         * (b) Apply a reduction op on the window to calculate a new value<br>
+         * for example, this transformer can be used to implement a simple moving average of the last N values,
+         * or determine the minimum or maximum values in the last N time steps.
+         * <p>
+         * For example, for a simple moving average, length 20: {@code new SequenceMovingWindowReduceTransform("myCol", 20, ReduceOp.Mean)}
+         *
+         * @param columnName Column name to perform windowing on
+         * @param lookback   Look back period for windowing
+         * @param op         Reduction operation to perform on each window
+         */
+        public Builder sequenceMovingWindowReduce(String columnName, int lookback, ReduceOp op){
+            actionList.add(new DataAction(new SequenceMovingWindowReduceTransform(columnName, lookback, op)));
             return this;
         }
 

@@ -28,10 +28,24 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Created by Alex on 17/05/2017.
+ * Various utilities for performing reductions
+ *
+ * @author Alex Black
  */
 public class ReductionUtils {
 
+    private ReductionUtils(){ }
+
+    /**
+     * Reduce a single column
+     *
+     * @param op            Reduction operation
+     * @param type          Column type
+     * @param values        Values to reduce
+     * @param ignoreInvalid Whether invalid values should be ignored when performing the reduction
+     * @param metaData      Meta data for the column. Maybe null if ignoreValid == false
+     * @return              The reduced value
+     */
     public static Writable reduceColumn(ReduceOp op, ColumnType type, List<Writable> values, boolean ignoreInvalid,
                                         ColumnMetaData metaData) {
         switch (type) {

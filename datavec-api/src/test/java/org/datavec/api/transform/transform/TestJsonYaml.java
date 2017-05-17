@@ -139,7 +139,7 @@ public class TestJsonYaml {
                                         //Calculate sorted rank
                                         .convertFromSequence()
                                         .calculateSortedRank("rankColName", "TimeCol2", new LongWritableComparator())
-
+                                        .sequenceMovingWindowReduce("rankColName", 20, ReduceOp.Mean)
                                         .build();
 
         String asJson = tp.toJson();

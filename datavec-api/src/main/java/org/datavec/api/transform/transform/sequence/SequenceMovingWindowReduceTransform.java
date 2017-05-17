@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.sequence;
 
+import lombok.Data;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.Transform;
@@ -28,6 +29,7 @@ import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,8 +49,16 @@ import java.util.List;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties({"inputSchema"})
+@Data
 public class SequenceMovingWindowReduceTransform implements Transform {
 
+    /**
+     * Enumeration to specify how each cases are handled: For example, for a look back period of 20, how should the
+     * first 19 output values be calculated?<br>
+     * Default: Perform your former reduction as normal, with as many values are available<br>
+     * SpecifiedValue: use the given/specified value instead of the actual output value. For example, you could assign
+     * values of 0 or NullWritable to positions 0 through 18 of the output.
+     */
     public enum EdgeCaseHandling {
         Default, SpecifiedValue
     }
@@ -61,30 +71,44 @@ public class SequenceMovingWindowReduceTransform implements Transform {
     private final Writable edgeCaseValue;
     private Schema inputSchema;
 
+    /**
+     *
+     * @param columnName Column name to perform windowing on
+     * @param lookback   Look back period for windowing
+     * @param op         Reduction operation to perform on each window
+     */
     public SequenceMovingWindowReduceTransform(String columnName, int lookback, ReduceOp op) {
         this(columnName, defaultOutputColumnName(columnName, lookback, op), lookback, op, EdgeCaseHandling.Default, null);
     }
 
-    public SequenceMovingWindowReduceTransform(String columnName, String newColumnName, int lookback, ReduceOp op,
-                                               EdgeCaseHandling firstStepMode, Writable edgeCaseValue) {
+    /**
+     * @param columnName       Column name to perform windowing on
+     * @param newColumnName    Name of the new output column (with results)
+     * @param lookback         Look back period for windowing
+     * @param op               Reduction operation to perform on each window
+     * @param edgeCaseHandling How the 1st steps should be handled (positions in sequence with indices less then the look-back period)
+     * @param edgeCaseValue    Used only with EdgeCaseHandling.SpecifiedValue, maybe null otherwise
+     */
+    public SequenceMovingWindowReduceTransform(@JsonProperty("columnName") String columnName,
+                                               @JsonProperty("newColumnName") String newColumnName,
+                                               @JsonProperty("lookback") int lookback,
+                                               @JsonProperty("op") ReduceOp op,
+                                               @JsonProperty("edgeCaseHandling") EdgeCaseHandling edgeCaseHandling,
+                                               @JsonProperty("edgeCaseValue") Writable edgeCaseValue) {
         this.columnName = columnName;
         this.newColumnName = newColumnName;
         this.lookback = lookback;
         this.op = op;
-        this.edgeCaseHandling = firstStepMode;
+        this.edgeCaseHandling = edgeCaseHandling;
         this.edgeCaseValue = edgeCaseValue;
     }
 
     public static String defaultOutputColumnName(String originalName, int lookback, ReduceOp op){
-        return op + "(" + lookback + "," + originalName + ")";
+        return op.toString().toLowerCase() + "(" + lookback + "," + originalName + ")";
     }
 
     @Override
     public Schema transform(Schema inputSchema) {
-        if (inputSchema != null && !(inputSchema instanceof SequenceSchema)) {
-            throw new IllegalArgumentException("Invalid input: input schema must be a SequenceSchema");
-        }
-
         int colIdx = inputSchema.getIndexOfColumn(columnName);
 
         //Approach here: The reducer gives us a schema for one time step -> simply convert this to a sequence schema...
@@ -151,7 +175,7 @@ public class SequenceMovingWindowReduceTransform implements Transform {
                 window.removeFirst();
             }
             Writable reduced;
-            if(i <= lookback && edgeCaseHandling == EdgeCaseHandling.SpecifiedValue){
+            if(window.size() < lookback && edgeCaseHandling == EdgeCaseHandling.SpecifiedValue){
                 reduced = edgeCaseValue;
             } else {
                 reduced = ReductionUtils.reduceColumn(op, columnType, window, false, null );
