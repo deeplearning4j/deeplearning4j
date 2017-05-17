@@ -33,6 +33,8 @@ import java.util.*;
  * (mask value 0) and hence won't be included in the calculated ROC.
  */
 @EqualsAndHashCode(callSuper = true)
+@Data
+@NoArgsConstructor
 public class ROCBinary extends BaseEvaluation<ROCBinary> {
     public static final int DEFAULT_PRECISION = 4;
 
@@ -44,15 +46,10 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
 
     public ROCBinary(int thresholdSteps) {
         this.thresholdSteps = thresholdSteps;
-        countActualNegative = new long[0];
-        countActualPositive = new long[0];
+        countActualNegative = null;
+        countActualPositive = null;
     }
 
-    public ROCBinary() {
-        this.countsForThresholdMap = new HashMap<>();
-        countActualNegative = new long[0];
-        countActualPositive = new long[0];
-    }
 
     @Override
     public void reset() {
