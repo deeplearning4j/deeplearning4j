@@ -34,7 +34,7 @@ public class EvalTests {
 
         EvaluationBinary evaluationBinary = new EvaluationBinary();
         json = evaluationBinary.toJson();
-        assertEquals(regressionEvaluation,BaseEvaluation.fromJson(json,EvaluationBinary.class));
+        assertEquals(evaluationBinary,BaseEvaluation.fromJson(json,EvaluationBinary.class));
 
 
 
