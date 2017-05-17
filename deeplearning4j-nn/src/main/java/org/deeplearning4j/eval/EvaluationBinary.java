@@ -7,7 +7,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
-import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,16 +42,13 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
     private List<String> labels;
 
-    public EvaluationBinary(int size) {
-        this(size, null);
-    }
 
     /**
      * This constructor allows for ROC to be calculated in addition to the standard evaluation metrics, when the
      * rocBinarySteps arg is non-null. See {@link ROCBinary} for more details
      *
      * @param size           Number of outputs
-     * @param rocBinarySteps Consructor arg for {@link ROCBinary#ROCBinary(int)}
+     * @param rocBinarySteps Constructor arg for {@link ROCBinary#ROCBinary(int)}
      */
     public EvaluationBinary(int size, Integer rocBinarySteps) {
         countTruePositive = new int[size];
@@ -217,6 +213,10 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
                 + countFalsePositive[outputNum];
     }
 
+
+
+
+
     /**
      * Get the true positives count for the specified output
      */
@@ -249,12 +249,32 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         return countFalseNegative[outputNum];
     }
 
+    public double averageAccuracy() {
+        double ret = 0.0;
+        for(int i = 0; i < numLabels(); i++) {
+            ret += accuracy(i);
+        }
+
+        ret /= (double) numLabels();
+        return ret;
+    }
+
     /**
      * Get the accuracy for the specified output
      */
     public double accuracy(int outputNum) {
         assertIndex(outputNum);
         return (countTruePositive[outputNum] + countTrueNegative[outputNum]) / (double) totalCount(outputNum);
+    }
+
+    public double averagePrecision() {
+        double ret = 0.0;
+        for(int i = 0; i < numLabels(); i++) {
+            ret += precision(i);
+        }
+
+        ret /= (double) numLabels();
+        return ret;
     }
 
     /**
@@ -266,6 +286,16 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         return countTruePositive[outputNum] / (double) (countTruePositive[outputNum] + countFalsePositive[outputNum]);
     }
 
+
+    public double averageRecall() {
+        double ret = 0.0;
+        for(int i = 0; i < numLabels(); i++) {
+            ret += recall(i);
+        }
+
+        ret /= (double) numLabels();
+        return ret;
+    }
     /**
      * Get the recall (tp / (tp + fn)) for the specified output
      */
@@ -274,6 +304,16 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         return countTruePositive[outputNum] / (double) (countTruePositive[outputNum] + countFalseNegative[outputNum]);
     }
 
+
+    public double averageF1() {
+        double ret = 0.0;
+        for(int i = 0; i < numLabels(); i++) {
+            ret += f1(i);
+        }
+
+        ret /= (double) numLabels();
+        return ret;
+    }
     /**
      * Get the F1 score for the specified output
      */

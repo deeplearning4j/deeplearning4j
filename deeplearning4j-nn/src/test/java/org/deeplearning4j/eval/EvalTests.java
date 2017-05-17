@@ -36,6 +36,10 @@ public class EvalTests {
         json = evaluationBinary.toJson();
         assertEquals(evaluationBinary,BaseEvaluation.fromJson(json,EvaluationBinary.class));
 
+        evaluationBinary.averageAccuracy();
+        evaluationBinary.averageF1();
+        evaluationBinary.averagePrecision();
+        evaluationBinary.averageRecall();
 
 
     }
