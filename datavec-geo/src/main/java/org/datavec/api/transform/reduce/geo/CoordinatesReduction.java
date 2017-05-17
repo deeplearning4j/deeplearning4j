@@ -23,7 +23,7 @@ import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.StringMetaData;
 import org.datavec.api.transform.reduce.ColumnReduction;
-import org.datavec.api.transform.reduce.Reducer;
+import org.datavec.api.transform.reduce.ReductionUtils;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Text;
@@ -71,7 +71,7 @@ public class CoordinatesReduction implements ColumnReduction {
         }
         String output = "";
         for (int i = 0; i < values.length; i++) {
-            output += Reducer.reduceDoubleColumn(op, values[i], false, null).toString();
+            output += ReductionUtils.reduceDoubleColumn(op, values[i], false, null).toString();
             if (i < values.length - 1) {
                 output += delimiter;
             }
