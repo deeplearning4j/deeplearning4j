@@ -535,4 +535,36 @@ public class ROCTest {
             assertArrayEquals(rocCurve[1], rocManual[1], 1e-6);
         }
     }
+
+    @Test
+    public void testAUCPrecisionRecall(){
+        //Assume 2 positive examples, at 0.33 and 0.66 predicted, 1 negative example at 0.25 prob
+        //at threshold 0 to 0.24999: tp=2, fp=1, fn=0, tn=0 prec=2/(2+1)=0.666, recall=2/2=1.0
+        //at threshold 0.25 to 0.33: tp=2, fp=0, fn=0, tn=1 prec=2/2=1, recall=2/2=1
+        //at threshold 0.331 to 0.66: tp=1, fp=0, fn=1, tn=1 prec=1/1=1, recall=1/2=0.5
+        //at threshold 0.661 to 1.0:  tp=0, fp=0, fn=2, tn=1 prec=0/0=1, recall=0/2=0
+
+        //area: 1.0
+        ROC r = new ROC(10);
+        INDArray zero = Nd4j.zeros(1);
+        INDArray one = Nd4j.ones(1);
+        r.eval(zero, Nd4j.create(new double[]{0.25}));
+        r.eval(one, Nd4j.create(new double[]{0.33}));
+        r.eval(one, Nd4j.create(new double[]{0.66}));
+
+        assertEquals(1.0, r.calculateAUCPR(), 1e-6);
+
+        //Assume 2 positive examples, at 0.33 and 0.66 predicted, 1 negative example at 0.5 prob
+        //at threshold 0 to 0.33: tp=2, fp=1, fn=0, tn=0 prec=2/(2+1)=0.666, recall=2/2=1.0
+        //at threshold 0.331 to 0.5: tp=1, fp=1, fn=1, tn=0 prec=1/2=0.5, recall=1/2=0.5
+        //at threshold 0.51 to 0.66: tp=1, fp=0, fn=1, tn=1 prec=1/1=1, recall=1/2=0.5
+        //at threshold 0.661 to 1.0:  tp=0, fp=0, fn=2, tn=1 prec=0/0=1, recall=0/2=0
+        //Area: 0.5 + 0.25 + 0.5*0.5*(0.66666-0.5) = 0.5+0.25+0.04165 = 0.79165
+        //But, we use 10 steps so the calculation might not match this exactly, but should be close
+        r = new ROC(10);
+        r.eval(one, Nd4j.create(new double[]{0.33}));
+        r.eval(zero, Nd4j.create(new double[]{0.5}));
+        r.eval(one, Nd4j.create(new double[]{0.66}));
+        assertEquals(0.79165, r.calculateAUCPR(), 1e-4);
+    }
 }

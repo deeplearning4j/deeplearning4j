@@ -726,7 +726,6 @@ public class EvalTest {
 
     @Test
     public void testF1FBeta_MicroMacroAveraging(){
-
         //Confusion matrix: rows = actual, columns = predicted
         //[3, 1, 0]
         //[2, 2, 1]
@@ -848,14 +847,14 @@ public class EvalTest {
         assertEquals(macroRecall, e.recall(EvaluationAveraging.Macro), 1e-6);
 
         assertEquals(microFBeta, e.fBeta(beta, EvaluationAveraging.Micro), 1e-6);
-        assertEquals(microFBeta, e.fBeta(beta, EvaluationAveraging.Micro), 1e-6);
-        assertEquals(macroFBeta, e.fBeta(beta, EvaluationAveraging.Macro), 1e-6);
         assertEquals(macroFBeta, e.fBeta(beta, EvaluationAveraging.Macro), 1e-6);
 
         assertEquals(microF1, e.f1(EvaluationAveraging.Micro), 1e-6);
-        assertEquals(microF1, e.f1(EvaluationAveraging.Micro), 1e-6);
         assertEquals(macroF1, e.f1(EvaluationAveraging.Macro), 1e-6);
-        assertEquals(macroF1, e.f1(EvaluationAveraging.Macro), 1e-6);
+
+        assertEquals(microMcc, e.matthewsCorrelation(EvaluationAveraging.Micro), 1e-6);
+        assertEquals(macroMcc, e.matthewsCorrelation(EvaluationAveraging.Macro), 1e-6);
+
     }
 
     private static void apply(Evaluation e, int nTimes, INDArray predicted, INDArray actual){
