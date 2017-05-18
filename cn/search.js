@@ -459,4 +459,10 @@ var PAGES = [{
 "title": "MNIST数据集与受限玻尔兹曼机",
 "description": "MNIST是一个大型手写数字数据集，用于训练神经网络及其他算法进行图像识别，其定型集有6万幅图像，测试集有1万幅图像。",
 "tags": ["mnist", "rbms", "受限玻尔兹曼机", "教程", "nist", "手写"]
+},
+{
+"url": "https://deeplearning4j.org/cn/multilayer-configuration",
+"title": "MultiLayerConfiguration类",
+"description": "MultiLayerConfiguration（多层网络配置）类是在Deeplearning4j中创建深度学习网络的基础构建器。以下是多层网络配置的参数及其默认设置。",
+"tags": ["多层", "multilayer", "configuration", "多层神经网络", "基础构建器", "多层网络", "hiddenlayersizes", "usedropconnect", "list", "override","MultiLayerConfiguration"]
 }];
