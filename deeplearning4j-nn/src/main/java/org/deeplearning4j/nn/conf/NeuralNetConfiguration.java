@@ -274,7 +274,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors)
                             .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                             .tBPTTBackwardLength(tbpttBackLength).cnnInputSize(this.cnnInputSize)
-                            .setInputType(this.inputType).trainingWorkspaceMode(globalConfig.trainingWorkspaceMode).confs(list).build();
+                            .setInputType(this.inputType).trainingWorkspaceMode(globalConfig.trainingWorkspaceMode)
+                            .inferenceWorkspaceMode(globalConfig.inferenceWorkspaceMode).confs(list).build();
         }
 
     }
