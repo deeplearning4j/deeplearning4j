@@ -16,11 +16,13 @@
 
 package org.datavec.api.transform.transform.column;
 
+import lombok.Data;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +32,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@Data
 public class AddConstantColumnTransform implements Transform {
 
     private final String newColumnName;
@@ -39,7 +42,9 @@ public class AddConstantColumnTransform implements Transform {
     private Schema inputSchema;
 
 
-    public AddConstantColumnTransform(String newColumnName, ColumnType newColumnType, Writable fixedValue) {
+    public AddConstantColumnTransform(@JsonProperty("newColumnName") String newColumnName,
+                                      @JsonProperty("newColumnType") ColumnType newColumnType,
+                                      @JsonProperty("fixedValue") Writable fixedValue) {
         this.newColumnName = newColumnName;
         this.newColumnType = newColumnType;
         this.fixedValue = fixedValue;

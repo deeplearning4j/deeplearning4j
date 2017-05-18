@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ClassUtils;
 import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.sequence.*;
+import org.datavec.api.transform.transform.integer.IntegerToOneHotTransform;
 import org.datavec.api.transform.transform.sequence.SequenceMovingWindowReduceTransform;
 import org.datavec.api.transform.transform.string.AppendStringColumnTransform;
 import org.datavec.api.transform.transform.string.ConvertToString;
@@ -811,6 +812,17 @@ public class TransformProcess implements Serializable {
          */
         public Builder integerToCategorical(String columnName, Map<Integer, String> categoryIndexNameMap) {
             return transform(new IntegerToCategoricalTransform(columnName, categoryIndexNameMap));
+        }
+
+        /**
+         * Convert an integer column to a set of 1 hot columns, based on the value in integer column
+         *
+         * @param columnName Name of the integer column
+         * @param minValue   Minimum value possible for the integer column (inclusive)
+         * @param maxValue   Maximum value possible for the integer column (inclusive)
+         */
+        public Builder integerToOneHot(String columnName, int minValue, int maxValue){
+            return transform(new IntegerToOneHotTransform(columnName, minValue, maxValue));
         }
 
         /**
