@@ -16,10 +16,7 @@
 
 package org.datavec.api.transform.transform;
 
-import org.datavec.api.transform.DataAction;
-import org.datavec.api.transform.MathOp;
-import org.datavec.api.transform.ReduceOp;
-import org.datavec.api.transform.TransformProcess;
+import org.datavec.api.transform.*;
 import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.analysis.columns.CategoricalAnalysis;
 import org.datavec.api.transform.analysis.columns.DoubleAnalysis;
@@ -42,6 +39,7 @@ import org.datavec.api.transform.transform.string.ReplaceEmptyStringTransform;
 import org.datavec.api.transform.transform.string.StringListToCategoricalSetTransform;
 import org.datavec.api.transform.transform.time.DeriveColumnsFromTimeTransform;
 import org.datavec.api.writable.DoubleWritable;
+import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.comparator.LongWritableComparator;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
@@ -140,6 +138,8 @@ public class TestJsonYaml {
                                         .convertFromSequence()
                                         .calculateSortedRank("rankColName", "TimeCol2", new LongWritableComparator())
                                         .sequenceMovingWindowReduce("rankColName", 20, ReduceOp.Mean)
+                                        .addConstantColumn("someIntColumn", ColumnType.Integer, new IntWritable(0))
+                                        .integerToOneHot("someIntColumn", 0, 3)
                                         .build();
 
         String asJson = tp.toJson();

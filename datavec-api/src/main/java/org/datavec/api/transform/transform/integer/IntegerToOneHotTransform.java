@@ -46,7 +46,9 @@ public class IntegerToOneHotTransform extends BaseTransform {
     private int maxValue;
     private int columnIdx = -1;
 
-    public IntegerToOneHotTransform(@JsonProperty("columnName") String columnName, int minValue, int maxValue) {
+    public IntegerToOneHotTransform(@JsonProperty("columnName") String columnName,
+                                    @JsonProperty("minValue") int minValue,
+                                    @JsonProperty("maxValue") int maxValue) {
         this.columnName = columnName;
         this.minValue = minValue;
         this.maxValue = maxValue;
@@ -116,6 +118,10 @@ public class IntegerToOneHotTransform extends BaseTransform {
 
             if (i++ == idx) {
                 int currValue = w.toInt();
+                if(currValue < minValue || currValue > maxValue){
+                    throw new IllegalStateException("Invalid value: integer value (" + currValue + ") is outside of "
+                            + "valid range: must be between " + minValue + " and " + maxValue + " inclusive");
+                }
 
                 for (int j = minValue; j <= maxValue; j++) {
                     if (j == currValue) {
@@ -142,9 +148,12 @@ public class IntegerToOneHotTransform extends BaseTransform {
     @Override
     public Object map(Object input) {
         int currValue = ((Number)input).intValue();
+        if(currValue < minValue || currValue > maxValue){
+            throw new IllegalStateException("Invalid value: integer value (" + currValue + ") is outside of "
+                    + "valid range: must be between " + minValue + " and " + maxValue + " inclusive");
+        }
 
         List<Integer> oneHot = new ArrayList<>();
-        int n = maxValue - minValue + 1;
         for (int j = minValue; j <= maxValue; j++) {
             if (j == currValue) {
                 oneHot.add(1);

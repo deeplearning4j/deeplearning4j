@@ -23,6 +23,7 @@ import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.sequence.ReduceSequenceTransform;
 import org.datavec.api.transform.transform.categorical.*;
 import org.datavec.api.transform.transform.column.*;
+import org.datavec.api.transform.transform.integer.*;
 import org.datavec.api.transform.transform.sequence.SequenceDifferenceTransform;
 import org.datavec.api.transform.transform.sequence.SequenceMovingWindowReduceTransform;
 import org.datavec.api.writable.*;
@@ -32,8 +33,6 @@ import org.datavec.api.transform.metadata.DoubleMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
-import org.datavec.api.transform.transform.integer.ReplaceEmptyIntegerWithValueTransform;
-import org.datavec.api.transform.transform.integer.ReplaceInvalidWithIntegerTransform;
 import org.datavec.api.transform.transform.longtransform.LongColumnsMathOpTransform;
 import org.datavec.api.transform.transform.longtransform.LongMathOpTransform;
 import org.datavec.api.transform.transform.doubletransform.*;
@@ -46,8 +45,6 @@ import org.datavec.api.transform.condition.ConditionOp;
 import org.datavec.api.transform.condition.column.StringColumnCondition;
 import org.datavec.api.transform.metadata.LongMetaData;
 import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
-import org.datavec.api.transform.transform.integer.IntegerColumnsMathOpTransform;
-import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
 import junit.framework.TestCase;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
@@ -194,7 +191,7 @@ public class TestTransforms {
         Schema out = transform.transform(schema);
 
         assertEquals(1, out.getColumnMetaData().size());
-        TestCase.assertEquals(ColumnType.Categorical, out.getMetaData(0).getColumnType());
+        assertEquals(ColumnType.Categorical, out.getMetaData(0).getColumnType());
         CategoricalMetaData meta = (CategoricalMetaData) out.getMetaData(0);
         assertEquals(Arrays.asList("zero", "one", "two"), meta.getStateNames());
 
@@ -204,6 +201,29 @@ public class TestTransforms {
                         transform.map(Collections.singletonList((Writable) new IntWritable(1))));
         assertEquals(Collections.singletonList((Writable) new Text("two")),
                         transform.map(Collections.singletonList((Writable) new IntWritable(2))));
+    }
+
+    @Test
+    public void testIntegerToOneHotTransform() {
+        Schema schema = getSchema(ColumnType.Integer);
+
+        Transform transform = new IntegerToOneHotTransform("column", 3, 5);
+        transform.setInputSchema(schema);
+        Schema out = transform.transform(schema);
+
+        assertEquals(3, out.getColumnMetaData().size());
+        assertEquals(ColumnType.Integer, out.getMetaData(0).getColumnType());
+        assertEquals(ColumnType.Integer, out.getMetaData(1).getColumnType());
+        assertEquals(ColumnType.Integer, out.getMetaData(2).getColumnType());
+
+        assertEquals(Arrays.asList("column[3]", "column[4]", "column[5]"), out.getColumnNames());
+
+        assertEquals(Arrays.<Writable>asList(new IntWritable(1), new IntWritable(0), new IntWritable(0)),
+                transform.map(Collections.singletonList((Writable) new IntWritable(3))));
+        assertEquals(Arrays.<Writable>asList(new IntWritable(0), new IntWritable(1), new IntWritable(0)),
+                transform.map(Collections.singletonList((Writable) new IntWritable(4))));
+        assertEquals(Arrays.<Writable>asList(new IntWritable(0), new IntWritable(0), new IntWritable(1)),
+                transform.map(Collections.singletonList((Writable) new IntWritable(5))));
     }
 
     @Test
