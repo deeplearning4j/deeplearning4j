@@ -477,4 +477,10 @@ var PAGES = [{
 "title": "递归神经张量网络",
 "description": "递归神经张量网络（RNTN）是适合用于自然语言处理的神经网络。RNTN呈树状结构，在每个节点上都有一个神经网络。您可以用RNTN来进行边界切分，判定词组属于正面还是负面，也可以对整个句子进行这些操作。",
 "tags": ["递归", "rntn", "递归神经张量网络", "nlp", "word2vec", "自然语言", "词", "数据加工", "词性", "语句","词袋"]
+},
+{
+"url": "https://deeplearning4j.org/cn/osx",
+"title": "在OSX上进行安装",
+"description": "示范如何在 Mac OSX 上设置 Deeplearning4j。",
+"tags": ["OSX", "Mac", "入门", "新手", "如何", "开始", "怎样", "java", "intellij", "设置","maven"]
 }];
