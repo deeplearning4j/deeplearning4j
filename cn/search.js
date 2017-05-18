@@ -483,4 +483,10 @@ var PAGES = [{
 "title": "在OSX上进行安装",
 "description": "示范如何在 Mac OSX 上设置 Deeplearning4j。",
 "tags": ["OSX", "Mac", "入门", "新手", "如何", "开始", "怎样", "java", "intellij", "设置","maven"]
+},
+{
+"url": "https://deeplearning4j.org/cn/linux",
+"title": "在Linux上进行安装",
+"description": "示范如何在 Linux 上设置 Deeplearning4j。",
+"tags": ["linux", "入门", "新手", "如何", "开始", "怎样", "java", "intellij", "设置","maven"]
 }];

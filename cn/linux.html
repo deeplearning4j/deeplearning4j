@@ -1,18 +1,28 @@
 ---
 layout: cn-default
-title: 在OSX上进行安装
+title: 在Linux上进行安装
 ---
-<h1>在OSX上进行安装</h1>
+<h1>在Linux上进行安装</h1>
 <ul>
   <li>如需运行示例，请参阅<a href="quickstart">快速入门指南</a>。</li>
-  <li>DeepLearning4J需要<a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html" target="_blank">Java 8</a>或以上的版本。</li>
-  <li>CPU操作依赖于Jblas，所以需要BLAS的原生绑定。这在OSX系统上已经安装。</li>
-  <li>您可以从源代码或Maven中央仓库安装DL4J。以下是从<strong>源代码</strong>安装的操作指南。</li>
-</ul>
-<pre class="line-numbers"><code class="language-java">
-git clone https://github.com/agibsonccc/java-deeplearning
+  <li>DeepLearning4J需要<a href="http://www.oracle.com/technetwork/java/javase/downloads/index.html" target="_blank">Java 8</a>或以上的版本。
+  </li>
+  <li>CPU操作依赖于Jblas，所以需要BLAS的原生绑定。
+  <pre class="line-numbers"><code class="language-java">
+  Fedora/RHEL
+  yum -y install blas
+    
+  Ubuntu
+  apt-get install libblas* (感谢@sujitpal贡献代码)
+  </code></pre>
+  </li>
+  <li>可以从源代码或Maven中央仓库安装DL4J。以下是从<strong>源代码</strong>安装的操作指南。  
+  <pre class="line-numbers"><code class="language-java">
+  git clone https://github.com/agibsonccc/java-deeplearning
    cd java-deeplearning
-</code></pre>
+  </code></pre>
+  </li>
+</ul>
 <br>
 <br>
 <h2>IntelliJ</h2>
