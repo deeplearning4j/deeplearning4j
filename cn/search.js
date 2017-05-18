@@ -465,4 +465,16 @@ var PAGES = [{
 "title": "MultiLayerConfiguration类",
 "description": "MultiLayerConfiguration（多层网络配置）类是在Deeplearning4j中创建深度学习网络的基础构建器。以下是多层网络配置的参数及其默认设置。",
 "tags": ["多层", "multilayer", "configuration", "多层神经网络", "基础构建器", "多层网络", "hiddenlayersizes", "usedropconnect", "list", "override","MultiLayerConfiguration"]
+},
+{
+"url": "https://deeplearning4j.org/cn/neuralnet-configuration",
+"title": "MultiLayerConfiguration类",
+"description": "DL4J中的所有神经网络均以NeuralNetConfiguration构建器为基础创建。该对象极其灵活，无论您需要实现什么类型的神经网络层，几乎都可以通过它来构建。这个类的参数组合及配置可用于设定不同类型的层，包括受限玻尔兹曼机（RBM）、深度置信网络（DBN）、卷积神经网络（CNN）、自动编码器等。",
+"tags": ["NeuralNetConfiguration", "基础创建", "神经网络", "构建", "基础构建器", "activationFunction", "applySparsity", "batch", "constrainGradientToUnitNorm", "convolutionType","corruptionLevel","dist","corruptionLevel","dropOut","filterSize","hiddenUnit","inputPreProcessor","iterations","lossFunction","learningRate","minimize","momentum","momentumAfter","nIn","nOut","numIterations","numLineSearchIterations","optimizationAlgo","preProcessor","renderWeightsEveryNumEpochs","resetAdaGradIterations","rng","stride","sparsity","stepFunction","useAdaGrad","useRegularization","variables","visibleUnit","weightInit","weightShape"]
+},
+{
+"url": "https://deeplearning4j.org/cn/recursiveneuraltensornetwork",
+"title": "递归神经张量网络",
+"description": "递归神经张量网络（RNTN）是适合用于自然语言处理的神经网络。RNTN呈树状结构，在每个节点上都有一个神经网络。您可以用RNTN来进行边界切分，判定词组属于正面还是负面，也可以对整个句子进行这些操作。",
+"tags": ["递归", "rntn", "递归神经张量网络", "nlp", "word2vec", "自然语言", "词", "数据加工", "词性", "语句","词袋"]
 }];
