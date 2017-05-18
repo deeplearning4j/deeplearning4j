@@ -468,7 +468,7 @@ var PAGES = [{
 },
 {
 "url": "https://deeplearning4j.org/cn/neuralnet-configuration",
-"title": "MultiLayerConfiguration类",
+"title": "NeuralNetConfiguration类",
 "description": "DL4J中的所有神经网络均以NeuralNetConfiguration构建器为基础创建。该对象极其灵活，无论您需要实现什么类型的神经网络层，几乎都可以通过它来构建。这个类的参数组合及配置可用于设定不同类型的层，包括受限玻尔兹曼机（RBM）、深度置信网络（DBN）、卷积神经网络（CNN）、自动编码器等。",
 "tags": ["NeuralNetConfiguration", "基础创建", "神经网络", "构建", "基础构建器", "activationFunction", "applySparsity", "batch", "constrainGradientToUnitNorm", "convolutionType","corruptionLevel","dist","corruptionLevel","dropOut","filterSize","hiddenUnit","inputPreProcessor","iterations","lossFunction","learningRate","minimize","momentum","momentumAfter","nIn","nOut","numIterations","numLineSearchIterations","optimizationAlgo","preProcessor","renderWeightsEveryNumEpochs","resetAdaGradIterations","rng","stride","sparsity","stepFunction","useAdaGrad","useRegularization","variables","visibleUnit","weightInit","weightShape"]
 },
