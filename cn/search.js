@@ -453,4 +453,10 @@ var PAGES = [{
 "title": "使用DeepLearning4J所需的Maven配置",
 "description": "本页将介绍在使用DeepLearning4J之前如何设置Maven以及pom.xml文件。Maven依赖一个名为pom.xml的配置文件。本页将协助您配置该文件中的依赖项。",
 "tags": ["maven", "配置", "pom", "依赖", "可视化", "生成图标", "arbiter", "dependent", "setup", "configuration", "超参数", "hyperparameter"]
+},
+{
+"url": "https://deeplearning4j.org/cn/rbm-mnist-tutorial",
+"title": "MNIST数据集与受限玻尔兹曼机",
+"description": "MNIST是一个大型手写数字数据集，用于训练神经网络及其他算法进行图像识别，其定型集有6万幅图像，测试集有1万幅图像。",
+"tags": ["mnist", "rbms", "受限玻尔兹曼机", "教程", "nist", "手写"]
 }];
