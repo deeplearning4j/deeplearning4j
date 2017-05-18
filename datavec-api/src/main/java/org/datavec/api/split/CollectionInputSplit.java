@@ -23,6 +23,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Collection;
+import java.util.LinkedList;
 
 /**
  * A simple InputSplit based on a collection of URIs
@@ -32,7 +33,7 @@ import java.util.Collection;
 public class CollectionInputSplit extends BaseInputSplit {
 
     public CollectionInputSplit(Collection<URI> list) {
-        uriStrings = new CompactHeapStringList();
+        uriStrings = new LinkedList<>();
         for (URI uri : list) {
             uriStrings.add(uri.toString());
         }
