@@ -416,6 +416,9 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         StringBuilder builder = new StringBuilder().append("\n");
         StringBuilder warnings = new StringBuilder();
         List<Integer> classes = confusion.getClasses();
+
+        List<Integer> falsePositivesWarningClasses = new ArrayList<>();
+        List<Integer> falseNegativesWarningClasses = new ArrayList<>();
         for (Integer clazz : classes) {
             actual = resolveLabelForClass(clazz);
             //Output confusion matrix
@@ -431,47 +434,63 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             //Output possible warnings regarding precision/recall calculation
             if (!suppressWarnings && truePositives.getCount(clazz) == 0) {
                 if (falsePositives.getCount(clazz) == 0) {
-                    warnings.append(String.format(
-                                    "Warning: class %s was never predicted by the model. This class was excluded from the average precision%n",
-                                    actual));
+                    falsePositivesWarningClasses.add(clazz);
                 }
                 if (falseNegatives.getCount(clazz) == 0) {
-                    warnings.append(String.format(
-                                    "Warning: class %s has never appeared as a true label. This class was excluded from the average recall%n",
-                                    actual));
+                    falseNegativesWarningClasses.add(clazz);
                 }
             }
         }
+        if(falsePositivesWarningClasses.size() > 0){
+            warningHelper(warnings, falsePositivesWarningClasses, "precision");
+        }
+        if(falseNegativesWarningClasses.size() > 0){
+            warningHelper(warnings, falseNegativesWarningClasses, "recall");
+        }
+
         builder.append("\n");
         builder.append(warnings);
 
         int nClasses = confusion.getClasses().size();
-        DecimalFormat df = new DecimalFormat("#.####");
+        DecimalFormat df = new DecimalFormat("0.0000");
         double acc = accuracy();
         double precisionMacro = precision(EvaluationAveraging.Macro);
         double recallMacro = recall(EvaluationAveraging.Macro);
-        double precisionMicro = precision(EvaluationAveraging.Micro);
-        double recallMicro = recall(EvaluationAveraging.Micro);
         double f1Macro = f1(EvaluationAveraging.Macro);
-        double f1Micro = f1(EvaluationAveraging.Micro);
         builder.append("\n==========================Scores========================================");
-        builder.append("\n Accuracy:          ").append(format(df, acc));
+        builder.append("\n # of classes:    ").append(nClasses);
+        builder.append("\n Accuracy:        ").append(format(df, acc));
         if (topN > 1) {
             double topNAcc = topNAccuracy();
             builder.append("\n Top ").append(topN).append(" Accuracy:  ").append(format(df, topNAcc));
         }
-        if(nClasses > 2){
-            builder.append("\nMacro-averaged binary metrics (equally weighted per class)");
-        }
         builder.append("\n Precision:       ").append(format(df, precisionMacro));
-        builder.append("\n Recall:          ").append(format(df, recallMacro));
-        builder.append("\n F1 Score:        ").append(format(df, f1Macro));
-        if(nClasses > 2){
-            builder.append("\nMicro-averaged binary metrics (equally weighted per example)");
-            builder.append("\n Precision:       ").append(format(df, precisionMicro));
-            builder.append("\n Recall:          ").append(format(df, recallMicro));
-            builder.append("\n F1 Score:        ").append(format(df, f1Micro));
+        if(nClasses > 2 && averagePrecisionNumClassesExcluded() > 0){
+            int ex = averagePrecisionNumClassesExcluded();
+            builder.append("\t(").append(ex).append(" class");
+            if(ex > 1) builder.append("es");
+            builder.append(" excluded from average)");
         }
+        builder.append("\n Recall:          ").append(format(df, recallMacro));
+        if(nClasses > 2 && averageRecallNumClassesExcluded() > 0){
+            int ex = averageRecallNumClassesExcluded();
+            builder.append("\t(").append(ex).append(" class");
+            if(ex > 1) builder.append("es");
+            builder.append(" excluded from average)");
+        }
+        builder.append("\n F1 Score:        ").append(format(df, f1Macro));
+        if(nClasses > 2 && averageF1NumClassesExcluded() > 0){
+            int ex = averageF1NumClassesExcluded();
+            builder.append("\t(").append(ex).append(" class");
+            if(ex > 1) builder.append("es");
+            builder.append(" excluded from average)");
+        }
+        if(nClasses > 2){
+            builder.append("\nPrecision, recall & F1: macro-averaged (equally weighted avg. of ").append(nClasses).append(" classes)");
+        }
+        //Note that we could report micro-averaged too - but these are the same as accuracy
+        //"Note that for “micro”-averaging in a multiclass setting with all labels included will produce equal precision, recall and F,"
+        //http://scikit-learn.org/stable/modules/model_evaluation.html
         builder.append("\n========================================================================");
         return builder.toString();
     }
@@ -486,6 +505,22 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         if (labelsList != null && labelsList.size() > clazz)
             return labelsList.get(clazz);
         return clazz.toString();
+    }
+
+    private void warningHelper(StringBuilder warnings, List<Integer> list, String metric ){
+        warnings.append("Warning: ").append(list.size()).append(" class");
+        String wasWere;
+        if(list.size() == 1) {
+            wasWere = "was";
+        } else {
+            wasWere = "were";
+            warnings.append("es");
+        }
+        warnings.append(" ").append(wasWere);
+        warnings.append(" never predicted by the model and ").append(wasWere).append(" excluded from average ")
+        .append(metric).append("\nClasses excluded from average ").append(metric).append(": ")
+                .append(list)
+                .append("\n");
     }
 
     /**
@@ -524,6 +559,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     /**
      * Calculate the average precision for all classes. Can specify whether macro or micro averaging should be used
+     * NOTE: if any classes have tp=0 and fp=0, (precision=0/0) these are excluded from the average
      *
      * @param averaging Averaging method - macro or micro
      * @return Average precision
@@ -532,10 +568,15 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         int nClasses = confusion.getClasses().size();
         if(averaging == EvaluationAveraging.Macro){
             double macroPrecision = 0.0;
+            int count = 0;
             for( int i=0; i<nClasses; i++ ){
-                macroPrecision += precision(i);
+                double thisClassPrec = precision(i, -1);
+                if(thisClassPrec != -1){
+                    macroPrecision += thisClassPrec;
+                    count++;
+                }
             }
-            macroPrecision /= nClasses;
+            macroPrecision /= count;
             return macroPrecision;
         } else if(averaging == EvaluationAveraging.Micro){
             long tpCount = 0;
@@ -548,6 +589,74 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         } else {
             throw new UnsupportedOperationException("Unknown averaging approach: " + averaging);
         }
+    }
+
+    /**
+     * When calculating the (macro) average precision, how many classes are excluded from the average due to
+     * no predictions – i.e., precision would be the edge case of 0/0
+     *
+     * @return Number of classes excluded from the  average precision
+     */
+    public int averagePrecisionNumClassesExcluded() {
+        return numClassesExcluded("precision");
+    }
+
+    /**
+     * When calculating the (macro) average Recall, how many classes are excluded from the average due to
+     * no predictions – i.e., recall would be the edge case of 0/0
+     *
+     * @return Number of classes excluded from the average recall
+     */
+    public int averageRecallNumClassesExcluded(){
+        return numClassesExcluded("recall");
+    }
+
+    /**
+     * When calculating the (macro) average F1, how many classes are excluded from the average due to
+     * no predictions – i.e., F1 would be calculated from a precision or recall of 0/0
+     *
+     * @return Number of classes excluded from the average F1
+     */
+    public int averageF1NumClassesExcluded(){
+        return numClassesExcluded("f1");
+    }
+
+    /**
+     * When calculating the (macro) average FBeta, how many classes are excluded from the average due to
+     * no predictions – i.e., FBeta would be calculated from a precision or recall of 0/0
+     *
+     * @return Number of classes excluded from the average FBeta
+     */
+    public int averageFBetaNumClassesExcluded(){
+        return numClassesExcluded("fbeta");
+    }
+
+    private int numClassesExcluded(String metric) {
+        int countExcluded = 0;
+        int nClasses = confusion.getClasses().size();
+
+        for (int i = 0; i < nClasses; i++) {
+            double d;
+            switch (metric.toLowerCase()) {
+                case "precision":
+                    d = precision(i, -1);
+                    break;
+                case "recall":
+                    d = recall(i, -1);
+                    break;
+                case "f1":
+                case "fbeta":
+                    d = fBeta(1.0, i, -1);
+                    break;
+                default:
+                    throw new RuntimeException("Unknown metric: " + metric);
+            }
+
+            if (d == -1) {
+                countExcluded++;
+            }
+        }
+        return countExcluded;
     }
 
     /**
@@ -586,6 +695,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     /**
      * Calculate the average recall for all classes - can specify whether macro or micro averaging should be used
+     * NOTE: if any classes have tp=0 and fn=0, (recall=0/0) these are excluded from the average
      *
      * @param averaging Averaging method - macro or micro
      * @return Average recall
@@ -594,10 +704,15 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         int nClasses = confusion.getClasses().size();
         if(averaging == EvaluationAveraging.Macro){
             double macroRecall = 0.0;
+            int count = 0;
             for( int i=0; i<nClasses; i++ ){
-                macroRecall += recall(i);
+                double thisClassRecall = recall(i,-1);
+                if(thisClassRecall != -1){
+                    macroRecall += thisClassRecall;
+                    count++;
+                }
             }
-            macroRecall /= nClasses;
+            macroRecall /= count;
             return macroRecall;
         } else if(averaging == EvaluationAveraging.Micro){
             long tpCount = 0;
@@ -753,7 +868,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param classLabel the label to calculate f1 for
      * @return the f1 score for the given label
      */
-    public double f1(Integer classLabel) {
+    public double f1(int classLabel) {
         return fBeta(1.0, classLabel);
     }
 
@@ -766,9 +881,26 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param classLabel Class label
      * @return F_beta
      */
-    public double fBeta(double beta, int classLabel){
-        double precision = precision(classLabel);
-        double recall = recall(classLabel);
+    public double fBeta(double beta, int classLabel) {
+        return fBeta(beta, classLabel, 0.0);
+    }
+
+    /**
+     * Calculate the f_beta for a given class, where f_beta is defined as:<br>
+     * (1+beta^2) * (precision * recall) / (beta^2 * precision + recall).<br>
+     * F1 is a special case of f_beta, with beta=1.0
+     *
+     * @param beta       Beta value to use
+     * @param classLabel Class label
+     * @param defaultValue Default value to use when precision or recall is undefined (0/0 for prec. or recall)
+     * @return F_beta
+     */
+    public double fBeta(double beta, int classLabel, double defaultValue){
+        double precision = precision(classLabel, -1);
+        double recall = recall(classLabel, -1);
+        if(precision == -1 || recall == -1){
+            return defaultValue;
+        }
         return EvaluationUtils.fBeta(beta, precision, recall);
     }
 
@@ -803,12 +935,23 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      */
     public double fBeta(double beta, EvaluationAveraging averaging){
         int nClasses = confusion.getClasses().size();
+
+        if(nClasses == 2){
+            return EvaluationUtils.fBeta(beta, (long)truePositives.getCount(1),
+                    (long)falsePositives.getCount(1), (long)falseNegatives.getCount(1));
+        }
+
         if(averaging == EvaluationAveraging.Macro){
             double macroFBeta = 0.0;
+            int count = 0;
             for( int i=0; i<nClasses; i++ ){
-                macroFBeta += fBeta(beta,i);
+                double thisFBeta = fBeta(beta,i, -1);
+                if(thisFBeta != -1){
+                    macroFBeta += thisFBeta;
+                    count++;
+                }
             }
-            macroFBeta /= nClasses;
+            macroFBeta /= count;
             return macroFBeta;
         } else if(averaging == EvaluationAveraging.Micro){
             long tpCount = 0;
