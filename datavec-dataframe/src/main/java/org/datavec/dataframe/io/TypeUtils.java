@@ -15,8 +15,8 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.Immutable;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import net.jcip.annotations.Immutable;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
@@ -151,7 +151,7 @@ public final class TypeUtils {
     /**
      * Constructs and returns a column for the given {@code name} and {@code type}
      */
-    public static Column newColumn(@Nonnull String name, @Nonnull ColumnType type) {
+    public static Column newColumn(@NonNull String name, @NonNull ColumnType type) {
 
         Preconditions.checkArgument(!Strings.isNullOrEmpty(name), "There must be a valid name for a new column");
 

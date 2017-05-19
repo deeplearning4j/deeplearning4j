@@ -3,7 +3,7 @@ package org.datavec.dataframe.util;
 import it.unimi.dsi.fastutil.ints.IntComparator;
 import it.unimi.dsi.fastutil.longs.LongComparator;
 
-import javax.annotation.concurrent.Immutable;
+import net.jcip.annotations.Immutable;
 
 /**
  * A Comparator for int primitives for sorting in reverse order, using the given comparator

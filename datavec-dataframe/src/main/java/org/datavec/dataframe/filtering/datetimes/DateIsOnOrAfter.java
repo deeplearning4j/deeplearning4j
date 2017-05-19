@@ -7,7 +7,7 @@ import org.datavec.dataframe.columns.ColumnReference;
 import org.datavec.dataframe.filtering.ColumnFilter;
 import org.datavec.dataframe.util.Selection;
 
-import javax.annotation.concurrent.Immutable;
+import net.jcip.annotations.Immutable;
 
 /**
  *
