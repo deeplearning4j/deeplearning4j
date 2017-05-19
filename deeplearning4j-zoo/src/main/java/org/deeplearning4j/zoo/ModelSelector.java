@@ -11,10 +11,10 @@ import java.util.Map;
  * @author Justin Long (crockpotveggies)
  */
 public class ModelSelector {
-    public static Map<ZooType,InstantiableModel> select(ZooType zooType, int numLabels, int seed, int iterations) {
-        Map<ZooType,InstantiableModel> netmap = new HashMap<>();
+    public static Map<ZooType, InstantiableModel> select(ZooType zooType, int numLabels, int seed, int iterations) {
+        Map<ZooType, InstantiableModel> netmap = new HashMap<>();
 
-        switch(zooType) {
+        switch (zooType) {
             case ALL:
                 netmap.putAll(ModelSelector.select(ZooType.CNN, numLabels, seed, iterations));
                 netmap.putAll(ModelSelector.select(ZooType.RNN, numLabels, seed, iterations));
@@ -43,10 +43,11 @@ public class ModelSelector {
                 netmap.put(ZooType.VGG16, new VGG16(numLabels, seed, iterations));
                 break;
             default:
-//                // do nothing
+                //                // do nothing
         }
 
-        if(netmap.size()==0) throw new IllegalArgumentException("Zero models have been selected for benchmarking.");
+        if (netmap.size() == 0)
+            throw new IllegalArgumentException("Zero models have been selected for benchmarking.");
 
         return netmap;
     }
