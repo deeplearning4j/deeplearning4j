@@ -194,7 +194,7 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
     }
 
     /**
-     * Calculate the AUC - Area Under Curve<br>
+     * Calculate the AUC - Area Under ROC Curve<br>
      * Utilizes trapezoidal integration internally
      *
      * @return AUC
@@ -219,6 +219,35 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
             auc += deltaX * avg;
         }
         return auc;
+    }
+
+    /**
+     * Calculate the AUPRC - Area Under Curve Precision Recall <br>
+     * Utilizes trapezoidal integration internally
+     *
+     * @return AUC
+     */
+    public double calculateAUCPR(int classIdx) {
+        assertHasBeenFit(classIdx);
+
+        //Calculate AUCPR using trapezoidal rule
+        List<ROC.PrecisionRecallPoint> prCurve = getPrecisionRecallCurve(classIdx);
+
+        //Trapezoidal integration
+        double aucpr = 0.0;
+        for (int i = 0; i < prCurve.size()-1; i++) {
+            ROC.PrecisionRecallPoint p = prCurve.get(i);
+            double x0 = prCurve.get(i).getRecall();
+            double x1 = prCurve.get(i+1).getRecall();
+            double deltaX = x1 - x0;
+            double y0 = prCurve.get(i).getPrecision();
+            double y1 = prCurve.get(i+1).getPrecision();
+            double avgY = (y0+y1) / 2.0;
+
+            aucpr += deltaX*avgY;
+        }
+
+        return aucpr;
     }
 
     /**

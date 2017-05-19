@@ -228,7 +228,7 @@ public class ROC extends BaseEvaluation<ROC> {
     }
 
     /**
-     * Calculate the AUC - Area Under Curve<br>
+     * Calculate the AUROC - Area Under ROC Curve<br>
      * Utilizes trapezoidal integration internally
      *
      * @return AUC
@@ -251,6 +251,34 @@ public class ROC extends BaseEvaluation<ROC> {
             auc += deltaX * avg;
         }
         return auc;
+    }
+
+    /**
+     * Calculate the area under the precision/recall curve - aka AUCPR
+     *
+     * @return
+     */
+    public double calculateAUCPR(){
+        List<PrecisionRecallPoint> prCurve = getPrecisionRecallCurve();
+        //Sorting by recall is unnecessary: recall increases as threshold increases, and PR curve points are
+        //sorted by threshold by default
+        //X axis: recall
+        //Y axis: precision
+
+        //Trapezoidal integration
+        double aucpr = 0.0;
+        for (int i = 0; i < prCurve.size()-1; i++) {
+            double x0 = prCurve.get(i).getRecall();
+            double x1 = prCurve.get(i+1).getRecall();
+            double deltaX = Math.abs(x1 - x0);  //Going from highest recall (at 0 threshold) to lowest recall (at 1.0 threshold)
+            double y0 = prCurve.get(i).getPrecision();
+            double y1 = prCurve.get(i+1).getPrecision();
+            double avgY = (y0+y1) / 2.0;
+
+            aucpr += deltaX*avgY;
+        }
+
+        return aucpr;
     }
 
     /**

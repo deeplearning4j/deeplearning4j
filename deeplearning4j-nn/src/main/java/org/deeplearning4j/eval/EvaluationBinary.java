@@ -30,6 +30,7 @@ import java.util.List;
 @Data
 public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     public static final int DEFAULT_PRECISION = 4;
+    public static final double DEFAULT_EDGE_VALUE = 0.0;
 
     //Because we want evaluation to work for large numbers of examples - and with low precision (FP16), we won't
     //use INDArrays to store the counts
@@ -315,15 +316,100 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         return ret;
     }
     /**
+     * Calculate the F-beta value for the given output
+     *
+     * @param beta      Beta value to use
+     * @param outputNum Output number
+     * @return F-beta for the given output
+     */
+    public double fBeta(double beta, int outputNum){
+        assertIndex(outputNum);
+        double precision = precision(outputNum);
+        double recall = recall(outputNum);
+        return EvaluationUtils.fBeta(beta, precision, recall);
+    }
+
+    /**
      * Get the F1 score for the specified output
      */
     public double f1(int outputNum) {
+        return fBeta(1.0, outputNum);
+    }
+
+    /**
+     * Calculate the Matthews correlation coefficient for the specified output
+     *
+     * @param outputNum Output number
+     * @return Matthews correlation coefficient
+     */
+    public double matthewsCorrelation(int outputNum){
         assertIndex(outputNum);
 
-        double precision = precision(outputNum);
-        double recall = recall(outputNum);
+        return EvaluationUtils.matthewsCorrelation(
+                truePositives(outputNum),
+                falsePositives(outputNum),
+                falseNegatives(outputNum),
+                trueNegatives(outputNum));
+    }
 
-        return 2.0 * (precision * recall) / (precision + recall);
+    /**
+     * Calculate the G-measure for the given output
+     *
+     * @param output The specified output
+     * @return The G-measure for the specified output
+     */
+    public double gMeasure(int output){
+        double precision = precision(output);
+        double recall = recall(output);
+        return EvaluationUtils.gMeasure(precision, recall);
+    }
+
+    /**
+     * Returns the false positive rate for a given label
+     *
+     * @param classLabel the label
+     * @return fpr as a double
+     */
+    public double falsePositiveRate(int classLabel) {
+        return recall(classLabel);
+    }
+
+    /**
+     * Returns the false positive rate for a given label
+     *
+     * @param classLabel the label
+     * @param edgeCase   What to output in case of 0/0
+     * @return fpr as a double
+     */
+    public double falsePositiveRate(int classLabel, double edgeCase) {
+        double fpCount = falsePositives(classLabel);
+        double tnCount = trueNegatives(classLabel);
+
+        return EvaluationUtils.falsePositiveRate((long)fpCount, (long)tnCount, edgeCase);
+    }
+
+    /**
+     * Returns the false negative rate for a given label
+     *
+     * @param classLabel the label
+     * @return fnr as a double
+     */
+    public double falseNegativeRate(Integer classLabel) {
+        return falseNegativeRate(classLabel, DEFAULT_EDGE_VALUE);
+    }
+
+    /**
+     * Returns the false negative rate for a given label
+     *
+     * @param classLabel the label
+     * @param edgeCase   What to output in case of 0/0
+     * @return fnr as a double
+     */
+    public double falseNegativeRate(Integer classLabel, double edgeCase) {
+        double fnCount = falseNegatives(classLabel);
+        double tpCount = truePositives(classLabel);
+
+        return EvaluationUtils.falseNegativeRate((long)fnCount, (long)tpCount, edgeCase);
     }
 
     /**
@@ -339,7 +425,8 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
                     "EvaluationBinary does not have any stats: eval must be called first");
         }
         if (outputNum < 0 || outputNum >= countTruePositive.length) {
-            throw new IllegalArgumentException("Invalid input: output number must be between 0 and " + (outputNum - 1));
+            throw new IllegalArgumentException("Invalid input: output number must be between 0 and "
+                    + (outputNum - 1) + ". Got index: " + outputNum);
         }
     }
 
