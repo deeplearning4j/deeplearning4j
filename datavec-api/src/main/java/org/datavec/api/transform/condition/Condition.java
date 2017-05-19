@@ -47,7 +47,9 @@ import java.util.List;
                 @JsonSubTypes.Type(value = StringColumnCondition.class, name = "StringColumnCondition"),
                 @JsonSubTypes.Type(value = TimeColumnCondition.class, name = "TimeColumnCondition"),
                 @JsonSubTypes.Type(value = StringRegexColumnCondition.class, name = "StringRegexColumnCondition"),
-                @JsonSubTypes.Type(value = BooleanCondition.class, name = "BooleanCondition")})
+                @JsonSubTypes.Type(value = BooleanCondition.class, name = "BooleanCondition"),
+                @JsonSubTypes.Type(value = NaNColumnCondition.class, name = "NaNColumnCondition"),
+                @JsonSubTypes.Type(value = InfiniteColumnCondition.class, name = "InfiniteColumnCondition")})
 public interface Condition extends Serializable, ColumnOp {
 
     /**
