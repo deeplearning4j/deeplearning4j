@@ -1,8 +1,6 @@
 package org.deeplearning4j.eval;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
+import lombok.*;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -13,6 +11,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
 
 import java.io.Serializable;
 import java.util.*;
@@ -31,9 +30,11 @@ import java.util.*;
  * @author Alex Black
  */
 @Getter
+@EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor
 public class ROC extends BaseEvaluation<ROC> {
 
-    private final int thresholdSteps;
+    private  int thresholdSteps;
 
     private long countActualPositive;
     private long countActualNegative;
@@ -149,6 +150,7 @@ public class ROC extends BaseEvaluation<ROC> {
      *
      * @return ROC curve, as a list of points
      */
+    @JsonIgnore
     public List<ROCValue> getResults() {
         List<ROCValue> out = new ArrayList<>(counts.size());
 
@@ -164,6 +166,7 @@ public class ROC extends BaseEvaluation<ROC> {
         return out;
     }
 
+    @JsonIgnore
     public List<PrecisionRecallPoint> getPrecisionRecallCurve() {
         //Precision: (true positive count) / (true positive count + false positive count) == true positive rate
         //Recall: (true positive count) / (true positive count + false negative count) = (TP count) / (total dataset positives)
@@ -208,6 +211,7 @@ public class ROC extends BaseEvaluation<ROC> {
      *
      * @return ROC curve as double[][]
      */
+    @JsonIgnore
     public double[][] getResultsAsArray() {
         double[][] out = new double[2][thresholdSteps + 1];
         int i = 0;
@@ -303,22 +307,25 @@ public class ROC extends BaseEvaluation<ROC> {
 
     @AllArgsConstructor
     @Data
+    @NoArgsConstructor
     public static class ROCValue {
-        private final double threshold;
-        private final double truePositiveRate;
-        private final double falsePositiveRate;
+        private  double threshold;
+        private  double truePositiveRate;
+        private  double falsePositiveRate;
     }
 
     @AllArgsConstructor
     @Data
+    @NoArgsConstructor
     public static class PrecisionRecallPoint {
-        private final double classiferThreshold;
-        private final double precision;
-        private final double recall;
+        private  double classiferThreshold;
+        private  double precision;
+        private  double recall;
     }
 
     @AllArgsConstructor
     @Data
+    @NoArgsConstructor
     public static class CountsForThreshold implements Serializable, Cloneable {
         private double threshold;
         private long countTruePositive;

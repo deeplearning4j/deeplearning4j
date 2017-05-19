@@ -22,6 +22,7 @@ import com.google.common.collect.Sets;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ClassUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
@@ -73,9 +74,9 @@ import java.util.*;
  */
 @Data
 @NoArgsConstructor
+@Slf4j
 public class NeuralNetConfiguration implements Serializable, Cloneable {
 
-    private static final Logger log = LoggerFactory.getLogger(NeuralNetConfiguration.class);
 
     /**
      * System property for custom layers, preprocessors, graph vertices etc. Enabled by default.
@@ -273,7 +274,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors)
                             .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                             .tBPTTBackwardLength(tbpttBackLength).cnnInputSize(this.cnnInputSize)
-                            .setInputType(this.inputType).trainingWorkspaceMode(globalConfig.trainingWorkspaceMode).confs(list).build();
+                            .setInputType(this.inputType).trainingWorkspaceMode(globalConfig.trainingWorkspaceMode)
+                            .inferenceWorkspaceMode(globalConfig.inferenceWorkspaceMode).confs(list).build();
         }
 
     }

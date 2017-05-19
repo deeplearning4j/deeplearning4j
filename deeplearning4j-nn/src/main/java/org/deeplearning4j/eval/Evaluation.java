@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.eval;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.shade.jackson.annotation.JsonIgnore;
 
 import java.io.Serializable;
 import java.text.DecimalFormat;
@@ -44,6 +46,7 @@ import java.util.*;
  * @author Adam Gibson
  */
 @Slf4j
+@EqualsAndHashCode(callSuper = true)
 public class Evaluation extends BaseEvaluation<Evaluation> {
 
     protected final int topN;
@@ -1224,7 +1227,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * the number of correct predictions
      * @return Number of correct top N predictions
      */
+    @JsonIgnore
     public int getTopNCorrectCount() {
+        if(confusion == null)
+            confusion = new ConfusionMatrix<>();
         if (topN <= 1) {
             int nClasses = confusion.getClasses().size();
             int countCorrect = 0;
@@ -1242,6 +1248,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * (i.e., requires the full probability distribution, not just predicted/actual indices)
      * @return Total number of top N predictions
      */
+    @JsonIgnore
     public int getTopNTotalCount() {
         if (topN <= 1) {
             return getNumRowCounter();
@@ -1258,6 +1265,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *
      * @return confusion matrix variable for this evaluation
      */
+    @JsonIgnore
     public ConfusionMatrix<Integer> getConfusionMatrix() {
         return confusion;
     }
@@ -1380,6 +1388,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *
      * @return A list of prediction errors, or null if no metadata has been recorded
      */
+    @JsonIgnore
     public List<Prediction> getPredictionErrors() {
         if (this.confusionMatrixMetaData == null)
             return null;
