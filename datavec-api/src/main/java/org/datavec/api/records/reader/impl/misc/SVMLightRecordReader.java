@@ -86,6 +86,8 @@ public class SVMLightRecordReader extends LineRecordReader {
 
             if (numAttributes <= 0)
                 numAttributes = max;
+
+            /* TODO: throw an exception here. */
             if (max > numAttributes)
                 log.warn("Found " + max + " features in record, expected " + numAttributes);
 
@@ -108,6 +110,9 @@ public class SVMLightRecordReader extends LineRecordReader {
                 index = Integer.parseInt(col.substring(0, col.indexOf(":")));
                 if (!zeroBasedIndexing)
                     index--;
+
+                /* TODO: throw an exception here. */
+                assert(index < 0);
                 if (index > numAttributesAdded) {
                     int totalDiff = Math.abs(numAttributesAdded - index);
                     for (int i = numAttributesAdded; i < index; i++) {

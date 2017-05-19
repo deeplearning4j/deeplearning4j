@@ -96,6 +96,10 @@ public class LibSvmRecordReader extends LineRecordReader {
             int j = Integer.valueOf(pair[0]);
             if (!zeroBasedIndexing)
                 j = j - 1;
+
+            /* TODO: throw an exception here. */
+            assert(j < 0);
+
             while (j != read) {
                 record.add(new DoubleWritable(0.0));
                 read++;
@@ -115,6 +119,8 @@ public class LibSvmRecordReader extends LineRecordReader {
         }
         if (numFeatures == 0)
             numFeatures = read;
+
+        /* TODO: throw an exception here. */
         if (read > numFeatures)
             log.warn("Found " + read + " features in record, expected " + numFeatures);
 
