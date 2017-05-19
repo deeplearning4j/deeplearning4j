@@ -42,6 +42,7 @@ public class LibSvmTest {
     public void testReadWrite() throws Exception {
         Configuration conf = new Configuration();
         conf.set(FileRecordReader.APPEND_LABEL, "true");
+        conf.setBoolean(LibSvmRecordReader.ZERO_BASED_INDEXING, false);
         File out = new File("iris.libsvm.out");
         if (out.exists())
             out.delete();
@@ -66,8 +67,6 @@ public class LibSvmTest {
         while (testLibSvmRecordReader.hasNext())
             test.add(testLibSvmRecordReader.next());
         assertEquals(data, test);
-
-
     }
 
     @Test
@@ -76,6 +75,7 @@ public class LibSvmTest {
         Configuration conf = new Configuration();
         conf.set(LineRecordReader.APPEND_LABEL, "true");
         conf.set(LibSvmRecordReader.NUM_FEATURES, "4");
+        conf.setBoolean(LibSvmRecordReader.ZERO_BASED_INDEXING, false);
         rr.initialize(conf, new FileSplit(new ClassPathResource("libsvm_with_multiple_missing.libsvm").getFile()));
 
         List<List<Double>> expected = new ArrayList<>(11);
@@ -104,5 +104,32 @@ public class LibSvmTest {
         }
     }
 
+    @Test
+    public void testReadZeroIndexed() throws Exception {
+        Configuration conf = new Configuration();
+        conf.set(FileRecordReader.APPEND_LABEL, "true");
+        RecordReader libSvmRecordReader = new LibSvmRecordReader();
+        libSvmRecordReader.initialize(conf, new FileSplit(new ClassPathResource("iris.libsvm").getFile()));
 
+        Configuration confZero = new Configuration();
+        confZero.set(FileRecordReader.APPEND_LABEL, "true");
+        confZero.setBoolean(LibSvmRecordReader.ZERO_BASED_INDEXING, true);
+        RecordReader libSvmRecordReaderZero = new LibSvmRecordReader();
+        libSvmRecordReaderZero.initialize(conf, new FileSplit(new ClassPathResource("iris_zero_indexed.libsvm").getFile()));
+
+        Configuration confNoZero = new Configuration();
+        confNoZero.set(FileRecordReader.APPEND_LABEL, "true");
+        confNoZero.setBoolean(LibSvmRecordReader.ZERO_BASED_INDEXING, false);
+        RecordReader libSvmRecordReaderNoZero = new LibSvmRecordReader();
+        libSvmRecordReaderNoZero.initialize(confNoZero, new FileSplit(new ClassPathResource("iris.libsvm").getFile()));
+
+        while (libSvmRecordReader.hasNext()) {
+            List<Writable> record = libSvmRecordReader.next();
+            record.remove(0);
+            List<Writable> recordZero = libSvmRecordReaderZero.next();
+            assertEquals(record, recordZero);
+            List<Writable> recordNoZero = libSvmRecordReaderNoZero.next();
+            assertEquals(record, recordNoZero);
+        }
+    }
 }
