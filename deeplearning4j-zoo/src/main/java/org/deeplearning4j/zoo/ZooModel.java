@@ -24,35 +24,34 @@ public abstract class ZooModel<T> implements InstantiableModel {
     }
 
     public boolean pretrainedAvailable() {
-        if(pretrainedUrl()==null)
+        if (pretrainedUrl() == null)
             return false;
         else
             return true;
     }
 
     public Model getPretrained() throws IOException {
-        if(pretrainedUrl()==null)
+        if (pretrainedUrl() == null)
             throw new UnsupportedOperationException("Pretrained weights are not available for this model.");
 
         String localFilename = new File(pretrainedUrl()).getName();
-        File cachedFile = new File(System.getProperty("user.home"), "/.deeplearning4j/"+localFilename);
+        File cachedFile = new File(System.getProperty("user.home"), "/.deeplearning4j/" + localFilename);
         cachedFile.mkdirs();
 
-        if(!cachedFile.exists()) {
+        if (!cachedFile.exists()) {
             log.info("Downloading model to " + cachedFile.toString());
             FileUtils.copyURLToFile(new URL(pretrainedUrl()), cachedFile);
         } else {
             log.info("Using cached model at " + cachedFile.toString());
         }
 
-        if(modelType() == MultiLayerNetwork.class) {
+        if (modelType() == MultiLayerNetwork.class) {
             return ModelSerializer.restoreComputationGraph(cachedFile);
-        }
-        else if(modelType() == ComputationGraph.class) {
+        } else if (modelType() == ComputationGraph.class) {
             return ModelSerializer.restoreComputationGraph(cachedFile);
-        }
-        else {
-            throw new UnsupportedOperationException("Pretrained models are only supported for MultiLayerNetwork and ComputationGraph.");
+        } else {
+            throw new UnsupportedOperationException(
+                            "Pretrained models are only supported for MultiLayerNetwork and ComputationGraph.");
         }
     }
 }
