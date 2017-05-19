@@ -239,6 +239,30 @@ public class Schema implements Serializable {
     }
 
     /**
+     * Return the indices of the columns, given their namess
+     *
+     * @param columnNames Name of the columns to get indices for
+     * @return Column indexes
+     */
+    public int[] getIndexOfColumns(Collection<String> columnNames){
+        return getIndexOfColumns(columnNames.toArray(new String[columnNames.size()]));
+    }
+
+    /**
+     * Return the indices of the columns, given their namess
+     *
+     * @param columnNames Name of the columns to get indices for
+     * @return Column indexes
+     */
+    public int[] getIndexOfColumns(String... columnNames){
+        int[] out = new int[columnNames.length];
+        for( int i=0; i<out.length; i++ ){
+            out[i] = getIndexOfColumn(columnNames[i]);
+        }
+        return out;
+    }
+
+    /**
      * Determine if the schema has a column with the specified name
      *
      * @param columnName Name to see if the column exists

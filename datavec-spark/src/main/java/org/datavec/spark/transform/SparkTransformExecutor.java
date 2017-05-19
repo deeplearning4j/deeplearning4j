@@ -22,11 +22,8 @@ import org.datavec.spark.functions.EmptyRecordFunction;
 import org.datavec.spark.transform.join.*;
 import org.datavec.spark.transform.misc.ColumnAsKeyPairFunction;
 import org.datavec.spark.transform.reduce.MapToPairForReducerFunction;
-import org.datavec.spark.transform.sequence.SparkMapToPairByColumnFunction;
+import org.datavec.spark.transform.sequence.*;
 import org.datavec.spark.transform.transform.SequenceSplitFunction;
-import org.datavec.spark.transform.sequence.SparkGroupToSequenceFunction;
-import org.datavec.spark.transform.sequence.SparkSequenceFilterFunction;
-import org.datavec.spark.transform.sequence.SparkSequenceTransformFunction;
 import org.apache.commons.math3.util.Pair;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -222,13 +219,13 @@ public class SparkTransformExecutor {
 
                 //First: convert to PairRDD
                 Schema schema = cts.getInputSchema();
-                int colIdx = schema.getIndexOfColumn(cts.getKeyColumn());
-                JavaPairRDD<Writable, List<Writable>> withKey =
-                                currentWritables.mapToPair(new SparkMapToPairByColumnFunction(colIdx));
-                JavaPairRDD<Writable, Iterable<List<Writable>>> grouped = withKey.groupByKey();
+                int[] colIdxs = schema.getIndexOfColumns(cts.getKeyColumns());
+                JavaPairRDD<List<Writable>, List<Writable>> withKey =
+                                currentWritables.mapToPair(new SparkMapToPairByMultipleColumnsFunction(colIdxs));
+                JavaPairRDD<List<Writable>, Iterable<List<Writable>>> grouped = withKey.groupByKey();
 
                 //Now: convert to a sequence...
-                currentSequence = grouped.map(new SparkGroupToSequenceFunction(cts.getComparator()));
+                currentSequence = grouped.map(new SparkGroupToSequenceFunction<List<Writable>>(cts.getComparator()));
                 currentWritables = null;
             } else if (d.getConvertFromSequence() != null) {
                 //Convert from sequence...

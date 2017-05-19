@@ -42,6 +42,12 @@ public class WritablesToStringFunction implements Function<List<Writable>, Strin
     public String call(List<Writable> c) throws Exception {
 
         StringBuilder sb = new StringBuilder();
+        append(c, sb, delim, quote);
+
+        return sb.toString();
+    }
+
+    public static void append(List<Writable> c, StringBuilder sb, String delim, String quote ){
         boolean first = true;
         for (Writable w : c) {
             if (!first)
@@ -58,8 +64,5 @@ public class WritablesToStringFunction implements Function<List<Writable>, Strin
             }
             first = false;
         }
-
-        return sb.toString();
     }
-
 }
