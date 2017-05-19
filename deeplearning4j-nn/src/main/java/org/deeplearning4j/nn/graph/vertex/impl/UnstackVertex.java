@@ -140,13 +140,13 @@ public class UnstackVertex extends BaseGraphVertex {
         }
 
         boolean allNull = true;
-        for( int i=0; i<maskArrays.length; i++ ){
-            if(maskArrays[i] != null){
+        for (int i = 0; i < maskArrays.length; i++) {
+            if (maskArrays[i] != null) {
                 allNull = false;
                 break;
             }
         }
-        if(allNull){
+        if (allNull) {
             return new Pair<>(null, currentMaskState);
         }
 

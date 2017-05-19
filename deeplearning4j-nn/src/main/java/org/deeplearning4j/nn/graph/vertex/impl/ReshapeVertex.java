@@ -45,7 +45,7 @@ public class ReshapeVertex extends BaseGraphVertex {
     }
 
     public ReshapeVertex(ComputationGraph graph, String name, int vertexIndex, VertexIndices[] inputVertices,
-                         VertexIndices[] outputVertices, int[] newShape) {
+                    VertexIndices[] outputVertices, int[] newShape) {
         super(graph, name, vertexIndex, inputVertices, outputVertices);
         this.newShape = newShape;
     }
@@ -95,7 +95,7 @@ public class ReshapeVertex extends BaseGraphVertex {
 
     @Override
     public Pair<INDArray, MaskState> feedForwardMaskArrays(INDArray[] maskArrays, MaskState currentMaskState,
-                                                           int minibatchSize) {
+                    int minibatchSize) {
         if (maskArrays == null) {
             return new Pair<>(null, currentMaskState);
         }
@@ -128,7 +128,7 @@ public class ReshapeVertex extends BaseGraphVertex {
 
     @Override
     public String toString() {
-        return "ReshapeVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",shape=" + newShape.toString()
-                        + ")";
+        return "ReshapeVertex(id=" + this.getVertexIndex() + ",name=\"" + this.getVertexName() + "\",shape="
+                        + newShape.toString() + ")";
     }
 }
