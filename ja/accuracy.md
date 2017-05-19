@@ -11,7 +11,7 @@ layout: default
 * [DeepFace:Closing the Gap to Human-Level Performance in Face Verification（DeepFace:顔認証の正答率を人間並みのレベルにまで高める）](http://www.cs.toronto.edu/~ranzato/publications/taigman_cvpr14.pdf)。Labeled Faces in the Wild (LFW)データセットにおいて、97.35%の判別正答率に達しました。エラーは従来の割合の27%を超えて減少し、もはや人間の認識能力レベル（~97.53 パーセント）にまで近付きました。
 * Andrew Ng氏は、2011年頃にディープラーニングについて言及した際に、数多くの領域でディープラーニングが成し遂げた[画期的な正答率向上の業績リストを報告しています](https://www.youtube.com/watch?v=ZmNOAtZIgIk)。
 * ごく最近では、Ng氏は百度（バイドゥ）のチームを引率し、音声や画像認識における画期的な開発を行いました。
-* 一般によく使用されるHub5f00というデータセットにおいて、約9パーセントの差で、[Deep Speechは最も優れた学際的な音声認識モデルを凌ぐ性能を達成](https://gigaom.com/2014/12/18/baidu-claims-deep-learning-breakthrough-with-deep-speech/)しました。ノイズのある環境においても81パーセントの正答率を誇り、主要な商用アルゴリズムの性能を超えました。 
+* 一般によく使用されるHub5’00というデータセットにおいて、約9パーセントの差で、[Deep Speechは最も優れた学際的な音声認識モデルを凌ぐ性能を達成](https://gigaom.com/2014/12/18/baidu-claims-deep-learning-breakthrough-with-deep-speech/)しました。ノイズのある環境においても81パーセントの正答率を誇り、主要な商用アルゴリズムの性能を超えました。 
 * Googleは、2014年度ImageNetのコンペティションにおいて、ディープラーニングネットワークを使用し、エラー率6.66パーセントを達成し、勝利しました。
 * [CIFAR-10データセットの結果一覧](http://zybler.blogspot.de/2011/02/table-of-results-for-cifar-10-dataset.html)
 * [Rodrigo Benenson氏のブログ](https://rodrigob.github.io/are_we_there_yet/build/#datasets)。CIFAR-10、CIFAR-100、STL-10、SVHN、ILSVRC2012のタスク1、Pascal VOC 2011 comp3、Caltech Pedestrians USA、INRIA Persons、MSRC-21、Leeds Sport Poses、Salient Object Detectionのベンチマークなどが含まれています。
