@@ -41,6 +41,6 @@ public class AsyncNStepQLearningDiscreteConv<O extends Encodable> extends AsyncN
     public AsyncThread newThread(int i) {
         AsyncThread at = super.newThread(i);
         at.setHistoryProcessor(hpconf);
-        return super.newThread(i);
+        return at;
     }
 }
