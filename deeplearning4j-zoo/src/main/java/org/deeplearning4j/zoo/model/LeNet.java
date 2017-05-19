@@ -28,7 +28,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 public class LeNet extends ZooModel {
 
-    private int[] inputShape = new int[]{3,224,224};
+    private int[] inputShape = new int[] {3, 224, 224};
     private int numLabels;
     private long seed;
     private int iterations;
@@ -49,47 +49,28 @@ public class LeNet extends ZooModel {
 
     public MultiLayerConfiguration conf() {
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .trainingWorkspaceMode(WorkspaceMode.SINGLE)
-                .inferenceWorkspaceMode(WorkspaceMode.SINGLE)
-                .seed(seed)
-                .iterations(iterations)
-                .activation(Activation.IDENTITY)
-//                .weightInit(WeightInit.XAVIER)
-                .weightInit(WeightInit.DISTRIBUTION)
-                .learningRate(1e-2)//.biasLearningRate(2e-2)
-                //.learningRateDecayPolicy(LearningRatePolicy.Inverse).lrPolicyDecayRate(0.001).lrPolicyPower(0.75)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .regularization(true).l2(5e-4)
-                .updater(Updater.NESTEROVS)
-                .list()
-                .layer(0, new ConvolutionLayer.Builder(new int[]{5, 5}, new int[]{1, 1})
-                        .name("cnn1")
-                        .nIn(inputShape[0])
-                        .nOut(20)
-                        .build())
-                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2}, new int[]{2, 2})
-                        .name("maxpool1")
-                        .build())
-                .layer(2, new ConvolutionLayer.Builder(new int[]{5, 5}, new int[]{1, 1})
-                        .name("cnn2")
-                        .nOut(50)
-                        .build())
-                .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{2, 2}, new int[]{2, 2})
-                        .name("maxpool2")
-                        .build())
-                .layer(4, new DenseLayer.Builder()
-                        .name("ffn1")
-                        .activation(Activation.RELU)
-                        .nOut(500)
-                        .build())
-                .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .name("output")
-                        .nOut(numLabels)
-                        .activation(Activation.SOFTMAX) // radial basis function required
-                        .build())
-                .setInputType(InputType.convolutionalFlat(inputShape[2],inputShape[1],inputShape[0]))
-                .backprop(true).pretrain(false).build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().trainingWorkspaceMode(WorkspaceMode.SINGLE)
+                        .inferenceWorkspaceMode(WorkspaceMode.SINGLE).seed(seed).iterations(iterations)
+                        .activation(Activation.IDENTITY)
+                        //                .weightInit(WeightInit.XAVIER)
+                        .weightInit(WeightInit.DISTRIBUTION).learningRate(1e-2)//.biasLearningRate(2e-2)
+                        //.learningRateDecayPolicy(LearningRatePolicy.Inverse).lrPolicyDecayRate(0.001).lrPolicyPower(0.75)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).regularization(true)
+                        .l2(5e-4).updater(Updater.NESTEROVS).list()
+                        .layer(0, new ConvolutionLayer.Builder(new int[] {5, 5}, new int[] {1, 1}).name("cnn1")
+                                        .nIn(inputShape[0]).nOut(20).build())
+                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2},
+                                        new int[] {2, 2}).name("maxpool1").build())
+                        .layer(2, new ConvolutionLayer.Builder(new int[] {5, 5}, new int[] {1, 1}).name("cnn2").nOut(50)
+                                        .build())
+                        .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2},
+                                        new int[] {2, 2}).name("maxpool2").build())
+                        .layer(4, new DenseLayer.Builder().name("ffn1").activation(Activation.RELU).nOut(500).build())
+                        .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                                        .name("output").nOut(numLabels).activation(Activation.SOFTMAX) // radial basis function required
+                                        .build())
+                        .setInputType(InputType.convolutionalFlat(inputShape[2], inputShape[1], inputShape[0]))
+                        .backprop(true).pretrain(false).build();
 
         return conf;
     }
@@ -101,11 +82,7 @@ public class LeNet extends ZooModel {
         return network;
     }
 
-    public ModelMetaData metaData(){
-        return new ModelMetaData(
-                new int[][]{inputShape},
-                1,
-                ZooType.CNN
-        );
+    public ModelMetaData metaData() {
+        return new ModelMetaData(new int[][] {inputShape}, 1, ZooType.CNN);
     }
 }

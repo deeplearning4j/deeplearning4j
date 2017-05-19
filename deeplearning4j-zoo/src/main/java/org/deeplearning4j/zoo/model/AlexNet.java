@@ -37,7 +37,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  */
 public class AlexNet extends ZooModel {
 
-    private int[] inputShape = new int[]{3,224,224};
+    private int[] inputShape = new int[] {3, 224, 224};
     private int numLabels = 1000;
     private long seed = 42;
     private int iterations = 90;
@@ -60,95 +60,56 @@ public class AlexNet extends ZooModel {
         double nonZeroBias = 1;
         double dropOut = 0.5;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(seed)
-                .iterations(iterations)
-                .weightInit(WeightInit.DISTRIBUTION)
-                .dist(new NormalDistribution(0.0, 0.01))
-                .activation(Activation.RELU)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(Updater.NESTEROVS)
-                .learningRate(1e-2)
-                .biasLearningRate(1e-2*2)
-                .regularization(true)
-                .convolutionMode(ConvolutionMode.Same)
-                .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer) // normalize to prevent vanishing or exploding gradients
-                .trainingWorkspaceMode(WorkspaceMode.SINGLE)
-                .inferenceWorkspaceMode(WorkspaceMode.SINGLE)
-                .dropOut(0.5)
-                .l2(5 * 1e-4)
-                .miniBatch(false)
-                .list()
-                .layer(0, new ConvolutionLayer.Builder(new int[]{11,11}, new int[]{4, 4}, new int[]{2,2})
-                        .name("cnn1")
-                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST)
-                        .convolutionMode(ConvolutionMode.Truncate)
-                        .nIn(inputShape[0])
-                        .nOut(64)
-                        .build())
-                .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{3,3}, new int[]{2,2}, new int[]{1,1})
-                        .convolutionMode(ConvolutionMode.Truncate)
-                        .name("maxpool1")
-                        .build())
-                .layer(2, new ConvolutionLayer.Builder(new int[]{5,5}, new int[]{2,2}, new int[]{2,2}) // TODO: fix input and put stride back to 1,1
-                        .convolutionMode(ConvolutionMode.Truncate)
-                        .name("cnn2")
-                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST)
-                        .nOut(192)
-                        .biasInit(nonZeroBias)
-                        .build())
-                .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{3, 3}, new int[]{2, 2})
-                        .name("maxpool2")
-                        .build())
-                .layer(4, new ConvolutionLayer.Builder(new int[]{3,3}, new int[]{1,1}, new int[]{1,1})
-                        .name("cnn3")
-                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST)
-                        .nOut(384)
-                        .build())
-                .layer(5, new ConvolutionLayer.Builder(new int[]{3,3}, new int[]{1,1}, new int[]{1,1})
-                        .name("cnn4")
-                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST)
-                        .nOut(256)
-                        .biasInit(nonZeroBias)
-                        .build())
-                .layer(6, new ConvolutionLayer.Builder(new int[]{3,3}, new int[]{1,1}, new int[]{1,1})
-                        .name("cnn5")
-                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST)
-                        .nOut(256)
-                        .biasInit(nonZeroBias)
-                        .build())
-                .layer(7, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[]{3,3}, new int[]{7,7}) // TODO: fix input and put stride back to 2,2
-                        .name("maxpool3")
-                        .build())
-                .layer(8, new DenseLayer.Builder()
-                        .name("ffn1")
-                        .nIn(256)
-                        .nOut(4096)
-                        .dist(new GaussianDistribution(0, 0.005))
-                        .biasInit(nonZeroBias)
-                        .dropOut(dropOut)
-                        .build())
-                .layer(9, new DenseLayer.Builder()
-                        .name("ffn2")
-                        .nOut(4096)
-                        .dist(new GaussianDistribution(0, 0.005))
-                        .biasInit(nonZeroBias)
-                        .dropOut(dropOut)
-                        .build())
-                .layer(10, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                        .name("output")
-                        .nOut(numLabels)
-                        .activation(Activation.SOFTMAX)
-                        .build())
-                .backprop(true)
-                .pretrain(false)
-                .setInputType(InputType.convolutionalFlat(inputShape[2],inputShape[1],inputShape[0]))
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0.0, 0.01))
+                        .activation(Activation.RELU).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .updater(Updater.NESTEROVS).learningRate(1e-2).biasLearningRate(1e-2 * 2).regularization(true)
+                        .convolutionMode(ConvolutionMode.Same)
+                        .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer) // normalize to prevent vanishing or exploding gradients
+                        .trainingWorkspaceMode(WorkspaceMode.SINGLE).inferenceWorkspaceMode(WorkspaceMode.SINGLE)
+                        .dropOut(0.5).l2(5 * 1e-4).miniBatch(false)
+                        .list().layer(0,
+                                        new ConvolutionLayer.Builder(new int[] {11, 11}, new int[] {4, 4},
+                                                        new int[] {2, 2}).name("cnn1")
+                                                                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST)
+                                                                        .convolutionMode(ConvolutionMode.Truncate)
+                                                                        .nIn(inputShape[0]).nOut(64).build())
+                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {3, 3},
+                                        new int[] {2, 2}, new int[] {1, 1}).convolutionMode(ConvolutionMode.Truncate)
+                                                        .name("maxpool1").build())
+                        .layer(2, new ConvolutionLayer.Builder(new int[] {5, 5}, new int[] {2, 2}, new int[] {2, 2}) // TODO: fix input and put stride back to 1,1
+                                        .convolutionMode(ConvolutionMode.Truncate).name("cnn2")
+                                        .cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST).nOut(192)
+                                        .biasInit(nonZeroBias).build())
+                        .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {3, 3},
+                                        new int[] {2, 2}).name("maxpool2").build())
+                        .layer(4, new ConvolutionLayer.Builder(new int[] {3, 3}, new int[] {1, 1}, new int[] {1, 1})
+                                        .name("cnn3").cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST).nOut(384)
+                                        .build())
+                        .layer(5, new ConvolutionLayer.Builder(new int[] {3, 3}, new int[] {1, 1}, new int[] {1, 1})
+                                        .name("cnn4").cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST).nOut(256)
+                                        .biasInit(nonZeroBias).build())
+                        .layer(6, new ConvolutionLayer.Builder(new int[] {3, 3}, new int[] {1, 1}, new int[] {1, 1})
+                                        .name("cnn5").cudnnAlgoMode(ConvolutionLayer.AlgoMode.PREFER_FASTEST).nOut(256)
+                                        .biasInit(nonZeroBias).build())
+                        .layer(7, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {3, 3},
+                                        new int[] {7, 7}) // TODO: fix input and put stride back to 2,2
+                                                        .name("maxpool3").build())
+                        .layer(8, new DenseLayer.Builder().name("ffn1").nIn(256).nOut(4096)
+                                        .dist(new GaussianDistribution(0, 0.005)).biasInit(nonZeroBias).dropOut(dropOut)
+                                        .build())
+                        .layer(9, new DenseLayer.Builder().name("ffn2").nOut(4096)
+                                        .dist(new GaussianDistribution(0, 0.005)).biasInit(nonZeroBias).dropOut(dropOut)
+                                        .build())
+                        .layer(10, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                                        .name("output").nOut(numLabels).activation(Activation.SOFTMAX).build())
+                        .backprop(true).pretrain(false)
+                        .setInputType(InputType.convolutionalFlat(inputShape[2], inputShape[1], inputShape[0])).build();
 
         return conf;
     }
 
-    public MultiLayerNetwork init(){
+    public MultiLayerNetwork init() {
         MultiLayerConfiguration conf = conf();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
         network.init();
@@ -156,12 +117,8 @@ public class AlexNet extends ZooModel {
 
     }
 
-    public ModelMetaData metaData(){
-        return new ModelMetaData(
-                new int[][]{inputShape},
-                1,
-                ZooType.CNN
-        );
+    public ModelMetaData metaData() {
+        return new ModelMetaData(new int[][] {inputShape}, 1, ZooType.CNN);
     }
 
 }
