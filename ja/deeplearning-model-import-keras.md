@@ -1,4 +1,4 @@
----
+----
 title:Deeplearning4j Keras Model Import
 layout: default
 ---
@@ -19,7 +19,7 @@ Kerasモデル設定をインポートしようとしていることを示しま
 
 いったんモデルをインポートしたら、さらなる保存や再読み込みには弊社のモデル・シリアライザクラスをお勧めします。 
 
-この詳細は、[DL4JのGitterチャンネル](https://gitter.im/deeplearning4j/deeplearning4j)をお読みください。You
+この詳細は、[DL4JのGitterチャンネル](https://gitter.im/deeplearning4j/deeplearning4j)をお読みください。
 あるいは、[Github経由で特徴のリクエスト](https://github.com/deeplearning4j/deeplearning4j/issues)を申請する、
 または必要な変更を書いて弊社にプルリクエストで送信していただければ、この機能の追加のお手伝いをいたします。
 
@@ -66,14 +66,14 @@ Kerasモデルのインポート機能を使用すると以下のオプション
 * model.to_json()と共にKerasに保存されたSequentialモデル設定のインポート
 
 ```
-MultiLayerNetworkConfiguration modelConfig = KerasModelImport.importKerasSequentialConfiguration("PATH TO YOUR JSON FILE)
+MultiLayerNetworkConfiguration modelConfig = KerasModelImport.importKerasSequentialConfiguration（"JSONファイルへのパス）
 
 ```
 
 * model.to_json()と共にKerasに保存されたComputationGraph設定のインポート
 
 ```
-ComputationGraphConfiguration computationGraphConfig = KerasModelImport.importKerasModelConfiguration("PATH TO YOUR JSON FILE)
+ComputationGraphConfiguration computationGraphConfig = KerasModelImport.importKerasModelConfiguration（"JSONファイルへのパス）
 
 ```
 
@@ -91,7 +91,7 @@ ComputationGraphConfiguration computationGraphConfig = KerasModelImport.importKe
 * Sequentialモデルの単一ファイル
 
 ```
-MultiLayerNetwork network = KerasModelImport.importKerasSequentialModelAndWeights("PATH TO YOUR H5 FILE")
+MultiLayerNetwork network = KerasModelImport.importKerasSequentialModelAndWeights（"JSONファイルへのパス）
 
 ```
 
