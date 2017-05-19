@@ -24,6 +24,9 @@ import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 
+import java.util.Arrays;
+import java.util.Collection;
+
 /**
  * Convert a set of values to a sequence
  *
@@ -34,13 +37,38 @@ import org.datavec.api.transform.schema.SequenceSchema;
 @JsonIgnoreProperties({"inputSchema"})
 public class ConvertToSequence {
 
-    private final String keyColumn;
+    private final String[] keyColumns;
     private final SequenceComparator comparator; //For sorting values within collected (unsorted) sequence
     private Schema inputSchema;
 
-    public ConvertToSequence(@JsonProperty("keyColumn") String keyColumn,
+    /**
+     *
+     * @param keyColumn The value to use as the key for inferring which examples belong to what sequence
+     * @param comparator The comparator to use when deciding the order of each possible time step in the sequence
+     */
+    public ConvertToSequence(String keyColumn, SequenceComparator comparator){
+        this(new String[]{keyColumn}, comparator);
+    }
+
+    /**
+     *
+     * @param keyColumns The value or values to use as the key (multiple values: compound key)  for inferring which
+     *                   examples belong to what sequence
+     * @param comparator The comparator to use when deciding the order of each possible time step in the sequence
+     */
+    public ConvertToSequence(Collection<String> keyColumns, SequenceComparator comparator) {
+        this(keyColumns.toArray(new String[keyColumns.size()]), comparator);
+    }
+
+    /**
+     *
+     * @param keyColumns The value or values to use as the key (multiple values: compound key)  for inferring which
+     *                   examples belong to what sequence
+     * @param comparator The comparator to use when deciding the order of each possible time step in the sequence
+     */
+    public ConvertToSequence(@JsonProperty("keyColumn") String[] keyColumns,
                     @JsonProperty("comparator") SequenceComparator comparator) {
-        this.keyColumn = keyColumn;
+        this.keyColumns = keyColumns;
         this.comparator = comparator;
     }
 
@@ -55,7 +83,11 @@ public class ConvertToSequence {
 
     @Override
     public String toString() {
-        return "ConvertToSequence(keyColumn=\"" + keyColumn + "\",comparator=" + comparator + ")";
+        if(keyColumns.length == 1){
+            return "ConvertToSequence(keyColumn=\"" + keyColumns[0] + "\",comparator=" + comparator + ")";
+        } else {
+            return "ConvertToSequence(keyColumns=\"" + Arrays.toString(keyColumns) + "\",comparator=" + comparator + ")";
+        }
     }
 
 }

@@ -941,6 +941,19 @@ public class TransformProcess implements Serializable {
             return this;
         }
 
+        /**
+         * Convert a set of independent records/examples into a sequence, where each sequence is grouped according to
+         * one or more key values (i.e., the values in one or more columns)
+         * Within each sequence, values are ordered using the provided {@link SequenceComparator}
+         *
+         * @param keyColumns  Column to use as a key (values with the same key will be combined into sequences)
+         * @param comparator A SequenceComparator to order the values within each sequence (for example, by time or String order)
+         */
+        public Builder convertToSequence(List<String> keyColumns, SequenceComparator comparator) {
+            actionList.add(new DataAction(new ConvertToSequence(keyColumns, comparator)));
+            return this;
+        }
+
 
         /**
          * Convert a sequence to a set of individual values (by treating each value in each sequence as a separate example)
