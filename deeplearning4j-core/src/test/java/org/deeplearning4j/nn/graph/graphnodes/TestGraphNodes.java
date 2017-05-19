@@ -18,6 +18,7 @@ import org.deeplearning4j.nn.graph.vertex.GraphVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.*;
 import org.deeplearning4j.nn.graph.vertex.impl.L2Vertex;
 import org.deeplearning4j.nn.graph.vertex.impl.MergeVertex;
+import org.deeplearning4j.nn.graph.vertex.impl.ReshapeVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.StackVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex;
 import org.deeplearning4j.nn.graph.vertex.impl.UnstackVertex;
@@ -33,6 +34,8 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.ops.transforms.Transforms;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -494,6 +497,24 @@ public class TestGraphNodes {
         Pair<Gradient, INDArray[]> p = l2.doBackward(false);
         assertEquals(dLda, p.getSecond()[0]);
         assertEquals(dLdb, p.getSecond()[1]);
+    }
+
+    @Test
+    public void testReshapeNode() {
+        Nd4j.getRandom().setSeed(12345);
+        GraphVertex reshapeVertex = new ReshapeVertex(null, "", -1, new int[]{-1, 736});
+
+        int[] inputShape = new int[]{1,1,1,736};
+        INDArray input = Nd4j.create(inputShape);
+
+        reshapeVertex.setInputs(input);
+        INDArray out = reshapeVertex.doForward(false);
+
+        assertArrayEquals(new int[] {1, 736}, out.shape());
+
+        reshapeVertex.setEpsilon(out);
+        INDArray[] backward = reshapeVertex.doBackward(false).getSecond();
+        assert(Arrays.equals(backward[0].shape(),inputShape));
     }
 
     @Test

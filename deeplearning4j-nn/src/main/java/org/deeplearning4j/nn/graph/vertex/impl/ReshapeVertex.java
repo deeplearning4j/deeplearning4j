@@ -30,7 +30,9 @@ import org.nd4j.linalg.api.ops.impl.transforms.Or;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Adds the ability to reshape and flatten the tensor in the computation graph.
+ * Adds the ability to reshape and flatten the tensor in the computation graph. This is the equivalent
+ * of calling {@code .reshape(new int[]{})} on the input array to the vertex and passing the new shape
+ * to the next layer. ReshapeVertex also ensures the shape is valid for the backward pass.
  *
  * @author Justin Long (crockpotveggies)
  */
@@ -69,7 +71,7 @@ public class ReshapeVertex extends BaseGraphVertex {
             throw new IllegalStateException("Cannot do forward pass: inputs not set");
 
         if (inputs.length > 1)
-            throw new IllegalStateException("Flatten vertex requires a single input.");
+            throw new IllegalStateException("Reshape vertex requires a single input.");
 
 
         return inputs[0].reshape(inputs[0].ordering(), newShape);
