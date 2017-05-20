@@ -40,6 +40,7 @@ public class EvalTests {
         evaluationBinary.averageF1();
         evaluationBinary.averagePrecision();
         evaluationBinary.averageRecall();
+        roc2.calculateAverageAuc();
 
 
     }

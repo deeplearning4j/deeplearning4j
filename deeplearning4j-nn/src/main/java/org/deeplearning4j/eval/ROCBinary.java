@@ -315,6 +315,20 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
         return out;
     }
 
+
+    /**
+     * Average AUC for all outcomes
+     * @return the average AUC for all outcomes.
+     */
+    public double calculateAverageAuc() {
+        double ret = 0.0;
+        for(int i = 0; i < numLabels(); i++) {
+            ret += calculateAUC(i);
+        }
+
+        return ret / (double) numLabels();
+    }
+
     /**
      * Calculate the AUC - Area Under Curve<br>
      * Utilizes trapezoidal integration internally
