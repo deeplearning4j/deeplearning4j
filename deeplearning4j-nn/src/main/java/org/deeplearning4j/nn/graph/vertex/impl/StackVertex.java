@@ -84,18 +84,18 @@ public class StackVertex extends BaseGraphVertex {
         }
 
         boolean variableLengthTS = false;
-        if(inShape.length == 3){
+        if (inShape.length == 3) {
             //RNN data - check for variable length time series
             int minLength = inputs[0].size(2);
             int maxLength = minLength;
-            for( int i=1; i<inputs.length; i++ ){
+            for (int i = 1; i < inputs.length; i++) {
                 int thisLength = inputs[i].size(2);
                 minLength = Math.min(minLength, thisLength);
                 maxLength = Math.max(maxLength, thisLength);
             }
             variableLengthTS = (minLength != maxLength);
 
-            if(!variableLengthTS){
+            if (!variableLengthTS) {
                 return Nd4j.concat(0, inputs);
             }
 
@@ -103,10 +103,9 @@ public class StackVertex extends BaseGraphVertex {
             INDArray out = Nd4j.create(outShape);
             int numExamples = inputs[0].size(0);
             lastInputShapes = new int[inputs.length][0];
-            for( int i=0; i<inputs.length; i++ ){
-                out.put(new INDArrayIndex[]{NDArrayIndex.interval(i*numExamples, (i+1)*numExamples),
-                        NDArrayIndex.all(),
-                        NDArrayIndex.interval(0, inputs[i].size(2))}, inputs[i]);
+            for (int i = 0; i < inputs.length; i++) {
+                out.put(new INDArrayIndex[] {NDArrayIndex.interval(i * numExamples, (i + 1) * numExamples),
+                                NDArrayIndex.all(), NDArrayIndex.interval(0, inputs[i].size(2))}, inputs[i]);
                 lastInputShapes[i] = inputs[i].shape();
             }
 
@@ -122,7 +121,7 @@ public class StackVertex extends BaseGraphVertex {
         if (!canDoForward())
             throw new IllegalStateException("Cannot do forward pass: input not set");
 
-        if(epsilon == null){
+        if (epsilon == null) {
             //Edge case for stack vertex: stack -> embedding
             //If the null epsilons are a problem in practice, this should be picked up by other layers
             return new Pair<>(null, new INDArray[inputs.length]);
@@ -139,13 +138,13 @@ public class StackVertex extends BaseGraphVertex {
                     out[i] = epsilon.get(NDArrayIndex.interval(i * step, (i + 1) * step), NDArrayIndex.all());
                     break;
                 case 3:
-                    if(lastInputShapes != null){
+                    if (lastInputShapes != null) {
                         //Variable length time series case
                         out[i] = epsilon.get(NDArrayIndex.interval(i * step, (i + 1) * step), NDArrayIndex.all(),
-                                NDArrayIndex.interval(0, lastInputShapes[i][2]));
+                                        NDArrayIndex.interval(0, lastInputShapes[i][2]));
                     } else {
                         out[i] = epsilon.get(NDArrayIndex.interval(i * step, (i + 1) * step), NDArrayIndex.all(),
-                                NDArrayIndex.all());
+                                        NDArrayIndex.all());
                     }
                     break;
                 case 4:
@@ -181,19 +180,19 @@ public class StackVertex extends BaseGraphVertex {
         boolean allSameLength = true;
         int size1_ex0 = maskArrays[0].size(1);
         int maxLength = size1_ex0;
-        for( int i=1; i<maskArrays.length; i++ ){
+        for (int i = 1; i < maskArrays.length; i++) {
             allSameLength &= (size1_ex0 == maskArrays[i].size(1));
             maxLength = Math.max(maxLength, maskArrays[i].size(1));
         }
 
-        if(allSameLength){
+        if (allSameLength) {
             return new Pair<>(Nd4j.vstack(maskArrays), currentMaskState);
         } else {
             int numExamples = maskArrays[0].size(0);
             INDArray outMask = Nd4j.create(maskArrays.length * numExamples, maxLength);
-            for( int i=0; i<maskArrays.length; i++ ){
-                outMask.put(new INDArrayIndex[]{NDArrayIndex.interval(i*numExamples, (i+1)*numExamples), NDArrayIndex.interval(0, maskArrays[i].size(1))},
-                        maskArrays[i]);
+            for (int i = 0; i < maskArrays.length; i++) {
+                outMask.put(new INDArrayIndex[] {NDArrayIndex.interval(i * numExamples, (i + 1) * numExamples),
+                                NDArrayIndex.interval(0, maskArrays[i].size(1))}, maskArrays[i]);
             }
 
             return new Pair<>(outMask, currentMaskState);
