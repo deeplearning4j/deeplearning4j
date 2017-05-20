@@ -42,7 +42,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     private INDArray sumSquaredPredicted;
 
     public RegressionEvaluation(){
-        this(null, DEFAULT_PRECISION);
+        this(createDefaultColumnNames(1), DEFAULT_PRECISION);
     }
 
     /** Create a regression evaluation object with the specified number of columns, and default precision
@@ -94,7 +94,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         initialized = false;
     }
 
-    private void initialize(int n){
+    private void initialize(int n) {
         if(columnNames == null || columnNames.size() != n){
             columnNames = createDefaultColumnNames(n);
         }
@@ -149,9 +149,9 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
         if (columnNames.size() != labels.size(1) || columnNames.size() != predictions.size(1)) {
             throw new IllegalArgumentException(
-                            "Number of the columns of labels and predictions must match specification ("
-                                            + columnNames.size() + "). Got " + labels.size(1) + " and "
-                                            + predictions.size(1));
+                    "Number of the columns of labels and predictions must match specification ("
+                            + columnNames.size() + "). Got " + labels.size(1) + " and "
+                            + predictions.size(1));
         }
 
         if(maskArray != null){
@@ -217,7 +217,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         this.currentMean.muliRowVector(exampleCountPerColumn).addi(other.currentMean.mulRowVector(other.exampleCountPerColumn))
                 .diviRowVector(exampleCountPerColumn.add(other.exampleCountPerColumn));
         this.currentPredictionMean.muliRowVector(exampleCountPerColumn).addi(other.currentPredictionMean.mulRowVector(other.exampleCountPerColumn))
-                        .diviRowVector(exampleCountPerColumn.add(other.exampleCountPerColumn));
+                .diviRowVector(exampleCountPerColumn.add(other.exampleCountPerColumn));
         this.sumOfProducts.addi(other.sumOfProducts);
         this.sumSquaredLabels.addi(other.sumSquaredLabels);
         this.sumSquaredPredicted.addi(other.sumSquaredPredicted);
@@ -226,7 +226,8 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     }
 
     public String stats() {
-
+        if(columnNames == null)
+            columnNames = createDefaultColumnNames(numColumns());
         int maxLabelLength = 0;
         for (String s : columnNames)
             maxLabelLength = Math.max(maxLabelLength, s.length());
@@ -235,17 +236,17 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         int columnWidth = precision + 10;
 
         String format = "%-" + labelWidth + "s" + "%-" + columnWidth + "." + precision + "e" //MSE
-                        + "%-" + columnWidth + "." + precision + "e" //MAE
-                        + "%-" + columnWidth + "." + precision + "e" //RMSE
-                        + "%-" + columnWidth + "." + precision + "e" //RSE
-                        + "%-" + columnWidth + "." + precision + "e"; //R2 (correlation coefficient)
+                + "%-" + columnWidth + "." + precision + "e" //MAE
+                + "%-" + columnWidth + "." + precision + "e" //RMSE
+                + "%-" + columnWidth + "." + precision + "e" //RSE
+                + "%-" + columnWidth + "." + precision + "e"; //R2 (correlation coefficient)
 
 
 
         //Print header:
         StringBuilder sb = new StringBuilder();
         String headerFormat = "%-" + labelWidth + "s" + "%-" + columnWidth + "s" + "%-" + columnWidth + "s" + "%-"
-                        + columnWidth + "s" + "%-" + columnWidth + "s" + "%-" + columnWidth + "s";
+                + columnWidth + "s" + "%-" + columnWidth + "s" + "%-" + columnWidth + "s";
         sb.append(String.format(headerFormat, "Column", "MSE", "MAE", "RMSE", "RSE", "R^2"));
         sb.append("\n");
 
@@ -297,7 +298,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         double exampleCount = exampleCountPerColumn.getDouble(column);
         double r2 = sumxiyi - exampleCount * predictionMean * labelMean;
         r2 /= Math.sqrt(sumSquaredLabels - exampleCount * labelMean * labelMean)
-                        * Math.sqrt(sumSquaredPredicted - exampleCount * predictionMean * predictionMean);
+                * Math.sqrt(sumSquaredPredicted - exampleCount * predictionMean * predictionMean);
 
         return r2;
     }
@@ -306,9 +307,9 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         // RSE: sum(predicted-actual)^2 / sum(actual-labelsMean)^2
         // (sum(predicted^2) - 2 * sum(predicted * actual) + sum(actual ^ 2)) / (sum(actual ^ 2) - n * actualMean)
         double numerator = sumSquaredPredicted.getDouble(column) - 2 * sumOfProducts.getDouble(column)
-                        + sumSquaredLabels.getDouble(column);
+                + sumSquaredLabels.getDouble(column);
         double denominator = sumSquaredLabels.getDouble(column)
-                        - exampleCountPerColumn.getDouble(column) * currentMean.getDouble(column) * currentMean.getDouble(column);
+                - exampleCountPerColumn.getDouble(column) * currentMean.getDouble(column) * currentMean.getDouble(column);
 
         if (Math.abs(denominator) > Nd4j.EPS_THRESHOLD) {
             return numerator / denominator;
@@ -317,4 +318,71 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         }
     }
 
+
+    /**
+     * Average MSE across all columns
+     * @return
+     */
+    public double averageMeanSquaredError() {
+        double ret = 0.0;
+        for(int i = 0; i < numColumns(); i++) {
+            ret += meanSquaredError(i);
+        }
+
+        return ret / (double) numColumns();
+    }
+
+    /**
+     * Average MAE across all columns
+     * @return
+     */
+    public double averageMeanAbsoluteError() {
+        double ret = 0.0;
+        for(int i = 0; i < numColumns(); i++) {
+            ret += meanAbsoluteError(i);
+        }
+
+        return ret / (double) numColumns();
+    }
+
+    /**
+     * Average RMSE across all columns
+     * @return
+     */
+    public double averagerootMeanSquaredError() {
+        double ret = 0.0;
+        for(int i = 0; i < numColumns(); i++) {
+            ret += rootMeanSquaredError(i);
+        }
+
+        return ret / (double) numColumns();
+    }
+
+
+    /**
+     * Average RSE across all columns
+     * @return
+     */
+    public double averagerelativeSquaredError() {
+        double ret = 0.0;
+        for(int i = 0; i < numColumns(); i++) {
+            ret += relativeSquaredError(i);
+        }
+
+        return ret / (double) numColumns();
+    }
+
+
+    /**
+     * Average R2 across all columns
+     * @return
+     */
+    public double averagecorrelationR2() {
+        double ret = 0.0;
+        for(int i = 0; i < numColumns(); i++) {
+            ret += correlationR2(i);
+        }
+
+        return ret / (double) numColumns();
+    }
 }
