@@ -201,6 +201,57 @@ public class CpuLapack extends BaseLapack {
         }
     }
 
+
+//=========================    
+// syev EigenValue/Vectors
+//
+    @Override
+    public int ssyev( char jobz, char uplo, int N, INDArray A, INDArray R ) {
+	FloatPointer fp = new FloatPointer(1) ;
+	int status = LAPACKE_ssyev_work( getColumnOrder(A), (byte)jobz, (byte)uplo, 
+					N, (FloatPointer)A.data().addressPointer(), getLda(A),
+					(FloatPointer)R.data().addressPointer(), fp, -1 ) ;
+	if( status == 0 ) {
+		int lwork = (int)fp.get() ;
+		INDArray work = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createFloat(lwork),
+		                Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, lwork}));
+
+		status = LAPACKE_ssyev( getColumnOrder(A), (byte)jobz, (byte)uplo, N, 
+		            (FloatPointer)A.data().addressPointer(), getLda(A),
+			    (FloatPointer)work.data().addressPointer() ) ;
+		if( status == 0 ) {
+			R.assign( work.get( NDArrayIndex.interval(0,N) ) ) ;
+		}
+	}
+	return status ;
+    }
+
+
+    public int dsyev( char jobz, char uplo, int N, INDArray A, INDArray R ) {
+
+	DoublePointer dp = new DoublePointer(1) ;
+	int status = LAPACKE_dsyev_work( getColumnOrder(A), (byte)jobz, (byte)uplo, 
+					N, (DoublePointer)A.data().addressPointer(), getLda(A),
+					(DoublePointer)R.data().addressPointer(), dp, -1 ) ;
+	if( status == 0 ) {
+		int lwork = (int)dp.get() ;
+		INDArray work = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createDouble(lwork),
+		                Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, lwork}));
+
+		status = LAPACKE_dsyev( getColumnOrder(A), (byte)jobz, (byte)uplo, N, 
+		            (DoublePointer)A.data().addressPointer(), getLda(A),
+			    (DoublePointer)work.data().addressPointer() ) ;
+
+		if( status == 0 ) {
+			R.assign( work.get( NDArrayIndex.interval(0,N) ) ) ;
+		}
+	}
+	return status ;
+    }
+
+
+
+
     /**
      * Generate inverse given LU decomp
      *
