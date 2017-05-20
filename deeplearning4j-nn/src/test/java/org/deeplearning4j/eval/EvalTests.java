@@ -28,7 +28,7 @@ public class EvalTests {
         assertEquals(roc3,BaseEvaluation.fromJson(json,ROCMultiClass.class));
 
 
-        RegressionEvaluation regressionEvaluation =  new RegressionEvaluation();
+        RegressionEvaluation regressionEvaluation =  new RegressionEvaluation(1);
         json = regressionEvaluation.toJson();
         assertEquals(regressionEvaluation,BaseEvaluation.fromJson(json,RegressionEvaluation.class));
 
@@ -41,6 +41,11 @@ public class EvalTests {
         evaluationBinary.averagePrecision();
         evaluationBinary.averageRecall();
         roc2.calculateAverageAuc();
+        regressionEvaluation.averagecorrelationR2();
+        regressionEvaluation.averageMeanAbsoluteError();
+        regressionEvaluation.averagerelativeSquaredError();
+        regressionEvaluation.averagerootMeanSquaredError();
+
 
 
     }
