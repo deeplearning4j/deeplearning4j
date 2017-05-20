@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ClassUtils;
 import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.sequence.*;
+import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
 import org.datavec.api.transform.transform.integer.IntegerToOneHotTransform;
 import org.datavec.api.transform.transform.sequence.SequenceMovingWindowReduceTransform;
 import org.datavec.api.transform.transform.string.AppendStringColumnTransform;
@@ -972,6 +973,19 @@ public class TransformProcess implements Serializable {
             actionList.add(new DataAction(split));
             return this;
         }
+
+        /**
+         * SequenceTrimTranform removes the first or last N values in a sequence. Note that the resulting sequence
+         * may be of length 0, if the input sequence is less than or equal to N.
+         *
+         * @param numStepsToTrim Number of time steps to trim from the sequence
+         * @param trimFromStart  If true: Trim values from the start of the sequence. If false: trim values from the end.
+         */
+        public Builder trimSequence(int numStepsToTrim, boolean trimFromStart){
+            actionList.add(new DataAction(new SequenceTrimTransform(numStepsToTrim, trimFromStart)));
+            return this;
+        }
+
 
         /**
          * Reduce (i.e., aggregate/combine) a set of examples (typically by key).

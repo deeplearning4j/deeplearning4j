@@ -21,6 +21,7 @@ import org.datavec.api.transform.reduce.IReducer;
 import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.sequence.ReduceSequenceTransform;
+import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
 import org.datavec.api.transform.transform.categorical.*;
 import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.transform.transform.integer.*;
@@ -1152,5 +1153,33 @@ public class TestTransforms {
 
         assertEquals(exp1, act1);
         assertEquals(exp2, act2);
+    }
+
+    @Test
+    public void testTrimSequenceTransform(){
+        List<List<Writable>> seq = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)),
+                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)),
+                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11)));
+
+        List<List<Writable>> expTrimFirst = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)),
+                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11)));
+
+        List<List<Writable>> expTrimLast = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)));
+
+        SequenceTrimTransform tFirst = new SequenceTrimTransform(2, true);
+        SequenceTrimTransform tLast = new SequenceTrimTransform(2, false);
+
+        Schema schema = new SequenceSchema.Builder().addColumnsDouble("col%d",0,2).build();
+        tFirst.setInputSchema(schema);
+        tLast.setInputSchema(schema);
+
+        assertEquals(expTrimFirst, tFirst.mapSequence(seq));
+        assertEquals(expTrimLast, tLast.mapSequence(seq));
+
     }
 }

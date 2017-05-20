@@ -113,26 +113,7 @@ public class LongColumnCondition extends BaseColumnCondition {
 
     @Override
     public boolean columnCondition(Writable writable) {
-        switch (op) {
-            case LessThan:
-                return writable.toLong() < value;
-            case LessOrEqual:
-                return writable.toLong() <= value;
-            case GreaterThan:
-                return writable.toLong() > value;
-            case GreaterOrEqual:
-                return writable.toLong() >= value;
-            case Equal:
-                return writable.toLong() == value;
-            case NotEqual:
-                return writable.toLong() != value;
-            case InSet:
-                return set.contains(writable.toLong());
-            case NotInSet:
-                return !set.contains(writable.toLong());
-            default:
-                throw new RuntimeException("Unknown or not implemented op: " + op);
-        }
+        return op.apply(writable.toLong(), (value == null ? 0 : value), set);
     }
 
     @Override
@@ -152,26 +133,7 @@ public class LongColumnCondition extends BaseColumnCondition {
     @Override
     public boolean condition(Object input) {
         Number n = (Number) input;
-        switch (op) {
-            case LessThan:
-                return n.longValue() < value;
-            case LessOrEqual:
-                return n.longValue() <= value;
-            case GreaterThan:
-                return n.longValue() > value;
-            case GreaterOrEqual:
-                return n.longValue() >= value;
-            case Equal:
-                return n.longValue() == value;
-            case NotEqual:
-                return n.longValue() != value;
-            case InSet:
-                return set.contains(n.longValue());
-            case NotInSet:
-                return !set.contains(n.longValue());
-            default:
-                throw new RuntimeException("Unknown or not implemented op: " + op);
-        }
+        return op.apply(n.longValue(), (value == null ? 0 : value), set);
     }
 
 

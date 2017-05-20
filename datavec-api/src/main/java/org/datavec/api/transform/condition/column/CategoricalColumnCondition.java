@@ -116,23 +116,7 @@ public class CategoricalColumnCondition extends BaseColumnCondition {
 
     @Override
     public boolean columnCondition(Writable writable) {
-        switch (op) {
-            case Equal:
-                return value.equals(writable.toString());
-            case NotEqual:
-                return !value.equals(writable.toString());
-            case InSet:
-                return set.contains(writable.toString());
-            case NotInSet:
-                return !set.contains(writable.toString());
-            case LessThan:
-            case LessOrEqual:
-            case GreaterThan:
-            case GreaterOrEqual:
-                throw new UnsupportedOperationException("Cannot use ConditionOp \"" + op + "\" on Categorical column");
-            default:
-                throw new RuntimeException("Unknown or not implemented op: " + op);
-        }
+        return op.apply(writable.toString(), value, set);
     }
 
     @Override
@@ -151,22 +135,6 @@ public class CategoricalColumnCondition extends BaseColumnCondition {
      */
     @Override
     public boolean condition(Object input) {
-        switch (op) {
-            case Equal:
-                return value.equals(input.toString());
-            case NotEqual:
-                return !value.equals(input.toString());
-            case InSet:
-                return set.contains(input.toString());
-            case NotInSet:
-                return !set.contains(input.toString());
-            case LessThan:
-            case LessOrEqual:
-            case GreaterThan:
-            case GreaterOrEqual:
-                throw new UnsupportedOperationException("Cannot use ConditionOp \"" + op + "\" on Categorical column");
-            default:
-                throw new RuntimeException("Unknown or not implemented op: " + op);
-        }
+        return op.apply(input.toString(), value, set);
     }
 }
