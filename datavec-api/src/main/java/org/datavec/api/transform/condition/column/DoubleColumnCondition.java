@@ -114,26 +114,7 @@ public class DoubleColumnCondition extends BaseColumnCondition {
 
     @Override
     public boolean columnCondition(Writable writable) {
-        switch (op) {
-            case LessThan:
-                return writable.toDouble() < value;
-            case LessOrEqual:
-                return writable.toDouble() <= value;
-            case GreaterThan:
-                return writable.toDouble() > value;
-            case GreaterOrEqual:
-                return writable.toDouble() >= value;
-            case Equal:
-                return writable.toDouble() == value;
-            case NotEqual:
-                return writable.toDouble() != value;
-            case InSet:
-                return set.contains(writable.toDouble());
-            case NotInSet:
-                return !set.contains(writable.toDouble());
-            default:
-                throw new RuntimeException("Unknown or not implemented op: " + op);
-        }
+        return op.apply(writable.toDouble(), (value == null ? Double.NaN : value), set);
     }
 
     @Override
@@ -153,26 +134,7 @@ public class DoubleColumnCondition extends BaseColumnCondition {
     @Override
     public boolean condition(Object input) {
         Number d = (Number) input;
-        switch (op) {
-            case LessThan:
-                return d.doubleValue() < value;
-            case LessOrEqual:
-                return d.doubleValue() <= value;
-            case GreaterThan:
-                return d.doubleValue() > value;
-            case GreaterOrEqual:
-                return d.doubleValue() >= value;
-            case Equal:
-                return d.doubleValue() == value;
-            case NotEqual:
-                return d.doubleValue() != value;
-            case InSet:
-                return set.contains(d.doubleValue());
-            case NotInSet:
-                return !set.contains(d.doubleValue());
-            default:
-                throw new RuntimeException("Unknown or not implemented op: " + op);
-        }
+        return op.apply(d.doubleValue(), (value == null ? Double.NaN : value), set);
     }
 
 }

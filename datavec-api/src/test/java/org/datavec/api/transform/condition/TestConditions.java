@@ -18,15 +18,14 @@ package org.datavec.api.transform.condition;
 
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.condition.column.*;
+import org.datavec.api.transform.condition.sequence.SequenceLengthCondition;
 import org.datavec.api.transform.condition.string.StringRegexColumnCondition;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.TestTransforms;
 import org.datavec.api.writable.*;
 import org.junit.Test;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -271,5 +270,34 @@ public class TestConditions {
         assertTrue(condition.condition(
                         Collections.singletonList((Writable) new LongWritable(1L + (long) Integer.MAX_VALUE))));
         assertTrue(condition.condition(Collections.singletonList((Writable) new DoubleWritable(3.14159))));
+    }
+
+    @Test
+    public void testSequenceLengthCondition(){
+
+        Condition c = new SequenceLengthCondition(ConditionOp.LessThan, 2);
+
+        List<List<Writable>> l1 = Arrays.asList(Collections.<Writable>singletonList(NullWritable.INSTANCE));
+
+        List<List<Writable>> l2 = Arrays.asList(
+                Collections.<Writable>singletonList(NullWritable.INSTANCE),
+                Collections.<Writable>singletonList(NullWritable.INSTANCE));
+
+        List<List<Writable>> l3 = Arrays.asList(
+                Collections.<Writable>singletonList(NullWritable.INSTANCE),
+                Collections.<Writable>singletonList(NullWritable.INSTANCE),
+                Collections.<Writable>singletonList(NullWritable.INSTANCE));
+
+        assertTrue(c.conditionSequence(l1));
+        assertFalse(c.conditionSequence(l2));
+        assertFalse(c.conditionSequence(l3));
+
+        Set<Integer> set = new HashSet<>();
+        set.add(2);
+        c = new SequenceLengthCondition(ConditionOp.InSet, set);
+        assertFalse(c.conditionSequence(l1));
+        assertTrue(c.conditionSequence(l2));
+        assertFalse(c.conditionSequence(l3));
+
     }
 }

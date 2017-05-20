@@ -114,26 +114,7 @@ public class TimeColumnCondition extends BaseColumnCondition {
 
     @Override
     public boolean columnCondition(Writable writable) {
-        switch (op) {
-            case LessThan:
-                return writable.toLong() < value;
-            case LessOrEqual:
-                return writable.toLong() <= value;
-            case GreaterThan:
-                return writable.toLong() > value;
-            case GreaterOrEqual:
-                return writable.toLong() >= value;
-            case Equal:
-                return writable.toLong() == value;
-            case NotEqual:
-                return writable.toLong() != value;
-            case InSet:
-                return set.contains(writable.toLong());
-            case NotInSet:
-                return !set.contains(writable.toLong());
-            default:
-                throw new RuntimeException("Unknown or not implemented op: " + op);
-        }
+        return op.apply(writable.toLong(), (value == null ? 0 : value), set);
     }
 
     @Override
@@ -152,26 +133,7 @@ public class TimeColumnCondition extends BaseColumnCondition {
      */
     @Override
     public boolean condition(Object input) {
-        Long l = (Long) input;
-        switch (op) {
-            case LessThan:
-                return l < value;
-            case LessOrEqual:
-                return l <= value;
-            case GreaterThan:
-                return l > value;
-            case GreaterOrEqual:
-                return l >= value;
-            case Equal:
-                return l == value;
-            case NotEqual:
-                return l != value;
-            case InSet:
-                return set.contains(l);
-            case NotInSet:
-                return !set.contains(l);
-            default:
-                throw new RuntimeException("Unknown or not implemented op: " + op);
-        }
+        Number n = (Number) input;
+        return op.apply(n.longValue(), (value == null ? 0 : value), set);
     }
 }

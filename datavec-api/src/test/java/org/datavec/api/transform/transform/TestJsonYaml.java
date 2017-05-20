@@ -24,6 +24,7 @@ import org.datavec.api.transform.analysis.columns.StringAnalysis;
 import org.datavec.api.transform.condition.ConditionOp;
 import org.datavec.api.transform.condition.column.DoubleColumnCondition;
 import org.datavec.api.transform.condition.column.NullWritableColumnCondition;
+import org.datavec.api.transform.condition.sequence.SequenceLengthCondition;
 import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.filter.FilterInvalidValues;
 import org.datavec.api.transform.reduce.Reducer;
@@ -140,6 +141,7 @@ public class TestJsonYaml {
                                         .sequenceMovingWindowReduce("rankColName", 20, ReduceOp.Mean)
                                         .addConstantColumn("someIntColumn", ColumnType.Integer, new IntWritable(0))
                                         .integerToOneHot("someIntColumn", 0, 3)
+                                        .filter(new SequenceLengthCondition(ConditionOp.LessThan, 1))
                                         .build();
 
         String asJson = tp.toJson();
