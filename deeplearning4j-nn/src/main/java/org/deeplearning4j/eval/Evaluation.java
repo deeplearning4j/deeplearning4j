@@ -133,6 +133,13 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         numRowCounter = 0;
     }
 
+    private ConfusionMatrix<Integer> confusion() {
+        if(confusion != null)
+            return confusion;
+        confusion = new ConfusionMatrix<>();
+        return confusion;
+    }
+    
     private static List<String> createLabels(int numClasses) {
         if (numClasses == 1)
             numClasses = 2; //Binary (single output variable) case...
@@ -258,10 +265,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             int fn = notGuess.mul(realOutcomes).sumNumber().intValue();
             int tn = nRows - tp - fp - fn;
 
-            confusion.add(1, 1, tp);
-            confusion.add(1, 0, fn);
-            confusion.add(0, 1, fp);
-            confusion.add(0, 0, tn);
+            confusion().add(1, 1, tp);
+            confusion().add(1, 0, fn);
+            confusion().add(0, 1, fp);
+            confusion().add(0, 0, tn);
 
             truePositives.incrementCount(1, tp);
             falsePositives.incrementCount(1, fp);
@@ -291,7 +298,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             for (int i = 0; i < nExamples; i++) {
                 int actual = (int) realOutcomeIndex.getDouble(i);
                 int predicted = (int) guessIndex.getDouble(i);
-                confusion.add(actual, predicted);
+                confusion().add(actual, predicted);
 
                 if (recordMetaData != null && recordMetaData.size() > i) {
                     Object m = recordMetaData.get(i);
@@ -386,7 +393,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
             // And add 1 for each negative class that is accurately predicted (True Negative)
             //(For a particular label)
-            for (Integer clazz : confusion.getClasses()) {
+            for (Integer clazz : confusion().getClasses()) {
                 if (clazz != predictedIdx)
                     trueNegatives.incrementCount(clazz, 1.0);
             }
@@ -396,7 +403,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             // Otherwise the prediction is predicted as falsely positive (False Positive)
             incrementFalsePositives(predictedIdx);
             // Otherwise true negatives
-            for (Integer clazz : confusion.getClasses()) {
+            for (Integer clazz : confusion().getClasses()) {
                 if (clazz != predictedIdx && clazz != actualIdx)
                     trueNegatives.incrementCount(clazz, 1.0);
 
@@ -418,7 +425,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         String actual, expected;
         StringBuilder builder = new StringBuilder().append("\n");
         StringBuilder warnings = new StringBuilder();
-        List<Integer> classes = confusion.getClasses();
+        List<Integer> classes = confusion().getClasses();
 
         List<Integer> falsePositivesWarningClasses = new ArrayList<>();
         List<Integer> falseNegativesWarningClasses = new ArrayList<>();
@@ -426,7 +433,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             actual = resolveLabelForClass(clazz);
             //Output confusion matrix
             for (Integer clazz2 : classes) {
-                int count = confusion.getCount(clazz, clazz2);
+                int count = confusion().getCount(clazz, clazz2);
                 if (count != 0) {
                     expected = resolveLabelForClass(clazz2);
                     builder.append(String.format("Examples labeled as %s classified by model as %s: %d times%n", actual,
@@ -454,7 +461,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         builder.append("\n");
         builder.append(warnings);
 
-        int nClasses = confusion.getClasses().size();
+        int nClasses = confusion().getClasses().size();
         DecimalFormat df = new DecimalFormat("0.0000");
         double acc = accuracy();
         double precisionMacro = precision(EvaluationAveraging.Macro);
@@ -568,7 +575,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return Average precision
      */
     public double precision(EvaluationAveraging averaging){
-        int nClasses = confusion.getClasses().size();
+        int nClasses = confusion().getClasses().size();
         if(averaging == EvaluationAveraging.Macro){
             double macroPrecision = 0.0;
             int count = 0;
@@ -636,7 +643,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     private int numClassesExcluded(String metric) {
         int countExcluded = 0;
-        int nClasses = confusion.getClasses().size();
+        int nClasses = confusion().getClasses().size();
 
         for (int i = 0; i < nClasses; i++) {
             double d;
@@ -704,7 +711,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return Average recall
      */
     public double recall(EvaluationAveraging averaging){
-        int nClasses = confusion.getClasses().size();
+        int nClasses = confusion().getClasses().size();
         if(averaging == EvaluationAveraging.Macro){
             double macroRecall = 0.0;
             int count = 0;
@@ -772,7 +779,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return Average false positive rate
      */
     public double falsePositiveRate(EvaluationAveraging averaging){
-        int nClasses = confusion.getClasses().size();
+        int nClasses = confusion().getClasses().size();
         if(averaging == EvaluationAveraging.Macro){
             double macroFPR = 0.0;
             for( int i=0; i<nClasses; i++ ){
@@ -834,7 +841,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return Average false negative rate
      */
     public double falseNegativeRate(EvaluationAveraging averaging){
-        int nClasses = confusion.getClasses().size();
+        int nClasses = confusion().getClasses().size();
         if(averaging == EvaluationAveraging.Macro){
             double macroFNR = 0.0;
             for( int i=0; i<nClasses; i++ ){
@@ -937,7 +944,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param averaging Averaging method to use
      */
     public double fBeta(double beta, EvaluationAveraging averaging){
-        int nClasses = confusion.getClasses().size();
+        int nClasses = confusion().getClasses().size();
 
         if(nClasses == 2){
             return EvaluationUtils.fBeta(beta, (long)truePositives.getCount(1),
@@ -990,7 +997,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return Average G measure
      */
     public double gMeasure(EvaluationAveraging averaging){
-        int nClasses = confusion.getClasses().size();
+        int nClasses = confusion().getClasses().size();
         if(averaging == EvaluationAveraging.Macro){
             double macroGMeasure = 0.0;
             for( int i=0; i<nClasses; i++ ){
@@ -1023,10 +1030,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      */
     public double accuracy() {
         //Accuracy: sum the counts on the diagonal of the confusion matrix, divide by total
-        int nClasses = confusion.getClasses().size();
+        int nClasses = confusion().getClasses().size();
         int countCorrect = 0;
         for (int i = 0; i < nClasses; i++) {
-            countCorrect += confusion.getCount(i, i);
+            countCorrect += confusion().getCount(i, i);
         }
 
         return countCorrect / (double) getNumRowCounter();
@@ -1067,7 +1074,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return Average
      */
     public double matthewsCorrelation(EvaluationAveraging averaging){
-        int nClasses = confusion.getClasses().size();
+        int nClasses = confusion().getClasses().size();
         if(averaging == EvaluationAveraging.Macro){
             double macroMatthewsCorrelation = 0.0;
             for( int i=0; i<nClasses; i++ ){
@@ -1101,7 +1108,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return the total true positives so far
      */
     public Map<Integer, Integer> truePositives() {
-        return convertToMap(truePositives, confusion.getClasses().size());
+        return convertToMap(truePositives, confusion().getClasses().size());
     }
 
     /**
@@ -1110,7 +1117,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return the total true negatives so far
      */
     public Map<Integer, Integer> trueNegatives() {
-        return convertToMap(trueNegatives, confusion.getClasses().size());
+        return convertToMap(trueNegatives, confusion().getClasses().size());
     }
 
     /**
@@ -1119,7 +1126,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return the count of the false positives
      */
     public Map<Integer, Integer> falsePositives() {
-        return convertToMap(falsePositives, confusion.getClasses().size());
+        return convertToMap(falsePositives, confusion().getClasses().size());
     }
 
     /**
@@ -1128,7 +1135,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return the total false negatives so far
      */
     public Map<Integer, Integer> falseNegatives() {
-        return convertToMap(falseNegatives, confusion.getClasses().size());
+        return convertToMap(falseNegatives, confusion().getClasses().size());
     }
 
     /**
@@ -1203,7 +1210,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param guess the system guess
      */
     public void addToConfusion(Integer real, Integer guess) {
-        confusion.add(real, guess);
+        confusion().add(real, guess);
     }
 
     /**
@@ -1215,7 +1222,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * actually occurred
      */
     public int classCount(Integer clazz) {
-        return confusion.getActualTotal(clazz);
+        return confusion().getActualTotal(clazz);
     }
 
     public int getNumRowCounter() {
@@ -1232,10 +1239,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         if(confusion == null)
             confusion = new ConfusionMatrix<>();
         if (topN <= 1) {
-            int nClasses = confusion.getClasses().size();
+            int nClasses = confusion().getClasses().size();
             int countCorrect = 0;
             for (int i = 0; i < nClasses; i++) {
-                countCorrect += confusion.getCount(i, i);
+                countCorrect += confusion().getCount(i, i);
             }
             return countCorrect;
         }
@@ -1291,7 +1298,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 confusion = new ConfusionMatrix<>(other.confusion);
         } else {
             if (other.confusion != null)
-                confusion.add(other.confusion);
+                confusion().add(other.confusion);
         }
         numRowCounter += other.numRowCounter;
         if (labelsList.isEmpty())
@@ -1309,7 +1316,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * Get a String representation of the confusion matrix
      */
     public String confusionToString() {
-        int nClasses = confusion.getClasses().size();
+        int nClasses = confusion().getClasses().size();
 
         //First: work out the longest label size
         int maxLabelSize = 0;
@@ -1353,7 +1360,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             args[0] = i;
             args[1] = labelsList.get(i);
             for (int j = 0; j < nClasses; j++) {
-                args[j + 2] = confusion.getCount(i, j);
+                args[j + 2] = confusion().getCount(i, j);
             }
             out.append(String.format(rowFormat, args));
             out.append("\n");
