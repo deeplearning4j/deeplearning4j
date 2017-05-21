@@ -43,7 +43,7 @@ DL4Jは、ユーザーインターフェースを提供することによって�
     //ネットワーク情報（勾配、スコア対時間など）が保管される場所の情報を設定するこちらのメモリーに保管します。
     StatsStorage statsStorage = new InMemoryStatsStorage();         //その他の選択肢： 新しいFileStatsStorage(File)。これは後で保存、ロードするため。
     
-    //Attach the StatsStorageインスタンスをUIに付ける。これによりStatsStorageのコンテンツが視覚化される。
+    //StatsStorageインスタンスをUIに付ける。これによりStatsStorageのコンテンツが視覚化される。
     uiServer.attach(statsStorage);
 
     //次に、トレーニングしながらネットワークからこの情報を収集するためにStatsListenerを追加する。
