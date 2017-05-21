@@ -33,7 +33,7 @@ layout: default
 
 <section>
   <h2 id="configuring">MNISTの設定例</h2>
-  <p>弊社にてMNISTのチュートリアルをMavenでパッケージ化したので、コードを記述する必要はありません。まずはIntelliJを開いてください。（IntelliJをダウンロードするには、弊社の<a href="quickstart">Quickstartc</a>をお読みください。）</p>
+  <p>弊社にてMNISTのチュートリアルをMavenでパッケージ化したので、コードを記述する必要はありません。まずはIntelliJを開いてください。（IntelliJをダウンロードするには、弊社の<a href="quickstart">Quickstart…</a>をお読みください。）</p>
   <p>フォルダ<code>dl4j-examples</code>を開いてください。ディレクトリの<kbd>src</kbd> → <kbd>main</kbd> → <kbd>java</kbd> → <kbd>feedforward</kbd> → <kbd>mnist</kbd>へと進み、ファイルの<code>MLPMnistSingleLayerExample.java</code>を開いてください。</p>
   <p><img src="/img/mlp_mnist_single_layer_example_setup.png"></p>
   <p>このファイルでは、ニューラルネットワークを設定し、モデルのトレーニングを行い、結果を評価します。このコードをチュートリアルと一緒に確認すると役に立ちます。</p>
