@@ -10,7 +10,7 @@ layout: default
 `deeplearning4j-modelimport`モジュールは、最初に設定され、トレーニングされたニューラルネットワークモデルをインポートするルーチンを提供します。
 また、これには[Keras](https://keras.io/)と言って、Deeplearning4jの最上部に抽象化層を提供する人気のあるPythonのディープラーニングライブラリ、
 [Theano](http://deeplearning.net/software/theano/)、[TensorFlow](https://www.tensorflow.org)
-のバックエンドを使います。Kerasモデルの保存について詳細を知りたい方は、Kerasの[FAQページ](https://keras.io/getting-started/faq/#how-can-i-save-a-keras-model)をご覧ください。Deeplearning4jのKerasを使ったPythonのAPI)の詳細は[こちらのリンク](https://github.com/crockpotveggies/dl4j-examples/tree/keras-examples/dl4j-keras-examples)をご覧ください。
+のバックエンドを使います。Kerasモデルの保存について詳細を知りたい方は、Kerasの[FAQページ](https://keras.io/getting-started/faq/#how-can-i-save-a-keras-model)をご覧ください。Deeplearning4jのKerasを使ったPythonのAPIの詳細は[こちらのリンク](https://github.com/crockpotveggies/dl4j-examples/tree/keras-examples/dl4j-keras-examples)をご覧ください。
 
 ![Model Import Schema](./img/model-import-keras.png)
 
