@@ -22,8 +22,7 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
     public INDArray compress(INDArray array) {
         INDArray dup = array.dup(array.ordering());
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
         dup.setData(compress(dup.data()));
         dup.markAsCompressed(true);

@@ -547,4 +547,14 @@ public class DefaultOpExecutioner implements OpExecutioner {
         log.info("Cores: [{}]; Memory: [{}GB];", env.get("cores"), fm);
         log.info("Blas vendor: [{}]", env.get("blas.vendor"));
     }
+
+    @Override
+    public void push() {
+        // no-op
+    }
+
+    @Override
+    public void commit() {
+        // no-op
+    }
 }

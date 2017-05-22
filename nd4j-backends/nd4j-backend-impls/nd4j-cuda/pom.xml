@@ -11,6 +11,7 @@
 
     <properties>
         <cuda.version>8.0</cuda.version>
+        <cudnn.version>6.0</cudnn.version>
         <env.LIBND4J_HOME>${basedir}/../../../../libnd4j/</env.LIBND4J_HOME>
     </properties>
 
@@ -183,12 +184,12 @@
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>cuda</artifactId>
-            <version>${cuda.version}-${javacpp-presets.version}</version>
+            <version>${cuda.version}-${cudnn.version}-${javacpp-presets.version}</version>
         </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
             <artifactId>cuda</artifactId>
-            <version>${cuda.version}-${javacpp-presets.version}</version>
+            <version>${cuda.version}-${cudnn.version}-${javacpp-presets.version}</version>
             <classifier>${dependency.platform}</classifier>
         </dependency>
 

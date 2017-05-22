@@ -7,16 +7,20 @@ import org.nd4j.linalg.api.memory.MemoryWorkspaceManager;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
+import org.nd4j.linalg.api.memory.pointers.PointersPair;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 
 import java.lang.ref.ReferenceQueue;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
+ * Workspace manager implementation. Please note, this class is supposed to be used via Nd4j.getWorkspaceManager(), to provide consistency between different threads within given JVM process
  * @author raver119@gmail.com
  */
 @Slf4j
@@ -24,7 +28,6 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
     protected WorkspaceConfiguration defaultConfiguration;
     protected ThreadLocal<Map<String, MemoryWorkspace>> backingMap = new ThreadLocal<>();
-    private DummyWorkspace dummyWorkspace = new DummyWorkspace();
     private ReferenceQueue<MemoryWorkspace> queue;
     private WorkspaceDeallocatorThread thread;
     private Map<String, Nd4jWorkspace.GarbageWorkspaceReference> referenceMap = new ConcurrentHashMap<>();
@@ -41,11 +44,19 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         thread.start();
     }
 
+    /**
+     * This method allows to specify "Default" configuration, that will be used in signatures which do not have WorkspaceConfiguration argument
+     * @param configuration
+     */
     @Override
     public void setDefaultWorkspaceConfiguration(@NonNull WorkspaceConfiguration configuration) {
         this.defaultConfiguration = configuration;
     }
 
+    /**
+     * This method will return workspace with default configuration and default id.
+     * @return
+     */
     @Override
     public MemoryWorkspace getWorkspaceForCurrentThread() {
         return getWorkspaceForCurrentThread(MemoryWorkspace.DEFAULT_ID);
@@ -88,29 +99,49 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         backingMap.get().put(id, workspace);
     }
 
+    /**
+     * This method destroys given workspace
+     *
+     * @param workspace
+     */
     @Override
-    public void destroyWorkspace(@NonNull MemoryWorkspace workspace) {
-        workspace.destroyWorkspace();
+    public void destroyWorkspace(MemoryWorkspace workspace) {
+        if (workspace == null || workspace instanceof DummyWorkspace)
+            return;
+
+        //workspace.destroyWorkspace();
+        backingMap.get().remove(workspace.getId());
     }
 
+    /**
+     * This method destroy default workspace, if any
+     */
     @Override
     public void destroyWorkspace() {
         ensureThreadExistense();
 
         MemoryWorkspace workspace = backingMap.get().get(MemoryWorkspace.DEFAULT_ID);
-        if (workspace != null)
-            workspace.destroyWorkspace();
+        //if (workspace != null)
+            //workspace.destroyWorkspace();
 
         backingMap.get().remove(MemoryWorkspace.DEFAULT_ID);
     }
 
+    /**
+     * This method destorys all workspaces allocated in current thread
+     */
     @Override
     public void destroyAllWorkspacesForCurrentThread() {
         ensureThreadExistense();
 
-        for (String key : backingMap.get().keySet()) {
-            backingMap.get().get(key).destroyWorkspace();
+        List<MemoryWorkspace> workspaces = new ArrayList<>();
+        workspaces.addAll(backingMap.get().values());
+
+        for (MemoryWorkspace workspace: workspaces) {
+            destroyWorkspace(workspace);
         }
+
+        System.gc();
     }
 
     protected void ensureThreadExistense() {
@@ -175,7 +206,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     public MemoryWorkspace scopeOutOfWorkspaces() {
         MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         if (workspace == null)
-            return dummyWorkspace;
+            return new DummyWorkspace();
         else {
             Nd4j.getMemoryManager().setCurrentWorkspace(null);
             return workspace.tagOutOfScopeUse();
@@ -198,15 +229,41 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
                 try {
                     Nd4jWorkspace.GarbageWorkspaceReference reference = (Nd4jWorkspace.GarbageWorkspaceReference) queue.remove();
                     if (reference != null) {
-                        //log.info("Releasing reference for Workspace [{}]", reference.getId());
-                        PagedPointer ptrDevice = reference.getPointerDevice();
-                        if (ptrDevice != null)
-                            Nd4j.getMemoryManager().release(ptrDevice, MemoryKind.DEVICE);
+//                      log.info("Releasing reference for Workspace [{}]", reference.getId());
+                        PointersPair pair = reference.getPointersPair();
+                        // purging workspace planes
+                        if (pair!= null) {
+                            if (pair.getDevicePointer() != null) {
+                                //log.info("Deallocating device...");
+                                Nd4j.getMemoryManager().release(pair.getDevicePointer(), MemoryKind.DEVICE);
+                            }
 
-                        PagedPointer ptrHost = reference.getPointerHost();
-                        if (ptrHost != null) {
-                            referenceMap.remove(reference.getId() + "_" + reference.getThreadId());
-                            Nd4j.getMemoryManager().release(ptrHost, MemoryKind.HOST);
+
+                            if (pair.getHostPointer() != null) {
+//                                log.info("Deallocating host...");
+                                referenceMap.remove(reference.getId() + "_" + reference.getThreadId());
+                                Nd4j.getMemoryManager().release(pair.getHostPointer(), MemoryKind.HOST);
+                            }
+                        }
+
+                        // purging all spilled pointers
+                        for (PointersPair pair2 : reference.getExternalPointers()) {
+                            if (pair2 != null) {
+                                if (pair2.getHostPointer() != null)
+                                    Nd4j.getMemoryManager().release(pair2.getHostPointer(), MemoryKind.HOST);
+
+                                if (pair2.getDevicePointer() != null)
+                                    Nd4j.getMemoryManager().release(pair2.getDevicePointer(), MemoryKind.DEVICE);
+                            }
+                        }
+
+                        // purging all pinned pointers
+                        while ((pair = reference.getPinnedPointers().poll()) != null) {
+                            if (pair.getHostPointer() != null)
+                                Nd4j.getMemoryManager().release(pair.getHostPointer(), MemoryKind.HOST);
+
+                            if (pair.getDevicePointer() != null)
+                                Nd4j.getMemoryManager().release(pair.getDevicePointer(), MemoryKind.DEVICE);
                         }
                     }
                 } catch (Exception e) {
@@ -216,15 +273,19 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
         }
     }
 
-
-    public void printAllocationStatisticsForCurrentThread() {
+    /**
+     * This method prints out basic statistics for workspaces allocated in current thread
+     */
+    public synchronized void printAllocationStatisticsForCurrentThread() {
         ensureThreadExistense();
         Map<String, MemoryWorkspace> map = backingMap.get();
         log.info("Workspace statistics: ---------------------------------");
+        log.info("Number of workspaces in current thread: {}", map.size());
         for (String key : map.keySet()) {
             log.info("Workspace: {}", key);
             log.info("Allocated amount: {} bytes", ((Nd4jWorkspace)map.get(key)).getCurrentSize());
             log.info("External (spilled) amount: {} bytes", ((Nd4jWorkspace)map.get(key)).getSpilledSize());
+            log.info("External (pinned) amount: {} bytes", ((Nd4jWorkspace)map.get(key)).getPinnedSize());
             System.out.println();
         }
     }

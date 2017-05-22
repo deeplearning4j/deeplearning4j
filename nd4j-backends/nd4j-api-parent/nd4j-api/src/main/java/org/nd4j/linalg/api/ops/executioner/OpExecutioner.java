@@ -252,6 +252,19 @@ public interface OpExecutioner {
     TADManager getTADManager();
 
 
+    /**
+     * This method prints out environmental information returned by getEnvironmentInformation() method
+     */
     void printEnvironmentInformation();
+
+    /**
+     * This method ensures all operations that supposed to be executed at this moment, are executed.
+     */
+    void push();
+
+    /**
+     * This method ensures all operations that supposed to be executed at this moment, are executed and finished.
+     */
+    void commit();
 
 }

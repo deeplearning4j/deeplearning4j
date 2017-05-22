@@ -23,6 +23,7 @@ import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.rng.NativeRandom;
 
+import java.util.Arrays;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -52,6 +53,21 @@ public class RandomTests extends BaseNd4jTest {
     @After
     public void tearDown() throws Exception {
         DataTypeUtil.setDTypeForContext(initialType);
+    }
+
+    @Test
+    public void testCrossBackendEquality1() throws Exception {
+
+        int[] shape = {1,12};
+        double mean = 0;
+        double standardDeviation = 1.0;
+        INDArray exp = Nd4j.create(new double[]{0.3201344790670888, 1.5718323114821624, 2.3576019088920157, 0.011034205622299313, -1.6848556179688527, 0.05479720804200661, -0.3641108263800006, -0.04683796849808572, -0.7358251292982549, 1.3590746854410898, 0.6587930319509204, 0.13347446589944548});
+        Nd4j.getRandom().setSeed(12345);
+        INDArray arr = Nd4j.getExecutioner().exec(new GaussianDistribution(
+                Nd4j.createUninitialized(shape, Nd4j.order()), mean, standardDeviation), Nd4j.getRandom());
+
+
+        assertEquals(exp, arr);
     }
 
 
@@ -618,8 +634,7 @@ public class RandomTests extends BaseNd4jTest {
                     rnd.setSeed(119);
                     INDArray array = Nd4j.getExecutioner().exec(new UniformDistribution(Nd4j.createUninitialized(25)));
 
-                    if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                        ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+                    Nd4j.getExecutioner().commit();
 
                     list.set(cnt.getAndIncrement(), array);
                 }

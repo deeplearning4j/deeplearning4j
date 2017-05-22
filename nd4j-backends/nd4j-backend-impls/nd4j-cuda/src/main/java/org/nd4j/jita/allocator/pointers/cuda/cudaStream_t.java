@@ -1,5 +1,6 @@
 package org.nd4j.jita.allocator.pointers.cuda;
 
+import lombok.NonNull;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.exception.ND4JException;
@@ -12,7 +13,7 @@ import org.nd4j.nativeblas.NativeOpsHolder;
  */
 public class cudaStream_t extends CudaPointer {
 
-    public cudaStream_t(Pointer pointer) {
+    public cudaStream_t(@NonNull Pointer pointer) {
         super(pointer);
     }
 

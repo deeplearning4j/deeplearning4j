@@ -129,6 +129,11 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createDouble(int offset, double[] data, MemoryWorkspace workspace) {
+        return new DoubleBuffer(data, true, offset, workspace);
+    }
+
+    @Override
     public DataBuffer createDouble(int offset, byte[] data, int length) {
         return createDouble(offset, ArrayUtil.toDoubleArray(data), true);
     }
@@ -156,6 +161,11 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createFloat(int offset, float[] data) {
         return new FloatBuffer(data, true, offset);
+    }
+
+    @Override
+    public DataBuffer createFloat(int offset, float[] data, MemoryWorkspace workspace) {
+        return new FloatBuffer(data, true, offset, workspace);
     }
 
     @Override
@@ -545,6 +555,11 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
      */
     @Override
     public DataBuffer createHalf(int offset, float[] data) {
+        throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
+    }
+
+    @Override
+    public DataBuffer createHalf(int offset, float[] data, MemoryWorkspace workspace) {
         throw new UnsupportedOperationException("FP16 isn't supported for CPU yet");
     }
 

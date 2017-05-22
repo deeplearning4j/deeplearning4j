@@ -17,14 +17,52 @@ public class CudaWorkspaceManager extends BasicWorkspaceManager {
 
     @Override
     public MemoryWorkspace createNewWorkspace(@NonNull WorkspaceConfiguration configuration) {
-        return new CudaWorkspace(configuration);
+        ensureThreadExistense();
+
+        MemoryWorkspace workspace = new CudaWorkspace(configuration);
+
+        backingMap.get().put(workspace.getId(), workspace);
+        pickReference(workspace);
+
+        return workspace;
     }
 
     @Override
     public MemoryWorkspace createNewWorkspace() {
-        return new CudaWorkspace(defaultConfiguration);
+        ensureThreadExistense();
+
+        MemoryWorkspace workspace = new CudaWorkspace(defaultConfiguration);
+
+        backingMap.get().put(workspace.getId(), workspace);
+        pickReference(workspace);
+
+        return workspace;
     }
 
+
+    @Override
+    public MemoryWorkspace createNewWorkspace(WorkspaceConfiguration configuration, String id) {
+        ensureThreadExistense();
+
+        MemoryWorkspace workspace = new CudaWorkspace(configuration, id);
+
+        backingMap.get().put(id, workspace);
+        pickReference(workspace);
+
+        return workspace;
+    }
+
+    @Override
+    public MemoryWorkspace createNewWorkspace(WorkspaceConfiguration configuration, String id, Integer deviceId) {
+        ensureThreadExistense();
+
+        MemoryWorkspace workspace = new CudaWorkspace(configuration, id, deviceId);
+
+        backingMap.get().put(id, workspace);
+        pickReference(workspace);
+
+        return workspace;
+    }
 
     @Override
     public MemoryWorkspace getWorkspaceForCurrentThread(@NonNull WorkspaceConfiguration configuration, @NonNull String id) {
@@ -39,4 +77,6 @@ public class CudaWorkspaceManager extends BasicWorkspaceManager {
 
         return workspace;
     }
+
+
 }

@@ -41,6 +41,9 @@ import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
+import org.nd4j.linalg.api.ops.impl.accum.Norm1;
+import org.nd4j.linalg.api.ops.impl.accum.Norm2;
+import org.nd4j.linalg.api.ops.impl.accum.Sum;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
@@ -91,7 +94,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Before
     public void before() throws Exception {
         super.before();
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
         Nd4j.getRandom().setSeed(123);
 
     }
@@ -3257,9 +3260,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         Nd4j.getExecutioner().exec(new Set(arr2f, arr, z_f, arr2c.length()));
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
-
+        Nd4j.getExecutioner().commit();
 
         Nd4j.getExecutioner().exec(new Set(arr2f, arr, z_c, arr2c.length()));
 
@@ -3285,8 +3286,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         Nd4j.getExecutioner().exec(new Set(arr3c, arr, arr3f, arr3c.length()));
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
 
         Nd4j.getExecutioner().exec(new Set(arr3f, arr, arr3c, arr3c.length()));
@@ -3990,6 +3990,178 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         result = x.fmod(y);
         assertEquals(exp, result);
+    }
+
+    @Test
+    public void testStrangeDups1() throws Exception {
+        INDArray array = Nd4j.create(10).assign(0);
+        INDArray exp = Nd4j.create(10).assign(1.0f);
+        INDArray copy = null;
+
+        for (int x = 0; x < array.length(); x++) {
+            array.putScalar(x, 1f);
+            copy = array.dup();
+        }
+
+        assertEquals(exp, array);
+        assertEquals(exp, copy);
+    }
+
+    @Test
+    public void testStrangeDups2() throws Exception {
+        INDArray array = Nd4j.create(10).assign(0);
+        INDArray exp1 = Nd4j.create(10).assign(1.0f);
+        INDArray exp2 = Nd4j.create(10).assign(1.0f).putScalar(9, 0f);
+        INDArray copy = null;
+
+        for (int x = 0; x < array.length(); x++) {
+            copy = array.dup();
+            array.putScalar(x, 1f);
+        }
+
+        assertEquals(exp1, array);
+        assertEquals(exp2, copy);
+    }
+
+    @Test
+    public void testReductionAgreement1() throws Exception {
+        INDArray row = Nd4j.linspace(1,3,3);
+        INDArray mean0 = row.mean(0);
+        assertFalse(mean0 == row);       //True: same object (should be a copy)
+
+        INDArray col = Nd4j.linspace(1,3,3).transpose();
+        INDArray mean1 = col.mean(1);
+        assertFalse(mean1 == col);
+    }
+
+
+    @Test
+    public void testSpecialConcat1() throws Exception {
+        for (int i = 0; i < 10; i++) {
+            List<INDArray> arrays = new ArrayList<>();
+            for (int x = 0; x < 10; x++) {
+                arrays.add(Nd4j.create(100).assign(x));
+            }
+
+            INDArray matrix = Nd4j.specialConcat(0, arrays.toArray(new INDArray[0]));
+            assertEquals(10, matrix.rows());
+            assertEquals(100, matrix.columns());
+
+            for (int x = 0; x < 10; x++) {
+                assertEquals((double) x, matrix.getRow(x).meanNumber().doubleValue(), 0.1);
+                assertEquals(arrays.get(x), matrix.getRow(x));
+            }
+        }
+    }
+
+
+    @Test
+    public void testSpecialConcat2() throws Exception {
+        List<INDArray> arrays = new ArrayList<>();
+        for (int x = 0; x < 10; x++) {
+            arrays.add(Nd4j.create(new double[]{x, x, x, x, x, x}));
+        }
+
+        INDArray matrix = Nd4j.specialConcat(0, arrays.toArray(new INDArray[0]));
+        assertEquals(10, matrix.rows());
+        assertEquals(6, matrix.columns());
+
+        for (int x = 0; x < 10; x++) {
+            assertEquals((double)x, matrix.getRow(x).meanNumber().doubleValue(), 0.1);
+            assertEquals(arrays.get(x), matrix.getRow(x));
+        }
+    }
+
+    @Test
+    public void testPutScalar1() {
+        INDArray array = Nd4j.create(10, 3, 96, 96);
+
+        for (int i = 0; i < 10; i++) {
+            log.info("Trying i: {}", i);
+            array.tensorAlongDimension(i, 1, 2, 3).putScalar(1, 2, 3, 1);
+        }
+    }
+
+    @Test
+    public void testAveraging1() {
+        Nd4j.getAffinityManager().allowCrossDeviceAccess(false);
+
+        List<INDArray> arrays = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            arrays.add(Nd4j.create(100).assign((double) i));
+        }
+
+        INDArray result = Nd4j.averageAndPropagate(arrays);
+
+        assertEquals(4.5, result.meanNumber().doubleValue(), 0.01);
+
+        for (int i = 0; i < 10; i++) {
+            assertEquals(result, arrays.get(i));
+        }
+    }
+
+    @Test
+    public void testZ1() throws Exception {
+        INDArray matrix = Nd4j.create(10, 10).assign(1.0);
+
+        INDArray exp = Nd4j.create(10).assign(10.0);
+
+        INDArray res = Nd4j.create(10);
+        INDArray sums = matrix.sum(res, 0);
+
+        assertTrue(res == sums);
+
+        assertEquals(exp, res);
+    }
+
+    @Test
+    public void testDupDelayed() {
+        INDArray in = Nd4j.zeros(10);
+
+        List<INDArray> out = new ArrayList<>();
+        List<INDArray> comp = new ArrayList<>();
+
+        for (int i = 0; i < in.length(); i++) {
+            in.putScalar(i, 1);
+            out.add(in.dup());
+            in.putScalar(i, 0);
+        }
+
+        for (int i = 0; i < in.length(); i++) {
+            in.putScalar(i, 1);
+            comp.add(Nd4j.create(in.data().dup()));
+            in.putScalar(i, 0);
+        }
+
+        for (int i = 0; i < out.size(); i++) {
+            assertEquals(out.get(i), comp.get(i));
+        }
+    }
+
+    @Test
+    public void testScalarReduction1() {
+        Accumulation op = new Norm2(Nd4j.create(1).assign(1.0));
+        double norm2 = Nd4j.getExecutioner().execAndReturn(op).getFinalResult().doubleValue();
+        double norm1 = Nd4j.getExecutioner().execAndReturn(new Norm1(Nd4j.create(1).assign(1.0))).getFinalResult().doubleValue();
+        double sum = Nd4j.getExecutioner().execAndReturn(new Sum(Nd4j.create(1).assign(1.0))).getFinalResult().doubleValue();
+
+        assertEquals(1.0, norm2, 0.001);
+        assertEquals(1.0, norm1, 0.001);
+        assertEquals(1.0, sum, 0.001);
+    }
+
+    @Test
+    public void sumResultArrayEdgeCase(){
+        INDArray delta = Nd4j.create(1,3);
+        delta.assign(Nd4j.rand(delta.shape()));
+
+        INDArray out = delta.sum(0);
+
+        INDArray out2 = Nd4j.zeros(new int[]{1,3}, 'c');
+        INDArray res = delta.sum(out2, 0);
+
+        assertEquals(out, out2);
+        assertTrue(res == out2);
     }
 
     @Override

@@ -73,6 +73,10 @@ import org.nd4j.linalg.fft.DefaultFFTInstance;
 import org.nd4j.linalg.fft.FFTInstance;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.memory.MemoryManager;
+import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
+import org.nd4j.linalg.memory.stash.BasicStashManager;
+import org.nd4j.linalg.memory.stash.StashManager;
+
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -164,6 +168,7 @@ public class Nd4j {
     protected static Class<? extends BasicConstantHandler> constantProviderClazz;
     protected static Class<? extends BasicAffinityManager> affinityManagerClazz;
     protected static Class<? extends BasicMemoryManager> memoryManagerClazz;
+    protected static Class<? extends BasicStashManager> stashManagerClazz;
 
     protected static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
     protected static BlasWrapper BLAS_WRAPPER_INSTANCE;
@@ -180,6 +185,7 @@ public class Nd4j {
     protected static ConstantHandler constantHandler;
     protected static AffinityManager affinityManager;
     protected static MemoryManager memoryManager;
+    protected static StashManager stashManager;
 
     protected static AtomicBoolean fallbackMode;
 
@@ -1214,11 +1220,11 @@ public class Nd4j {
     public static DataBuffer createBuffer(float[] data, int offset) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.FLOAT)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data);
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data, Nd4j.getMemoryManager().getCurrentWorkspace());
         else if (dataType() == DataBuffer.Type.HALF)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data);
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data, Nd4j.getMemoryManager().getCurrentWorkspace());
         else
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, ArrayUtil.toDoubles(data));
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, ArrayUtil.toDoubles(data)) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, ArrayUtil.toDoubles(data), Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -1232,11 +1238,11 @@ public class Nd4j {
     public static DataBuffer createBuffer(double[] data, int offset) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.DOUBLE)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, data);
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(offset, data, Nd4j.getMemoryManager().getCurrentWorkspace());
         else if (dataType() == DataBuffer.Type.HALF)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data);
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, data) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(offset, ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
         else
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, ArrayUtil.toFloats(data));
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, ArrayUtil.toFloats(data)) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -5571,6 +5577,21 @@ public class Nd4j {
     /**
      * Concatneate ndarrays along a dimension
      *
+     * PLEASE NOTE: This method is special for GPU backend, it works on HOST side only.
+     *
+     * @param dimension
+     * @param toConcat
+     * @return
+     */
+    public static INDArray specialConcat(int dimension, INDArray... toConcat) {
+        INDArray ret = INSTANCE.specialConcat(dimension, toConcat);
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Concatneate ndarrays along a dimension
+     *
      * @param dimension the dimension to concatneate along
      * @param toConcat  the ndarrays to concat
      * @return the concatted ndarrays with an output shape of
@@ -6211,6 +6232,11 @@ public class Nd4j {
         return fallbackMode.get();
     }
 
+    /**
+     * This method returns WorkspaceManager implementation to be used within this JVM process
+     *
+     * @return
+     */
     public static MemoryWorkspaceManager getWorkspaceManager() {
         return workspaceManager;
     }
@@ -6289,5 +6315,15 @@ public class Nd4j {
      */
     public static INDArray createFromNpyFile(File file) {
         return INSTANCE.createFromNpyFile(file);
+    }
+
+
+    /**
+     * This method returns StashManager instance
+     *
+     * @return
+     */
+    private static StashManager getStashManager() {
+        return stashManager;
     }
 }

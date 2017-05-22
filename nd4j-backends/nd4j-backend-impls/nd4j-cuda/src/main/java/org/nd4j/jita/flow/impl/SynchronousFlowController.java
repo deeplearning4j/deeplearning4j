@@ -45,9 +45,9 @@ public class SynchronousFlowController implements FlowController {
      */
     @Override
     public void synchronizeToHost(AllocationPoint point) {
-        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
         if (!point.isActualOnHostSide()) {
+            CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
             if (!point.isConstant())
                 waitTillFinished(point);
@@ -70,6 +70,28 @@ public class SynchronousFlowController implements FlowController {
             point.tickHostRead();
             //log.info("After sync... isActualOnHostSide: {}", point.isActualOnHostSide());
         } // else log.info("Point is actual on host side! " + point.getShape());
+    }
+
+    @Override
+    public void synchronizeToDevice(AllocationPoint point) {
+        if (point.isConstant())
+            return;
+
+        if (!point.isActualOnDeviceSide()) {
+
+
+            if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
+                CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+
+                if (nativeOps.memcpyAsync(point.getDevicePointer(), point.getHostPointer(),
+                        AllocationUtils.getRequiredMemory(point.getShape()),
+                        CudaConstants.cudaMemcpyHostToDevice, context.getSpecialStream()) == 0)
+                    throw new IllegalStateException("MemcpyAsync failed: " + point.getShape());
+
+                commitTransfer(context.getSpecialStream());
+                point.tickDeviceRead();
+            }
+        }
     }
 
     @Override

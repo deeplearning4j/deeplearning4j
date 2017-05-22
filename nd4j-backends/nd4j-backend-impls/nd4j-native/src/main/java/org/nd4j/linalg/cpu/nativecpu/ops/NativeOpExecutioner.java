@@ -256,19 +256,35 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             retShape = new int[] {1, 1};
         }
 
-        if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
+        if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1)
             return op.noOp();
 
         /**
          * This is the result array.
+         * We create it only if we hadn't provided it before
          */
         INDArray ret;
-        if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
-            ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-        else
-            ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
+        if (op.z() == null || op.z() == op.x()) {
 
-        op.setZ(ret);
+            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
+                ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+            else
+                ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
+
+            op.setZ(ret);
+        } else {
+            // compare length
+            if (op.z().lengthLong() != ArrayUtil.prodLong(retShape))
+                throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
+
+            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+                op.z().assign(op.zeroDouble());
+            } else {
+                op.z().assign(op.zeroFloat());
+            }
+
+            ret = op.z();
+        }
 
         /**
          * Returns the {@link Shape#createShapeInformation(int[], int[], int, int, char)}
@@ -578,13 +594,22 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if (op.y() != null) {
-                if (op.x().elementWiseStride() >= 1 && op.y().elementWiseStride() >= 1
-                                && op.x().elementWiseStride() == op.y().elementWiseStride() && !op.isExecSpecial()
-                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+
+                int xEWS = op.x().elementWiseStride();
+                int yEWS = op.y().elementWiseStride();
+                int zEWS = op.z().elementWiseStride();
+
+                boolean xRow = op.x().isRowVector();
+                boolean yRow = op.y().isRowVector();
+                boolean zRow = op.z().isRowVector();
+
+                if ((xEWS >= 1 && yEWS >= 1
+                                && xEWS == yEWS && !op.isExecSpecial()
+                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
                     loop.execPairwiseTransformDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                                    op.x().elementWiseStride(), (DoublePointer) op.y().data().addressPointer(),
-                                    op.y().elementWiseStride(), (DoublePointer) op.z().data().addressPointer(),
-                                    op.z().elementWiseStride(), (DoublePointer) getPointerForExtraArgs(op), op.n());
+                                    xEWS, (DoublePointer) op.y().data().addressPointer(),
+                                    yEWS, (DoublePointer) op.z().data().addressPointer(),
+                                    zEWS, (DoublePointer) getPointerForExtraArgs(op), op.n());
 
                 } else {
                     loop.execPairwiseTransformDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
@@ -613,13 +638,21 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         } else {
             if (op.y() != null) {
-                if (op.x().elementWiseStride() >= 1 && op.y().elementWiseStride() >= 1
-                                && op.x().elementWiseStride() == op.y().elementWiseStride() && !op.isExecSpecial()
-                                && op.x().ordering() == op.y().ordering()) {
+                int xEWS = op.x().elementWiseStride();
+                int yEWS = op.y().elementWiseStride();
+                int zEWS = op.z().elementWiseStride();
+
+                boolean xRow = op.x().isRowVector();
+                boolean yRow = op.y().isRowVector();
+                boolean zRow = op.z().isRowVector();
+
+                if ((xEWS >= 1 && yEWS >= 1
+                                && xEWS == yEWS && !op.isExecSpecial()
+                                && op.x().ordering() == op.y().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
                     loop.execPairwiseTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                                    op.x().elementWiseStride(), (FloatPointer) op.y().data().addressPointer(),
-                                    op.y().elementWiseStride(), (FloatPointer) op.z().data().addressPointer(),
-                                    op.z().elementWiseStride(), (FloatPointer) getPointerForExtraArgs(op), op.n());
+                                    xEWS, (FloatPointer) op.y().data().addressPointer(),
+                                    yEWS, (FloatPointer) op.z().data().addressPointer(),
+                                    zEWS, (FloatPointer) getPointerForExtraArgs(op), op.n());
 
                 } else {
                     loop.execPairwiseTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),

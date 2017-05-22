@@ -22,6 +22,7 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.aggregates.AggregateDescriptor;
@@ -611,13 +612,29 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
         */
 
         INDArray ret = null;
-        if (Math.abs(op.zeroDouble()) < Nd4j.EPS_THRESHOLD) {
-            ret = Nd4j.zeros(retShape);
-        } else {
-            ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-        }
+        if (op.z() == null || op.z() == op.x()) {
+            if (Math.abs(op.zeroDouble()) < Nd4j.EPS_THRESHOLD) {
+                ret = Nd4j.zeros(retShape);
+            } else {
+                ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+            }
 
-        op.setZ(ret);
+            op.setZ(ret);
+        } else {
+            // compare length
+            if (op.z().lengthLong() != ArrayUtil.prodLong(retShape))
+                throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
+
+            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
+                op.z().assign(op.zeroDouble());
+            } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
+                op.z().assign(op.zeroFloat());
+            } else if (op.x().data().dataType() == DataBuffer.Type.HALF) {
+                op.z().assign(op.zeroHalf());
+            }
+
+            ret = op.z();
+        }
     }
 
     @Override
@@ -1021,5 +1038,16 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     private static class WatchdogPair {
         private INDArray array;
         private String tag;
+    }
+
+
+    @Override
+    public void push() {
+        flushQueue();
+    }
+
+    @Override
+    public void commit() {
+        flushQueueBlocking();
     }
 }

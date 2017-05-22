@@ -31,8 +31,8 @@ public class RandomPerformanceTests extends BaseNd4jTest {
             DropOutInverted opWarmup = new DropOutInverted(Nd4j.createUninitialized(1000000), 0.8);
             Nd4j.getExecutioner().exec(opWarmup, Nd4j.getRandom());
         }
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+
+        Nd4j.getExecutioner().commit();
 
 
         for (int i = 100; i < 100000001; i *= 10) {
@@ -45,8 +45,7 @@ public class RandomPerformanceTests extends BaseNd4jTest {
 
             Nd4j.getExecutioner().exec(op1);
 
-            if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+            Nd4j.getExecutioner().commit();
 
             long time2 = System.nanoTime();
 
@@ -57,8 +56,7 @@ public class RandomPerformanceTests extends BaseNd4jTest {
             time1 = System.nanoTime();
             Nd4j.getExecutioner().exec(op2, Nd4j.getRandom());
 
-            if (Nd4j.getExecutioner() instanceof GridExecutioner)
-                ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+            Nd4j.getExecutioner().commit();
 
             time2 = System.nanoTime();
             long timeRecent = time2 - time1;

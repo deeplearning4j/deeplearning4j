@@ -5,6 +5,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.indexer.Indexer;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
@@ -62,9 +63,11 @@ public class CompressedDataBuffer extends BaseDataBuffer {
             byte b = pointer.asByteBuffer().get(x);
             out.writeByte(b);
         }
+    }
 
-
-
+    @Override
+    protected void setIndexer(Indexer indexer) {
+        // no-op
     }
 
     /**

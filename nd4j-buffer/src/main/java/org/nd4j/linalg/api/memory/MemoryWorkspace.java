@@ -28,6 +28,13 @@ public interface MemoryWorkspace extends AutoCloseable {
     String getId();
 
     /**
+     * Returns deviceId for this workspace
+     *
+     * @return
+     */
+    int getDeviceId();
+
+    /**
      * This method returns threadId where this workspace was created
      *
      * @return
@@ -93,6 +100,8 @@ public interface MemoryWorkspace extends AutoCloseable {
      */
     void destroyWorkspace();
 
+    void destroyWorkspace(boolean extended);
+
     /**
      * This method allows you to temporary disable/enable given Workspace use.
      * If turned off - direct memory allocations will be used.
@@ -127,6 +136,13 @@ public interface MemoryWorkspace extends AutoCloseable {
      * @return
      */
     long getMaxCycleAllocations();
+
+    /**
+     * This methos returns current allocated size of this workspace
+     *
+     * @return
+     */
+    long getCurrentSize();
 
     /**
      * This method is for compatibility with "try-with-resources" java blocks.

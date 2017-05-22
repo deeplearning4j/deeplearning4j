@@ -105,9 +105,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.wrappedDataBuffer = this;
 
         this.pointer = pointer;
-        this.indexer = indexer;
+        setIndexer(indexer);
     }
 
+
+    protected void setIndexer(Indexer indexer) {
+        this.indexer = indexer;
+    }
 
     /**
      *
@@ -143,7 +147,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
 
         pointer = underlyingBuffer.pointer();
-        indexer = underlyingBuffer.indexer();
+        setIndexer(underlyingBuffer.indexer());
     }
 
     /**
@@ -169,6 +173,15 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     }
 
+    public BaseDataBuffer(float[] data, boolean copy, int offset, MemoryWorkspace workspace) {
+        this(data, copy, workspace);
+        this.offset = offset;
+        this.originalOffset = offset;
+        this.length = data.length - offset;
+        this.underlyingLength = data.length;
+
+    }
+
     /**
      *
      * @param data
@@ -179,7 +192,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         initTypeAndSize();
 
         pointer = new FloatPointer(data);
-        indexer = FloatIndexer.create((FloatPointer) pointer);
+        setIndexer(FloatIndexer.create((FloatPointer) pointer));
         wrappedBuffer = pointer.asByteBuffer();
 
         length = data.length;
@@ -198,7 +211,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         //log.info("Allocating FloatPointer from array of {} elements", data.length);
 
         pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asFloatPointer().put(data);
-        indexer = FloatIndexer.create((FloatPointer) pointer);
+        setIndexer(FloatIndexer.create((FloatPointer) pointer));
         //wrappedBuffer = pointer.asByteBuffer();
     }
 
@@ -226,6 +239,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     public BaseDataBuffer(double[] data, boolean copy, int offset) {
         this(data, copy);
+        this.offset = offset;
+        this.originalOffset = offset;
+        this.underlyingLength = data.length;
+        this.length = underlyingLength - offset;
+    }
+
+    public BaseDataBuffer(double[] data, boolean copy, int offset, MemoryWorkspace workspace) {
+        this(data, copy, workspace);
         this.offset = offset;
         this.originalOffset = offset;
         this.underlyingLength = data.length;
@@ -273,7 +294,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         initTypeAndSize();
 
         pointer = new IntPointer(data);
-        indexer = IntIndexer.create((IntPointer) pointer);
+        setIndexer(IntIndexer.create((IntPointer) pointer));
         wrappedBuffer = pointer.asByteBuffer();
 
         length = data.length;
@@ -340,10 +361,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
             indexer = DoubleIndexer.create((DoublePointer) pointer);
         } else if (dataType() == Type.FLOAT) {
             pointer = new FloatPointer(length);
-            indexer = FloatIndexer.create((FloatPointer) pointer);
+            setIndexer(FloatIndexer.create((FloatPointer) pointer));
         } else if (dataType() == Type.INT) {
             pointer = new IntPointer(length);
-            indexer = IntIndexer.create((IntPointer) pointer);
+            setIndexer(IntIndexer.create((IntPointer) pointer));
         }
     }
 
@@ -380,13 +401,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
         if (dataType() == Type.DOUBLE) {
             pointer = new DoublePointer(buffer.asDoubleBuffer());
-            indexer = DoubleIndexer.create((DoublePointer) pointer);
+            setIndexer(DoubleIndexer.create((DoublePointer) pointer));
         } else if (dataType() == Type.FLOAT) {
             pointer = new FloatPointer(buffer.asFloatBuffer());
-            indexer = FloatIndexer.create((FloatPointer) pointer);
+            setIndexer(FloatIndexer.create((FloatPointer) pointer));
         } else if (dataType() == Type.INT) {
             pointer = new IntPointer(buffer.asIntBuffer());
-            indexer = IntIndexer.create((IntPointer) pointer);
+            setIndexer(IntIndexer.create((IntPointer) pointer));
         }
     }
 
@@ -484,13 +505,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 fillPointerWithZero();
         } else if (dataType() == Type.FLOAT) {
             pointer = new FloatPointer(length());
-            indexer = FloatIndexer.create((FloatPointer) pointer);
+            setIndexer(FloatIndexer.create((FloatPointer) pointer));
+
             if (initialize)
                 fillPointerWithZero();
 
         } else if (dataType() == Type.INT) {
             pointer = new IntPointer(length());
-            indexer = IntIndexer.create((IntPointer) pointer);
+            setIndexer(IntIndexer.create((IntPointer) pointer));
             if (initialize)
                 fillPointerWithZero();
         }
@@ -522,14 +544,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
             parentWorkspace = workspace;
 
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asFloatPointer(); //new FloatPointer(length());
-            indexer = FloatIndexer.create((FloatPointer) pointer);
+            setIndexer(FloatIndexer.create((FloatPointer) pointer));
 
             //            if (initialize)
             //                fillPointerWithZero();
 
         } else if (dataType() == Type.INT) {
             pointer = new IntPointer(length());
-            indexer = IntIndexer.create((IntPointer) pointer);
+            setIndexer(IntIndexer.create((IntPointer) pointer));
 
             if (initialize)
                 fillPointerWithZero();
@@ -842,34 +864,13 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public double getDouble(long i) {
         if (dataType() == Type.FLOAT) {
             dirty.set(false);
-            if (indexer instanceof FloatIndexer) {
-                return ((FloatIndexer) indexer).get(offset() + i);
-
-            } else {
-                UByteRawIndexer other = (UByteRawIndexer) indexer;
-                return (double) other.get(offset() + i);
-
-            }
+            return ((FloatIndexer) indexer).get(offset() + i);
         } else if (dataType() == Type.INT) {
             dirty.set(false);
-            if (indexer instanceof IntIndexer) {
-                return ((IntIndexer) indexer).get(offset() + i);
-
-            } else {
-                UByteRawIndexer other = (UByteRawIndexer) indexer;
-                return (double) other.get(offset() + i);
-
-            }
+            return ((IntIndexer) indexer).get(offset() + i);
         } else {
             dirty.set(false);
-            if (indexer instanceof DoubleIndexer) {
-                return ((DoubleIndexer) indexer).get(offset() + i);
-
-            } else {
-                UByteRawIndexer other = (UByteRawIndexer) indexer;
-                return (double) other.get(offset() + i);
-
-            }
+            return ((DoubleIndexer) indexer).get(offset() + i);
         }
     }
 
@@ -916,40 +917,16 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public float getFloat(long i) {
         if (dataType() == Type.DOUBLE) {
             dirty.set(false);
-            if (indexer instanceof DoubleIndexer)
-                return (float) ((DoubleIndexer) indexer).get(offset() + i);
-            else {
-                UByteRawIndexer other = (UByteRawIndexer) indexer;
-                return (float) other.get(offset() + i);
-
-            }
+            return (float) ((DoubleIndexer) indexer).get(offset() + i);
         } else if (dataType() == Type.INT) {
             dirty.set(false);
-            if (indexer instanceof IntIndexer) {
-                return ((IntIndexer) indexer).get(offset() + i);
-
-            } else {
-                UByteRawIndexer other = (UByteRawIndexer) indexer;
-                return (float) other.get(offset() + i);
-
-            }
+            return ((IntIndexer) indexer).get(offset() + i);
         } else if (dataType() == Type.HALF) {
             dirty.set(false);
-            if (indexer instanceof HalfIndexer) {
-                return ((HalfIndexer) indexer).get(offset() + i);
-
-            }
-
-            throw new RuntimeException("Unsupported indexer was used for Half-precision buffer");
+            return ((HalfIndexer) indexer).get(offset() + i);
         } else {
             dirty.set(false);
-            if (indexer instanceof FloatIndexer) {
-                return ((FloatIndexer) indexer).get(offset() + i);
-
-            } else {
-                UByteRawIndexer other = (UByteRawIndexer) indexer;
-                return (float) other.get(offset() + i);
-            }
+            return ((FloatIndexer) indexer).get(offset() + i);
         }
     }
 
@@ -957,31 +934,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public int getInt(long i) {
         if (dataType() == Type.DOUBLE) {
             dirty.set(false);
-            if (indexer instanceof DoubleIndexer) {
-                return (int) ((DoubleIndexer) indexer).get(offset() + i);
-            } else {
-                UByteRawIndexer other = (UByteRawIndexer) indexer;
-                return other.get(offset() + i);
-
-            }
+            return (int) ((DoubleIndexer) indexer).get(offset() + i);
         } else if (dataType() == Type.INT) {
-            dirty.set(false);
-            if (indexer instanceof IntIndexer) {
-                return ((IntIndexer) indexer).get(offset() + i);
-
-            } else {
-                UByteRawIndexer other = (UByteRawIndexer) indexer;
-                return other.get(offset() + i);
-
-            }
+             return ((IntIndexer) indexer).get(offset() + i);
         } else {
-            if (indexer instanceof FloatIndexer) {
-                return (int) ((FloatIndexer) indexer).get(offset() + i);
-
-            } else {
-                UByteRawIndexer other = (UByteRawIndexer) indexer;
-                return other.get(offset() + i);
-            }
+             return (int) ((FloatIndexer) indexer).get(offset() + i);
         }
     }
 
@@ -997,7 +954,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public void pointerIndexerByGlobalType(Type currentType) {
         if (currentType == Type.INT) {
             pointer = new IntPointer(length());
-            indexer = IntIndexer.create((IntPointer) pointer);
+            setIndexer(IntIndexer.create((IntPointer) pointer));
             type = Type.INT;
         } else {
             if (globalType == Type.DOUBLE) {
@@ -1005,7 +962,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 indexer = DoubleIndexer.create((DoublePointer) pointer);
             } else if (globalType == Type.FLOAT) {
                 pointer = new FloatPointer(length());
-                indexer = FloatIndexer.create((FloatPointer) pointer);
+                setIndexer(FloatIndexer.create((FloatPointer) pointer));
             }
         }
     }
@@ -1026,69 +983,24 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public void put(long i, float element) {
         if (dataType() == Type.DOUBLE) {
-            if (indexer instanceof DoubleIndexer) {
-                ((DoubleIndexer) indexer).put(offset() + i, element);
-
-            } else {
-                UByteRawIndexer other = (UByteRawIndexer) indexer;
-                other.put(offset() + i, (int) element);
-
-            }
+            ((DoubleIndexer) indexer).put(offset() + i, element);
         } else if (dataType() == Type.INT) {
-            if (indexer instanceof IntIndexer) {
-                ((IntIndexer) indexer).put(offset() + i, (int) element);
-
-            } else {
-                UByteRawIndexer other = (UByteRawIndexer) indexer;
-                other.put(offset() + i, (int) element);
-
-            }
+            ((IntIndexer) indexer).put(offset() + i, (int) element);
         } else {
-            if (indexer instanceof FloatIndexer) {
-                ((FloatIndexer) indexer).put(offset() + i, element);
-
-            } else {
-                UByteRawIndexer other = (UByteRawIndexer) indexer;
-                other.put(offset() + i, (int) element);
-
-            }
+            ((FloatIndexer) indexer).put(offset() + i, element);
         }
-
-        dirty.set(true);
     }
 
     @Override
     public void put(long i, double element) {
         if (dataType() == Type.DOUBLE) {
-            if (indexer instanceof DoubleIndexer) {
-                ((DoubleIndexer) indexer).put(offset() + i, element);
-
-            } else {
-                UByteRawIndexer other = (UByteRawIndexer) indexer;
-                other.put(offset() + i, (int) element);
-
-            }
+             ((DoubleIndexer) indexer).put(offset() + i, element);
         } else if (dataType() == Type.INT) {
-            if (indexer instanceof IntIndexer) {
-                ((IntIndexer) indexer).put(offset() + i, (int) element);
-
-            } else {
-                UByteRawIndexer other = (UByteRawIndexer) indexer;
-                other.put(offset() + i, (int) element);
-            }
+             ((IntIndexer) indexer).put(offset() + i, (int) element);
         } else if (dataType() == Type.HALF) {
-            if (indexer instanceof HalfIndexer) {
-                ((HalfIndexer) indexer).put(offset() + i, (float) element);
-
-            }
+             ((HalfIndexer) indexer).put(offset() + i, (float) element);
         } else {
-            if (indexer instanceof FloatIndexer) {
-                ((FloatIndexer) indexer).put(offset() + i, (float) element);
-
-            } else {
-                UByteRawIndexer other = (UByteRawIndexer) indexer;
-                other.put(offset() + i, (int) element);
-            }
+             ((FloatIndexer) indexer).put(offset() + i, (float) element);
         }
 
         dirty.set(true);
@@ -1097,29 +1009,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public void put(long i, int element) {
         if (dataType() == Type.DOUBLE) {
-            if (indexer instanceof DoubleIndexer) {
-                ((DoubleIndexer) indexer).put(offset() + i, element);
-
-            } else {
-                UByteRawIndexer other = (UByteRawIndexer) indexer;
-                other.put(offset() + i, element);
-            }
+            ((DoubleIndexer) indexer).put(offset() + i, element);
         } else if (dataType() == Type.INT) {
-            if (indexer instanceof IntIndexer) {
-                ((IntIndexer) indexer).put(offset() + i, element);
-
-            } else {
-                UByteRawIndexer other = (UByteRawIndexer) indexer;
-                other.put(offset() + i, element);
-            }
+            ((IntIndexer) indexer).put(offset() + i, element);
         } else {
-            if (indexer instanceof FloatIndexer) {
-                ((FloatIndexer) indexer).put(offset() + i, element);
-
-            } else {
-                UByteRawIndexer other = (UByteRawIndexer) indexer;
-                other.put(offset() + i, element);
-            }
+            ((FloatIndexer) indexer).put(offset() + i, element);
         }
 
         dirty.set(true);

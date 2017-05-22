@@ -20,8 +20,7 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
     }
 
     @Override
-    // FIXME: this method should NOT be synchronized
-    public synchronized DataBuffer createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride,
+    public DataBuffer createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride,
                     char order) {
         return provider.createShapeInformation(shape, stride, offset, elementWiseStride, order);
     }

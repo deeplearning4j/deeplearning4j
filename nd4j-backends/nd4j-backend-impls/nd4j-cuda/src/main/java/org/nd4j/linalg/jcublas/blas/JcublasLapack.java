@@ -26,6 +26,8 @@ import org.nd4j.nativeblas.NativeOpsHolder;
 
 import static org.bytedeco.javacpp.cuda.CUstream_st;
 import static org.bytedeco.javacpp.cusolver.*;
+import static org.bytedeco.javacpp.cublas.* ;
+
 
 /**
  * JCublas lapack
@@ -782,7 +784,160 @@ public class JcublasLapack extends BaseLapack {
             VT.assign(vt);
     }
 
+    @Override
+    public int ssyev( char _jobz, char _uplo, int N, INDArray A, INDArray R ) {
 
+	int status = -1 ;
+
+	int jobz = _jobz == 'V' ? CUSOLVER_EIG_MODE_VECTOR : CUSOLVER_EIG_MODE_NOVECTOR ;
+	int uplo = _uplo == 'L' ? CUBLAS_FILL_MODE_LOWER : CUBLAS_FILL_MODE_UPPER ;
+
+        if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
+            log.warn("FLOAT ssyev called in DOUBLE environment");
+
+        INDArray a = A;
+
+        if (A.ordering() == 'c')
+            a = A.dup('f');
+
+	int M = A.rows() ;
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
+        // Get context for current thread
+        CudaContext ctx = (CudaContext) allocator.getDeviceContext().getContext();
+
+        // setup the solver handles for cuSolver calls
+        cusolverDnHandle_t handle = ctx.getSolverHandle();
+        cusolverDnContext solverDn = new cusolverDnContext(handle);
+
+        // synchronized on the solver
+        synchronized (handle) {
+            status = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+            if( status == 0 ) {
+		    // transfer the INDArray into GPU memory
+		    CublasPointer xAPointer = new CublasPointer(a, ctx);
+		    CublasPointer xRPointer = new CublasPointer(R, ctx);
+
+		    // this output - indicates how much memory we'll need for the real operation
+		    DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
+
+		    status = cusolverDnSsyevd_bufferSize(
+				solverDn, jobz, uplo, M, 
+				(FloatPointer) xAPointer.getDevicePointer(), M,
+				(FloatPointer) xRPointer.getDevicePointer(),
+				(IntPointer)worksizeBuffer.addressPointer() ) ;
+
+		    if (status == CUSOLVER_STATUS_SUCCESS) {
+			    int worksize = worksizeBuffer.getInt(0);
+
+			    // Now allocate memory for the workspace, the non-converging row buffer and a return code
+			    Pointer workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+
+			    INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
+				        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}));
+
+
+			    // Do the actual decomp
+			    status = cusolverDnSsyevd(solverDn, jobz, uplo, M, 
+						(FloatPointer) xAPointer.getDevicePointer(), M,
+						(FloatPointer) xRPointer.getDevicePointer(), 
+					        new CudaPointer(workspace).asFloatPointer(), worksize,
+					        new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer());
+
+			    allocator.registerAction(ctx, INFO);
+			    if( status == 0 ) status = INFO.getInt(0) ;
+		    }
+		}
+        }
+	if( status == 0 ) {
+		allocator.registerAction(ctx, R);
+		allocator.registerAction(ctx, a);
+
+		if (a != A)
+		    A.assign(a);
+	}
+	return status ;
+    }
+
+
+    @Override
+    public int dsyev( char _jobz, char _uplo, int N, INDArray A, INDArray R ) {
+
+	int status = -1 ;
+
+	int jobz = _jobz == 'V' ? CUSOLVER_EIG_MODE_VECTOR : CUSOLVER_EIG_MODE_NOVECTOR ;
+	int uplo = _uplo == 'L' ? CUBLAS_FILL_MODE_LOWER : CUBLAS_FILL_MODE_UPPER ;
+
+        if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
+            log.warn("DOUBLE dsyev called in FLOAT environment");
+
+        INDArray a = A;
+
+        if (A.ordering() == 'c')
+            a = A.dup('f');
+
+	int M = A.rows() ;
+
+        if (Nd4j.getExecutioner() instanceof GridExecutioner)
+            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+
+        // Get context for current thread
+        CudaContext ctx = (CudaContext) allocator.getDeviceContext().getContext();
+
+        // setup the solver handles for cuSolver calls
+        cusolverDnHandle_t handle = ctx.getSolverHandle();
+        cusolverDnContext solverDn = new cusolverDnContext(handle);
+
+        // synchronized on the solver
+        synchronized (handle) {
+            status = cusolverDnSetStream(new cusolverDnContext(handle), new CUstream_st(ctx.getOldStream()));
+            if( status == 0 ) {
+		    // transfer the INDArray into GPU memory
+		    CublasPointer xAPointer = new CublasPointer(a, ctx);
+		    CublasPointer xRPointer = new CublasPointer(R, ctx);
+
+		    // this output - indicates how much memory we'll need for the real operation
+		    DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
+
+		    status = cusolverDnDsyevd_bufferSize(
+				solverDn, jobz, uplo, M, 
+				(DoublePointer) xAPointer.getDevicePointer(), M,
+				(DoublePointer) xRPointer.getDevicePointer(),
+				(IntPointer)worksizeBuffer.addressPointer() ) ;
+
+		    if (status == CUSOLVER_STATUS_SUCCESS) {
+			    int worksize = worksizeBuffer.getInt(0);
+
+			    // Now allocate memory for the workspace, the non-converging row buffer and a return code
+			    Pointer workspace = new Workspace(worksize * Nd4j.sizeOfDataType());
+
+			    INDArray INFO = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createInt(1),
+				        Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, 1}));
+
+
+			    // Do the actual decomp
+			    status = cusolverDnDsyevd(solverDn, jobz, uplo, M, 
+						(DoublePointer) xAPointer.getDevicePointer(), M,
+						(DoublePointer) xRPointer.getDevicePointer(), 
+					        new CudaPointer(workspace).asDoublePointer(), worksize,
+					        new CudaPointer(allocator.getPointer(INFO, ctx)).asIntPointer());
+
+			    allocator.registerAction(ctx, INFO);
+			    if( status == 0 ) status = INFO.getInt(0) ;
+		    }
+		}
+        }
+	if( status == 0 ) {
+		allocator.registerAction(ctx, R);
+		allocator.registerAction(ctx, a);
+
+		if (a != A)
+		    A.assign(a);
+	}
+	return status ;
+    }
 
     static class Workspace extends Pointer {
         public Workspace(long size) {

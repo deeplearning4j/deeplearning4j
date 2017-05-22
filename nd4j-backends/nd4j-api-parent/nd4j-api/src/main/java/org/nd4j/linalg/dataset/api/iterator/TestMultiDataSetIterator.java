@@ -50,6 +50,11 @@ public class TestMultiDataSetIterator implements MultiDataSetIterator {
     }
 
     @Override
+    public MultiDataSetPreProcessor getPreProcessor() {
+        return this.preProcessor;
+    }
+
+    @Override
     public boolean resetSupported() {
         return true;
     }

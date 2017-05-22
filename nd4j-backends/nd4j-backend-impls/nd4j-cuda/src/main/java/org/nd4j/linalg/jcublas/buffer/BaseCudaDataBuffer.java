@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.memory.abstracts.DummyWorkspace;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -249,6 +250,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             throw new IllegalStateException("WrappedBuffer is NULL");
         }
         */
+    }
+
+    @Override
+    protected void setIndexer(Indexer indexer) {
+        //TODO: to be abstracted
     }
 
     /**
@@ -762,7 +768,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             // skip allocationMode
             s.readUTF();
             allocationMode = AllocationMode.JAVACPP;
-            length = s.readInt();
+            int locLength = s.readInt();
+            boolean reallocate = locLength != length;
+            length = locLength;
+
             Type t = Type.valueOf(s.readUTF());
             //                  log.info("Restoring buffer ["+t+"] of length ["+ length+"]");
             if (globalType == null && Nd4j.dataType() != null) {
@@ -789,95 +798,110 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
                 this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asIntPointer();
                 indexer = IntIndexer.create((IntPointer) pointer);
 
+                IntIndexer Iindexer = (IntIndexer) indexer;
+
                 int[] array = new int[(int) length];
 
                 for (int i = 0; i < length(); i++) {
                     if (t == Type.INT)
-                        array[i] = s.readInt();
+                        //array[i] = s.readInt();
+                        Iindexer.put(i, s.readInt());
                     else if (t == Type.DOUBLE)
-                        array[i] = (int) s.readDouble();
+                        Iindexer.put(i, (int) s.readDouble());
                     else if (t == Type.FLOAT)
-                        array[i] = (int) s.readFloat();
+                        Iindexer.put(i, (int) s.readFloat());
                     else if (t == Type.HALF)
-                        array[i] = (int) toFloat((int) s.readShort());
+                        Iindexer.put(i, (int) toFloat((int) s.readShort()));
                 }
-                setData(array);
+
+                allocationPoint.tickHostWrite();
+
             } else if (globalType == Type.DOUBLE) {
                 this.elementSize = 8;
-                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
-                                new AllocationShape(length, elementSize, globalType), false);
-                //allocationPoint.attachBuffer(this);
-                this.trackingPoint = allocationPoint.getObjectId();
 
-                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length)
-                                .asDoublePointer();
-                indexer = DoubleIndexer.create((DoublePointer) pointer);
+                if (reallocate) {
+                    MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+                    if (workspace != null && (workspace instanceof DummyWorkspace)) {
+                        this.attached = true;
+                        this.parentWorkspace = workspace;
+                    }
 
-                double[] array = new double[(int) length];
+                    this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
+                            new AllocationShape(length, elementSize, globalType), false);
+                    //allocationPoint.attachBuffer(this);
+                    this.trackingPoint = allocationPoint.getObjectId();
 
-                for (int i = 0; i < length(); i++) {
-                    if (t == Type.INT)
-                        array[i] = (double) s.readInt();
-                    else if (t == Type.DOUBLE)
-                        array[i] = s.readDouble();
-                    else if (t == Type.FLOAT)
-                        array[i] = (double) s.readFloat();
-                    else if (t == Type.HALF)
-                        array[i] = (double) toFloat((int) s.readShort());
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length)
+                            .asDoublePointer();
+                    indexer = DoubleIndexer.create((DoublePointer) pointer);
                 }
 
-                setData(array);
+                DoubleIndexer Dindexer = (DoubleIndexer) indexer;
+
+                for (int i = 0; i < length(); i++) {
+                    if (t == Type.DOUBLE)
+                        Dindexer.put(i, s.readDouble());
+                    else if (t == Type.FLOAT)
+                        Dindexer.put(i, (double) s.readFloat());
+                    else if (t == Type.HALF)
+                        Dindexer.put(i, (double) toFloat((int) s.readShort()));
+                }
+
+                allocationPoint.tickHostWrite();
 
             } else if (globalType == Type.FLOAT) {
                 this.elementSize = 4;
-                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
-                                new AllocationShape(length, elementSize, dataType()), false);
-                this.trackingPoint = allocationPoint.getObjectId();
+                if (reallocate) {
+                    this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
+                            new AllocationShape(length, elementSize, dataType()), false);
+                    this.trackingPoint = allocationPoint.getObjectId();
 
-                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asFloatPointer();
-                indexer = FloatIndexer.create((FloatPointer) pointer);
-
-                float[] array = new float[(int) length];
-
-                for (int i = 0; i < length(); i++) {
-                    if (t == Type.INT)
-                        array[i] = (float) s.readInt();
-                    else if (t == Type.DOUBLE)
-                        array[i] = (float) s.readDouble();
-                    else if (t == Type.FLOAT)
-                        array[i] = s.readFloat();
-                    else if (t == Type.HALF) {
-                        array[i] = toFloat((int) s.readShort());
-                    }
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asFloatPointer();
+                    indexer = FloatIndexer.create((FloatPointer) pointer);
                 }
 
-                setData(array);
-            } else if (globalType == Type.HALF) {
-                this.elementSize = 2;
-                this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
-                                new AllocationShape(length, elementSize, dataType()), false);
-                this.trackingPoint = allocationPoint.getObjectId();
-
-                this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asShortPointer();
-                indexer = HalfIndexer.create((ShortPointer) this.pointer);
+                FloatIndexer Findexer = (FloatIndexer) indexer;
 
                 for (int i = 0; i < length; i++) {
 
-                    if (t == Type.INT)
-                        ((HalfIndexer) indexer).put(i, (float) s.readInt());
-                    else if (t == Type.DOUBLE)
-                        ((HalfIndexer) indexer).put(i, (float) s.readDouble());
+
+                    if (t == Type.DOUBLE)
+                        Findexer.put(i, (float) s.readDouble());
                     else if (t == Type.FLOAT)
-                        ((HalfIndexer) indexer).put(i, s.readFloat());
+                        Findexer.put(i, s.readFloat());
                     else if (t == Type.HALF) {
-                        ((HalfIndexer) indexer).put(i, toFloat((int) s.readShort()));
+                        Findexer.put(i, toFloat((int) s.readShort()));
                     }
                 }
 
-                AllocationPoint pointDst = allocationPoint;
+                allocationPoint.tickHostWrite();
+            } else if (globalType == Type.HALF) {
+                this.elementSize = 2;
+                if (reallocate) {
+                    this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
+                            new AllocationShape(length, elementSize, dataType()), false);
+                    this.trackingPoint = allocationPoint.getObjectId();
+
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length).asShortPointer();
+                    indexer = HalfIndexer.create((ShortPointer) this.pointer);
+
+                }
+
+                HalfIndexer Hindexer = (HalfIndexer) indexer;
+
+                for (int i = 0; i < length; i++) {
+
+                    if (t == Type.DOUBLE)
+                        Hindexer.put(i, (float) s.readDouble());
+                    else if (t == Type.FLOAT)
+                        Hindexer.put(i, s.readFloat());
+                    else if (t == Type.HALF) {
+                        Hindexer.put(i, toFloat((int) s.readShort()));
+                    }
+                }
 
                 // for HALF & HALF2 datatype we just tag data as fresh on host
-                pointDst.tickHostWrite();
+                allocationPoint.tickHostWrite();
             } else
                 throw new IllegalStateException("Unknown dataType: [" + t.toString() + "]");
 
@@ -891,7 +915,8 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         }
 
         // we call sync to copyback data to host
-        allocator.synchronizeHostData(this);
+        AtomicAllocator.getInstance().getFlowController().synchronizeToDevice(allocationPoint);
+        //allocator.synchronizeHostData(this);
     }
 
     @Override

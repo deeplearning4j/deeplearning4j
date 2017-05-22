@@ -117,8 +117,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         this.labelsMask = labelsMask;
 
         // we want this dataset to be fully committed to device
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
     }
 
     public boolean isPreProcessed() {
@@ -231,8 +230,8 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
     @Override
     public void load(InputStream from) {
         try {
-            BufferedInputStream bis = new BufferedInputStream(from);
-            DataInputStream dis = new DataInputStream(bis);
+
+            DataInputStream dis = from instanceof BufferedInputStream ? new DataInputStream(from) : new DataInputStream(new BufferedInputStream(from));
 
             byte included = dis.readByte();
             boolean hasFeatures = (included & BITMASK_FEATURES_PRESENT) != 0;
@@ -261,7 +260,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public void load(File from) {
-        try (FileInputStream fis = new FileInputStream(from); BufferedInputStream bis = new BufferedInputStream(fis)) {
+        try (FileInputStream fis = new FileInputStream(from); BufferedInputStream bis = new BufferedInputStream(fis, 1024 * 1024)) {
             load(bis);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -421,6 +420,10 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      * @param seed Seed to use for the random Number Generator
      */
     public void shuffle(long seed) {
+        // just skip shuffle if there's only 1 example
+        if (numExamples() < 2)
+            return;
+
         //note here we use the same seed with different random objects guaranteeing same order
 
         List<INDArray> arrays = new ArrayList<>();
@@ -1315,5 +1318,43 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         reqMem += labelsMask == null ? 0 : labelsMask.lengthLong() * Nd4j.sizeOfDataType();
 
         return reqMem;
+    }
+
+    /**
+     * This method migrates this DataSet into current Workspace (if any)
+     */
+    @Override
+    public void migrate() {
+        if (Nd4j.getMemoryManager().getCurrentWorkspace() != null) {
+            if (features != null)
+                features = features.migrate();
+
+            if (labels != null)
+                labels = labels.migrate();
+
+            if (featuresMask != null)
+                featuresMask = featuresMask.migrate();
+
+            if (labelsMask != null)
+                labelsMask = labelsMask.migrate();
+        }
+    }
+
+    /**
+     * This method migrates this DataSet into current Workspace (if any)
+     */
+    @Override
+    public void detach() {
+        if (features != null)
+            features = features.detach();
+
+        if (labels != null)
+            labels = labels.detach();
+
+        if (featuresMask != null)
+            featuresMask = featuresMask.detach();
+
+        if (labelsMask != null)
+           labelsMask = labelsMask.detach();
     }
 }

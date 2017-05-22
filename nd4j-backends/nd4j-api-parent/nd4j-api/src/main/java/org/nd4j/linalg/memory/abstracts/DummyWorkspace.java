@@ -43,6 +43,11 @@ public class DummyWorkspace implements MemoryWorkspace {
         return -1L;
     }
 
+    @Override
+    public int getDeviceId() {
+        return 0;
+    }
+
     /**
      * This method does allocation from a given Workspace
      *
@@ -132,6 +137,11 @@ public class DummyWorkspace implements MemoryWorkspace {
 
     }
 
+    @Override
+    public void destroyWorkspace(boolean extended) {
+
+    }
+
     /**
      * This method allows you to temporary disable/enable given Workspace use.
      * If turned off - direct memory allocations will be used.
@@ -181,6 +191,16 @@ public class DummyWorkspace implements MemoryWorkspace {
      */
     @Override
     public long getMaxCycleAllocations() {
+        return 0;
+    }
+
+    /**
+     * This methos returns current allocated size of this workspace
+     *
+     * @return
+     */
+    @Override
+    public long getCurrentSize() {
         return 0;
     }
 

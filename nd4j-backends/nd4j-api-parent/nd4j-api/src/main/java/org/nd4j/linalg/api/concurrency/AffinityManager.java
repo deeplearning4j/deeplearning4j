@@ -109,4 +109,35 @@ public interface AffinityManager {
      * @param location
      */
     void tagLocation(DataBuffer buffer, Location location);
+
+
+    /**
+     * This method propagates given INDArray to specified location
+     *
+     * @param array
+     * @param location
+     */
+    void ensureLocation(INDArray array, Location location);
+
+    /**
+     * This method forces specific device for current thread.
+     *
+     * PLEASE NOTE: This method is UNSAFE and should NOT be used with 100% clearance about it.
+     *
+     * @param deviceId
+     */
+    void unsafeSetDevice(Integer deviceId);
+
+
+    /**
+     * This method returns TRUE if cross-device access is allowed on this system
+     */
+    boolean isCrossDeviceAccessSupported();
+
+    /**
+     * This method allows to block cross-device access. Mostly suitable for debugging/testing purposes
+     *
+     * @param reallyAllow
+     */
+    void allowCrossDeviceAccess(boolean reallyAllow);
 }

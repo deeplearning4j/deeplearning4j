@@ -15,9 +15,11 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -264,6 +266,48 @@ public class EndlessWorkspaceTests extends BaseNd4jTest {
         int pos = (int) (results.size() * 0.9);
 
         log.info("Block: {} ns; Op: {} ns;", results.get(pos), resultsOp.get(pos));
+    }
+
+    @Test
+    public void endlessTestSerDe1() throws Exception {
+        INDArray features = Nd4j.create(32, 3, 224, 224);
+        INDArray labels = Nd4j.create(32, 200);
+        File tmp = File.createTempFile("12dadsad","dsdasds");
+        float[] array = new float[33 * 3 * 224 * 224];
+        DataSet ds = new DataSet(features, labels);
+        ds.save(tmp);
+
+        WorkspaceConfiguration wsConf = WorkspaceConfiguration.builder()
+                .initialSize(0)
+                .policyLearning(LearningPolicy.FIRST_LOOP)
+                .build();
+
+        while (true) {
+
+            try(MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(wsConf, "serde")) {
+/*
+            try (FileOutputStream fos = new FileOutputStream(tmp); BufferedOutputStream bos = new BufferedOutputStream(fos)) {
+                SerializationUtils.serialize(array, fos);
+            }
+
+            try (FileInputStream fis = new FileInputStream(tmp); BufferedInputStream bis = new BufferedInputStream(fis)) {
+                long time1 = System.currentTimeMillis();
+                float[] arrayR = (float[]) SerializationUtils.deserialize(bis);
+                long time2 = System.currentTimeMillis();
+
+                log.info("Load time: {}", time2 - time1);
+            }
+*/
+
+
+
+                long time1 = System.currentTimeMillis();
+                ds.load(tmp);
+                long time2 = System.currentTimeMillis();
+
+                log.info("Load time: {}", time2 - time1);
+            }
+        }
     }
 
     @Override

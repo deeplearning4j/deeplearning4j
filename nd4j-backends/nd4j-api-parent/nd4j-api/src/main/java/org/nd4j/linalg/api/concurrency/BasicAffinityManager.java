@@ -75,4 +75,24 @@ public abstract class BasicAffinityManager implements AffinityManager {
     public void tagLocation(DataBuffer buffer, Location location) {
         // no-op
     }
+
+    @Override
+    public void unsafeSetDevice(Integer deviceId) {
+        // no-op
+    }
+
+    @Override
+    public void ensureLocation(INDArray array, Location location) {
+        // no-op
+    }
+
+    @Override
+    public boolean isCrossDeviceAccessSupported() {
+        return true;
+    }
+
+    @Override
+    public void allowCrossDeviceAccess(boolean reallyAllow) {
+        // no-op
+    }
 }

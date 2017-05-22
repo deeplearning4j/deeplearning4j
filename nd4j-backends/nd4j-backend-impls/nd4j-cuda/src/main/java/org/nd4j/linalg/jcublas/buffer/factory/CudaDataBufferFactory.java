@@ -142,6 +142,11 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createDouble(int offset, double[] data, MemoryWorkspace workspace) {
+        return new CudaDoubleDataBuffer(data, true, offset, workspace);
+    }
+
+    @Override
     public DataBuffer createDouble(int offset, byte[] data, int length) {
         return new CudaDoubleDataBuffer(ArrayUtil.toDoubleArray(data), true, offset);
     }
@@ -169,6 +174,11 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createFloat(int offset, float[] data) {
         return new CudaFloatDataBuffer(data, true, offset);
+    }
+
+    @Override
+    public DataBuffer createFloat(int offset, float[] data, MemoryWorkspace workspace) {
+        return new CudaFloatDataBuffer(data, true, offset, workspace);
     }
 
     @Override
@@ -526,6 +536,11 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createHalf(int offset, float[] data) {
         return new CudaHalfDataBuffer(data, true, offset);
+    }
+
+    @Override
+    public DataBuffer createHalf(int offset, float[] data, MemoryWorkspace workspace) {
+        return new CudaHalfDataBuffer(data, true, offset, workspace);
     }
 
     /**

@@ -70,8 +70,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
         this.featuresMaskArrays = featuresMaskArrays;
         this.labelsMaskArrays = labelsMaskArrays;
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueueBlocking();
+        Nd4j.getExecutioner().commit();
 
     }
 
@@ -546,5 +545,49 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
                 reqMem += f == null ? 0 : f.lengthLong() * Nd4j.sizeOfDataType();
 
         return reqMem;
+    }
+
+
+    @Override
+    public void migrate() {
+        if (Nd4j.getMemoryManager().getCurrentWorkspace() != null) {
+            if (features != null)
+                for (int e = 0; e < features.length; e++)
+                    features[e] = features[e].migrate();
+
+            if (labels != null)
+                for (int e = 0; e < labels.length; e++)
+                    labels[e] = labels[e].migrate();
+
+            if (featuresMaskArrays != null)
+                for (int e = 0; e < featuresMaskArrays.length; e++)
+                    featuresMaskArrays[e] = featuresMaskArrays[e].migrate();
+
+            if (labelsMaskArrays != null)
+                for (int e = 0; e < labelsMaskArrays.length; e++)
+                    labelsMaskArrays[e] = labelsMaskArrays[e].migrate();
+        }
+    }
+
+    /**
+     * This method migrates this DataSet into current Workspace (if any)
+     */
+    @Override
+    public void detach() {
+        if (features != null)
+            for (int e = 0; e < features.length; e++)
+                features[e] = features[e].detach();
+
+        if (labels != null)
+            for (int e = 0; e < labels.length; e++)
+                labels[e] = labels[e].detach();
+
+        if (featuresMaskArrays != null)
+            for (int e = 0; e < featuresMaskArrays.length; e++)
+                featuresMaskArrays[e] = featuresMaskArrays[e].detach();
+
+        if (labelsMaskArrays != null)
+            for (int e = 0; e < labelsMaskArrays.length; e++)
+                labelsMaskArrays[e] = labelsMaskArrays[e].detach();
     }
 }

@@ -39,7 +39,6 @@ public abstract class BasicMemoryManager implements MemoryManager {
 
     private ThreadLocal<MemoryWorkspace> tempWorkspace = new ThreadLocal<>();
 
-    private DummyWorkspace dummyWorkspace = new DummyWorkspace();
 
     /**
      * This method returns
@@ -183,10 +182,10 @@ public abstract class BasicMemoryManager implements MemoryManager {
     public MemoryWorkspace scopeOutOfWorkspaces() {
         MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         if (workspace == null)
-            return dummyWorkspace;
+            return new DummyWorkspace();
         else {
-            Nd4j.getMemoryManager().setCurrentWorkspace(null);
-            return workspace.tagOutOfScopeUse();
+            //Nd4j.getMemoryManager().setCurrentWorkspace(null);
+            return new DummyWorkspace().notifyScopeEntered();//workspace.tagOutOfScopeUse();
         }
     }
 }
