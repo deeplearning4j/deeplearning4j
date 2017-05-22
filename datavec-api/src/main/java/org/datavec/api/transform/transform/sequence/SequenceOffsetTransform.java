@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.transform.sequence;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -30,8 +32,8 @@ import java.util.*;
 /**
  * Sequence offset transform takes a sequence, and shifts The values in one or more columns by a specified number of
  * times steps. It has 2 modes of operation (OperationType enum), with respect to the columns it operates on:<br>
- * OperationType: operations may be performed in-place, modifying the values in the specified columns<br>
- * EdgeHandling: operations may produce new columns, with the original (source) columns remaining unmodified<br>
+ * InPlace: operations may be performed in-place, modifying the values in the specified columns<br>
+ * NewColumn: operations may produce new columns, with the original (source) columns remaining unmodified<br>
  * <p>
  * Additionally, there are 2 modes for handling values outside the original sequence (EdgeHandling enum):
  * TrimSequence: the entire sequence is trimmed (start or end) by a specified number of steps<br>
@@ -50,6 +52,8 @@ import java.util.*;
  */
 @JsonIgnoreProperties({"inputSchema", "columnsToOffsetSet"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Data
+@EqualsAndHashCode(exclude = {"columnsToOffsetSet", "inputSchema"})
 public class SequenceOffsetTransform implements Transform {
 
     public enum OperationType {InPlace, NewColumn}
@@ -71,6 +75,11 @@ public class SequenceOffsetTransform implements Transform {
                                    @JsonProperty("operationType") OperationType operationType,
                                    @JsonProperty("edgeHandling") EdgeHandling edgeHandling,
                                    @JsonProperty("edgeCaseValue") Writable edgeCaseValue) {
+        if(edgeCaseValue != null && edgeHandling != EdgeHandling.SpecifiedValue){
+            throw new UnsupportedOperationException("edgeCaseValue was non-null, but EdgeHandling was not set to SpecifiedValue. "
+                    + "edgeCaseValue can only be used with SpecifiedValue mode");
+        }
+
         this.columnsToOffset = columnsToOffset;
         this.offsetAmount = offsetAmount;
         this.operationType = operationType;
@@ -168,16 +177,16 @@ public class SequenceOffsetTransform implements Transform {
             } else {
                 //Values in the specified columns are shifted earlier -> trim the end of the sequence
                 firstOutputStepInclusive = 0;
-                lastOutputStepInclusive = sequence.size() - 1 - offsetAmount;
+                lastOutputStepInclusive = sequence.size() - 1 + offsetAmount;
             }
         } else {
             //Specified value -> same output size
             firstOutputStepInclusive = 0;
-            lastOutputStepInclusive = sequence.size();
+            lastOutputStepInclusive = sequence.size()-1;
         }
 
         List<List<Writable>> out = new ArrayList<>();
-        for (int step = firstOutputStepInclusive; step < lastOutputStepInclusive; step++) {
+        for (int step = firstOutputStepInclusive; step <= lastOutputStepInclusive; step++) {
             List<Writable> thisStepIn = sequence.get(step);     //Input for the *non-shifted* values
             List<Writable> thisStepOut = new ArrayList<>(nOut);
 
@@ -186,10 +195,14 @@ public class SequenceOffsetTransform implements Transform {
             for (int j = 0; j < nIn; j++) {
                 if (columnsToOffsetSet.contains(colNames.get(j))) {
 
-                    if(edgeHandling == EdgeHandling.SpecifiedValue && step-offsetAmount < 0 || step-offsetAmount > sequence.size()){
+                    if(edgeHandling == EdgeHandling.SpecifiedValue && step-offsetAmount < 0 || step-offsetAmount >= sequence.size()){
+                        if(operationType == OperationType.NewColumn){
+                            //Keep the original value
+                            thisStepOut.add(thisStepIn.get(j));
+                        }
                         thisStepOut.add(edgeCaseValue);
                     } else {
-                        //Trim case
+                        //Trim case, or specified but within range
                         Writable shifted = sequence.get(step-offsetAmount).get(j);
                         if (operationType == OperationType.InPlace) {
                             //Shift by the specified amount and output

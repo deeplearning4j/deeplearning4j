@@ -998,8 +998,8 @@ public class TransformProcess implements Serializable {
          * @param operationType   Whether the offset should be done in-place or by adding a new column
          */
         public Builder offsetSequence(List<String> columnsToOffset, int offsetAmount, SequenceOffsetTransform.OperationType operationType){
-            actionList.add(new SequenceOffsetTransform(columnsToOffset, offsetAmount, operationType, SequenceOffsetTransform.EdgeHandling.TrimSequence, null);
-            return this;
+            return transform(new SequenceOffsetTransform(columnsToOffset, offsetAmount, operationType,
+                    SequenceOffsetTransform.EdgeHandling.TrimSequence, null));
         }
 
 
