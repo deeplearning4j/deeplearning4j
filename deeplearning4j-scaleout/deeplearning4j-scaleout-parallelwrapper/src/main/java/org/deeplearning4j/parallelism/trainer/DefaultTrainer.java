@@ -353,6 +353,10 @@ public class DefaultTrainer extends Thread implements Trainer {
     }
 
 
+    @Override
+    public boolean averagingRequired() {
+        return true;
+    }
 
     protected static IterationListener cloneListener(IterationListener original) {
         if (original instanceof RoutingIterationListener) {

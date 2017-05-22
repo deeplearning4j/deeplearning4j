@@ -414,7 +414,7 @@ public class ParallelWrapper implements AutoCloseable {
                 /*
                     average model, and propagate it to whole
                 */
-                if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers) {
+                if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers && zoo[0].averagingRequired()) {
                     long timeA1 = System.currentTimeMillis();
 
                     // model averaging happens within
