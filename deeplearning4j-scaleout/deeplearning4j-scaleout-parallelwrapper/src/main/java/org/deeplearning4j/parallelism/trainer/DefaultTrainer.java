@@ -48,8 +48,10 @@ import java.util.concurrent.locks.LockSupport;
 public class DefaultTrainer extends Thread implements Trainer {
     protected Model originalModel;
     protected Model replicatedModel;
-    @Builder.Default protected LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>();
-    @Builder.Default protected LinkedBlockingQueue<MultiDataSet> queueMDS = new LinkedBlockingQueue<>();
+
+    // TODO: make queue size configurable
+    @Builder.Default protected LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>(2);
+    @Builder.Default protected LinkedBlockingQueue<MultiDataSet> queueMDS = new LinkedBlockingQueue<>(2);
     @Builder.Default protected AtomicInteger running = new AtomicInteger(0);
     protected int threadId;
     @Builder.Default protected AtomicBoolean shouldUpdate = new AtomicBoolean(false);
@@ -74,7 +76,11 @@ public class DefaultTrainer extends Thread implements Trainer {
     public void feedMultiDataSet(@NonNull MultiDataSet dataSet, long etlTime) {
         setupIfNeccessary();
         running.incrementAndGet();
-        queueMDS.add(dataSet);
+        try {
+            queueMDS.put(dataSet);
+        } catch (InterruptedException e) {
+            // do nothing
+        }
 
         if (lastEtlTime == null)
             lastEtlTime = new AtomicLong(0);
@@ -86,9 +92,13 @@ public class DefaultTrainer extends Thread implements Trainer {
     public void feedDataSet(DataSet dataSet, long etlTime) {
         setupIfNeccessary();
         running.incrementAndGet();
-        if (dataSet != null)
-            queue.add(dataSet);
-        else {
+        if (dataSet != null) {
+            try {
+                queue.put(dataSet);
+            } catch (InterruptedException e) {
+                // do nothing
+            }
+        } else {
             if (nullMode == null)
                 nullMode = new AtomicBoolean(false);
 

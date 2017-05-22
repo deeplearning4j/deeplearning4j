@@ -157,7 +157,7 @@ public class ParallelWrapper implements AutoCloseable {
             /*
                 if all workers are dispatched now, join till all are finished
             */
-            if (pos + 1 == workers) {
+            if (pos + 1 == workers && zoo[0].averagingRequired()) {
                 iterationsCounter.incrementAndGet();
 
                 for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
@@ -173,7 +173,7 @@ public class ParallelWrapper implements AutoCloseable {
                 /*
                     average model, and propagate it to whole
                 */
-                if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers) {
+                if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers && zoo[0].averagingRequired()) {
                     // averaging model
                     double score = getScore(locker);
 
@@ -398,7 +398,7 @@ public class ParallelWrapper implements AutoCloseable {
             /*
                 if all workers are dispatched now, join till all are finished
             */
-            if (pos + 1 == workers ) {
+            if (pos + 1 == workers && zoo[0].averagingRequired()) {
                 iterationsCounter.incrementAndGet();
 
                 for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
