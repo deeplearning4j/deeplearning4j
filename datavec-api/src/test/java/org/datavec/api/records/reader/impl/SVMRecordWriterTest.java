@@ -80,9 +80,11 @@ public class SVMRecordWriterTest {
         writer.close();
         records.clear();
 
+        Configuration conf = new Configuration();
+        conf.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
         RecordReader svmReader = new SVMLightRecordReader();
         InputSplit svmSplit = new FileSplit(out);
-        svmReader.initialize(svmSplit);
+        svmReader.initialize(conf, svmSplit);
         assertTrue(svmReader.hasNext());
         while (svmReader.hasNext()) {
             List<Writable> record = svmReader.next();
@@ -103,5 +105,32 @@ public class SVMRecordWriterTest {
         assertEquals(785, record.size());
     }
 
+    @Test
+    public void testReadZeroIndexed() throws Exception {
+        Configuration conf = new Configuration();
+        conf.set(FileRecordReader.APPEND_LABEL, "true");
+        RecordReader libSvmRecordReader = new SVMLightRecordReader();
+        libSvmRecordReader.initialize(conf, new FileSplit(new ClassPathResource("iris.libsvm").getFile()));
 
+        Configuration confZero = new Configuration();
+        confZero.set(FileRecordReader.APPEND_LABEL, "true");
+        confZero.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, true);
+        RecordReader libSvmRecordReaderZero = new SVMLightRecordReader();
+        libSvmRecordReaderZero.initialize(conf, new FileSplit(new ClassPathResource("iris_zero_indexed.libsvm").getFile()));
+
+        Configuration confNoZero = new Configuration();
+        confNoZero.set(FileRecordReader.APPEND_LABEL, "true");
+        confNoZero.setBoolean(SVMLightRecordReader.ZERO_BASED_INDEXING, false);
+        RecordReader libSvmRecordReaderNoZero = new SVMLightRecordReader();
+        libSvmRecordReaderNoZero.initialize(confNoZero, new FileSplit(new ClassPathResource("iris.libsvm").getFile()));
+
+        while (libSvmRecordReader.hasNext()) {
+            List<Writable> record = libSvmRecordReader.next();
+            record.remove(0);
+            List<Writable> recordZero = libSvmRecordReaderZero.next();
+            assertEquals(record, recordZero);
+            List<Writable> recordNoZero = libSvmRecordReaderNoZero.next();
+            assertEquals(record, recordNoZero);
+        }
+    }
 }

@@ -45,7 +45,12 @@ import java.util.StringTokenizer;
 public class SVMLightRecordReader extends LineRecordReader {
     private static Logger log = LoggerFactory.getLogger(SVMLightRecordReader.class);
     private int numAttributes = -1;
-    public final static String NUM_ATTRIBUTES = SVMLightRecordReader.class.getName() + ".numattributes";
+    public static final String NAME_SPACE = LibSvmRecordReader.class.getName();
+    public final static String NUM_ATTRIBUTES = NAME_SPACE + ".numattributes";
+    public static final String NUM_FEATURES = NAME_SPACE + ".numfeatures";
+    public static final String ZERO_BASED_INDEXING = NAME_SPACE + ".zeroBasedIndexing";
+
+    private boolean zeroBasedIndexing = true;
 
     public SVMLightRecordReader() {}
 
@@ -79,6 +84,13 @@ public class SVMLightRecordReader extends LineRecordReader {
                     max = index;
             }
 
+            if (numAttributes <= 0)
+                numAttributes = max;
+
+            /* TODO: throw an exception here. */
+            if (max > numAttributes)
+                log.warn("Found " + max + " features in record, expected " + numAttributes);
+
             // read values into array
             tok = new StringTokenizer(val, " \t");
 
@@ -95,7 +107,12 @@ public class SVMLightRecordReader extends LineRecordReader {
                 if (col.startsWith("qid:"))
                     continue;
                 // actual value
-                index = Integer.parseInt(col.substring(0, col.indexOf(":"))) - 1;
+                index = Integer.parseInt(col.substring(0, col.indexOf(":")));
+                if (!zeroBasedIndexing)
+                    index--;
+
+                /* TODO: throw an exception here. */
+                assert(index < 0);
                 if (index > numAttributesAdded) {
                     int totalDiff = Math.abs(numAttributesAdded - index);
                     for (int i = numAttributesAdded; i < index; i++) {
@@ -130,7 +147,9 @@ public class SVMLightRecordReader extends LineRecordReader {
         super.initialize(conf, split);
         if (conf.get(NUM_ATTRIBUTES) != null)
             numAttributes = conf.getInt(NUM_ATTRIBUTES, -1);
-
+        else if (conf.get(NUM_FEATURES) != null)
+            numAttributes = conf.getInt(NUM_FEATURES, -1);
+        zeroBasedIndexing = conf.getBoolean(ZERO_BASED_INDEXING, true);
     }
 
     @Override
@@ -138,6 +157,9 @@ public class SVMLightRecordReader extends LineRecordReader {
         super.setConf(conf);
         if (conf.get(NUM_ATTRIBUTES) != null)
             numAttributes = conf.getInt(NUM_ATTRIBUTES, -1);
+        else if (conf.get(NUM_FEATURES) != null)
+            numAttributes = conf.getInt(NUM_FEATURES, -1);
+        zeroBasedIndexing = conf.getBoolean(ZERO_BASED_INDEXING, true);
     }
 
     @Override

@@ -16,7 +16,9 @@
 
 package org.datavec.api.records.reader.impl.misc;
 
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.conf.Configuration;
+import org.datavec.api.exceptions.DataVecException;
 import org.datavec.api.records.reader.impl.LineRecordReader;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
@@ -33,15 +35,18 @@ import java.util.List;
 /**
  * @author Adam Gibson
  */
+@Slf4j
 public class LibSvmRecordReader extends LineRecordReader {
 
     public static final String CLASSIFICATION = "libsvm.classification";
     public static final String NAME_SPACE = LibSvmRecordReader.class.getName();
     public static final String NUM_FEATURES = NAME_SPACE + ".numfeatures";
+    public static final String ZERO_BASED_INDEXING = NAME_SPACE + ".zeroBasedIndexing";
 
     private boolean appendLabel = false;
     private boolean classification = true;
     private int numFeatures;
+    private boolean zeroBasedIndexing = true;
 
     @Override
     public void initialize(InputSplit split) throws IOException, InterruptedException {
@@ -54,6 +59,7 @@ public class LibSvmRecordReader extends LineRecordReader {
         appendLabel = conf.getBoolean(APPEND_LABEL, false);
         classification = conf.getBoolean(CLASSIFICATION, true);
         numFeatures = conf.getInt(NUM_FEATURES, 0);
+        zeroBasedIndexing = conf.getBoolean(ZERO_BASED_INDEXING, true);
     }
 
     @Override
@@ -87,7 +93,13 @@ public class LibSvmRecordReader extends LineRecordReader {
                 throw new NumberFormatException("Invalid data: " + tokens[k]);
             }
 
-            int j = Integer.valueOf(pair[0]) - 1;
+            int j = Integer.valueOf(pair[0]);
+            if (!zeroBasedIndexing)
+                j = j - 1;
+
+            /* TODO: throw an exception here. */
+            assert(j < 0);
+
             while (j != read) {
                 record.add(new DoubleWritable(0.0));
                 read++;
@@ -105,6 +117,12 @@ public class LibSvmRecordReader extends LineRecordReader {
             record.add(new DoubleWritable(0.0));
             read++;
         }
+        if (numFeatures == 0)
+            numFeatures = read;
+
+        /* TODO: throw an exception here. */
+        if (read > numFeatures)
+            log.warn("Found " + read + " features in record, expected " + numFeatures);
 
         if (classification && appendLabel || !classification) {
             record.add(new DoubleWritable(response));
