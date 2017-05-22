@@ -2031,8 +2031,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         //Listeners
         if (trainingListeners.size() > 0) {
-            for (TrainingListener tl : trainingListeners) {
-                tl.onBackwardPass(this);
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                for (TrainingListener tl : trainingListeners) {
+                    tl.onBackwardPass(this);
+                }
             }
         }
     }

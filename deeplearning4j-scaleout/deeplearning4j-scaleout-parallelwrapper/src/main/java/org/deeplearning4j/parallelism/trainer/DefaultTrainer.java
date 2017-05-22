@@ -203,6 +203,29 @@ public class DefaultTrainer extends Thread implements Trainer {
         ((ComputationGraph) replicatedModel).fit(dataSet);
     }
 
+    /**
+     * This method does post-initialization configuration of Model.
+     * Good place to configure listeners and all such a things
+     */
+    protected void postInit() {
+        Collection<IterationListener> oldListeners = null;
+
+        if (originalModel instanceof ComputationGraph) {
+            oldListeners = ((ComputationGraph) originalModel).getListeners();
+        } else if (originalModel instanceof MultiLayerNetwork) {
+            oldListeners = ((MultiLayerNetwork) originalModel).getListeners();
+        }
+        oldListeners = (oldListeners == null ? new ArrayList<>() : new ArrayList<>(oldListeners));
+        Collection<IterationListener> replicatedListeners = new ArrayList<>();
+
+        if (parallelWrapper.getListeners() != null) {
+            oldListeners.addAll(parallelWrapper.getListeners());
+        }
+        configureListeners(uuid, oldListeners, replicatedListeners);
+
+        this.replicatedModel.setListeners(replicatedListeners);
+    }
+
     @Override
     public void run() {
         setupIfNeccessary();
@@ -232,18 +255,6 @@ public class DefaultTrainer extends Thread implements Trainer {
 
                         Nd4j.getExecutioner().commit();
                     }
-
-                    Collection<IterationListener> oldListeners = ((MultiLayerNetwork) originalModel).getListeners();
-                    oldListeners = (oldListeners == null ? new ArrayList<>() : new ArrayList<>(oldListeners));
-                    Collection<IterationListener> replicatedListeners = new ArrayList<>();
-
-                    if (parallelWrapper.getListeners() != null) {
-                        oldListeners.addAll(parallelWrapper.getListeners());
-                    }
-
-                    configureListeners(uuid, oldListeners, replicatedListeners);
-
-                    this.replicatedModel.setListeners(replicatedListeners);
                 }
             } else if (originalModel instanceof ComputationGraph) {
                 if (!onRootModel) {
@@ -266,19 +277,11 @@ public class DefaultTrainer extends Thread implements Trainer {
 
                         Nd4j.getExecutioner().commit();
                     }
-
-                    Collection<IterationListener> oldListeners = ((ComputationGraph) originalModel).getListeners();
-                    oldListeners = (oldListeners == null ? new ArrayList<>() : new ArrayList<>(oldListeners));
-                    Collection<IterationListener> replicatedListeners = new ArrayList<>();
-
-                    if (parallelWrapper.getListeners() != null) {
-                        oldListeners.addAll(parallelWrapper.getListeners());
-                    }
-                    configureListeners(uuid, oldListeners, replicatedListeners);
-
-                    this.replicatedModel.setListeners(replicatedListeners);
                 }
             }
+
+            // classes that extend DefaultTrainer might hook something there
+            postInit();
 
             if (!useMDS) {
                 while (!shouldStop.get()) {

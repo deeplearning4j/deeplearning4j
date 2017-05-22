@@ -44,6 +44,13 @@ public class SymmetricTrainer extends DefaultTrainer {
         // gradients should be extracted here
     }
 
+    @Override
+    protected void postInit() {
+        super.postInit();
+
+        // TODO: in this method we inject special listener, that will pull gradients out of the model,
+    }
+
     public static class SymmetricTrainerBuilder extends DefaultTrainerBuilder {
         @Override
         public SymmetricTrainerBuilder originalModel(Model originalModel) {
