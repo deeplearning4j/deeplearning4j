@@ -24,6 +24,7 @@ import org.datavec.api.transform.sequence.*;
 import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
 import org.datavec.api.transform.transform.integer.IntegerToOneHotTransform;
 import org.datavec.api.transform.transform.sequence.SequenceMovingWindowReduceTransform;
+import org.datavec.api.transform.transform.sequence.SequenceOffsetTransform;
 import org.datavec.api.transform.transform.string.AppendStringColumnTransform;
 import org.datavec.api.transform.transform.string.ConvertToString;
 import org.datavec.api.transform.transform.string.ReplaceStringTransform;
@@ -983,6 +984,21 @@ public class TransformProcess implements Serializable {
          */
         public Builder trimSequence(int numStepsToTrim, boolean trimFromStart){
             actionList.add(new DataAction(new SequenceTrimTransform(numStepsToTrim, trimFromStart)));
+            return this;
+        }
+
+        /**
+         * Perform a sequence of operation on the specified columns. Note that this also truncates sequences by the
+         * specified offset amount by default. Use {@code transform(new SequenceOffsetTransform(...)} to change this.
+         * See {@link SequenceOffsetTransform} for details on exactly what this operation does and how.
+         *
+         * @param columnsToOffset Columns to offset
+         * @param offsetAmount    Amount to offset the specified columns by (positive offset: 'columnsToOffset' are
+         *                        moved to later time steps)
+         * @param operationType   Whether the offset should be done in-place or by adding a new column
+         */
+        public Builder offsetSequence(List<String> columnsToOffset, int offsetAmount, SequenceOffsetTransform.OperationType operationType){
+            actionList.add(new SequenceOffsetTransform(columnsToOffset, offsetAmount, operationType, SequenceOffsetTransform.EdgeHandling.TrimSequence, null);
             return this;
         }
 
