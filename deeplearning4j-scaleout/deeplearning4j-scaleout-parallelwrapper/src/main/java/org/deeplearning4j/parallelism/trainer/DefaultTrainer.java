@@ -188,6 +188,21 @@ public class DefaultTrainer extends Thread implements Trainer {
         isStopped.set(false);
     }
 
+    protected void fit(DataSet dataSet) {
+        if (replicatedModel instanceof MultiLayerNetwork) {
+            ((MultiLayerNetwork) replicatedModel).setLastEtlTime(lastEtlTime.get());
+            ((MultiLayerNetwork) replicatedModel).fit(dataSet);
+        } else if (replicatedModel instanceof ComputationGraph) {
+            ((ComputationGraph) replicatedModel).setLastEtlTime(lastEtlTime.get());
+            ((ComputationGraph) replicatedModel).fit(dataSet);
+        }
+    }
+
+    protected void fit(MultiDataSet dataSet) {
+        ((ComputationGraph) replicatedModel).setLastEtlTime(lastEtlTime.get());
+        ((ComputationGraph) replicatedModel).fit(dataSet);
+    }
+
     @Override
     public void run() {
         setupIfNeccessary();
@@ -271,6 +286,7 @@ public class DefaultTrainer extends Thread implements Trainer {
                     if (nullMode == null || !nullMode.get())
                         dataSet = queue.poll(100, TimeUnit.MILLISECONDS);
                     else {
+                        // this code branch is for debugging only, please ignore :)
                         if (nullDataSet == null)
                             nullDataSet = new org.nd4j.linalg.dataset.DataSet(Nd4j.create(64, 28 * 28), Nd4j.create(64, 10));
 
@@ -278,19 +294,10 @@ public class DefaultTrainer extends Thread implements Trainer {
                     }
                     if (dataSet != null) {
 
-                        //if (Nd4j.getAffinityManager().getDeviceForCurrentThread() != Nd4j.getAffinityManager().getDeviceForArray(dataSet.getFeatures()))
-                        //    log.debug("Thread: {}; Bad align for data: {}/{}", Thread.currentThread().getId(), Nd4j.getAffinityManager().getDeviceForCurrentThread(), Nd4j.getAffinityManager().getDeviceForArray(dataSet.getFeatures()));
-
-                        if (replicatedModel instanceof MultiLayerNetwork) {
-                            ((MultiLayerNetwork) replicatedModel).setLastEtlTime(lastEtlTime.get());
-                            ((MultiLayerNetwork) replicatedModel).fit(dataSet);
-                        } else if (replicatedModel instanceof ComputationGraph) {
-                            ((ComputationGraph) replicatedModel).setLastEtlTime(lastEtlTime.get());
-                            ((ComputationGraph) replicatedModel).fit(dataSet);
-                        }
+                        fit(dataSet);
 
                         // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
-                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported() && iterationsCounter.incrementAndGet() % averagingFrequency == 0) {
+                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported() && iterationsCounter.incrementAndGet() % averagingFrequency == 0 && averagingRequired()) {
                             // we ensure all operations are finished in this training round
                             Nd4j.getExecutioner().commit();
 
@@ -317,14 +324,12 @@ public class DefaultTrainer extends Thread implements Trainer {
                 while (!shouldStop.get()) {
                     MultiDataSet dataSet = queueMDS.poll(100, TimeUnit.MILLISECONDS);
                     if (dataSet != null) {
-                        if (replicatedModel instanceof ComputationGraph) {
-                            ((ComputationGraph) replicatedModel).setLastEtlTime(lastEtlTime.get());
-                            ((ComputationGraph) replicatedModel).fit(dataSet);
-                        } else
-                            throw new RuntimeException("MultiDataSet can be fit into ComputationGraph only");
+
+                        // just fitting
+                        fit(dataSet);
 
                         // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
-                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported() && iterationsCounter.incrementAndGet() % averagingFrequency == 0) {
+                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported() && iterationsCounter.incrementAndGet() % averagingFrequency == 0 && averagingRequired()) {
                             // we ensure all operations are finished in this training round
                             Nd4j.getExecutioner().commit();
 

@@ -337,6 +337,20 @@ public class ParallelWrapper implements AutoCloseable {
         this.storageRouter = statsStorage;
     }
 
+    /**
+     * This method will propagate gradients across all workers
+     *
+     * @param gradients
+     */
+    public void broadcastGradients(INDArray gradients) {
+        // TODO: add implementation
+        /*
+            Basically all we want here is:
+            1) Ensure length matches parameters length
+            2) Ensure data is acessible from all devices somehow (i.e. it's in HOST-only mode
+         */
+    }
+
 
     /**
      * This method takes DataSetIterator, and starts training over it by scheduling DataSets to different executors

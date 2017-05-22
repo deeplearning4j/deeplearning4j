@@ -134,5 +134,10 @@ public class ParameterServerTrainer extends DefaultTrainer {
         public ParameterServerTrainerBuilder parallelWrapper(ParallelWrapper parallelWrapper) {
             return (ParameterServerTrainerBuilder) super.parallelWrapper(parallelWrapper);
         }
+
+        @Override
+        public ParameterServerTrainerBuilder averagingFrequency(int frequency) {
+            return (ParameterServerTrainerBuilder) super.averagingFrequency(frequency);
+        }
     }
 }
