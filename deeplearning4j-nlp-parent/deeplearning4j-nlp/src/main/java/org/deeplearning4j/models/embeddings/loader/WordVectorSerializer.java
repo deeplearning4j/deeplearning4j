@@ -2345,7 +2345,9 @@ public class WordVectorSerializer {
                 log.debug("Trying simplified model restoration...");
 
                 File tmpFileSyn0 = File.createTempFile("word2vec", "syn");
+                tmpFileSyn0.deleteOnExit();
                 File tmpFileConfig = File.createTempFile("word2vec", "config");
+                tmpFileConfig.deleteOnExit();
                 // we don't need full model, so we go directly to syn0 file
 
                 ZipFile zipFile = new ZipFile(file);
@@ -2567,6 +2569,7 @@ public class WordVectorSerializer {
         try {
             log.debug("Trying DL4j format...");
             File tmpFileSyn0 = File.createTempFile("word2vec", "syn");
+            tmpFileSyn0.deleteOnExit();
 
             ZipFile zipFile = new ZipFile(file);
             ZipEntry syn0 = zipFile.getEntry("syn0.txt");
@@ -2593,6 +2596,12 @@ public class WordVectorSerializer {
                     Nd4j.getMemoryManager().togglePeriodicGc(true);
 
                 Nd4j.getMemoryManager().setOccasionalGcFrequency(originalFreq);
+
+                try {
+                    tmpFileSyn0.delete();
+                } catch (Exception e) {
+                    //
+                }
             }
         } catch (Exception e) {
             //
