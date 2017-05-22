@@ -269,9 +269,9 @@ public class TransformProcess implements Serializable {
                 currValues = t.mapSequence(currValues);
 
             } else if (d.getFilter() != null) {
-                //                Filter f = d.getFilter();
-                //                if (f.removeExample(currValues)) return null;
-                throw new RuntimeException("Sequence filtering not yet implemnted here");
+                if(d.getFilter().removeSequence(currValues)){
+                    return null;
+                }
             } else if (d.getConvertToSequence() != null) {
                 throw new RuntimeException(
                                 "Cannot execute examples individually: TransformProcess contains a ConvertToSequence operation");
@@ -282,7 +282,7 @@ public class TransformProcess implements Serializable {
                 throw new RuntimeException(
                                 "Cannot execute examples individually: TransformProcess contains a SequenceSplit operation");
             } else {
-                throw new RuntimeException("Unknown action: " + d);
+                throw new RuntimeException("Unknown or not supported action: " + d);
             }
         }
 
