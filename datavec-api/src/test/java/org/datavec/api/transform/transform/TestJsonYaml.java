@@ -35,6 +35,7 @@ import org.datavec.api.transform.sequence.split.SequenceSplitTimeSeparation;
 import org.datavec.api.transform.sequence.window.OverlappingTimeWindowFunction;
 import org.datavec.api.transform.transform.integer.ReplaceEmptyIntegerWithValueTransform;
 import org.datavec.api.transform.transform.integer.ReplaceInvalidWithIntegerTransform;
+import org.datavec.api.transform.transform.sequence.SequenceOffsetTransform;
 import org.datavec.api.transform.transform.string.MapAllStringsExceptListTransform;
 import org.datavec.api.transform.transform.string.ReplaceEmptyStringTransform;
 import org.datavec.api.transform.transform.string.StringListToCategoricalSetTransform;
@@ -46,10 +47,7 @@ import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
@@ -142,6 +140,8 @@ public class TestJsonYaml {
                                         .addConstantColumn("someIntColumn", ColumnType.Integer, new IntWritable(0))
                                         .integerToOneHot("someIntColumn", 0, 3)
                                         .filter(new SequenceLengthCondition(ConditionOp.LessThan, 1))
+                                        .addConstantColumn("testColSeq", ColumnType.Integer, new DoubleWritable(0))
+                                        .offsetSequence(Collections.singletonList("testColSeq"), 1, SequenceOffsetTransform.OperationType.InPlace)
                                         .build();
 
         String asJson = tp.toJson();
