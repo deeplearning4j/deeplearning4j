@@ -53,6 +53,13 @@ public interface Model {
      */
     void setListeners(IterationListener... listeners);
 
+    /**
+     * This method ADDS additional IterationListener to existing listeners
+     *
+     * @param listener
+     */
+    void addListener(IterationListener listener);
+
 
     /**
      * All models have a fit method

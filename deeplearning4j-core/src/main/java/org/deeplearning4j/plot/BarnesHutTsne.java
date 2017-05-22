@@ -272,6 +272,11 @@ public class BarnesHutTsne implements Model {
     }
 
     @Override
+    public void addListener(IterationListener listener) {
+        // no-op
+    }
+
+    @Override
     public Map<String, INDArray> paramTable() {
         return null;
     }

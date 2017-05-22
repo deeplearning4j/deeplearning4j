@@ -1431,6 +1431,23 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         }
     }
 
+    /**
+     * This method ADDS additional IterationListener to existing listeners
+     *
+     * @param listener
+     */
+    @Override
+    public void addListener(IterationListener listener) {
+        if (this.listeners == null) {
+            setListeners(listener);
+            return;
+        }
+
+        listeners.add(listener);
+        if (listener instanceof TrainingListener) {
+            this.trainingListeners.add((TrainingListener) listener);
+        }
+    }
 
     @Override
     public void setListeners(IterationListener... listeners) {

@@ -173,6 +173,16 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
         insideLayer.setListeners(listeners);
     }
 
+    /**
+     * This method ADDS additional IterationListener to existing listeners
+     *
+     * @param listener
+     */
+    @Override
+    public void addListener(IterationListener listener) {
+        insideLayer.addListener(listener);
+    }
+
     @Override
     public void fit() {
         if (!logFit) {
