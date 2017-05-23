@@ -70,13 +70,14 @@ public class StochasticGradientDescent extends BaseOptimizer {
             Gradient gradient = pair.getFirst();
 
             INDArray params = model.params();
+            //log.info("Thread {}; Applying own gradient. Mean number {}", Thread.currentThread().getId(), gradient.gradient().meanNumber().doubleValue());
             stepFunction.step(params, gradient.gradient());
 
             // applying external gradients if any
             if (processor != null)
                 while (!processor.getForeignGradients().isEmpty()) {
                     SharedGradient grad = processor.getForeignGradients().poll();
-                    log.info("Applying external gradient. Mean number: {}", grad.getGradient().meanNumber().doubleValue());
+                    //log.info("Thread {}; Applying external gradient. Mean number: {}", Thread.currentThread().getId(), grad.getGradient().meanNumber().doubleValue());
                     stepFunction.step(params, grad.getGradient());
                 }
 

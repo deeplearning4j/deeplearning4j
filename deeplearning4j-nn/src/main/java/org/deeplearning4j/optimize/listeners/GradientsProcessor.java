@@ -68,15 +68,7 @@ public class GradientsProcessor implements TrainingListener {
     @Override
     public void onBackwardPass(Model model) {
         // Beware: this code block operates out of workspaces
-        Gradient gradient = model.gradient();
-        INDArray array = gradient.gradient().dup();
-        //array.assign(0.0);
 
-        log.info("Gradients length: {}; Mean number: {}", array.lengthLong(), array.meanNumber().doubleValue());
-
-        // TODO: we want to push make gradient copy, and push it to host memory here
-
-        ownGradients.add(new SharedGradient(id, array.detach()));
     }
 
     @Override
@@ -92,5 +84,14 @@ public class GradientsProcessor implements TrainingListener {
     @Override
     public void iterationDone(Model model, int iteration) {
         // no-op
+        Gradient gradient = model.gradient();
+        INDArray array = gradient.gradient().dup();
+        //array.assign(0.0);
+
+        //log.info("Gradients length: {}; Mean number: {}", array.lengthLong(), array.meanNumber().doubleValue());
+
+        // TODO: we want to push make gradient copy, and push it to host memory here
+
+        ownGradients.add(new SharedGradient(id, array.detach()));
     }
 }
