@@ -33,7 +33,7 @@ layout: default
 
 <section>
   <h2 id="configuring">MNISTの設定例</h2>
-  <p>弊社にてMNISTのチュートリアルをMavenでパッケージ化したので、コードを記述する必要はありません。まずはIntelliJを開いてください。（IntelliJをダウンロードするには、弊社の<a href="quickstart">Quickstart…</a>をお読みください。）</p>
+  <p>弊社にてMNISTのチュートリアルをMavenでパッケージ化したので、コードを記述する必要はありません。まずはIntelliJを開いてください。（IntelliJをダウンロードするには、弊社の<a href="quickstart">Quickstart…</a>をお読みください。）</p>
   <p>フォルダ<code>dl4j-examples</code>を開いてください。ディレクトリの<kbd>src</kbd> → <kbd>main</kbd> → <kbd>java</kbd> → <kbd>feedforward</kbd> → <kbd>mnist</kbd>へと進み、ファイルの<code>MLPMnistSingleLayerExample.java</code>を開いてください。</p>
   <p><img src="/img/mlp_mnist_single_layer_example_setup.png"></p>
   <p>このファイルでは、ニューラルネットワークを設定し、モデルのトレーニングを行い、結果を評価します。このコードをチュートリアルと一緒に確認すると役に立ちます。</p>
@@ -89,7 +89,7 @@ layout: default
   <p>弊社では、L2正規化を使用することにより、個々の重みが全体の結果に大きな影響を及ぼさないよう回避しています。</p>
   <h5>.list()</h5>
   <p>ネットワーク内の層数を指定します。この関数は、設定をn回複製し、層に基づいた設定を構築します。</p>
-  <p>上記の説明で分かりにくいことがあれば、先に挙げた<a href="https://www.coursera.org/learn/machine-learning" target="_blank">Andrew Ng's Machine Learning course（Andrew Ng氏の機械学習コース）</a>をご参照になることをお勧めします。</p>
+  <p>上記の説明で分かりにくいことがあれば、先に挙げた<a href="https://www.coursera.org/learn/machine-learning" target="_blank">Andrew Ng's Machine Learning course（Andrew Ng氏の機械学習コース）</a>をご参照になることをお勧めします。</p>
   <h3>層の構築</h3>
   <p>ここでは各ハイパーパラメタ―の背景（活性化やweightInit）については取り上げませんが、それらの役割について簡単に触れておきましょう。ただし、これらがなぜ重要なのかを知りたい方は、<a href="http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf" target="_blank">Xavier Glorot and Yoshua Bengioによる論文</a>をお読みください。
   <img src="/img/onelayer_labeled.png"><br>
