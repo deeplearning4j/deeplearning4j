@@ -11,8 +11,22 @@ import java.util.Map;
  * @author Justin Long (crockpotveggies)
  */
 public class ModelSelector {
-    public static Map<ZooType, InstantiableModel> select(ZooType zooType, int numLabels, int seed, int iterations) {
-        Map<ZooType, InstantiableModel> netmap = new HashMap<>();
+
+    public static Map<ZooType, ZooModel> select(ZooType zooType, int numLabels) {
+        return select(zooType, numLabels, 123, 1);
+    }
+
+    /**
+     * Select multiple models from the zoo according to type.
+     *
+     * @param zooType
+     * @param numLabels
+     * @param seed
+     * @param iterations
+     * @return A hashmap of zoo types and models.
+     */
+    public static Map<ZooType, ZooModel> select(ZooType zooType, int numLabels, int seed, int iterations) {
+        Map<ZooType, ZooModel> netmap = new HashMap<>();
 
         switch (zooType) {
             case ALL:
