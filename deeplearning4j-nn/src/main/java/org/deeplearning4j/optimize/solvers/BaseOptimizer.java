@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.*;
+import org.deeplearning4j.optimize.listeners.GradientsProcessor;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
 import org.deeplearning4j.optimize.terminations.EpsTermination;
@@ -40,6 +41,7 @@ import org.deeplearning4j.optimize.terminations.ZeroDirection;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +72,9 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public final static String PARAMS_KEY = "params";
     public final static String SEARCH_DIR = "searchDirection";
     protected Map<String, Object> searchState = new ConcurrentHashMap<>();
+
+    // FIXME: something better would fit better here
+    protected GradientsProcessor processor;
 
     /**
      *
@@ -103,7 +108,6 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         lineMaximizer = new BackTrackLineSearch(model, this.stepFunction, this);
         lineMaximizer.setStepMax(stepMax);
         lineMaximizer.setMaxIterations(conf.getMaxNumLineSearchIterations());
-
     }
 
 
@@ -160,9 +164,11 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         model.computeGradientAndScore();
 
         if (iterationListeners != null && iterationListeners.size() > 0) {
-            for (IterationListener l : iterationListeners) {
-                if (l instanceof TrainingListener) {
-                    ((TrainingListener) l).onGradientCalculation(model);
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                for (IterationListener l : iterationListeners) {
+                    if (l instanceof TrainingListener) {
+                        ((TrainingListener) l).onGradientCalculation(model);
+                    }
                 }
             }
         }

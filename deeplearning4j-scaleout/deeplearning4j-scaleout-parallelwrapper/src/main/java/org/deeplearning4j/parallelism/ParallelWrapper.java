@@ -1,6 +1,5 @@
 package org.deeplearning4j.parallelism;
 
-import com.google.common.base.Preconditions;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +17,9 @@ import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.parallelism.factory.DefaultTrainerContext;
 import org.deeplearning4j.parallelism.factory.TrainerContext;
+import org.deeplearning4j.optimize.listeners.SharedGradient;
+import org.deeplearning4j.parallelism.trainer.CommunicativeTrainer;
+import org.deeplearning4j.parallelism.trainer.SymmetricTrainer;
 import org.deeplearning4j.parallelism.trainer.Trainer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -346,13 +348,18 @@ public class ParallelWrapper implements AutoCloseable {
      *
      * @param gradients
      */
-    public void broadcastGradients(INDArray gradients) {
+    public void broadcastGradients(SharedGradient gradients) {
         // TODO: add implementation
         /*
             Basically all we want here is:
             1) Ensure length matches parameters length
             2) Ensure data is acessible from all devices somehow (i.e. it's in HOST-only mode
          */
+        if (zoo[0] instanceof CommunicativeTrainer) {
+            for (int i = 0; i < zoo.length; i++) {
+                ((CommunicativeTrainer) zoo[i]).enqueueGradient(gradients);
+            }
+        }
     }
 
 
@@ -362,6 +369,7 @@ public class ParallelWrapper implements AutoCloseable {
      * @param source
      */
     public synchronized void fit(@NonNull DataSetIterator source) {
+        log.info("Using workspaceMode {} for training", workspaceMode.name());
         stopFit.set(false);
         createZooIfNeccessary(false);
 
@@ -377,16 +385,12 @@ public class ParallelWrapper implements AutoCloseable {
                     log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
                                     Nd4j.getAffinityManager().getNumberOfDevices());
 
-               // if (mq == null)
-               //     mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL).setType(MagicQueue.Type.DS)
-               //         .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
-
-
                 iterator = new AsyncDataSetIterator(source, prefetchSize, new LinkedBlockingQueue<>(prefetchSize * workers), true, new InterleavedDataSetCallback(prefetchSize * 2));
 
             } else
                 iterator = new AsyncDataSetIterator(source, prefetchSize);
         }
+
 
         List<Long> nanos = new ArrayList<>();
         AtomicInteger locker = new AtomicInteger(0);
@@ -454,11 +458,19 @@ public class ParallelWrapper implements AutoCloseable {
             time1 = System.currentTimeMillis();
         }
 
+        // FIXME: we need to ensure all models are synchronized back to HOST
+        // ensure all threads stopped processing
+        for (int cnt = 0; cnt < workers; cnt++) {
+            try {
+                zoo[cnt].waitTillRunning();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         if (prefetchSize > 0 && source.asyncSupported())
             ((AsyncDataSetIterator) iterator).shutdown();
 
-
-        // FIXME: we need to ensure all models are synchronized back to HOST
         // now we transfer models back from workers
         List<Model> models = new ArrayList<>();
         for (int i = 0; i < zoo.length; i++) {

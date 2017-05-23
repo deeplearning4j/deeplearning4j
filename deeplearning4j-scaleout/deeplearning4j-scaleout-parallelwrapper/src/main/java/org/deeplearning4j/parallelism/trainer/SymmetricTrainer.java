@@ -1,14 +1,13 @@
 package org.deeplearning4j.parallelism.trainer;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.optimize.listeners.GradientsProcessor;
+import org.deeplearning4j.optimize.listeners.SharedGradient;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -29,8 +28,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class SymmetricTrainer extends DefaultTrainer {
-    @Builder.Default protected GradientsExtractor extractor = new GradientsExtractor();
+public class SymmetricTrainer extends DefaultTrainer implements CommunicativeTrainer {
+    @Builder.Default protected GradientsProcessor extractor = new GradientsProcessor();
 
     public SymmetricTrainer(@NonNull Model originalModel, int threadIdx, @NonNull WorkspaceMode mode, @NonNull ParallelWrapper wrapper) {
         super();
@@ -39,6 +38,12 @@ public class SymmetricTrainer extends DefaultTrainer {
         this.workspaceMode = mode;
         this.parallelWrapper = wrapper;
     }
+
+    public void enqueueGradient(SharedGradient gradient) {
+        //log.info("Gradient attached: {}", gradient.getGradient().isAttached());
+        extractor.enqueueGradient(gradient);
+    }
+
 
     @Override
     public boolean averagingRequired() {
@@ -52,10 +57,10 @@ public class SymmetricTrainer extends DefaultTrainer {
         // gradients should be extracted here
         // and broadcasted to all trainers
 
-        while (!extractor.gradients.isEmpty()) {
-            INDArray grads = extractor.gradients.poll();
+        while (!extractor.getOwnGradients().isEmpty()) {
+            // TODO: ensure gradients array is detached!!!
 
-            parallelWrapper.broadcastGradients(grads);
+            parallelWrapper.broadcastGradients(extractor.getOwnGradients().poll());
         }
     }
 
@@ -71,74 +76,12 @@ public class SymmetricTrainer extends DefaultTrainer {
         super.postInit();
 
         if (extractor == null)
-            extractor = new GradientsExtractor();
+            extractor = new GradientsProcessor();
 
         replicatedModel.addListener(extractor);
     }
 
 
-    /**
-     * This class is suited for gradients extraction out of the model
-     *
-     * PLEASE NOTE: It operates on gradients as a whole, not partial gradients for layers
-     */
-    protected static class GradientsExtractor implements TrainingListener {
-        protected Queue<INDArray> gradients = new ConcurrentLinkedQueue<>();
 
-        @Override
-        public void onEpochStart(Model model) {
-            // no-op
-        }
 
-        @Override
-        public void onEpochEnd(Model model) {
-            // no-op
-        }
-
-        @Override
-        public void onForwardPass(Model model, List<INDArray> activations) {
-            // no-op
-        }
-
-        @Override
-        public void onForwardPass(Model model, Map<String, INDArray> activations) {
-            // no-op
-        }
-
-        @Override
-        public void onGradientCalculation(Model model) {
-            // no-op
-        }
-
-        /**
-         * In this method we extract gradients from the model
-         *
-         * @param model Model
-         */
-        @Override
-        public void onBackwardPass(Model model) {
-            // Beware: this code block operates out of workspaces
-            Gradient gradient = model.gradient();
-            INDArray array = gradient.gradient();
-
-            // TODO: we want to push make gradient copy, and push it to host memory here
-
-            gradients.add(array);
-        }
-
-        @Override
-        public boolean invoked() {
-            return false;
-        }
-
-        @Override
-        public void invoke() {
-            // no-op
-        }
-
-        @Override
-        public void iterationDone(Model model, int iteration) {
-            // no-op
-        }
-    }
 }

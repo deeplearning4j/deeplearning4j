@@ -1163,16 +1163,20 @@ public class ComputationGraph implements Serializable, Model {
         if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
             Map<String, INDArray> activations = rnnActivateUsingStoredState(inputs, true, true);
             if (trainingListeners.size() > 0) {
-                for (TrainingListener tl : trainingListeners) {
-                    tl.onForwardPass(this, activations);
+                try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    for (TrainingListener tl : trainingListeners) {
+                        tl.onForwardPass(this, activations);
+                    }
                 }
             }
             calcBackpropGradients(true);
         } else {
             Map<String, INDArray> activations = feedForward(true, true, false, false);
             if (trainingListeners.size() > 0) {
-                for (TrainingListener tl : trainingListeners) {
-                    tl.onForwardPass(this, activations);
+                try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    for (TrainingListener tl : trainingListeners) {
+                        tl.onForwardPass(this, activations);
+                    }
                 }
             }
             calcBackpropGradients(false);
