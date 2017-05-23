@@ -12,7 +12,7 @@ layout: default
 ## 目次
 
 * <a href="#normalization">データ正規化</a>
-* <a href="#intro">ライセンス</a>
+* <a href="#intro">重みの初期化</a>
 * <a href="#epochs">エポック数とイテレーション数</a>
 * <a href="#lrate">学習率</a>
 * <a href="#activation">活性化関数</a>
