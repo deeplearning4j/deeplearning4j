@@ -1,13 +1,13 @@
-----
+---
 title:「ディープラーニングの比較シート：Deeplearning4j、Torch、Theano,TensorFlow、Caffe、Paddle、MxNet、Keras、CNTK
 layout:default
 ---
 
 # フレームワークの比較：Deeplearning4j、Torch、Theano, TensorFlow、Caffe、Paddle、MxNet、Keras、CNTK
 
-Deeplearning4jは、API言語、その意図、統合の観点から他のフレームワークとは区別されます。DL4Jは、JVMベースで、業界向けで商業用サポートが提供されている**分散型ディープラーニングフレームワーク**です。大量なデータが関連した問題を合理的な時間量で解決します。任意の数の[GPU](./gpu)や[CPUs](./native)を使用してKafka、Hadoop、[Spark](./spark)と統合します。また、もし何かがうまく行かなかった場合に[電話のお問合せ先](http://www.skymind.io/contact)がございます。 
+Deeplearning4jは、そのAPI言語、意図すること、統合に関する点から他のフレームワークとは異なります。DL4Jは、JVMをベースとしており、業界向けの商用サポートが提供されている**分散型ディープラーニングフレームワーク**です。大量なデータに関連した問題を合理的な時間数で解決します。任意の数の[GPU](./gpu)や[CPU](./native)を使用してKafka、Hadoop、[Spark](./spark)と統合します。また、もし何かがうまく行かなかった場合には、[電話でお問い合せ](http://www.skymind.io/contact)いただけます。 
 
-DL4Jは、ポータブルで、AWS、Azure、Googleクラウドなど特定のクラウドサービス向けに最適化されているわけではなく、プラットフォームに関してはニュートラルです。速度については、複雑な画像処理タスクだとその[パフォーマンスはCaffeに匹敵](https://github.com/deeplearning4j/dl4j-benchmark)し、TensorflowやTorchよりも優れています。Deeplearning4jのベンチマーキングについての詳細情報は、こちらの[benchmarks page（ベンチマークのページ）](https://deeplearning4j.org/benchmark)をお読みください。このベンチマークは、JVMのヒープ領域、ガベージコレクションアルゴリズム、メモリ管理、DL4JのETLパイプラインの最適化に関連しています。Deeplearning4jはJava、[Scala](https://github.com/deeplearning4j/scalnet)、[Kerasを使用しているPython API](./keras)を備えています。
+DL4Jは、AWS、Azure、Googleクラウドなどある1つのクラウドサービス向けに最適化されているというより、ポータブルでプラットフォームに関しては中立的です。速度については、複雑な画像処理タスクだとその[性能はCaffeと同レベル](https://github.com/deeplearning4j/dl4j-benchmark)であり、TensorflowやTorchよりも優れています。Deeplearning4jのベンチマーキングについての詳細情報は、こちらの[benchmarks page（ベンチマークのページ）](https://deeplearning4j.org/benchmark)をお読みください。このベンチマークは、JVMのヒープ領域、ガベージコレクションアルゴリズム、メモリ管理、DL4JのETLパイプラインを調節して性能を最適化するのに使用します。Deeplearning4jはJava、[Scala](https://github.com/deeplearning4j/scalnet)、[Kerasを使用しているPython API](./keras)を使用しています。
 
 <p align="center">
 <a href="quickstart" type="button" class="btn btn-lg btn-success" onClick="ga('send', 'event', ‘quickstart', 'click');">DEEPLEARNING4Jの使用を開始</a>
@@ -47,17 +47,17 @@ JVMについて
 
 ### <a name="torch">Torch及びPytorch</a>
 
-[**Torch**](http://torch.ch/)は、機械学習アルゴリズムをサポートするLuaで書かれたAPIを持つ計算フレームワークです。そのいくつかのバージョンはFacebookやTwitterなどの大手のIT企業でも使用されており、それぞれ社内チームを設けてディープラーニングプラットフォームのカスタマイズに従事しています。Luaはマルチパラダイムのスクリプト言語で、1990年代初めにブラジルで開発されました。 
+[**Torch**](http://torch.ch/)は、Luaで書かれたAPIを持つ計算フレームワークで、機械学習アルゴリズムをサポートします。そのいくつかのバージョンはFacebookやTwitterなどの大手のIT企業でも使用されており、それぞれ社内チームを設けてディープラーニングプラットフォームのカスタマイズに従事しています。Luaはマルチパラダイムのスクリプト言語で、1990年代初めにブラジルで開発されました。 
 
-Torch7はパワフルですが、Pythonを基盤とした学術的コミュニティーやJAVAを共通語とする企業ソフトエンジニアが[幅広くアクセスできることを目的として作成されたものではありませんでした](https://news.ycombinator.com/item?id=7929216)。Deeplearning4jがJavaで書かれた理由は、主に業界向けであるということ、そして使いやすくするためです。利便性という要素が欠けているがためにディープラーニングの導入が広く行われないのだと私たちは考えています。我々はHadoopやSparkなどのオープンソースの分散型ランタイムによって拡張性を自動化する必要があると考えています。そして、商業用にサポートされたオープンソースのフレームワークを使うことが作業可能なツールを確保し、コミュニティーを築き上げるための適切な解決策だと考えています。
+Torch7はパワフルですが、Pythonを基盤とした学術的コミュニティーやJAVAを共通語とする企業ソフトエンジニアが[幅広くアクセスできることを目的として作成されたものではありませんでした](https://news.ycombinator.com/item?id=7929216)。Deeplearning4jがJavaで書かれた理由は、主に業界向けに適した言語を使用したいため、そして使いやすくするためです。利便性に欠けるために、ディープラーニングがなかなか普及しないのだと思われるのです。我々はHadoopやSparkなどのオープンソースの分散型ランタイムによって拡張性を自動化する必要があると考えています。そして、商業用にサポートされたオープンソースのフレームワークを使うことが、作業可能なツールを確保し、コミュニティーを築き上げるための適切な解決策だと考えています。
 
-[Pytorch](https://github.com/pytorch/pytorch)として知られるTorchのPython APIは2017年1月にオープンソースになりました。PyTorchは様々な長さの入出力を処理できる動的計算グラフを提供しています。これは例えばRNNを使用するときに役に立ちます。動的計算グラフをサポートしている他のフレームワークに、CMUのDyNet及びPFNのChainerがあります。 
+[Pytorch](https://github.com/pytorch/pytorch)として知られるTorchのPython APIは2017年1月にオープンソースになりました。PyTorchは様々な長さの入出力データを処理できる動的計算グラフを提供しています。これは例えば再帰型ニューラルネットワークを使用するときに役に立ちます。動的計算グラフをサポートしている他のフレームワークに、CMUのDyNet及びPFNのChainerがあります。 
 
 長所と短所：
 
 * (+) 簡単に組み合わせることのできるモジュールのピースが多くある。
 * (+) 自分の層のタイプを簡単に入力し、GPU上で実行できる。
-* (+) Lua(^.^)（ライブラリのコードのほとんどがLuaにあり、読みやすい。）
+* (+) Lua (^.^)（ライブラリのコードのほとんどがLuaにあり、読みやすい。）
 * (+) 前もってトレーニングされたモデルが多くある。
 * (+) PyTorch
 * (-) Lua
@@ -69,60 +69,60 @@ Torch7はパワフルですが、Pythonを基盤とした学術的コミュニ�
 
 ### <a name="theano">Theanoとエコシステム</a>
 
-ディープラーニングの分野における研究者たちは、ディープラーニングのフレームワークの祖父であり、[Python](http://darkf.github.io/posts/problems-i-have-with-python.html)によって書かれた[**Theano**](http://deeplearning.net/software/theano/)を使っています。TheanoはNumpyのように多次元配列を処理するライブラリです。他のライブラリと使用し、データの探索に適しており、研究を目的としています。 
+ディープラーニングの分野における研究者たちは、ディープラーニングのフレームワークの祖父であり、[Python](http://darkf.github.io/posts/problems-i-have-with-python.html)によって書かれた[**Theano**](http://deeplearning.net/software/theano/)を使っています。TheanoはNumpyのように多次元配列を処理するライブラリです。他のライブラリと使用し、データ探索に適しており、研究を目的としています。 
 
-数多くのオープンソースのディープライブラリはTheanoの最上部に構築されています。これには[Keras](https://github.com/fchollet/keras)、[Lasagne](https://lasagne.readthedocs.org/en/latest/)、[Blocks](https://github.com/mila-udem/blocks)が含まれます。これらのライブラリは、使い方が簡単なAPIを直感的でないことのあるTheanoのインターフェイスの最上部に配置されることを目的としています。（2016年3月以降、Theano関連のライブラリである[Pylearn2は使用不可となっているようです](https://github.com/lisa-lab/pylearn2))。
+数多くのオープンソースのディープライブラリはTheanoの最上部に構築されています。これには[Keras](https://github.com/fchollet/keras)、[Lasagne](https://lasagne.readthedocs.org/en/latest/)、[Blocks](https://github.com/mila-udem/blocks)が含まれます。これらのライブラリは、常に直感的であるわけではないTheanoのインターフェイスの最上部に、使い方が簡単なAPIを配置させることを目的としています。（2016年3月以降、Theano関連のライブラリである[Pylearn2は使用不可となっているようです](https://github.com/lisa-lab/pylearn2))。
 
-これとは対照的に、Deeplearning4jはディープラーニングを生産環境へともたらし、JavaやScalaのようなJVM言語にソリューションを作成します。並列GPUやCPUで拡張性の高い方法でできるだけ多くのknobsを自動化し、必要な場合はHadoop and [Spark](./spark.html)と統合することを目的としています。
+これとは対照的に、Deeplearning4jはディープラーニングを生産的環境へともたらし、JavaやScalaのようなJVM言語に解決策をもたらします。並列GPUやCPUにおいて、拡張性の高い方法でできるだけ多くのknobを自動化し、必要な場合はHadoop and [Spark](./spark.html)と統合することを目的としています。
 
 長所と短所：
 
 * (+) Python + Numpy
-* (+) 計算グラフは抽象
-* (+) RNNsは計算グラフに良く適合する。
+* (+) 計算グラフは見やすく抽象化されている。
+* (+) 再帰型ニューラルネットワークは計算グラフに良く適合する。
 * (-) 生のTheanoは幾分レベルが低い。
 * (+) 高レベルのラッパー（Keras、Lasagne）により、手間が省ける。
 * (-) エラーメッセージが役に立たないことがある。
 * (-) 大きなモデルの場合、コンパイルの時間が長くなることがある。
 * (-) Torchよりも「分厚い」
 * (-) 事前トレーニングを受けたモデルにへのサポートが不十分
-* (-) AWSでのバグが多い
-* (-) GPUが単一
+* (-) AWSでのバグが多い。
+* (-) 単一GPU
 
 ### <a name="tensorflow">TensorFlow</a>
 
-* GoogleはTheanoと取り換えるためにTensorFlowを作成しました。これら二つのライブラリは実際には非常に類似しています。Ian Goodfellow氏などのTheanoの作成者のうち何人かは、OpenAI社へと移る前にGoogle社にてTensorflowをも作成しました。 
-* 現在のところ、**TensorFlow**は、いわゆる「インライン」の行列演算に対応しておらず、その上で演算を実行するためには行列をコピーしなければなりません。非常に数の多い行列をコピーするのはあらゆる意味でコストがかかります。TensorFlowだと、最先端のディープラーニングツールの4倍の時間が掛かります。Googleはこの問題に取り組んでいるところとのことです。 
-* ほとんどのディープラーニングのフレームワークのように、TensorFlowはPython APIによって、C/C++エンジンに書かれており、これにより、より速く動作します。Java APIには実験的サポートが提供されていますが、現在それは安定したものとは考えられておらず、Java及びScalaのコミュニティーにとっては解決策であるとは考えられていません。 
+* GoogleはTheanoの代替としてTensorFlowを作成しました。これら二つのライブラリは実際には非常に類似しています。Ian Goodfellow氏などのTheanoの作成者のうち何人かは、OpenAI社へと移る前にGoogle社にてTensorflowも作成しました。 
+* 現在のところ、**TensorFlow**は、いわゆる「インライン」の行列演算に対応しておらず、その上演算を実行するためには行列をコピーしなければなりません。非常に数の多い行列をコピーするのはあらゆる意味でコストがかかります。TensorFlowだと、最先端のディープラーニングツールの4倍の時間が掛かります。Googleはこの問題に取り組んでいる最中とのことです。 
+* ほとんどのディープラーニングのフレームワークのように、TensorFlowはC/C++エンジンの上にあるPython APIによって書かれているため、より速く動作します。Java APIには実験的サポートが提供されていますが、現在それは安定したものとは考えられておらず、Java及びScalaのコミュニティーにとっては解決策であるとは考えられていません。 
 * TensorFlowは、CNTKやMxNetなど[他のフレームワークと比べて動作は随分遅めです](https://arxiv.org/pdf/1608.07249v7.pdf)。 
 * TensorFlowは、ディープラーニング以外のことができます。TensorFlowは、強化学習やその他のアルゴリズムに対応するツールを備えています。
-* Googleも自認しているその目標とは、人員を増やし、研究者のコードを共有可能なものとし、ソフトウェアエンジニアのディープラーニングへのアプローチ方法を標準化し、TensorFlowが最適化されたGoogleのクラウドサービスへの人気を高めることです。 
-* TensorFlowは商業用サポートを受けていません。Googleがオープンソースの企業ソフトウェアをサポートするビジネスを行うという可能性は低いでしょう。これにより研究者に新しいツールが提供されているのです。 
-* Theanoのように、TensforFlowは計算グラフ（例：行列演算の一連であるz = sigmoid(x)、xやzは行列）を生成し、自動識別を行います。自動識別は重要です。これにより、新しいニューラルネットワークの配列で実験しているたびにバックプロパゲーションの新しいバリエーションをハンドコーディングする必要がなくなるからです。Googleのエコシステムでは、Google Brainが最も難しい仕事に計算グラフを使用しますが、Googleはこれらのツールオープンソース化していません。TensorFlowはGoogleの社内デイープラーニング・ソリューションの半分を占めています。 
-* 企業的観点から言うと、企業が考える必要のあることは、これらのツールをGoogleから求めたいかということです。 
-* Tensorflowの演算すべてがNumpyでのようには動作しないのでご注意ください。 
+* Googleも自認しているその目標とは、人員を増やし、研究者のコードを共有可能なものとし、ソフトウェアエンジニアのディープラーニングへのアプローチ方法を標準化し、TensorFlowが最適化されたGoogleのクラウドサービスの人気を高めることです。 
+* TensorFlowは商用サポートを受けていません。Googleがオープンソースの企業ソフトウェアをサポートするビジネスを行うという可能性は低いでしょう。研究者に新しいツールを提供するものなのです。 
+* Theanoのように、TensforFlowは計算グラフ（例：行列演算の一連であるz = sigmoid(x)、xやzは行列）を生成し、自動識別を行います。自動識別は重要です。これにより、新しいニューラルネットワークの配列で実験しているたびにバックプロパゲーションの新しいバリエーションをハンドコーディングする必要がなくなるからです。Googleのエコシステムでは、計算グラフはGoogle Brainが最も難しい仕事を処理するのにも使用しますが、Googleはこれらのツールをオープンソース化していません。TensorFlowはGoogleの社内デイープラーニング・ソリューションの半分を占めています。 
+* ビジネスの観点から言うと、企業が考えるべきことは、これらのツールの提供をGoogleに求めたいかということです。 
+* Tensorflowの演算すべてがNumpyと同じようには動作しないのでご注意ください。 
 
 長所と短所：
 
 * (+) Python + Numpy
-* (+) Theanoのような計算グラフ
+* (+) Theanoと同じような計算グラフの抽象化
 * (+) Theanoよりもコンパイル時間が短い。
-* (+) 視覚化にTensorBoardを使用する。
+* (+) TensorBoardを使用して視覚化する。
 * (+) データとモデルの並列処理
 * (-) 他のフレームワークより遅い。
 * (-) Torchよりも「ぶ厚い」。魔法のようなことがもっとある。
 * (-) 事前トレーニングされたモデルがあまりない。
 * (-) 計算グラフは単なるPythonなため、遅い。
-* (-) 商業用サポート無し
+* (-) 商用サポート無し
 * (-) 新しいトレーニングのバッチがあるごとに読み込みをするためにPythonにドロップアウトする。
 * (-) ツールにはなりにくい。
 * (-) 大規模なソフトウェアプロジェクトで動的型付けにエラーが発生しやくすい。
 
 ### <a name="caffe">Caffe</a>
 
-[**Caffe**](http://caffe.berkeleyvision.org/)は有名で、かつ広く一般に使用されているマシンビジョンのライブラリで、素早い畳み込みネットワークのMatlabによる実装をC及びC++に移植したものです（速度とこのテクニカル面での負担とのトレードオフを考慮したい方は、あるチップから別のチップにC++を移植することについてのSteve Yegge氏の見解を[こちら](https://sites.google.com/site/steveyegge2/google-at-delphi)でお読みいただけます）。Caffeは、テキスト、音声、時系列データなど他のディープラーニングのアプリケーションを対象としたものではありません。これまでご紹介してまいりました他のフレームワークと同様に、CaffeはそのAPIが目的でPythonを選択しました。 
+[**Caffe**](http://caffe.berkeleyvision.org/)は有名で、広く一般に使用されているマシンビジョンのライブラリで、Matlabのの実装した素早い畳み込みネットワークをC及びC++で移植したものです（速度とテクニカル面の負担のトレードオフを考慮したい方は、あるチップから別のチップにC++を移植することについてのSteve Yegge氏の見解を[こちら](https://sites.google.com/site/steveyegge2/google-at-delphi)でお読みいただけます）。Caffeは、テキスト、音声、時系列データなど他のディープラーニングのアプリケーションを対象としたものではありません。これまでご紹介してまいりました他のフレームワークと同様に、CaffeはそのAPIが目的でPythonを選択しました。 
 
-Deeplearning4jとCaffeはどちらも畳み込みネットワークを使用して、最先端の技術で画像分類を行います。Caffeとは対照的に、Deeplearning4jはGPUの並列処理*サポート*を提供しているため、任意数のチップに使用できるだけでなく、数多くの特徴に対応できるため、ディープラーニングがよりスムースに複数のGPUクラスタを使って並列処理できます。論文でもよく引用されているように、CaffeはそのModel Zooサイトがホストする事前トレーニングされたモデルのソースとして主に使用されます。Deeplearning4jは、CaffeモデルをSparkにインポートするために[構文解析ツールを構築しています](https://deeplearning4j.org/compare-dl4j-torch7-pylearn#caffe)。
+Deeplearning4jとCaffeはどちらも畳み込みネットワークを使用して、最先端の技術で画像分類を行います。Caffeとは対照的に、Deeplearning4jはGPUの並列処理*サポート*を提供しているため、任意数のチップに使用できるだけでなく、数多くの特徴に対応できるため、ディープラーニングがよりスムースに複数のGPUクラスタを使って並列処理できます。論文でよく引用されていますが、CaffeはそのModel Zooサイトがホストする事前トレーニングされたモデルのソースとして主に使用されます。Deeplearning4jは、CaffeモデルをSparkにインポートするために[構文解析ツールを構築しています](https://deeplearning4j.org/compare-dl4j-torch7-pylearn#caffe)。
 
 長所と短所：
 
@@ -139,11 +139,11 @@ Deeplearning4jとCaffeはどちらも畳み込みネットワークを使用し�
 
 ### <a name="cntk">CNTK</a>
 
-[**CNTK**](https://github.com/Microsoft/CNTK)とは、マイクロソフトによるオープンソースのディープラーニングフレームワークです。CNTKとは「Computational Network Toolkit（計算ネットワークのツールキット）」の略語です。そのライブラリにはフィードフォワードDNN、畳み込みネットワーク、再帰型ニューラルネットワークネットが含まれています。そして、C++コードでのPython APIを提供しています。CNTKは[permissive license（許容的ライセンス）](https://github.com/Microsoft/CNTK/blob/master/LICENSE.md)を取得していると誤解されがちですが、ASF 2.0、BSD、MIT.など従来のどのライセンスも採用していません。このライセンスはCNTKの1ビットSGD（確率的勾配降下法）といって、分散型トレーニングが簡単になる方法には適用されません。商業用には適用されないライセンスだからです。 
+[**CNTK**](https://github.com/Microsoft/CNTK)とは、マイクロソフトによるオープンソースのディープラーニングフレームワークで、CNTKとは「Computational Network Toolkit（計算ネットワークのツールキット）」の略語です。そのライブラリにはフィードフォワードディープニューラルネットワーク、畳み込みネットワーク、再帰型ニューラルネットワークネットが含まれています。そして、C++コードでPython APIを提供しています。CNTKは[permiLICENSEssive license（許容的ライセンス）](https://github.com/Microsoft/CNTK/blob/master/.md)を取得していると誤解されがちですが、ASF 2.0、BSD、MIT.など従来のどのライセンスも採用していません。許容的ライセンスはCNTKの1ビットSGD（確率的勾配降下法）といって、分散型トレーニングが簡単になる方法には適用されません。商業用には適用されないライセンスだからです。 
 
 ### <a name="chainer">Chainer</a>
 
-Chainerとはオープンソースのニューラルネットワークフレームワークで、Python APIを備えています。中心となる開発チームは[Preferred Networks](https://www.crunchbase.com/organization/preferred-networks#/entity)という東京を拠点とする機械学習のスタートアップで活動しており、多くの東京大学のエンジニアが携わっています。CMUのDyNetやFacebookのPyTorchが登場するまではChainerが動的計算グラフの主要なニューラルネットワークフレームワーク、または自然言語処理作業には人気の高い機能である、様々な長さの入力が可能なネットワークでした。独自の[ベンチマーク](http://chainer.org/general/2017/02/08/Performance-of-Distributed-Deep-Learning-Using-ChainerMN.html)を使い、Chainerは他のPython向けフレームワークよりも素早く、MxNetとCNTKを含めた最も遅いテストグループであるTensorFlowを備えています。 
+Chainerとはオープンソースのニューラルネットワークフレームワークで、Python APIを備えています。中心となる開発チームは[Preferred Networks](https://www.crunchbase.com/organization/preferred-networks#/entity)という東京を拠点とする機械学習のスタートアップで活動しており、多くの東京大学のエンジニアが携わっています。CMUのDyNetやFacebookのPyTorchが登場するまではChainerが動的計算グラフの主要なニューラルネットワークフレームワークであり、様々な長さの入力が可能なネットワークであったため、自然言語処理作業には人気の高い機能です。独自の[ベンチマーク](http://chainer.org/general/2017/02/08/Performance-of-Distributed-Deep-Learning-Using-ChainerMN.html)を使い、Chainerは他のPython向けフレームワークよりも素早く、MxNetとCNTKを含めた最も遅いテストグループであるTensorFlowを備えています。 
 
 ### <a name="dsstne">DSSTNE</a>
 
@@ -155,7 +155,7 @@ Amazonの[DSSTNE](https://github.com/amznlabs/amazon-dsstne)（Deep Scalable Spa
 
 ### <a name="dynet">DyNet</a>
 
-[DyNet](https://github.com/clab/dynet)（[Dynamic Neural Network Toolkit](https://arxiv.org/abs/1701.03980)）はカーネギーメロン大学が開発し、元々CNNと呼ばれていました。その注目すべき機能は、動的計算グラフであり、様々な長さの入力が可能なため自然言語処理作業には好適です。PyTorch及びChainerも同じ機能を備えています。 
+[DyNet](https://github.com/clab/dynet)（[Dynamic Neural Network Toolkit](https://arxiv.org/abs/1701.03980)）はカーネギーメロン大学が開発し、元々CNNと呼ばれていました。その注目すべき機能は、動的計算グラフであり、様々な長さの入力が可能なため自然言語処理作業に適しています。PyTorch及びChainerも同じ機能を備えています。 
 
 * (+) 動的計算グラフ
 * (-) ユーザコミュニティが小規模
@@ -189,54 +189,54 @@ Amazonの[DSSTNE](https://github.com/amznlabs/amazon-dsstne)（Deep Scalable Spa
 
 ### <a name="speed">速度</a>
 
-Deeplearning4jの基盤であるND4Jで実行される線形代数計算は[Numpyよりも最低2倍の速度](http://nd4j.org/benchmarking)で大規模な行列の積を計算するということが証明されています。このため、NASAのJet Propulsion Laboratory（ジェット推進研究所）のチームが弊社の技術を採用しているのです。また、Deeplearning4jはx86やCUDA CのGPUを含む様々なチップ実行できるように最適化されています。
+ND4Jで実行されるDeeplearning4jの基盤である線形代数計算は、[Numpyよりも最低2倍の速度](http://nd4j.org/benchmarking)で大規模な行列の積を計算するということが証明されています。このため、NASAのJet Propulsion Laboratory（ジェット推進研究所）のチームは弊社の技術を採用しています。また、Deeplearning4jはx86やCUDA CのGPUを含む様々なチップ実行できるように最適化されています。
 
-Torch7とDL4Jの両方が並列処理を行いますが、DL4Jの**並列処理は自動**で実行されます。つまり、ノードや接続の設定を自動化し、ライブラリを通ることなく、[Spark](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark)、[Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn)に並列ネットワークを作成したり、[Akka及びAWS](http://deeplearning4j.org/scaleout.html)を使用できるのです。Deeplearning4jは特定の問題解決を素早く行うのに最適です。 
+Torch7もDL4Jも並列処理を行いますが、DL4Jの**並列処理は自動**で実行されます。つまり、ノードや接続の設定を自動化し、ライブラリを通ることなく、[Spark](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark)、[Hadoop](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/hadoop-yarn)に並列ネットワークを作成したり、[Akka及びAWS](http://deeplearning4j.org/scaleout.html)を使用できるのです。Deeplearning4jは特定の問題解決を素早く行うのに最適です。 
 
 Deeplearning4jの機能の全リストについては弊社の[features（機能）のページ](./features.html)をご覧ください。
 
 ### <a name="java">なぜJVMなのか？</a>
 
-我々がよく受ける質問に、ディープラーニングのコミュニティーの多くがPythonを重視する中、なぜJVM向けのオープンソースのディープラーニング・プロジェクトを導入するのか、というものがあります。つまり、PythonはJavaとは異なり、構文の要素がたくさんあるため、explicitクラスを作成せずに行列を追加することができます。同様にして、PythonにはTheanoやNumpyなどネイティブ拡張があり、広範囲に渡って科学計算が行える環境があります。
+我々がよく受ける質問に、ディープラーニングのコミュニティーの多くがPythonを重視する中、なぜJVM向けのオープンソースのディープラーニング・プロジェクトを導入するのか、というものがあります。PythonはJavaとは異なり、構文の要素がたくさんあるため、explicitクラスを作成せずに行列を追加することができます。同様にして、PythonにはTheanoやNumpyなどネイティブ拡張があり、広範囲に渡って科学計算が行える環境があります。
 
 しかし、JVMやその主要言語（JavaやScalaなど）にはいくつかの長所があります。 
 
-まず、最大手企業や大規模な政府機関で主に使用されているのはJavaやJVMベースのシステムです。これらの組織は巨大な投資を行っており、JVMベースのAIを利用することが可能です。今でもJavaは事業に最も幅広く使用されているのです。Javaは機械学習の問題に対処するのに最も役に立つのはHadoop、ElasticSearch、Hive、Lucene、Pigの言語なのです。SparkやKafkaはScalaで書かれていますが、これもJVMの言語です。つまり、現実問題を解決している多くのプログラマーはディープラーニングの恩恵を受けることが可能なのに言語の障壁によって引き離されているのです。我々はディープラーニングをもっと多くの新しい利用者がすぐに使用できるように進化させていきたいと考えています。Javaは千万人もの開発者がいる世界最大規模のプログラミング言語です。 
+まず、最大手企業や大規模な政府機関で主に使用されているのはJavaやJVMベースのシステムだということです。これらの組織は巨大な投資を行っているため、JVMベースのAIを利用することが可能です。今でもJavaは事業に最も幅広く使用されているのです。Javaは機械学習の問題に対処するのに最も役に立つHadoop、ElasticSearch、Hive、Lucene、Pigに使用される言語なのです。SparkやKafkaはScalaで書かれていますが、これもJVMの言語です。つまり、現実問題を解決している多くのプログラマーはディープラーニングの恩恵を受けることが可能なのに言語の障壁によって引き離されているのです。我々はディープラーニングをもっと多くの新しい利用者がすぐに使用できるように進化させていきたいと考えています。Javaは1千万人もの開発者がいる世界最大規模のプログラミング言語です。 
 
-そして、JavaとScalaはPythonより本質的に素早いというのも理由です。Pythonで書かれたものはどれでもCythonを使用していることを差し引いても速度は遅めになります。確かに最も計算的に高価な演算は、C言語やC++言語で書かれています。（演算についてとなると、より高レベルな機械学習処理に関連した文字列やその他の作業についても考慮します。）最初にPythonで書かれたほとんどのディープラーニングのプロジェクトは生産を実行するには再度書き直さなければなりません。Deeplearning4jは、Javaから事前にコンパイルされたネイティブのC++を呼び出すために[JavaCPP](https://github.com/bytedeco/javacpp)を使用し、トレーニングの速度を著しく向上させています。多くのPythonのプログラマーはScalaでディープラーニングを行おうとしますが、これは他の開発者たちと共有したコードベースで作業するときに静的型付けや機能的プログラミングを好むからです。 
+そして、JavaとScalaはPythonより本質的に素早いというのも理由です。Pythonで書かれたものはどれでもCythonを使用していることを差し引いても速度は遅めになります。確かに最も計算的に高価な演算は、C言語やC++言語で書かれています。（演算についてとなると、より高レベルな機械学習処理に関連した文字列やその他の作業についても考慮しなければなりません。）元々Pythonで書かれたほとんどのディープラーニングのプロジェクトは、生産的にするためには再度書き直さなければなりません。Deeplearning4jは、Javaから事前にコンパイルされたネイティブのC++を呼び出すために[JavaCPP](https://github.com/bytedeco/javacpp)を使用し、トレーニングの速度を著しく向上させています。多くのPythonのプログラマーはScalaでディープラーニングを行おうとしますが、これは他の開発者たちと共有したコードベースで作業するときに静的型付けや機能的プログラミングを行いたいからです。 
 
-また、Javaに強固な科学計算ライブラリはないという問題はそれらを書きさえすれば解決します。これは[ND4J](http://nd4j.org)で行いました。ND4Jは分散型のGPUやGPUで実行されます。そしてJavaやScala API経由で相互作用させることができます。
+また、Javaに強固な科学計算ライブラリはないという問題はそれらを書きさえすれば解決するのです。これは既に[ND4J](http://nd4j.org)で行いました。ND4Jは分散型のGPUやGPUで実行されます。そしてJavaやScala API経由で相互作用させることができます。
 
-最後に、Javaは本来はLinuxのサーバー、Windows、OSXデスクトップ、アンドロイドの電話、モノのインターネットの低メモリーセンサーなど埋め込まれたJava経由でプラットフォームを超えて動作する安全が確保されたネットワーク言語です。TorchやPylearn2はC++経由で最適化しますが、この最適化や維持には困難が伴います。それに比べてJavaは「一度書くと、どこでも実行」可能な言語で、ディープラーニングを数多くのプラットフォームで使用する必要のある企業には適しています。 
+最後に、Javaは本来はLinuxのサーバー、Windows、OSXデスクトップ、アンドロイドの電話、モノのインターネットの低メモリーセンサーなど埋め込まれたJava経由で異なるプラットフォーム間で動作する安全が確保されたネットワーク言語です。TorchやPylearn2はC++経由で最適化しますが、この最適化や維持には困難が伴います。それに比べてJavaは「一度書くと、どこでも実行」可能な言語で、ディープラーニングを数多くのプラットフォームで使用する必要のある企業には適しています。 
 
 ### <a name="ecosystem">エコシステム</a>
 
-Javaの人気の上昇はそのエコシステムのみによるものです。[Hadoop](https://hadoop.apache.org/)はJavaに実装されています。[Spark](https://spark.apache.org/)はHadoopのYarn実行時間内に実行されます。[Akka](https://www.typesafe.com/community/core-projects/akka)などのライブラリによってDeeplearning4jの分散型システムの構築が可能になりました。まとめると、Javaは大体どのアプリケ―ションにも高度に検証されたインフラストラクチャーで、Javaで書かれたディープラーニングネットワークはデータの近くに位置することができ、プログラマーの生活がより簡単になるのです。Deeplearning4jはYARNアプリとして実行し、提供することができます。
+Javaの人気はそのエコシステムによりますます高まりました。[Hadoop](https://hadoop.apache.org/)はJavaに実装されています。[Spark](https://spark.apache.org/)はHadoopのYarn実行時間内に実行されます。[Akka](https://www.typesafe.com/community/core-projects/akka)などのライブラリによってDeeplearning4jの分散型システムの構築が可能になりました。まとめると、Javaは大体どのアプリケ―ションにも高度に検証されたインフラストラクチャーで、Javaで書かれたディープラーニングネットワークはデータの近くに位置することができ、プログラマーの生活がより簡単になるのです。Deeplearning4jはYARNアプリとして実行し、提供することができます。
 
 また、JavaはScala、Clojure、Python、Rubyなど他の人気のある言語からネイティブで使用することができます。Javaを選ぶことにより、我々はできるだけ最も少ない主要なプログラミングのコミュニティーを除外しました。 
 
-JavaはCやC++ほど素早くはありませんが、多くの人が思い込んでいるよりも速度は速いため、我々はGPUであろうとCPUであろうとノードを少し追加すると加速できるよう、分散システムを構築しました。つまり、速度を向上させたければ、より多くの箱を投げつければいいのです。 
+JavaはCやC++ほど素早くはありませんが、多くの人が思い込んでいるよりも速度は速いため、我々はGPUであろうとCPUであろうとノードを少し追加すると加速できるよう、分散システムを構築しました。つまり、速度を向上させたければ、より多くのボックスをスローすればいいのです。 
 
-最後に我々はJavaにDL4J用のND-Arrayを含めて、Numpyの基本的アプリケーションを構築しています。我々はJavaの欠点の多くは素早く解決でき、その長所の多くはしばらくの間なくなることはないはずだと見ています。 
+最後に我々はJavaにDL4J用のND-Arrayを含めて、Numpyの基本的アプリケーションを構築しています。我々はJavaの欠点の多くは素早く解決できるものであり、長所の多くもすぐにはなくならないはずだと見ています。 
 
 ### <a name="scala">Scala</a>
 
 我々はDeeplearning4jとND4Jを構築するにあたって[Scala](./scala)に特に注目しましました。データサイエンスにおいてScalaが優勢な言語となる可能性があると見ているからです。数値計算を書くこと、ベクトル化、[Scala API](http://nd4j.org/scala.html)の実装されたJVM用のディープラーニングライブラリによってコミュニティーはその目標に向かうことができるのです。 
 
-DL4Jとその他のフレームワークの違いの理解を深めるには、[弊社のサービスを試してみる](./quickstart)のがいいかもしれません。
+DL4Jとその他のフレームワークの違いの理解を深めるには、[弊社のサービスを試してみる](./quickstart)のがお勧めです。
 
 ### <a name="ml">機械学習のフレームワーク</a>
 
-先に挙げたディープラーニングのフレームワークは一般的な機械学習フレームワークよりも専門化されたものです。それらは数多くあります。ここでは主なものだけを挙げます。
+先に挙げたようなディープラーニングのフレームワークは一般的な機械学習フレームワークよりも専門化されたものです。現在、専門化は機械学習フレームは数多くあります。ここでは主なものだけを挙げましょう。
 
 * [sci-kit learn](http://scikit-learn.org/stable/) - Python向けのデフォルトの機械学習フレームワーク 
-* [Apache Mahout](https://mahout.apache.org/users/basics/quickstart.html) - 最も重要なApacheの機械学習フレームワークMahoutが分類、クラスタリング、リコメンデーションを行います。
+* [Apache Mahout](https://mahout.apache.org/users/basics/quickstart.html) - 最も重要なApacheの機械学習フレームワーク。Mahoutが分類、クラスタリング、リコメンデーションを行います。
 * [SystemML](https://sparktc.github.io/systemml/quick-start-guide.html) - IBMの機械学習フレームワークで、記述統計学、分類、クラスタリング、回帰、行列の因数分解、生存率解析を行う。サポートベクターマシンを含みます。 
-* [Microsoft DMTK](http://www.dmtk.io/) - Microsoftの分散型機械学習ツールキット分散型の語の埋め込みとLDA(線形判別分析) 
+* [Microsoft DMTK](http://www.dmtk.io/) - Microsoftの分散型機械学習ツールキット分散型の語の埋め込みとLDA（線形判別分析） 
 
 ### <a name="tutorial">Deeplearning4jのチュートリアル</a>
 
-* [Deep Neural Networkのご紹介](./neuralnet-overview)
+* [ディープニューラルネットワークについて](./neuralnet-overview)
 * [畳込みネットワークのチュートリアル](./convolutionalnets)
 * [LSTMと回帰ネットワークのチュートリアル](./lstm)
 * [回帰ネットワークをDL4Jに使用しましょう](./usingrnns)
@@ -246,3 +246,4 @@ DL4Jとその他のフレームワークの違いの理解を深めるには、[
 * [固有ベクトル、PCA（主成分分析）、エントリピー](./eigenvector.html)
 * [ディープラーニング用語集](./glossary.html)
 * [Word2vec、Doc2vec、GloVe](./word2vec)
+
