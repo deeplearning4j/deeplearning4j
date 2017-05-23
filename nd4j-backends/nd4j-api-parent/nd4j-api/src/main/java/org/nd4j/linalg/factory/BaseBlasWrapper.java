@@ -419,7 +419,7 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
 
     @Override
     public int syev(char jobz, char uplo, INDArray a, INDArray w) {
-	return lapack().syev( jobz, uplo, a, w ) ;
+        throw new UnsupportedOperationException();
     }
 
     @Override
