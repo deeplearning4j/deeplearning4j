@@ -1,9 +1,6 @@
 package org.deeplearning4j.parallelism.trainer;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
@@ -46,30 +43,31 @@ import java.util.concurrent.locks.LockSupport;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DefaultTrainer extends Thread implements Trainer {
-    protected Model originalModel;
+
     protected Model replicatedModel;
 
     // TODO: make queue size configurable
     @Builder.Default protected LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>(2);
     @Builder.Default protected LinkedBlockingQueue<MultiDataSet> queueMDS = new LinkedBlockingQueue<>(2);
     @Builder.Default protected AtomicInteger running = new AtomicInteger(0);
-    protected int threadId;
     @Builder.Default protected AtomicBoolean shouldUpdate = new AtomicBoolean(false);
     @Builder.Default protected AtomicBoolean shouldStop = new AtomicBoolean(false);
     protected Exception thrownException;
     @Builder.Default protected volatile boolean useMDS = false;
     protected final String uuid = UUID.randomUUID().toString();
     @Builder.Default protected boolean onRootModel = false;
-    protected ParallelWrapper parallelWrapper;
-    protected WorkspaceMode workspaceMode;
     @Builder.Default protected AtomicLong lastEtlTime = new AtomicLong(0);
 
     @Builder.Default protected AtomicBoolean nullMode = new AtomicBoolean(false);
     protected DataSet nullDataSet;
 
     @Builder.Default protected AtomicBoolean isStopped = new AtomicBoolean(false);
-    protected int averagingFrequency;
 
+    protected ParallelWrapper parallelWrapper;
+    protected WorkspaceMode workspaceMode;
+    protected int averagingFrequency;
+    protected int threadId;
+    protected Model originalModel;
 
 
     @Override
@@ -156,9 +154,9 @@ public class DefaultTrainer extends Thread implements Trainer {
 
     protected void setupIfNeccessary() {
         if (queue == null)
-            queue = new LinkedBlockingQueue<>();
+            queue = new LinkedBlockingQueue<>(2);
         if (queueMDS == null)
-            queueMDS = new LinkedBlockingQueue<>();
+            queueMDS = new LinkedBlockingQueue<>(2);
         if (running == null)
             running = new AtomicInteger(0);
         if (shouldStop == null)

@@ -50,4 +50,16 @@ public class DefaultTrainerContext implements TrainerContext {
 
         return trainer;
     }
+
+    @Override
+    public void finalizeRound(Model originalModel, Model... models) {
+        // apply averaging
+
+        // TODO: move averaging here
+    }
+
+    @Override
+    public void finalizeTraining(Model originalModel, Model... models) {
+        finalizeRound(originalModel, models);
+    }
 }

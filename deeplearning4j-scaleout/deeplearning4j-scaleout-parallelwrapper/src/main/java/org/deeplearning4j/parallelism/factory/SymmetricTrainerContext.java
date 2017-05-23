@@ -1,5 +1,6 @@
 package org.deeplearning4j.parallelism.factory;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -12,8 +13,9 @@ import org.deeplearning4j.parallelism.trainer.Trainer;
 /**
  * Creates {@link DefaultTrainer}
  * instances for use with {@link ParallelWrapper}
- * @author Adam Gibson
+ * @author raver119@gmail.com
  */
+@Slf4j
 public class SymmetricTrainerContext implements TrainerContext {
     /**
      * Initialize the context
@@ -43,11 +45,22 @@ public class SymmetricTrainerContext implements TrainerContext {
     public Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper,
                     WorkspaceMode mode, int averagingFrequency) {
 
-        SymmetricTrainer trainer = (SymmetricTrainer) SymmetricTrainer.builder().originalModel(model).replicatedModel(model).threadId(threadId).parallelWrapper(wrapper).workspaceMode(mode).useMDS(useMDS).averagingFrequency(averagingFrequency).build();
+        SymmetricTrainer trainer = new SymmetricTrainer(model, threadId, mode, wrapper);
 
         trainer.setName("SymmetricTrainer thread " + threadId);
         trainer.setDaemon(true);
 
         return trainer;
+    }
+
+    @Override
+    public void finalizeRound(Model originalModel, Model... models) {
+        // no-op
+    }
+
+    @Override
+    public void finalizeTraining(Model originalModel, Model... models) {
+        // we CAN avarage here, but for now we'll just push first model params to original model
+        originalModel.setParams(models[0].params());
     }
 }

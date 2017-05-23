@@ -51,7 +51,7 @@ public class ParallelWrapper implements AutoCloseable {
     protected int prefetchSize = 2;
     protected int averagingFrequency = 1;
     protected Trainer[] zoo;
-    private TrainerContext trainerContext = new DefaultTrainerContext();
+    protected TrainerContext trainerContext;
     protected AtomicLong iterationsCounter = new AtomicLong(0);
     protected boolean reportScore = false;
     protected boolean averageUpdaters = true;
@@ -70,6 +70,7 @@ public class ParallelWrapper implements AutoCloseable {
     Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
         public void uncaughtException(Thread th, Throwable ex) {
             log.error("Uncaught exception: " + ex);
+            ex.printStackTrace();
         }
     };
 
@@ -157,29 +158,32 @@ public class ParallelWrapper implements AutoCloseable {
             /*
                 if all workers are dispatched now, join till all are finished
             */
-            if (pos + 1 == workers && zoo[0].averagingRequired()) {
+            if (pos + 1 == workers) {
                 iterationsCounter.incrementAndGet();
 
-                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                    try {
-                        zoo[cnt].waitTillRunning();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                if (zoo[0].averagingRequired()) {
+                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                        try {
+                            zoo[cnt].waitTillRunning();
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                    Nd4j.getMemoryManager().invokeGcOccasionally();
+
+                    /*
+                        average model, and propagate it to whole
+                    */
+                    if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers && zoo[0].averagingRequired()) {
+                        // averaging model
+                        double score = getScore(locker);
+
+                        // averaging updaters state
+                        averageUpdatersState(locker, score);
                     }
                 }
 
-                Nd4j.getMemoryManager().invokeGcOccasionally();
-
-                /*
-                    average model, and propagate it to whole
-                */
-                if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers && zoo[0].averagingRequired()) {
-                    // averaging model
-                    double score = getScore(locker);
-
-                    // averaging updaters state
-                    averageUpdatersState(locker, score);
-                }
                 locker.set(0);
             }
 
@@ -412,34 +416,37 @@ public class ParallelWrapper implements AutoCloseable {
             /*
                 if all workers are dispatched now, join till all are finished
             */
-            if (pos + 1 == workers && zoo[0].averagingRequired()) {
+            if (pos + 1 == workers) {
                 iterationsCounter.incrementAndGet();
 
-                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                    try {
-                        zoo[cnt].waitTillRunning();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                if (zoo[0].averagingRequired()) {
+                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                        try {
+                            zoo[cnt].waitTillRunning();
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
                     }
-                }
 
-                Nd4j.getMemoryManager().invokeGcOccasionally();
+                    Nd4j.getMemoryManager().invokeGcOccasionally();
 
-                /*
-                    average model, and propagate it to whole
-                */
-                if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers && zoo[0].averagingRequired()) {
-                    long timeA1 = System.currentTimeMillis();
+                    /*
+                        average model, and propagate it to whole
+                    */
+                    if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers && zoo[0].averagingRequired()) {
+                        long timeA1 = System.currentTimeMillis();
 
-                    // model averaging happens within
-                    double score = getScore(locker);
+                        // model averaging happens within
+                        double score = getScore(locker);
 
-                    // updaters averging happens within (if any)
-                    averageUpdatersState(locker, score);
+                        // updaters averging happens within (if any)
+                        averageUpdatersState(locker, score);
 
-                    long timeA2 = System.currentTimeMillis();
-                    if (reportScore)
-                        log.info("Averaging time: {} ms", timeA2 - timeA1);
+                        long timeA2 = System.currentTimeMillis();
+                        if (reportScore)
+                            log.info("Averaging time: {} ms", timeA2 - timeA1);
+                    }
+
                 }
                 locker.set(0);
             }
@@ -450,22 +457,24 @@ public class ParallelWrapper implements AutoCloseable {
         if (prefetchSize > 0 && source.asyncSupported())
             ((AsyncDataSetIterator) iterator).shutdown();
 
+
+        // FIXME: we need to ensure all models are synchronized back to HOST
+        // now we transfer models back from workers
+        List<Model> models = new ArrayList<>();
+        for (int i = 0; i < zoo.length; i++) {
+            models.add(zoo[0].getModel());
+        }
+
+        // actual transfer code depends on trainer
+        trainerContext.finalizeTraining(model, models.toArray(new Model[0]));
+
+
         if (zoo != null) {
             for (int i = 0; i < zoo.length; i++) {
                 zoo[i].shutdown();
             }
             zoo = null;
         }
-
-        //Collections.sort(nanos);
-        //int pos = (int) (nanos.size() * 0.85);
-        //log.info("p85 ETL time: {} ms; p50 ETL time: {} ms", nanos.get(pos), nanos.get(nanos.size() / 2));
-
-
-        // sanity checks, or the dataset may never average
-        if (!wasAveraged)
-            log.warn("Parameters were never averaged on current fit(). Ratios of batch size, num workers, and averaging frequency may be responsible.");
-        //            throw new IllegalStateException("Parameters were never averaged. Please check batch size ratios, number of workers, and your averaging frequency.");
 
         log.debug("Iterations passed: {}", iterationsCounter.get());
     }
@@ -523,8 +532,7 @@ public class ParallelWrapper implements AutoCloseable {
          * @param trainerContext the trainer factory to use
          * @return builder pattern
          */
-        public Builder trainerFactory(TrainerContext trainerContext) {
-            Preconditions.checkNotNull(trainerContext);
+        public Builder trainerFactory(@NonNull TrainerContext trainerContext) {
             this.trainerContext = trainerContext;
             return this;
         }
@@ -564,6 +572,9 @@ public class ParallelWrapper implements AutoCloseable {
          * @return
          */
         public Builder averagingFrequency(int freq) {
+            if (freq < 0)
+                freq = 0;
+
             this.averagingFrequency = freq;
             return this;
         }
@@ -594,6 +605,7 @@ public class ParallelWrapper implements AutoCloseable {
          * @param reallyUse
          * @return
          */
+        @Deprecated
         public Builder useMQ(boolean reallyUse) {
             //this.isMQ = reallyUse;
             return this;
@@ -626,6 +638,7 @@ public class ParallelWrapper implements AutoCloseable {
          * @param reallyUse
          * @return
          */
+        @Deprecated
         public Builder useLegacyAveraging(boolean reallyUse) {
             this.legacyAveraging = reallyUse;
             return this;

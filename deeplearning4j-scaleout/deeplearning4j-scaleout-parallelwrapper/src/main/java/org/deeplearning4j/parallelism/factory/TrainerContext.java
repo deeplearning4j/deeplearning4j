@@ -36,4 +36,20 @@ public interface TrainerContext {
     Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper,
                     WorkspaceMode workspaceMode, int averagingFrequency);
 
+
+    /**
+     * This method is called at averagingFrequency
+     *
+     * @param originalModel
+     * @param models
+     */
+    void finalizeRound(Model originalModel, Model... models);
+
+    /**
+     * This method is called
+     *
+     * @param originalModel
+     * @param models
+     */
+    void finalizeTraining(Model originalModel, Model... models);
 }
