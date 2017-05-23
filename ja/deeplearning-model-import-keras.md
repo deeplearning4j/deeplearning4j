@@ -1,4 +1,4 @@
-----
+---
 title:Deeplearning4j Keras Model Import
 layout: default
 ---
@@ -7,10 +7,10 @@ layout: default
 
 *モデルのインポートは新機能ですのでご注意ください。2017年2月以降は、ユーザーの皆様は最新バージョンをご使用になるか、問題作成を行ったり不具合を報告する前にマスターからローカルに構築することをお勧めします。 
 
-`deeplearning4j-modelimport`モジュールは、最初に設定され、トレーニングされたニューラルネットワークモデルをインポートするルーチンを提供します。
-また、これには[Keras](https://keras.io/)と言って、Deeplearning4jの最上部に抽象化層を提供する人気のあるPythonのディープラーニングライブラリ、
-[Theano](http://deeplearning.net/software/theano/)、[TensorFlow](https://www.tensorflow.org)
-のバックエンドを使います。Kerasモデルの保存について詳細を知りたい方は、Kerasの[FAQページ](https://keras.io/getting-started/faq/#how-can-i-save-a-keras-model)をご覧ください。Deeplearning4jのKerasを使ったPythonのAPIの詳細は[こちらのリンク](https://github.com/crockpotveggies/dl4j-examples/tree/keras-examples/dl4j-keras-examples)をご覧ください。
+`deeplearning4j-modelimport`モジュールは、
+[Keras](https://keras.io/)というDeeplearning4jの最上部に抽象化層を提供する評判の高いPythonのディープラーニングライブラリ、
+[Theano](http://deeplearning.net/software/theano/)と[TensorFlow](https://www.tensorflow.org)
+のバックエンドを使って最初に設定され、トレーニングされたニューラルネットワークモデルをインポートするルーチンを提供します。Kerasモデルの保存について詳細を知りたい方は、Kerasの[FAQページ](https://keras.io/getting-started/faq/#how-can-i-save-a-keras-model)をご覧ください。Deeplearning4jのKerasを使ったPythonのAPIの詳細は[こちらのリンク](https://github.com/crockpotveggies/dl4j-examples/tree/keras-examples/dl4j-keras-examples)をご覧ください。
 
 ![Model Import Schema](./img/model-import-keras.png)
 
@@ -24,15 +24,15 @@ Kerasモデル設定をインポートしようとしていることを示しま
 または必要な変更を書いて弊社にプルリクエストで送信していただければ、この機能の追加のお手伝いをいたします。
 
 
-頻繁にある更新については、モデルのインポートモジュール*と*このページの両方でチェックしましょう！
+頻繁にある更新については、モデルのインポートモジュール*と*このページの両方でチェックしてください！
 
-## 人気の高いモデルのサポート
+## 評判の高いモデルのサポート
 
 VGG16やその他の事前にトレーニングされたモデルはデモンストレーションを目的として、また特定のユースケース用に再トレーニングするために広く使用されています。弊社は、VGG16のインポートのサポートと共にデータの取り込みが行えるようにデータを正常にフォーマットし、正常化するヘルパー関数、そして数値出力をラベル化したテキストクラスに変換するヘルパー関数の提供を行っています。  
 
-## DeepLearning4JモデルのZoo
+## DeepLearning4JのModel Zoo
 
-DeepLearning4jは、事前にトレーニングされたKerasのモデルをインポートするだけでなく、弊社のモデルzooへのモデル追加を行っています。 
+DeepLearning4jは、事前にトレーニングされたKerasのモデルをインポートするだけでなく、弊社のModel Zooへのモデル追加を行っています。 
 
 ## IDEを設定し、modelimportクラスにアクセス
 
@@ -117,7 +117,7 @@ modelimport機能にはenforceTrainingConfigパラメータが一つ含まれて
 
 ## Kerasモデルのインポート
 
-こちらは[ビデオのチュートリアル](https://www.youtube.com/embed/bI1aR1Tj2DM)です。このビデオではKerasモデルをDeeplearning4jに読み込むのに使用可能なコードを紹介し、使用可能なネットワークを立証しています。このビデオでは、講師のトム・ハンロン氏がエクスポートされ、Deeplearning4jに読み込まれたシンプルなIrisデータの分類器についての概要を説明しています。この分類器はTheanoがバックエンドであるKerasに構築されたものです。
+こちらは[ビデオのチュートリアル](https://www.youtube.com/embed/bI1aR1Tj2DM)です。このビデオではKerasモデルをDeeplearning4jに読み込むのに使用可能なコードを紹介し、使用可能なネットワークを立証しています。このビデオでは、講師のトム・ハンロン氏が、エクスポートし、Deeplearning4jに読み込まれたIrisデータのシンプルな分類器についての概要を説明しています。この分類器はTheanoがバックエンドであるKerasに構築されたものです。
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/bI1aR1Tj2DM" frameborder="0" allowfullscreen></iframe>
 
