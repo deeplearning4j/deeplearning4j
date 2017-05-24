@@ -44,7 +44,8 @@ public class LeNet extends ZooModel {
         this.seed = seed;
         this.iterations = iterations;
         this.workspaceMode = workspaceMode;
-        this.cudnnAlgoMode = workspaceMode==WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST :ConvolutionLayer.AlgoMode.NO_WORKSPACE;
+        this.cudnnAlgoMode = workspaceMode == WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
+                        : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
     }
 
     public ZooType zooType() {

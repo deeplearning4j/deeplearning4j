@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.*;
@@ -12,6 +13,8 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 
+import java.io.File;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -57,24 +60,27 @@ import static org.junit.Assert.assertEquals;
 public class KerasCustomLayerTest {
 
     // run manually
+    @Test
     public void testCustomLayerImport() throws Exception {
         // file paths
-        String kerasJson = "/home/justin/Downloads/googlenet_config.json";
-        String kerasWeightsAndConfig = "/home/justin/Downloads/googlenet_keras_weightsandconfig.h5";
+        String kerasWeightsAndConfigUrl = "http://blob.deeplearning4j.org/models/googlenet_keras_weightsandconfig.h5";
+        File cachedKerasFile = new File(System.getProperty("user.tmp"),"googlenet_keras_weightsandconfig.h5");
         String outputPath = "/home/justin/Downloads/googlenet_dl4j_inference.zip";
 
         KerasLayer.registerCustomLayer("PoolHelper", KerasPoolHelper.class);
         KerasLayer.registerCustomLayer("LRN", KerasLRN.class);
 
-        org.deeplearning4j.nn.api.Model importedModel = KerasModelImport.importKerasModelAndWeights(kerasWeightsAndConfig);
+        // download file
+        if (!cachedKerasFile.exists()) {
+            log.info("Downloading model to " + cachedKerasFile.toString());
+            FileUtils.copyURLToFile(new URL(kerasWeightsAndConfigUrl), cachedKerasFile);
+            cachedKerasFile.deleteOnExit();
+        }
+
+        org.deeplearning4j.nn.api.Model importedModel = KerasModelImport.importKerasModelAndWeights(cachedKerasFile.getAbsolutePath());
         ModelSerializer.writeModel(importedModel, outputPath, false);
 
         ComputationGraph serializedModel = ModelSerializer.restoreComputationGraph(outputPath);
         log.info(serializedModel.summary());
-    }
-
-    public static void main(String... args) throws Exception {
-        // runs manual tests
-        new KerasCustomLayerTest().testCustomLayerImport();
     }
 }

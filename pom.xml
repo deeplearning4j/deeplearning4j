@@ -643,7 +643,6 @@
               <configuration>
                 <configFile>${session.executionRootDirectory}/contrib/formatter.xml</configFile>
                 <directories>
-                  <directory>deeplearning4j-zoo</directory>
                   <directory>deeplearning4j-scaleout</directory>
                   <directory>deeplearning4j-ui-parent</directory>
                   <directory>deeplearning4j-graph</directory>

@@ -43,7 +43,8 @@ public class ResNet50 extends ZooModel {
         this.numClasses = outputNum;
         this.iterations = iterations;
         this.workspaceMode = workspaceMode;
-        this.cudnnAlgoMode = workspaceMode== WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST :ConvolutionLayer.AlgoMode.NO_WORKSPACE;
+        this.cudnnAlgoMode = workspaceMode == WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST
+                        : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
     }
 
     public String pretrainedUrl() {
@@ -77,15 +78,15 @@ public class ResNet50 extends ZooModel {
         graph.addInputs("input1").setInputTypes(InputType.convolutional(inputShape[2], inputShape[1], inputShape[0]))
                         .addLayer(convName + "2a",
                                         new ConvolutionLayer.Builder(new int[] {1, 1}).nOut(filters[0])
-                                                .cudnnAlgoMode(cudnnAlgoMode).build(), input)
+                                                        .cudnnAlgoMode(cudnnAlgoMode).build(),
+                                        input)
                         .addLayer(batchName + "2a", new BatchNormalization(), convName + "2a")
                         .addLayer(activationName + "2a",
                                         new ActivationLayer.Builder().activation(Activation.RELU).build(),
                                         batchName + "2a")
 
-                        .addLayer(convName + "2b",
-                                        new ConvolutionLayer.Builder(kernelSize).nOut(filters[1])
-                                                .cudnnAlgoMode(cudnnAlgoMode).convolutionMode(ConvolutionMode.Same).build(),
+                        .addLayer(convName + "2b", new ConvolutionLayer.Builder(kernelSize).nOut(filters[1])
+                                        .cudnnAlgoMode(cudnnAlgoMode).convolutionMode(ConvolutionMode.Same).build(),
                                         activationName + "2a")
                         .addLayer(batchName + "2b", new BatchNormalization(), convName + "2b")
                         .addLayer(activationName + "2b",
@@ -94,7 +95,7 @@ public class ResNet50 extends ZooModel {
 
                         .addLayer(convName + "2c",
                                         new ConvolutionLayer.Builder(new int[] {1, 1}).nOut(filters[2])
-                                                .cudnnAlgoMode(cudnnAlgoMode).build(),
+                                                        .cudnnAlgoMode(cudnnAlgoMode).build(),
                                         activationName + "2b")
                         .addLayer(batchName + "2c", new BatchNormalization(), convName + "2c")
 

@@ -38,7 +38,7 @@ public abstract class ZooModel<T> implements InstantiableModel {
         File cachedFile = new File(System.getProperty("user.home"), "/.deeplearning4j/" + localFilename);
         cachedFile.mkdirs();
 
-        if(cachedFile.isDirectory())
+        if (cachedFile.isDirectory())
             cachedFile.delete();
 
         if (!cachedFile.exists()) {

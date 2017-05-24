@@ -32,13 +32,14 @@ public class TestInstantiation {
     public void testMultipleCnnTraining() {
         Map<ZooType, ZooModel> models = ModelSelector.select(ZooType.CNN, CifarLoader.NUM_LABELS);
 
-        for(Map.Entry<ZooType, ZooModel> entry : models.entrySet()) {
-            log.info("Testing training on zoo model "+entry.getKey());
+        for (Map.Entry<ZooType, ZooModel> entry : models.entrySet()) {
+            log.info("Testing training on zoo model " + entry.getKey());
             ZooModel model = entry.getValue();
 
             // set up data iterator
             int[] inputShape = model.metaData().getInputShape()[0];
-            CifarDataSetIterator iter = new CifarDataSetIterator(16, CifarLoader.NUM_LABELS*16, new int[]{inputShape[1], inputShape[2], inputShape[0]});
+            CifarDataSetIterator iter = new CifarDataSetIterator(16, CifarLoader.NUM_LABELS * 16,
+                            new int[] {inputShape[1], inputShape[2], inputShape[0]});
 
             Model initializedModel = model.init();
             try {
@@ -51,8 +52,8 @@ public class TestInstantiation {
                     else
                         throw new IllegalStateException("Zoo models are only MultiLayerNetwork or ComputationGraph.");
                 }
-            } catch(Exception e) {
-                log.error("Test failed on model type: "+entry.getKey());
+            } catch (Exception e) {
+                log.error("Test failed on model type: " + entry.getKey());
                 throw new RuntimeException(e);
             }
 
@@ -66,8 +67,8 @@ public class TestInstantiation {
     public void testInitPretrained() throws IOException {
         ZooModel model = new ResNet50(1, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
         ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
-        INDArray[] result = initializedModel.output(Nd4j.create(new int[]{1,3,224,224}));
-        assertArrayEquals(result[0].shape(), new int[]{1, 1000});
+        INDArray[] result = initializedModel.output(Nd4j.create(new int[] {1, 3, 224, 224}));
+        assertArrayEquals(result[0].shape(), new int[] {1, 1000});
 
         // clean up for current model
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -75,8 +76,8 @@ public class TestInstantiation {
 
         model = new VGG16(1, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
         initializedModel = (ComputationGraph) model.initPretrained();
-        result = initializedModel.output(Nd4j.create(new int[]{1,3,224,224}));
-        assertArrayEquals(result[0].shape(), new int[]{1, 1000});
+        result = initializedModel.output(Nd4j.create(new int[] {1, 3, 224, 224}));
+        assertArrayEquals(result[0].shape(), new int[] {1, 1000});
 
         // clean up for current model
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
@@ -84,8 +85,8 @@ public class TestInstantiation {
 
         model = new GoogLeNet(1, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
         initializedModel = (ComputationGraph) model.initPretrained();
-        result = initializedModel.output(Nd4j.create(new int[]{1,3,224,224}));
-        assertArrayEquals(result[0].shape(), new int[]{1, 1000});
+        result = initializedModel.output(Nd4j.create(new int[] {1, 3, 224, 224}));
+        assertArrayEquals(result[0].shape(), new int[] {1, 1000});
     }
 
 }
