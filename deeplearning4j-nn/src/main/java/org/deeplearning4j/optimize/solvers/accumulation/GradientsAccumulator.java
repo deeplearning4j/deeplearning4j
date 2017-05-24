@@ -6,8 +6,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -31,6 +34,15 @@ public class GradientsAccumulator implements Serializable {
     // this counter tracks number of messages received from somewhere
     protected transient AtomicLong extCounter = new AtomicLong(0);
 
+    // FIXME: this mechanics should be improved i think.
+    protected int[] shape;
+    protected char ordering;
+
+    protected List<INDArray> consumerData = new ArrayList<>();
+    protected List<Object> consumerLocks = new ArrayList<>();
+    protected ThreadLocal<Integer> consumerIndex = new ThreadLocal<>();
+    protected AtomicInteger consumers = new AtomicInteger(0);
+
     /**
      * Creates new GradientsAccumulator with starting threshold of 1e-3
      */
@@ -51,8 +63,29 @@ public class GradientsAccumulator implements Serializable {
     }
 
     public INDArray getUpdate() {
-        // FIXME: this is wrong
-        return gradients.poll();
+        synchronized (this) {
+            if (consumerIndex.get() == null) {
+                try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    consumerData.add(Nd4j.create(shape, ordering));
+                    consumerLocks.add(new Object());
+                    consumerIndex.set(consumers.getAndIncrement());
+                }
+            }
+        }
+
+        synchronized (consumerLocks.get(consumerIndex.get())) {
+            // this code should run within workspace
+
+            INDArray updates = consumerData.get(consumerIndex.get());
+            INDArray ret = updates.dup(ordering);
+
+            Nd4j.getExecutioner().commit();
+
+            // we assign to 0.0, so all future incoming updates will be able to call for addi here
+            updates.assign(0.0);
+
+            return ret;
+        }
     }
 
     /**
@@ -73,13 +106,19 @@ public class GradientsAccumulator implements Serializable {
         // if accum is null, let's just create it here
         if (storage == null) {
             // we don't want state array to be attached to any workspace
+            shape = array.shape();
+            ordering = array.ordering();
+
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                storage = Nd4j.create(array.shape(), array.ordering());
+                storage = Nd4j.create(shape, ordering);
             }
         }
 
-        // accumulate our values
+        // accumulate our values, a
         storage.addi(array);
+
+        // we ensure storage was updated successfully
+        Nd4j.getExecutioner().commit();
 
         // if there's something to send - send it. Skip otherwise!!!
         if (handler.broadcastUpdates(storage)) {
@@ -97,7 +136,15 @@ public class GradientsAccumulator implements Serializable {
         extCounter.getAndIncrement();
 
         // TODO: we need to replicate array here, wrt number of consumers. separate queues maybe? MQ-style?
-        gradients.add(array);
+
+        for (int i = 0; i < consumerData.size(); i++) {
+            synchronized (consumerLocks.get(i)) {
+                consumerData.get(i).addi(array);
+            }
+        }
+
+        // we have to ensure, all operations were finished here
+        Nd4j.getExecutioner().commit();
     }
 
 
