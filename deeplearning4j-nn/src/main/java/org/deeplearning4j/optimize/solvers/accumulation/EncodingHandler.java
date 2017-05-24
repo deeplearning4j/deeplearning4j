@@ -48,13 +48,16 @@ public class EncodingHandler implements MessageHandler {
     }
 
     @Override
-    public void broadcastUpdates(INDArray updates) {
+    public boolean broadcastUpdates(INDArray updates) {
         /*
             we want to do 2 things here:
             1) encode updates
             2) send them somewhere
          */
         INDArray message = encodeUpdates(updates);
-        sendMessage(message);
+        if (message != null) {
+            sendMessage(message);
+            return true;
+        } else return false;
     }
 }

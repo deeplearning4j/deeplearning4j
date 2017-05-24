@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
+import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
@@ -49,6 +50,21 @@ public interface ConvexOptimizer extends Serializable {
     void setUpdaterComputationGraph(ComputationGraphUpdater updater);
 
     void setListeners(Collection<IterationListener> listeners);
+
+    /**
+     * This method specifies GradientsAccumulator instance to be used for updates sharing across multiple models
+     *
+     * @param accumulator
+     */
+    void setGradientsAccumulator(GradientsAccumulator accumulator);
+
+    /**
+     * This method returns GradientsAccumulator instance used in this optimizer.
+     *
+     * This method can return null.
+     * @return
+     */
+    GradientsAccumulator getGradientsAccumulator();
 
     NeuralNetConfiguration getConf();
 

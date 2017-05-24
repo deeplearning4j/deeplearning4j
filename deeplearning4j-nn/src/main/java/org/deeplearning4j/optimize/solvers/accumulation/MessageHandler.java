@@ -23,6 +23,7 @@ public interface MessageHandler extends Serializable {
      * This method does broadcast of given update message across network
      *
      * @param updates
+     * @return TRUE if something was sent, FALSE otherwise
      */
-    void broadcastUpdates(INDArray updates);
+    boolean broadcastUpdates(INDArray updates);
 }

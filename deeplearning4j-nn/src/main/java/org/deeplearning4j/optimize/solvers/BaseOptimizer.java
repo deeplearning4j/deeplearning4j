@@ -34,6 +34,7 @@ import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.*;
 import org.deeplearning4j.optimize.listeners.GradientsProcessor;
+import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
 import org.deeplearning4j.optimize.terminations.EpsTermination;
@@ -73,8 +74,8 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public final static String SEARCH_DIR = "searchDirection";
     protected Map<String, Object> searchState = new ConcurrentHashMap<>();
 
-    // FIXME: something better would fit better here
-    protected GradientsProcessor processor;
+
+    protected GradientsAccumulator accumulator;
 
     /**
      *
@@ -110,6 +111,15 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         lineMaximizer.setMaxIterations(conf.getMaxNumLineSearchIterations());
     }
 
+    @Override
+    public void setGradientsAccumulator(GradientsAccumulator accumulator) {
+        this.accumulator = accumulator;
+    }
+
+    @Override
+    public GradientsAccumulator getGradientsAccumulator() {
+        return accumulator;
+    }
 
     @Override
     public double score() {
@@ -227,6 +237,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
             //Update parameters based on final/best step size returned by line search:
             if (step != 0.0) {
+                // TODO: inject accumulation use here
                 stepFunction.step(parameters, searchDirection, step); //Calculate params. given step size
                 model.setParams(parameters);
             } else {

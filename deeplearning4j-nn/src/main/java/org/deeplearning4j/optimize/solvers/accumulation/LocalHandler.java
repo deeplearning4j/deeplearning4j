@@ -23,8 +23,10 @@ public class LocalHandler implements MessageHandler {
     }
 
     @Override
-    public void broadcastUpdates(INDArray updates) {
+    public boolean broadcastUpdates(INDArray updates) {
         // we just loop back data immediately
         accumulator.receiveUpdate(updates);
+
+        return true;
     }
 }

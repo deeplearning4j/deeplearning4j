@@ -58,28 +58,28 @@ public class StochasticGradientDescent extends BaseOptimizer {
 
     @Override
     public boolean optimize() {
-        if (processor == null)
-            for (IterationListener listener: iterationListeners) {
-                if (listener instanceof GradientsProcessor)
-                    processor = (GradientsProcessor) listener;
-            }
-
         for (int i = 0; i < conf.getNumIterations(); i++) {
             Pair<Gradient, Double> pair = gradientAndScore();
 
             Gradient gradient = pair.getFirst();
 
             INDArray params = model.params();
-            //log.info("Thread {}; Applying own gradient. Mean number {}", Thread.currentThread().getId(), gradient.gradient().meanNumber().doubleValue());
-            stepFunction.step(params, gradient.gradient());
 
-            // applying external gradients if any
-            if (processor != null)
-                while (!processor.getForeignGradients().isEmpty()) {
-                    SharedGradient grad = processor.getForeignGradients().poll();
-                    //log.info("Thread {}; Applying external gradient. Mean number: {}", Thread.currentThread().getId(), grad.getGradient().meanNumber().doubleValue());
-                    stepFunction.step(params, grad.getGradient());
-                }
+            // if optimizer has GradientsAccumulator defined - go for it
+            if (accumulator != null) {
+                // we're propagating current update
+                accumulator.storeUpdate(gradient.gradient());
+
+                // and getting (possible) pending update from accumulator
+                INDArray pendingUpdate = accumulator.getUpdate();
+                if (pendingUpdate != null)
+                    stepFunction.step(params, pendingUpdate);
+
+                // if there's no update available - just go on then
+            } else {
+                // if accumulator isn't used - we just to for direct updates application
+                stepFunction.step(params, gradient.gradient());
+            }
 
             //Note: model.params() is always in-place for MultiLayerNetwork and ComputationGraph, hence no setParams is necessary there
             //However: for pretrain layers, params are NOT a view. Thus a setParams call is necessary
