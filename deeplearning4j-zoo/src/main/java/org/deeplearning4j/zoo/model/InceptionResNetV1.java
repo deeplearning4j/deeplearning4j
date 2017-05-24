@@ -1,6 +1,7 @@
 package org.deeplearning4j.zoo.model;
 
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.zoo.ModelMetaData;
 import org.deeplearning4j.zoo.ZooType;
 import org.deeplearning4j.zoo.ZooModel;
@@ -34,11 +35,19 @@ public class InceptionResNetV1 extends ZooModel {
     private long seed;
     private int iterations;
     private int numClasses;
+    private WorkspaceMode workspaceMode;
+    private ConvolutionLayer.AlgoMode cudnnAlgoMode;
 
-    public InceptionResNetV1(int outputNum, long seed, int iterations) {
+    public InceptionResNetV1(int numLabels, long seed, int iterations) {
+        this(numLabels, seed, iterations, WorkspaceMode.SEPARATE);
+    }
+
+    public InceptionResNetV1(int outputNum, long seed, int iterations, WorkspaceMode workspaceMode) {
         this.seed = seed;
         this.numClasses = outputNum;
         this.iterations = iterations;
+        this.workspaceMode = workspaceMode;
+        this.cudnnAlgoMode = workspaceMode==WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST :ConvolutionLayer.AlgoMode.NO_WORKSPACE;
     }
 
     public ZooType zooType() {

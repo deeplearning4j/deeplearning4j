@@ -1,14 +1,11 @@
 package org.deeplearning4j.zoo.model;
 
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.zoo.ModelMetaData;
 import org.deeplearning4j.zoo.ZooType;
 import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.GradientNormalization;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.L2NormalizeVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -36,12 +33,19 @@ public class FaceNetNN4Small2 extends ZooModel {
     private long seed;
     private int iterations;
     private Activation transferFunction = Activation.RELU;
+    private WorkspaceMode workspaceMode;
+    private ConvolutionLayer.AlgoMode cudnnAlgoMode;
 
     public FaceNetNN4Small2(int numLabels, long seed, int iterations) {
-        ;
+        this(numLabels, seed, iterations, WorkspaceMode.SEPARATE);
+    }
+
+    public FaceNetNN4Small2(int numLabels, long seed, int iterations, WorkspaceMode workspaceMode) {
         this.numLabels = numLabels;
         this.seed = seed;
         this.iterations = iterations;
+        this.workspaceMode = workspaceMode;
+        this.cudnnAlgoMode = workspaceMode==WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST :ConvolutionLayer.AlgoMode.NO_WORKSPACE;
     }
 
     public ZooType zooType() {

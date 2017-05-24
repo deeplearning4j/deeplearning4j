@@ -6,11 +6,19 @@ import org.deeplearning4j.datasets.iterator.impl.CifarDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.zoo.model.GoogLeNet;
+import org.deeplearning4j.zoo.model.ResNet50;
+import org.deeplearning4j.zoo.model.VGG16;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.IOException;
 import java.util.Map;
+
+import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Tests workflow for zoo model instantiation.
@@ -52,6 +60,32 @@ public class TestInstantiation {
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
             System.gc();
         }
+    }
+
+    @Test
+    public void testInitPretrained() throws IOException {
+        ZooModel model = new ResNet50(1, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
+        ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
+        INDArray[] result = initializedModel.output(Nd4j.create(new int[]{1,3,224,224}));
+        assertArrayEquals(result[0].shape(), new int[]{1, 1000});
+
+        // clean up for current model
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+
+        model = new VGG16(1, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
+        initializedModel = (ComputationGraph) model.initPretrained();
+        result = initializedModel.output(Nd4j.create(new int[]{1,3,224,224}));
+        assertArrayEquals(result[0].shape(), new int[]{1, 1000});
+
+        // clean up for current model
+        Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
+        System.gc();
+
+        model = new GoogLeNet(1, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
+        initializedModel = (ComputationGraph) model.initPretrained();
+        result = initializedModel.output(Nd4j.create(new int[]{1,3,224,224}));
+        assertArrayEquals(result[0].shape(), new int[]{1, 1000});
     }
 
 }

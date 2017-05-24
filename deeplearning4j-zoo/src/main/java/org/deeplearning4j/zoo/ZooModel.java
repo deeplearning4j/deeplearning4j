@@ -30,13 +30,16 @@ public abstract class ZooModel<T> implements InstantiableModel {
             return true;
     }
 
-    public Model getPretrained() throws IOException {
+    public Model initPretrained() throws IOException {
         if (pretrainedUrl() == null)
             throw new UnsupportedOperationException("Pretrained weights are not available for this model.");
 
         String localFilename = new File(pretrainedUrl()).getName();
         File cachedFile = new File(System.getProperty("user.home"), "/.deeplearning4j/" + localFilename);
         cachedFile.mkdirs();
+
+        if(cachedFile.isDirectory())
+            cachedFile.delete();
 
         if (!cachedFile.exists()) {
             log.info("Downloading model to " + cachedFile.toString());

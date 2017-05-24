@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration.GraphBuilder;
 import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -34,11 +35,19 @@ public class GoogLeNet extends ZooModel {
     private int numLabels;
     private long seed;
     private int iterations;
+    private WorkspaceMode workspaceMode;
+    private ConvolutionLayer.AlgoMode cudnnAlgoMode;
 
     public GoogLeNet(int numLabels, long seed, int iterations) {
+        this(numLabels, seed, iterations, WorkspaceMode.SEPARATE);
+    }
+
+    public GoogLeNet(int numLabels, long seed, int iterations, WorkspaceMode workspaceMode) {
         this.numLabels = numLabels;
         this.seed = seed;
         this.iterations = iterations;
+        this.workspaceMode = workspaceMode;
+        this.cudnnAlgoMode = workspaceMode==WorkspaceMode.SINGLE ? ConvolutionLayer.AlgoMode.PREFER_FASTEST :ConvolutionLayer.AlgoMode.NO_WORKSPACE;
     }
 
     public String pretrainedUrl() {
