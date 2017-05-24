@@ -17,6 +17,7 @@
 package org.datavec.api.records.reader.impl.regex;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataURI;
@@ -29,10 +30,7 @@ import org.datavec.api.writable.Writable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -103,7 +101,7 @@ public class RegexSequenceRecordReader extends FileRecordReader implements Seque
 
     @Override
     public List<List<Writable>> sequenceRecord(URI uri, DataInputStream dataInputStream) throws IOException {
-        String fileContents = org.apache.commons.io.IOUtils.toString(dataInputStream, charset.name());
+        String fileContents = IOUtils.toString(new BufferedInputStream(dataInputStream), charset.name());
         return loadSequence(fileContents, uri);
     }
 
