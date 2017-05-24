@@ -5,9 +5,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.listeners.GradientsProcessor;
 import org.deeplearning4j.optimize.listeners.SharedGradient;
+import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -29,7 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Slf4j
 public class SymmetricTrainer extends DefaultTrainer implements CommunicativeTrainer {
-    @Builder.Default protected GradientsProcessor extractor = new GradientsProcessor();
+    protected GradientsAccumulator accumulator;
 
     public SymmetricTrainer(@NonNull Model originalModel, int threadIdx, @NonNull WorkspaceMode mode, @NonNull ParallelWrapper wrapper) {
         super();
@@ -37,11 +40,14 @@ public class SymmetricTrainer extends DefaultTrainer implements CommunicativeTra
         this.threadId = threadIdx;
         this.workspaceMode = mode;
         this.parallelWrapper = wrapper;
+        this.accumulator = wrapper.getGradientsAccumulator();
     }
 
+    // FIXME: delete this method, it's not needed anymore
+    @Deprecated
     public void enqueueGradient(SharedGradient gradient) {
         //log.info("Gradient attached: {}", gradient.getGradient().isAttached());
-        extractor.enqueueGradient(gradient);
+        //extractor.enqueueGradient(gradient);
     }
 
 
@@ -50,20 +56,23 @@ public class SymmetricTrainer extends DefaultTrainer implements CommunicativeTra
         return false;
     }
 
+    // FIXME: delete this method, it's not needed anymore
     @Override
     protected void fit(DataSet dataSet) {
         super.fit(dataSet);
 
         // gradients should be extracted here
         // and broadcasted to all trainers
-
+/*
         while (!extractor.getOwnGradients().isEmpty()) {
             // TODO: ensure gradients array is detached!!!
 
             parallelWrapper.broadcastGradients(extractor.getOwnGradients().poll());
         }
+        */
     }
 
+    // FIXME: delete this method, it's not needed anymore
     @Override
     protected void fit(MultiDataSet dataSet) {
         super.fit(dataSet);
@@ -75,10 +84,17 @@ public class SymmetricTrainer extends DefaultTrainer implements CommunicativeTra
     protected void postInit() {
         super.postInit();
 
-        if (extractor == null)
-            extractor = new GradientsProcessor();
+        if (accumulator == null) {
+            log.warn("GradientsAccumulator is undefined, gradients sharing will be skipped");
+            return;
+        }
 
-        replicatedModel.addListener(extractor);
+        // just pass accumulator down the hill
+        if (replicatedModel instanceof ComputationGraph) {
+            ((ComputationGraph) replicatedModel).setGradientsAccumulator(accumulator);
+        } else if (replicatedModel instanceof MultiLayerNetwork) {
+            ((MultiLayerNetwork) replicatedModel).setGradientsAccumulator(accumulator);
+        }
     }
 
 

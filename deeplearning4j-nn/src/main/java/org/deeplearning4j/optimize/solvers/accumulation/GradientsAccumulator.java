@@ -46,10 +46,13 @@ public class GradientsAccumulator implements Serializable {
     public GradientsAccumulator(@NonNull MessageHandler handler) {
         this.gradients = new LinkedTransferQueue<>();
         this.handler = handler;
+
+        this.handler.initialize(this);
     }
 
     public INDArray getUpdate() {
-        return null;
+        // FIXME: this is wrong
+        return gradients.poll();
     }
 
     /**

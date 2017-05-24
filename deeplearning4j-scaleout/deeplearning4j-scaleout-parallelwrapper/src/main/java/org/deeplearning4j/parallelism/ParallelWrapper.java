@@ -1,7 +1,9 @@
 package org.deeplearning4j.parallelism;
 
 import lombok.Data;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
@@ -15,11 +17,11 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
+import org.deeplearning4j.optimize.solvers.accumulation.LocalHandler;
 import org.deeplearning4j.parallelism.factory.DefaultTrainerContext;
 import org.deeplearning4j.parallelism.factory.TrainerContext;
 import org.deeplearning4j.optimize.listeners.SharedGradient;
-import org.deeplearning4j.parallelism.trainer.CommunicativeTrainer;
-import org.deeplearning4j.parallelism.trainer.SymmetricTrainer;
 import org.deeplearning4j.parallelism.trainer.Trainer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -44,7 +46,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
-// TODO: We want this thing to be NUMA-aware in foreseable future
+// TODO: We want this thing to be NUMA-aware in foreseeable future
 @Slf4j
 @Data
 public class ParallelWrapper implements AutoCloseable {
@@ -64,7 +66,9 @@ public class ParallelWrapper implements AutoCloseable {
     protected StatsStorageRouter storageRouter;
     protected boolean isMQ;
     protected WorkspaceMode workspaceMode;
-    private Object[] trainerContextArgs;
+    protected Object[] trainerContextArgs;
+
+    @Getter @Setter protected GradientsAccumulator gradientsAccumulator;
 
     private MagicQueue mq;
 
@@ -355,11 +359,13 @@ public class ParallelWrapper implements AutoCloseable {
             1) Ensure length matches parameters length
             2) Ensure data is acessible from all devices somehow (i.e. it's in HOST-only mode
          */
+        /*
         if (zoo[0] instanceof CommunicativeTrainer) {
             for (int i = 0; i < zoo.length; i++) {
                 ((CommunicativeTrainer) zoo[i]).enqueueGradient(gradients);
             }
         }
+        */
     }
 
 
@@ -523,6 +529,8 @@ public class ParallelWrapper implements AutoCloseable {
         protected Object[] trainerContextArgs;
         protected WorkspaceMode workspaceMode = WorkspaceMode.SEPARATE;
 
+        protected GradientsAccumulator accumulator;
+
         /**
          * Transer context args are for calling a
          * {@link TrainerContext} init method
@@ -656,6 +664,17 @@ public class ParallelWrapper implements AutoCloseable {
             return this;
         }
 
+        /**
+         * This method allows you to specify GradientsAccumulator instance to be used in this ParallelWrapper instance
+         *
+         * @param accumulator
+         * @return
+         */
+        public Builder gradientsAccumulator(@NonNull GradientsAccumulator accumulator) {
+            this.accumulator = accumulator;
+            return this;
+        }
+
 
         /**
          * This method enables/disables averaged model score reporting
@@ -682,6 +701,7 @@ public class ParallelWrapper implements AutoCloseable {
             wrapper.isMQ = this.isMQ;
             wrapper.workspaceMode = this.workspaceMode;
             wrapper.trainerContext = this.trainerContext;
+            wrapper.gradientsAccumulator = this.accumulator;
 
             return wrapper;
         }
