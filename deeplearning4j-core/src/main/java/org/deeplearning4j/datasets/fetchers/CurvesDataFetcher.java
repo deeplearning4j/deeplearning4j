@@ -32,6 +32,7 @@ import java.net.URL;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class CurvesDataFetcher extends BaseDataFetcher {
 
     public final static String CURVES_URL = "https://s3.amazonaws.com/dl4j-distribution/curves.ser";
