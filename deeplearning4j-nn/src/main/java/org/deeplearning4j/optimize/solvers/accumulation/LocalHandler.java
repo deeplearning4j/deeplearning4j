@@ -25,7 +25,9 @@ public class LocalHandler implements MessageHandler {
     @Override
     public boolean broadcastUpdates(INDArray updates) {
         // we just loop back data immediately
-        accumulator.receiveUpdate(updates);
+        accumulator.receiveUpdate(updates.dup(updates.ordering()));
+
+        updates.assign(0.0);
 
         return true;
     }

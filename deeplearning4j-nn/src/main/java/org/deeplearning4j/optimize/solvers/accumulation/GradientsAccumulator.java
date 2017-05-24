@@ -60,10 +60,11 @@ public class GradientsAccumulator implements Serializable {
     // TODO: this method should be synchronized probably, if we want to call this method from different threads
     public synchronized void storeUpdate(INDArray array) {
         /*
-            Here we want to do 2 things:
+            Here we want to do 4 things:
             1) update accumulated values
-            2) invoke extractor, that'll pull all updates above threshold
-            3)
+            2) invoke extractor, that'll (optionally) pull all updates above threshold
+            3) ???
+            4) PROFIT!
          */
 
         // if accum is null, let's just create it here

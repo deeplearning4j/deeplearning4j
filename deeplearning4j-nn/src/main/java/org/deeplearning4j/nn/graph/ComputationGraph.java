@@ -52,6 +52,7 @@ import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
@@ -318,6 +319,21 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     /**
+     * This method allows you to specificy GradientsAccumulator instance to be used with this model
+     *
+     * PLEASE NOTE: Do not use this method unless you understand how to use GradientsAccumulator & updates sharing.
+     * PLEASE NOTE: Do not use this method on standalone model
+     *
+     * @param accumulator
+     */
+    public void setGradientsAccumulator(GradientsAccumulator accumulator) {
+        if (!initCalled)
+            init();
+
+        solver.getOptimizer().setGradientsAccumulator(accumulator);
+    }
+
+    /**
      * Initialize the ComputationGraph network
      */
     public void init() {
@@ -522,6 +538,14 @@ public class ComputationGraph implements Serializable, Model {
                 outputIndices[j++] = new VertexIndices(outputVertexIndex, outputVertexInputNumber);
             }
             gv.setOutputVertices(outputIndices);
+        }
+
+        // now we init solver & optimizer
+        if (solver == null) {
+            try(MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                solver.initOptimizer();
+            }
         }
 
         initCalled = true;
