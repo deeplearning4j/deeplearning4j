@@ -86,7 +86,8 @@ void convertToThreshold(void *dx, Nd4jIndex N, void *dz) {
     z[1] = (int) N;
 
     int t = 3;
-    for (Nd4jIndex e = 0; e < N && t < limit; e++) {
+    int flimit = limit + t;
+    for (Nd4jIndex e = 0; e < N && t < flimit; e++) {
         if (x[e] >= (T) threshold) {
             z[t++] = e;
             x[e] -= threshold;
