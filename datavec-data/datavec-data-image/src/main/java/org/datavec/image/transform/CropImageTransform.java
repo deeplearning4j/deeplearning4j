@@ -15,20 +15,27 @@
  */
 package org.datavec.image.transform;
 
-import java.util.Random;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 
-import static org.bytedeco.javacpp.opencv_core.*;
+import java.util.Random;
+
+import static org.bytedeco.javacpp.opencv_core.Mat;
+import static org.bytedeco.javacpp.opencv_core.Rect;
 
 /**
  * Crops images deterministically or randomly.
  *
  * @author saudet
  */
+//@NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CropImageTransform extends BaseImageTransform<Mat> {
 
     int cropTop, cropLeft, cropBottom, cropRight;
+
+    private CropImageTransform() {this(-1);}
 
     /** Calls {@code this(null, crop, crop, crop, crop)}. */
     public CropImageTransform(int crop) {
@@ -88,7 +95,6 @@ public class CropImageTransform extends BaseImageTransform<Mat> {
         int h = Math.max(1, mat.rows() - bottom - y);
         int w = Math.max(1, mat.cols() - right - x);
         Mat result = mat.apply(new Rect(x, y, w, h));
-
 
         return new ImageWritable(converter.convert(result));
     }

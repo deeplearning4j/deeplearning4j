@@ -15,22 +15,27 @@
  */
 package org.datavec.image.transform;
 
-import java.util.Random;
-
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 
-import static org.bytedeco.javacpp.opencv_core.*;
-import static org.bytedeco.javacpp.opencv_imgproc.*;
+import java.util.Random;
+
+import static org.bytedeco.javacpp.opencv_core.Mat;
+import static org.bytedeco.javacpp.opencv_core.Size;
+import static org.bytedeco.javacpp.opencv_imgproc.resize;
 
 /**
  * Scales images deterministically or randomly.
  *
  * @author saudet
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ScaleImageTransform extends BaseImageTransform<Mat> {
 
     float dx, dy;
+
+    private ScaleImageTransform() { this(-1); }
 
     /** Calls {@code this(null, delta, delta)}. */
     public ScaleImageTransform(float delta) {

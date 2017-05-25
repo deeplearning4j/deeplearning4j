@@ -79,5 +79,11 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-data-image</artifactId>
+            <version>${parent.version}</version>
+        </dependency>
+
     </dependencies>
 </project>

@@ -15,12 +15,15 @@
  */
 package org.datavec.image.transform;
 
-import java.util.Random;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+
+import java.util.Random;
 
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
@@ -33,6 +36,8 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  * @author saudet
  */
 @Accessors(fluent = true)
+@JsonIgnoreProperties({"interMode", "borderMode", "borderValue", "converter"})
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class WarpImageTransform extends BaseImageTransform<Mat> {
 
     float[] deltas;
@@ -45,6 +50,8 @@ public class WarpImageTransform extends BaseImageTransform<Mat> {
     @Getter
     @Setter
     Scalar borderValue = Scalar.ZERO;
+
+    private WarpImageTransform() { this(-1); }
 
     /** Calls {@code this(null, delta, delta, delta, delta, delta, delta, delta, delta)}. */
     public WarpImageTransform(float delta) {

@@ -17,20 +17,22 @@ package org.datavec.image.transform;
 
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 import java.util.Random;
 
-import static org.bytedeco.javacpp.opencv_core.Mat;
-import static org.bytedeco.javacpp.opencv_core.MatVector;
-import static org.bytedeco.javacpp.opencv_core.split;
-import static org.bytedeco.javacpp.opencv_core.merge;
-import static org.bytedeco.javacpp.opencv_imgproc.*;
+import static org.bytedeco.javacpp.opencv_core.*;
+import static org.bytedeco.javacpp.opencv_imgproc.CV_BGR2GRAY;
+import static org.bytedeco.javacpp.opencv_imgproc.equalizeHist;
 
 /**
  * "<a href="https://opencv-srf.blogspot.com/2013/08/histogram-equalization.html">Histogram Equalization</a> equalizes the intensity distribution of an image or flattens the intensity distribution curve.
  * Used to improve the contrast of an image."
  *
  */
+@JsonIgnoreProperties({"splitChannels", "converter"})
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class EqualizeHistTransform extends BaseImageTransform {
 
     int conversionCode;
@@ -42,6 +44,15 @@ public class EqualizeHistTransform extends BaseImageTransform {
 
     public EqualizeHistTransform() {
         this(new Random(1234), CV_BGR2GRAY);
+    }
+
+    /**
+     * Return contrast normalized object
+     *
+     * @param conversionCode  to transform,
+     */
+    public EqualizeHistTransform(int conversionCode) {
+        this(null, conversionCode);
     }
 
     /**

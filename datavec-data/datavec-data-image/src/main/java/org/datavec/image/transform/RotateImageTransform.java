@@ -15,12 +15,15 @@
  */
 package org.datavec.image.transform;
 
-import java.util.Random;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+
+import java.util.Random;
 
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
@@ -33,6 +36,8 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  * @author saudet
  */
 @Accessors(fluent = true)
+@JsonIgnoreProperties({"interMode", "borderMode", "borderValue", "converter"})
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class RotateImageTransform extends BaseImageTransform<Mat> {
 
     float centerx, centery, angle, scale;
@@ -46,6 +51,8 @@ public class RotateImageTransform extends BaseImageTransform<Mat> {
     @Setter
     Scalar borderValue = Scalar.ZERO;
 
+    private RotateImageTransform() { this(-1); }
+
     /** Calls {@code this(null, 0, 0, angle, 0)}. */
     public RotateImageTransform(float angle) {
         this(null, 0, 0, angle, 0);
@@ -54,6 +61,18 @@ public class RotateImageTransform extends BaseImageTransform<Mat> {
     /** Calls {@code this(random, 0, 0, angle, 0)}. */
     public RotateImageTransform(Random random, float angle) {
         this(random, 0, 0, angle, 0);
+    }
+
+    /**
+     * Constructs an instance of the ImageTransform.
+     *
+     * @param centerx maximum deviation in x of center of rotation (relative to image center)
+     * @param centery maximum deviation in y of center of rotation (relative to image center)
+     * @param angle   maximum rotation (degrees)
+     * @param scale   maximum scaling (relative to 1)
+     */
+    public RotateImageTransform(float centerx, float centery, float angle, float scale) {
+        this(null, centerx, centery, angle, scale);
     }
 
     /**

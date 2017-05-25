@@ -18,6 +18,8 @@ package org.datavec.image.data;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.nio.Buffer;
+
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameConverter;
 import org.datavec.api.writable.Writable;
@@ -77,4 +79,21 @@ public class ImageWritable implements Writable {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        Frame f2 = ((ImageWritable)obj).getFrame();
+
+        Buffer[] b1 = this.frame.image;
+        Buffer[] b2 = f2.image;
+
+        if (b1.length != b2.length)
+            return false;
+
+        for (int i = 0; i < b1.length; i++) {
+            if (b1[i].equals(b2[i]) == false)
+                return false;
+        }
+
+        return true;
+    }
 }

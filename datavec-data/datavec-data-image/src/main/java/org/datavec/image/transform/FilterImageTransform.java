@@ -15,11 +15,13 @@
  */
 package org.datavec.image.transform;
 
-import java.util.Random;
-
 import org.bytedeco.javacv.FFmpegFrameFilter;
 import org.bytedeco.javacv.FrameFilter;
 import org.datavec.image.data.ImageWritable;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+
+import java.util.Random;
 
 import static org.bytedeco.javacpp.avutil.*;
 
@@ -30,9 +32,15 @@ import static org.bytedeco.javacpp.avutil.*;
  * @author saudet
  * @see FFmpegFrameFilter
  */
+@JsonIgnoreProperties({"filter", "converter"})
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class FilterImageTransform extends BaseImageTransform {
 
     FFmpegFrameFilter filter;
+
+    int width, height, channels;
+
+    private FilterImageTransform() { this("noise=alls=20:allf=t+u,format=rgba", 50, 50, 4); }
 
     /** Calls {@code this(filters, width, height, 3)}. */
     public FilterImageTransform(String filters, int width, int height) {
@@ -49,6 +57,11 @@ public class FilterImageTransform extends BaseImageTransform {
      */
     public FilterImageTransform(String filters, int width, int height, int channels) {
         super(null);
+
+        this.width = width;
+        this.height = height;
+        this.channels = channels;
+
         int pixelFormat = channels == 1 ? AV_PIX_FMT_GRAY8
                         : channels == 3 ? AV_PIX_FMT_BGR24 : channels == 4 ? AV_PIX_FMT_RGBA : AV_PIX_FMT_NONE;
         if (pixelFormat == AV_PIX_FMT_NONE) {

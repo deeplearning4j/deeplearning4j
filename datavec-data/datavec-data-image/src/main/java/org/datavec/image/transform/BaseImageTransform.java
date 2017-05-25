@@ -15,10 +15,12 @@
  */
 package org.datavec.image.transform;
 
-import java.util.Random;
-
+import lombok.NoArgsConstructor;
 import org.bytedeco.javacv.FrameConverter;
 import org.datavec.image.data.ImageWritable;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+
+import java.util.Random;
 
 /**
  *
@@ -27,6 +29,8 @@ import org.datavec.image.data.ImageWritable;
  *
  * @author saudet
  */
+@NoArgsConstructor
+@JsonIgnoreProperties({"converter"})
 public abstract class BaseImageTransform<F> implements ImageTransform {
 
     protected Random random;

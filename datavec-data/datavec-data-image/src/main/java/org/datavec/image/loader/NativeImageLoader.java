@@ -539,4 +539,35 @@ public class NativeImageLoader extends BaseImageLoader {
         }
         return scaled;
     }
+
+    public ImageWritable asWritable(File f) throws IOException {
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f))) {
+            byte[] bytes = IOUtils.toByteArray(bis);
+            Mat image = imdecode(new Mat(bytes), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+            if (image == null || image.empty()) {
+                PIX pix = pixReadMem(bytes, bytes.length);
+                if (pix == null) {
+                    throw new IOException("Could not decode image from input stream");
+                }
+                image = convert(pix);
+                pixDestroy(pix);
+            }
+
+            if (converter == null) {
+                this.converter = new OpenCVFrameConverter.ToMat();
+//                throw new IOException("need to initialize converter");
+            }
+            ImageWritable writable = new ImageWritable(converter.convert(image));
+            return writable;
+        }
+    }
+
+    public INDArray asMatrix(ImageWritable writable) throws IOException {
+        if (converter == null) {
+            this.converter = new OpenCVFrameConverter.ToMat();
+//            throw new IOException("need to initialize converter");
+        }
+        Mat image = converter.convert(writable.getFrame());
+        return asMatrix(image);
+    }
 }

@@ -15,20 +15,22 @@
  */
 package org.datavec.image.transform;
 
-import java.util.Random;
-
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 
-import static org.bytedeco.javacpp.opencv_imgproc.cvtColor;
-import static org.bytedeco.javacpp.opencv_imgproc.COLOR_BGR2Luv;
+import java.util.Random;
+
 import static org.bytedeco.javacpp.opencv_core.Mat;
+import static org.bytedeco.javacpp.opencv_imgproc.COLOR_BGR2Luv;
+import static org.bytedeco.javacpp.opencv_imgproc.cvtColor;
 
 /**
  * Color conversion transform using CVT (cvtcolor):
  * <a href="http://docs.opencv.org/2.4/modules/imgproc/doc/miscellaneous_transformations.html#cvtcolor">CVT Color</a>.
  * <a href="http://bytedeco.org/javacpp-presets/opencv/apidocs/org/bytedeco/javacpp/opencv_imgproc.html#cvtColor-org.bytedeco.javacpp.opencv_core.Mat-org.bytedeco.javacpp.opencv_core.Mat-int-int-">More CVT Color</a>.
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ColorConversionTransform extends BaseImageTransform {
 
     int conversionCode;
@@ -38,6 +40,15 @@ public class ColorConversionTransform extends BaseImageTransform {
      */
     public ColorConversionTransform() {
         this(new Random(1234), COLOR_BGR2Luv);
+    }
+
+    /**
+     * Return new ColorConversion object
+     *
+     * @param conversionCode  to transform,
+     */
+    public ColorConversionTransform(int conversionCode) {
+        this(null, conversionCode);
     }
 
     /**

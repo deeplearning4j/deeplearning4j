@@ -18,6 +18,7 @@ package org.datavec.image.transform;
 import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 import java.util.Random;
 
@@ -28,9 +29,12 @@ import static org.bytedeco.javacpp.opencv_imgproc.resize;
  *
  * @author raver119@gmail.com
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ResizeImageTransform extends BaseImageTransform<opencv_core.Mat> {
 
     int newHeight, newWidth;
+
+    private ResizeImageTransform() { this(-1, -1);}
 
     /**
      * Returns new ResizeImageTransform object
