@@ -2,6 +2,7 @@ package org.nd4j.compression.impl;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -11,6 +12,7 @@ import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -23,8 +25,9 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class Threshold extends AbstractCompressor {
-    @Getter @Setter private float threshold = 1e-3f;
+    @Getter @Setter private float threshold = 0.0f;
 
     /**
      * This method returns compression descriptor. It should be unique for any compressor implementation
@@ -34,6 +37,17 @@ public class Threshold extends AbstractCompressor {
     @Override
     public String getDescriptor() {
         return "THRESHOLD";
+    }
+
+    @Override
+    public void configure(Object... vars) {
+        if (vars[0] instanceof Number) {
+            Number t = (Number) vars[0];
+            threshold = t.floatValue();
+            log.info("Setting threshold to [{}]", threshold);
+        } else {
+            throw new ND4JIllegalStateException("Threshold value should be Number");
+        }
     }
 
     @Override
@@ -97,6 +111,6 @@ public class Threshold extends AbstractCompressor {
 
     @Override
     protected CompressedDataBuffer compressPointer(DataBuffer.TypeEx srcType, Pointer srcPointer, int length, int elementSize) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 }

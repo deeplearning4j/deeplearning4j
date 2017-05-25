@@ -297,6 +297,8 @@ public class CompressionTests extends BaseNd4jTest {
         INDArray exp_0 = Nd4j.create(6);
         INDArray exp_1 = initial.dup();
 
+        Nd4j.getCompressor().getCompressor("THRESHOLD").configure(1e-3);
+
         INDArray compressed = Nd4j.getCompressor().compress(initial, "THRESHOLD");
 
 
@@ -315,6 +317,7 @@ public class CompressionTests extends BaseNd4jTest {
         INDArray exp_0 = Nd4j.create(new double[]{1.0 - 1e-3, 2.0 - 1e-3, 0.0, 0.0, -1.0 + 1e-3, -1.0 + 1e-3});
         INDArray exp_1 = Nd4j.create(new double[]{1e-3, 1e-3, 0.0, 0.0, -1e-3, -1e-3});
 
+        Nd4j.getCompressor().getCompressor("THRESHOLD").configure(1e-3);
         INDArray compressed = Nd4j.getCompressor().compress(initial, "THRESHOLD");
 
 
@@ -335,6 +338,7 @@ public class CompressionTests extends BaseNd4jTest {
         INDArray exp_0 = Nd4j.create(new double[]{-1.0 + 1e-3, -2.0 + 1e-3, 0.0, 0.0, 1.0 - 1e-3, 1.0 - 1e-3});
         INDArray exp_1 = Nd4j.create(new double[]{-1e-3, -1e-3, 0.0, 0.0, 1e-3, 1e-3});
 
+        Nd4j.getCompressor().getCompressor("THRESHOLD").configure(1e-3);
         INDArray compressed = Nd4j.getCompressor().compress(initial, "THRESHOLD");
 
 

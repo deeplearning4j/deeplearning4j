@@ -1,5 +1,6 @@
 package org.nd4j.compression.impl;
 
+import lombok.extern.slf4j.Slf4j;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
@@ -15,8 +16,8 @@ import org.slf4j.LoggerFactory;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public abstract class AbstractCompressor implements NDArrayCompressor {
-    protected static Logger logger = LoggerFactory.getLogger(AbstractCompressor.class);
 
     @Override
     public INDArray compress(INDArray array) {
@@ -28,6 +29,11 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
         dup.markAsCompressed(true);
 
         return dup;
+    }
+
+    @Override
+    public void configure(Object... vars) {
+        // no-op
     }
 
     /**
