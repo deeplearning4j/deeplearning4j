@@ -89,11 +89,13 @@ void convertToThreshold(void *dx, Nd4jIndex N, void *dz) {
     int flimit = limit + t;
     for (Nd4jIndex e = 0; e < N && t < flimit; e++) {
         if (x[e] >= (T) threshold) {
-            z[t++] = e;
+            z[t++] = e+1;
             x[e] -= threshold;
+//            printf("Element [%i] is +T; Storing as [%i]\n", e, e + 1);
         } else if (x[e] <= (T) -threshold) {
-            z[t++] = -e;
+            z[t++] = -e - 1;
             x[e] += threshold;
+//            printf("Element [%i] is -T; Storing as [%i]\n", e, -e - 1);
         }
     }
 }
@@ -111,12 +113,13 @@ void convertFromThreshold(void *dx, Nd4jIndex N, void *dz) {
     // everything is set to 0 now
     memset(z, 0, sizeof(T) * size);
 
-    for(int e = 3; e < limit; e++) {
+    int flimit = limit + 3;
+    for(int e = 3; e < flimit; e++) {
         int el = x[e];
         if (el > 0) {
-            z[el] = threshold;
+            z[el-1] = threshold;
         } else if (el < 0) {
-            z[el * -1] = -threshold;
+            z[(el + 1) * -1] = -threshold;
         }
     }
 }
