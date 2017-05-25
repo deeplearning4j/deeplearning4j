@@ -16,8 +16,7 @@ import java.util.HashMap;
  */
 public class ImageNetLabels {
 
-    private final static String jsonUrl =
-                    "http://blob.deeplearning4j.org/utils/imagenet_class_index.json";
+    private final static String jsonUrl = "http://blob.deeplearning4j.org/utils/imagenet_class_index.json";
     private static ArrayList<String> predictionLabels = null;
 
     public ImageNetLabels() {
@@ -73,7 +72,8 @@ public class ImageNetLabels {
                 top5[i] = Nd4j.argMax(currentBatch, 1).getInt(0, 0);
                 top5Prob[i] = currentBatch.getFloat(batch, top5[i]);
                 currentBatch.putScalar(0, top5[i], 0);
-                predictionDescription += "\n\t" + String.format("%3f", top5Prob[i] * 100) + "%, " + predictionLabels.get(top5[i]);
+                predictionDescription += "\n\t" + String.format("%3f", top5Prob[i] * 100) + "%, "
+                                + predictionLabels.get(top5[i]);
                 i++;
             }
         }

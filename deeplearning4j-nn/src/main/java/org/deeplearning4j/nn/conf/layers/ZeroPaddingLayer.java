@@ -2,7 +2,6 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -22,7 +21,6 @@ import java.util.Map;
  * @author Alex Black
  */
 @Data
-@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
 public class ZeroPaddingLayer extends Layer {
 

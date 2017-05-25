@@ -75,19 +75,22 @@ public class ResNet50 extends ZooModel {
         String activationName = "act" + stage + block + "_branch";
         String shortcutName = "short" + stage + block + "_branch";
 
-        graph
-                .addLayer(convName + "2a",
-                        new ConvolutionLayer.Builder(new int[] {1, 1}).nOut(filters[0])
-                                .cudnnAlgoMode(cudnnAlgoMode).build(), input)
-                .addLayer(batchName + "2a", new BatchNormalization(), convName + "2a")
-                .addLayer(activationName + "2a",
-                        new ActivationLayer.Builder().activation(Activation.RELU).build(), batchName + "2a")
+        graph.addLayer(convName + "2a",
+                        new ConvolutionLayer.Builder(new int[] {1, 1}).nOut(filters[0]).cudnnAlgoMode(cudnnAlgoMode)
+                                        .build(),
+                        input)
+                        .addLayer(batchName + "2a", new BatchNormalization(), convName + "2a")
+                        .addLayer(activationName + "2a",
+                                        new ActivationLayer.Builder().activation(Activation.RELU).build(),
+                                        batchName + "2a")
 
-                .addLayer(convName + "2b", new ConvolutionLayer.Builder(kernelSize).nOut(filters[1])
-                                .cudnnAlgoMode(cudnnAlgoMode).convolutionMode(ConvolutionMode.Same).build(), activationName + "2a")
+                        .addLayer(convName + "2b", new ConvolutionLayer.Builder(kernelSize).nOut(filters[1])
+                                        .cudnnAlgoMode(cudnnAlgoMode).convolutionMode(ConvolutionMode.Same).build(),
+                                        activationName + "2a")
                         .addLayer(batchName + "2b", new BatchNormalization(), convName + "2b")
                         .addLayer(activationName + "2b",
-                                new ActivationLayer.Builder().activation(Activation.RELU).build(), batchName + "2b")
+                                        new ActivationLayer.Builder().activation(Activation.RELU).build(),
+                                        batchName + "2b")
 
                         .addLayer(convName + "2c",
                                         new ConvolutionLayer.Builder(new int[] {1, 1}).nOut(filters[2])
@@ -150,25 +153,20 @@ public class ResNet50 extends ZooModel {
     public ComputationGraphConfiguration.GraphBuilder graphBuilder() {
 
         ComputationGraphConfiguration.GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed)
-                .iterations(iterations)
-                .activation(Activation.IDENTITY)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(new RmsProp(0.1, 0.96, 0.001))
-                .weightInit(WeightInit.DISTRIBUTION)
-                .dist(new NormalDistribution(0.0, 0.5))
-                .regularization(true)
-                .l1(1e-7)
-                .l2(5e-5)
-                .miniBatch(true)
-                .convolutionMode(ConvolutionMode.Truncate)
-                .graphBuilder();
+                        .iterations(iterations).activation(Activation.IDENTITY)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .updater(new RmsProp(0.1, 0.96, 0.001)).weightInit(WeightInit.DISTRIBUTION)
+                        .dist(new NormalDistribution(0.0, 0.5)).regularization(true).l1(1e-7).l2(5e-5).miniBatch(true)
+                        .convolutionMode(ConvolutionMode.Truncate).graphBuilder();
 
 
         graph.addInputs("input").setInputTypes(InputType.convolutional(inputShape[2], inputShape[1], inputShape[0]))
                         // stem
                         .addLayer("stem-zero", new ZeroPaddingLayer.Builder(3, 3).build(), "input")
                         .addLayer("stem-cnn1",
-                                        new ConvolutionLayer.Builder(new int[] {7, 7}, new int[] {2, 2}).nOut(64).build(), "stem-zero")
+                                        new ConvolutionLayer.Builder(new int[] {7, 7}, new int[] {2, 2}).nOut(64)
+                                                        .build(),
+                                        "stem-zero")
                         .addLayer("stem-batch1", new BatchNormalization(), "stem-cnn1")
                         .addLayer("stem-act1", new ActivationLayer.Builder().activation(Activation.RELU).build(),
                                         "stem-batch1")
@@ -196,13 +194,14 @@ public class ResNet50 extends ZooModel {
         identityBlock(graph, new int[] {3, 3}, new int[] {512, 512, 2048}, "5", "c", "res5b_branch");
 
         graph.addLayer("avgpool",
-                        new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {3,3}).build(),
+                        new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {3, 3}).build(),
                         "res5c_branch")
                         // TODO add flatten/reshape layer here
-                .addLayer("output",
-                        new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                .nOut(numClasses).activation(Activation.SOFTMAX).build(), "avgpool")
-                .setOutputs("output").backprop(true).pretrain(false);
+                        .addLayer("output",
+                                        new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                                                        .nOut(numClasses).activation(Activation.SOFTMAX).build(),
+                                        "avgpool")
+                        .setOutputs("output").backprop(true).pretrain(false);
 
         return graph;
     }

@@ -58,8 +58,8 @@ public class LeNet extends ZooModel {
 
     public MultiLayerConfiguration conf() {
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().trainingWorkspaceMode(WorkspaceMode.SINGLE)
-                        .inferenceWorkspaceMode(WorkspaceMode.SINGLE).seed(seed).iterations(iterations)
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().trainingWorkspaceMode(workspaceMode)
+                        .inferenceWorkspaceMode(workspaceMode).seed(seed).iterations(iterations)
                         .activation(Activation.IDENTITY)
                         //                .weightInit(WeightInit.XAVIER)
                         .weightInit(WeightInit.DISTRIBUTION).learningRate(1e-2)//.biasLearningRate(2e-2)

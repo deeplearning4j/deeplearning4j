@@ -2,6 +2,7 @@ package org.deeplearning4j.zoo;
 
 import lombok.extern.slf4j.Slf4j;
 import org.datavec.image.loader.CifarLoader;
+import org.deeplearning4j.datasets.iterator.impl.BenchmarkDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.CifarDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -12,6 +13,7 @@ import org.deeplearning4j.zoo.model.VGG16;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
@@ -29,8 +31,8 @@ import static org.junit.Assert.*;
 public class TestInstantiation {
 
     @Test
-    public void testMultipleCnnTraining() {
-        Map<ZooType, ZooModel> models = ModelSelector.select(ZooType.CNN, CifarLoader.NUM_LABELS);
+    public void testMultipleCnnTraining() throws Exception {
+        Map<ZooType, ZooModel> models = ModelSelector.select(ZooType.VGG19, 10);
 
         for (Map.Entry<ZooType, ZooModel> entry : models.entrySet()) {
             log.info("Testing training on zoo model " + entry.getKey());
@@ -38,8 +40,8 @@ public class TestInstantiation {
 
             // set up data iterator
             int[] inputShape = model.metaData().getInputShape()[0];
-            CifarDataSetIterator iter = new CifarDataSetIterator(16, CifarLoader.NUM_LABELS * 16,
-                            new int[] {inputShape[1], inputShape[2], inputShape[0]});
+            DataSetIterator iter = new BenchmarkDataSetIterator(
+                            new int[] {16, inputShape[0], inputShape[1], inputShape[2]}, 10, 1);
 
             Model initializedModel = model.init();
             while (iter.hasNext()) {
@@ -55,6 +57,7 @@ public class TestInstantiation {
             // clean up for current model
             Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
             System.gc();
+            Thread.sleep(1000);
         }
     }
 

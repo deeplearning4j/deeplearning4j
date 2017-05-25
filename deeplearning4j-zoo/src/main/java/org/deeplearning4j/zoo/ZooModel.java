@@ -30,7 +30,7 @@ public abstract class ZooModel<T> implements InstantiableModel {
 
     public boolean pretrainedAvailable(PretrainedType pretrainedType) {
         boolean available;
-        switch(pretrainedType) {
+        switch (pretrainedType) {
             case IMAGENET:
                 if (pretrainedImageNetUrl() == null)
                     available = false;
@@ -70,17 +70,19 @@ public abstract class ZooModel<T> implements InstantiableModel {
     public Model initPretrained(PretrainedType pretrainedType) throws IOException {
         String localFilename;
         String remoteUrl;
-        switch(pretrainedType) {
+        switch (pretrainedType) {
             case IMAGENET:
                 if (pretrainedImageNetUrl() == null)
-                    throw new UnsupportedOperationException("Pretrained ImageNet weights are not available for this model.");
+                    throw new UnsupportedOperationException(
+                                    "Pretrained ImageNet weights are not available for this model.");
 
                 localFilename = new File(pretrainedImageNetUrl()).getName();
                 remoteUrl = pretrainedImageNetUrl();
                 break;
             case MNIST:
                 if (pretrainedMnistUrl() == null)
-                    throw new UnsupportedOperationException("Pretrained MNIST weights are not available for this model.");
+                    throw new UnsupportedOperationException(
+                                    "Pretrained MNIST weights are not available for this model.");
 
                 localFilename = new File(pretrainedMnistUrl()).getName();
                 remoteUrl = pretrainedMnistUrl();
