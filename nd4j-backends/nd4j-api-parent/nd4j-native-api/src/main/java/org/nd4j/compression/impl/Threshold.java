@@ -39,6 +39,11 @@ public class Threshold extends AbstractCompressor {
         return "THRESHOLD";
     }
 
+    /**
+     * This method allows you to configure threshold for delta extraction. Pass it as float/double value
+     *
+     * @param vars
+     */
     @Override
     public void configure(Object... vars) {
         if (vars[0] instanceof Number) {

@@ -31,6 +31,11 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
         return dup;
     }
 
+    /**
+     * This method has no effect in this compressor
+     *
+     * @param vars
+     */
     @Override
     public void configure(Object... vars) {
         // no-op
