@@ -43,6 +43,11 @@ public class SparseBaseLapack implements Lapack {
     }
 
     @Override
+    public int syev(char jobz, char uplo, INDArray A, INDArray V) {
+        return 0;
+    }
+
+    @Override
     public void gesvd(INDArray A, INDArray S, INDArray U, INDArray VT) {
 
     }

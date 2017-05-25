@@ -17,7 +17,7 @@ public interface ISparseNDArray extends INDArray {
   * i.e. return the column indexes in case of row-major ndarray
   * @return a DataBuffer of indexes
   * */
- DataBuffer getMinorPointer();
+ DataBuffer getVectorCoordinates();
 
  /**
   * Return a dense representation of the sparse ndarray

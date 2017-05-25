@@ -27,7 +27,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
 
         if(X instanceof BaseSparseNDArray) {
             BaseSparseNDArray sparseX = (BaseSparseNDArray) X;
-            DataBuffer pointers = sparseX.getMinorPointer();
+            DataBuffer pointers = sparseX.getVectorCoordinates();
 
             switch(X.data().dataType()){
                 case DOUBLE:
@@ -224,7 +224,7 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
     @Override
     public void axpy(int n, double alpha, INDArray x, INDArray y) {
         BaseSparseNDArray sparseX = (BaseSparseNDArray) x;
-        DataBuffer pointers = sparseX.getMinorPointer();
+        DataBuffer pointers = sparseX.getVectorCoordinates();
         switch(x.data().dataType()){
             case DOUBLE:
                 DefaultOpExecutioner.validateDataType(DataBuffer.Type.DOUBLE, x);
@@ -279,13 +279,13 @@ public abstract class SparseBaseLevel1 extends SparseBaseLevel implements Level1
 
             switch(X.data().dataType()) {
                 case DOUBLE:
-                    droti(N, X, sparseX.getMinorPointer(), Y, c, s);
+                    droti(N, X, sparseX.getVectorCoordinates(), Y, c, s);
                     break;
                 case FLOAT:
-                    sroti(N, X, sparseX.getMinorPointer(), Y, c, s);
+                    sroti(N, X, sparseX.getVectorCoordinates(), Y, c, s);
                     break;
                 case HALF:
-                    hroti(N, X, sparseX.getMinorPointer(), Y, c, s);
+                    hroti(N, X, sparseX.getVectorCoordinates(), Y, c, s);
                     break;
                 default: throw new UnsupportedOperationException();
             }

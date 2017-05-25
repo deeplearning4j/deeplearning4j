@@ -1186,17 +1186,32 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
-    public INDArray createSparse(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparse(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public INDArray createSparse(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray createSparseCOO(double[] values, int[][] indices, int[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray createSparseCOO(float[] values, int[][] indices, int[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] shape) {
         throw new UnsupportedOperationException();
     }
 }

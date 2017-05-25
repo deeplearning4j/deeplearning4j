@@ -1,16 +1,12 @@
 package org.nd4j.linalg.api.ndarray;
 
 import com.google.common.primitives.Ints;
-import net.ericaro.neoitertools.Generator;
 import org.nd4j.linalg.api.buffer.DataBuffer;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -82,19 +78,6 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         this.pointerE.setData(pointerE);
 
         }
-
-    protected void init(int[] shape) {
-
-        if (shape.length == 1) {
-            rows = 1;
-            columns = shape[0];
-        } else if (this.shape().length == 2) {
-            rows = shape[0];
-            columns = shape[1];
-        }
-        this.length = ArrayUtil.prodLong(shape);
-        rank = shape.length;
-    }
 
     public INDArray putScalar(int row, int col, double value){
 
@@ -174,7 +157,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     /**
      * Return the minor pointers. (columns for CSR, rows for CSC,...)
      * */
-    public DataBuffer getMinorPointer(){
+    public DataBuffer getVectorCoordinates(){
         return Nd4j.getDataBufferFactory().create(columnsPointers, 0, length());
 
     }
@@ -204,11 +187,11 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     }
 
     public DataBuffer getPointerB() {
-        return pointerB;
+        return Nd4j.getDataBufferFactory().create(pointerB, 0,rows());
     }
 
     public DataBuffer getPointerE() {
-        return pointerE;
+        return Nd4j.getDataBufferFactory().create(pointerE, 0,rows());
     }
 
     private DataBuffer addAtPosition(DataBuffer buf, long dataSize, int pos, double value){
@@ -224,66 +207,8 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     }
 
     @Override
-    public DataBuffer data(){return values;}
-
-    @Override
-    public int columns() {
-        return columns;
-    }
-
-    @Override
-    public int rows() {
-        return rows;
-    }
-
-    /**
-     * Checks whether the matrix is a vector.
-     */
-    @Override
-    public boolean isVector() {
-        return isRowVector() || isColumnVector();
-    }
-
-    @Override
-    public boolean isSquare() {
-
-        return isMatrix() && rows() == columns();
-    }
-
-    /**
-     * Checks whether the matrix is a row vector.
-     */
-    @Override
-    public boolean isRowVector() {
-        return rank == 2 && rows == 1;
-    }
-
-    /**
-     * Checks whether the matrix is a column vector.
-     */
-    @Override
-    public boolean isColumnVector() {
-        return rank == 2 && columns == 1;
-    }
-
-
-    @Override
-    public boolean isMatrix() {
-        if (isMatrix != null)
-            return isMatrix;
-        isMatrix = (rank == 2 && (size(0) != 1 && size(1) != 1));
-        return isMatrix;
-    }
-
-    @Override
-    public boolean isScalar() {
-        return false;
-        //todo
-    }
-
-    @Override
-    public char ordering() {
-        return 'c';
+    public DataBuffer data(){
+        return Nd4j.getDataBufferFactory().create(values, 0, length());
     }
 
     @Override
@@ -382,6 +307,40 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
 
     @Override
     public INDArray subArray(int[] offsets, int[] shape, int[] stride) {
-        return null;
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        //TODO use op
+        // fixme
+        if(o == null || !(o instanceof INDArray)){
+            return false;
+        }
+        INDArray n = (INDArray) o;
+        if(n.isSparse()){
+            BaseSparseNDArray s = (BaseSparseNDArray) n;
+            switch(s.getFormat()){
+                case CSR:
+                    BaseSparseNDArrayCSR csrArray = (BaseSparseNDArrayCSR) s;
+                    if(csrArray.rows() == rows()
+                           && csrArray.columns() == columns()
+                           && csrArray.getVectorCoordinates().equals(getVectorCoordinates())
+                           && csrArray.data().equals(data())
+                           && csrArray.getPointerB().equals(getPointerB())
+                           && csrArray.getPointerE().equals(getPointerE())){
+                        return true;
+                    }
+                    break;
+                default:
+                    INDArray dense = toDense();
+                    INDArray oDense = s.toDense();
+                    return dense.equals(oDense);
+            }
+        } else {
+            INDArray dense = toDense();
+            return dense.equals(o);
+        }
+        return false;
     }
 }

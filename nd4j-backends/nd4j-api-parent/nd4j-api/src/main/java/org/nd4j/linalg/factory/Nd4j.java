@@ -73,7 +73,6 @@ import org.nd4j.linalg.fft.DefaultFFTInstance;
 import org.nd4j.linalg.fft.FFTInstance;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.memory.MemoryManager;
-import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
 import org.nd4j.linalg.memory.stash.BasicStashManager;
 import org.nd4j.linalg.memory.stash.StashManager;
 
@@ -5134,7 +5133,7 @@ public class Nd4j {
      * @return a INDArray
      * */
     public static INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
-        INDArray matrix = SPARSE_INSTANCE.createSparse(data, columns, pointerB, pointerE, shape);
+        INDArray matrix = SPARSE_INSTANCE.createSparseCSR(data, columns, pointerB, pointerE, shape);
 
         return matrix;
     }
@@ -5148,7 +5147,7 @@ public class Nd4j {
      * @return a INDArray
      * */
     public static INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
-        INDArray matrix = SPARSE_INSTANCE.createSparse(data, columns, pointerB, pointerE, shape);
+        INDArray matrix = SPARSE_INSTANCE.createSparseCSR(data, columns, pointerB, pointerE, shape);
 
         return matrix;
     }
@@ -5162,7 +5161,7 @@ public class Nd4j {
      * @return a INDArray
      * */
     public static INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
-        INDArray matrix = SPARSE_INSTANCE.createSparse(data, columns, pointerB, pointerE, shape);
+        INDArray matrix = SPARSE_INSTANCE.createSparseCSR(data, columns, pointerB, pointerE, shape);
 
         return matrix;
     }

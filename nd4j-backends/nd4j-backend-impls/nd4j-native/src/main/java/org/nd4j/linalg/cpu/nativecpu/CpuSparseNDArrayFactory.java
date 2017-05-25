@@ -26,17 +26,28 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     public CpuSparseNDArrayFactory(){}
 
     @Override
-    public INDArray createSparse(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape){
+    public INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape){
         return new SparseNDArrayCSR(data, columns, pointerB, pointerE, shape);
     }
     @Override
-    public INDArray createSparse(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape){
+    public INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape){
         return new SparseNDArrayCSR(data, columns, pointerB, pointerE, shape);
     }
     @Override
-    public INDArray createSparse(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape){
+    public INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape){
         return new SparseNDArrayCSR(data, columns, pointerB, pointerE, shape);
     }
+
+    @Override
+    public INDArray createSparseCOO(double[] values, int[][] indices, int[] shape){
+        return new SparseNDArrayCOO(values, indices, shape);
+    }
+    @Override
+    public INDArray createSparseCOO(float[] values, int[][] indices, int[] shape){
+        return new SparseNDArrayCOO(values, indices, shape);    }
+    @Override
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] shape){
+        return new SparseNDArrayCOO(values, indices, shape);    }
 
     //  TODO ->
 
@@ -62,6 +73,11 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
 
     @Override
     public IComplexNDArray createComplex(List<IComplexNDArray> arrs, int[] shape) {
+        return null;
+    }
+
+    @Override
+    public INDArray specialConcat(int dimension, INDArray... toConcat) {
         return null;
     }
 

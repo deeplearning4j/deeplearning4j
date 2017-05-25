@@ -9,6 +9,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.nio.IntBuffer;
 import java.util.Arrays;
@@ -33,7 +34,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     protected transient DataBuffer stride;
 
     protected DataBuffer reallocate(DataBuffer buffer) {
-        int newSize = (int) buffer.length() * 2; // should be bound to max(nnz, size*2)
+        int newSize = (int) buffer.length() * 2;
         DataBuffer newBuffer = Nd4j.createBuffer(newSize);
 
         switch(buffer.dataType()){
@@ -47,13 +48,13 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
                 newBuffer.setData(buffer.asFloat());
                 break;
             case HALF:
-                // ??
-                break;
+                //TODO
+                throw new UnsupportedOperationException();
             case COMPRESSED:
-                // ??
-                break;
+                //TODO
+                throw new UnsupportedOperationException();
             default:
-                break;
+                throw new UnsupportedOperationException();
         }
         return newBuffer;
     }
@@ -72,7 +73,22 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     public abstract SparseFormat getFormat();
 
+    protected void init(int[] shape) {
+
+        if (shape.length == 1) {
+            rows = 1;
+            columns = shape[0];
+        } else if (this.shape().length == 2) {
+            rows = shape[0];
+            columns = shape[1];
+        }
+        this.length = ArrayUtil.prodLong(shape);
+        rank = shape.length;
+    }
+
     // Override methods from INDArray
+    // TODO: Most of them should be reimplemented for each format
+
 
 
     @Override
@@ -1280,42 +1296,74 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public int columns() {
-        return 0;
+        return columns;
     }
 
     @Override
     public int rows() {
-        return 0;
+        return rows;
     }
 
-    @Override
-    public boolean isColumnVector() {
-        return false;
-    }
-
-    @Override
-    public boolean isRowVector() {
-        return false;
-    }
-
+    /**
+     * Checks whether the matrix is a vector.
+     */
     @Override
     public boolean isVector() {
-        return false;
+        return isRowVector() || isColumnVector();
     }
 
     @Override
     public boolean isSquare() {
-        return false;
+
+        return isMatrix() && rows() == columns();
     }
+
+    /**
+     * Checks whether the matrix is a row vector.
+     */
+    @Override
+    public boolean isRowVector() {
+        return rank == 2 && rows == 1;
+    }
+
+    /**
+     * Checks whether the matrix is a column vector.
+     */
+    @Override
+    public boolean isColumnVector() {
+        return rank == 2 && columns == 1;
+    }
+
 
     @Override
     public boolean isMatrix() {
-        return false;
+        if (isMatrix != null)
+            return isMatrix;
+        isMatrix = (rank == 2 && (size(0) != 1 && size(1) != 1));
+        return isMatrix;
     }
 
     @Override
     public boolean isScalar() {
-        return false;
+        if (isScalar != null)
+            return isScalar;
+        if (Shape.rank(shapeInformation) > 2) {
+            isScalar = false;
+        } else if (Shape.rank(shapeInformation) == 1) {
+            isScalar = shapeOf().getInt(0) == 1;
+        } else if (Shape.rank(shapeInformation) == 2) {
+            isScalar = shapeOf().getInt(0) == 1 && shapeOf().getInt(1) == 1;
+        }
+
+        else
+            isScalar = false;
+
+        return isScalar;
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
     }
 
     @Override
@@ -1332,11 +1380,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     @Override
     public int[] stride() {
         return shape();
-    }
-
-    @Override
-    public char ordering() {
-        return 0;
     }
 
     @Override
@@ -1620,4 +1663,15 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     public INDArray migrate() {
         return null;
     }
+
+    @Override
+    public INDArray sum(INDArray result, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray mean(INDArray result, int... dimension) {
+        return null;
+    }
+
 }

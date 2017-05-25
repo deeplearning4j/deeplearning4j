@@ -88,7 +88,7 @@ public class SparseLevel1Test extends BaseNd4jTest{
         Nd4j.getBlasWrapper().level1().rot(vec.length(), sparseVec, vec, 1, 2);
         System.out.println(sparseVec.data()  + " " + vec.data());
 
-        //System.out.println("indexes: " + ((BaseSparseNDArray) sparseVec).getMinorPointer().toString());
+        //System.out.println("indexes: " + ((BaseSparseNDArray) sparseVec).getVectorCoordinates().toString());
         INDArray expectedSparseVec = Nd4j.createSparseCSR(
                 new double[]{3, 6, 6, 12},
                 new int[]{0, 1, 2, 3},
@@ -134,7 +134,7 @@ public class SparseLevel1Test extends BaseNd4jTest{
         if(expectedSparseVec.isSparse() && sparseVec.isSparse()){
             BaseSparseNDArray vec2 = ((BaseSparseNDArray) expectedSparseVec);
             BaseSparseNDArray vecSparse2 = ((BaseSparseNDArray) sparseVec);
-            assertEquals(getFailureMessage(), vec2.getMinorPointer(), vecSparse2);
+            assertEquals(getFailureMessage(), vec2.getVectorCoordinates(), vecSparse2);
         }
     }
 

@@ -4092,6 +4092,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray n = (INDArray) o;
 
+        if(n.isSparse()) {
+            return n.equals(this);
+        }
+
         if (this.lengthLong() != n.lengthLong())
             return false;
 

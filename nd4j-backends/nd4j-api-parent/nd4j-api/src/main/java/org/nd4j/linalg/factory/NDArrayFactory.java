@@ -1832,8 +1832,10 @@ public interface NDArrayFactory {
 
     // =========== Sparse methods ===========
 
-    INDArray createSparse(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape);
-    INDArray createSparse(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape);
-    INDArray createSparse(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape);
-
-}
+    INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape);
+    INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape);
+    INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, int[] shape);
+    INDArray createSparseCOO(double[] values, int[][] indices, int[] shape);
+    INDArray createSparseCOO(float[] values, int[][] indices, int[] shape);
+    INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] shape);
+    }

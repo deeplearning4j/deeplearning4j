@@ -42,7 +42,7 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
-    public ISparseNDArray createSparse(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
+    public ISparseNDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape) {
         return new JcusparseNDArrayCSR(data, columns, pointerB, pointerE, shape);
     }
 }
