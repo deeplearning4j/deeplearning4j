@@ -59,6 +59,7 @@ public class Threshold extends AbstractCompressor {
     public INDArray compress(INDArray array) {
         //logger.info("Threshold [{}] compression", threshold);
 
+        Nd4j.getExecutioner().commit();
         Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.HOST);
 
         DataBuffer buffer = compress(array.data());
@@ -116,6 +117,8 @@ public class Threshold extends AbstractCompressor {
         CompressedDataBuffer cbuff = new CompressedDataBuffer(pointer, descriptor);
 
         Nd4j.getNDArrayFactory().convertDataEx(getBufferTypeEx(buffer), buffer.addressPointer(), DataBuffer.TypeEx.THRESHOLD, pointer, buffer.length());
+
+        Nd4j.getAffinityManager().tagLocation(buffer, AffinityManager.Location.HOST);
 
         return cbuff;
     }

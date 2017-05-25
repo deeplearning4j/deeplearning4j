@@ -616,6 +616,11 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     }
 
     @Override
+    public Pointer addressPointer() {
+        return AtomicAllocator.getInstance().getHostPointer(this);
+    }
+
+    @Override
     public IComplexFloat getComplexFloat(long i) {
         return Nd4j.createFloat(getFloat(i), getFloat(i + 1));
     }
