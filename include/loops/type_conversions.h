@@ -288,6 +288,16 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd
         } else {
             printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
         }
+    } else if (srcType == ND4J_THRESHOLD) {
+        if (dstType == ND4J_FLOAT16) {
+            convertFromThreshold<float16>(dx, N, dz);
+        } else if (dstType == ND4J_FLOAT32) {
+            convertFromThreshold<float>(dx, N, dz);
+        } else if (dstType == ND4J_DOUBLE) {
+            convertFromThreshold<double>(dx, N, dz);
+        } else {
+            printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+        }
     } else {
         printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
     }
