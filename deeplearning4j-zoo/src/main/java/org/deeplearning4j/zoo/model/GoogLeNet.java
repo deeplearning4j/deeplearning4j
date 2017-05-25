@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.zoo.ModelMetaData;
+import org.deeplearning4j.zoo.PretrainedType;
 import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.zoo.ZooType;
 import org.nd4j.linalg.activations.Activation;
@@ -24,11 +25,11 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  *
  *  Revised and consolidated version by @kedardoshi
  *
- * Warning this has not been run yet.
- * There are a couple known issues with CompGraph regarding combining different layer types into one and
- * combining different shapes of input even if the layer types are the same at least for CNN.
+ * <p>ImageNet weights for this model are available and have been converted from https://gist.github.com/joelouismarino/a2ede9ab3928f999575423b9887abd14.</p>
+ *
+ * @author kedardoshi
+ * @author Justin Long (crockpotveggies)
  */
-
 public class GoogLeNet extends ZooModel {
 
     private int[] inputShape = new int[] {3, 224, 224};
@@ -52,13 +53,19 @@ public class GoogLeNet extends ZooModel {
     }
 
     @Override
-    public String pretrainedImageNetUrl() {
-        return "http://blob.deeplearning4j.org/models/googlenet_dl4j_inference.zip";
+    public String pretrainedUrl(PretrainedType pretrainedType) {
+        if(pretrainedType==PretrainedType.IMAGENET)
+            return "http://blob.deeplearning4j.org/models/googlenet_dl4j_inference.zip";
+        else
+            return null;
     }
 
     @Override
-    public String pretrainedMnistUrl() {
-        return null;
+    public long pretrainedChecksum(PretrainedType pretrainedType) {
+        if(pretrainedType==PretrainedType.IMAGENET)
+            return 3337733202L;
+        else
+            return 0L;
     }
 
     @Override

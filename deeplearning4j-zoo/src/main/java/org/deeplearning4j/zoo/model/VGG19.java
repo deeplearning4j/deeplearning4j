@@ -14,13 +14,19 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.zoo.ModelMetaData;
+import org.deeplearning4j.zoo.PretrainedType;
 import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.zoo.ZooType;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
- * VGG-16
+ * VGG-19, from Very Deep Convolutional Networks for Large-Scale Image Recognition
+ * https://arxiv.org/abs/1409.1556)
+ *
+ * <p>ImageNet weights for this model are available and have been converted from https://github.com/fchollet/keras/tree/1.1.2/keras/applications.</p>
+ *
+ * @author Justin Long (crockpotveggies)
  */
 public class VGG19 extends ZooModel {
 
@@ -45,13 +51,19 @@ public class VGG19 extends ZooModel {
     }
 
     @Override
-    public String pretrainedImageNetUrl() {
-        return "http://blob.deeplearning4j.org/models/vgg19_dl4j_inference.zip";
+    public String pretrainedUrl(PretrainedType pretrainedType) {
+        if(pretrainedType==PretrainedType.IMAGENET)
+            return "http://blob.deeplearning4j.org/models/vgg19_dl4j_inference.zip";
+        else
+            return null;
     }
 
     @Override
-    public String pretrainedMnistUrl() {
-        return null;
+    public long pretrainedChecksum(PretrainedType pretrainedType) {
+        if(pretrainedType==PretrainedType.IMAGENET)
+            return 2782932419L;
+        else
+            return 0L;
     }
 
     @Override

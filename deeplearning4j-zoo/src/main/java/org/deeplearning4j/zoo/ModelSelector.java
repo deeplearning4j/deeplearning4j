@@ -75,7 +75,7 @@ public class ModelSelector {
                 netmap.put(ZooType.VGG16, new VGG16(numLabels, seed, iterations, workspaceMode));
                 break;
             case VGG19:
-                netmap.put(ZooType.VGG16, new VGG19(numLabels, seed, iterations, workspaceMode));
+                netmap.put(ZooType.VGG19, new VGG19(numLabels, seed, iterations, workspaceMode));
                 break;
             default:
                 // do nothing

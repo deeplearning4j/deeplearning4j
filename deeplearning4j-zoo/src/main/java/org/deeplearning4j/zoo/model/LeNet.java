@@ -2,9 +2,7 @@ package org.deeplearning4j.zoo.model;
 
 import lombok.Setter;
 import org.deeplearning4j.nn.conf.*;
-import org.deeplearning4j.zoo.ModelMetaData;
-import org.deeplearning4j.zoo.ZooType;
-import org.deeplearning4j.zoo.ZooModel;
+import org.deeplearning4j.zoo.*;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -20,9 +18,13 @@ import org.nd4j.linalg.learning.config.AdaDelta;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
- * Created by kepricon on 17. 3. 30.
- * LeNet
+ * LeNet was an early promising achiever on the ImageNet dataset.
  * Reference: http://yann.lecun.com/exdb/publis/pdf/lecun-98.pdf
+ *
+ * <p>MNIST weights for this model are available and have been converted from https://github.com/f00-/mnist-lenet-keras.</p>
+ *
+ * @author kepricon
+ * @author Justin Long (crockpotveggies)
  */
 public class LeNet extends ZooModel {
 
@@ -47,13 +49,19 @@ public class LeNet extends ZooModel {
     }
 
     @Override
-    public String pretrainedImageNetUrl() {
-        return null;
+    public String pretrainedUrl(PretrainedType pretrainedType) {
+        if(pretrainedType==PretrainedType.MNIST)
+            return "http://blob.deeplearning4j.org/models/lenet_dl4j_mnist_inference.zip";
+        else
+            return null;
     }
 
     @Override
-    public String pretrainedMnistUrl() {
-        return "http://blob.deeplearning4j.org/models/lenet_dl4j_mnist_inference.zip";
+    public long pretrainedChecksum(PretrainedType pretrainedType) {
+        if(pretrainedType==PretrainedType.MNIST)
+            return 3337733202L;
+        else
+            return 0L;
     }
 
     @Override

@@ -2,9 +2,7 @@ package org.deeplearning4j.zoo.model;
 
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.*;
-import org.deeplearning4j.zoo.ModelMetaData;
-import org.deeplearning4j.zoo.ZooType;
-import org.deeplearning4j.zoo.ZooModel;
+import org.deeplearning4j.zoo.*;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.graph.L2NormalizeVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
@@ -50,13 +48,13 @@ public class FaceNetNN4Small2 extends ZooModel {
     }
 
     @Override
-    public String pretrainedImageNetUrl() {
+    public String pretrainedUrl(PretrainedType pretrainedType) {
         return null;
     }
 
     @Override
-    public String pretrainedMnistUrl() {
-        return null;
+    public long pretrainedChecksum(PretrainedType pretrainedType) {
+        return 0L;
     }
 
     @Override

@@ -13,6 +13,7 @@ import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.zoo.ModelMetaData;
+import org.deeplearning4j.zoo.PretrainedType;
 import org.deeplearning4j.zoo.ZooModel;
 import org.deeplearning4j.zoo.ZooType;
 import org.nd4j.linalg.activations.Activation;
@@ -58,13 +59,13 @@ public class AlexNet extends ZooModel {
     }
 
     @Override
-    public String pretrainedImageNetUrl() {
+    public String pretrainedUrl(PretrainedType pretrainedType) {
         return null;
     }
 
     @Override
-    public String pretrainedMnistUrl() {
-        return null;
+    public long pretrainedChecksum(PretrainedType pretrainedType) {
+        return 0L;
     }
 
     @Override

@@ -1,9 +1,8 @@
 package org.deeplearning4j.zoo.model;
 
 import org.deeplearning4j.nn.api.Model;
-import org.deeplearning4j.zoo.ModelMetaData;
-import org.deeplearning4j.zoo.ZooType;
-import org.deeplearning4j.zoo.ZooModel;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.zoo.*;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -19,7 +18,12 @@ import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
- * VGG-16
+ * VGG-16, from Very Deep Convolutional Networks for Large-Scale Image Recognition
+ * https://arxiv.org/abs/1409.1556)
+ *
+ * <p>ImageNet weights for this model are available and have been converted from https://github.com/fchollet/keras/tree/1.1.2/keras/applications.</p>
+ *
+ * @author Justin Long (crockpotveggies)
  */
 public class VGG16 extends ZooModel {
 
@@ -44,13 +48,19 @@ public class VGG16 extends ZooModel {
     }
 
     @Override
-    public String pretrainedImageNetUrl() {
-        return "http://blob.deeplearning4j.org/models/vgg16_dl4j_inference.zip";
+    public String pretrainedUrl(PretrainedType pretrainedType) {
+        if(pretrainedType==PretrainedType.IMAGENET)
+            return "http://blob.deeplearning4j.org/models/vgg16_dl4j_inference.zip";
+        else
+            return null;
     }
 
     @Override
-    public String pretrainedMnistUrl() {
-        return null;
+    public long pretrainedChecksum(PretrainedType pretrainedType) {
+        if(pretrainedType==PretrainedType.IMAGENET)
+            return 3501732770L;
+        else
+            return 0L;
     }
 
     @Override
@@ -60,7 +70,7 @@ public class VGG16 extends ZooModel {
 
     @Override
     public Class<? extends Model> modelType() {
-        return MultiLayerNetwork.class;
+        return ComputationGraph.class;
     }
 
     public MultiLayerConfiguration conf() {

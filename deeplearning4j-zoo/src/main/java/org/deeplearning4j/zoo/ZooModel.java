@@ -10,6 +10,8 @@ import org.deeplearning4j.util.ModelSerializer;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
+import java.util.zip.Adler32;
+import java.util.zip.Checksum;
 
 /**
  * A zoo model is instantiable, returns information about itself, and can download
@@ -20,26 +22,13 @@ import java.net.URL;
 @Slf4j
 public abstract class ZooModel<T> implements InstantiableModel {
 
+    public static File ROOT_CACHE_DIR = new File(System.getProperty("user.home"), "/.deeplearning4j/");
+
     public boolean pretrainedAvailable(PretrainedType pretrainedType) {
-        boolean available;
-        switch (pretrainedType) {
-            case IMAGENET:
-                if (pretrainedImageNetUrl() == null)
-                    available = false;
-                else
-                    available = true;
-                break;
-            case MNIST:
-                if (pretrainedMnistUrl() == null)
-                    available = false;
-                else
-                    available = true;
-                break;
-            default:
-                available = false;
-                break;
-        }
-        return available;
+        if(pretrainedUrl(pretrainedType) == null)
+            return false;
+        else
+            return true;
     }
 
     /**
@@ -60,34 +49,15 @@ public abstract class ZooModel<T> implements InstantiableModel {
      * @throws IOException
      */
     public Model initPretrained(PretrainedType pretrainedType) throws IOException {
-        String localFilename;
-        String remoteUrl;
-        switch (pretrainedType) {
-            case IMAGENET:
-                if (pretrainedImageNetUrl() == null)
-                    throw new UnsupportedOperationException(
-                                    "Pretrained ImageNet weights are not available for this model.");
+        String remoteUrl = pretrainedUrl(pretrainedType);
+        if(remoteUrl==null)
+            throw new UnsupportedOperationException(
+                    "Pretrained "+pretrainedType+" weights are not available for this model.");
 
-                localFilename = new File(pretrainedImageNetUrl()).getName();
-                remoteUrl = pretrainedImageNetUrl();
-                break;
-            case MNIST:
-                if (pretrainedMnistUrl() == null)
-                    throw new UnsupportedOperationException(
-                                    "Pretrained MNIST weights are not available for this model.");
+        String localFilename = new File(remoteUrl).getName();
 
-                localFilename = new File(pretrainedMnistUrl()).getName();
-                remoteUrl = pretrainedMnistUrl();
-                break;
-            default:
-                throw new UnsupportedOperationException("Only ImageNet and MNIST pretrained models are supported.");
-        }
-
-        File cachedFile = new File(System.getProperty("user.home"), "/.deeplearning4j/" + localFilename);
-        cachedFile.mkdirs();
-
-        if (cachedFile.isDirectory())
-            cachedFile.delete();
+        ROOT_CACHE_DIR.mkdirs();
+        File cachedFile = new File(ROOT_CACHE_DIR.getAbsolutePath(), localFilename);
 
         if (!cachedFile.exists()) {
             log.info("Downloading model to " + cachedFile.toString());
@@ -96,8 +66,24 @@ public abstract class ZooModel<T> implements InstantiableModel {
             log.info("Using cached model at " + cachedFile.toString());
         }
 
+        long expectedChecksum = pretrainedChecksum(pretrainedType);
+        if(expectedChecksum != 0L) {
+            log.info("Verifying download...");
+            Checksum adler = new Adler32();
+            FileUtils.checksum(cachedFile, adler);
+            long localChecksum = adler.getValue();
+            log.info("Checksum local is " + localChecksum + ", expecting "+expectedChecksum);
+
+            if(expectedChecksum != localChecksum) {
+                log.error("Checksums do not match. Cleaning up files and failing...");
+                cachedFile.delete();
+                throw new IllegalStateException(
+                        "Pretrained model file failed checksum. If this error persists, please open an issue at https://github.com/deeplearning4j/deeplearning4j.");
+            }
+        }
+
         if (modelType() == MultiLayerNetwork.class) {
-            return ModelSerializer.restoreComputationGraph(cachedFile);
+            return ModelSerializer.restoreMultiLayerNetwork(cachedFile);
         } else if (modelType() == ComputationGraph.class) {
             return ModelSerializer.restoreComputationGraph(cachedFile);
         } else {
