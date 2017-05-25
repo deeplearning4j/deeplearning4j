@@ -66,7 +66,7 @@ public class VGG16 extends ZooModel {
         if(pretrainedType==PretrainedType.IMAGENET)
             return 3501732770L;
         if(pretrainedType==PretrainedType.VGGFACE)
-            return 2706403553;
+            return 2706403553L;
         else
             return 0L;
     }

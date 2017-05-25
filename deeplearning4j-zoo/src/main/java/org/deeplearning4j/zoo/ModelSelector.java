@@ -53,6 +53,13 @@ public class ModelSelector {
                 netmap.putAll(ModelSelector.select(ZooType.VGG16, numLabels, seed, iterations, workspaceMode));
                 netmap.putAll(ModelSelector.select(ZooType.VGG19, numLabels, seed, iterations, workspaceMode));
                 break;
+            // RNN models
+            case RNN:
+                netmap.putAll(ModelSelector.select(ZooType.TEXTGENLSTM, numLabels, seed, iterations, workspaceMode));
+                break;
+            case TEXTGENLSTM:
+                netmap.put(ZooType.TEXTGENLSTM, new TextGenerationLSTM(numLabels, seed, iterations, workspaceMode));
+                break;
             case SIMPLECNN:
                 netmap.put(ZooType.SIMPLECNN, new SimpleCNN(numLabels, seed, iterations, workspaceMode));
                 break;
