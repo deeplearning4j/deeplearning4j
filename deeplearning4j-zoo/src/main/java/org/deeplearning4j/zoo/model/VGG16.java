@@ -25,6 +25,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  * http://www.robots.ox.ac.uk/~vgg/publications/2015/Parkhi15/parkhi15.pdf
  *
  * <p>ImageNet weights for this model are available and have been converted from https://github.com/fchollet/keras/tree/1.1.2/keras/applications.</p>
+ * <p>CIFAR-10 weights for this model are available and have been converted using "approach 2" from https://github.com/rajatvikramsingh/cifar10-vgg16.</p>
  * <p>VGGFace weights for this model are available and have been converted from https://github.com/rcmalli/keras-vggface.</p>
  *
  * @author Justin Long (crockpotveggies)
@@ -55,6 +56,8 @@ public class VGG16 extends ZooModel {
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if(pretrainedType==PretrainedType.IMAGENET)
             return "http://blob.deeplearning4j.org/models/vgg16_dl4j_inference.zip";
+        else if(pretrainedType==PretrainedType.CIFAR10)
+            return "http://blob.deeplearning4j.org/models/vgg16_dl4j_cifar10_inference.v1.zip";
         else if(pretrainedType==PretrainedType.VGGFACE)
             return "http://blob.deeplearning4j.org/models/vgg16_dl4j_vggface_inference.v1.zip";
         else
@@ -65,6 +68,8 @@ public class VGG16 extends ZooModel {
     public long pretrainedChecksum(PretrainedType pretrainedType) {
         if(pretrainedType==PretrainedType.IMAGENET)
             return 3501732770L;
+        if(pretrainedType==PretrainedType.CIFAR10)
+            return 2192260131L;
         if(pretrainedType==PretrainedType.VGGFACE)
             return 2706403553L;
         else
