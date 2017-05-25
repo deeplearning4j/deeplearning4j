@@ -2060,7 +2060,7 @@ public:
      * @param dstType
      * @param z
      */
-    void convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, long N, int dstType, Nd4jPointer z);
+    void convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd4jIndex N, int dstType, Nd4jPointer z);
 
 
     /**

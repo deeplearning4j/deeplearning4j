@@ -16,6 +16,7 @@
 #define ND4J_UINT16 5
 #define ND4J_FLOAT32 6
 #define ND4J_DOUBLE 7
+#define ND4J_THRESHOLD 8
 #define ND4J_FLOAT24 119 // not supported after all. might want to add support later.
 
 #include <ops/ops.h>
@@ -26,10 +27,16 @@
 #include <types/int16.h>
 #include <types/uint16.h>
 
+typedef union
+{
+    float f_;
+    int   i_;
+} FloatBits;
+
 
 #ifdef __CUDACC__
 template<typename S, typename T>
-__device__ inline void convertKernelGeneric(void *dx, long N, void *dz) {
+__device__ inline void convertKernelGeneric(void *dx, Nd4jIndex N, void *dz) {
     S *x = reinterpret_cast<S *> (dx);
     T *z = reinterpret_cast<T *> (dz);
 
@@ -42,7 +49,7 @@ __device__ inline void convertKernelGeneric(void *dx, long N, void *dz) {
 #endif
 
 template<typename S, typename T>
-void convertGeneric(void *dx,const long N, void *dz) {
+void convertGeneric(void *dx, Nd4jIndex N, void *dz) {
     S *x = reinterpret_cast<S *> (dx);
     T *z = reinterpret_cast<T *> (dz);
 
@@ -61,11 +68,63 @@ void convertGeneric(void *dx,const long N, void *dz) {
     }
 };
 
+
+template <typename T>
+void convertToThreshold(void *dx, Nd4jIndex N, void *dz) {
+    // we suppose that first 4 bytes are integer, second 4 bytes are float
+    // integer: enc length
+    // integer: dec length
+    // float: threshold
+    FloatBits fb;
+    T *x = (T *) dx;
+    int *z = (int *) dz;
+    int limit = z[0];
+    fb.i_ = z[2];
+    float threshold = fb.f_;
+
+    // FIXME: int limit is sad thing here, 2B elements limitation
+    z[1] = (int) N;
+
+    int t = 3;
+    for (Nd4jIndex e = 0; e < N && t < limit; e++) {
+        if (x[e] >= (T) threshold) {
+            z[t++] = e;
+            x[e] -= threshold;
+        } else if (x[e] <= (T) -threshold) {
+            z[t++] = -e;
+            x[e] += threshold;
+        }
+    }
+}
+
+template <typename T>
+void convertFromThreshold(void *dx, Nd4jIndex N, void *dz) {
+    FloatBits fb;
+    T *z = (T *) dz;
+    int *x = (int *) dx;
+    int limit = x[0];
+    int size = x[1];
+    fb.i_ = x[2];
+    float threshold = fb.f_;
+
+    // everything is set to 0 now
+    memset(z, 0, sizeof(T) * size);
+
+    for(int e = 3; e < limit; e++) {
+        int el = x[e];
+        if (el > 0) {
+            z[el] = threshold;
+        } else if (el < 0) {
+            z[el * -1] = -threshold;
+        }
+    }
+}
+
 /*
  * TypeDef:
  *     void convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, long N, int dstType, Nd4jPointer z);
  */
-void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, long N, int dstType, Nd4jPointer z) {
+void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd4jIndex N, int dstType, Nd4jPointer z) {
     void *dx = reinterpret_cast<void *> (x);
     void *dz = reinterpret_cast<void *> (z);
 
@@ -154,6 +213,8 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, lo
             convertGeneric<float16, float>(dx, N, dz);
         } else if (dstType == ND4J_DOUBLE) {
             convertGeneric<float16, double>(dx, N, dz);
+        } else if (dstType == ND4J_THRESHOLD) {
+            convertToThreshold<float16>(dx, N, dz);
         } else {
             printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
         }
@@ -198,6 +259,8 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, lo
 
         } else if (dstType == ND4J_DOUBLE) {
             convertGeneric<float, double>(dx, N, dz);
+        } else if (dstType == ND4J_THRESHOLD) {
+            convertToThreshold<float>(dx, N, dz);
         } else {
             printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
         }
@@ -220,6 +283,8 @@ void NativeOps::convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, lo
             convertGeneric<double, float>(dx, N, dz);
         } else if (dstType == ND4J_DOUBLE) {
             //
+        } else if (dstType == ND4J_THRESHOLD) {
+            convertToThreshold<double>(dx, N, dz);
         } else {
             printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
         }
