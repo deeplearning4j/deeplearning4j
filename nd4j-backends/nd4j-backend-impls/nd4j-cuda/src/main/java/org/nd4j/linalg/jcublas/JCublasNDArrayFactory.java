@@ -1296,8 +1296,11 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
             descriptor.setCompressedLength(source.length() * elementSize);
             buffer = new CompressedDataBuffer(pointer, descriptor);
         } else {
+            CompressedDataBuffer compressed = (CompressedDataBuffer) source;
+            CompressionDescriptor descriptor = compressed.getCompressionDescriptor();
             // decompression mode
-            buffer = Nd4j.createBuffer(source.length(), false);
+            buffer = Nd4j.createBuffer(descriptor.getNumberOfElements(), false);
+
             AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(buffer);
             point.tickHostWrite();
         }

@@ -3481,7 +3481,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param dstType
      * @param z
      */
-    public native void convertTypes(@Cast("Nd4jPointer*") PointerPointer extras, int srcType, @Cast("Nd4jPointer") Pointer x, long N, int dstType, @Cast("Nd4jPointer") Pointer z);
+    public native void convertTypes(@Cast("Nd4jPointer*") PointerPointer extras, int srcType, @Cast("Nd4jPointer") Pointer x, @Cast("Nd4jIndex") long N, int dstType, @Cast("Nd4jPointer") Pointer z);
 
 
     /**

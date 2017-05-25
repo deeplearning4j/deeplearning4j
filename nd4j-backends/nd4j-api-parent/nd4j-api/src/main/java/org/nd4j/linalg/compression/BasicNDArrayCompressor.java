@@ -208,6 +208,10 @@ public class BasicNDArrayCompressor {
         return codecs.get(descriptor.getCompressionAlgorithm()).decompress(buffer);
     }
 
+    public NDArrayCompressor getCompressor(@NonNull String name) {
+        return codecs.get(name);
+    }
+
     /**
      *
      * @param array
