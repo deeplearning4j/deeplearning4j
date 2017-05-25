@@ -13,8 +13,11 @@ import org.bytedeco.javacpp.*;
 public class PagedPointer extends Pointer {
 
     // we're storing this pointer as strong reference
-    @Getter private Pointer originalPointer;
-    @Getter @Setter private boolean leaked = false;
+    @Getter
+    private Pointer originalPointer;
+    @Getter
+    @Setter
+    private boolean leaked = false;
 
     private PagedPointer() {
 

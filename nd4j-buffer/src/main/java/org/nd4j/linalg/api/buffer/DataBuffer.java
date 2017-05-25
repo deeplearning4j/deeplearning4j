@@ -631,4 +631,6 @@ public interface DataBuffer extends Serializable {
      * @return
      */
     MemoryWorkspace getParentWorkspace();
+
+    DataBuffer reallocate(long length);
 }

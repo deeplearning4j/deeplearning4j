@@ -39,7 +39,7 @@ public class BigDecimalMath {
      * the string’s length, taking into account the decimal dot.
      * static int E_PRECISION = E.length()-1 ;
      */
-    public static final  BigDecimal E =
+    public static final BigDecimal E =
                     new BigDecimal("2.71828182845904523536028747135266249775724709369995957496696762772407663035354"
                                     + "759457138217852516642742746639193200305992181741359662904357290033429526059563"
                                     + "073813232862794349076323382988075319525101901157383418793070215408914993488416"
