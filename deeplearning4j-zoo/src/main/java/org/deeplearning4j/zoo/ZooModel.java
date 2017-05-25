@@ -20,14 +20,6 @@ import java.net.URL;
 @Slf4j
 public abstract class ZooModel<T> implements InstantiableModel {
 
-    public String pretrainedImageNetUrl() {
-        return null;
-    }
-
-    public String pretrainedMnistUrl() {
-        return null;
-    }
-
     public boolean pretrainedAvailable(PretrainedType pretrainedType) {
         boolean available;
         switch (pretrainedType) {

@@ -49,10 +49,22 @@ public class FaceNetNN4Small2 extends ZooModel {
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
     }
 
+    @Override
+    public String pretrainedImageNetUrl() {
+        return null;
+    }
+
+    @Override
+    public String pretrainedMnistUrl() {
+        return null;
+    }
+
+    @Override
     public ZooType zooType() {
         return ZooType.FACENETNN4SMALL2;
     }
 
+    @Override
     public Class<? extends Model> modelType() {
         return ComputationGraph.class;
     }
@@ -328,19 +340,20 @@ public class FaceNetNN4Small2 extends ZooModel {
         return graph.build();
     }
 
-
+    @Override
     public ComputationGraph init() {
-        ;
         ComputationGraph model = new ComputationGraph(conf());
         model.init();
 
         return model;
     }
 
+    @Override
     public ModelMetaData metaData() {
         return new ModelMetaData(new int[][] {inputShape}, 1, ZooType.CNN);
     }
 
+    @Override
     public void setInputShape(int[][] inputShape) {
         this.inputShape = inputShape[0];
     }

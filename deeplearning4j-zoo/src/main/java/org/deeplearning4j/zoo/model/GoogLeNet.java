@@ -51,14 +51,22 @@ public class GoogLeNet extends ZooModel {
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
     }
 
+    @Override
     public String pretrainedImageNetUrl() {
         return "http://blob.deeplearning4j.org/models/googlenet_dl4j_inference.zip";
     }
 
+    @Override
+    public String pretrainedMnistUrl() {
+        return null;
+    }
+
+    @Override
     public ZooType zooType() {
         return ZooType.GOOGLENET;
     }
 
+    @Override
     public Class<? extends Model> modelType() {
         return ComputationGraph.class;
     }
@@ -117,7 +125,6 @@ public class GoogLeNet extends ZooModel {
         return graph;
     }
 
-
     public ComputationGraphConfiguration conf() {
         GraphBuilder graph = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
                         .activation(Activation.RELU).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
@@ -160,6 +167,7 @@ public class GoogLeNet extends ZooModel {
         return graph.build();
     }
 
+    @Override
     public ComputationGraph init() {
         ComputationGraph model = new ComputationGraph(conf());
         model.init();
@@ -167,10 +175,12 @@ public class GoogLeNet extends ZooModel {
         return model;
     }
 
+    @Override
     public ModelMetaData metaData() {
         return new ModelMetaData(new int[][] {inputShape}, 1, ZooType.CNN);
     }
 
+    @Override
     public void setInputShape(int[][] inputShape) {
         this.inputShape = inputShape[0];
     }

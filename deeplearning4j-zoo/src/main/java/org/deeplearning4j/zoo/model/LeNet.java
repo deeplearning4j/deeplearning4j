@@ -46,20 +46,27 @@ public class LeNet extends ZooModel {
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
     }
 
+    @Override
+    public String pretrainedImageNetUrl() {
+        return null;
+    }
+
+    @Override
     public String pretrainedMnistUrl() {
         return "http://blob.deeplearning4j.org/models/lenet_dl4j_mnist_inference.zip";
     }
 
+    @Override
     public ZooType zooType() {
         return ZooType.LENET;
     }
 
+    @Override
     public Class<? extends Model> modelType() {
         return MultiLayerNetwork.class;
     }
 
     public MultiLayerConfiguration conf() {
-
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .trainingWorkspaceMode(workspaceMode)
                         .inferenceWorkspaceMode(workspaceMode)
@@ -102,10 +109,12 @@ public class LeNet extends ZooModel {
         return network;
     }
 
+    @Override
     public ModelMetaData metaData() {
         return new ModelMetaData(new int[][] {inputShape}, 1, ZooType.CNN);
     }
 
+    @Override
     public void setInputShape(int[][] inputShape) {
         this.inputShape = inputShape[0];
     }

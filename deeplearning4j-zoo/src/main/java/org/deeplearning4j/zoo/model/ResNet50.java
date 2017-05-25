@@ -47,18 +47,27 @@ public class ResNet50 extends ZooModel {
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
     }
 
+    @Override
     public String pretrainedImageNetUrl() {
         return "http://blob.deeplearning4j.org/models/resnet50_dl4j_inference.zip";
     }
 
+    @Override
+    public String pretrainedMnistUrl() {
+        return null;
+    }
+
+    @Override
     public ZooType zooType() {
         return ZooType.RESNET50;
     }
 
+    @Override
     public Class<? extends Model> modelType() {
         return ComputationGraph.class;
     }
 
+    @Override
     public ComputationGraph init() {
         ComputationGraphConfiguration.GraphBuilder graph = graphBuilder();
         ComputationGraphConfiguration conf = graph.build();
@@ -206,10 +215,12 @@ public class ResNet50 extends ZooModel {
         return graph;
     }
 
+    @Override
     public ModelMetaData metaData() {
         return new ModelMetaData(new int[][] {inputShape}, 1, ZooType.CNN);
     }
 
+    @Override
     public void setInputShape(int[][] inputShape) {
         this.inputShape = inputShape[0];
     }

@@ -57,10 +57,22 @@ public class AlexNet extends ZooModel {
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
     }
 
+    @Override
+    public String pretrainedImageNetUrl() {
+        return null;
+    }
+
+    @Override
+    public String pretrainedMnistUrl() {
+        return null;
+    }
+
+    @Override
     public ZooType zooType() {
         return ZooType.ALEXNET;
     }
 
+    @Override
     public Class<? extends Model> modelType() {
         return MultiLayerNetwork.class;
     }
@@ -118,6 +130,7 @@ public class AlexNet extends ZooModel {
         return conf;
     }
 
+    @Override
     public MultiLayerNetwork init() {
         MultiLayerConfiguration conf = conf();
         MultiLayerNetwork network = new MultiLayerNetwork(conf);
@@ -126,10 +139,12 @@ public class AlexNet extends ZooModel {
 
     }
 
+    @Override
     public ModelMetaData metaData() {
         return new ModelMetaData(new int[][] {inputShape}, 1, ZooType.CNN);
     }
 
+    @Override
     public void setInputShape(int[][] inputShape) {
         this.inputShape = inputShape[0];
     }

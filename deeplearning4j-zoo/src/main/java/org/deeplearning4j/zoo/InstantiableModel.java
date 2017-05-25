@@ -19,4 +19,6 @@ public interface InstantiableModel {
     public Class<? extends Model> modelType();
 
     public String pretrainedImageNetUrl();
+
+    public String pretrainedMnistUrl();
 }

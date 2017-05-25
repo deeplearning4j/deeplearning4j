@@ -51,14 +51,27 @@ public class InceptionResNetV1 extends ZooModel {
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
     }
 
+    @Override
+    public String pretrainedImageNetUrl() {
+        return null;
+    }
+
+    @Override
+    public String pretrainedMnistUrl() {
+        return null;
+    }
+
+    @Override
     public ZooType zooType() {
         return ZooType.INCEPTIONRESNETV1;
     }
 
+    @Override
     public Class<? extends Model> modelType() {
         return ComputationGraph.class;
     }
 
+    @Override
     public ComputationGraph init() {
         int embeddingSize = 128;
         ComputationGraphConfiguration.GraphBuilder graph = graphBuilder("input1");
@@ -296,10 +309,12 @@ public class InceptionResNetV1 extends ZooModel {
         return graph;
     }
 
+    @Override
     public ModelMetaData metaData() {
         return new ModelMetaData(new int[][] {inputShape}, 1, ZooType.CNN);
     }
 
+    @Override
     public void setInputShape(int[][] inputShape) {
         this.inputShape = inputShape[0];
     }

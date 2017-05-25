@@ -43,14 +43,22 @@ public class VGG16 extends ZooModel {
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
     }
 
+    @Override
     public String pretrainedImageNetUrl() {
         return "http://blob.deeplearning4j.org/models/vgg16_dl4j_inference.zip";
     }
 
+    @Override
+    public String pretrainedMnistUrl() {
+        return null;
+    }
+
+    @Override
     public ZooType zooType() {
         return ZooType.VGG16;
     }
 
+    @Override
     public Class<? extends Model> modelType() {
         return MultiLayerNetwork.class;
     }
@@ -121,16 +129,19 @@ public class VGG16 extends ZooModel {
         return conf;
     }
 
+    @Override
     public MultiLayerNetwork init() {
         MultiLayerNetwork network = new MultiLayerNetwork(conf());
         network.init();
         return network;
     }
 
+    @Override
     public ModelMetaData metaData() {
         return new ModelMetaData(new int[][] {inputShape}, 1, ZooType.CNN);
     }
 
+    @Override
     public void setInputShape(int[][] inputShape) {
         this.inputShape = inputShape[0];
     }
