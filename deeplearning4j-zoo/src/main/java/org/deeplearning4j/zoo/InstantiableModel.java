@@ -8,6 +8,8 @@ import org.deeplearning4j.nn.api.Model;
  */
 public interface InstantiableModel {
 
+    public void setInputShape(int[][] inputShape);
+
     public Model init();
 
     public ModelMetaData metaData();

@@ -140,4 +140,8 @@ public class VGG19 extends ZooModel {
         return new ModelMetaData(new int[][] {inputShape}, 1, ZooType.CNN);
     }
 
+    public void setInputShape(int[][] inputShape) {
+        this.inputShape = inputShape[0];
+    }
+
 }

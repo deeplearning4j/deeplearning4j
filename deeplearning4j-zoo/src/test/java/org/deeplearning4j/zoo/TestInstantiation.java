@@ -1,9 +1,7 @@
 package org.deeplearning4j.zoo;
 
 import lombok.extern.slf4j.Slf4j;
-import org.datavec.image.loader.CifarLoader;
 import org.deeplearning4j.datasets.iterator.impl.BenchmarkDataSetIterator;
-import org.deeplearning4j.datasets.iterator.impl.CifarDataSetIterator;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -20,7 +18,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Tests workflow for zoo model instantiation.
