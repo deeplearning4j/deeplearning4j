@@ -45,12 +45,16 @@ public class ModelSelector {
                 break;
             // CNN models
             case CNN:
+                netmap.putAll(ModelSelector.select(ZooType.SIMPLECNN, numLabels, seed, iterations, workspaceMode));
                 netmap.putAll(ModelSelector.select(ZooType.ALEXNET, numLabels, seed, iterations, workspaceMode));
                 netmap.putAll(ModelSelector.select(ZooType.LENET, numLabels, seed, iterations, workspaceMode));
                 netmap.putAll(ModelSelector.select(ZooType.GOOGLENET, numLabels, seed, iterations, workspaceMode));
                 netmap.putAll(ModelSelector.select(ZooType.RESNET50, numLabels, seed, iterations, workspaceMode));
                 netmap.putAll(ModelSelector.select(ZooType.VGG16, numLabels, seed, iterations, workspaceMode));
                 netmap.putAll(ModelSelector.select(ZooType.VGG19, numLabels, seed, iterations, workspaceMode));
+                break;
+            case SIMPLECNN:
+                netmap.put(ZooType.SIMPLECNN, new SimpleCNN(numLabels, seed, iterations, workspaceMode));
                 break;
             case ALEXNET:
                 netmap.put(ZooType.ALEXNET, new AlexNet(numLabels, seed, iterations, workspaceMode));

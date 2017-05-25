@@ -19,9 +19,13 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
  * VGG-16, from Very Deep Convolutional Networks for Large-Scale Image Recognition
- * https://arxiv.org/abs/1409.1556)
+ * https://arxiv.org/abs/1409.1556
+ *
+ * Deep Face Recognition
+ * http://www.robots.ox.ac.uk/~vgg/publications/2015/Parkhi15/parkhi15.pdf
  *
  * <p>ImageNet weights for this model are available and have been converted from https://github.com/fchollet/keras/tree/1.1.2/keras/applications.</p>
+ * <p>VGGFace weights for this model are available and have been converted from https://github.com/rcmalli/keras-vggface.</p>
  *
  * @author Justin Long (crockpotveggies)
  */
@@ -51,6 +55,8 @@ public class VGG16 extends ZooModel {
     public String pretrainedUrl(PretrainedType pretrainedType) {
         if(pretrainedType==PretrainedType.IMAGENET)
             return "http://blob.deeplearning4j.org/models/vgg16_dl4j_inference.zip";
+        else if(pretrainedType==PretrainedType.VGGFACE)
+            return "http://blob.deeplearning4j.org/models/vgg16_dl4j_vggface_inference.v1.zip";
         else
             return null;
     }
@@ -59,6 +65,8 @@ public class VGG16 extends ZooModel {
     public long pretrainedChecksum(PretrainedType pretrainedType) {
         if(pretrainedType==PretrainedType.IMAGENET)
             return 3501732770L;
+        if(pretrainedType==PretrainedType.VGGFACE)
+            return 2706403553;
         else
             return 0L;
     }
@@ -80,6 +88,7 @@ public class VGG16 extends ZooModel {
                                         .updater(Updater.NESTEROVS).activation(Activation.RELU)
                                         .trainingWorkspaceMode(workspaceMode).inferenceWorkspaceMode(workspaceMode)
                                         .list()
+                                        // block 1
                                         .layer(0, new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1).padding(
                                                         1, 1).nIn(inputShape[0]).nOut(64).cudnnAlgoMode(cudnnAlgoMode)
                                                         .build())
@@ -90,6 +99,7 @@ public class VGG16 extends ZooModel {
                                         .layer(2, new SubsamplingLayer.Builder()
                                                         .poolingType(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
                                                         .stride(2, 2).build())
+                                        // block 2
                                         .layer(3, new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1)
                                                         .padding(1, 1).nOut(128).cudnnAlgoMode(cudnnAlgoMode).build())
                                         .layer(4, new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1)
@@ -97,6 +107,7 @@ public class VGG16 extends ZooModel {
                                         .layer(5, new SubsamplingLayer.Builder()
                                                         .poolingType(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
                                                         .stride(2, 2).build())
+                                        // block 3
                                         .layer(6, new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1)
                                                         .padding(1, 1).nOut(256).cudnnAlgoMode(cudnnAlgoMode).build())
                                         .layer(7, new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1)
@@ -106,6 +117,7 @@ public class VGG16 extends ZooModel {
                                         .layer(9, new SubsamplingLayer.Builder()
                                                         .poolingType(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
                                                         .stride(2, 2).build())
+                                        // block 4
                                         .layer(10, new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1)
                                                         .padding(1, 1).nOut(512).cudnnAlgoMode(cudnnAlgoMode).build())
                                         .layer(11, new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1)
@@ -115,6 +127,7 @@ public class VGG16 extends ZooModel {
                                         .layer(13, new SubsamplingLayer.Builder()
                                                         .poolingType(SubsamplingLayer.PoolingType.MAX).kernelSize(2, 2)
                                                         .stride(2, 2).build())
+                                        // block 5
                                         .layer(14, new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1)
                                                         .padding(1, 1).nOut(512).cudnnAlgoMode(cudnnAlgoMode).build())
                                         .layer(15, new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1)
