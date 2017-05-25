@@ -353,6 +353,23 @@ public class CompressionTests extends BaseNd4jTest {
         assertEquals(exp_1, decompressed);
     }
 
+    @Test
+    public void testThresholdCompression4() throws Exception {
+        INDArray initial = Nd4j.create(new double[]{1e-4, -1e-4, 0.0, 0.0, 1e-4, -1e-4});
+        INDArray exp_0 = initial.dup();
+
+
+        Nd4j.getCompressor().getCompressor("THRESHOLD").configure(1e-3);
+        INDArray compressed = Nd4j.getCompressor().compress(initial, "THRESHOLD");
+
+
+        log.info("Initial array: {}", Arrays.toString(initial.data().asFloat()));
+
+        assertEquals(exp_0, initial);
+
+        assertNull(compressed);
+    }
+
     @Override
     public char ordering() {
         return 'c';

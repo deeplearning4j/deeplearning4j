@@ -62,6 +62,9 @@ public class Threshold extends AbstractCompressor {
         Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.HOST);
 
         DataBuffer buffer = compress(array.data());
+        if (buffer == null)
+            return null;
+
         INDArray dup = Nd4j.createArrayFromShapeBuffer(buffer, array.shapeInfoDataBuffer());
         dup.markAsCompressed(true);
 
@@ -87,6 +90,9 @@ public class Threshold extends AbstractCompressor {
         INDArray temp = Nd4j.createArrayFromShapeBuffer(buffer, Nd4j.getShapeInfoProvider().createShapeInformation(new int[]{1, (int) buffer.length()}));
         MatchCondition condition = new MatchCondition(Transforms.abs(temp, true), Conditions.greaterThanOrEqual(threshold));
         int cntAbs = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+
+        if (cntAbs == 0)
+            return null;
 
         long originalLength = buffer.length() * Nd4j.sizeOfDataType(buffer.dataType());
         int compressedLength = cntAbs + 3;
