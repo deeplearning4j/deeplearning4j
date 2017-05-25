@@ -1,7 +1,14 @@
 package org.deeplearning4j.optimize.solvers.accumulation;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
+import org.nd4j.linalg.compression.NDArrayCompressor;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
  * This MessageHandler implementation is suited for debugging mostly, but still can be used in production environment if you really want that.
@@ -11,9 +18,11 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class EncodingHandler implements MessageHandler {
     protected transient GradientsAccumulator accumulator;
     protected double threshold;
+    protected NDArrayCompressor compressor;
 
     public EncodingHandler() {
         this(1e-3);
@@ -26,16 +35,24 @@ public class EncodingHandler implements MessageHandler {
     @Override
     public void initialize(@NonNull GradientsAccumulator accumulator) {
         this.accumulator = accumulator;
+
+        compressor = Nd4j.getCompressor().getCompressor("THRESHOLD");
+        if (compressor == null)
+            throw new ND4JIllegalStateException("Can't find Threshold compressor implementation!");
+
+        compressor.configure(threshold);
     }
 
     public INDArray encodeUpdates(INDArray updates) {
         // special op should be called here for encoding
-        return null;
+
+        return compressor.compress(updates);
     }
 
     public INDArray decodeUpdates(INDArray message) {
         // special op should be called here for decoding
-        return null;
+
+        return compressor.decompress(message);
     }
 
     /**
