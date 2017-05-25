@@ -36,7 +36,11 @@ public class ModelSelector {
             // CNN models
             case CNN:
                 netmap.putAll(ModelSelector.select(ZooType.ALEXNET, numLabels, seed, iterations));
+                netmap.putAll(ModelSelector.select(ZooType.LENET, numLabels, seed, iterations));
+                netmap.putAll(ModelSelector.select(ZooType.GOOGLENET, numLabels, seed, iterations));
+                netmap.putAll(ModelSelector.select(ZooType.RESNET50, numLabels, seed, iterations));
                 netmap.putAll(ModelSelector.select(ZooType.VGG16, numLabels, seed, iterations));
+                netmap.putAll(ModelSelector.select(ZooType.VGG19, numLabels, seed, iterations));
                 break;
             case ALEXNET:
                 netmap.put(ZooType.ALEXNET, new AlexNet(numLabels, seed, iterations));
@@ -50,11 +54,17 @@ public class ModelSelector {
             case FACENETNN4SMALL2:
                 netmap.put(ZooType.FACENETNN4SMALL2, new FaceNetNN4Small2(numLabels, seed, iterations));
                 break;
+            case GOOGLENET:
+                netmap.put(ZooType.LENET, new GoogLeNet(numLabels, seed, iterations));
+                break;
             case RESNET50:
                 netmap.put(ZooType.RESNET50, new ResNet50(numLabels, seed, iterations));
                 break;
             case VGG16:
                 netmap.put(ZooType.VGG16, new VGG16(numLabels, seed, iterations));
+                break;
+            case VGG19:
+                netmap.put(ZooType.VGG16, new VGG19(numLabels, seed, iterations));
                 break;
             default:
                 //                // do nothing

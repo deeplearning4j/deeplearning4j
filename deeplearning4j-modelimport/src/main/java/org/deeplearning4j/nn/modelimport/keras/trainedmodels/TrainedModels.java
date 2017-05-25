@@ -12,6 +12,7 @@ import java.util.ArrayList;
 /**
  * Support for popular trained image-classification models
  * @author susaneraly
+ * @deprecated Please use the new module deeplearning4j-zoo and instantiate pretrained models from the zoo directly.
  */
 public enum TrainedModels {
 

@@ -43,7 +43,7 @@ public class VGG16 extends ZooModel {
                         : ConvolutionLayer.AlgoMode.NO_WORKSPACE;
     }
 
-    public String pretrainedUrl() {
+    public String pretrainedImageNetUrl() {
         return "http://blob.deeplearning4j.org/models/vgg16_dl4j_inference.zip";
     }
 
