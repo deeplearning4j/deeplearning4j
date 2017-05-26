@@ -13,6 +13,10 @@ import java.util.Map;
  */
 public class ModelSelector {
 
+    public static Map<ZooType, ZooModel> select(ZooType zooType) {
+        return select(zooType, 1, 123, 1, WorkspaceMode.SEPARATE);
+    }
+
     public static Map<ZooType, ZooModel> select(ZooType zooType, int numLabels) {
         return select(zooType, numLabels, 123, 1, WorkspaceMode.SEPARATE);
     }
@@ -35,8 +39,39 @@ public class ModelSelector {
      * @return A hashmap of zoo types and models.
      */
     public static Map<ZooType, ZooModel> select(ZooType zooType, int numLabels, int seed, int iterations,
-                    WorkspaceMode workspaceMode) {
+                                                WorkspaceMode workspaceMode) {
+        return select(new HashMap<ZooType, ZooModel>(), zooType, numLabels, seed, iterations, workspaceMode);
+    }
+
+    public static Map<ZooType, ZooModel> select(WorkspaceMode workspaceMode, ZooType... zooTypes) {
+        return select(0, 123, 1, workspaceMode, zooTypes);
+    }
+
+    public static Map<ZooType, ZooModel> select(ZooType... zooTypes) {
+        return select(0, 123, 1, WorkspaceMode.SEPARATE, zooTypes);
+    }
+
+    /**
+     * Select specific models from the zoo.
+     *
+     * @param numLabels
+     * @param seed
+     * @param iterations
+     * @param workspaceMode
+     * @param zooTypes
+     * @return A hashmap of zoo types and models.
+     */
+    public static Map<ZooType, ZooModel> select(int numLabels, int seed, int iterations, WorkspaceMode workspaceMode, ZooType... zooTypes) {
         Map<ZooType, ZooModel> netmap = new HashMap<>();
+
+        for(ZooType zooType : zooTypes) {
+            select(netmap, zooType, numLabels, seed, iterations, workspaceMode);
+        }
+        return netmap;
+    }
+
+    private static Map<ZooType, ZooModel> select(Map<ZooType, ZooModel> netmap, ZooType zooType, int numLabels, int seed, int iterations,
+                    WorkspaceMode workspaceMode) {
 
         switch (zooType) {
             case ALL:
