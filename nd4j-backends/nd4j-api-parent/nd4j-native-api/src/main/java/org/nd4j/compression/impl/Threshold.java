@@ -3,6 +3,7 @@ package org.nd4j.compression.impl;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.math3.util.FastMath;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -14,6 +15,7 @@ import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.AbsValueGreaterThan;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -48,7 +50,7 @@ public class Threshold extends AbstractCompressor {
     public void configure(Object... vars) {
         if (vars[0] instanceof Number) {
             Number t = (Number) vars[0];
-            threshold = t.floatValue();
+            threshold = FastMath.abs(t.floatValue());
             log.info("Setting threshold to [{}]", threshold);
         } else {
             throw new ND4JIllegalStateException("Threshold value should be Number");
@@ -89,7 +91,7 @@ public class Threshold extends AbstractCompressor {
     @Override
     public DataBuffer compress(DataBuffer buffer) {
         INDArray temp = Nd4j.createArrayFromShapeBuffer(buffer, Nd4j.getShapeInfoProvider().createShapeInformation(new int[]{1, (int) buffer.length()}));
-        MatchCondition condition = new MatchCondition(Transforms.abs(temp, true), Conditions.greaterThanOrEqual(threshold));
+        MatchCondition condition = new MatchCondition(temp, Conditions.absGreaterThanOrEqual(threshold));
         int cntAbs = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
 
         if (cntAbs == 0)
