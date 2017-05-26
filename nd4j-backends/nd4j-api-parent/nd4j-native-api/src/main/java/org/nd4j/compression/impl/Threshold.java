@@ -94,6 +94,8 @@ public class Threshold extends AbstractCompressor {
         MatchCondition condition = new MatchCondition(temp, Conditions.absGreaterThanOrEqual(threshold));
         int cntAbs = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
 
+        //log.info("values to be sent: {}", cntAbs);
+
         if (cntAbs == 0)
             return null;
 
