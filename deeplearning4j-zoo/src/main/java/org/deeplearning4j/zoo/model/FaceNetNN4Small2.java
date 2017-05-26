@@ -1,5 +1,6 @@
 package org.deeplearning4j.zoo.model;
 
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.zoo.*;
@@ -23,7 +24,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  *
  * Revised and consolidated version by @crockpotveggies
  */
-
+@NoArgsConstructor
 public class FaceNetNN4Small2 extends ZooModel {
 
     private int[] inputShape = new int[] {3, 96, 96};

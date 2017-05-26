@@ -1,5 +1,6 @@
 package org.deeplearning4j.zoo.model;
 
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
@@ -36,6 +37,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  * Weight distribution uses 0.1 std for all layers in the paper but 0.005 in the dense layers in the imagenetExample code
  *
  */
+@NoArgsConstructor
 public class AlexNet extends ZooModel {
 
     private int[] inputShape = new int[] {3, 224, 224};

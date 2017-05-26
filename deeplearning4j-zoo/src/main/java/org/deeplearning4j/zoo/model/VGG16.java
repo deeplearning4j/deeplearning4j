@@ -1,5 +1,6 @@
 package org.deeplearning4j.zoo.model;
 
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.zoo.*;
@@ -30,6 +31,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  *
  * @author Justin Long (crockpotveggies)
  */
+@NoArgsConstructor
 public class VGG16 extends ZooModel {
 
     private int[] inputShape = new int[] {3, 224, 224};
