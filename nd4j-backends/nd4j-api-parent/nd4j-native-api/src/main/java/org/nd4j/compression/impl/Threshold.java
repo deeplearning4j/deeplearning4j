@@ -29,7 +29,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  */
 @Slf4j
 public class Threshold extends AbstractCompressor {
-    @Getter @Setter private float threshold = 0.0f;
+    @Getter @Setter protected float threshold = 1e-3f;
 
     /**
      * This method returns compression descriptor. It should be unique for any compressor implementation
@@ -44,6 +44,7 @@ public class Threshold extends AbstractCompressor {
     /**
      * This method allows you to configure threshold for delta extraction. Pass it as float/double value
      *
+     * Default value: 1e-3
      * @param vars
      */
     @Override
@@ -94,7 +95,8 @@ public class Threshold extends AbstractCompressor {
         MatchCondition condition = new MatchCondition(temp, Conditions.absGreaterThanOrEqual(threshold));
         int cntAbs = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
 
-        //log.info("values to be sent: {}", cntAbs);
+
+        //log.info("density ratio: {}", String.format("%.2f", cntAbs * 100.0f / buffer.length()));
 
         if (cntAbs == 0)
             return null;
