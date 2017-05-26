@@ -239,7 +239,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
         assertEquals(4, buffer.capacity());
         buffer.reallocate(6);
         assertEquals(6, buffer.capacity());
-
+        workspace.close();
     }
 
     @Override

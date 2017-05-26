@@ -1451,11 +1451,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public MemoryWorkspace getParentWorkspace() {
         return parentWorkspace;
     }
-/**
- * Reallocate the native memory of the buffer
- * @param length the new length of the buffer
- * @return this databuffer
- * */
+
+    /**
+     * Reallocate the native memory of the buffer
+     * @param length the new length of the buffer
+     * @return this databuffer
+     * */
     @Override
     public DataBuffer reallocate(long length) {
 
@@ -1468,7 +1469,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     indexer = DoubleIndexer.create((DoublePointer) pointer);
                     break;
                 case FLOAT:
-                    pointer = getParentWorkspace().alloc(capacity, Type.DOUBLE, false).asFloatPointer();
+                    pointer = getParentWorkspace().alloc(capacity, Type.FLOAT, false).asFloatPointer();
                     indexer = FloatIndexer.create((FloatPointer) pointer);
                     break;
             }
@@ -1483,13 +1484,12 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     indexer = DoubleIndexer.create((DoublePointer) pointer);
                     break;
                 case FLOAT:
-                   pointer = new FloatPointer(length);
+                    pointer = new FloatPointer(length);
                     indexer = FloatIndexer.create((FloatPointer) pointer);
                     break;
             }
         }
-        pointer.put(oldPointer);
-        //this.length = length;
+        Pointer.memcpy(pointer, oldPointer, oldPointer.capacity());
         return this;
     }
 
