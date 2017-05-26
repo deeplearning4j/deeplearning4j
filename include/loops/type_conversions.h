@@ -95,7 +95,6 @@ void convertToThreshold(void *dx, Nd4jIndex N, void *dz) {
         } else if (x[e] <= (T) -threshold) {
             z[t++] = -e - 1;
             x[e] += threshold;
-//            printf("Element [%i] is -T; Storing as [%i]\n", e, -e - 1);
         }
     }
 }
@@ -114,13 +113,12 @@ void convertFromThreshold(void *dx, Nd4jIndex N, void *dz) {
     memset(z, 0, sizeof(T) * size);
 
     int flimit = limit + 3;
-    for(int e = 3; e < flimit; e++) {
+
+#pragma omp parallel for schedule(guided)
+    for (int e = 3; e < flimit; e++) {
         int el = x[e];
-        if (el > 0) {
-            z[el-1] = threshold;
-        } else if (el < 0) {
-            z[(el + 1) * -1] = -threshold;
-        }
+        int ael = nd4j::math::nd4j_abs<int>(el) - 1;
+        z[ael] = el > 0 ? threshold : -threshold;
     }
 }
 
