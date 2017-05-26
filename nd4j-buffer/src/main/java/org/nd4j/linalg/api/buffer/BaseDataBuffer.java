@@ -442,7 +442,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public Pointer pointer() {
-        return underlyingDataBuffer().pointer() != null ? underlyingDataBuffer().pointer() : pointer;
+        return underlyingDataBuffer() != null ? underlyingDataBuffer().pointer() : pointer;
     }
 
     @Override
@@ -1459,50 +1459,45 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public DataBuffer reallocate(long length) {
 
-        if (getParentWorkspace() != null) {
+        Pointer oldPointer = pointer;
+        if (getParentWorkspace() != null && dataType() != Type.INT) {
             long capacity = length * getElementSize();
             switch (dataType()) {
                 case DOUBLE:
-                    double[] doubles = asDouble();
-                    pointer = getParentWorkspace().alloc(capacity, Type.DOUBLE, false);
+                    pointer = getParentWorkspace().alloc(capacity, Type.DOUBLE, false).asDoublePointer();
                     indexer = DoubleIndexer.create((DoublePointer) pointer);
-                    setData(doubles);
-                    break;
-                case INT:
-                    int[] ints = asInt();
-                    pointer = getParentWorkspace().alloc(capacity, Type.INT, false);
-                    indexer = IntIndexer.create((IntPointer) pointer);
-                    setData(ints);
                     break;
                 case FLOAT:
-                    double[] floats = asDouble();
-                    pointer = getParentWorkspace().alloc(capacity, Type.DOUBLE, false);
+                    pointer = getParentWorkspace().alloc(capacity, Type.DOUBLE, false).asFloatPointer();
                     indexer = FloatIndexer.create((FloatPointer) pointer);
-                    setData(floats);
                     break;
             }
         } else {
             switch (dataType()) {
                 case INT:
-                    int[] ints = asInt();
                     pointer = new IntPointer(length);
                     indexer = IntIndexer.create((IntPointer) pointer);
-                    setData(ints);
                     break;
                 case DOUBLE:
-                    double[] doubles = asDouble();
                     pointer = new DoublePointer(length);
                     indexer = DoubleIndexer.create((DoublePointer) pointer);
-                    setData(doubles);
                     break;
                 case FLOAT:
-                    double[] floats = asDouble();
-                    pointer = new FloatPointer(length);
+                   pointer = new FloatPointer(length);
                     indexer = FloatIndexer.create((FloatPointer) pointer);
-                    setData(floats);
                     break;
             }
         }
+        pointer.put(oldPointer);
+        //this.length = length;
         return this;
+    }
+
+    /**
+     * @return the capacity of the buffer
+     * */
+    @Override
+    public long capacity() {
+        return pointer().capacity();
     }
 }

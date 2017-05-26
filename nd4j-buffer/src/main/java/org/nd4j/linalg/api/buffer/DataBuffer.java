@@ -632,5 +632,15 @@ public interface DataBuffer extends Serializable {
      */
     MemoryWorkspace getParentWorkspace();
 
+    /**
+     * Reallocate the native memory of the buffer
+     * @param length the new length of the buffer
+     * @return this databuffer
+     * */
     DataBuffer reallocate(long length);
+
+    /**
+     * @return the capacity of the databuffer
+     * */
+    long capacity();
 }
