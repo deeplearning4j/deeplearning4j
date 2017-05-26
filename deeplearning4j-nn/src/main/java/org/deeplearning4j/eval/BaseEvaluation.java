@@ -22,6 +22,7 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
 
     private static ObjectMapper objectMapper = new ObjectMapper();
     private static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
+
     @Override
     public void evalTimeSeries(INDArray labels, INDArray predicted) {
         evalTimeSeries(labels, predicted, null);
@@ -44,7 +45,11 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
     @Override
     public void eval(INDArray labels, INDArray networkPredictions, INDArray maskArray) {
         if (maskArray == null) {
-            eval(labels, networkPredictions);
+            if (labels.rank() == 3) {
+                evalTimeSeries(labels, networkPredictions, maskArray);
+            } else {
+                eval(labels, networkPredictions);
+            }
             return;
         }
         if (labels.rank() == 3 && maskArray.rank() == 2) {
@@ -54,7 +59,7 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
         }
 
         throw new UnsupportedOperationException(
-                        this.getClass().getSimpleName() + " does not support per-output masking");
+                this.getClass().getSimpleName() + " does not support per-output masking");
     }
 
     /**
@@ -83,30 +88,28 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
 
 
     /**
-     *
      * @param json
      * @param clazz
      * @param <T>
      * @return
      */
-    public static <T extends BaseEvaluation> T fromYaml(String json,Class<T> clazz) {
+    public static <T extends BaseEvaluation> T fromYaml(String json, Class<T> clazz) {
         try {
-            return yamlMapper.readValue(json,clazz);
+            return yamlMapper.readValue(json, clazz);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     /**
-     *
      * @param json
      * @param clazz
      * @param <T>
      * @return
      */
-    public static <T extends BaseEvaluation> T fromJson(String json,Class<T> clazz) {
+    public static <T extends BaseEvaluation> T fromJson(String json, Class<T> clazz) {
         try {
-            return objectMapper.readValue(json,clazz);
+            return objectMapper.readValue(json, clazz);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
