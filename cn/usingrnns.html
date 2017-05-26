@@ -247,7 +247,7 @@ DataSetIterator iterRegression = new SequenceRecordReaderDataSetIterator(reader,
 
 <p><h3>示例3：不等长时间序列（多对多）</h3></p>
 <p>接前两例，假设每个单独样例的输入和标签长度相等，但不同的时间序列之间则存在长度差异。</p>
-<p>我们可以使用同样的方法（CSVSequenceRecordReader and SequenceRecordReaderDataSetIterator），但需要改变构造：</p>
+<p>我们可以使用同样的方法（CSVSequenceRecordReader and SequenceRecordReaderDataSetIterator），但需要改变构造器：</p>
 <pre><code class="language-java">
 DataSetIterator variableLengthIter = new SequenceRecordReaderDataSetIterator(featureReader, labelReader, miniBatchSize, numPossibleLabels, regression, SequenceRecordReaderDataSetIterator.AlignmentMode.ALIGN_END);
 </code></pre>
