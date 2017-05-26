@@ -37,7 +37,10 @@
         (9, simdOps::StandardDeviation), \
         (10,simdOps::Variance), \
 		(11, simdOps::ASum), \
-        (12, simdOps::MatchCondition)
+        (12, simdOps::MatchCondition) ,\
+        (13, simdOps::AMax) ,\
+        (14, simdOps::AMin) ,\
+        (15, simdOps::AMean)
 
 
 //an op for the kernel
