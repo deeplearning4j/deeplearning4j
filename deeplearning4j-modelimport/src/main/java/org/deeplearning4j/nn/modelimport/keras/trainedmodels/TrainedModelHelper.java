@@ -14,6 +14,7 @@ import java.net.URL;
 
 /**
  * @author susaneraly
+ * @deprecated Please use the new module deeplearning4j-zoo and instantiate pretrained models from the zoo directly.
  */
 public class TrainedModelHelper {
 

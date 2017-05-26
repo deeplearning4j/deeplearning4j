@@ -27,6 +27,7 @@ import java.io.IOException;
  *
  * @author Adam Gibson
  */
+@Deprecated
 public class CurvesDataSetIterator extends BaseDatasetIterator {
     public CurvesDataSetIterator(int batch, int numExamples) throws IOException {
         super(batch, numExamples, new CurvesDataFetcher());

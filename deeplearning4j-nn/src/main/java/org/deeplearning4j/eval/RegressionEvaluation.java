@@ -42,7 +42,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     private INDArray sumSquaredPredicted;
 
     public RegressionEvaluation(){
-        this(createDefaultColumnNames(1), DEFAULT_PRECISION);
+        this(null, DEFAULT_PRECISION);
     }
 
     /** Create a regression evaluation object with the specified number of columns, and default precision

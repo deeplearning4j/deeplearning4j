@@ -379,6 +379,12 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
             if (c.size() < maxTSLength)
                 needMaskArray = true;
         }
+
+        if(needMaskArray && alignmentMode == AlignmentMode.EQUAL_LENGTH ){
+            throw new UnsupportedOperationException("Alignment mode is set to EQUAL_LENGTH but variable length data was "
+                    + "encountered. Use AlignmentMode.ALIGN_START or AlignmentMode.ALIGN_END with variable length data");
+        }
+
         INDArray maskArray;
         if (needMaskArray)
             maskArray = Nd4j.ones(minValues, maxTSLength);
@@ -525,7 +531,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
     public static class Builder {
 
         private int batchSize;
-        private AlignmentMode alignmentMode = AlignmentMode.EQUAL_LENGTH;
+        private AlignmentMode alignmentMode = AlignmentMode.ALIGN_START;
         private Map<String, RecordReader> recordReaders = new HashMap<>();
         private Map<String, SequenceRecordReader> sequenceRecordReaders = new HashMap<>();
 
