@@ -1024,6 +1024,10 @@ namespace simdOps {
                 return (d1 == compare) ? 1.0 : 0.0;
             else if (mode == 11)
                 return (d1 != compare) ? 1.0 : 0.0;
+			else if (mode == 12) // abs_greater_or_equals_than
+				return nd4j::math::nd4j_abs<T>(d1) >= compare? 1.0 : 0.0;
+			else if (mode == 13) // abs_less_or_equals_than
+				return nd4j::math::nd4j_abs<T>(d1) <= compare? 1.0 : 0.0;
             else
                 printf("Undefined match condition: [%i]\n", mode);
 
@@ -2367,6 +2371,10 @@ template<typename T>
                 return (d1 == compare) ? d2 : d1;
             else if (mode == 11)
                 return (d1 != compare) ? d2 : d1;
+            else if (mode == 12) // abs_greater_or_equals_than
+                return nd4j::math::nd4j_abs<T>(d1) >= compare? d2 : d1;
+            else if (mode == 13) // abs_less_or_equals_than
+                return nd4j::math::nd4j_abs<T>(d1) <= compare? d2 : d1;
             else
                 printf("Undefined boolean operation: [%i]\n", mode);
             return d1;
@@ -2411,6 +2419,10 @@ template<typename T>
                 return (d1 == compare) ? set : d1;
             else if (mode == 11)
                 return (d1 != compare) ? set : d1;
+            else if (mode == 12) // abs_greater_or_equals_than
+                return nd4j::math::nd4j_abs<T>(d1) >= compare? set : d1;
+            else if (mode == 13) // abs_less_or_equals_than
+                return nd4j::math::nd4j_abs<T>(d1) <= compare? set : d1;
             else
                 printf("Undefined boolean operation: [%i]\n", mode);
             return d1;
@@ -2445,6 +2457,10 @@ template<typename T>
                 return (d2 == compare) ? d2 : d1;
             else if (mode == 11)
                 return (d2 != compare) ? d2 : d1;
+            else if (mode == 12) // abs_greater_or_equals_than
+                return nd4j::math::nd4j_abs<T>(d1) >= compare? d2 : d1;
+            else if (mode == 13) // abs_less_or_equals_than
+                return nd4j::math::nd4j_abs<T>(d1) <= compare? d2 : d1;
             else
                 printf("Undefined boolean operation: [%i]\n", mode);
             return d1;
