@@ -20,6 +20,7 @@
 #define ND4J_FLOAT24 119 // not supported after all. might want to add support later.
 
 #include <ops/ops.h>
+#include <atomic>
 #include <types/float16.h>
 #include <types/float8.h>
 #include <types/uint8.h>
@@ -85,16 +86,38 @@ void convertToThreshold(void *dx, Nd4jIndex N, void *dz) {
     // FIXME: int limit is sad thing here, 2B elements limitation
     z[1] = (int) N;
 
-    int t = 3;
-    int flimit = limit + t;
-    for (Nd4jIndex e = 0; e < N && t < flimit; e++) {
-        if (x[e] >= (T) threshold) {
-            z[t++] = e+1;
-            x[e] -= threshold;
-//            printf("Element [%i] is +T; Storing as [%i]\n", e, e + 1);
-        } else if (x[e] <= (T) -threshold) {
-            z[t++] = -e - 1;
-            x[e] += threshold;
+    // we use 3 as offset, since first 12 bytes are occupied with header
+    int flimit = limit + 3;
+    volatile std::atomic<int> cnt;
+    cnt.store(3);
+    volatile  std::atomic<bool> flag;
+    flag.store(false);
+#pragma omp parallel for schedule(guided) default(shared)
+    for (int e = 0; e < N;  e++) {
+        if (flag.load())
+            continue;
+
+        T cUpd = x[e];
+        if (cUpd >= (T) threshold) {
+            int idx = cnt++;
+
+            if (idx >= flimit) {
+                flag.store(true);
+                continue;
+            }
+
+            z[idx] = e + 1;
+            x[e] -= (T) threshold;
+        } else if (cUpd <= (T) -threshold) {
+            int idx = cnt++;
+
+            if (idx >= flimit) {
+                flag.store(true);
+                continue;
+            }
+
+            z[idx] = -e - 1;
+            x[e] += (T) threshold;
         }
     }
 }
@@ -112,6 +135,7 @@ void convertFromThreshold(void *dx, Nd4jIndex N, void *dz) {
     // everything is set to 0 now
     memset(z, 0, sizeof(T) * size);
 
+    // we use 3 as offset, since first 12 bytes are occupied with header
     int flimit = limit + 3;
 
 #pragma omp parallel for schedule(guided)
