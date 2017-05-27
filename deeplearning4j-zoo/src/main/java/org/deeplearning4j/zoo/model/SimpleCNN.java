@@ -1,5 +1,6 @@
 package org.deeplearning4j.zoo.model;
 
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -24,6 +25,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  *
  * @author Justin Long (crockpotveggies)
  */
+@NoArgsConstructor
 public class SimpleCNN extends ZooModel {
 
     private int[] inputShape = new int[] {3, 48, 48};

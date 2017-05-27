@@ -61,7 +61,7 @@ public class TestInstantiation {
 
     @Test
     public void testInitPretrained() throws IOException {
-        ZooModel model = new ResNet50(1, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
+        ZooModel model = new ResNet50(); //num labels doesn't matter since we're getting pretrained imagenet
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         ComputationGraph initializedModel = (ComputationGraph) model.initPretrained();
@@ -72,7 +72,7 @@ public class TestInstantiation {
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         System.gc();
 
-        model = new VGG16(1, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
+        model = new VGG16(); //num labels doesn't matter since we're getting pretrained imagenet
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         initializedModel = (ComputationGraph) model.initPretrained();
@@ -83,7 +83,7 @@ public class TestInstantiation {
         Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();
         System.gc();
 
-        model = new GoogLeNet(1, 123, 1); //num labels doesn't matter since we're getting pretrained imagenet
+        model = new GoogLeNet(); //num labels doesn't matter since we're getting pretrained imagenet
         assertTrue(model.pretrainedAvailable(PretrainedType.IMAGENET));
 
         initializedModel = (ComputationGraph) model.initPretrained();

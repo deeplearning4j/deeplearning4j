@@ -62,6 +62,13 @@
       <version>${py4j.version}</version>
     </dependency>
 
+    <!-- Used to alleviate licensing issues with findbugs -->
+    <dependency>
+      <groupId>com.github.stephenc.findbugs</groupId>
+      <artifactId>findbugs-annotations</artifactId>
+      <version>1.3.9-1</version>
+    </dependency>
+
     <!-- Test deps -->
     <dependency>
       <groupId>junit</groupId>

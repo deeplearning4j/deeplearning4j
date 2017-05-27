@@ -1,5 +1,6 @@
 package org.deeplearning4j.zoo.model;
 
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.BackpropType;
@@ -27,6 +28,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  *
  * @author Justin Long (crockpotveggies)
  */
+@NoArgsConstructor
 public class TextGenerationLSTM extends ZooModel {
 
     private int maxLength = 40;
