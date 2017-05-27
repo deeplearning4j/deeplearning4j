@@ -4,6 +4,7 @@ import org.bytedeco.javacpp.IntPointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.accum.AMax;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
@@ -14,7 +15,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
  * This compression is very special case, and shouldn't be ever used outside of ParallelWrapper/ParameterServer implementation.
  * It encodes data as delta between zero and abs threshold.
  *
- * Unlike Threshold codec, FlexibleThreshold tries to target specified sparsity/density updates ratio.
+ * Unlike Threshold codec, FlexibleThreshold tries to target specified sparsity/density updates ratio via topN approach
  *
  * PLEASE NOTE: DO NOT USE THIS COMPRESSOR UNLESS YOU'RE 100% SURE WHAT YOU DO!
  *
@@ -51,7 +52,10 @@ public class FlexibleThreshold extends Threshold {
 
     @Override
     public DataBuffer compress(DataBuffer buffer) {
-        int cntAbs = (int) (buffer.length() * threshold);
+        INDArray temp = Nd4j.createArrayFromShapeBuffer(buffer, Nd4j.getShapeInfoProvider().createShapeInformation(new int[]{1, (int) buffer.length()}));
+        double max = temp.amaxNumber().doubleValue();
+
+        int cntAbs = temp.scan(Conditions.absGreaterThanOrEqual(max - (max * threshold))).intValue();
 
         long originalLength = buffer.length() * Nd4j.sizeOfDataType(buffer.dataType());
         int compressedLength = cntAbs + 3;

@@ -1622,10 +1622,16 @@ public interface INDArray extends Serializable {
     INDArray max(int... dimension);
 
     /**
-     *
+     * Returns max value in this INDArray
      * @return
      */
     Number maxNumber();
+
+    /**
+     * Returns absolute max value in this INDArray
+     * @return
+     */
+    Number amaxNumber();
 
     /**
      *
@@ -1641,7 +1647,17 @@ public interface INDArray extends Serializable {
      */
     INDArray min(int... dimension);
 
+    /**
+     * Returns min value in this INDArray
+     * @return
+     */
     Number minNumber();
+
+    /**
+     * Returns absolute min value in this INDArray
+     * @return
+     */
+    Number aminNumber();
 
     IComplexNumber minComplex();
 
@@ -1653,7 +1669,13 @@ public interface INDArray extends Serializable {
      */
     INDArray sum(int... dimension);
 
-
+    /**
+     * This method takes boolean condition, and returns number of elements matching this condition
+     *
+     * @param condition
+     * @return
+     */
+    Number scan(Condition condition);
 
     /**
      * Returns the sum along the last dimension of this ndarray
