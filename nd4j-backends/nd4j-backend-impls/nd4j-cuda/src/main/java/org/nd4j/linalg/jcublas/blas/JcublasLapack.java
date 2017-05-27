@@ -44,7 +44,7 @@ public class JcublasLapack extends BaseLapack {
     private Method cusolverDnSsyevd_bufferSize, cusolverDnSsyevd,cusolverDnDsyevd_bufferSize, cusolverDnDsyevd  ;
     private int CUSOLVER_EIG_MODE_VECTOR, CUSOLVER_EIG_MODE_NOVECTOR ;
 
-    public JcublasLapack() {
+    public JcublasLapack() { 
         Class c = org.bytedeco.javacpp.cusolver.class;
         try {
             cusolverDnSorgqr_bufferSize = c.getMethod("cusolverDnSorgqr_bufferSize", cusolverDnContext.class, int.class, int.class, int.class, FloatPointer.class, int.class, FloatPointer.class, IntPointer.class);
