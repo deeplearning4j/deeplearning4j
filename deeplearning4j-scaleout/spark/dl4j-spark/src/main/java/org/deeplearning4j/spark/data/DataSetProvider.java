@@ -11,7 +11,6 @@ import org.nd4j.linalg.dataset.DataSet;
  */
 public interface DataSetProvider {
 
-
     /**
      * Return an rdd of type dataset
      * @return
