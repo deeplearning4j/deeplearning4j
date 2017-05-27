@@ -15,14 +15,14 @@ import org.nd4j.autodiff.tensorgrad.TensorGrad;
 import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 import org.nd4j.autodiff.tensorgrad.impl.TensorGradVariable;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.dataset.ExistingMiniBatchDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class ArrayTestAbstractFactory
         extends AbstractFactoriesTest<ArrayField> {
@@ -43,7 +43,7 @@ public class ArrayTestAbstractFactory
     public void testAutoDiff() {
         TensorGradGraph graph = new TensorGradGraph();
         ArrayFactory arrayFactory = new ArrayFactory(graph);
-        DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
+        DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph, arrayFactory);
         NDArrayInformation xInfo = NDArrayInformation.
                 builder().
                 shape(new int[]{1,1}).
@@ -54,14 +54,19 @@ public class ArrayTestAbstractFactory
                 shape(new int[]{1,1}).
                 id("y").
                 build();
-        NDArrayVertex xVertex = new NDArrayVertex(0,xInfo);
-        NDArrayVertex arrayVertex = new NDArrayVertex(1,yInfo);
+        NDArrayVertex xVertex = new NDArrayVertex(0, xInfo);
+        NDArrayVertex arrayVertex = new NDArrayVertex(1, yInfo);
 
-        Variable<ArrayField> x = arrayFieldDifferentialFunctionFactory.var("x",new ArrayField(xVertex, graph));
+        Variable<ArrayField> x = arrayFieldDifferentialFunctionFactory.var("x", new ArrayField(xVertex, graph));
         Variable<ArrayField> y = arrayFieldDifferentialFunctionFactory.var("y", new ArrayField(arrayVertex, graph));
-        DifferentialFunction<ArrayField> h = x.mul(x).mul( arrayFieldDifferentialFunctionFactory.cos(x.mul(y) ).plus(y));
-        System.out.println(h.diff(x).getValue().getOps());
+        DifferentialFunction<ArrayField> h = x.mul(x).mul(arrayFieldDifferentialFunctionFactory.cos(x.mul(y)).plus(y));
 
+        DifferentialFunction<ArrayField> diff = h.diff(x);
+        ArrayField value = diff.getValue();
+        Graph<NDArrayInformation, OpState> ops = value.getOps();
+        String s = ops.toString();
+
+        assertNotNull(s);
     }
 
     @Test

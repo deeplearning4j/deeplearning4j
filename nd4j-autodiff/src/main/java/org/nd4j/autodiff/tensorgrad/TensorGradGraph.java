@@ -13,6 +13,7 @@ import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.impl.TensorGradVariable;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by agibsonccc on 4/11/17.
@@ -38,7 +39,7 @@ public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
                             boolean frozen,
                             Map<Integer, List<Edge<OpState>>> incomingEdges,
                             TensorGrad tensorGrad) {
-        super(allowMultipleEdges, edges, vertices, frozen, incomingEdges,null);
+        super(allowMultipleEdges, edges, vertices, frozen, incomingEdges);
         this.tensorGrad = tensorGrad;
     }
 

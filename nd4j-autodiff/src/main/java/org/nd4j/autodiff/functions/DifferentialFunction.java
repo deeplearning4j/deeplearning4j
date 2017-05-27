@@ -73,6 +73,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
         return val;
     }
+
     @Override
     public abstract double getReal();
 
@@ -202,7 +203,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
                     .id(opName +"(" + v1.getInput().getId() + "," + v2.getInput().getId() + ")")
                     .shape(shape).build();
             //result
-            NDArrayVertex newVertex = new NDArrayVertex(graph.numVertices(),arrInfo);
+            NDArrayVertex newVertex = new NDArrayVertex(graph.nextVertexId(), arrInfo);
             if(newVertex.vertexID() == v2VertexId || newVertex.vertexID() == v1VertexId)
                 throw new ND4JIllegalStateException("Illegal vertex id specified in new vertex. Perhaps a mismatched graph call? Another likely cause is applyGraph");
             this.vertexId = newVertex.vertexID();
@@ -213,14 +214,14 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
             //ensure there's 2 vertices for when the 2 inputs are the same
             if(v1.equals(v2)) {
-                NDArrayVertex dupVertex = new NDArrayVertex(graph.getVertices().size(),
+                NDArrayVertex dupVertex = new NDArrayVertex(graph.nextVertexId(),
                         NDArrayInformation.builder()
                                 .shape(v1.getInput().getShape())
                                 .id(v1.getInput().getId()).build());
                 //update vertex id
                 v2VertexId = dupVertex.vertexID();
                 graph.addVertex(dupVertex);
-                opState =    OpState.builder()
+                opState = OpState.builder()
                         .opType(opType)
                         .opName(opName)
                         .id(opName + "(" + dupVertex.getValue().getId() + " -> " + newVertex.getValue().getId() + ")")

@@ -49,7 +49,7 @@ public class ArrayField implements Field<ArrayField> {
     public ArrayField(NDArrayInformation input,Graph<NDArrayInformation,OpState> ops) {
         this.input = input;
         this.ops = ops;
-        NDArrayVertex vertex = new NDArrayVertex(ops.numVertices(),input);
+        NDArrayVertex vertex = new NDArrayVertex(ops.nextVertexId(), input);
         ops.addVertex(vertex);
         this.vertex = vertex;
     }
@@ -572,7 +572,7 @@ public class ArrayField implements Field<ArrayField> {
 
     private ArrayField addScalarTransformOp(String name,Number scalarValue) {
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size(),
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId(),
                 NDArrayInformation.builder()
                         .id(name + "(" + input.getId() + ")")
                         .shape(input.getShape()).build());
@@ -603,8 +603,7 @@ public class ArrayField implements Field<ArrayField> {
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
                 .shape(resultShape).build();
 
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size(),information);
-
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId(), information);
 
         //add the result vertex to the graph
         this.getOps().addVertex(newVertex);
@@ -638,7 +637,7 @@ public class ArrayField implements Field<ArrayField> {
         NDArrayInformation resultInfo =  NDArrayInformation.builder()
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
                 .shape(input.getShape()).build();
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size(),resultInfo);
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId(), resultInfo);
 
         //add the result vertex to the graph
         this.getOps().addVertex(newVertex);

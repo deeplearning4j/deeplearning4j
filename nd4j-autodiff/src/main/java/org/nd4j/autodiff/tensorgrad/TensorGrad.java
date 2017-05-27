@@ -171,7 +171,7 @@ public class TensorGrad {
     public  TensorGradVariable var(String name, INDArray arr) {
         NDArrayInformation ndArrayInformation = NDArrayInformation.builder()
                 .shape(arr.shape()).id(name).build();
-        NDArrayVertex ndArrayVertex = new NDArrayVertex(graph.numVertices(),ndArrayInformation);
+        NDArrayVertex ndArrayVertex = new NDArrayVertex(graph.nextVertexId(), ndArrayInformation);
         ArrayField arrayField = new ArrayField(ndArrayVertex,graph);
         TensorGradVariable ret = TensorGradVariable.builder()
                 .tensorGrad(this).
