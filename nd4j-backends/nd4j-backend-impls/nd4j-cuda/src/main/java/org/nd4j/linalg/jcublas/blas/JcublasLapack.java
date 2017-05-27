@@ -847,7 +847,7 @@ public class JcublasLapack extends BaseLapack {
 		    DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
 		    try {
 			    status = (Integer)this.cusolverDnSsyevd_bufferSize.invoke (
-					solverDn, jobz, uplo, M, 
+					null, solverDn, jobz, uplo, M, 
 					(FloatPointer) xAPointer.getDevicePointer(), M,
 					(FloatPointer) xRPointer.getDevicePointer(),
 					(IntPointer)worksizeBuffer.addressPointer() ) ;
@@ -863,7 +863,7 @@ public class JcublasLapack extends BaseLapack {
 
 
 				    // Do the actual decomp
-				    status = (Integer)this.cusolverDnSsyevd.invoke(solverDn, jobz, uplo, M, 
+				    status = (Integer)this.cusolverDnSsyevd.invoke(null, solverDn, jobz, uplo, M, 
 							(FloatPointer) xAPointer.getDevicePointer(), M,
 							(FloatPointer) xRPointer.getDevicePointer(), 
 							new CudaPointer(workspace).asFloatPointer(), worksize,
@@ -932,7 +932,7 @@ public class JcublasLapack extends BaseLapack {
 		    DataBuffer worksizeBuffer = Nd4j.getDataBufferFactory().createInt(1);
 		    try {
 			    status = (Integer)this.cusolverDnDsyevd_bufferSize.invoke(
-					solverDn, jobz, uplo, M, 
+					null, solverDn, jobz, uplo, M, 
 					(DoublePointer) xAPointer.getDevicePointer(), M,
 					(DoublePointer) xRPointer.getDevicePointer(),
 					(IntPointer)worksizeBuffer.addressPointer() ) ;
@@ -948,7 +948,7 @@ public class JcublasLapack extends BaseLapack {
 
 
 				    // Do the actual decomp
-				    status = (Integer)this.cusolverDnDsyevd.invoke(solverDn, jobz, uplo, M, 
+				    status = (Integer)this.cusolverDnDsyevd.invoke( null, solverDn, jobz, uplo, M, 
 							(DoublePointer) xAPointer.getDevicePointer(), M,
 							(DoublePointer) xRPointer.getDevicePointer(), 
 							new CudaPointer(workspace).asDoublePointer(), worksize,
