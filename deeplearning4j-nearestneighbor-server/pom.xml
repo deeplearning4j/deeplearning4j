@@ -37,6 +37,12 @@
             <groupId>com.typesafe.play</groupId>
             <artifactId>play-java_2.11</artifactId>
             <version>${playframework.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>jsr305</artifactId>
+              </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.mashape.unirest</groupId>

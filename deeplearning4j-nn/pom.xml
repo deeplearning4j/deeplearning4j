@@ -34,6 +34,11 @@
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
             <version>${nd4j.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>com.google.code.findbugs</groupId>
+              </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- ND4J Shaded Jackson Dependency -->
