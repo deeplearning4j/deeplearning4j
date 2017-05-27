@@ -11,7 +11,7 @@ import it.unimi.dsi.fastutil.ints.IntSortedSet;
 import java.util.NoSuchElementException;
 import java.util.SortedSet;
 
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 public final class IntRange {
 

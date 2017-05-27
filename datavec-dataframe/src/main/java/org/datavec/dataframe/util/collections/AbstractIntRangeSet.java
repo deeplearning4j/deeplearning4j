@@ -1,6 +1,6 @@
 package org.datavec.dataframe.util.collections;
 
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * A skeletal implementation of {@code IntRangeSet}.

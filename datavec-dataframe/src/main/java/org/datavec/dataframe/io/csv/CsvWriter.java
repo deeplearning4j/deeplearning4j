@@ -4,7 +4,7 @@ import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.columns.Column;
 import com.opencsv.CSVWriter;
 
-import javax.annotation.concurrent.Immutable;
+import net.jcip.annotations.Immutable;
 import java.io.FileWriter;
 import java.io.IOException;
 

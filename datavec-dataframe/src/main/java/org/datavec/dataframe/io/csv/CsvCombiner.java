@@ -4,7 +4,7 @@ package org.datavec.dataframe.io.csv;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVWriter;
 
-import javax.annotation.concurrent.Immutable;
+import net.jcip.annotations.Immutable;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;

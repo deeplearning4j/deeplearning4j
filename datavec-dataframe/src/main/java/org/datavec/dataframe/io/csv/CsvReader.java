@@ -10,8 +10,8 @@ import com.google.common.collect.Lists;
 import com.opencsv.CSVReader;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.annotation.Nullable;
-import javax.annotation.concurrent.Immutable;
+import edu.umd.cs.findbugs.annotations.Nullable;
+import net.jcip.annotations.Immutable;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileReader;

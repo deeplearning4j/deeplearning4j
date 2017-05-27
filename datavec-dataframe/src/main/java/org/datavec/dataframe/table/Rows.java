@@ -14,7 +14,7 @@ import org.datavec.dataframe.api.TimeColumn;
 import org.datavec.dataframe.util.Selection;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 
-import javax.annotation.concurrent.Immutable;
+import net.jcip.annotations.Immutable;
 
 /**
  * A static utility class for row operations
