@@ -9,6 +9,7 @@ import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.graph.Graph;
+import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpExecAction;
@@ -144,7 +145,7 @@ public class TensorGrad {
     }
 
     public void allocate() {
-        for(int i = 0; i < graph().numVertices(); i++) {
+        for (Integer i : graph().getVertices().keySet()) {
             NDArrayInformation info = graph.getInformationFor(i);
             if(!variableMap.containsKey(info.getId())) {
                 TensorGradVariable variable = TensorGradVariable.builder()
