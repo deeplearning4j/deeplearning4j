@@ -48,8 +48,29 @@ public class TensorGrad {
         return graph;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
-    public static TensorGrad create(TensorGrad originalTensorGrad,TensorGradGraph graph) {
+        TensorGrad that = (TensorGrad) o;
+
+        if (graph != null ? !graph.equals(that.graph) : that.graph != null) return false;
+        if (tensorGradVariables != null ? !tensorGradVariables.equals(that.tensorGradVariables) : that.tensorGradVariables != null)
+            return false;
+        return variableMap != null ? variableMap.equals(that.variableMap) : that.variableMap == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (graph != null ? graph.hashCode() : 0);
+        result = 31 * result + (tensorGradVariables != null ? tensorGradVariables.hashCode() : 0);
+        result = 31 * result + (variableMap != null ? variableMap.hashCode() : 0);
+        return result;
+    }
+
+    public static TensorGrad create(TensorGrad originalTensorGrad, TensorGradGraph graph) {
         ArrayFactory arrayFactory = new ArrayFactory(graph);
         TensorGradGraph clone = new TensorGradGraph(graph);
         TensorGrad ret = TensorGrad.builder()

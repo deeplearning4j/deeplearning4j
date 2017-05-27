@@ -2,6 +2,7 @@ package org.nd4j.autodiff;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.graph.Graph;
@@ -31,6 +32,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 @AllArgsConstructor
 @Getter
 @Builder
+@EqualsAndHashCode
 public class ArrayField implements Field<ArrayField> {
     private Graph<NDArrayInformation,OpState> ops;
     private NDArrayInformation input;
