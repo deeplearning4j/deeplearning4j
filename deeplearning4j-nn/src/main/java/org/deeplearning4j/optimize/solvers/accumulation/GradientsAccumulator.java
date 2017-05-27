@@ -62,6 +62,7 @@ public class GradientsAccumulator implements Serializable {
         this.handler.initialize(this);
     }
 
+    // FIXME: this implementation is wrong, and might cause rc
     public INDArray getUpdate() {
         synchronized (this) {
             if (consumerIndex.get() == null) {
@@ -135,8 +136,7 @@ public class GradientsAccumulator implements Serializable {
     public void receiveUpdate(INDArray array) {
         extCounter.getAndIncrement();
 
-        // TODO: we need to replicate array here, wrt number of consumers. separate queues maybe? MQ-style?
-
+        // FIXME: something better needed here
         for (int i = 0; i < consumerData.size(); i++) {
             synchronized (consumerLocks.get(i)) {
                 consumerData.get(i).addi(array);
