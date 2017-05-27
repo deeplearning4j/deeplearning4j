@@ -1,5 +1,6 @@
 package org.deeplearning4j.zoo.model;
 
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.zoo.*;
@@ -26,6 +27,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
  * @author kepricon
  * @author Justin Long (crockpotveggies)
  */
+@NoArgsConstructor
 public class LeNet extends ZooModel {
 
     private int[] inputShape = new int[] {3, 224, 224};
