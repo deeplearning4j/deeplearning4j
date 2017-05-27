@@ -1580,7 +1580,27 @@ public interface INDArray extends Serializable {
      */
     INDArray mean(INDArray result, int... dimension);
 
+    /**
+     * Returns the absolute overall mean of this ndarray
+     *
+     * @param dimension the dimension to getScalar the mean along
+     * @return the mean along the specified dimension of this ndarray
+     */
+    INDArray amean(int... dimension);
+
+    /**
+     * Returns the overall mean of this ndarray
+     *
+     * @return the mean along the specified dimension of this ndarray
+     */
     Number meanNumber();
+
+    /**
+     * Returns the absolute overall mean of this ndarray
+     *
+     * @return the mean along the specified dimension of this ndarray
+     */
+    Number ameanNumber();
 
     IComplexNumber meanComplex();
 
@@ -1614,12 +1634,20 @@ public interface INDArray extends Serializable {
     IComplexNumber varComplex();
 
     /**
-     * Returns the overall max of this ndarray
+     * Returns the overall max of this ndarray along given dimensions
      *
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
     INDArray max(int... dimension);
+
+    /**
+     * Returns the absolute overall max of this ndarray along given dimensions
+     *
+     * @param dimension the dimension to getScalar the mean along
+     * @return the mean along the specified dimension of this ndarray
+     */
+    INDArray amax(int... dimension);
 
     /**
      * Returns max value in this INDArray
@@ -1646,6 +1674,8 @@ public interface INDArray extends Serializable {
      * @return the mean along the specified dimension of this ndarray
      */
     INDArray min(int... dimension);
+
+    INDArray amin(int... dimension);
 
     /**
      * Returns min value in this INDArray

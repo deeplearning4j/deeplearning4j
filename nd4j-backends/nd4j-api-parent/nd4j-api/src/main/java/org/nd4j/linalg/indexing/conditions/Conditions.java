@@ -104,4 +104,12 @@ public class Conditions {
         return new AbsValueLessOrEqualsThan(value);
     }
 
+    public static Condition absGreaterThan(Number value) {
+        return new AbsValueGreaterThan(value);
+    }
+
+    public static Condition absLessThan(Number value) {
+        return new AbsValueLessThan(value);
+    }
+
 }

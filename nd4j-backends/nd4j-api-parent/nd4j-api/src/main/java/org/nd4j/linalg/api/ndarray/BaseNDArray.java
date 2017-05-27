@@ -1143,6 +1143,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
+    public Number ameanNumber() {
+        return amean(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
     public IComplexNumber meanComplex() {
         throw new UnsupportedOperationException();
 
@@ -3730,6 +3735,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray mean(int... dimension) {
         return Nd4j.getExecutioner().exec(new Mean(this), dimension);
+    }
+
+    @Override
+    public INDArray amean(int... dimension) {
+        return Nd4j.getExecutioner().exec(new AMean(this), dimension);
     }
 
     @Override
