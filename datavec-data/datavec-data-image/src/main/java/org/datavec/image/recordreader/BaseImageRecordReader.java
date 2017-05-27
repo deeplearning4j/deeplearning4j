@@ -16,7 +16,6 @@
 
 package org.datavec.image.recordreader;
 
-import org.apache.commons.io.FileUtils;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.records.Record;
@@ -26,17 +25,17 @@ import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.util.files.FileFromPathIterator;
+import org.datavec.api.util.files.URIUtil;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.RecordConverter;
 import org.datavec.common.data.NDArrayWritable;
+import org.datavec.image.loader.BaseImageLoader;
 import org.datavec.image.loader.ImageLoader;
 import org.datavec.image.loader.NativeImageLoader;
-import org.datavec.image.loader.BaseImageLoader;
 import org.datavec.image.transform.ImageTransform;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.collection.CompactHeapStringList;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.*;
@@ -49,13 +48,13 @@ import java.util.*;
  * @author Adam Gibson
  */
 public abstract class BaseImageRecordReader extends BaseRecordReader {
-    protected List<String> allPaths;
     protected Iterator<File> iter;
     protected Configuration conf;
     protected File currentFile;
     protected PathLabelGenerator labelGenerator = null;
     protected List<String> labels = new ArrayList<>();
     protected boolean appendLabel = false;
+    protected boolean writeLabel = false;
     protected List<Writable> record;
     protected boolean hitImage = false;
     protected int height = 28, width = 28, channels = 1;
@@ -105,44 +104,25 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
         inputSplit = split;
         URI[] locations = split.locations();
         if (locations != null && locations.length >= 1) {
-            if (locations.length > 1 || containsFormat(locations[0].getPath())) {
-                allPaths = new CompactHeapStringList();
+            if (appendLabel) {
                 for (URI location : locations) {
                     File imgFile = new File(location);
-                    if (!imgFile.isDirectory() && containsFormat(imgFile.getAbsolutePath())) {
-                        allPaths.add(imgFile.toURI().toString());
+                    File parentDir = imgFile.getParentFile();
+                    String name = parentDir.getName();
+                    if (labelGenerator != null) {
+                        name = labelGenerator.getLabelForPath(location).toString();
                     }
-                    if (appendLabel) {
-                        File parentDir = imgFile.getParentFile();
-                        String name = parentDir.getName();
-                        if (labelGenerator != null) {
-                            name = labelGenerator.getLabelForPath(location).toString();
-                        }
-                        if (!labels.contains(name)) {
-                            labels.add(name);
-                        }
-                        if (pattern != null) {
-                            String label = name.split(pattern)[patternPosition];
-                            fileNameMap.put(imgFile.toString(), label);
-                        }
+                    if (!labels.contains(name)) {
+                        labels.add(name);
+                    }
+                    if (pattern != null) {
+                        String label = name.split(pattern)[patternPosition];
+                        fileNameMap.put(imgFile.toString(), label);
                     }
                 }
-            } else {
-                File curr = new File(locations[0]);
-                if (!curr.exists())
-                    throw new IllegalArgumentException("Path " + curr.getAbsolutePath() + " does not exist!");
-                if (curr.isDirectory()) {
-                    Collection<File> temp = FileUtils.listFiles(curr, null, true);
-                    allPaths = new CompactHeapStringList();
-                    for (File f : temp) {
-                        allPaths.add(f.getPath());
-                    }
-                } else {
-                    allPaths = Collections.singletonList(curr.getPath());
-                }
-
             }
             iter = new FileFromPathIterator(inputSplit.locationsPathIterator()); //This handles randomization internally if necessary
+//            iter = new FileFromPathIterator(allPaths.iterator()); //This handles randomization internally if necessary
         } else
             throw new IllegalArgumentException("No path locations found in the split.");
 
@@ -219,7 +199,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 INDArray row = imageLoader.asMatrix(image);
                 Nd4j.getAffinityManager().ensureLocation(row, AffinityManager.Location.DEVICE);
                 ret = RecordConverter.toRecord(row);
-                if (appendLabel)
+                if (appendLabel || writeLabel)
                     ret.add(new IntWritable(labels.indexOf(getLabel(image.getPath()))));
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -258,12 +238,12 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
         int cnt = 0;
 
-        int numCategories = appendLabel ? labels.size() : 0;
+        int numCategories = (appendLabel || writeLabel) ? labels.size() : 0;
         List<Integer> currLabels = new ArrayList<>();
         while (cnt < num && iter.hasNext()) {
             File currFile = iter.next();
             currBatch.add(currFile);
-            if (appendLabel)
+            if (appendLabel || writeLabel)
                 currLabels.add(labels.indexOf(getLabel(currFile.getPath())));
             cnt++;
         }
@@ -281,7 +261,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
 
         List<Writable> ret = (RecordConverter.toRecord(features));
-        if (appendLabel) {
+        if (appendLabel || writeLabel) {
             INDArray labels = Nd4j.create(cnt, numCategories, 'c');
             Nd4j.getAffinityManager().tagLocation(labels, AffinityManager.Location.HOST);
             for (int i = 0; i < currLabels.size(); i++) {
@@ -356,6 +336,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
 
     public void setLabels(List<String> labels) {
         this.labels = labels;
+        this.writeLabel = true;
     }
 
     @Override
@@ -393,7 +374,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
     @Override
     public Record nextRecord() {
         List<Writable> list = next();
-        URI uri = currentFile.toURI();
+        URI uri = URIUtil.fileToURI(currentFile);
         return new org.datavec.api.records.impl.Record(list, new RecordMetaDataURI(uri, BaseImageRecordReader.class));
     }
 
