@@ -52,8 +52,10 @@ public class Eigen {
      */
     public static INDArray symmetricGeneralizedEigenvalues(INDArray A) {
         INDArray eigenvalues = Nd4j.create(A.rows());
-        Nd4j.getBlasWrapper().syev( 'V', 'L', A, eigenvalues );
+        int isuppz[] = new int[2 * A.rows()];
+        Nd4j.getBlasWrapper().syevr('N', 'A', 'U', A.dup(), 0, 0, 0, 0, 0, eigenvalues, Nd4j.ones(1), isuppz);
         return eigenvalues;
+
     }
 
 
@@ -107,7 +109,7 @@ public class Eigen {
         assert A.rows() == A.columns();
         assert B.rows() == B.columns();
         INDArray W = Nd4j.create(A.rows());
-        Nd4j.getBlasWrapper().syev( 'V', 'L', A.dup(), W);
+        Nd4j.getBlasWrapper().sygvd(1, 'N', 'U', A.dup(), B.dup(), W);
         return W;
     }
 

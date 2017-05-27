@@ -52,7 +52,7 @@ public class JcublasLapack extends BaseLapack {
             cusolverDnDorgqr_bufferSize = c.getMethod("cusolverDnDorgqr_bufferSize", cusolverDnContext.class, int.class, int.class, int.class, DoublePointer.class, int.class, DoublePointer.class, IntPointer.class);
             cusolverDnDorgqr = c.getMethod("cusolverDnDorgqr", cusolverDnContext.class, int.class, int.class, int.class, DoublePointer.class, int.class, DoublePointer.class, DoublePointer.class, int.class, IntPointer.class);
         } catch (NoSuchMethodException | SecurityException ex) {
-            log.warn("cusolverDnSorgqr() and cusolverDnDorgqr() are not available", ex);
+            log.warn("cusolverDnSorgqr() and cusolverDnDorgqr() are not available", ex); 
         }
 
         try {

@@ -64,20 +64,6 @@ public interface Lapack {
     public void potrf(INDArray A, boolean lower ) ;
 
 
-    /**
-     * Caclulate the eigenvalues and vectors of a symmetric matrix. The
-     * symmetric matrix means the results are guaranteed to be real (not complex)
-     *
-     * The matrix A is overridden by the eigenvectors. The eigenvalues
-     * are returned separately
-     *
-     * @param A the input matrix, it will be overwritten with the eigenvectors
-     * @param V the resulting eigenvalues
-     * @throws Error - with a message to indicate failure (usu. bad params)
-     */
-    public int syev( char jobz, char uplo, INDArray A, INDArray V ) ;
-
-    
 
     /**
      * SVD decomposiiton of a matrix
@@ -95,8 +81,6 @@ public interface Lapack {
      * @throws Error - with a message to indicate failure (usu. bad params)
      */
     public void gesvd(INDArray A, INDArray S, INDArray U, INDArray VT);
-
-
 
 
     /** 

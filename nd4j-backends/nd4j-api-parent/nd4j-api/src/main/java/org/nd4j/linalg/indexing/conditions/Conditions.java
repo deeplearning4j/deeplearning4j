@@ -39,7 +39,7 @@ public class Conditions {
     }
 
     public static Condition epsEquals(IComplexNumber value) {
-        return new EqualsCondition(value);
+        return new EpsilonEquals(value);
     }
 
     public static Condition epsNotEquals(Number value) {
@@ -47,7 +47,7 @@ public class Conditions {
     }
 
     public static Condition epsEquals(Number value) {
-        return new EqualsCondition(value);
+        return new EpsilonEquals(value);
     }
 
 

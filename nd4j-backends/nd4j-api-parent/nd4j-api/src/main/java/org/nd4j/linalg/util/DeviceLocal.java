@@ -2,7 +2,8 @@ package org.nd4j.linalg.util;
 
 import org.nd4j.linalg.factory.Nd4j;
 
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

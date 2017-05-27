@@ -440,7 +440,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
             dimensions.add(ArrayUtil.range(1, getFeaturesMaskArray().rank()));
         }
 
-        if (featuresMask != null) {
+        if (labelsMask != null) {
             arrays.add(getLabelsMaskArray());
             dimensions.add(ArrayUtil.range(1, getLabelsMaskArray().rank()));
         }
