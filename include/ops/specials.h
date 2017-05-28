@@ -306,7 +306,45 @@ void concatCpuGeneric(
 }
 
 
+/**
+ * This kernel accumulates X arrays, and stores result into Z
+ *
+ * @tparam T
+ * @param x
+ * @param z
+ * @param n
+ * @param length
+ */
+template<typename T>
+void accumulateGeneric(T **x, T *z, int n, const Nd4jIndex length) {
+    // aggregation step
+#ifdef _OPENNMP
+    int _threads = omp_get_max_threads();
+#else
+    // we can use whatever we want here, this value won't be used if there's no omp
+    int _threads = 4;
+#endif
 
+#pragma omp parallel for simd num_threads(_threads) schedule(guided) default(shared) proc_bind(close)
+    for (int i = 0; i < length; i++) {
+
+        for (int ar = 0; ar < n; ar++) {
+            z[i] += x[ar][i];
+        }
+    }
+}
+
+
+/**
+ * This kernel averages X input arrays, and stores result to Z
+ *
+ * @tparam T
+ * @param x
+ * @param z
+ * @param n
+ * @param length
+ * @param propagate
+ */
 template<typename T>
 void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) {
 
@@ -326,7 +364,7 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
 
     // aggregation step
 #ifdef _OPENNMP
-    int _threads = nd4j::math::nd4j_min<int>(omp_get_max_threads() / 2, 4);
+    int _threads = omp_get_max_threads(); //nd4j::math::nd4j_min<int>(omp_get_max_threads() / 2, 4);
 #else
     // we can use whatever we want here, this value won't be used if there's no omp
     int _threads = 4;
@@ -350,5 +388,8 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
     if (tempZ)
         delete[] z;
 }
+
+
+
 
 #endif //LIBND4J_CONCAT_H
