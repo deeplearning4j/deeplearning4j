@@ -25,7 +25,9 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.rdd.RDD;
+import org.deeplearning4j.eval.*;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.api.TrainingMaster;
@@ -35,6 +37,8 @@ import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
 import org.deeplearning4j.spark.impl.graph.dataset.DataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.graph.dataset.PairDataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.graph.scoring.*;
+import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateFlatMapFunction;
+import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluationReduceFunction;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -51,6 +55,7 @@ import scala.Tuple2;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -60,7 +65,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Slf4j
 public class SparkComputationGraph extends SparkListenable {
-
+    public static final int DEFAULT_ROC_THRESHOLD_STEPS = 32;
     public static final int DEFAULT_EVAL_SCORE_BATCH_SIZE = 64;
     private transient JavaSparkContext sc;
     private ComputationGraphConfiguration conf;
@@ -491,5 +496,147 @@ public class SparkComputationGraph extends SparkListenable {
                     boolean includeRegularizationTerms, int batchSize) {
         return data.mapPartitionsToPair(new ScoreExamplesWithKeyFunction<K>(sc.broadcast(network.params()),
                         sc.broadcast(conf.toJson()), includeRegularizationTerms, batchSize));
+    }
+
+
+    /**
+     * {@code RDD<DataSet>} overload of {@link #evaluate(JavaRDD)}
+     */
+    public Evaluation evaluate(RDD<DataSet> data) {
+        return evaluate(data.toJavaRDD());
+    }
+
+    /**
+     * Evaluate the network (classification performance) in a distributed manner on the provided data
+     *
+     * @param data Data to evaluate on
+     * @return Evaluation object; results of evaluation on all examples in the data set
+     */
+    public Evaluation evaluate(JavaRDD<DataSet> data) {
+        return evaluate(data, null);
+    }
+
+    /**
+     * {@code RDD<DataSet>} overload of {@link #evaluate(JavaRDD, List)}
+     */
+    public Evaluation evaluate(RDD<DataSet> data, List<String> labelsList) {
+        return evaluate(data.toJavaRDD(), labelsList);
+    }
+
+    /**
+     * Evaluate the network (regression performance) in a distributed manner on the provided data
+     *
+     * @param data Data to evaluate
+     * @return     {@link RegressionEvaluation} instance with regression performance
+     */
+    public RegressionEvaluation evaluateRegression(JavaRDD<DataSet> data) {
+        return evaluateRegression(data, DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**
+     * Evaluate the network (regression performance) in a distributed manner on the provided data
+     *
+     * @param data Data to evaluate
+     * @param minibatchSize Minibatch size to use when doing performing evaluation
+     * @return     {@link RegressionEvaluation} instance with regression performance
+     */
+    public RegressionEvaluation evaluateRegression(JavaRDD<DataSet> data, int minibatchSize) {
+        int nOut = ((FeedForwardLayer) network.getOutputLayer(0).conf().getLayer()).getNOut();
+        return doEvaluation(data, new RegressionEvaluation(nOut), minibatchSize);
+    }
+
+    /**
+     * Evaluate the network (classification performance) in a distributed manner, using default batch size and a provided
+     * list of labels
+     *
+     * @param data       Data to evaluate on
+     * @param labelsList List of labels used for evaluation
+     * @return Evaluation object; results of evaluation on all examples in the data set
+     */
+    public Evaluation evaluate(JavaRDD<DataSet> data, List<String> labelsList) {
+        return evaluate(data, labelsList, DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**
+     * Perform ROC analysis/evaluation on the given DataSet in a distributed manner, using the default number of
+     * threshold steps ({@link #DEFAULT_ROC_THRESHOLD_STEPS}) and the default minibatch size ({@link #DEFAULT_EVAL_SCORE_BATCH_SIZE})
+     *
+     * @param data                    Test set data (to evaluate on)
+     * @return ROC for the entire data set
+     */
+    public ROC evaluateROC(JavaRDD<DataSet> data) {
+        return evaluateROC(data, DEFAULT_ROC_THRESHOLD_STEPS,
+                DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**
+     * Perform ROC analysis/evaluation on the given DataSet in a distributed manner
+     *
+     * @param data                    Test set data (to evaluate on)
+     * @param thresholdSteps          Number of threshold steps for ROC - see {@link ROC}
+     * @param evaluationMinibatchSize Minibatch size to use when performing ROC evaluation
+     * @return ROC for the entire data set
+     */
+    public ROC evaluateROC(JavaRDD<DataSet> data, int thresholdSteps, int evaluationMinibatchSize) {
+        return doEvaluation(data, new ROC(thresholdSteps), evaluationMinibatchSize);
+    }
+
+    /**
+     * Perform ROC analysis/evaluation (for the multi-class case, using {@link ROCMultiClass} on the given DataSet in a distributed manner
+     *
+     * @param data                    Test set data (to evaluate on)
+     * @return ROC for the entire data set
+     */
+    public ROCMultiClass evaluateROCMultiClass(JavaRDD<DataSet> data) {
+        return evaluateROCMultiClass(data, DEFAULT_ROC_THRESHOLD_STEPS, DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**
+     * Perform ROC analysis/evaluation (for the multi-class case, using {@link ROCMultiClass} on the given DataSet in a distributed manner
+     *
+     * @param data                    Test set data (to evaluate on)
+     * @param thresholdSteps          Number of threshold steps for ROC - see {@link ROC}
+     * @param evaluationMinibatchSize Minibatch size to use when performing ROC evaluation
+     * @return ROCMultiClass for the entire data set
+     */
+    public ROCMultiClass evaluateROCMultiClass(JavaRDD<DataSet> data, int thresholdSteps, int evaluationMinibatchSize) {
+        return doEvaluation(data, new ROCMultiClass(thresholdSteps), evaluationMinibatchSize);
+    }
+
+
+
+    /**
+     * Evaluate the network (classification performance) in a distributed manner, using specified batch size and a provided
+     * list of labels
+     *
+     * @param data          Data to evaluate on
+     * @param labelsList    List of labels used for evaluation
+     * @param evalBatchSize Batch size to use when conducting evaluations
+     * @return Evaluation object; results of evaluation on all examples in the data set
+     */
+    public Evaluation evaluate(JavaRDD<DataSet> data, List<String> labelsList, int evalBatchSize) {
+        Evaluation e = new Evaluation();
+        e = doEvaluation(data, e, evalBatchSize);
+        if (labelsList != null) {
+            e.setLabelsList(labelsList);
+        }
+        return e;
+    }
+
+    /**
+     * Perform distributed evaluation of any type of {@link IEvaluation}. For example, {@link Evaluation}, {@link RegressionEvaluation},
+     * {@link ROC}, {@link ROCMultiClass} etc.
+     *
+     * @param data            Data to evaluate on
+     * @param emptyEvaluation Empty evaluation instance. This is the starting point (serialized/duplicated, then merged)
+     * @param evalBatchSize   Evaluation batch size
+     * @param <T>             Type of evaluation instance to return
+     * @return                IEvaluation instance
+     */
+    public <T extends IEvaluation> T doEvaluation(JavaRDD<DataSet> data, T emptyEvaluation, int evalBatchSize) {
+        IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(sc.broadcast(conf.toJson()),
+                sc.broadcast(network.params()), evalBatchSize, emptyEvaluation);
+        JavaRDD<T> evaluations = data.mapPartitions(evalFn);
+        return evaluations.reduce(new IEvaluationReduceFunction<T>());
     }
 }

@@ -1714,7 +1714,8 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     /**
-     * Get the specified output layer, by index. The index of the output layer may be 0 to {@link #getNumOutputArrays()}-1
+     * Get the specified output layer, by index. The index of the output
+     * layer may be 0 to {@link #getNumOutputArrays()}-1
      */
     public Layer getOutputLayer(int outputLayerIdx) {
         if (outputLayerIdx >= numOutputArrays)
