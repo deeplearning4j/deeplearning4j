@@ -3,6 +3,7 @@ package org.deeplearning4j.parallelism.main;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import lombok.Data;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.impl.RemoteUIStatsStorageRouter;
 import org.deeplearning4j.nn.api.Model;
@@ -24,6 +25,7 @@ import java.io.File;
  *
  * @author Adam Gibson
  */
+@Data
 public class ParallelWrapperMain {
     @Parameter(names = {"--modelPath"}, description = "Path to the model", arity = 1, required = true)
     private String modelPath = null;
@@ -40,16 +42,16 @@ public class ParallelWrapperMain {
     @Parameter(names = {"--legacyAveraging"}, description = "Whether to use legacy averaging", arity = 1)
     private boolean legacyAveraging = true;
     @Parameter(names = {"--dataSetIteratorFactoryClazz"},
-                    description = "The fully qualified class name of the multi data set iterator class to use.",
-                    arity = 1)
+            description = "The fully qualified class name of the multi data set iterator class to use.",
+            arity = 1)
     private String dataSetIteratorFactoryClazz = null;
     @Parameter(names = {"--multiDataSetIteratorFactoryClazz"},
-                    description = "The fully qualified class name of the multi data set iterator class to use.",
-                    arity = 1)
+            description = "The fully qualified class name of the multi data set iterator class to use.",
+            arity = 1)
     private String multiDataSetIteratorFactoryClazz = null;
     @Parameter(names = {"--modelOutputPath"},
-                    description = "The fully qualified class name of the multi data set iterator class to use.",
-                    arity = 1, required = true)
+            description = "The fully qualified class name of the multi data set iterator class to use.",
+            arity = 1, required = true)
     private String modelOutputPath = null;
     @Parameter(names = {"--uiUrl"}, description = "The host:port of the ui to use (optional)", arity = 1)
     private String uiUrl = null;
@@ -76,30 +78,36 @@ public class ParallelWrapperMain {
             System.exit(1);
         }
 
+        run();
+
+    }
+
+
+    public void run() throws Exception {
 
         Model model = ModelGuesser.loadModelGuess(modelPath);
         // ParallelWrapper will take care of load balancing between GPUs.
         ParallelWrapper wrapper = new ParallelWrapper.Builder(model)
-                        // DataSets prefetching options. Set this value with respect to number of actual devices
-                        .prefetchBuffer(prefetchSize)
+                // DataSets prefetching options. Set this value with respect to number of actual devices
+                .prefetchBuffer(prefetchSize)
 
-                        // set number of workers equal or higher then number of available devices. x1-x2 are good values to start with
-                        .workers(workers)
+                // set number of workers equal or higher then number of available devices. x1-x2 are good values to start with
+                .workers(workers)
 
-                        // rare averaging improves performance, but might reduce model accuracy
-                        .averagingFrequency(averagingFrequency).averageUpdaters(averageUpdaters)
+                // rare averaging improves performance, but might reduce model accuracy
+                .averagingFrequency(averagingFrequency).averageUpdaters(averageUpdaters)
 
-                        // if set to TRUE, on every averaging model score will be reported
-                        .reportScoreAfterAveraging(reportScore)
+                // if set to TRUE, on every averaging model score will be reported
+                .reportScoreAfterAveraging(reportScore)
 
-                        // optional parameter, set to false ONLY if your system has support P2P memory access across PCIe (hint: AWS do not support P2P)
-                        .useLegacyAveraging(legacyAveraging)
+                // optional parameter, set to false ONLY if your system has support P2P memory access across PCIe (hint: AWS do not support P2P)
+                .useLegacyAveraging(legacyAveraging)
 
-                        .build();
+                .build();
 
         if (dataSetIteratorFactoryClazz != null) {
             DataSetIteratorProviderFactory dataSetIteratorProviderFactory =
-                            (DataSetIteratorProviderFactory) Class.forName(dataSetIteratorFactoryClazz).newInstance();
+                    (DataSetIteratorProviderFactory) Class.forName(dataSetIteratorFactoryClazz).newInstance();
             DataSetIterator dataSetIterator = dataSetIteratorProviderFactory.create();
             if (uiUrl != null) {
                 // it's important that the UI can report results from parallel training
@@ -114,7 +122,7 @@ public class ParallelWrapperMain {
 
         } else if (multiDataSetIteratorFactoryClazz != null) {
             MultiDataSetProviderFactory multiDataSetProviderFactory =
-                            (MultiDataSetProviderFactory) Class.forName(multiDataSetIteratorFactoryClazz).newInstance();
+                    (MultiDataSetProviderFactory) Class.forName(multiDataSetIteratorFactoryClazz).newInstance();
             MultiDataSetIterator iterator = multiDataSetProviderFactory.create();
             if (uiUrl != null) {
                 // it's important that the UI can report results from parallel training
@@ -129,7 +137,6 @@ public class ParallelWrapperMain {
         } else {
             throw new IllegalStateException("Please provide a datasetiteraator or multi datasetiterator class");
         }
-
 
 
     }
