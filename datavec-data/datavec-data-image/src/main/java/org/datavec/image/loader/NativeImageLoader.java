@@ -15,18 +15,11 @@
  */
 package org.datavec.image.loader;
 
-import java.io.*;
-import java.nio.ByteOrder;
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.indexer.DoubleIndexer;
-import org.bytedeco.javacpp.indexer.FloatIndexer;
-import org.bytedeco.javacpp.indexer.Indexer;
-import org.bytedeco.javacpp.indexer.IntIndexer;
-import org.bytedeco.javacpp.indexer.UByteIndexer;
-import org.bytedeco.javacpp.indexer.UShortIndexer;
+import org.bytedeco.javacpp.indexer.*;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.ImageTransform;
@@ -36,6 +29,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.io.*;
+import java.nio.ByteOrder;
 
 import static org.bytedeco.javacpp.lept.*;
 import static org.bytedeco.javacpp.opencv_core.*;
@@ -53,7 +49,7 @@ public class NativeImageLoader extends BaseImageLoader {
                     "png", "tif", "tiff", "exr", "webp", "BMP", "GIF", "JPG", "JPEG", "JP2", "PBM", "PGM", "PPM", "PNM",
                     "PNG", "TIF", "TIFF", "EXR", "WEBP"};
 
-    OpenCVFrameConverter.ToMat converter = null;
+    protected static OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
 
     /**
      * Loads images with no scaling or conversion.
@@ -110,7 +106,6 @@ public class NativeImageLoader extends BaseImageLoader {
     public NativeImageLoader(int height, int width, int channels, ImageTransform imageTransform) {
         this(height, width, channels);
         this.imageTransform = imageTransform;
-        this.converter = new OpenCVFrameConverter.ToMat();
     }
 
     protected NativeImageLoader(NativeImageLoader other) {
@@ -554,8 +549,7 @@ public class NativeImageLoader extends BaseImageLoader {
             }
 
             if (converter == null) {
-                this.converter = new OpenCVFrameConverter.ToMat();
-//                throw new IOException("need to initialize converter");
+                throw new IOException("need to initialize converter");
             }
             ImageWritable writable = new ImageWritable(converter.convert(image));
             return writable;
@@ -564,8 +558,7 @@ public class NativeImageLoader extends BaseImageLoader {
 
     public INDArray asMatrix(ImageWritable writable) throws IOException {
         if (converter == null) {
-            this.converter = new OpenCVFrameConverter.ToMat();
-//            throw new IOException("need to initialize converter");
+            throw new IOException("need to initialize converter");
         }
         Mat image = converter.convert(writable.getFrame());
         return asMatrix(image);
