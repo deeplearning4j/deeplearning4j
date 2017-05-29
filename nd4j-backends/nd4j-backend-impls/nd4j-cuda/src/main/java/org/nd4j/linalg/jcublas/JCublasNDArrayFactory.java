@@ -845,6 +845,12 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         return ret;
     }
 
+    public INDArray accumulate(INDArray target, INDArray... arrays) {
+        // TODO: to be implemented
+
+        return target;
+    }
+
     @Override
     public INDArray average(INDArray target, INDArray[] arrays) {
         if (arrays == null || arrays.length == 0)

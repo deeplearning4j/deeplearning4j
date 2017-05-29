@@ -5456,6 +5456,58 @@ public class Nd4j {
     }
 
     /**
+     * This method sums given arrays and stores them to a new target array
+     *
+     * @param arrays
+     * @return
+     */
+    public static INDArray accumulate(Collection<INDArray> arrays) {
+        if (arrays == null|| arrays.size() == 0)
+            throw new ND4JIllegalStateException("Input for accumulation is null or empty");
+
+        return accumulate(arrays.toArray(new INDArray[0]));
+    }
+
+    /**
+     * This method sums given arrays and stores them to a new array
+     *
+     * @param arrays
+     * @return
+     */
+    public static INDArray accumulate(INDArray... arrays) {
+        if (arrays == null|| arrays.length == 0)
+            throw new ND4JIllegalStateException("Input for accumulation is null or empty");
+
+        return accumulate(Nd4j.create(arrays[0].shape(), arrays[0].ordering()), arrays);
+    }
+
+    /**
+     * This method sums given arrays and stores them to a given target array
+     *
+     * @param target
+     * @param arrays
+     * @return
+     */
+    public static INDArray accumulate(INDArray target, Collection<INDArray> arrays) {
+
+        return accumulate(target, arrays.toArray(new INDArray[0]));
+    }
+
+    /**
+     * This method sums given arrays and stores them to a given target array
+     *
+     * @param target
+     * @param arrays
+     * @return
+     */
+    public static INDArray accumulate(INDArray target, INDArray[] arrays) {
+        if (arrays == null|| arrays.length == 0)
+            return target;
+
+        return factory().accumulate(target, arrays);
+    }
+
+    /**
      * This method produces concatenated array, that consist from tensors, fetched from source array, against some dimension and specified indexes
      *
      * @param source source tensor

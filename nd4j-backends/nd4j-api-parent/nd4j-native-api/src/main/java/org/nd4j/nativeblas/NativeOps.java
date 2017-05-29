@@ -1271,6 +1271,17 @@ public abstract class NativeOps extends Pointer {
 
     ///////////////////////
 
+    public abstract void accumulateHalf(PointerPointer extraPointers, PointerPointer x, @Cast("float16*") ShortPointer z,
+                                     int n, long length);
+
+    public abstract void accumulateFloat(PointerPointer extraPointers, PointerPointer x, FloatPointer z, int n,
+                                      long length);
+
+    public abstract void accumulateDouble(PointerPointer extraPointers, PointerPointer x, DoublePointer z, int n,
+                                       long length);
+
+    ///////////////////////
+
     public abstract void enableP2P(boolean reallyEnable);
 
     public abstract void checkP2P();
