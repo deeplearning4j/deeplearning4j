@@ -83,7 +83,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @param network      the network to use
      */
     public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerNetwork network,
-                    TrainingMaster<?, ?> trainingMaster) {
+                               TrainingMaster<?, ?> trainingMaster) {
         this(new JavaSparkContext(sparkContext), network, trainingMaster);
     }
 
@@ -94,7 +94,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @param conf         the configuration of the network
      */
     public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerConfiguration conf,
-                    TrainingMaster<?, ?> trainingMaster) {
+                               TrainingMaster<?, ?> trainingMaster) {
         this(new JavaSparkContext(sparkContext), initNetwork(conf), trainingMaster);
     }
 
@@ -104,12 +104,15 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @param sc   the spark context to use
      * @param conf the configuration of the network
      */
-    public SparkDl4jMultiLayer(JavaSparkContext sc, MultiLayerConfiguration conf, TrainingMaster<?, ?> trainingMaster) {
+    public SparkDl4jMultiLayer(JavaSparkContext sc,
+                               MultiLayerConfiguration conf,
+                               TrainingMaster<?, ?> trainingMaster) {
         this(sc.sc(), conf, trainingMaster);
     }
 
-    public SparkDl4jMultiLayer(JavaSparkContext javaSparkContext, MultiLayerNetwork network,
-                    TrainingMaster<?, ?> trainingMaster) {
+    public SparkDl4jMultiLayer(JavaSparkContext javaSparkContext,
+                               MultiLayerNetwork network,
+                               TrainingMaster<?, ?> trainingMaster) {
         sc = javaSparkContext;
         this.conf = network.getLayerWiseConfigurations().clone();
         this.network = network;
@@ -327,7 +330,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      */
     public double calculateScore(JavaRDD<DataSet> data, boolean average, int minibatchSize) {
         JavaRDD<Tuple2<Integer, Double>> rdd = data.mapPartitions(
-                        new ScoreFlatMapFunction(conf.toJson(), sc.broadcast(network.params(false)), minibatchSize));
+                new ScoreFlatMapFunction(conf.toJson(), sc.broadcast(network.params(false)), minibatchSize));
 
         //Reduce to a single tuple, with example count + sum of scores
         Tuple2<Integer, Double> countAndSumScores = rdd.reduce(new IntDoubleReduceFunction());
@@ -382,7 +385,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      */
     public JavaDoubleRDD scoreExamples(JavaRDD<DataSet> data, boolean includeRegularizationTerms, int batchSize) {
         return data.mapPartitionsToDouble(new ScoreExamplesFunction(sc.broadcast(network.params()),
-                        sc.broadcast(conf.toJson()), includeRegularizationTerms, batchSize));
+                sc.broadcast(conf.toJson()), includeRegularizationTerms, batchSize));
     }
 
     /**
@@ -416,9 +419,9 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @see MultiLayerNetwork#scoreExamples(DataSet, boolean)
      */
     public <K> JavaPairRDD<K, Double> scoreExamples(JavaPairRDD<K, DataSet> data, boolean includeRegularizationTerms,
-                    int batchSize) {
+                                                    int batchSize) {
         return data.mapPartitionsToPair(new ScoreExamplesWithKeyFunction<K>(sc.broadcast(network.params()),
-                        sc.broadcast(conf.toJson()), includeRegularizationTerms, batchSize));
+                sc.broadcast(conf.toJson()), includeRegularizationTerms, batchSize));
     }
 
     /**
@@ -431,7 +434,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      */
     public <K> JavaPairRDD<K, INDArray> feedForwardWithKey(JavaPairRDD<K, INDArray> featuresData, int batchSize) {
         return featuresData.mapPartitionsToPair(new FeedForwardWithKeyFunction<K>(sc.broadcast(network.params()),
-                        sc.broadcast(conf.toJson()), batchSize));
+                sc.broadcast(conf.toJson()), batchSize));
     }
 
     /**
@@ -575,7 +578,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      */
     public <T extends IEvaluation> T doEvaluation(JavaRDD<DataSet> data, T emptyEvaluation, int evalBatchSize) {
         IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(sc.broadcast(conf.toJson()),
-                        sc.broadcast(network.params()), evalBatchSize, emptyEvaluation);
+                sc.broadcast(network.params()), evalBatchSize, emptyEvaluation);
         JavaRDD<T> evaluations = data.mapPartitions(evalFn);
         return evaluations.reduce(new IEvaluationReduceFunction<T>());
     }

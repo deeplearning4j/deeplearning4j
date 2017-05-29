@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.lang.reflect.Constructor;
 import java.util.*;
 
 /**
@@ -144,6 +145,8 @@ public class KerasLayer {
     public static final String KERAS_LOSS_COSINE_PROXIMITY = "cosine_proximity";
     public static final String LAYER_FIELD_LAYER = "layer";
 
+    public static final Map<String, Class<? extends KerasLayer>> customLayers = new HashMap<>();
+
     /* Keras backends store convolutional inputs and weights
      * in tensors with different dimension orders.
      */
@@ -251,9 +254,24 @@ public class KerasLayer {
             case LAYER_CLASS_NAME_AVERAGE_POOLING_1D:
             case LAYER_CLASS_NAME_ZERO_PADDING_1D:
             default:
-                throw new UnsupportedKerasConfigurationException("Unsupported keras layer type " + layerClassName);
+                // check if user registered a custom config
+                Class<? extends KerasLayer> customConfig = customLayers.get(layerClassName);
+
+                if(customConfig == null)
+                    throw new UnsupportedKerasConfigurationException("Unsupported keras layer type " + layerClassName);
+                try {
+                    Constructor constructor = customConfig.getConstructor(Map.class);
+                    layer = (KerasLayer) constructor.newInstance(layerConfig);
+                } catch(Exception e) {
+                    throw new RuntimeException(e);
+                }
+                break;
         }
         return layer;
+    }
+
+    public static void registerCustomLayer(String layerName, Class<? extends KerasLayer> configClass) {
+        customLayers.put(layerName, configClass);
     }
 
     protected KerasLayer() {
