@@ -15,7 +15,7 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * Created by rcorbish
- */ 
+ */
 @RunWith(Parameterized.class)
 public class TestEigen extends BaseNd4jTest {
 
@@ -52,5 +52,4 @@ public class TestEigen extends BaseNd4jTest {
         return 'f';
     }
 }
-
 
