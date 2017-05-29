@@ -26,8 +26,6 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.api.TerminationCondition;
-import org.deeplearning4j.optimize.listeners.GradientsProcessor;
-import org.deeplearning4j.optimize.listeners.SharedGradient;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

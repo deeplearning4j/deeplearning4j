@@ -4,25 +4,13 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
-import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.optimize.api.TrainingListener;
-import org.deeplearning4j.optimize.listeners.GradientsProcessor;
 import org.deeplearning4j.optimize.listeners.SharedGradient;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.parallelism.ParallelWrapper;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This trainer implementation does parallel training via gradients broadcasts.
