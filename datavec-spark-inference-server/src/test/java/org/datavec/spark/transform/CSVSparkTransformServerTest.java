@@ -75,23 +75,23 @@ public class CSVSparkTransformServerTest {
     public void testServer() throws Exception {
         String[] values = new String[] {"1.0", "2.0"};
         CSVRecord record = new CSVRecord(values);
-        JsonNode jsonNode = Unirest.post("http://localhost:9050/transform").header("accept", "application/json")
+        JsonNode jsonNode = Unirest.post("http://localhost:9050/transformincremental").header("accept", "application/json")
                         .header("Content-Type", "application/json").body(record).asJson().getBody();
-        CSVRecord csvRecord = Unirest.post("http://localhost:9050/transform").header("accept", "application/json")
+        CSVRecord csvRecord = Unirest.post("http://localhost:9050/transformincremental").header("accept", "application/json")
                         .header("Content-Type", "application/json").body(record).asObject(CSVRecord.class).getBody();
 
         BatchRecord batchRecord = new BatchRecord();
         for (int i = 0; i < 3; i++)
             batchRecord.add(csvRecord);
-        BatchRecord batchRecord1 = Unirest.post("http://localhost:9050/transformbatch")
+        BatchRecord batchRecord1 = Unirest.post("http://localhost:9050/transform")
                         .header("accept", "application/json").header("Content-Type", "application/json")
                         .body(batchRecord).asObject(BatchRecord.class).getBody();
 
-        Base64NDArrayBody array = Unirest.post("http://localhost:9050/transformedarray")
+        Base64NDArrayBody array = Unirest.post("http://localhost:9050/transformedincrementalarray")
                         .header("accept", "application/json").header("Content-Type", "application/json").body(record)
                         .asObject(Base64NDArrayBody.class).getBody();
 
-        Base64NDArrayBody batchArray1 = Unirest.post("http://localhost:9050/transformedbatcharray")
+        Base64NDArrayBody batchArray1 = Unirest.post("http://localhost:9050/transformedarray")
                         .header("accept", "application/json").header("Content-Type", "application/json")
                         .body(batchRecord).asObject(Base64NDArrayBody.class).getBody();
 
