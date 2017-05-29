@@ -1337,7 +1337,7 @@ extern "C" __global__ void kernelHalfsToFloats(half *dx, int n, float *dz) {
  * @param length
  */
 template<typename T>
-void accumulateKernelGeneric(T **x, T *z, int n, const Nd4jIndex length) {
+__device__ void accumulateKernelGeneric(T **x, T *z, int n, const Nd4jIndex length) {
     __shared__ T *shmem;
 
     if (threadIdx.x == 0) {
@@ -1353,14 +1353,14 @@ void accumulateKernelGeneric(T **x, T *z, int n, const Nd4jIndex length) {
 
         // aggregation step, we roll over all arrays
         for (int ar = 0; ar < n; ar++) {
-            T *cdata = (T *) dx[ar];
+            T *cdata = (T *) x[ar];
             cdata += baseIdx;
 
             if (baseIdx + threadIdx.x < length)
                 shmem[threadIdx.x] += cdata[threadIdx.x];
         }
 
-        T *wdata = dz + baseIdx;
+        T *wdata = z + baseIdx;
 
         // saving accumulated values
         if (baseIdx + threadIdx.x < length) {

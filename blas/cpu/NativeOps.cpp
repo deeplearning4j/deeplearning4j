@@ -2107,6 +2107,21 @@ void NativeOps::averageDouble(Nd4jPointer *extras, Nd4jPointer *dx, double *dz, 
     averageGeneric<double>(x, dz, n, length, propagate);
 }
 
+void NativeOps::accumulateHalf(Nd4jPointer *extras, Nd4jPointer *dx, float16 *dz, int n, Nd4jIndex length) {
+    float16 **x = reinterpret_cast<float16 **>(dx);
+    accumulateGeneric<float16>(x, dz, n, length);
+}
+
+void NativeOps::accumulateFloat(Nd4jPointer *extras, Nd4jPointer *dx, float *dz, int n, Nd4jIndex length) {
+    float **x = reinterpret_cast<float **>(dx);
+    accumulateGeneric<float>(x, dz, n, length);
+}
+
+void NativeOps::accumulateDouble(Nd4jPointer *extras, Nd4jPointer *dx, double *dz, int n, Nd4jIndex length) {
+    double **x = reinterpret_cast<double **>(dx);
+    accumulateGeneric<double>(x, dz, n, length);
+}
+
 void NativeOps::enableP2P(bool enable) {
     // no-op
 }
