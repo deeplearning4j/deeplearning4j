@@ -90,6 +90,13 @@ public interface Writable extends Serializable {
      */
     void readFields(DataInput in) throws IOException;
 
+    /**
+     *
+     * @param out
+     * @throws IOException
+     */
+    void writeType(DataOutput out) throws IOException;
+
     /** Convert Writable to double. Whether this is supported depends on the specific writable. */
     double toDouble();
 
@@ -101,6 +108,5 @@ public interface Writable extends Serializable {
 
     /** Convert Writable to long. Whether this is supported depends on the specific writable. */
     long toLong();
-
 
 }

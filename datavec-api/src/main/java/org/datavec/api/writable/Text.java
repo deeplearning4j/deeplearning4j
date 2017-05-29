@@ -17,6 +17,7 @@
 package org.datavec.api.writable;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.io.BinaryComparable;
 import org.datavec.api.io.WritableComparable;
 import org.datavec.api.io.WritableComparator;
@@ -50,7 +51,10 @@ import java.text.StringCharacterIterator;
  * string.
  */
 public class Text extends BinaryComparable implements WritableComparable<BinaryComparable> {
-    private static final Logger LOG = LoggerFactory.getLogger(Text.class);
+    public static final short WRITABLE_TYPE = 8;
+    static {
+        WritableFactory.registerWritableType(WRITABLE_TYPE, Text.class);
+    }
 
     private static ThreadLocal<CharsetEncoder> ENCODER_FACTORY = new ThreadLocal<CharsetEncoder>() {
         protected CharsetEncoder initialValue() {
@@ -268,6 +272,11 @@ public class Text extends BinaryComparable implements WritableComparable<BinaryC
         setCapacity(newLength, false);
         in.readFully(bytes, 0, newLength);
         length = newLength;
+    }
+
+    @Override
+    public void writeType(DataOutput out) throws IOException {
+        out.writeShort(WRITABLE_TYPE);
     }
 
     /** Skips over one Text in the input. */

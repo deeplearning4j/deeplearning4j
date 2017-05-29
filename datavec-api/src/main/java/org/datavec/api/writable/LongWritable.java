@@ -26,6 +26,11 @@ import java.io.*;
 
 /** A WritableComparable for longs. */
 public class LongWritable implements WritableComparable {
+    public static final short WRITABLE_TYPE = 6;
+    static {
+        WritableFactory.registerWritableType(WRITABLE_TYPE, LongWritable.class);
+    }
+
     private long value;
 
     public LongWritable() {}
@@ -46,6 +51,11 @@ public class LongWritable implements WritableComparable {
 
     public void readFields(DataInput in) throws IOException {
         value = in.readLong();
+    }
+
+    @Override
+    public void writeType(DataOutput out) throws IOException {
+        out.writeShort(WRITABLE_TYPE);
     }
 
     public void write(DataOutput out) throws IOException {

@@ -26,6 +26,11 @@ import java.io.*;
 
 /** A WritableComparable for floats. */
 public class FloatWritable implements WritableComparable {
+    public static final short WRITABLE_TYPE = 4;
+    static {
+        WritableFactory.registerWritableType(WRITABLE_TYPE, FloatWritable.class);
+    }
+
     private float value;
 
     public FloatWritable() {}
@@ -46,6 +51,11 @@ public class FloatWritable implements WritableComparable {
 
     public void readFields(DataInput in) throws IOException {
         value = in.readFloat();
+    }
+
+    @Override
+    public void writeType(DataOutput out) throws IOException {
+        out.writeShort(WRITABLE_TYPE);
     }
 
     public void write(DataOutput out) throws IOException {

@@ -25,6 +25,11 @@ import java.io.*;
 
 /** A WritableComparable for ints. */
 public class IntWritable implements WritableComparable {
+    public static final short WRITABLE_TYPE = 5;
+    static {
+        WritableFactory.registerWritableType(WRITABLE_TYPE, IntWritable.class);
+    }
+
     private int value;
 
     public IntWritable() {}
@@ -45,6 +50,11 @@ public class IntWritable implements WritableComparable {
 
     public void readFields(DataInput in) throws IOException {
         value = in.readInt();
+    }
+
+    @Override
+    public void writeType(DataOutput out) throws IOException {
+        out.writeShort(WRITABLE_TYPE);
     }
 
     public void write(DataOutput out) throws IOException {

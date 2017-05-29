@@ -28,6 +28,11 @@ import java.io.*;
  * A WritableComparable for booleans. 
  */
 public class BooleanWritable implements WritableComparable {
+    public static final short WRITABLE_TYPE = 1;
+    static {
+        WritableFactory.registerWritableType(WRITABLE_TYPE, BooleanWritable.class);
+    }
+
     private boolean value;
 
     /**
@@ -58,6 +63,11 @@ public class BooleanWritable implements WritableComparable {
      */
     public void readFields(DataInput in) throws IOException {
         value = in.readBoolean();
+    }
+
+    @Override
+    public void writeType(DataOutput out) throws IOException {
+        out.writeShort(WRITABLE_TYPE);
     }
 
     /**

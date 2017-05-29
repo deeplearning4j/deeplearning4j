@@ -28,6 +28,10 @@ import java.io.IOException;
  * UnsupportedOperationException being thrown
  */
 public class NullWritable implements WritableComparable {
+    public static final short WRITABLE_TYPE = 7;
+    static {
+        WritableFactory.registerWritableType(WRITABLE_TYPE, NullWritable.class);
+    }
 
     public static final NullWritable INSTANCE = new NullWritable();
 
@@ -53,6 +57,11 @@ public class NullWritable implements WritableComparable {
     @Override
     public void readFields(DataInput in) throws IOException {
         //No op
+    }
+
+    @Override
+    public void writeType(DataOutput out) throws IOException {
+        out.writeShort(WRITABLE_TYPE);
     }
 
     @Override
