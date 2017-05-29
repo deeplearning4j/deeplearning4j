@@ -220,12 +220,14 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
 
         if (updates == null) {
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                // TODO: this one has to be HOST-only
+                // TODO: this one has to be HOST-only if P2P is NOT supported
                 updates = Nd4j.create(array.shape(), array.ordering());
             }
         }
 
         hasSomething.compareAndSet(false, true);
+
+        // if P2P is NOT supported - this call should be handled with cpu
         updates.addi(array);
 
         // we have to ensure, all operations were finished here
