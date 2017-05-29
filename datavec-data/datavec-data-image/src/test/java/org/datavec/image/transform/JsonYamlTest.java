@@ -4,8 +4,6 @@ import org.datavec.image.data.ImageWritable;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.Buffer;
 import java.util.List;
 import java.util.Random;
 
@@ -35,16 +33,31 @@ public class JsonYamlTest {
                 .rotateImageTransform(30)
                 .scaleImageTransform(3)
                 .warpImageTransform((float)0.5)
-//              .randomCropTransform(seed, 50, 50)
-//              .filterImageTransform("noise=alls=20:allf=t+u,format=rgba", 100, 100, 4)
+
+                // Note : since randomCropTransform use random value
+                // the results from each case(json, yaml, ImageTransformProcess)
+                // can be different
+                // don't use the below line
+                // if you uncomment it, you will get fail from below assertions
+                //  .randomCropTransform(seed, 50, 50)
+
+                // Note : you will get "java.lang.NoClassDefFoundError: Could not initialize class org.bytedeco.javacpp.avutil"
+                // it needs to add the below dependency
+                // <dependency>
+                //     <groupId>org.bytedeco.javacpp-presets</groupId>
+                //     <artifactId>ffmpeg-platform</artifactId>
+                // </dependency>
+                // FFmpeg has license issues, be careful to use it
+                //.filterImageTransform("noise=alls=20:allf=t+u,format=rgba", 100, 100, 4)
+
                 .build();
 
         String asJson = itp.toJson();
         String asYaml = itp.toYaml();
 
-//        System.out.println(asJson);
-//        System.out.println("\n\n\n");
-//        System.out.println(asYaml);
+        System.out.println(asJson);
+        System.out.println("\n\n\n");
+        System.out.println(asYaml);
 
         ImageWritable img = TestImageTransform.makeRandomImage(0, 0, 3);
         ImageWritable imgJson = new ImageWritable(img.getFrame().clone());
@@ -53,7 +66,7 @@ public class JsonYamlTest {
 
         ImageTransformProcess itpFromJson = ImageTransformProcess.fromJson(asJson);
         ImageTransformProcess itpFromYaml = ImageTransformProcess.fromYaml(asYaml);
-//
+
         List<ImageTransform> transformList = itp.getTransformList();
         List<ImageTransform> transformListJson = itpFromJson.getTransformList();
         List<ImageTransform> transformListYaml = itpFromYaml.getTransformList();
@@ -63,7 +76,7 @@ public class JsonYamlTest {
             ImageTransform itJson = transformListJson.get(i);
             ImageTransform itYaml = transformListYaml.get(i);
 
-//            System.out.println(i + "\t" + it);
+            System.out.println(i + "\t" + it);
 
             img = it.transform(img);
             imgJson = itJson.transform(imgJson);
