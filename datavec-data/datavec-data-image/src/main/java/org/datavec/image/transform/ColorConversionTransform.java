@@ -33,7 +33,11 @@ import static org.bytedeco.javacpp.opencv_imgproc.cvtColor;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ColorConversionTransform extends BaseImageTransform {
 
-    int conversionCode;
+    /**
+     * Color Conversion code
+     * {@link org.bytedeco.javacpp.opencv_imgproc}
+     */
+    private int conversionCode;
 
     /**
      * Default conversion BGR to Luv (chroma) color.

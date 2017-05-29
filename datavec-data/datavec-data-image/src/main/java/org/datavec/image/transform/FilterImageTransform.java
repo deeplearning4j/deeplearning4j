@@ -20,6 +20,7 @@ import org.bytedeco.javacv.FrameFilter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Random;
 
@@ -36,11 +37,30 @@ import static org.bytedeco.javacpp.avutil.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class FilterImageTransform extends BaseImageTransform {
 
-    FFmpegFrameFilter filter;
+    /**
+     * see the javadoc comments of this class
+     */
+    private FFmpegFrameFilter filter;
 
-    int width, height, channels;
+    /**
+     * filter strings to use
+     */
+    private String filters;
 
-    private FilterImageTransform() { this("noise=alls=20:allf=t+u,format=rgba", 50, 50, 4); }
+    /**
+     * width    of the input images
+     */
+    private int width;
+
+    /**
+     * height   of the input images
+     */
+    private int height;
+
+    /**
+     * channels of the input images
+     */
+    private int channels;
 
     /** Calls {@code this(filters, width, height, 3)}. */
     public FilterImageTransform(String filters, int width, int height) {
@@ -55,9 +75,13 @@ public class FilterImageTransform extends BaseImageTransform {
      * @param height   of the input images
      * @param channels of the input images
      */
-    public FilterImageTransform(String filters, int width, int height, int channels) {
+    public FilterImageTransform(@JsonProperty("filters") String filters,
+                                @JsonProperty("width") int width,
+                                @JsonProperty("height") int height,
+                                @JsonProperty("channels") int channels) {
         super(null);
 
+        this.filters = filters;
         this.width = width;
         this.height = height;
         this.channels = channels;

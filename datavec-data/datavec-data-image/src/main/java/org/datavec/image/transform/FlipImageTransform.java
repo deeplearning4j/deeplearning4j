@@ -32,7 +32,13 @@ import static org.bytedeco.javacpp.opencv_core.flip;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class FlipImageTransform extends BaseImageTransform<Mat> {
 
-    int flipMode;
+    /**
+     * the deterministic flip mode
+     *                 {@code  0} Flips around x-axis.
+     *                 {@code >0} Flips around y-axis.
+     *                 {@code <0} Flips around both axes.
+     */
+    private int flipMode;
 
     /**
      * Calls {@code this(null)}.

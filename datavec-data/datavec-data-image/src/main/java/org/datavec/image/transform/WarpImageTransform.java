@@ -22,6 +22,7 @@ import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Random;
 
@@ -40,7 +41,18 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class WarpImageTransform extends BaseImageTransform<Mat> {
 
-    float[] deltas;
+    /**
+     * deltas[0] maximum warping in x for the top-left corner (pixels)
+     * deltas[1] maximum warping in y for the top-left corner (pixels)
+     * deltas[2] maximum warping in x for the top-right corner (pixels)
+     * deltas[3] maximum warping in y for the top-right corner (pixels)
+     * deltas[4] maximum warping in x for the bottom-right corner (pixels)
+     * deltas[5] maximum warping in y for the bottom-right corner (pixels)
+     * deltas[6] maximum warping in x for the bottom-left corner (pixels)
+     * deltas[7] maximum warping in y for the bottom-left corner (pixels)
+     */
+    private float[] deltas;
+
     @Getter
     @Setter
     int interMode = INTER_LINEAR;
@@ -50,8 +62,6 @@ public class WarpImageTransform extends BaseImageTransform<Mat> {
     @Getter
     @Setter
     Scalar borderValue = Scalar.ZERO;
-
-    private WarpImageTransform() { this(-1); }
 
     /** Calls {@code this(null, delta, delta, delta, delta, delta, delta, delta, delta)}. */
     public WarpImageTransform(float delta) {
@@ -64,7 +74,14 @@ public class WarpImageTransform extends BaseImageTransform<Mat> {
     }
 
     /** Calls {@code this(null, dx1, dy1, dx2, dy2, dx3, dy3, dx4, dy4)}. */
-    public WarpImageTransform(float dx1, float dy1, float dx2, float dy2, float dx3, float dy3, float dx4, float dy4) {
+    public WarpImageTransform(@JsonProperty("deltas[0]") float dx1,
+                              @JsonProperty("deltas[1]") float dy1,
+                              @JsonProperty("deltas[2]") float dx2,
+                              @JsonProperty("deltas[3]") float dy2,
+                              @JsonProperty("deltas[4]") float dx3,
+                              @JsonProperty("deltas[5]") float dy3,
+                              @JsonProperty("deltas[6]") float dx4,
+                              @JsonProperty("deltas[7]") float dy4) {
         this(null, dx1, dy1, dx2, dy2, dx3, dy3, dx4, dy4);
     }
 

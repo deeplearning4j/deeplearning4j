@@ -19,6 +19,7 @@ import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Random;
 
@@ -32,9 +33,15 @@ import static org.bytedeco.javacpp.opencv_imgproc.resize;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ResizeImageTransform extends BaseImageTransform<opencv_core.Mat> {
 
-    int newHeight, newWidth;
+    /**
+     * new Width for the outcome images
+     */
+    private int newHeight;
 
-    private ResizeImageTransform() { this(-1, -1);}
+    /**
+     * new Height for the outcome images
+     */
+    private int newWidth;
 
     /**
      * Returns new ResizeImageTransform object
@@ -42,7 +49,8 @@ public class ResizeImageTransform extends BaseImageTransform<opencv_core.Mat> {
      * @param newWidth new Width for the outcome images
      * @param newHeight new Height for outcome images
      */
-    public ResizeImageTransform(int newWidth, int newHeight) {
+    public ResizeImageTransform(@JsonProperty("newWidth") int newWidth,
+                                @JsonProperty("newHeight") int newHeight) {
         this(null, newWidth, newHeight);
     }
 

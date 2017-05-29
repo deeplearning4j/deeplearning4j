@@ -35,13 +35,17 @@ import static org.bytedeco.javacpp.opencv_imgproc.equalizeHist;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class EqualizeHistTransform extends BaseImageTransform {
 
-    int conversionCode;
-    MatVector splitChannels = new MatVector();
+    /**
+     * Color Conversion code
+     * {@link org.bytedeco.javacpp.opencv_imgproc}
+     */
+    private int conversionCode;
+
+    private MatVector splitChannels = new MatVector();
 
     /**
      * Default transforms histogram equalization for CV_BGR2GRAY (grayscale)
      */
-
     public EqualizeHistTransform() {
         this(new Random(1234), CV_BGR2GRAY);
     }

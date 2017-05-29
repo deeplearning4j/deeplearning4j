@@ -18,6 +18,7 @@ package org.datavec.image.transform;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Random;
 
@@ -29,13 +30,28 @@ import static org.bytedeco.javacpp.opencv_core.Rect;
  *
  * @author saudet
  */
-//@NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CropImageTransform extends BaseImageTransform<Mat> {
 
-    int cropTop, cropLeft, cropBottom, cropRight;
+    /**
+     * maximum cropping of the top of the image (pixels)
+     */
+    private int cropTop;
 
-    private CropImageTransform() {this(-1);}
+    /**
+     * maximum cropping of the left of the image (pixels)
+     */
+    private int cropLeft;
+
+    /**
+     * maximum cropping of the bottom of the image (pixels)
+     */
+    private int cropBottom;
+
+    /**
+     * maximum cropping of the right of the image (pixels)
+     */
+    private int cropRight;
 
     /** Calls {@code this(null, crop, crop, crop, crop)}. */
     public CropImageTransform(int crop) {
@@ -48,7 +64,10 @@ public class CropImageTransform extends BaseImageTransform<Mat> {
     }
 
     /** Calls {@code this(random, cropTop, cropLeft, cropBottom, cropRight)}. */
-    public CropImageTransform(int cropTop, int cropLeft, int cropBottom, int cropRight) {
+    public CropImageTransform(@JsonProperty("cropTop") int cropTop,
+                              @JsonProperty("cropLeft") int cropLeft,
+                              @JsonProperty("cropBottom")int cropBottom,
+                              @JsonProperty("cropRight")int cropRight) {
         this(null, cropTop, cropLeft, cropBottom, cropRight);
     }
 

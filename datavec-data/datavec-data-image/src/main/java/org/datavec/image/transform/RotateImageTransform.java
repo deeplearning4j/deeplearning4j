@@ -22,6 +22,7 @@ import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Random;
 
@@ -40,18 +41,35 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class RotateImageTransform extends BaseImageTransform<Mat> {
 
-    float centerx, centery, angle, scale;
-    @Getter
-    @Setter
-    int interMode = INTER_LINEAR;
-    @Getter
-    @Setter
-    int borderMode = BORDER_CONSTANT;
-    @Getter
-    @Setter
-    Scalar borderValue = Scalar.ZERO;
+    /**
+     * maximum deviation in x of center of rotation (relative to image center)
+     */
+    private float centerx;
 
-    private RotateImageTransform() { this(-1); }
+    /**
+     * maximum deviation in y of center of rotation (relative to image center)
+     */
+    private float centery;
+
+    /**
+     * maximum rotation (degrees)
+     */
+    private float angle;
+
+    /**
+     * maximum scaling (relative to 1)
+     */
+    private float scale;
+
+    @Getter
+    @Setter
+    private int interMode = INTER_LINEAR;
+    @Getter
+    @Setter
+    private int borderMode = BORDER_CONSTANT;
+    @Getter
+    @Setter
+    private Scalar borderValue = Scalar.ZERO;
 
     /** Calls {@code this(null, 0, 0, angle, 0)}. */
     public RotateImageTransform(float angle) {
@@ -71,7 +89,10 @@ public class RotateImageTransform extends BaseImageTransform<Mat> {
      * @param angle   maximum rotation (degrees)
      * @param scale   maximum scaling (relative to 1)
      */
-    public RotateImageTransform(float centerx, float centery, float angle, float scale) {
+    public RotateImageTransform(@JsonProperty("centerx") float centerx,
+                                @JsonProperty("centery") float centery,
+                                @JsonProperty("angle") float angle,
+                                @JsonProperty("scale") float scale) {
         this(null, centerx, centery, angle, scale);
     }
 
