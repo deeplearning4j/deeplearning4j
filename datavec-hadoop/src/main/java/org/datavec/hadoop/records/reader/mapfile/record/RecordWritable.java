@@ -17,7 +17,10 @@
 package org.datavec.hadoop.records.reader.mapfile.record;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.hadoop.io.Writable;
+import org.datavec.api.writable.WritableFactory;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -29,17 +32,16 @@ import java.util.List;
  * Created by Alex on 29/05/2017.
  */
 @AllArgsConstructor
+@NoArgsConstructor
+@Data
 public class RecordWritable implements Writable {
-
     private List<org.datavec.api.writable.Writable> record;
 
     @Override
     public void write(DataOutput out) throws IOException {
         out.writeInt(record.size());
         for(org.datavec.api.writable.Writable w : record){
-            //TODO record type information...
-
-            w.write(out);
+            WritableFactory.writeWithType(w, out);
         }
     }
 
@@ -48,7 +50,8 @@ public class RecordWritable implements Writable {
         int numRecords = in.readInt();
 
         List<org.datavec.api.writable.Writable> out = new ArrayList<>(numRecords);
-
-
+        for( int i=0; i<numRecords; i++ ){
+            out.add(WritableFactory.readWithType(in));
+        }
     }
 }

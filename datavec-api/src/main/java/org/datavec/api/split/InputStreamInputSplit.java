@@ -134,4 +134,9 @@ public class InputStreamInputSplit implements InputSplit {
     public long toLong() {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public void writeType(DataOutput out) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 }

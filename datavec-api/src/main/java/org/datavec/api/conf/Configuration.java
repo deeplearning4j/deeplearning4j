@@ -1436,4 +1436,9 @@ public class Configuration implements Iterable<Map.Entry<String, String>>, Writa
     public long toLong() {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public void writeType(DataOutput out) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 }

@@ -114,4 +114,9 @@ public class ListStringInputFormat implements InputFormat {
     public long toLong() {
         return 0;
     }
+
+    @Override
+    public void writeType(DataOutput out) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 }

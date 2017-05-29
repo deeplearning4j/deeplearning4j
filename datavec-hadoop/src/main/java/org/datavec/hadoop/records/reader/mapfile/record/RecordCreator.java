@@ -14,16 +14,15 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.hadoop.records.reader.mapfile;
-
+package org.datavec.hadoop.records.reader.mapfile.record;
 
 import org.apache.hadoop.io.Writable;
 
 /**
  * Created by Alex on 29/05/2017.
  */
-public interface WritableFactory {
+public interface RecordCreator {
 
-    Writable newHadoopWritable();
+    Writable newRecord();
 
 }

@@ -113,6 +113,11 @@ public class NumberedFileInputSplit implements InputSplit {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public void writeType(DataOutput out) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
     private class NumberedFileIterator implements Iterator<String> {
 
         private int currIdx;

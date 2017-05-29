@@ -16,6 +16,8 @@
 
 package org.datavec.api.split;
 
+import java.io.DataOutput;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -87,6 +89,11 @@ public abstract class BaseInputSplit implements InputSplit {
 
     @Override
     public long toLong() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void writeType(DataOutput out) throws IOException {
         throw new UnsupportedOperationException();
     }
 
