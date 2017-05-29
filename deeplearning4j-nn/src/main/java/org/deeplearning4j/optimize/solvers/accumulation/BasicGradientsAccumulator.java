@@ -161,6 +161,8 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
          */
 
         try {
+            // commit should happen in each individual thread
+            Nd4j.getExecutioner().commit();
             firstOne.compareAndSet(-1L, Thread.currentThread().getId());
 
             // TODO: since we know number of elements in advance, we don't really need CopyOnWrite list here.
@@ -179,6 +181,7 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
                         storage = Nd4j.create(shape, ordering);
                     }
                 }
+
 
                 // accumulate our values, a
                 //storage.addi(array);
