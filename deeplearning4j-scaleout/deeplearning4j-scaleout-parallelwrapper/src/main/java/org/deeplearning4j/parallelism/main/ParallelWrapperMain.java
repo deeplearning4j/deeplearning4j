@@ -93,7 +93,7 @@ public class ParallelWrapperMain {
                         .reportScoreAfterAveraging(reportScore)
 
                         // optional parameter, set to false ONLY if your system has support P2P memory access across PCIe (hint: AWS do not support P2P)
-                        .useLegacyAveraging(legacyAveraging)
+                        //.useLegacyAveraging(legacyAveraging)
 
                         .build();
 

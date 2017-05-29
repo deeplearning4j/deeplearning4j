@@ -630,7 +630,6 @@ public class ParallelWrapper implements AutoCloseable {
          * @param reallyAverage
          * @return
          */
-        @Deprecated
         public Builder averageUpdaters(boolean reallyAverage) {
             this.averageUpdaters = reallyAverage;
             return this;
