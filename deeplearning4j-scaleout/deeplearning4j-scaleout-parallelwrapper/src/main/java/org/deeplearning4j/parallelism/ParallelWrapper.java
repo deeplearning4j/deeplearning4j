@@ -65,9 +65,9 @@ public class ParallelWrapper implements AutoCloseable {
         SHARED_GRADIENTS,
 
         /**
-         * Models within ParallelWrapper instance will share encoded gradients updates
+         * This option assumes use of GradientsAccumulator with any MessageHandler
          */
-        ENCODED_GRADIENTS,
+        CUSTOM,
     }
 
     protected Model model;
@@ -716,7 +716,7 @@ public class ParallelWrapper implements AutoCloseable {
                         }
                     }
                     break;
-                case ENCODED_GRADIENTS: {
+                case CUSTOM: {
                         this.trainerContext = new SymmetricTrainerContext();
                         if (this.accumulator == null)
                             throw new DL4JInvalidConfigException("Please specify GradientsAccumulator fo encoded gradients mode");
