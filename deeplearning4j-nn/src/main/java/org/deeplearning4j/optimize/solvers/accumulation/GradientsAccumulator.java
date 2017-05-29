@@ -9,6 +9,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -43,11 +45,17 @@ public class GradientsAccumulator implements Serializable {
     protected ThreadLocal<Integer> consumerIndex = new ThreadLocal<>();
     protected AtomicInteger consumers = new AtomicInteger(0);
 
+
+    protected int parties = 0;
+    protected CyclicBarrier barrier;
+    protected AtomicLong firstOne = new AtomicLong(0);
+    protected List<INDArray> candidates = new CopyOnWriteArrayList<>();
+
     /**
      * Creates new GradientsAccumulator with starting threshold of 1e-3
      */
-    public GradientsAccumulator() {
-        this(new LocalHandler());
+    public GradientsAccumulator(int parties) {
+        this(parties, new LocalHandler());
     }
 
     /**
@@ -55,11 +63,13 @@ public class GradientsAccumulator implements Serializable {
      *
      * @param handler MessageHandler instance that'll be used for communication purposes
      */
-    public GradientsAccumulator(@NonNull MessageHandler handler) {
+    public GradientsAccumulator(int parties, @NonNull MessageHandler handler) {
         this.gradients = new LinkedTransferQueue<>();
         this.handler = handler;
 
         this.handler.initialize(this);
+        this.parties = parties;
+        barrier = new CyclicBarrier(parties);
     }
 
     // FIXME: this implementation is wrong, and might cause rc
@@ -95,7 +105,7 @@ public class GradientsAccumulator implements Serializable {
      * @param array
      */
     // TODO: this method should be synchronized probably, if we want to call this method from different threads
-    public synchronized void storeUpdate(INDArray array) {
+    public void storeUpdate(INDArray array) {
         /*
             Here we want to do 4 things:
             1) update accumulated values
@@ -104,26 +114,47 @@ public class GradientsAccumulator implements Serializable {
             4) PROFIT!
          */
 
-        // if accum is null, let's just create it here
-        if (storage == null) {
-            // we don't want state array to be attached to any workspace
-            shape = array.shape();
-            ordering = array.ordering();
+        try {
+            firstOne.compareAndSet(0, Thread.currentThread().getId());
 
-            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                storage = Nd4j.create(shape, ordering);
+            // TODO: since we know number of elements in advance, we don't really need CopyOnWrite list here.
+            candidates.add(array);
+            barrier.await();
+
+            if (firstOne.get() == Thread.currentThread().getId()) {
+                // if accum is null, let's just create it here
+                if (storage == null) {
+                    // we don't want state array to be attached to any workspace
+                    shape = array.shape();
+                    ordering = array.ordering();
+
+                    try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        // TODO: if p2p isn't supported, this should become HOST-only allocation
+                        storage = Nd4j.create(shape, ordering);
+                    }
+                }
+
+                // accumulate our values, a
+                //storage.addi(array);
+                Nd4j.accumulate(storage, candidates);
+
+                // we ensure storage was updated successfully
+                Nd4j.getExecutioner().commit();
+
+                // if there's something to send - send it. Skip otherwise!!!
+                if (handler.broadcastUpdates(storage)) {
+                    ownCounter.getAndIncrement();
+                }
+
+                // reset "first one" :)
+                firstOne.set(0);
+                candidates.clear();
             }
-        }
 
-        // accumulate our values, a
-        storage.addi(array);
+            barrier.await();
 
-        // we ensure storage was updated successfully
-        Nd4j.getExecutioner().commit();
-
-        // if there's something to send - send it. Skip otherwise!!!
-        if (handler.broadcastUpdates(storage)) {
-            ownCounter.getAndIncrement();
+        } catch (Exception e) {
+            // do something here
         }
     }
 
