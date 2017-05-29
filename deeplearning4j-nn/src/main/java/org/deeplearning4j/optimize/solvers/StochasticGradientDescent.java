@@ -71,9 +71,9 @@ public class StochasticGradientDescent extends BaseOptimizer {
                 accumulator.storeUpdate(gradient.gradient());
 
                 // and getting (possible) pending update from accumulator
-                INDArray pendingUpdate = accumulator.getUpdate();
-                if (pendingUpdate != null)
-                    stepFunction.step(params, pendingUpdate);
+                //INDArray pendingUpdate = accumulator.getUpdate();
+                //stepFunction.step(params, pendingUpdate);
+                accumulator.applyUpdate(stepFunction, params);
 
                 // if there's no update available - just go on then
             } else {
