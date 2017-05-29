@@ -49,7 +49,7 @@ import java.util.*;
  */
 public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.Layer> implements Layer {
 
-    protected INDArray input;
+    protected INDArray input, preOutput;
     protected INDArray paramsFlattened;
     protected INDArray gradientsFlattened;
     protected Map<String, INDArray> params;

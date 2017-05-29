@@ -310,6 +310,9 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
 
         if (helper != null) {
+            if (preOutput != null)
+                return new Pair<>(preOutput, null);
+
             INDArray ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(),
                             layerConf().getCudnnFwdAlgo(), convolutionMode);
             if (ret != null) {
@@ -363,6 +366,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         applyDropOutIfNecessary(training);
 
         INDArray z = preOutput(training);
+
+        if (training)
+            preOutput = z.leverageTo(ComputationGraph.workspaceExternal);
+
         //String afn = conf.getLayer().getActivationFunction();
         IActivation afn = conf.getLayer().getActivationFn();
 
