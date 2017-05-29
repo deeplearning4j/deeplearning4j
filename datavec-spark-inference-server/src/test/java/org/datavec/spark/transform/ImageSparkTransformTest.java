@@ -1,17 +1,17 @@
 package org.datavec.spark.transform;
 
 import org.datavec.api.util.ClassPathResource;
-import org.datavec.image.transform.ImageTransform;
 import org.datavec.image.transform.ImageTransformProcess;
-import org.datavec.image.transform.ScaleImageTransform;
 import org.datavec.spark.transform.model.Base64NDArrayBody;
+import org.datavec.spark.transform.model.BatchImageRecord;
 import org.datavec.spark.transform.model.ImageRecord;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.serde.base64.Nd4jBase64;
 
 import java.io.File;
-import java.util.Random;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by kepricon on 17. 5. 24.
@@ -19,7 +19,7 @@ import java.util.Random;
 public class ImageSparkTransformTest {
 
     @Test
-    public void testImageSparkTransform() throws Exception {
+    public void testSingleImageSparkTransform() throws Exception {
         int seed = 12345;
 
         File f1 = new ClassPathResource("/testimages/class1/A.jpg").getFile();
@@ -29,7 +29,7 @@ public class ImageSparkTransformTest {
         ImageTransformProcess imgTransformProcess = new ImageTransformProcess.Builder()
                 .seed(seed)
                 .scaleImageTransform(10)
-                .cropImageTransform(50)
+                .cropImageTransform(5)
                 .build();
 
         ImageSparkTransform imgSparkTransform = new ImageSparkTransform(imgTransformProcess);
@@ -37,5 +37,33 @@ public class ImageSparkTransformTest {
 
         INDArray fromBase64 = Nd4jBase64.fromBase64(body.getNdarray());
         System.out.println("Base 64ed array " + fromBase64);
+        assertEquals(1, fromBase64.size(0));
+    }
+
+    @Test
+    public void testBatchImageSparkTransform() throws Exception {
+        int seed = 12345;
+
+        File f0 = new ClassPathResource("/testimages/class1/A.jpg").getFile();
+        File f1 = new ClassPathResource("/testimages/class1/B.png").getFile();
+        File f2 = new ClassPathResource("/testimages/class1/C.jpg").getFile();
+
+        BatchImageRecord batch = new BatchImageRecord();
+        batch.add(f0.toURI());
+        batch.add(f1.toURI());
+        batch.add(f2.toURI());
+
+        ImageTransformProcess imgTransformProcess = new ImageTransformProcess.Builder()
+                .seed(seed)
+                .scaleImageTransform(10)
+                .cropImageTransform(5)
+                .build();
+
+        ImageSparkTransform imgSparkTransform = new ImageSparkTransform(imgTransformProcess);
+        Base64NDArrayBody body = imgSparkTransform.toArray(batch);
+
+        INDArray fromBase64 = Nd4jBase64.fromBase64(body.getNdarray());
+        System.out.println("Base 64ed array " + fromBase64);
+        assertEquals(3, fromBase64.size(0));
     }
 }

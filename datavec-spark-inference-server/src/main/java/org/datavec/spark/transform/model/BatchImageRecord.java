@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,5 +25,9 @@ public class BatchImageRecord {
         if (records == null)
             records = new ArrayList<>();
         records.add(record);
+    }
+
+    public void add(URI uri) {
+        records.add(new ImageRecord(uri));
     }
 }

@@ -10,6 +10,7 @@ import org.datavec.spark.transform.model.Base64NDArrayBody;
 import org.datavec.spark.transform.model.BatchImageRecord;
 import org.datavec.spark.transform.model.ImageRecord;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.serde.base64.Nd4jBase64;
 
 import java.io.IOException;
@@ -31,16 +32,18 @@ public class ImageSparkTransform {
     }
 
     public Base64NDArrayBody toArray(BatchImageRecord batch) throws IOException {
-        List<List<Writable>> records = new ArrayList<>();
+        List<INDArray> records = new ArrayList<>();
+
         for (ImageRecord imgRecord : batch.getRecords()) {
             ImageWritable record2 = imageTransformProcess.transformFileUriToInput(imgRecord.getUri());
             INDArray finalRecord = imageTransformProcess.executeArray(record2);
-            List<Writable> writables = RecordConverter.toRecord(finalRecord);
-            records.add(writables);
+            records.add(finalRecord);
         }
 
-        INDArray convert = RecordConverter.toMatrix(records);
-        return new Base64NDArrayBody(Nd4jBase64.base64String(convert));
+        int shape[] = records.get(0).shape();
+        INDArray array = Nd4j.create(records, new int[]{records.size(),shape[1], shape[2], shape[3]});
+
+        return new Base64NDArrayBody(Nd4jBase64.base64String(array));
     }
 
 }
