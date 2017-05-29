@@ -3323,6 +3323,56 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                            @Cast("bool") boolean propagate);
 
 
+    public native void accumulateHalf(@Cast("Nd4jPointer*") PointerPointer extras,
+                              @Cast("Nd4jPointer*") PointerPointer dx,
+                              @Cast("float16*") ShortPointer dz,
+                              int n,
+                              @Cast("Nd4jIndex") long length);
+    public native void accumulateHalf(@Cast("Nd4jPointer*") PointerPointer extras,
+                              @Cast("Nd4jPointer*") PointerPointer dx,
+                              @Cast("float16*") ShortBuffer dz,
+                              int n,
+                              @Cast("Nd4jIndex") long length);
+    public native void accumulateHalf(@Cast("Nd4jPointer*") PointerPointer extras,
+                              @Cast("Nd4jPointer*") PointerPointer dx,
+                              @Cast("float16*") short[] dz,
+                              int n,
+                              @Cast("Nd4jIndex") long length);
+
+
+    public native void accumulateFloat(@Cast("Nd4jPointer*") PointerPointer extras,
+                              @Cast("Nd4jPointer*") PointerPointer dx,
+                              FloatPointer dz,
+                              int n,
+                              @Cast("Nd4jIndex") long length);
+    public native void accumulateFloat(@Cast("Nd4jPointer*") PointerPointer extras,
+                              @Cast("Nd4jPointer*") PointerPointer dx,
+                              FloatBuffer dz,
+                              int n,
+                              @Cast("Nd4jIndex") long length);
+    public native void accumulateFloat(@Cast("Nd4jPointer*") PointerPointer extras,
+                              @Cast("Nd4jPointer*") PointerPointer dx,
+                              float[] dz,
+                              int n,
+                              @Cast("Nd4jIndex") long length);
+
+    public native void accumulateDouble(@Cast("Nd4jPointer*") PointerPointer extras,
+                           @Cast("Nd4jPointer*") PointerPointer dx,
+                           DoublePointer dz,
+                           int n,
+                           @Cast("Nd4jIndex") long length);
+    public native void accumulateDouble(@Cast("Nd4jPointer*") PointerPointer extras,
+                           @Cast("Nd4jPointer*") PointerPointer dx,
+                           DoubleBuffer dz,
+                           int n,
+                           @Cast("Nd4jIndex") long length);
+    public native void accumulateDouble(@Cast("Nd4jPointer*") PointerPointer extras,
+                           @Cast("Nd4jPointer*") PointerPointer dx,
+                           double[] dz,
+                           int n,
+                           @Cast("Nd4jIndex") long length);
+
+
     /**
      * P2P enabler
      */
@@ -3481,7 +3531,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
      * @param dstType
      * @param z
      */
-    public native void convertTypes(@Cast("Nd4jPointer*") PointerPointer extras, int srcType, @Cast("Nd4jPointer") Pointer x, long N, int dstType, @Cast("Nd4jPointer") Pointer z);
+    public native void convertTypes(@Cast("Nd4jPointer*") PointerPointer extras, int srcType, @Cast("Nd4jPointer") Pointer x, @Cast("Nd4jIndex") long N, int dstType, @Cast("Nd4jPointer") Pointer z);
 
 
     /**

@@ -803,7 +803,6 @@ public class JcublasLapack extends BaseLapack {
             VT.assign(vt);
     }
 
-    @Override
     public int ssyev( char _jobz, char _uplo, int N, INDArray A, INDArray R ) {
 
 	if( cusolverDnSsyevd_bufferSize == null || cusolverDnSsyevd == null ) {
@@ -888,7 +887,6 @@ public class JcublasLapack extends BaseLapack {
     }
 
 
-    @Override
     public int dsyev( char _jobz, char _uplo, int N, INDArray A, INDArray R ) {
 
 	if( cusolverDnDsyevd_bufferSize == null || cusolverDnDsyevd == null ) {
