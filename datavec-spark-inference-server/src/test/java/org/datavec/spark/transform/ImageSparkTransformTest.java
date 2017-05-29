@@ -22,10 +22,8 @@ public class ImageSparkTransformTest {
     public void testImageSparkTransform() throws Exception {
         int seed = 12345;
 
-        File f0 = new ClassPathResource("/testimages/class0/0.jpg").getFile();
         File f1 = new ClassPathResource("/testimages/class1/A.jpg").getFile();
 
-//        ImageRecord imgRecord = new ImageRecord(f0.toURI());
         ImageRecord imgRecord = new ImageRecord(f1.toURI());
 
         ImageTransformProcess imgTransformProcess = new ImageTransformProcess.Builder()

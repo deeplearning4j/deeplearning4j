@@ -27,7 +27,6 @@ public class ImageSparkTransform {
         ImageWritable record2 = imageTransformProcess.transformFileUriToInput(record.getUri());
         INDArray finalRecord = imageTransformProcess.executeArray(record2);
 
-//        INDArray convert = RecordConverter.toArray(finalRecord);
         return new Base64NDArrayBody(Nd4jBase64.base64String(finalRecord));
     }
 
