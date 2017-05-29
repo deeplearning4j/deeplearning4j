@@ -846,9 +846,99 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
     }
 
     public INDArray accumulate(INDArray target, INDArray... arrays) {
-        // TODO: to be implemented
+        if (arrays == null || arrays.length == 0)
+            throw new RuntimeException("Input arrays are missing");
 
-        return target;
+        if (arrays.length == 1)
+            return target.assign(arrays[0]);
+
+        // we do averaging on GPU only if ALL devices have p2p links
+        if (CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed() && nativeOps.isP2PAvailable()) {
+            Nd4j.getExecutioner().push();
+
+            long len = target.lengthLong();
+
+            AtomicAllocator allocator = AtomicAllocator.getInstance();
+
+            CudaContext context = allocator.getFlowController().prepareAction(target, arrays);
+
+            PointerPointer extras = new PointerPointer(null, // not used
+                    context.getOldStream(), allocator.getDeviceIdPointer(), new CudaPointer(0));
+
+
+            Pointer z = AtomicAllocator.getInstance().getPointer(target, context);
+
+            long[] xPointers = new long[arrays.length];
+
+            for (int i = 0; i < arrays.length; i++) {
+                if (arrays[i].elementWiseStride() != 1)
+                    throw new ND4JIllegalStateException("Native averaging is applicable only to continuous INDArrays");
+
+                if (arrays[i].lengthLong() != len)
+                    throw new ND4JIllegalStateException("All arrays should have equal length for averaging");
+
+                AllocationPoint point = allocator.getAllocationPoint(arrays[i]);
+                xPointers[i] = point.getPointers().getDevicePointer().address();
+                point.tickDeviceWrite();
+            }
+
+            CudaDoubleDataBuffer tempX = new CudaDoubleDataBuffer(arrays.length);
+
+            allocator.memcpyBlocking(tempX, new LongPointer(xPointers), xPointers.length * 8, 0);
+
+            PointerPointer x = new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context));
+
+            if (target.data().dataType() == DataBuffer.Type.DOUBLE) {
+                nativeOps.accumulateDouble(extras, x, (DoublePointer) z, arrays.length, len);
+            } else if (target.data().dataType() == DataBuffer.Type.FLOAT) {
+                nativeOps.accumulateFloat(extras, x, (FloatPointer) z, arrays.length, len);
+            } else {
+                nativeOps.accumulateHalf(extras, x, (ShortPointer) z, arrays.length, len);
+            }
+
+            allocator.getFlowController().registerAction(context, target, arrays);
+
+            tempX.address();
+
+            return target;
+        } else {
+            long len = target.lengthLong();
+
+            Nd4j.getExecutioner().commit();
+
+            CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+            PointerPointer dataPointers = new PointerPointer(arrays.length);
+            PointerPointer extras = new PointerPointer(null, // not used
+                    context.getOldStream(), AtomicAllocator.getInstance().getDeviceIdPointer(), new CudaPointer(1) );
+
+            for (int i = 0; i < arrays.length; i++) {
+                Nd4j.getCompressor().autoDecompress(arrays[i]);
+
+                if (arrays[i].elementWiseStride() != 1)
+                    throw new ND4JIllegalStateException("Native averaging is applicable only to continuous INDArrays");
+
+                if (arrays[i].lengthLong() != len)
+                    throw new ND4JIllegalStateException("All arrays should have equal length for averaging");
+
+                dataPointers.put(i, AtomicAllocator.getInstance().getHostPointer(arrays[i]));
+            }
+
+            if (target.data().dataType() == DataBuffer.Type.DOUBLE) {
+                nativeOps.accumulateDouble(extras, dataPointers, (DoublePointer) AtomicAllocator.getInstance().getHostPointer(target), arrays.length, len);
+            } else if (target.data().dataType() == DataBuffer.Type.FLOAT) {
+                nativeOps.accumulateFloat(extras, dataPointers, (FloatPointer) AtomicAllocator.getInstance().getHostPointer(target), arrays.length, len);
+            } else {
+                nativeOps.accumulateHalf(extras, dataPointers, (ShortPointer) AtomicAllocator.getInstance().getHostPointer(target), arrays.length, len);
+            }
+
+            AtomicAllocator.getInstance().getAllocationPoint(target).tickHostWrite();
+
+
+
+            return target;
+        }
+
     }
 
     @Override
