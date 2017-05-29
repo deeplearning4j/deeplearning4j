@@ -10,6 +10,7 @@ import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.callbacks.InterleavedDataSetCallback;
+import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
@@ -17,9 +18,11 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.solvers.accumulation.BasicGradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.LocalHandler;
 import org.deeplearning4j.parallelism.factory.DefaultTrainerContext;
+import org.deeplearning4j.parallelism.factory.SymmetricTrainerContext;
 import org.deeplearning4j.parallelism.factory.TrainerContext;
 import org.deeplearning4j.optimize.listeners.SharedGradient;
 import org.deeplearning4j.parallelism.trainer.Trainer;
@@ -50,6 +53,23 @@ import java.util.concurrent.atomic.AtomicLong;
 @Slf4j
 @Data
 public class ParallelWrapper implements AutoCloseable {
+    public enum TrainingMode {
+        /**
+         * Averaging every X epochs will be applied
+         */
+        AVERAGING,
+
+        /**
+         * Models within ParallelWrapper instance will share gradients updates
+         */
+        SHARED_GRADIENTS,
+
+        /**
+         * Models within ParallelWrapper instance will share encoded gradients updates
+         */
+        ENCODED_GRADIENTS,
+    }
+
     protected Model model;
     protected int workers = 2;
     protected int prefetchSize = 2;
@@ -517,6 +537,7 @@ public class ParallelWrapper implements AutoCloseable {
     }
 
     public static class Builder<T extends Model> {
+        protected TrainingMode trainingMode;
         protected T model;
         protected int workers = Nd4j.getAffinityManager().getNumberOfDevices();
         protected int prefetchSize = 16;
@@ -609,25 +630,9 @@ public class ParallelWrapper implements AutoCloseable {
          * @param reallyAverage
          * @return
          */
+        @Deprecated
         public Builder averageUpdaters(boolean reallyAverage) {
             this.averageUpdaters = reallyAverage;
-            return this;
-        }
-
-        /**
-         * This method enables/disable MagicQueue use
-         * If set to true, all datasets will be spread among all available devices at prefetch phase using AsyncDataSetIterator
-         *
-         * PLEASE NOTE: This is experimental feature.
-         *
-         * Default: true
-         *
-         * @param reallyUse
-         * @return
-         */
-        @Deprecated
-        public Builder useMQ(boolean reallyUse) {
-            //this.isMQ = reallyUse;
             return this;
         }
 
@@ -651,16 +656,12 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
         /**
-         * If set to true, legacy averaging method is used. This might be used as fallback on multi-gpu systems without P2P access available.
          *
-         * Default value: false
-         *
-         * @param reallyUse
+         * @param mode
          * @return
          */
-        @Deprecated
-        public Builder useLegacyAveraging(boolean reallyUse) {
-            this.legacyAveraging = reallyUse;
+        public Builder trainingMode(@NonNull TrainingMode mode) {
+            this.trainingMode = mode;
             return this;
         }
 
@@ -700,6 +701,32 @@ public class ParallelWrapper implements AutoCloseable {
             wrapper.legacyAveraging = this.legacyAveraging;
             wrapper.isMQ = this.isMQ;
             wrapper.workspaceMode = this.workspaceMode;
+
+
+            switch (trainingMode) {
+                case AVERAGING: {
+                        this.trainerContext = new DefaultTrainerContext();
+                        this.accumulator = null;
+                    }
+                    break;
+                case SHARED_GRADIENTS: {
+                        this.trainerContext = new SymmetricTrainerContext();
+                        if (this.accumulator == null) {
+                            log.info("Creating new GradientsAccumulator instance");
+                            this.accumulator = new BasicGradientsAccumulator(workers, new LocalHandler());
+                        }
+                    }
+                    break;
+                case ENCODED_GRADIENTS: {
+                        this.trainerContext = new SymmetricTrainerContext();
+                        if (this.accumulator == null)
+                            throw new DL4JInvalidConfigException("Please specify GradientsAccumulator fo encoded gradients mode");
+                    }
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Unknown trainingMode: [" + trainingMode + "]");
+            }
+
             wrapper.trainerContext = this.trainerContext;
             wrapper.gradientsAccumulator = this.accumulator;
 

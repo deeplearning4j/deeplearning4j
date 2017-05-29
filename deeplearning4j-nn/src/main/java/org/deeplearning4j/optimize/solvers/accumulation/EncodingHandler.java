@@ -16,6 +16,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  *
  * This handler is used as basement for distributed handler though.
  *
+ * PLEASE NOTE: This handler does NOT provide any network connectivity. *
  * @author raver119@gmail.com
  */
 @Slf4j

@@ -2,6 +2,7 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * MessageHandler implementation suited for ParallelWrapper running on single box
@@ -28,6 +29,8 @@ public class LocalHandler implements MessageHandler {
         accumulator.receiveUpdate(updates);
 
         updates.assign(0.0);
+
+        Nd4j.getExecutioner().commit();
 
         return true;
     }
