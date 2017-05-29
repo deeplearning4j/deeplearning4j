@@ -5402,6 +5402,70 @@ void NativeOps::averageDouble(Nd4jPointer *extras, Nd4jPointer *dx, double *dz, 
 	}
 }
 
+void NativeOps::accumulateHalf(Nd4jPointer *extras, Nd4jPointer *dx, float16 *dz, int n, Nd4jIndex length) {
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+	int mode = getDeviceId(extras[3]);
+
+	float16 **x = reinterpret_cast<float16 **>(dx);
+
+	if (debug && verbose)
+		printf("accumulateHalf called\n");
+
+	// launching on gpu
+	if (mode == 0) {
+		dim3 launchDims = getBasicLaunchParams(getDeviceId(extras[2]), length, sizeof(float16), funcAttributes[44]);
+
+		accumulateKernelHalf<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, dz, n, length);
+
+		checkCudaErrors(cudaStreamSynchronize(*stream));
+	} else {
+		accumulateGeneric<float16>(x, dz, n, length);
+	}
+}
+
+void NativeOps::accumulateFloat(Nd4jPointer *extras, Nd4jPointer *dx, float *dz, int n, Nd4jIndex length) {
+	cudaStream_t * stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+	int mode = getDeviceId(extras[3]);
+
+	float **x = reinterpret_cast<float **>(dx);
+
+	if (debug && verbose)
+		printf("accumulateFloat called\n");
+
+	// launching on gpu
+	if (mode == 0) {
+		dim3 launchDims = getBasicLaunchParams(getDeviceId(extras[2]), length, sizeof(float), funcAttributes[45]);
+
+        accumulateKernelFloat<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, dz, n, length);
+
+		checkCudaErrors(cudaStreamSynchronize(*stream));
+	} else {
+		// launching on host memory
+		accumulateGeneric<float>(x, dz, n, length);
+	}
+}
+
+void NativeOps::accumulateDouble(Nd4jPointer *extras, Nd4jPointer *dx, double *dz, int n, Nd4jIndex length) {
+	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+	int mode = getDeviceId(extras[3]);
+
+	double **x = reinterpret_cast<double **>(dx);
+
+	if (debug && verbose)
+		printf("accumulateDouble called\n");
+
+	// launching on gpu
+	if (mode == 0) {
+		dim3 launchDims = getBasicLaunchParams(getDeviceId(extras[2]), length, sizeof(double), funcAttributes[46]);
+
+		accumulateKernelDouble << < launchDims.x, launchDims.y, launchDims.z, *stream >> > (x, dz, n, length);
+
+		checkCudaErrors(cudaStreamSynchronize(*stream));
+	} else {
+		accumulateGeneric<double>(x, dz, n, length);
+	}
+}
+
 void NativeOps::shuffleDouble(Nd4jPointer *extras, Nd4jPointer *dx, Nd4jPointer *xShapeInfo, Nd4jPointer *dz, Nd4jPointer *zShapeInfo, int N, int *shuffleMap, Nd4jPointer *tadShapeInfo, Nd4jPointer *tadOffsets) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
 

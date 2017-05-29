@@ -1327,6 +1327,61 @@ extern "C" __global__ void kernelHalfsToFloats(half *dx, int n, float *dz) {
     convertHalfsToGeneric<float>(dx, n, dz);
 }
 
+/**
+ * This kernel accumulates X arrays, and stores result into Z
+ *
+ * @tparam T
+ * @param x
+ * @param z
+ * @param n
+ * @param length
+ */
+template<typename T>
+__device__ void accumulateKernelGeneric(T **x, T *z, int n, const Nd4jIndex length) {
+    __shared__ T *shmem;
+
+    if (threadIdx.x == 0) {
+        extern __shared__ unsigned char sharedmem[];
+        shmem = (T *) sharedmem;
+    }
+    __syncthreads();
+
+    for (int r = blockDim.x * blockIdx.x; r < length; r += blockDim.x * gridDim.x) {
+        shmem[threadIdx.x] = 0.0f;
+
+        Nd4jIndex baseIdx = r;
+
+        // aggregation step, we roll over all arrays
+        for (int ar = 0; ar < n; ar++) {
+            T *cdata = (T *) x[ar];
+            cdata += baseIdx;
+
+            if (baseIdx + threadIdx.x < length)
+                shmem[threadIdx.x] += cdata[threadIdx.x];
+        }
+
+        T *wdata = z + baseIdx;
+
+        // saving accumulated values
+        if (baseIdx + threadIdx.x < length) {
+            wdata[threadIdx.x] = shmem[threadIdx.x];
+       }
+    }
+}
+
+
+extern "C" __global__ void accumulateKernelHalf(float16 **dx, float16 *dz, int n, Nd4jIndex length) {
+    accumulateKernelGeneric<float16>(dx, dz, n, length);
+}
+
+extern "C" __global__ void accumulateKernelFloat(float **dx, float *dz, int n, Nd4jIndex length) {
+    accumulateKernelGeneric<float>(dx, dz, n, length);
+}
+
+extern "C" __global__ void accumulateKernelDouble(double **dx, double *dz, int n, Nd4jIndex length) {
+    accumulateKernelGeneric<double>(dx, dz, n, length);
+}
+
 
 template <typename T>
 __device__ void averagingKernelGeneric(T **dx, T *dz, int n, Nd4jIndex length, bool propagate) {

@@ -1024,6 +1024,10 @@ namespace simdOps {
                 return (d1 == compare) ? 1.0 : 0.0;
             else if (mode == 11)
                 return (d1 != compare) ? 1.0 : 0.0;
+			else if (mode == 12) // abs_greater_or_equals_than
+				return nd4j::math::nd4j_abs<T>(d1) >= compare? 1.0 : 0.0;
+			else if (mode == 13) // abs_less_or_equals_than
+				return nd4j::math::nd4j_abs<T>(d1) <= compare? 1.0 : 0.0;
             else
                 printf("Undefined match condition: [%i]\n", mode);
 
@@ -1287,6 +1291,30 @@ namespace simdOps {
 	};
 
 
+    template<typename T>
+    class AMean {
+    public:
+        op_def static T startingValue(const T *input) {
+            return (T) 0.0f;
+        }
+
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+            return nd4j::math::nd4j_abs<T>(opOutput) + nd4j::math::nd4j_abs<T>(old);
+        }
+
+        op_def static T update(T old, T opOutput, T *extraParams) {
+            return nd4j::math::nd4j_abs<T>(opOutput) + nd4j::math::nd4j_abs<T>(old);
+        }
+
+        op_def static T op(T d1, T *extraParams) {
+            return nd4j::math::nd4j_abs<T>(d1);
+        }
+
+        op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+            return nd4j::math::nd4j_abs<T>(reduction) / (int) n;
+        }
+    };
+
 	template<typename T>
 	class Max {
 	public:
@@ -1317,37 +1345,96 @@ namespace simdOps {
 	};
 
 
+    template<typename T>
+    class AMax {
+    public:
+        op_def static T startingValue(const T *input) {
+            return input[0];
+        }
+
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+            return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(old), nd4j::math::nd4j_abs<T>(opOutput));
+        }
+
+        op_def static T update(T old, T opOutput, T *extraParams) {
+            return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(opOutput), nd4j::math::nd4j_abs<T>(old));
+        }
+
+        op_def static T op(T d1, T d2, T *params) {
+            return nd4j::math::nd4j_max<T>(nd4j::math::nd4j_abs<T>(d1), nd4j::math::nd4j_abs<T>(d2));
+        }
+
+        // FIXME: this signature overlaps with MetaOp
+        op_def static T op(T d1, T *extraParams) {
+            return nd4j::math::nd4j_abs<T>(d1);
+        }
+
+        op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+            return nd4j::math::nd4j_abs<T>(reduction);
+        }
+    };
+
+
 	template<typename T>
-	class Min {
+	class AMin {
 	public:
 		op_def static T startingValue(const T *input) {
 			return input[0];
 		}
 
 		op_def static T merge(T old, T opOutput, T *extraParams) {
-			return nd4j::math::nd4j_min<T>(old, opOutput);
+			return nd4j::math::nd4j_min<T>(nd4j::math::nd4j_abs<T>(old), nd4j::math::nd4j_abs<T>(opOutput));
 		}
 
 		op_def static T update(T old, T opOutput, T *extraParams) {
-			return nd4j::math::nd4j_min<T>(opOutput, old);
+			return nd4j::math::nd4j_min<T>(nd4j::math::nd4j_abs<T>(opOutput), nd4j::math::nd4j_abs<T>(old));
 		}
 
 		op_def static T op(T d1, T d2, T *params) {
-			return nd4j::math::nd4j_min(d1, d2);
+			return nd4j::math::nd4j_min(nd4j::math::nd4j_abs<T>(d1), nd4j::math::nd4j_abs<T>(d2));
 		}
 
 		// FIXME: this signature overlaps with MetaOp
 		op_def static T op(T d1, T *extraParams) {
-			return d1;
+			return nd4j::math::nd4j_abs<T>(d1);
 		}
 
 		op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
-			return reduction;
+			return nd4j::math::nd4j_abs<T>(reduction);
 		}
 	};
 
+    template<typename T>
+    class Min {
+    public:
+        op_def static T startingValue(const T *input) {
+            return input[0];
+        }
 
-	template<typename T>
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+            return nd4j::math::nd4j_min<T>(old, opOutput);
+        }
+
+        op_def static T update(T old, T opOutput, T *extraParams) {
+            return nd4j::math::nd4j_min<T>(opOutput, old);
+        }
+
+        op_def static T op(T d1, T d2, T *params) {
+            return nd4j::math::nd4j_min(d1, d2);
+        }
+
+        // FIXME: this signature overlaps with MetaOp
+        op_def static T op(T d1, T *extraParams) {
+            return d1;
+        }
+
+        op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+            return reduction;
+        }
+    };
+
+
+    template<typename T>
 	class Norm1 {
 	public:
 		op_def static T startingValue(const T *input) {
@@ -2367,6 +2454,10 @@ template<typename T>
                 return (d1 == compare) ? d2 : d1;
             else if (mode == 11)
                 return (d1 != compare) ? d2 : d1;
+            else if (mode == 12) // abs_greater_or_equals_than
+                return nd4j::math::nd4j_abs<T>(d1) >= compare? d2 : d1;
+            else if (mode == 13) // abs_less_or_equals_than
+                return nd4j::math::nd4j_abs<T>(d1) <= compare? d2 : d1;
             else
                 printf("Undefined boolean operation: [%i]\n", mode);
             return d1;
@@ -2411,6 +2502,10 @@ template<typename T>
                 return (d1 == compare) ? set : d1;
             else if (mode == 11)
                 return (d1 != compare) ? set : d1;
+            else if (mode == 12) // abs_greater_or_equals_than
+                return nd4j::math::nd4j_abs<T>(d1) >= compare? set : d1;
+            else if (mode == 13) // abs_less_or_equals_than
+                return nd4j::math::nd4j_abs<T>(d1) <= compare? set : d1;
             else
                 printf("Undefined boolean operation: [%i]\n", mode);
             return d1;
@@ -2445,6 +2540,10 @@ template<typename T>
                 return (d2 == compare) ? d2 : d1;
             else if (mode == 11)
                 return (d2 != compare) ? d2 : d1;
+            else if (mode == 12) // abs_greater_or_equals_than
+                return nd4j::math::nd4j_abs<T>(d1) >= compare? d2 : d1;
+            else if (mode == 13) // abs_less_or_equals_than
+                return nd4j::math::nd4j_abs<T>(d1) <= compare? d2 : d1;
             else
                 printf("Undefined boolean operation: [%i]\n", mode);
             return d1;

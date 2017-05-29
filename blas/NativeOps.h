@@ -1956,6 +1956,26 @@ public:
                        bool propagate);
 
 
+    void accumulateHalf(Nd4jPointer *extras,
+                          Nd4jPointer *dx,
+                          float16 *dz,
+                          int n,
+                          Nd4jIndex length);
+
+
+    void accumulateFloat(Nd4jPointer *extras,
+                          Nd4jPointer *dx,
+                          float *dz,
+                          int n,
+                          Nd4jIndex length);
+
+    void accumulateDouble(Nd4jPointer *extras,
+                       Nd4jPointer *dx,
+                       double *dz,
+                       int n,
+                       Nd4jIndex length);
+
+
     /**
      * P2P enabler
      */
@@ -2060,7 +2080,7 @@ public:
      * @param dstType
      * @param z
      */
-    void convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, long N, int dstType, Nd4jPointer z);
+    void convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer x, Nd4jIndex N, int dstType, Nd4jPointer z);
 
 
     /**
