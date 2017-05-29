@@ -537,7 +537,7 @@ public class ParallelWrapper implements AutoCloseable {
     }
 
     public static class Builder<T extends Model> {
-        protected TrainingMode trainingMode;
+        protected TrainingMode trainingMode = TrainingMode.AVERAGING;
         protected T model;
         protected int workers = Nd4j.getAffinityManager().getNumberOfDevices();
         protected int prefetchSize = 16;
