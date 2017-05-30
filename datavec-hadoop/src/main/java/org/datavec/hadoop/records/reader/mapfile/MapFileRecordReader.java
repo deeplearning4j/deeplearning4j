@@ -18,7 +18,6 @@ package org.datavec.hadoop.records.reader.mapfile;
 
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
-import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.listener.RecordListener;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataIndex;
@@ -33,13 +32,26 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collection;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Random;
+import java.util.*;
 
 /**
- * Created by Alex on 29/05/2017.
+ * A {@link RecordReader} implementation for reading from a Hadoop {@link org.apache.hadoop.io.MapFile}<br>
+ * <p>
+ * A typical use case is with {@link org.datavec.api.transform.TransformProcess} executed on Spark (perhaps Spark
+ * local), followed by non-distributed training on a single machine. For example:
+ * <pre>
+ *  {@code
+ *  JavaRDD<List<Writable>> myRDD = ...;
+ *  String mapFilePath = ...;
+ *  SparkStorageUtils.saveMapFile( mapFilePath, myRDD );
+ *
+ *  RecordReader rr = new MapFileRecordReader();
+ *  rr.initialize( new FileSplit( new File( mapFilePath ) ) );
+ *  //Pass to DataSetIterator or similar
+ *  }
+ * </pre>
+ *
+ * @author Alex Black
  */
 public class MapFileRecordReader implements RecordReader {
     private static final Class<? extends org.apache.hadoop.io.Writable> recordClass = RecordWritable.class;
@@ -47,22 +59,41 @@ public class MapFileRecordReader implements RecordReader {
     private final IndexToKey indexToKey;
     private MapFileReader<RecordWritable> mapFileReader;
     private URI uri;
+    private List<RecordListener> listeners;
 
     private long numRecords;
     private long position;
     private Random rng;
     private int[] order;
 
-
+    /**
+     * Create a MapFileRecordReader with no randomisation, and assuming MapFile keys are {@link org.apache.hadoop.io.LongWritable}
+     * values
+     */
     public MapFileRecordReader() throws Exception {
         this(new LongIndexToKey(), null);
     }
 
-    public MapFileRecordReader(Random rng){
+    /**
+     * Create a MapFileRecordReader with optional randomisation, and assuming MapFile keys are
+     * {@link org.apache.hadoop.io.LongWritable} values
+     *
+     * @param rng If non-null, will be used to randomize the order of examples
+     *
+     */
+    public MapFileRecordReader(Random rng) {
         this(new LongIndexToKey(), rng);
     }
 
-    public MapFileRecordReader(IndexToKey indexToKey, Random rng){
+    /**
+     * Create a MapFileRecordReader with optional randomisation, with a custom {@link IndexToKey} instance to
+     * handle MapFile keys
+     *
+     * @param indexToKey Handles conversion between long indices and key values (see for example {@link LongIndexToKey}
+     * @param rng If non-null, will be used to randomize the order of examples
+     *
+     */
+    public MapFileRecordReader(IndexToKey indexToKey, Random rng) {
         this.indexToKey = indexToKey;
         this.rng = rng;
     }
@@ -77,13 +108,13 @@ public class MapFileRecordReader implements RecordReader {
         URI[] uris = split.locations();
 
         //Check URIs are correct: we expect /data and /index files...
-        if(uris.length == 0){
+        if (uris.length == 0) {
             throw new IllegalStateException("Cannot initialize MapFileSequenceRecordReader: could not find data and index files in input split");
         }
 
         uri = uris[0];
         File f = new File(uri);
-        if(!f.isDirectory()){
+        if (!f.isDirectory()) {
             f = f.getParentFile();
             uri = f.toURI();
         }
@@ -91,17 +122,17 @@ public class MapFileRecordReader implements RecordReader {
         File indexFile = new File(f, "index");
         File dataFile = new File(f, "data");
 
-        if(!indexFile.exists()){
+        if (!indexFile.exists()) {
             throw new IOException("Could not find index file at " + indexFile.getAbsolutePath() + " - must have MapFile "
                     + "index and data files at the input split location");
         }
-        if(!dataFile.exists()){
+        if (!dataFile.exists()) {
             throw new IOException("Could not find data file at " + dataFile.getAbsolutePath() + " - must have MapFile "
                     + "index and data files at the input split location");
         }
 
 
-        if(mapFileReader != null){
+        if (mapFileReader != null) {
             mapFileReader.close();
             mapFileReader = null;
         }
@@ -109,9 +140,9 @@ public class MapFileRecordReader implements RecordReader {
         this.mapFileReader = new MapFileReader<>(uri.getPath(), indexToKey, recordClass);
         this.numRecords = mapFileReader.numRecords();
 
-        if(rng != null){
+        if (rng != null) {
             order = new int[(int) numRecords];
-            for( int i=0; i<order.length; i++ ){
+            for (int i = 0; i < order.length; i++) {
                 order[i] = i;
             }
             RandomUtils.shuffleInPlace(order, rng);
@@ -156,7 +187,7 @@ public class MapFileRecordReader implements RecordReader {
     @Override
     public void reset() {
         position = 0;
-        if(order != null){
+        if (order != null) {
             RandomUtils.shuffleInPlace(order, rng);
         }
     }
@@ -183,51 +214,57 @@ public class MapFileRecordReader implements RecordReader {
 
     @Override
     public List<RecordListener> getListeners() {
-        return null;
+        return listeners;
     }
 
     @Override
     public void setListeners(RecordListener... listeners) {
-
+        this.listeners = Arrays.asList(listeners);
     }
 
     @Override
     public void setListeners(Collection<RecordListener> listeners) {
-
+        this.listeners = new ArrayList<>(listeners);
     }
 
     @Override
     public void close() throws IOException {
-        if(mapFileReader != null){
+        if (mapFileReader != null) {
             mapFileReader.close();
         }
     }
 
 
-    private Record next(boolean withMetadata){
-        if(!hasNext()){
+    private Record next(boolean withMetadata) {
+        if (!hasNext()) {
             throw new NoSuchElementException();
         }
 
         RecordWritable rec;
         long currIdx;
-        if(order != null){
-            currIdx = order[(int)position++];
+        if (order != null) {
+            currIdx = order[(int) position++];
         } else {
             currIdx = position++;
         }
 
-        try{
+        try {
             rec = mapFileReader.getRecord(currIdx);
-        } catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
         RecordMetaData meta;
-        if(withMetadata){
+        if (withMetadata) {
             meta = new RecordMetaDataIndex(currIdx, uri, MapFileRecordReader.class);
         } else {
             meta = null;
+        }
+
+        if(listeners != null && !listeners.isEmpty()){
+            for(RecordListener l : listeners){
+                l.recordRead(this, rec);
+            }
         }
 
         return new org.datavec.api.records.impl.Record(rec.getRecord(), meta);

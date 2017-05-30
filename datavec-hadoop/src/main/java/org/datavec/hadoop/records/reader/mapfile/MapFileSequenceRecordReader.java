@@ -16,6 +16,7 @@
 
 package org.datavec.hadoop.records.reader.mapfile;
 
+import lombok.NonNull;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.SequenceRecord;
@@ -33,13 +34,26 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collection;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Random;
+import java.util.*;
 
 /**
- * Created by Alex on 29/05/2017.
+ * A {@link SequenceRecordReader} implementation for reading from a Hadoop {@link org.apache.hadoop.io.MapFile}<br>
+ * <p>
+ * A typical use case is with {@link org.datavec.api.transform.TransformProcess} executed on Spark (perhaps Spark
+ * local), followed by non-distributed training on a single machine. For example:
+ * <pre>
+ *  {@code
+ *  JavaRDD<List<List<Writable>>> myRDD = ...;
+ *  String mapFilePath = ...;
+ *  SparkStorageUtils.saveMapFileSequences( mapFilePath, myRDD );
+ *
+ *  SequenceRecordReader rr = new MapFileSequenceRecordReader();
+ *  rr.initialize( new FileSplit( new File( mapFilePath ) ) );
+ *  //Pass to DataSetIterator or similar
+ *  }
+ * </pre>
+ *
+ * @author Alex Black
  */
 public class MapFileSequenceRecordReader implements SequenceRecordReader {
     private static final Class<? extends org.apache.hadoop.io.Writable> recordClass = SequenceRecordWritable.class;
@@ -47,21 +61,40 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
     private final IndexToKey indexToKey;
     private MapFileReader<SequenceRecordWritable> mapFileReader;
     private URI uri;
+    private List<RecordListener> listeners;
 
     private long numSequences;
     private long position;
     private Random rng;
     private int[] order;
 
-
-    public MapFileSequenceRecordReader() throws Exception {
+    /**
+     * Create a MapFileSequenceRecordReader with no randomisation, and assuming MapFile keys are {@link org.apache.hadoop.io.LongWritable}
+     * values
+     */
+    public MapFileSequenceRecordReader() {
         this(new LongIndexToKey(), null);
     }
 
+    /**
+     * Create a MapFileSequenceRecordReader with optional randomisation, and assuming MapFile keys are
+     * {@link org.apache.hadoop.io.LongWritable} values
+     *
+     * @param rng If non-null, will be used to randomize the order of examples
+     *
+     */
     public MapFileSequenceRecordReader(Random rng){
         this(new LongIndexToKey(), rng);
     }
 
+    /**
+     * Create a MapFileSequenceRecordReader with optional randomisation, with a custom {@link IndexToKey} instance to
+     * handle MapFile keys
+     *
+     * @param indexToKey Handles conversion between long indices and key values (see for example {@link LongIndexToKey}
+     * @param rng If non-null, will be used to randomize the order of examples
+     *
+     */
     public MapFileSequenceRecordReader(IndexToKey indexToKey, Random rng){
         this.indexToKey = indexToKey;
         this.rng = rng;
@@ -78,7 +111,8 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
 
         //Check URIs are correct: we expect /data and /index files...
         if(uris.length == 0){
-            throw new IllegalStateException("Cannot initialize MapFileSequenceRecordReader: could not find data and index files in input split");
+            throw new IllegalStateException("Cannot initialize MapFileSequenceRecordReader: could not find data and " +
+                    "index files in input split");
         }
 
         uri = uris[0];
@@ -169,17 +203,28 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
             meta = null;
         }
 
+        if(listeners != null && !listeners.isEmpty()){
+            for(RecordListener l : listeners){
+                l.recordRead(this, seq);
+            }
+        }
+
         return new org.datavec.api.records.impl.SequenceRecord(seq.getSequenceRecord(), meta);
     }
 
     @Override
-    public SequenceRecord loadSequenceFromMetaData(RecordMetaData recordMetaData) throws IOException {
-        return null;
+    public SequenceRecord loadSequenceFromMetaData(@NonNull RecordMetaData recordMetaData) throws IOException {
+        long idx = ((RecordMetaDataIndex)recordMetaData).getIndex();
+        return new org.datavec.api.records.impl.SequenceRecord(mapFileReader.getRecord(idx).getSequenceRecord(), recordMetaData);
     }
 
     @Override
-    public List<SequenceRecord> loadSequenceFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
-        throw new UnsupportedOperationException("Not yet implemented");
+    public List<SequenceRecord> loadSequenceFromMetaData( @NonNull List<RecordMetaData> recordMetaDatas) throws IOException {
+        List<SequenceRecord> out = new ArrayList<>(recordMetaDatas.size());
+        for(RecordMetaData r : recordMetaDatas){
+            out.add(loadSequenceFromMetaData(r));
+        }
+        return out;
     }
 
     @Override
@@ -237,17 +282,17 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
 
     @Override
     public List<RecordListener> getListeners() {
-        return null;
+        return listeners;
     }
 
     @Override
     public void setListeners(RecordListener... listeners) {
-
+        this.listeners = Arrays.asList(listeners);
     }
 
     @Override
     public void setListeners(Collection<RecordListener> listeners) {
-
+        this.listeners = new ArrayList<>(listeners);
     }
 
     @Override

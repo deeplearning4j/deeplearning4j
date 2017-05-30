@@ -31,6 +31,10 @@ public enum WritableType {
     NDArray,
     Image;
 
+    /**
+     *
+     * @return True if Writable is defined in datavec-api, false otherwise
+     */
     public boolean isCoreWritable(){
         switch (this){
             case NDArray:
@@ -41,10 +45,21 @@ public enum WritableType {
         }
     }
 
+    /**
+     * Return a unique type index for the given writable
+     *
+     * @return Type index for the writable
+     */
     public short typeIdx(){
         return (short)this.ordinal();
     }
 
+    /**
+     * Return the class of the implementation corresponding to each WritableType.
+     * Note that if {@link #isCoreWritable()} returns false, null will be returned by this method.
+     *
+     * @return Class for the given WritableType
+     */
     public Class<? extends Writable> getWritableClass(){
         switch (this){
             case Boolean:

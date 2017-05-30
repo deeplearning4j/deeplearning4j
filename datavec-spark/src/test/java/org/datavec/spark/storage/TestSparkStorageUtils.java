@@ -17,21 +17,20 @@
 package org.datavec.spark.storage;
 
 import com.google.common.io.Files;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.datavec.hadoop.records.reader.mapfile.record.RecordWritable;
-import org.datavec.hadoop.records.reader.mapfile.record.SequenceRecordWritable;
 import org.datavec.spark.BaseSparkTest;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -62,6 +61,21 @@ public class TestSparkStorageUtils extends BaseSparkTest {
         assertEquals(3, m.size());
         for( int i=0; i<3; i++ ){
             assertEquals(l.get(i), m.get((long)i));
+        }
+
+
+        //Also test sequence file:
+        f = Files.createTempDir();
+        f.delete();
+        f.deleteOnExit();
+        path = "file:///" + f.getAbsolutePath();
+
+        SparkStorageUtils.saveSequenceFile(path, rdd);
+        List<List<Writable>> restored2 = SparkStorageUtils.restoreSequenceFile(path, sc).collect();
+
+        assertEquals(3, restored2.size());
+        for( int i=0; i<3; i++ ){
+            assertEquals(l.get(i), restored2.get(i));
         }
     }
 
@@ -102,6 +116,23 @@ public class TestSparkStorageUtils extends BaseSparkTest {
         for( int i=0; i<3; i++ ){
             assertEquals(l.get(i), m.get((long)i));
         }
+
+        //Also test sequence file:
+        f = Files.createTempDir();
+        f.delete();
+        f.deleteOnExit();
+        path = "file:///" + f.getAbsolutePath();
+
+        SparkStorageUtils.saveSequenceFileSequences(path, rdd);
+        List<List<List<Writable>>> restored2 = SparkStorageUtils.restoreSequenceFileSequences(path, sc).collect();
+
+        assertEquals(3, restored2.size());
+        for( int i=0; i<3; i++ ){
+            assertEquals(l.get(i), restored2.get(i));
+        }
     }
+
+
+
 
 }

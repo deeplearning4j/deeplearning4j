@@ -24,7 +24,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Created by Alex on 29/05/2017.
+ * Factory class for creating and saving writable objects to/from DataInput and DataOutput
+ *
+ * @author Alex Black
  */
 public class WritableFactory {
 
@@ -34,7 +36,6 @@ public class WritableFactory {
     private Map<Short, Constructor<? extends Writable>> constructorMap = new ConcurrentHashMap<>();
 
     private WritableFactory(){
-
         for(WritableType wt : WritableType.values()){
             if(wt.isCoreWritable()){
                 registerWritableType((short)wt.ordinal(), wt.getWritableClass());
@@ -42,10 +43,23 @@ public class WritableFactory {
         }
     }
 
+    /**
+     * @return Singleton WritableFactory instance
+     */
     public static WritableFactory getInstance(){
         return INSTANCE;
     }
 
+    /**
+     * Register a writable class with a specific key (as a short). Note that key values must be unique for each type of
+     * Writable, as they are used as type information in certain types of serialisation. Consequently, an exception will
+     * be thrown If the key value is not unique or is already assigned.<br>
+     * Note that in general, this method needs to only be used for custom Writable types; Care should be taken to ensure
+     * that the given key does not change once assigned.
+     *
+     * @param writableTypeKey Key for the Writable
+     * @param writableClass   Class for the given key. Must have a no-arg constructor
+     */
     public void registerWritableType(short writableTypeKey, Class<? extends Writable> writableClass){
         if (map.containsKey(writableTypeKey)) {
             throw new UnsupportedOperationException("Key " + writableTypeKey + " is already registered to type "
@@ -63,6 +77,12 @@ public class WritableFactory {
         constructorMap.put(writableTypeKey, c);
     }
 
+    /**
+     * Create a new risible instance (using reflection) given the specified key
+     *
+     * @param writableTypeKey Key to create a new writable instance for
+     * @return A new (empty/default) Writable instance
+     */
     public Writable newWritable(short writableTypeKey){
         Constructor<? extends Writable> c = constructorMap.get(writableTypeKey);
         if(c == null){
@@ -75,11 +95,26 @@ public class WritableFactory {
         }
     }
 
+    /**
+     * A convenience method for writing a given Writable  object to a DataOutput. The key is 1st written (a single short)
+     * followed by the value from writable.
+     *
+     * @param w          Writable value
+     * @param dataOutput DataOutput to write both key and value to
+     * @throws IOException If an error occurs during writing to the DataOutput
+     */
     public void writeWithType(Writable w, DataOutput dataOutput) throws IOException {
         w.writeType(dataOutput);
         w.write(dataOutput);
     }
 
+    /**
+     * Read a Writable From the DataInput, where the Writable was previously written using {@link #writeWithType(Writable, DataOutput)}
+     *
+     * @param dataInput DataInput to read the Writable from
+     * @return Writable from the DataInput
+     * @throws IOException In an error occurs during reading
+     */
     public Writable readWithType(DataInput dataInput) throws IOException {
         Writable w = newWritable(dataInput.readShort());
         w.readFields(dataInput);

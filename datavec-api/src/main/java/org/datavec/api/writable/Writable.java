@@ -91,9 +91,10 @@ public interface Writable extends Serializable {
     void readFields(DataInput in) throws IOException;
 
     /**
+     * Write the type (a single short value) to the DataOutput. See {@link WritableFactory} for details.
      *
-     * @param out
-     * @throws IOException
+     * @param out DataOutput to write to
+     * @throws IOException For errors during writing
      */
     void writeType(DataOutput out) throws IOException;
 

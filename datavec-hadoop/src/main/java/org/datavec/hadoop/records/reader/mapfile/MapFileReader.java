@@ -30,7 +30,9 @@ import java.io.Closeable;
 import java.io.IOException;
 
 /**
- * Created by Alex on 29/05/2017.
+ * A wrapper around a Hadoop {@link MapFile.Reader}, used in {@link MapFileRecordReader} and {@link MapFileSequenceRecordReader}
+ *
+ * @author Alex Black
  */
 public class MapFileReader<V> implements Closeable {
 
@@ -43,6 +45,12 @@ public class MapFileReader<V> implements Closeable {
         this(path, new LongIndexToKey(), RecordWritable.class);
     }
 
+    /**
+     * @param path        Path (directory) of the MapFile
+     * @param indexToKey  Instance used to convert long indices to key values. This allows for lookup by key
+     * @param recordClass Class of the records in the MapFile
+     * @throws IOException If an error occurs during opening or initialisation
+     */
     public MapFileReader(String path, IndexToKey indexToKey, Class<? extends Writable> recordClass) throws IOException {
 
         this.indexToKey = indexToKey;
@@ -50,29 +58,37 @@ public class MapFileReader<V> implements Closeable {
 
         SequenceFile.Reader.Option[] opts = new SequenceFile.Reader.Option[0];
         reader = new MapFile.Reader(new Path(path), new Configuration(), opts);
-        if(reader.getValueClass() != recordClass){
+        if (reader.getValueClass() != recordClass) {
             throw new UnsupportedOperationException("MapFile record class: " + reader.getValueClass()
                     + ", but got class " + recordClass);
         }
-        try{
-            indexToKey.initialize(reader);
-        } catch (IOException e){
-            throw new RuntimeException(e);
-        }
+        indexToKey.initialize(reader);
     }
 
-    public long numRecords(){
-        try{
+    /**
+     * Determine the total number of records in the map file, using the {@link IndexToKey} instance
+     *
+     * @return  Total number of records and the map file
+     */
+    public long numRecords() {
+        try {
             return indexToKey.getNumRecords(reader);
-        } catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
+    /**
+     * It a single record from the map file for the given index
+     *
+     * @param index Index, between 0 and numRecords()-1
+     * @return Value from the MapFile
+     * @throws IOException If an error occurs during reading
+     */
     public V getRecord(long index) throws IOException {
         WritableComparable key = indexToKey.getKeyForIndex(index);
         Writable value = ReflectionUtils.newInstance(recordClass, null);
-        V v = (V)reader.get(key, value);
+        V v = (V) reader.get(key, value);
         return v;
     }
 

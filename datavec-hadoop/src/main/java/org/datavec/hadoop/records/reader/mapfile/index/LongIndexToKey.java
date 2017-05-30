@@ -24,7 +24,11 @@ import org.datavec.hadoop.records.reader.mapfile.IndexToKey;
 import java.io.IOException;
 
 /**
- * Created by Alex on 29/05/2017.
+ * A default implementation of {@link IndexToKey} that assumes (strictly requires) keys that are
+ * {@link LongWritable} values, where all values are both unique and contiguous (0 to numRecords()-1)<br>
+ * This allows for easy inference of the number of records, and identify mapping between indexes and keys.
+ *
+ * @author Alex Black
  */
 public class LongIndexToKey implements IndexToKey {
 

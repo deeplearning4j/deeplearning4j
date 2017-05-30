@@ -22,14 +22,33 @@ import org.apache.hadoop.io.WritableComparable;
 import java.io.IOException;
 
 /**
- * Created by Alex on 29/05/2017.
+ * An interface to handle Index to key conversion, for use in {@link MapFileReader}
+ *
+ * @author Alex Black
  */
 public interface IndexToKey {
 
+    /**
+     * Initialise the instance
+     *
+     * @param reader The underlying map file reader
+     */
     void initialize(MapFile.Reader reader) throws IOException;
 
+    /**
+     * Get the key for the given index
+     *
+     * @param index 0 to getNumRecords(reader)
+     * @return The key for the given index
+     */
     WritableComparable getKeyForIndex(long index);
 
+    /**
+     * Getter infer the number of records in the given map file using the reader
+     *
+     * @param reader Reader to get the number of records for
+     * @return Number of records in the reader
+     */
     long getNumRecords(MapFile.Reader reader) throws IOException;
 
 }
