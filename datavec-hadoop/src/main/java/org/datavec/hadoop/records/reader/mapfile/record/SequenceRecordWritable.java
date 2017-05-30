@@ -72,6 +72,7 @@ public class SequenceRecordWritable implements Writable {
                 for( int j=0; j<valuesPerStep; j++ ){
                     currStep.add(wf.readWithType(in));
                 }
+                out.add(currStep);
             }
             sequenceRecord = out;
         } else {

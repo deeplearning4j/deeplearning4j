@@ -20,6 +20,8 @@ import com.google.common.io.Files;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Writable;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
@@ -33,20 +35,18 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by Alex on 29/05/2017.
  */
 public class TestMapFileSequenceRecordReader {
 
+    private static File tempDirSeq;
     private static Path seqMapFilePath;
     private static Map<LongWritable,SequenceRecordWritable> seqMap;
 
@@ -62,8 +62,8 @@ public class TestMapFileSequenceRecordReader {
                 SequenceFile.Writer.valueClass(valueClass)
         };
 
-        File tempDir = Files.createTempDir();
-        seqMapFilePath = new Path("file:///" + tempDir.getAbsolutePath());
+        tempDirSeq = Files.createTempDir();
+        seqMapFilePath = new Path("file:///" + tempDirSeq.getAbsolutePath());
 
         MapFile.Writer writer = new MapFile.Writer(c, seqMapFilePath, opts);
 
@@ -105,31 +105,50 @@ public class TestMapFileSequenceRecordReader {
 
     @AfterClass
     public static void destroyMapFiles(){
-
+        tempDirSeq.delete();
+        tempDirSeq = null;
         seqMapFilePath = null;
         seqMap = null;
-
-        //TODO delete directory
 
     }
 
     @Test
     public void testSequenceRecordReader() throws Exception {
-
         SequenceRecordReader seqRR = new MapFileSequenceRecordReader();
         URI uri = seqMapFilePath.toUri();
         InputSplit is = new FileSplit(new File(uri));
-        URI[] uris = is.locations();
         seqRR.initialize(is);
 
         assertTrue(seqRR.hasNext());
         int count = 0;
         while(seqRR.hasNext()){
-            seqRR.sequenceRecord();
+            List<List<org.datavec.api.writable.Writable>> l = seqRR.sequenceRecord();
+
+            assertEquals(seqMap.get(new LongWritable(count)).getSequenceRecord(), l);
+
             count++;
         }
-
         assertEquals(seqMap.size(), count);
+
+        seqRR.close();
+
+        //Try the same thing, but with random order
+        seqRR = new MapFileSequenceRecordReader(new Random(12345));
+        seqRR.initialize(is);
+
+        Field f = MapFileSequenceRecordReader.class.getDeclaredField("order");
+        f.setAccessible(true);
+        int[] order = (int[])f.get(seqRR);
+        assertNotNull(order);
+        int[] expOrder = new int[]{1,2,0};  //Fixed RNG seed -> always this order
+        assertArrayEquals(expOrder, order);
+
+        count = 0;
+        while(seqRR.hasNext()){
+            List<List<org.datavec.api.writable.Writable>> l = seqRR.sequenceRecord();
+            assertEquals(seqMap.get(new LongWritable(expOrder[count])).getSequenceRecord(), l);
+            count++;
+        }
     }
 
 }

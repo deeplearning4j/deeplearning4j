@@ -29,21 +29,22 @@ import org.datavec.api.writable.Writable;
 import org.datavec.hadoop.records.reader.mapfile.IndexToKey;
 import org.datavec.hadoop.records.reader.mapfile.MapFileReader;
 import org.datavec.hadoop.records.reader.mapfile.index.LongIndexToKey;
-import org.datavec.hadoop.records.reader.mapfile.record.RecordCreator;
 import org.datavec.hadoop.records.reader.mapfile.record.SequenceRecordWritable;
-import org.datavec.hadoop.records.reader.mapfile.record.SequenceRecordWritableCreator;
 
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Random;
 
 /**
  * Created by Alex on 29/05/2017.
  */
 public class MapFileSequenceRecordReader implements SequenceRecordReader {
-    private static final RecordCreator recordCreator = new SequenceRecordWritableCreator();
+    private static final Class<? extends org.apache.hadoop.io.Writable> recordClass = SequenceRecordWritable.class;
 
     private final IndexToKey indexToKey;
     private MapFileReader<SequenceRecordWritable> mapFileReader;
@@ -107,7 +108,7 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
             mapFileReader = null;
         }
 
-        this.mapFileReader = new MapFileReader<>(uri.getPath(), indexToKey, recordCreator);
+        this.mapFileReader = new MapFileReader<>(uri.getPath(), indexToKey, recordClass);
         this.numSequences = mapFileReader.numRecords();
 
         if(rng != null){
@@ -131,7 +132,7 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
 
     @Override
     public List<List<Writable>> sequenceRecord() {
-        return nextSequence().getSequenceRecord();
+        return nextSequence(false).getSequenceRecord();
     }
 
     @Override
@@ -141,6 +142,10 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
 
     @Override
     public SequenceRecord nextSequence() {
+        return nextSequence(true);
+    }
+
+    private SequenceRecord nextSequence(boolean withMetadata){
         if(!hasNext()){
             throw new NoSuchElementException();
         }
@@ -159,7 +164,14 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
             throw new RuntimeException(e);
         }
 
-        return new org.datavec.api.records.impl.SequenceRecord(seq.getSequenceRecord(), new RecordMetaDataIndex(currIdx, uri, MapFileSequenceRecordReader.class));  //TODO metadata
+        RecordMetaData meta;
+        if(withMetadata){
+            meta = new RecordMetaDataIndex(currIdx, uri, MapFileSequenceRecordReader.class);
+        } else {
+            meta = null;
+        }
+
+        return new org.datavec.api.records.impl.SequenceRecord(seq.getSequenceRecord(), meta);
     }
 
     @Override

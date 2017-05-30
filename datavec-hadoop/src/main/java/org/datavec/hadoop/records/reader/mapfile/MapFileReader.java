@@ -22,9 +22,9 @@ import org.apache.hadoop.io.MapFile;
 import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
+import org.apache.hadoop.util.ReflectionUtils;
 import org.datavec.hadoop.records.reader.mapfile.index.LongIndexToKey;
-import org.datavec.hadoop.records.reader.mapfile.record.RecordCreator;
-import org.datavec.hadoop.records.reader.mapfile.record.RecordWritableCreator;
+import org.datavec.hadoop.records.reader.mapfile.record.RecordWritable;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -32,28 +32,28 @@ import java.io.IOException;
 /**
  * Created by Alex on 29/05/2017.
  */
-public class MapFileReader<V extends Writable> implements Closeable {
+public class MapFileReader<V> implements Closeable {
 
     private MapFile.Reader reader;
     private IndexToKey indexToKey;
-    private RecordCreator recordCreator;
-
+    private Class<? extends Writable> recordClass;
 
 
     public MapFileReader(String path) throws Exception {
-        this(path, new LongIndexToKey(), new RecordWritableCreator());
+        this(path, new LongIndexToKey(), RecordWritable.class);
     }
 
-    public MapFileReader(String path, IndexToKey indexToKey, RecordCreator recordCreator) throws IOException {
+    public MapFileReader(String path, IndexToKey indexToKey, Class<? extends Writable> recordClass) throws IOException {
 
         this.indexToKey = indexToKey;
-        this.recordCreator = recordCreator;
-
-        Class<? extends WritableComparable> keyClass = indexToKey.getKeyClass();
-        Class<? extends Writable> valueClass = recordCreator.getRecordClass();
+        this.recordClass = recordClass;
 
         SequenceFile.Reader.Option[] opts = new SequenceFile.Reader.Option[0];
         reader = new MapFile.Reader(new Path(path), new Configuration(), opts);
+        if(reader.getValueClass() != recordClass){
+            throw new UnsupportedOperationException("MapFile record class: " + reader.getValueClass()
+                    + ", but got class " + recordClass);
+        }
         try{
             indexToKey.initialize(reader);
         } catch (IOException e){
@@ -70,7 +70,9 @@ public class MapFileReader<V extends Writable> implements Closeable {
     }
 
     public V getRecord(long index) throws IOException {
-        V v = (V)reader.get(indexToKey.getKeyForIndex(index), recordCreator.newRecord());
+        WritableComparable key = indexToKey.getKeyForIndex(index);
+        Writable value = ReflectionUtils.newInstance(recordClass, null);
+        V v = (V)reader.get(key, value);
         return v;
     }
 
