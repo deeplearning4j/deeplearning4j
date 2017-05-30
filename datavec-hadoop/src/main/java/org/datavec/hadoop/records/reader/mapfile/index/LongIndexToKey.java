@@ -18,6 +18,7 @@ package org.datavec.hadoop.records.reader.mapfile.index;
 
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.MapFile;
+import org.apache.hadoop.io.WritableComparable;
 import org.datavec.hadoop.records.reader.mapfile.IndexToKey;
 
 import java.io.IOException;
@@ -26,6 +27,11 @@ import java.io.IOException;
  * Created by Alex on 29/05/2017.
  */
 public class LongIndexToKey implements IndexToKey {
+    @Override
+    public Class<? extends WritableComparable> getKeyClass() {
+        return LongWritable.class;
+    }
+
     @Override
     public void initialize(MapFile.Reader reader) throws IOException {
         //No-op

@@ -23,6 +23,11 @@ import org.apache.hadoop.io.Writable;
  */
 public class SequenceRecordWritableCreator implements RecordCreator {
     @Override
+    public Class<? extends Writable> getRecordClass() {
+        return SequenceRecordWritable.class;
+    }
+
+    @Override
     public Writable newRecord() {
         return new SequenceRecordWritable();
     }

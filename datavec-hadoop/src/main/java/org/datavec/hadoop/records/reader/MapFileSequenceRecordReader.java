@@ -76,18 +76,38 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         URI[] uris = split.locations();
-        if(uris.length != 1){
-            throw new IllegalStateException("Cannot initialize MapFileSequenceRecordReader with more than 1 URI: got "
-                    + Arrays.toString(uris));
+
+        //Check URIs are correct: we expect /data and /index files...
+        if(uris.length == 0){
+            throw new IllegalStateException("Cannot initialize MapFileSequenceRecordReader: could not find data and index files in input split");
         }
-        this.uri = uris[0];
+
+        uri = uris[0];
+        File f = new File(uri);
+        if(!f.isDirectory()){
+            f = f.getParentFile();
+            uri = f.toURI();
+        }
+
+        File indexFile = new File(f, "index");
+        File dataFile = new File(f, "data");
+
+        if(!indexFile.exists()){
+            throw new IOException("Could not find index file at " + indexFile.getAbsolutePath() + " - must have MapFile "
+                    + "index and data files at the input split location");
+        }
+        if(!dataFile.exists()){
+            throw new IOException("Could not find data file at " + dataFile.getAbsolutePath() + " - must have MapFile "
+                    + "index and data files at the input split location");
+        }
+
 
         if(mapFileReader != null){
             mapFileReader.close();
             mapFileReader = null;
         }
 
-        this.mapFileReader = new MapFileReader<>(uris[0].getPath(), indexToKey, recordCreator);
+        this.mapFileReader = new MapFileReader<>(uri.getPath(), indexToKey, recordCreator);
         this.numSequences = mapFileReader.numRecords();
 
         if(rng != null){

@@ -23,6 +23,8 @@ import org.apache.hadoop.io.Writable;
  */
 public interface RecordCreator {
 
+    Class<? extends Writable> getRecordClass();
+
     Writable newRecord();
 
 }

@@ -21,6 +21,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
 import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.split.FileSplit;
+import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
@@ -31,12 +33,14 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Alex on 29/05/2017.
@@ -59,7 +63,7 @@ public class TestMapFileSequenceRecordReader {
         };
 
         File tempDir = Files.createTempDir();
-        seqMapFilePath = new Path(tempDir.toString());
+        seqMapFilePath = new Path("file:///" + tempDir.getAbsolutePath());
 
         MapFile.Writer writer = new MapFile.Writer(c, seqMapFilePath, opts);
 
@@ -113,9 +117,15 @@ public class TestMapFileSequenceRecordReader {
     public void testSequenceRecordReader() throws Exception {
 
         SequenceRecordReader seqRR = new MapFileSequenceRecordReader();
+        URI uri = seqMapFilePath.toUri();
+        InputSplit is = new FileSplit(new File(uri));
+        URI[] uris = is.locations();
+        seqRR.initialize(is);
 
+        assertTrue(seqRR.hasNext());
         int count = 0;
         while(seqRR.hasNext()){
+            seqRR.sequenceRecord();
             count++;
         }
 

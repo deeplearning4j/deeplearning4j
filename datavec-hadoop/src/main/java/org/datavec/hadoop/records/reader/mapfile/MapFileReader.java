@@ -16,8 +16,10 @@
 
 package org.datavec.hadoop.records.reader.mapfile;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.MapFile;
+import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.datavec.hadoop.records.reader.mapfile.index.LongIndexToKey;
@@ -46,7 +48,12 @@ public class MapFileReader<V extends Writable> implements Closeable {
 
         this.indexToKey = indexToKey;
         this.recordCreator = recordCreator;
-        reader = new MapFile.Reader(new Path(path), null, null);
+
+        Class<? extends WritableComparable> keyClass = indexToKey.getKeyClass();
+        Class<? extends Writable> valueClass = recordCreator.getRecordClass();
+
+        SequenceFile.Reader.Option[] opts = new SequenceFile.Reader.Option[0];
+        reader = new MapFile.Reader(new Path(path), new Configuration(), opts);
         try{
             indexToKey.initialize(reader);
         } catch (IOException e){
