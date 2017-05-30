@@ -42,11 +42,16 @@ public class MapFileReader<V extends Writable> implements Closeable {
         this(path, new LongIndexToKey(), new RecordWritableCreator());
     }
 
-    public MapFileReader(String path, IndexToKey indexToKey, RecordCreator recordCreator) throws Exception {
+    public MapFileReader(String path, IndexToKey indexToKey, RecordCreator recordCreator) throws IOException {
 
         this.indexToKey = indexToKey;
         this.recordCreator = recordCreator;
         reader = new MapFile.Reader(new Path(path), null, null);
+        try{
+            indexToKey.initialize(reader);
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
     }
 
     public long numRecords(){

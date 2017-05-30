@@ -24,35 +24,75 @@ import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataIndex;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.util.RandomUtils;
 import org.datavec.api.writable.Writable;
+import org.datavec.hadoop.records.reader.mapfile.IndexToKey;
 import org.datavec.hadoop.records.reader.mapfile.MapFileReader;
 import org.datavec.hadoop.records.reader.mapfile.index.LongIndexToKey;
+import org.datavec.hadoop.records.reader.mapfile.record.RecordCreator;
 import org.datavec.hadoop.records.reader.mapfile.record.SequenceRecordWritable;
 import org.datavec.hadoop.records.reader.mapfile.record.SequenceRecordWritableCreator;
 
 import java.io.DataInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.util.Collection;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
  * Created by Alex on 29/05/2017.
  */
 public class MapFileSequenceRecordReader implements SequenceRecordReader {
+    private static final RecordCreator recordCreator = new SequenceRecordWritableCreator();
 
-    private final MapFileReader<SequenceRecordWritable> mapFileReader;
-    private final long numSequences;
+    private final IndexToKey indexToKey;
+    private MapFileReader<SequenceRecordWritable> mapFileReader;
+    private URI uri;
+
+    private long numSequences;
     private long position;
+    private Random rng;
+    private int[] order;
 
-    public MapFileSequenceRecordReader(String path) throws Exception {
-        this(new MapFileReader(path, new LongIndexToKey(), new SequenceRecordWritableCreator()));
+
+    public MapFileSequenceRecordReader() throws Exception {
+        this(new LongIndexToKey(), null);
     }
 
-    public MapFileSequenceRecordReader(MapFileReader mapFileReader){
-        this.mapFileReader = mapFileReader;
+    public MapFileSequenceRecordReader(IndexToKey indexToKey, Random rng){
+        this.indexToKey = indexToKey;
+        this.rng = rng;
+    }
+
+    @Override
+    public void initialize(InputSplit split) throws IOException, InterruptedException {
+        initialize(null, split);
+    }
+
+    @Override
+    public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
+        URI[] uris = split.locations();
+        if(uris.length != 1){
+            throw new IllegalStateException("Cannot initialize MapFileSequenceRecordReader with more than 1 URI: got "
+                    + Arrays.toString(uris));
+        }
+        this.uri = uris[0];
+
+        if(mapFileReader != null){
+            mapFileReader.close();
+            mapFileReader = null;
+        }
+
+        this.mapFileReader = new MapFileReader<>(uris[0].getPath(), indexToKey, recordCreator);
         this.numSequences = mapFileReader.numRecords();
+
+        if(rng != null){
+            order = new int[(int)numSequences];
+            for( int i=0; i<order.length; i++ ){
+                order[i] = i;
+            }
+            RandomUtils.shuffleInPlace(order, rng);
+        }
     }
 
     @Override
@@ -82,14 +122,20 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
         }
 
         SequenceRecordWritable seq;
-        long currIdx = position++;
+        long currIdx;
+        if(order != null){
+            currIdx = order[(int)position++];
+        } else {
+            currIdx = position++;
+        }
+
         try{
             seq = mapFileReader.getRecord(currIdx);
         } catch (IOException e){
             throw new RuntimeException(e);
         }
 
-        return new org.datavec.api.records.impl.SequenceRecord(seq.getSequenceRecord(), new RecordMetaDataIndex(currIdx, null, MapFileSequenceRecordReader.class));  //TODO metadata
+        return new org.datavec.api.records.impl.SequenceRecord(seq.getSequenceRecord(), new RecordMetaDataIndex(currIdx, uri, MapFileSequenceRecordReader.class));  //TODO metadata
     }
 
     @Override
@@ -100,16 +146,6 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
     @Override
     public List<SequenceRecord> loadSequenceFromMetaData(List<RecordMetaData> recordMetaDatas) throws IOException {
         throw new UnsupportedOperationException("Not yet implemented");
-    }
-
-    @Override
-    public void initialize(InputSplit split) throws IOException, InterruptedException {
-
-    }
-
-    @Override
-    public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
-
     }
 
     @Override
@@ -140,6 +176,9 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
     @Override
     public void reset() {
         position = 0;
+        if(order != null){
+            RandomUtils.shuffleInPlace(order, rng);
+        }
     }
 
     @Override
