@@ -51,10 +51,6 @@ import java.text.StringCharacterIterator;
  * string.
  */
 public class Text extends BinaryComparable implements WritableComparable<BinaryComparable> {
-    public static final short WRITABLE_TYPE = 8;
-    static {
-        WritableFactory.registerWritableType(WRITABLE_TYPE, Text.class);
-    }
 
     private static ThreadLocal<CharsetEncoder> ENCODER_FACTORY = new ThreadLocal<CharsetEncoder>() {
         protected CharsetEncoder initialValue() {
@@ -276,7 +272,7 @@ public class Text extends BinaryComparable implements WritableComparable<BinaryC
 
     @Override
     public void writeType(DataOutput out) throws IOException {
-        out.writeShort(WRITABLE_TYPE);
+        out.writeShort(WritableType.Text.typeIdx());
     }
 
     /** Skips over one Text in the input. */

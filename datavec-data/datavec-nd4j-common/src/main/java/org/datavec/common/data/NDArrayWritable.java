@@ -25,6 +25,8 @@ import java.nio.IntBuffer;
 import org.datavec.api.io.WritableComparable;
 import org.datavec.api.io.WritableComparator;
 import org.datavec.api.writable.ArrayWritable;
+import org.datavec.api.writable.WritableFactory;
+import org.datavec.api.writable.WritableType;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -35,6 +37,9 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author saudet
  */
 public class NDArrayWritable extends ArrayWritable implements WritableComparable {
+    static {
+        WritableFactory.getInstance().registerWritableType(WritableType.NDArray.typeIdx(), NDArrayWritable.class);
+    }
     private INDArray array = null;
 
     public NDArrayWritable() {}
@@ -72,6 +77,11 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
         } else {
             throw new UnsupportedOperationException("Unsupported data type: " + type);
         }
+    }
+
+    @Override
+    public void writeType(DataOutput out) throws IOException {
+        out.writeShort(WritableType.NDArray.typeIdx());
     }
 
     /** Serialize array data linearly. */

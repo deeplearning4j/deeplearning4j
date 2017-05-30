@@ -29,10 +29,6 @@ import java.io.IOException;
  * Writable for Double values.
  */
 public class DoubleWritable implements WritableComparable {
-    public static final short WRITABLE_TYPE = 3;
-    static {
-        WritableFactory.registerWritableType(WRITABLE_TYPE, DoubleWritable.class);
-    }
 
     private double value = 0.0;
 
@@ -50,7 +46,7 @@ public class DoubleWritable implements WritableComparable {
 
     @Override
     public void writeType(DataOutput out) throws IOException {
-        out.writeShort(WRITABLE_TYPE);
+        out.writeShort(WritableType.Double.typeIdx());
     }
 
     public void write(DataOutput out) throws IOException {

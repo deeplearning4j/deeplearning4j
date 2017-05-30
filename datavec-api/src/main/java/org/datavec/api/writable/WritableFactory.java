@@ -28,12 +28,25 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class WritableFactory {
 
-    private static Map<Short, Class<? extends Writable>> map = new ConcurrentHashMap<>();
-    private static Map<Short, Constructor<? extends Writable>> constructorMap = new ConcurrentHashMap<>();
+    private static WritableFactory INSTANCE = new WritableFactory();
 
-    private WritableFactory(){ }
+    private Map<Short, Class<? extends Writable>> map = new ConcurrentHashMap<>();
+    private Map<Short, Constructor<? extends Writable>> constructorMap = new ConcurrentHashMap<>();
 
-    public static synchronized void registerWritableType(short writableTypeKey, Class<? extends Writable> writableClass){
+    private WritableFactory(){
+
+        for(WritableType wt : WritableType.values()){
+            if(wt.isCoreWritable()){
+                registerWritableType((short)wt.ordinal(), wt.getWritableClass());
+            }
+        }
+    }
+
+    public static WritableFactory getInstance(){
+        return INSTANCE;
+    }
+
+    public void registerWritableType(short writableTypeKey, Class<? extends Writable> writableClass){
         if (map.containsKey(writableTypeKey)) {
             throw new UnsupportedOperationException("Key " + writableTypeKey + " is already registered to type "
                     + map.get(writableTypeKey) + " and cannot be registered to " + writableClass);
@@ -50,7 +63,7 @@ public class WritableFactory {
         constructorMap.put(writableTypeKey, c);
     }
 
-    public static Writable newInstance(short writableTypeKey){
+    public Writable newWritable(short writableTypeKey){
         Constructor<? extends Writable> c = constructorMap.get(writableTypeKey);
         if(c == null){
             throw new IllegalStateException("Unknown writable key: " + writableTypeKey);
@@ -62,13 +75,13 @@ public class WritableFactory {
         }
     }
 
-    public static void writeWithType(Writable w, DataOutput dataOutput) throws IOException {
+    public void writeWithType(Writable w, DataOutput dataOutput) throws IOException {
         w.writeType(dataOutput);
         w.write(dataOutput);
     }
 
-    public static Writable readWithType(DataInput dataInput) throws IOException {
-        Writable w = newInstance(dataInput.readShort());
+    public Writable readWithType(DataInput dataInput) throws IOException {
+        Writable w = newWritable(dataInput.readShort());
         w.readFields(dataInput);
         return  w;
     }

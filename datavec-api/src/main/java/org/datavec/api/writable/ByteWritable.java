@@ -25,10 +25,6 @@ import java.io.*;
 
 /** A WritableComparable for a single byte. */
 public class ByteWritable implements WritableComparable {
-    public static final short WRITABLE_TYPE = 2;
-    static {
-        WritableFactory.registerWritableType(WRITABLE_TYPE, ByteWritable.class);
-    }
 
     private byte value;
 
@@ -54,7 +50,7 @@ public class ByteWritable implements WritableComparable {
 
     @Override
     public void writeType(DataOutput out) throws IOException {
-        out.writeShort(WRITABLE_TYPE);
+        out.writeShort(WritableType.Byte.typeIdx());
     }
 
     public void write(DataOutput out) throws IOException {
