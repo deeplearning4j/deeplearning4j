@@ -362,9 +362,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         z = Shape.newShapeNoCopy(z, new int[] {outW, outH, miniBatch, outDepth}, true);
         z = z.permute(2, 3, 1, 0);
 
-        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)
-                && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager()
-                .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)) {
+        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceCache)) {
 
             try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
                     .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
@@ -384,12 +382,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         INDArray z = preOutput(training);
 
-
-        if (training) {
+        // we do cache only if cache workspace exists. Skip otherwise
+        if (training && Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceCache)) {
             try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
                     .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
                 preOutput = z.unsafeDuplication();
-                Nd4j.getExecutioner().commit();
             }
         }
 
