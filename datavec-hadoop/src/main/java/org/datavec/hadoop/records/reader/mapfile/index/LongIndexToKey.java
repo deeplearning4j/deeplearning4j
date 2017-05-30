@@ -27,6 +27,11 @@ import java.io.IOException;
  */
 public class LongIndexToKey implements IndexToKey {
     @Override
+    public void initialize(MapFile.Reader reader) throws IOException {
+        //No-op
+    }
+
+    @Override
     public LongWritable getKeyForIndex(long index) {
         return new LongWritable(index);
     }

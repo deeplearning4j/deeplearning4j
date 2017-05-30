@@ -26,6 +26,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -39,6 +40,7 @@ public class SequenceRecordWritable implements Writable {
 
     @Override
     public void write(DataOutput out) throws IOException {
+        WritableFactory wf = WritableFactory.getInstance();
         //Assumption: each step in each record is the same size
         out.writeInt(sequenceRecord.size());
         if(sequenceRecord.size() > 0){
@@ -51,7 +53,7 @@ public class SequenceRecordWritable implements Writable {
                             + " vs. " + step.size());
                 }
                 for(org.datavec.api.writable.Writable w : step){
-                    WritableFactory.writeWithType(w, out);
+                    wf.writeWithType(w, out);
                 }
             }
         }
@@ -59,6 +61,7 @@ public class SequenceRecordWritable implements Writable {
 
     @Override
     public void readFields(DataInput in) throws IOException {
+        WritableFactory wf = WritableFactory.getInstance();
         int numSteps = in.readInt();
         if(numSteps > 0){
             int valuesPerStep = in.readInt();
@@ -67,9 +70,12 @@ public class SequenceRecordWritable implements Writable {
             for( int i=0; i<numSteps; i++ ){
                 List<org.datavec.api.writable.Writable> currStep = new ArrayList<>(valuesPerStep);
                 for( int j=0; j<valuesPerStep; j++ ){
-                    currStep.add(WritableFactory.readWithType(in));
+                    currStep.add(wf.readWithType(in));
                 }
             }
+            sequenceRecord = out;
+        } else {
+            sequenceRecord = Collections.emptyList();
         }
     }
 }

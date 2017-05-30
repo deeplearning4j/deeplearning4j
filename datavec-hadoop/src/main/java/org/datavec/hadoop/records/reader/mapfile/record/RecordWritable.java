@@ -39,19 +39,21 @@ public class RecordWritable implements Writable {
 
     @Override
     public void write(DataOutput out) throws IOException {
+        WritableFactory wf = WritableFactory.getInstance();
         out.writeInt(record.size());
         for(org.datavec.api.writable.Writable w : record){
-            WritableFactory.writeWithType(w, out);
+            wf.writeWithType(w, out);
         }
     }
 
     @Override
     public void readFields(DataInput in) throws IOException {
+        WritableFactory wf = WritableFactory.getInstance();
         int numRecords = in.readInt();
 
         List<org.datavec.api.writable.Writable> out = new ArrayList<>(numRecords);
         for( int i=0; i<numRecords; i++ ){
-            out.add(WritableFactory.readWithType(in));
+            out.add(wf.readWithType(in));
         }
     }
 }

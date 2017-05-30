@@ -59,6 +59,10 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
         this(new LongIndexToKey(), null);
     }
 
+    public MapFileSequenceRecordReader(Random rng){
+        this(new LongIndexToKey(), rng);
+    }
+
     public MapFileSequenceRecordReader(IndexToKey indexToKey, Random rng){
         this.indexToKey = indexToKey;
         this.rng = rng;
