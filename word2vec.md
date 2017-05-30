@@ -409,7 +409,7 @@ And the most popular model used so far is Google News model. There's 3M words, a
 
 *Q: I did everything you said and the results still don't look right.*
 
-*A:* If you are using Ubuntu, the serialized data may not be getting loaded properly. This is a problem with Ubuntu. We recommend testing this version of Wordvec on another version of Linux.
+*A:* Make sure you're not hitting into normalization issues. Some tasks, like wordsNearest(), use normalized weights by default, and others require non-normalized weights. Pay attention to this difference.
 
 
 
