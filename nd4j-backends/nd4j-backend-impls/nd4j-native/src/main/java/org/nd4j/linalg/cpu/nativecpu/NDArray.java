@@ -364,12 +364,17 @@ public class NDArray extends BaseNDArray {
      * @return
      */
     @Override
-    public synchronized INDArray unsafeDuplication() {
+    public INDArray unsafeDuplication() {
         INDArray ret = Nd4j.createUninitialized(this.shape(), this.ordering());
 
         Pointer.memcpy(ret.data().addressPointer(), this.data().addressPointer(),
                         this.data().length() * this.data().getElementSize());
 
         return ret;
+    }
+
+    @Override
+    public INDArray unsafeDuplication(boolean blocking) {
+        return unsafeDuplication();
     }
 }

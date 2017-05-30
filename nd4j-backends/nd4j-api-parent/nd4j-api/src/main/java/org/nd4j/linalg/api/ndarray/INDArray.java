@@ -2370,6 +2370,9 @@ public interface INDArray extends Serializable {
 
     INDArray unsafeDuplication();
 
+
+    INDArray unsafeDuplication(boolean blocking);
+
     /**
      * Remainder operator
      * @param denominator the denominator
