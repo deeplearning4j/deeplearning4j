@@ -27,10 +27,6 @@ import java.io.IOException;
  * Created by Alex on 29/05/2017.
  */
 public class LongIndexToKey implements IndexToKey {
-    @Override
-    public Class<? extends WritableComparable> getKeyClass() {
-        return LongWritable.class;
-    }
 
     @Override
     public void initialize(MapFile.Reader reader) throws IOException {

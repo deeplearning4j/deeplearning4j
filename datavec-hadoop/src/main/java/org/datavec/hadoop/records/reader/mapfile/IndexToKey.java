@@ -26,8 +26,6 @@ import java.io.IOException;
  */
 public interface IndexToKey {
 
-    Class<? extends WritableComparable> getKeyClass();
-
     void initialize(MapFile.Reader reader) throws IOException;
 
     WritableComparable getKeyForIndex(long index);

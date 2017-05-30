@@ -51,9 +51,9 @@ public class RecordWritable implements Writable {
         WritableFactory wf = WritableFactory.getInstance();
         int numRecords = in.readInt();
 
-        List<org.datavec.api.writable.Writable> out = new ArrayList<>(numRecords);
+        record = new ArrayList<>(numRecords);
         for( int i=0; i<numRecords; i++ ){
-            out.add(wf.readWithType(in));
+            record.add(wf.readWithType(in));
         }
     }
 }

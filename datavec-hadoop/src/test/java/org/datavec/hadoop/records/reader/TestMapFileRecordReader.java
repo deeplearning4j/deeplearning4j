@@ -22,12 +22,16 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Writable;
+import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
+import org.datavec.hadoop.records.reader.mapfile.MapFileRecordReader;
+import org.datavec.hadoop.records.reader.mapfile.MapFileSequenceRecordReader;
+import org.datavec.hadoop.records.reader.mapfile.record.RecordWritable;
 import org.datavec.hadoop.records.reader.mapfile.record.SequenceRecordWritable;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -44,14 +48,19 @@ import static org.junit.Assert.*;
 /**
  * Created by Alex on 29/05/2017.
  */
-public class TestMapFileSequenceRecordReader {
+public class TestMapFileRecordReader {
 
     private static File tempDirSeq;
+    private static File tempDir;
     private static Path seqMapFilePath;
-    private static Map<LongWritable,SequenceRecordWritable> seqMap;
+    private static Path mapFilePath;
+    private static Map<LongWritable, SequenceRecordWritable> seqMap;
+    private static Map<LongWritable, RecordWritable> recordMap;
 
     @BeforeClass
     public static void buildMapFiles() throws IOException {
+
+        //----- Sequence RR setup -----
 
         Configuration c = new Configuration();
         Class<? extends WritableComparable> keyClass = LongWritable.class;
@@ -91,25 +100,64 @@ public class TestMapFileSequenceRecordReader {
 
 
         //Need to write in order
-        for( int i=0; i<=2; i++ ){
+        for (int i = 0; i <= 2; i++) {
             LongWritable key = new LongWritable(i);
             SequenceRecordWritable value = seqMap.get(key);
 
             writer.append(key, value);
         }
-
         writer.close();
 
+
+        //----- Standard RR setup -----
+
+        valueClass = RecordWritable.class;
+
+        opts = new SequenceFile.Writer.Option[]{
+                MapFile.Writer.keyClass(keyClass),
+                SequenceFile.Writer.valueClass(valueClass)
+        };
+
+        tempDir = Files.createTempDir();
+        mapFilePath = new Path("file:///" + tempDir.getAbsolutePath());
+
+        writer = new MapFile.Writer(c, mapFilePath, opts);
+
+        recordMap = new HashMap<>();
+        recordMap.put(new LongWritable(0), new RecordWritable(
+                Arrays.<org.datavec.api.writable.Writable>asList(new Text("zero"), new IntWritable(0), new DoubleWritable(0))));
+
+        recordMap.put(new LongWritable(1), new RecordWritable(
+                Arrays.<org.datavec.api.writable.Writable>asList(new Text("one"), new IntWritable(11), new DoubleWritable(11.0)))
+        );
+
+        recordMap.put(new LongWritable(2), new RecordWritable(
+                Arrays.<org.datavec.api.writable.Writable>asList(new Text("two"), new IntWritable(22), new DoubleWritable(22.0)))
+        );
+
+
+        //Need to write in order
+        for (int i = 0; i <= 2; i++) {
+            LongWritable key = new LongWritable(i);
+            RecordWritable value = recordMap.get(key);
+
+            writer.append(key, value);
+        }
+        writer.close();
 
     }
 
     @AfterClass
-    public static void destroyMapFiles(){
+    public static void destroyMapFiles() {
         tempDirSeq.delete();
         tempDirSeq = null;
         seqMapFilePath = null;
         seqMap = null;
 
+        tempDir.delete();
+        tempDir = null;
+        mapFilePath = null;
+        seqMap = null;
     }
 
     @Test
@@ -121,7 +169,7 @@ public class TestMapFileSequenceRecordReader {
 
         assertTrue(seqRR.hasNext());
         int count = 0;
-        while(seqRR.hasNext()){
+        while (seqRR.hasNext()) {
             List<List<org.datavec.api.writable.Writable>> l = seqRR.sequenceRecord();
 
             assertEquals(seqMap.get(new LongWritable(count)).getSequenceRecord(), l);
@@ -138,17 +186,55 @@ public class TestMapFileSequenceRecordReader {
 
         Field f = MapFileSequenceRecordReader.class.getDeclaredField("order");
         f.setAccessible(true);
-        int[] order = (int[])f.get(seqRR);
+        int[] order = (int[]) f.get(seqRR);
         assertNotNull(order);
-        int[] expOrder = new int[]{1,2,0};  //Fixed RNG seed -> always this order
+        int[] expOrder = new int[]{1, 2, 0};  //Fixed RNG seed -> always this order
         assertArrayEquals(expOrder, order);
 
         count = 0;
-        while(seqRR.hasNext()){
+        while (seqRR.hasNext()) {
             List<List<org.datavec.api.writable.Writable>> l = seqRR.sequenceRecord();
             assertEquals(seqMap.get(new LongWritable(expOrder[count])).getSequenceRecord(), l);
             count++;
         }
     }
 
+    @Test
+    public void testRecordReader() throws Exception {
+        RecordReader rr = new MapFileRecordReader();
+        URI uri = mapFilePath.toUri();
+        InputSplit is = new FileSplit(new File(uri));
+        rr.initialize(is);
+
+        assertTrue(rr.hasNext());
+        int count = 0;
+        while (rr.hasNext()) {
+            List<org.datavec.api.writable.Writable> l = rr.next();
+
+            assertEquals(recordMap.get(new LongWritable(count)).getRecord(), l);
+
+            count++;
+        }
+        assertEquals(recordMap.size(), count);
+
+        rr.close();
+
+        //Try the same thing, but with random order
+        rr = new MapFileRecordReader(new Random(12345));
+        rr.initialize(is);
+
+        Field f = MapFileRecordReader.class.getDeclaredField("order");
+        f.setAccessible(true);
+        int[] order = (int[]) f.get(rr);
+        assertNotNull(order);
+        int[] expOrder = new int[]{1, 2, 0};  //Fixed RNG seed -> always this order
+        assertArrayEquals(expOrder, order);
+
+        count = 0;
+        while (rr.hasNext()) {
+            List<org.datavec.api.writable.Writable> l = rr.next();
+            assertEquals(recordMap.get(new LongWritable(expOrder[count])).getRecord(), l);
+            count++;
+        }
+    }
 }
