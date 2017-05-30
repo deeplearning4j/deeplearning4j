@@ -116,6 +116,22 @@
         </dependency>
 
         <dependency>
+            <groupId>com.clearspring.analytics</groupId>
+            <artifactId>stream</artifactId>
+            <version>${stream.analytics.version}</version>
+        </dependency>
+
+        <!-- For map/sequence file integrations -->
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-hadoop</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+
+        <!-- Test scope dependencies -->
+
+        <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-data-image</artifactId>
             <version>${project.parent.version}</version>
@@ -141,12 +157,6 @@
             <artifactId>nd4j-native</artifactId>
             <version>${nd4j.version}</version>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.clearspring.analytics</groupId>
-            <artifactId>stream</artifactId>
-            <version>${stream.analytics.version}</version>
         </dependency>
     </dependencies>
 
