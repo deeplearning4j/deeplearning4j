@@ -27,7 +27,8 @@ import static org.bytedeco.javacpp.opencv_core.Size;
 import static org.bytedeco.javacpp.opencv_imgproc.resize;
 
 /**
- * Scales images deterministically or randomly.
+ * ScaleImageTransform is aim to scale by a certain <b>random factor</b>,
+ * <b>not</b> the <b>final size</b> of the image.
  *
  * @author saudet
  */

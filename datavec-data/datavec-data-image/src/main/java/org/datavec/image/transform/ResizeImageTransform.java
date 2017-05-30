@@ -26,7 +26,11 @@ import java.util.Random;
 import static org.bytedeco.javacpp.opencv_imgproc.resize;
 
 /**
- * Resize image transform is suited to force the same image size for whole pipeline.
+ * ResizeImageTransform is suited to force the <b>same image size</b> for whole pipeline
+ * and it doesn't use any random factor for width and height.
+ *
+ * If you need to use random scales to scale or crop the images,
+ * these links might be helpful {@link ScaleImageTransform} or {@link ScaleImageTransform}
  *
  * @author raver119@gmail.com
  */
