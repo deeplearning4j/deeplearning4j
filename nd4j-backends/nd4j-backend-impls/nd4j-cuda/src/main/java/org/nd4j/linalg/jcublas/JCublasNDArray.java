@@ -20,6 +20,7 @@
 package org.nd4j.linalg.jcublas;
 
 
+import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -495,8 +496,27 @@ public class JCublasNDArray extends BaseNDArray {
         AtomicAllocator allocator = AtomicAllocator.getInstance();
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
-        allocator.memcpyDevice(ret.data(), allocator.getAllocationPoint(this.data).getDevicePointer(),
-                        this.data.length() * this.data().getElementSize(), 0, context);
+        AllocationPoint srcPoint = allocator.getAllocationPoint(this);
+        AllocationPoint dstPoint = allocator.getAllocationPoint(ret);
+
+        if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE && srcPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
+            // d2d copy
+            NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(dstPoint.getDevicePointer(), srcPoint.getDevicePointer(), this.length * this.data.getElementSize(), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream());
+            dstPoint.tickDeviceWrite();
+        } else if (dstPoint.getAllocationStatus() == AllocationStatus.HOST && srcPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(dstPoint.getHostPointer(), srcPoint.getDevicePointer(), this.length * this.data.getElementSize(), CudaConstants.cudaMemcpyDeviceToHost, context.getOldStream());
+            dstPoint.tickHostWrite();
+        } else if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE && srcPoint.getAllocationStatus() == AllocationStatus.HOST) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(dstPoint.getDevicePointer(), srcPoint.getHostPointer(), this.length * this.data.getElementSize(), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream());
+            dstPoint.tickDeviceWrite();
+        } else {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(dstPoint.getHostPointer(), srcPoint.getHostPointer(), this.length * this.data.getElementSize(), CudaConstants.cudaMemcpyHostToHost, context.getOldStream());
+            dstPoint.tickHostWrite();
+        }
+
+
+        //allocator.memcpyDevice(ret.data(), allocator.getAllocationPoint(this.data).getDevicePointer(), this.data.length() * this.data().getElementSize(), 0, context);
+
         context.syncOldStream();
 
         return ret;

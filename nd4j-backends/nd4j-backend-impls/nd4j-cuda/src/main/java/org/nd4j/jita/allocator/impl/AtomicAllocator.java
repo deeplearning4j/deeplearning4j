@@ -432,10 +432,14 @@ public class AtomicAllocator implements Allocator {
             PagedPointer ptrDev = workspace.alloc(reqMem, MemoryKind.DEVICE, requiredMemory.getDataType(), initialize);
             PagedPointer ptrHost = workspace.alloc(reqMem, MemoryKind.HOST, requiredMemory.getDataType(), initialize);
 
-            pair.setDevicePointer(ptrDev);
             pair.setHostPointer(ptrHost);
-
-            point.setAllocationStatus(AllocationStatus.DEVICE);
+            if (ptrDev != null) {
+                pair.setDevicePointer(ptrDev);
+                point.setAllocationStatus(AllocationStatus.DEVICE);
+            } else {
+                pair.setDevicePointer(ptrHost);
+                point.setAllocationStatus(AllocationStatus.HOST);
+            }
 
 
             //if (!ptrDev.isLeaked())
