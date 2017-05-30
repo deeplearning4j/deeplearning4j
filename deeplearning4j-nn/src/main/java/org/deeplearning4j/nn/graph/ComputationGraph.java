@@ -101,9 +101,9 @@ public class ComputationGraph implements Serializable, Model {
     @Setter
     private boolean initDone = false;
 
+    public final static String workspaceCache = "LOOP_CACHE";
     public final static String workspaceExternal = "LOOP_EXTERNAL";
     public final static String workspaceFeedForward = "LOOP_FF";
-    public final static String workspaceBackProp = "LOOP_BP";
     public final static String workspaceTBPTT = "LOOP_TBPTT";
     public final static String workspaceLSTM = "LOOP_LSTM";
 
@@ -125,6 +125,10 @@ public class ComputationGraph implements Serializable, Model {
     public final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
                     .overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT).cyclesBeforeInitialization(3)
                     .policySpill(SpillPolicy.REALLOCATE).policyLearning(LearningPolicy.OVER_TIME).build();
+
+    public final static WorkspaceConfiguration workspaceConfigurationCache = WorkspaceConfiguration.builder()
+            .overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT).cyclesBeforeInitialization(3)
+            .policySpill(SpillPolicy.REALLOCATE).policyLearning(LearningPolicy.OVER_TIME).build();
 
     protected ThreadLocal<Long> lastEtlTime = new ThreadLocal<>();
 
@@ -803,10 +807,8 @@ public class ComputationGraph implements Serializable, Model {
             pretrain(dataSetIterator);
         }
 
-        MemoryWorkspace workspace =
-                        configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                                                        workspaceConfigurationExternal, workspaceExternal);
+        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
+        MemoryWorkspace cache = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationCache, workspaceCache);
 
         if (configuration.isBackprop()) {
             update(TaskUtils.buildTask(dataSetIterator));
@@ -847,8 +849,10 @@ public class ComputationGraph implements Serializable, Model {
                         }
                     }
 
-                    try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                        solver.optimize();
+                    try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
+                        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                            solver.optimize();
+                        }
                     }
                 }
 
@@ -913,6 +917,8 @@ public class ComputationGraph implements Serializable, Model {
                                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                                                         workspaceConfigurationExternal, workspaceExternal);
 
+        MemoryWorkspace cache = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationCache, workspaceCache);
+
         if (configuration.isBackprop()) {
 
             long time1 = System.currentTimeMillis();
@@ -946,8 +952,10 @@ public class ComputationGraph implements Serializable, Model {
                         }
                     }
 
-                    try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                        solver.optimize();
+                    try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
+                        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                            solver.optimize();
+                        }
                     }
 
                     if (hasMaskArrays) {
@@ -1037,11 +1045,8 @@ public class ComputationGraph implements Serializable, Model {
             pretrain(iter);
         }
 
-        MemoryWorkspace workspace =
-                        configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
-                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
-                                                        workspaceConfigurationExternal, workspaceExternal);
-
+        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
+        MemoryWorkspace cache = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationCache, workspaceCache);
 
         if (configuration.isBackprop()) {
             if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
@@ -1053,8 +1058,10 @@ public class ComputationGraph implements Serializable, Model {
                     }
                 }
 
-                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                    solver.optimize();
+                try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
+                    try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                        solver.optimize();
+                    }
                 }
             }
         }

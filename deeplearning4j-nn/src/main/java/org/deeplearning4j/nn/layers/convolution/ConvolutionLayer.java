@@ -49,6 +49,7 @@ import java.util.Map;
 public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.ConvolutionLayer> {
     protected static final Logger log = LoggerFactory.getLogger(ConvolutionLayer.class);
 
+    protected INDArray i2d;
     protected ConvolutionHelper helper = null;
     protected ConvolutionMode convolutionMode;
 
@@ -310,14 +311,19 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
 
         if (helper != null) {
-            if (preOutput != null && forBackprop)
+            if (preOutput != null && forBackprop) {
                 return new Pair<>(preOutput, null);
+            }
 
             INDArray ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(),
                             layerConf().getCudnnFwdAlgo(), convolutionMode);
             if (ret != null) {
                 return new Pair<>(ret,null);
             }
+        }
+
+        if (preOutput != null && i2d != null && forBackprop) {
+            return new Pair<>(preOutput, i2d);
         }
 
         //im2col in the required order: want [outW,outH,miniBatch,depthIn,kH,kW], but need to input [miniBatch,depth,kH,kW,outH,outW] given the current im2col implementation
@@ -355,6 +361,17 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //Now, reshape to [outW,outH,miniBatch,outDepth], and permute to have correct output order: [miniBath,outDepth,outH,outW];
         z = Shape.newShapeNoCopy(z, new int[] {outW, outH, miniBatch, outDepth}, true);
         z = z.permute(2, 3, 1, 0);
+
+        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)
+                && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager()
+                .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)) {
+
+            try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
+                    .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
+                i2d = im2col2d.unsafeDuplication();
+            }
+        }
+
         return new Pair<>(z, forBackprop ? im2col2d : null);
     }
 
@@ -367,11 +384,12 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         INDArray z = preOutput(training);
 
+
         if (training) {
             try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                    .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
-                //preOutput = z.unsafeDuplication();
-                //Nd4j.getExecutioner().commit();
+                    .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
+                preOutput = z.unsafeDuplication();
+                Nd4j.getExecutioner().commit();
             }
         }
 

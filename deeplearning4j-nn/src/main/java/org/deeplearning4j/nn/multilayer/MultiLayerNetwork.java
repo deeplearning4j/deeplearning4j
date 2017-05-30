@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.FrozenLayer;
 import org.deeplearning4j.nn.updater.MultiLayerUpdater;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
@@ -69,6 +70,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
+
+import static org.deeplearning4j.nn.graph.ComputationGraph.workspaceConfigurationCache;
 
 
 /**
@@ -1073,6 +1076,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
 
         MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace cache = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceConfigurationCache, ComputationGraph.workspaceCache);
 
         if (layerWiseConfigurations.isBackprop()) {
             update(TaskUtils.buildTask(iter));
@@ -1111,8 +1115,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                         }
                     }
 
-                    try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                        solver.optimize();
+                    try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
+                        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                            solver.optimize();
+                        }
                     }
                 }
 
@@ -1603,6 +1609,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
         MemoryWorkspace workspace = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
 
+        MemoryWorkspace cache = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceConfigurationCache, ComputationGraph.workspaceCache);
+
         if (layerWiseConfigurations.isBackprop()) {
             if (layerWiseConfigurations.getBackpropType() == BackpropType.TruncatedBPTT) {
                 doTruncatedBPTT(features, labels, featuresMask, labelsMask);
@@ -1612,8 +1620,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                         solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
                     }
                 }
-                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                    solver.optimize();
+
+                try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
+                    try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                        solver.optimize();
+                    }
                 }
             }
         }
@@ -2684,7 +2695,6 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      * Perform evaluation using an arbitrary IEvaluation instance.
      *
      * @param iterator   data to evaluate on
-     * @param evaluation IEvaluation instance to perform evaluation with
      */
     public <T extends IEvaluation> T[] doEvaluation(DataSetIterator iterator, T... evaluations) {
         if (!iterator.hasNext() && iterator.resetSupported()) {
