@@ -138,6 +138,37 @@ __device__ inline void encoderKernelP2Generic(void *dx, int *offsets, Nd4jIndex 
 	}
 }
 
+/*
+*   This kernel handles decode from sparse threshold array, to dense array
+ *
+ *   PLEASE NOTE: Z is expected to be memset to 0
+*/
+template<typename T>
+__device__ inline void decoderKernelGeneric(void *dx, Nd4jIndex N, void *dz) {
+    int *x = reinterpret_cast<int *> (dx);
+    T *z = reinterpret_cast<T *> (dz);
+
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    __shared__ float threshold;
+    __shared__ int limit;
+
+    FloatBits fb;
+    if (threadIdx.x == 0) {
+        limit = z[0];
+        fb.i_ = z[2];
+        threshold = fb.f_;
+    }
+    __syncthreads();
+
+    for (int e = tid; e < limit; e += blockDim.x * gridDim.x) {
+        int el = x[e+3];
+        int ael = nd4j::math::nd4j_abs<int>(el) - 1;
+
+        // TODO: investigate, if += would work better here, as in "decoded accumulation"
+        z[ael] = el > 0 ? threshold : -threshold;
+    }
+}
+
 
 extern "C" __global__ void encoderKernelP1Float(void *dx, Nd4jIndex N, void *dz) {
     encoderKernelP1Generic<float>(dx, N, dz);
