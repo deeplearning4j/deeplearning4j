@@ -4686,7 +4686,7 @@ Nd4jPointer NativeOps::createContext() {
 }
 
 Nd4jPointer NativeOps::createStream() {
-	Nd4jPointer nativeStream = 0;
+	Nd4jPointer nativeStream = (Nd4jPointer) malloc(sizeof(cudaStream_t));
 	cudaError_t result = cudaStreamCreate((cudaStream_t *) &nativeStream);
 	checkCudaErrors(result);
 	if (result != 0)
@@ -4695,7 +4695,7 @@ Nd4jPointer NativeOps::createStream() {
 }
 
 Nd4jPointer NativeOps::createEvent() {
-	Nd4jPointer nativeEvent= 0;
+	Nd4jPointer nativeEvent= (Nd4jPointer) malloc(sizeof(cudaEvent_t));
 	cudaError_t result = cudaEventCreateWithFlags((cudaEvent_t *) &nativeEvent, cudaEventDisableTiming);
 	checkCudaErrors(result);
 	if (result != 0)
