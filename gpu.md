@@ -31,9 +31,7 @@ If you have several GPUs, but your system is forcing you to use just one, there'
 
 ## Multi-GPU data parallelism
 
-If your system has multiple GPUs installed, you can train your model in data-parallel mode. We have simple wrapper available for that:
-
-Consider using something like this:
+If your system has multiple GPUs installed, you can train your model in data-parallel mode. We have simple wrapper available for that. Consider using something like this:
 
         ParallelWrapper wrapper = new ParallelWrapper.Builder(YourExistingModel)
             .prefetchBuffer(24)
@@ -65,6 +63,7 @@ If your app can afford using half-precision math (typically neural nets can affo
 Place this call as the first line of your app, so that all subsequent allocations/calculations will be done using the HALF data type.
 
 However you should be aware: HALF data type offers way smaller precision then FLOAT or DOUBLE, thus neural net tuning might become way harder.
+
 On top of that, at this moment we don't offer full LAPACK support for HALF data type.
 
 ## Larger Grids
@@ -77,9 +76,9 @@ For most GPUs, default values are fine, but if you’re using high-end hardware 
 
 This won’t force all, even minor operations, to use specified grid dimensions, but it’ll create theoretical limits for them. 
 
-## Allow for a larger cache
+## Allow for a Larger Cache
 
-Since ND4J is based on JAva, the cache size is very important for CUDA backend, and it’s able to dramatically increase or decrease performance. If you have plenty of RAM - just allow larger caches.
+Since ND4J is based on Java, the cache size is very important for CUDA backend, and it’s able to dramatically increase or decrease performance. If you have plenty of RAM, just allow for larger caches.
 
 Something like this might be used:
 
@@ -91,20 +90,20 @@ Something like this might be used:
 
 This code will allow to cache up to 6GB of GPU RAM (it doesn’t mean that it WILL allocate that much though), and each individually cached memory chunk for both host and GPU memory might be up to 1GB in size. 
 
-Since the cache in Nd4j works has a «reuse» paradigm, such high values don’t mean anything bad. Only memory chunks that were allocated for your app might be cached for future reuse.
+Since the cache in ND4J works employs a «reuse» paradigm, those high values don’t mean anything bad. Only memory chunks that were allocated for your app might be cached for future reuse.
 
 ## Setting Environment Variables BACKEND_PRIORITY_CPU and BACKEND_PRIORITY_GPU
 
 If set the Environment Variables BACKEND_PRIORITY_CPU BACKEND_PRIORITY_GPU can determine wether GPU or CPU backend is used. To use set BACKEND_PRIORITY_CPU and BACKEND_PRIORITY_GPU to integers. The highest value determines what backend is used. 
 
 
-## How it works after all?
+## How Does It Work After All?
 
-CUDA backend has few design differences if compared to native backend, caused by GPU vs x86 differences. 
+The CUDA backend has few design differences if compared to native backend, because of differences between GPUs and x86. 
 
-Here's highlights for approaches used:
+Here are the highlights:
 
-- CUDA backend heavily relies on various memory caches.
+- The CUDA backend heavily relies on various memory caches.
     * Each memory chunk is allocated once, and after released from JVM context, we put it to the cache for further reuse.
     * ShapeInfo & TAD cache are using GPU device constant memory for faster access from kernel context.
 - Kernels are "atomic": one Op = one pre-compiled kernel (in most of cases)  
@@ -117,8 +116,7 @@ Here's highlights for approaches used:
 - Multi-GPU environments are handled via Thread <-> Device affinity management. One Java thread is attached to one GPU at any given moment.
 
 
-
-Further Reading
+### Further Reading
 
 * [Deeplearning4j on Spark (with GPUs)](./spark)
 * [Optimizing Deeplearning4j on Native With OpenMP and SIMD instructions](./native)
