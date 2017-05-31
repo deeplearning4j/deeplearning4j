@@ -20,6 +20,7 @@
 #define ND4J_FLOAT24 119 // not supported after all. might want to add support later.
 
 #include <ops/ops.h>
+#include <templatemath.h>
 #include <atomic>
 #include <types/float16.h>
 #include <types/float8.h>
@@ -56,12 +57,13 @@ __device__ inline void encoderKernelP1Generic(void *dx, Nd4jIndex N, void *dz) {
     T *x = reinterpret_cast<T *> (dx);
     int *z = reinterpret_cast<int *> (dz);
 
+    // TODO: this should be real value, obviously
     float threshold = 0.0f;
 
     //basically, for phase One we want do calculation: how many eligible values we have, and which blocks will be holding data
     Nd4jIndex tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    int pass = tid < N && x[tid] >= threshold ? 1 : 0;
+    int pass = tid < N && nd4j::math::nd4j_abs<T>(x[tid]) >= threshold ? 1 : 0;
     int bp=__syncthreads_count(pass);
 
     if (threadIdx.x == 0) {
@@ -71,6 +73,69 @@ __device__ inline void encoderKernelP1Generic(void *dx, Nd4jIndex N, void *dz) {
         // saving out sum
         atomicAdd(&z[0], bp);
     }
+}
+
+__device__ __inline__ int pow2i (int e){
+	return 1<<e;
+}
+
+/*
+ * PLEASE NOTE: This kernel doesn't allow loop for data. Basically: grid will be huge.
+ *
+ * Based on: https://github.com/knotman90/cuStreamComp <-- efficient CUDA stream compaction algorithm
+ */
+template<typename T>
+__device__ inline void encoderKernelP2Generic(void *dx, int *offsets, Nd4jIndex N, void *dz) {
+    T *x = reinterpret_cast<T *> (dx);
+    int *z = reinterpret_cast<int *> (dz);
+
+    Nd4jIndex tid = blockIdx.x * blockDim.x + threadIdx.x;
+	extern __shared__ int warpTotals[];
+
+    // fetch block offset only once
+	__shared__ int bo;
+	if (threadIdx.x == 0) {
+	    bo = offsets[blockIdx.x+1];
+	}
+	__syncthreads();
+
+    // TODO: this should be real value, obviously
+    float threshold = 0.0f;
+
+	if (tid < N) {
+	    T value = x[tid];
+        int pred = nd4j::math::nd4j_abs<T>(value) >= threshold ? 1 : 0;
+		int w_i = threadIdx.x/warpSize; //warp index
+		int w_l = tid % warpSize;//thread index within a warp
+		int t_m = INT_MAX >> (warpSize-w_l-1); //thread mask (ERROR IN THE PAPER minus one is required)
+
+		int b	= __ballot(pred) & t_m; //balres = number whose ith bit isone if the ith's thread pred is true masked up to the current index in warp
+		int t_u	= __popc(b); // popc count the number of bit one. simply count the number predicated true BEFORE MY INDEX
+
+		if(w_l==warpSize-1){
+			warpTotals[w_i]=t_u+pred;
+		}
+
+		__syncthreads();
+
+		if(w_i==0 && w_l<blockDim.x/warpSize){
+			int w_i_u=0;
+			for(int j=0;j<=5;j++){
+				int b_j =__ballot( warpTotals[w_l] & pow2i(j) ); //# of the ones in the j'th digit of the warp offsets
+				w_i_u += (__popc(b_j & t_m)  ) << j;
+				//printf("indice %i t_m=%i,j=%i,b_j=%i,w_i_u=%i\n",w_l,t_m,j,b_j,w_i_u);
+			}
+			warpTotals[w_l]=w_i_u;
+		}
+
+		__syncthreads();
+
+		if(pred){
+			z[t_u+warpTotals[w_i]+ bo]= value > 0.0 ? tid : -tid;
+		}
+
+
+	}
 }
 
 
