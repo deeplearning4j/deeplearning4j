@@ -89,7 +89,6 @@ public class TestMapFileRecordReaderMultipleParts {
             subdirs[i].mkdir();
             paths[i] = new Path("file:///" + subdirs[i].getAbsolutePath());
             writers[i] = new MapFile.Writer(c, paths[i], opts);
-
         }
         seqMapFilePath = new Path("file:///" + tempDirSeq.getAbsolutePath());
 
@@ -126,37 +125,42 @@ public class TestMapFileRecordReaderMultipleParts {
 
         valueClass = RecordWritable.class;
 
-//        opts = new SequenceFile.Writer.Option[]{
-//                MapFile.Writer.keyClass(keyClass),
-//                SequenceFile.Writer.valueClass(valueClass)
-//        };
-//
-//        tempDir = Files.createTempDir();
-//        mapFilePath = new Path("file:///" + tempDir.getAbsolutePath());
-//
-//        writer = new MapFile.Writer(c, mapFilePath, opts);
-//
-//        recordMap = new HashMap<>();
-//        recordMap.put(new LongWritable(0), new RecordWritable(
-//                Arrays.<org.datavec.api.writable.Writable>asList(new Text("zero"), new IntWritable(0), new DoubleWritable(0))));
-//
-//        recordMap.put(new LongWritable(1), new RecordWritable(
-//                Arrays.<org.datavec.api.writable.Writable>asList(new Text("one"), new IntWritable(11), new DoubleWritable(11.0)))
-//        );
-//
-//        recordMap.put(new LongWritable(2), new RecordWritable(
-//                Arrays.<org.datavec.api.writable.Writable>asList(new Text("two"), new IntWritable(22), new DoubleWritable(22.0)))
-//        );
-//
-//
-//        //Need to write in order
-//        for (int i = 0; i <= 2; i++) {
-//            LongWritable key = new LongWritable(i);
-//            RecordWritable value = recordMap.get(key);
-//
-//            writer.append(key, value);
-//        }
-//        writer.close();
+        opts = new SequenceFile.Writer.Option[]{
+                MapFile.Writer.keyClass(keyClass),
+                SequenceFile.Writer.valueClass(valueClass)
+        };
+
+        tempDir = Files.createTempDir();
+        subdirs = new File[3];
+        paths = new Path[subdirs.length];
+        writers = new MapFile.Writer[subdirs.length];
+        for (int i = 0; i < subdirs.length; i++) {
+            subdirs[i] = new File(tempDir, "part-r-0000" + i);
+            subdirs[i].mkdir();
+            paths[i] = new Path("file:///" + subdirs[i].getAbsolutePath());
+            writers[i] = new MapFile.Writer(c, paths[i], opts);
+        }
+        mapFilePath = new Path("file:///" + tempDir.getAbsolutePath());
+
+        recordMap = new HashMap<>();
+        for (int i = 0; i < 9; i++) {
+            recordMap.put(new LongWritable(i), new RecordWritable(
+                            Arrays.<org.datavec.api.writable.Writable>asList(new Text(String.valueOf(i)), new IntWritable(i), new DoubleWritable(i))));
+        }
+
+
+        //Need to write in order
+        for (int i = 0; i < recordMap.size(); i++) {
+            int mapFileIdx = i / writers.length;
+            LongWritable key = new LongWritable(i);
+            RecordWritable value = recordMap.get(key);
+
+            writers[mapFileIdx].append(key, value);
+        }
+
+        for( MapFile.Writer m : writers){
+            m.close();
+        }
 
     }
 
@@ -167,10 +171,10 @@ public class TestMapFileRecordReaderMultipleParts {
         seqMapFilePath = null;
         seqMap = null;
 
-//        tempDir.delete();
-//        tempDir = null;
-//        mapFilePath = null;
-//        seqMap = null;
+        tempDir.delete();
+        tempDir = null;
+        mapFilePath = null;
+        seqMap = null;
     }
 
     @Test
@@ -228,7 +232,7 @@ public class TestMapFileRecordReaderMultipleParts {
         }
         RandomUtils.shuffleInPlace(expOrder, new Random(12345));
         assertArrayEquals(expOrder, order);
-        System.out.println(Arrays.toString(expOrder));
+//        System.out.println(Arrays.toString(expOrder));
 
         count = 0;
         while (seqRR.hasNext()) {
@@ -238,59 +242,60 @@ public class TestMapFileRecordReaderMultipleParts {
         }
     }
 
-//    @Test
-//    public void testSequenceRecordReader_DEBUG() throws Exception {
-//        SequenceRecordReader seqRR = new MapFileSequenceRecordReader();
-//        URI uri = new URI("file:///E:/Data/Ericsson_REDUCED/domainrelevantdata/dataNormalized_24");
-//        InputSplit is = new FileSplit(new File(uri));
-//        seqRR.initialize(is);
-//
-//        assertTrue(seqRR.hasNext());
-//        int count = 0;
-//        while (seqRR.hasNext() && count++ < 3) {
-//            List<List<org.datavec.api.writable.Writable>> l = seqRR.sequenceRecord();
-//
-//            System.out.println(l.size() + "\t" + l.get(0).size());
-//        }
-//        seqRR.close();
-//    }
+    @Test
+    public void testRecordReaderMultipleParts() throws Exception {
+        RecordReader rr = new MapFileRecordReader();
+        URI uri = mapFilePath.toUri();
+        InputSplit is = new FileSplit(new File(uri));
+        rr.initialize(is);
 
-//    @Test
-//    public void testRecordReader() throws Exception {
-//        RecordReader rr = new MapFileRecordReader();
-//        URI uri = mapFilePath.toUri();
-//        InputSplit is = new FileSplit(new File(uri));
-//        rr.initialize(is);
-//
-//        assertTrue(rr.hasNext());
-//        int count = 0;
-//        while (rr.hasNext()) {
-//            List<org.datavec.api.writable.Writable> l = rr.next();
-//
-//            assertEquals(recordMap.get(new LongWritable(count)).getRecord(), l);
-//
-//            count++;
-//        }
-//        assertEquals(recordMap.size(), count);
-//
-//        rr.close();
-//
-//        //Try the same thing, but with random order
-//        rr = new MapFileRecordReader(new Random(12345));
-//        rr.initialize(is);
-//
-//        Field f = MapFileRecordReader.class.getDeclaredField("order");
-//        f.setAccessible(true);
-//        int[] order = (int[]) f.get(rr);
-//        assertNotNull(order);
-//        int[] expOrder = new int[]{1, 2, 0};  //Fixed RNG seed -> always this order
-//        assertArrayEquals(expOrder, order);
-//
-//        count = 0;
-//        while (rr.hasNext()) {
-//            List<org.datavec.api.writable.Writable> l = rr.next();
-//            assertEquals(recordMap.get(new LongWritable(expOrder[count])).getRecord(), l);
-//            count++;
-//        }
-//    }
+        //Check number of records calculation
+        Field f = MapFileRecordReader.class.getDeclaredField("indexToKey");
+        f.setAccessible(true);
+        IndexToKey itk = (IndexToKey) f.get(rr);
+        assertEquals(seqMap.size(), itk.getNumRecords());
+
+        //Check indices for each map file
+        List<Pair<Long,Long>> expReaderExampleIdxs = new ArrayList<>();
+        expReaderExampleIdxs.add(new Pair<>(0L,2L));
+        expReaderExampleIdxs.add(new Pair<>(3L,5L));
+        expReaderExampleIdxs.add(new Pair<>(6L,8L));
+
+        f = LongIndexToKey.class.getDeclaredField("readerIndices");
+        f.setAccessible(true);
+        assertEquals(expReaderExampleIdxs, f.get(itk));
+
+        assertTrue(rr.hasNext());
+        int count = 0;
+        while (rr.hasNext()) {
+            List<org.datavec.api.writable.Writable> l = rr.next();
+            assertEquals(recordMap.get(new LongWritable(count)).getRecord(), l);
+            count++;
+        }
+        assertEquals(recordMap.size(), count);
+
+        rr.close();
+
+        //Try the same thing, but with random order
+        rr = new MapFileRecordReader(new Random(12345));
+        rr.initialize(is);
+
+        f = MapFileRecordReader.class.getDeclaredField("order");
+        f.setAccessible(true);
+        int[] order = (int[]) f.get(rr);
+        assertNotNull(order);
+        int[] expOrder = new int[9];
+        for( int i=0; i<expOrder.length; i++ ){
+            expOrder[i] = i;
+        }
+        RandomUtils.shuffleInPlace(expOrder, new Random(12345));
+        assertArrayEquals(expOrder, order);
+
+        count = 0;
+        while (rr.hasNext()) {
+            List<org.datavec.api.writable.Writable> l = rr.next();
+            assertEquals(recordMap.get(new LongWritable(expOrder[count])).getRecord(), l);
+            count++;
+        }
+    }
 }

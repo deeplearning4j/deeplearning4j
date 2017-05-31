@@ -58,7 +58,7 @@ public class MapFileRecordReader implements RecordReader {
 
     private final IndexToKey indexToKey;
     private MapFileReader<RecordWritable> mapFileReader;
-    private URI uri;
+    private URI baseDirUri;
     private List<RecordListener> listeners;
 
     private long numRecords;
@@ -107,37 +107,51 @@ public class MapFileRecordReader implements RecordReader {
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         URI[] uris = split.locations();
 
-        //Check URIs are correct: we expect /data and /index files...
-        if (uris.length == 0) {
-            throw new IllegalStateException("Cannot initialize MapFileSequenceRecordReader: could not find data and index files in input split");
+        //First: work out whether we have a single MapFile or multiple parts
+        int dataCount = 0;
+        int indexCount = 0;
+        List<URI> dataUris = new ArrayList<>();
+        for(URI u : uris){
+            String p = u.getPath();
+            if(p.endsWith("data")){
+                dataCount++;
+                dataUris.add(u);
+            } else if(p.endsWith("index")){
+                indexCount++;
+            }
         }
 
-        uri = uris[0];
-        File f = new File(uri);
-        if (!f.isDirectory()) {
-            f = f.getParentFile();
-            uri = f.toURI();
+        //Check URIs are correct: we expect one or more /data and /index files...
+        if(dataCount == 0 || indexCount == 0){
+            throw new IllegalStateException("Cannot initialize MapFileSequenceRecordReader: could not find data and " +
+                    "index files in input split");
+        }
+        if(dataCount != indexCount){
+            throw new IllegalStateException("Invalid input: found " + dataCount + " data files but " + indexCount
+                    + " index files. Expect equal number of both for map files");
         }
 
-        File indexFile = new File(f, "index");
-        File dataFile = new File(f, "data");
-
-        if (!indexFile.exists()) {
-            throw new IOException("Could not find index file at " + indexFile.getAbsolutePath() + " - must have MapFile "
-                    + "index and data files at the input split location");
-        }
-        if (!dataFile.exists()) {
-            throw new IOException("Could not find data file at " + dataFile.getAbsolutePath() + " - must have MapFile "
-                    + "index and data files at the input split location");
+        List<String> mapFilePartRootDirectories = new ArrayList<>(dataUris.size());
+        for( URI u : dataUris ){
+            File partRootDir = new File(u).getParentFile();
+            mapFilePartRootDirectories.add(partRootDir.getAbsolutePath());
         }
 
 
-        if (mapFileReader != null) {
+        if(dataUris.size() == 1){
+            //Just parent of /data
+            baseDirUri = new File(dataUris.get(0)).getParentFile().toURI();
+        } else {
+            //Multiple parts -> up 2 levels from data
+            //so, /baseDir/part-r-00000/data -> /baseDir
+            baseDirUri = new File(dataUris.get(0)).getParentFile().getParentFile().toURI();
+        }
+
+        if(mapFileReader != null){
             mapFileReader.close();
-            mapFileReader = null;
         }
 
-        this.mapFileReader = new MapFileReader<>(uri.getPath(), indexToKey, recordClass);
+        this.mapFileReader = new MapFileReader<>(mapFilePartRootDirectories, indexToKey, recordClass);
         this.numRecords = mapFileReader.numRecords();
 
         if (rng != null) {
@@ -256,7 +270,7 @@ public class MapFileRecordReader implements RecordReader {
 
         RecordMetaData meta;
         if (withMetadata) {
-            meta = new RecordMetaDataIndex(currIdx, uri, MapFileRecordReader.class);
+            meta = new RecordMetaDataIndex(currIdx, baseDirUri, MapFileRecordReader.class);
         } else {
             meta = null;
         }

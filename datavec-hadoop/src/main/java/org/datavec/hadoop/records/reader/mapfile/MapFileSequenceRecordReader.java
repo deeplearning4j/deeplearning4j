@@ -109,8 +109,7 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         URI[] uris = split.locations();
 
-
-        //First: work out whether we have a single or multiple parts
+        //First: work out whether we have a single MapFile or multiple parts
         int dataCount = 0;
         int indexCount = 0;
         List<URI> dataUris = new ArrayList<>();
@@ -124,9 +123,7 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
             }
         }
 
-        System.out.println("Counts: dataCount=" + dataCount + ", indexCount=" + indexCount);
-
-        //Check URIs are correct: we expect /data and /index files...
+        //Check URIs are correct: we expect one or more /data and /index files...
         if(dataCount == 0 || indexCount == 0){
             throw new IllegalStateException("Cannot initialize MapFileSequenceRecordReader: could not find data and " +
                     "index files in input split");
@@ -136,37 +133,21 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
                     + " index files. Expect equal number of both for map files");
         }
 
-        System.out.println(dataUris);
-
-//        List<File> partRootDirectories = new ArrayList<>(dataUris.size());
         List<String> mapFilePartRootDirectories = new ArrayList<>(dataUris.size());
         for( URI u : dataUris ){
             File partRootDir = new File(u).getParentFile();
             mapFilePartRootDirectories.add(partRootDir.getAbsolutePath());
         }
 
-        System.out.println("Root directories: " + mapFilePartRootDirectories);
 
-
-        baseDirUri = uris[0];
-        File f = new File(baseDirUri);
-        if(!f.isDirectory()){
-            f = f.getParentFile();
-            baseDirUri = f.toURI();
+        if(dataUris.size() == 1){
+            //Just parent of /data
+            baseDirUri = new File(dataUris.get(0)).getParentFile().toURI();
+        } else {
+            //Multiple parts -> up 2 levels from data
+            //so, /baseDir/part-r-00000/data -> /baseDir
+            baseDirUri = new File(dataUris.get(0)).getParentFile().getParentFile().toURI();
         }
-
-        File indexFile = new File(f, "index");
-        File dataFile = new File(f, "data");
-
-//        if(!indexFile.exists()){
-//            throw new IOException("Could not find index file at " + indexFile.getAbsolutePath() + " - must have MapFile "
-//                    + "index and data files at the input split location");
-//        }
-//        if(!dataFile.exists()){
-//            throw new IOException("Could not find data file at " + dataFile.getAbsolutePath() + " - must have MapFile "
-//                    + "index and data files at the input split location");
-//        }
-
 
         if(mapFileReader != null){
             mapFileReader.close();
