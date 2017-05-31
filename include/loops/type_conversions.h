@@ -60,17 +60,16 @@ __device__ inline void encoderKernelP1Generic(void *dx, Nd4jIndex N, void *dz) {
 
     //basically, for phase One we want do calculation: how many eligible values we have, and which blocks will be holding data
     Nd4jIndex tid = blockIdx.x * blockDim.x + threadIdx.x;
-    if (tid < N) {
-        int pass = x[tid] >= threshold ? 1 : 0;
-        int bp=__syncthreads_count(pass);
 
-        if (threadIdx.x == 0) {
-            // saving out per-block passes
-            z[blockIdx.x+1] = bp;
+    int pass = tid < N && x[tid] >= threshold ? 1 : 0;
+    int bp=__syncthreads_count(pass);
 
-            // saving out sum
-            atomicAdd(&z[0], bp);
-        }
+    if (threadIdx.x == 0) {
+        // saving out per-block passes
+        z[blockIdx.x+1] = bp;
+
+        // saving out sum
+        atomicAdd(&z[0], bp);
     }
 }
 
