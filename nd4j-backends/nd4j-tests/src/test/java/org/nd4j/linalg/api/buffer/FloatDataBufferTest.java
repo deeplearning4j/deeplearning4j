@@ -234,7 +234,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
                 .build();
         MemoryWorkspace  workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "SOME_ID");
 
-        DataBuffer buffer = new DoubleBuffer(new double[]{1, 2, 3, 4}, workspace);
+        DataBuffer buffer = Nd4j.createBuffer(new float[]{1, 2, 3, 4});
         assert(buffer.isAttached());
         assertEquals(4, buffer.capacity());
         buffer.reallocate(6);

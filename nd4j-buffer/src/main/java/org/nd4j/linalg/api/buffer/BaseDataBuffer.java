@@ -1384,7 +1384,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     @Override
     public Long getTrackingPoint() {
-        return trackingPoint;
+        return underlyingDataBuffer() == null ? trackingPoint : underlyingDataBuffer().getTrackingPoint();
     }
 
     /**

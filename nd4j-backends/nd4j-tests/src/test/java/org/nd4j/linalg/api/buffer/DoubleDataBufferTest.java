@@ -23,6 +23,7 @@ import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -233,12 +234,14 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
                 .build();
         MemoryWorkspace  workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "SOME_ID");
 
-        DataBuffer buffer = new DoubleBuffer(new double[]{1, 2, 3, 4}, workspace);
-        assert(buffer.isAttached());
+        DataBuffer buffer = Nd4j.createBuffer(new double[]{1, 2, 3, 4});
+
+        Assert.assertTrue(buffer.isAttached());
         assertEquals(4, buffer.capacity());
         buffer.reallocate(6);
         assertEquals(6, buffer.capacity());
         workspace.close();
+
     }
 
     @Override

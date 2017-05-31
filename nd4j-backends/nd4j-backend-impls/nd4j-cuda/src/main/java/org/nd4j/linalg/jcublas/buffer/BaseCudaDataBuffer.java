@@ -1004,6 +1004,47 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         return super.getInt(ix);
     }
 
+    @Override
+    public DataBuffer reallocate(long length) {
+
+            AllocationPoint old = allocationPoint;
+            allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
+                    new AllocationShape(length, elementSize, dataType()), false);
+            trackingPoint = allocationPoint.getObjectId();
+
+            switch(dataType()){
+                case DOUBLE:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asDoublePointer();
+                    indexer = DoubleIndexer.create((DoublePointer) pointer);
+                    break;
+                case FLOAT:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asFloatPointer();
+                    indexer = FloatIndexer.create((FloatPointer) pointer);
+                    break;
+                case HALF:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
+                    indexer = ShortIndexer.create((ShortPointer) pointer);
+                    break;
+                case INT:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asIntPointer();
+                    indexer = IntIndexer.create((IntPointer) pointer);
+                    break;
+                default:
+                    throw new UnsupportedOperationException();
+            }
+            allocator.memcpyAsync(this, old.getPointers().getHostPointer(), length * elementSize, 0);
+            // we're keeping pointer reference for JVM
+            pointer.address(); // ?
+
+
+        if(getParentWorkspace() != null && dataType() != Type.INT){
+            // no need to release the pointers?
+        } else{
+            // todo - release pointers
+        }
+
+        return null;
+    }
 
     /*
     protected short fromFloat( float fval ) {
