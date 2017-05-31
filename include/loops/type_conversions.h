@@ -53,17 +53,14 @@ __device__ inline void convertKernelGeneric(void *dx, Nd4jIndex N, void *dz) {
  * PLEASE NOTE: This kernel doesn't allow loop for data. Basically: grid will be huge.
  */
 template<typename T>
-__device__ inline void encoderKernelP1Generic(void *dx, Nd4jIndex N, void *dz) {
+__device__ inline void encoderKernelP1Generic(void *dx, Nd4jIndex N, void *dz, float threshold) {
     T *x = reinterpret_cast<T *> (dx);
     int *z = reinterpret_cast<int *> (dz);
-
-    // TODO: this should be real value, obviously
-    float threshold = 0.0f;
 
     //basically, for phase One we want do calculation: how many eligible values we have, and which blocks will be holding data
     Nd4jIndex tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    int pass = tid < N && nd4j::math::nd4j_abs<T>(x[tid]) >= threshold ? 1 : 0;
+    int pass = tid < N && nd4j::math::nd4j_abs<T>(x[tid]) >= (T) threshold ? 1 : 0;
     int bp=__syncthreads_count(pass);
 
     if (threadIdx.x == 0) {
@@ -93,14 +90,15 @@ __device__ inline void encoderKernelP2Generic(void *dx, int *offsets, Nd4jIndex 
 	extern __shared__ int warpTotals[];
 
     // fetch block offset only once
+    __shared__ float threshold;
+    __shared__ FloatBits fb;
 	__shared__ int bo;
 	if (threadIdx.x == 0) {
+        fb.i_ = z[2];
+        threshold = fb.f_;
 	    bo = offsets[blockIdx.x+1];
 	}
 	__syncthreads();
-
-    // TODO: this should be real value, obviously
-    float threshold = 0.0f;
 
 	if (tid < N) {
 	    T value = x[tid];
@@ -115,7 +113,6 @@ __device__ inline void encoderKernelP2Generic(void *dx, int *offsets, Nd4jIndex 
 		if(w_l==warpSize-1){
 			warpTotals[w_i]=t_u+pred;
 		}
-
 		__syncthreads();
 
 		if(w_i==0 && w_l<blockDim.x/warpSize){
@@ -133,8 +130,6 @@ __device__ inline void encoderKernelP2Generic(void *dx, int *offsets, Nd4jIndex 
 		if(pred){
 			z[t_u+warpTotals[w_i]+ bo]= value > 0.0 ? tid : -tid;
 		}
-
-
 	}
 }
 
@@ -152,7 +147,7 @@ __device__ inline void decoderKernelGeneric(void *dx, Nd4jIndex N, void *dz) {
     __shared__ float threshold;
     __shared__ int limit;
 
-    FloatBits fb;
+    __shared__ FloatBits fb;
     if (threadIdx.x == 0) {
         limit = z[0];
         fb.i_ = z[2];
@@ -170,8 +165,16 @@ __device__ inline void decoderKernelGeneric(void *dx, Nd4jIndex N, void *dz) {
 }
 
 
-extern "C" __global__ void encoderKernelP1Float(void *dx, Nd4jIndex N, void *dz) {
-    encoderKernelP1Generic<float>(dx, N, dz);
+extern "C" __global__ void encoderKernelP1Float(void *dx, Nd4jIndex N, void *dz, float threshold) {
+    encoderKernelP1Generic<float>(dx, N, dz, threshold);
+}
+
+extern "C" __global__ void encoderKernelP1Double(void *dx, Nd4jIndex N, void *dz, float threshold) {
+    encoderKernelP1Generic<double>(dx, N, dz, threshold);
+}
+
+extern "C" __global__ void encoderKernelP1Half(void *dx, Nd4jIndex N, void *dz, float threshold) {
+    encoderKernelP1Generic<float16>(dx, N, dz, threshold);
 }
 #endif
 
