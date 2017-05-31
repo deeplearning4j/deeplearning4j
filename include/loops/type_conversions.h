@@ -102,7 +102,7 @@ __device__ inline void encoderKernelP2Generic(void *dx, int *offsets, Nd4jIndex 
 
 	if (tid < N) {
 	    T value = x[tid];
-        int pred = nd4j::math::nd4j_abs<T>(value) >= threshold ? 1 : 0;
+        int pred = nd4j::math::nd4j_abs<T>(value) >= (T) threshold ? 1 : 0;
 		int w_i = threadIdx.x/warpSize; //warp index
 		int w_l = tid % warpSize;//thread index within a warp
 		int t_m = INT_MAX >> (warpSize-w_l-1); //thread mask (ERROR IN THE PAPER minus one is required)
@@ -128,7 +128,7 @@ __device__ inline void encoderKernelP2Generic(void *dx, int *offsets, Nd4jIndex 
 		__syncthreads();
 
 		if(pred){
-			z[t_u+warpTotals[w_i]+ bo]= value > 0.0 ? tid : -tid;
+			z[t_u+warpTotals[w_i]+ bo]= value > (T) 0.0f ? tid+1 : -(tid + 1);
 		}
 	}
 }
@@ -175,6 +175,22 @@ extern "C" __global__ void encoderKernelP1Double(void *dx, Nd4jIndex N, void *dz
 
 extern "C" __global__ void encoderKernelP1Half(void *dx, Nd4jIndex N, void *dz, float threshold) {
     encoderKernelP1Generic<float16>(dx, N, dz, threshold);
+}
+
+extern "C" __global__ void encoderKernelP2Float(void *dx, int *offsets, Nd4jIndex N, void *dz) {
+    encoderKernelP2Generic<float>(dx, offsets, N, dz);
+}
+
+extern "C" __global__ void encoderKernelP2Double(void *dx, int *offsets, Nd4jIndex N, void *dz) {
+    encoderKernelP2Generic<double>(dx, offsets, N, dz);
+}
+
+extern "C" __global__ void encoderKernelP2Half(void *dx, int *offsets, Nd4jIndex N, void *dz) {
+    encoderKernelP2Generic<float16>(dx, offsets, N, dz);
+}
+
+extern "C" __global__ void decoderKernelFloat(void *dx, Nd4jIndex N, void *dz) {
+    decoderKernelGeneric<float>(dx, N, dz);
 }
 #endif
 

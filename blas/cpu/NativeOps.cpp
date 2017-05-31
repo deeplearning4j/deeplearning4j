@@ -2126,6 +2126,20 @@ void NativeOps::enableP2P(bool enable) {
     // no-op
 }
 
+void NativeOps::encodeThresholdP1Float(Nd4jPointer *extraPointers, float *dx, Nd4jIndex N, int *dz, float threshold) {
+    // TODO: to be implemented
+}
+
+void NativeOps::encodeThresholdP2Float(Nd4jPointer *extraPointers, float *dx, int *offsets, Nd4jIndex N, int *dz){
+    // offsets won't be used here
+
+    // TODO: to be implemented
+}
+
+void NativeOps::decodeThresholdFloat(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float *dz){
+    // TODO: to be implemented
+}
+
 bool NativeOps::isP2PAvailable() {
     // always TRUE for cpu backend
     return true;

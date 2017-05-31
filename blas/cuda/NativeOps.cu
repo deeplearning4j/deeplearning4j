@@ -6142,3 +6142,35 @@ void NativeOps::tearHalf(Nd4jPointer *extras, float16 *x, int *xShapeInfo, Nd4jP
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
+
+void NativeOps::encodeThresholdP1Float(Nd4jPointer *extras, float *dx, Nd4jIndex N, int *dz, float threshold) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    int blockSize = 1024;
+    int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
+
+    encoderKernelP1Float<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz, threshold);
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::encodeThresholdP2Float(Nd4jPointer *extraPointers, float *dx, int *offsets, Nd4jIndex N, int *dz){
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    int blockSize = 1024;
+    int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
+
+    encoderKernelP2Float<<<numBlocks, blockSize , 1024, *stream>>>(dx, offsets, N, dz);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::decodeThresholdFloat(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float *dz){
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    // we probably want to have smaller blocks here, memory writes are misaligned anyway
+    int blockSize = 128;
+    int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
+
+    decoderKernelFloat<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz);
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
