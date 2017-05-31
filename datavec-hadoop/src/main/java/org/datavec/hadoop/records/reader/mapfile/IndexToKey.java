@@ -17,9 +17,12 @@
 package org.datavec.hadoop.records.reader.mapfile;
 
 import org.apache.hadoop.io.MapFile;
+import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
+import org.datavec.api.berkeley.Pair;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * An interface to handle Index to key conversion, for use in {@link MapFileReader}
@@ -29,11 +32,11 @@ import java.io.IOException;
 public interface IndexToKey {
 
     /**
-     * Initialise the instance
+     * Initialise the instance, and return the first and last record indexes (inclusive) for each reader
      *
-     * @param reader The underlying map file reader
+     * @param readers The underlying map file readers
      */
-    void initialize(MapFile.Reader reader) throws IOException;
+    List<Pair<Long,Long>> initialize(MapFile.Reader[] readers, Class<? extends Writable> valueClass) throws IOException;
 
     /**
      * Get the key for the given index
@@ -44,11 +47,10 @@ public interface IndexToKey {
     WritableComparable getKeyForIndex(long index);
 
     /**
-     * Getter infer the number of records in the given map file using the reader
+     * Getter infer the number of records in the given map file(s)
      *
-     * @param reader Reader to get the number of records for
-     * @return Number of records in the reader
+     * @return Number of records in the map file(s)
      */
-    long getNumRecords(MapFile.Reader reader) throws IOException;
+    long getNumRecords() throws IOException;
 
 }

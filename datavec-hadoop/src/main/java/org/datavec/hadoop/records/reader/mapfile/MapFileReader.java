@@ -23,22 +23,30 @@ import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Writable;
 import org.apache.hadoop.io.WritableComparable;
 import org.apache.hadoop.util.ReflectionUtils;
+import org.datavec.api.berkeley.Pair;
 import org.datavec.hadoop.records.reader.mapfile.index.LongIndexToKey;
 import org.datavec.hadoop.records.reader.mapfile.record.RecordWritable;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * A wrapper around a Hadoop {@link MapFile.Reader}, used in {@link MapFileRecordReader} and {@link MapFileSequenceRecordReader}
+ *
+ * <b>Note</b>: This also handles multiple map files, such as the output from Spark, which gives a set of map files
+ * in directories like /part-r-00000, /part-r-00001
  *
  * @author Alex Black
  */
 public class MapFileReader<V> implements Closeable {
 
-    private MapFile.Reader reader;
+    private MapFile.Reader[] readers;
     private IndexToKey indexToKey;
     private Class<? extends Writable> recordClass;
+    private List<Pair<Long,Long>> recordIndexesEachReader;
+    private Long numRecords;
 
 
     public MapFileReader(String path) throws Exception {
@@ -52,17 +60,26 @@ public class MapFileReader<V> implements Closeable {
      * @throws IOException If an error occurs during opening or initialisation
      */
     public MapFileReader(String path, IndexToKey indexToKey, Class<? extends Writable> recordClass) throws IOException {
+        this(Collections.singletonList(path), indexToKey, recordClass);
+    }
+
+    public MapFileReader(List<String> paths, IndexToKey indexToKey, Class<? extends Writable> recordClass) throws IOException {
 
         this.indexToKey = indexToKey;
         this.recordClass = recordClass;
+        this.readers = new MapFile.Reader[paths.size()];
 
         SequenceFile.Reader.Option[] opts = new SequenceFile.Reader.Option[0];
-        reader = new MapFile.Reader(new Path(path), new Configuration(), opts);
-        if (reader.getValueClass() != recordClass) {
-            throw new UnsupportedOperationException("MapFile record class: " + reader.getValueClass()
-                    + ", but got class " + recordClass);
+
+        for( int i=0; i<paths.size(); i++ ) {
+            readers[i] = new MapFile.Reader(new Path(paths.get(i)), new Configuration(), opts);
+            if (readers[i].getValueClass() != recordClass) {
+                throw new UnsupportedOperationException("MapFile record class: " + readers[i].getValueClass()
+                        + ", but got class " + recordClass + ", path = " + paths.get(i));
+            }
         }
-        indexToKey.initialize(reader);
+
+        recordIndexesEachReader = indexToKey.initialize(readers, recordClass);
     }
 
     /**
@@ -71,11 +88,14 @@ public class MapFileReader<V> implements Closeable {
      * @return  Total number of records and the map file
      */
     public long numRecords() {
-        try {
-            return indexToKey.getNumRecords(reader);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        if(numRecords == null){
+            try {
+                numRecords = indexToKey.getNumRecords();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
+        return numRecords;
     }
 
     /**
@@ -86,15 +106,31 @@ public class MapFileReader<V> implements Closeable {
      * @throws IOException If an error occurs during reading
      */
     public V getRecord(long index) throws IOException {
+        //First: determine which reader to read from...
+        int readerIdx = -1;
+        for( int i=0; i<recordIndexesEachReader.size(); i++ ){
+            Pair<Long,Long> p = recordIndexesEachReader.get(i);
+            if(index >= p.getFirst() && index <= p.getSecond()){
+                readerIdx = i;
+                break;
+            }
+        }
+        if(readerIdx == -1){
+            throw new IllegalStateException("Index not found in any reader: " + index );
+        }
+
         WritableComparable key = indexToKey.getKeyForIndex(index);
         Writable value = ReflectionUtils.newInstance(recordClass, null);
-        V v = (V) reader.get(key, value);
+
+        V v = (V) readers[readerIdx].get(key, value);
         return v;
     }
 
 
     @Override
     public void close() throws IOException {
-        reader.close();
+        for(MapFile.Reader r : readers){
+            r.close();
+        }
     }
 }

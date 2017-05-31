@@ -200,6 +200,23 @@ public class TestMapFileRecordReader {
     }
 
     @Test
+    public void testSequenceRecordReader_DEBUG() throws Exception {
+        SequenceRecordReader seqRR = new MapFileSequenceRecordReader();
+        URI uri = new URI("file:///E:/Data/Ericsson_REDUCED/domainrelevantdata/dataNormalized_24");
+        InputSplit is = new FileSplit(new File(uri));
+        seqRR.initialize(is);
+
+        assertTrue(seqRR.hasNext());
+        int count = 0;
+        while (seqRR.hasNext() && count++ < 3) {
+            List<List<org.datavec.api.writable.Writable>> l = seqRR.sequenceRecord();
+
+            System.out.println(l.size() + "\t" + l.get(0).size());
+        }
+        seqRR.close();
+    }
+
+    @Test
     public void testRecordReader() throws Exception {
         RecordReader rr = new MapFileRecordReader();
         URI uri = mapFilePath.toUri();
