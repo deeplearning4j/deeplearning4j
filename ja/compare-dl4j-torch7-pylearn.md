@@ -1,6 +1,6 @@
 ---
-title:「ディープラーニングの比較シート：Deeplearning4j、Torch、Theano,TensorFlow、Caffe、Paddle、MxNet、Keras、CNTK
-layout:default
+title: 「ディープラーニングの比較シート：Deeplearning4j、Torch、Theano,TensorFlow、Caffe、Paddle、MxNet、Keras、CNTK
+layout: default
 ---
 
 # フレームワークの比較：Deeplearning4j、Torch、Theano, TensorFlow、Caffe、Paddle、MxNet、Keras、CNTK
