@@ -47,6 +47,37 @@ __device__ inline void convertKernelGeneric(void *dx, Nd4jIndex N, void *dz) {
         z[i] = (T) ((float) x[i]);
     }
 };
+
+/*
+ * PLEASE NOTE: This kernel doesn't allow loop for data. Basically: grid will be huge.
+ */
+template<typename T>
+__device__ inline void encoderKernelP1Generic(void *dx, Nd4jIndex N, void *dz) {
+    T *x = reinterpret_cast<T *> (dx);
+    int *z = reinterpret_cast<int *> (dz);
+
+    float threshold = 0.0f;
+
+    //basically, for phase One we want do calculation: how many eligible values we have, and which blocks will be holding data
+    Nd4jIndex tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid < N) {
+        int pass = x[tid] >= threshold ? 1 : 0;
+        int bp=__syncthreads_count(pass);
+
+        if (threadIdx.x == 0) {
+            // saving out per-block passes
+            z[blockIdx.x+1] = bp;
+
+            // saving out sum
+            atomicAdd(&z[0], bp);
+        }
+    }
+}
+
+
+extern "C" __global__ void encoderKernelP1Float(void *dx, Nd4jIndex N, void *dz) {
+    encoderKernelP1Generic<float>(dx, N, dz);
+}
 #endif
 
 template<typename S, typename T>
