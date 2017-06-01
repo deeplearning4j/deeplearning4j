@@ -297,16 +297,17 @@ public class CompressionTests extends BaseNd4jTest {
         INDArray exp_0 = Nd4j.create(6);
         INDArray exp_1 = initial.dup();
 
-        Nd4j.getCompressor().getCompressor("THRESHOLD").configure(1e-3);
+        NDArrayCompressor compressor = Nd4j.getCompressor().getCompressor("THRESHOLD");
+        compressor.configure(1e-3);
 
-        INDArray compressed = Nd4j.getCompressor().compress(initial, "THRESHOLD");
+        INDArray compressed = compressor.compress(initial);
 
 
         log.info("Initial array: {}", Arrays.toString(initial.data().asFloat()));
 
         assertEquals(exp_0, initial);
 
-        INDArray decompressed = Nd4j.getCompressor().decompress(compressed);
+        INDArray decompressed = compressor.decompress(compressed);
 
         assertEquals(exp_1, decompressed);
     }

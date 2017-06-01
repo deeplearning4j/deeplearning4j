@@ -1486,4 +1486,10 @@ public abstract class NativeOps extends Pointer {
     public abstract void tearFloat(PointerPointer extras, FloatPointer tensor, IntPointer xShapeInfo, PointerPointer targets, IntPointer zShapeInfo, IntPointer tadShapeInfo, IntPointer tadOffsets);
 
     public abstract void tearHalf(PointerPointer extras, @Cast("float16*") ShortPointer tensor, IntPointer xShapeInfo, PointerPointer targets, IntPointer zShapeInfo, IntPointer tadShapeInfo, IntPointer tadOffsets);
+
+    public abstract void encodeThresholdP1Float(PointerPointer extraPointers, FloatPointer dx, long N, IntPointer dz, float threshold);
+
+    public abstract void encodeThresholdP2Float(PointerPointer extraPointers, FloatPointer dx, IntPointer offsets, long N, IntPointer dz);
+
+    public abstract void decodeThresholdFloat(PointerPointer extraPointers, Pointer dx, long N, FloatPointer dz);
 }

@@ -1,4 +1,4 @@
-package org.nd4j.compression.impl;
+package org.nd4j.linalg.cpu.nativecpu.compression;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
 import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -15,9 +16,8 @@ import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.compression.CompressionType;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.conditions.AbsValueGreaterThan;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 /**
  * This compression is very special case, and shouldn't be ever used outside of ParallelWrapper/ParameterServer implementation.
@@ -28,7 +28,7 @@ import org.nd4j.linalg.ops.transforms.Transforms;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class Threshold extends AbstractCompressor {
+public class CpuThreshold extends AbstractCompressor {
     @Getter @Setter protected float threshold = 1e-3f;
 
     /**
