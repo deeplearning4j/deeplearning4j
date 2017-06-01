@@ -30,6 +30,7 @@
 #include <op_boilerplate.h>
 #include <loops/grid.h>
 #include <loops/aggregates.h>
+#include <helpers/threshold.h>
 //#include <sys/time.h>
 
 #include <curand.h>
@@ -6154,8 +6155,17 @@ void NativeOps::encodeThresholdP1Float(Nd4jPointer *extras, float *dx, Nd4jIndex
 }
 
 
+
+
 void NativeOps::encodeThresholdP2Float(Nd4jPointer *extraPointers, int *dx, Nd4jIndex N, int *dz) {
-    // TODO: to be implemented
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    int blockSize = 1024;
+    int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
+
+    encoderKernelP2Float<<<numBlocks, blockSize , 1024 * sizeof(float), *stream>>>(dx, N, dz);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 void NativeOps::encodeThresholdP3Float(Nd4jPointer *extraPointers, float *dx, int *offsets, Nd4jIndex N, int *dz){

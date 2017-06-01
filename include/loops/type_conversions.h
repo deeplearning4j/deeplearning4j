@@ -76,7 +76,7 @@ __device__ __inline__ int pow2i (int e){
 	return 1<<e;
 }
 
-#define NUM_BANKS 16
+#define NUM_BANKS 32
 #define LOG_NUM_BANKS 4
 
 // Define this to more rigorously avoid bank conflicts, even at the lower (root) levels of the tree
@@ -94,84 +94,181 @@ __device__ __inline__ int pow2i (int e){
 #define TEMP(index)   temp[index]
 #endif
 
+
+inline bool
+isPowerOfTwo(int n)
+{
+    return ((n&(n-1))==0) ;
+}
+
+inline int
+floorPow2(int n)
+{
+#ifdef WIN32
+    // method 2
+    return 1 << (int)logb((float)n);
+#else
+    // method 1
+    // float nf = (float)n;
+    // return 1 << (((*(int*)&nf) >> 23) - 127);
+    int exp;
+    frexp((float)n, &exp);
+    return 1 << (exp - 1);
+#endif
+}
+
+
+template <bool isNP2>
+__device__ void loadSharedChunkFromMem(int *s_data, const int *g_idata, int n, int baseIndex, int& ai, int& bi, int& mem_ai, int& mem_bi, int& bankOffsetA, int& bankOffsetB) {
+    int thid = threadIdx.x;
+    mem_ai = baseIndex + threadIdx.x;
+    mem_bi = mem_ai + blockDim.x;
+
+    ai = thid;
+    bi = thid + blockDim.x;
+
+    // compute spacing to avoid bank conflicts
+    bankOffsetA = CONFLICT_FREE_OFFSET(ai);
+    bankOffsetB = CONFLICT_FREE_OFFSET(bi);
+
+    // Cache the computational window in shared memory
+    // pad values beyond n with zeros
+    s_data[ai + bankOffsetA] = g_idata[mem_ai];
+
+    if (isNP2) { // compile-time decision
+        s_data[bi + bankOffsetB] = (bi < n) ? g_idata[mem_bi] : 0;
+    } else {
+        s_data[bi + bankOffsetB] = g_idata[mem_bi];
+    }
+}
+
+template <bool isNP2>
+__device__ void storeSharedChunkToMem(int* g_odata, int* s_data, int n, int ai, int bi, int mem_ai, int mem_bi, int bankOffsetA, int bankOffsetB) {
+    __syncthreads();
+
+    // write results to global memory
+    g_odata[mem_ai] = s_data[ai + bankOffsetA];
+    if (isNP2) { // compile-time decision
+        if (bi < n)
+            g_odata[mem_bi] = s_data[bi + bankOffsetB];
+    } else {
+        g_odata[mem_bi] = s_data[bi + bankOffsetB];
+    }
+}
+
+template <bool storeSum>
+__device__ void clearLastElement(int* s_data, int *g_blockSums, int blockIndex) {
+    if (threadIdx.x == 0)
+    {
+        int index = (blockDim.x << 1) - 1;
+        index += CONFLICT_FREE_OFFSET(index);
+
+        if (storeSum) { // compile-time decision
+            // write this block's total sum to the corresponding index in the blockSums array
+            g_blockSums[blockIndex] = s_data[index];
+        }
+
+        // zero the last element in the scan so it will propagate back to the front
+        s_data[index] = 0;
+    }
+}
+
+
+
+__device__ unsigned int buildSum(int *s_data) {
+    unsigned int thid = threadIdx.x;
+    unsigned int stride = 1;
+
+    // build the sum in place up the tree
+    for (int d = blockDim.x; d > 0; d >>= 1) {
+        __syncthreads();
+
+        if (thid < d) {
+            int i  = __mul24(__mul24(2, stride), thid);
+            int ai = i + stride - 1;
+            int bi = ai + stride;
+
+            ai += CONFLICT_FREE_OFFSET(ai);
+            bi += CONFLICT_FREE_OFFSET(bi);
+
+            s_data[bi] += s_data[ai];
+        }
+
+        stride *= 2;
+    }
+
+    return stride;
+}
+
+__device__ void scanRootToLeaves(int *s_data, unsigned int stride) {
+     unsigned int thid = threadIdx.x;
+
+    // traverse down the tree building the scan in place
+    for (int d = 1; d <= blockDim.x; d *= 2) {
+        stride >>= 1;
+
+        __syncthreads();
+
+        if (thid < d) {
+            int i  = __mul24(__mul24(2, stride), thid);
+            int ai = i + stride - 1;
+            int bi = ai + stride;
+
+            ai += CONFLICT_FREE_OFFSET(ai);
+            bi += CONFLICT_FREE_OFFSET(bi);
+
+            float t  = s_data[ai];
+            s_data[ai] = s_data[bi];
+            s_data[bi] += t;
+        }
+    }
+}
+
+template <bool storeSum>
+__device__ void prescanBlock(int *data, int blockIndex, int *blockSums) {
+    int stride = buildSum(data);               // build the sum in place up the tree
+    clearLastElement<storeSum>(data, blockSums,
+                               (blockIndex == 0) ? blockIdx.x : blockIndex);
+    scanRootToLeaves(data, stride);            // traverse down tree to build the scan
+}
+
+
+template <bool storeSum, bool isNP2>
+__global__ void prescan(int *g_odata, const int *g_idata, int *g_blockSums, int n, int blockIndex, int baseIndex) {
+    int ai, bi, mem_ai, mem_bi, bankOffsetA, bankOffsetB;
+    extern __shared__ int s_data[];
+
+    // load data into shared memory
+    loadSharedChunkFromMem<isNP2>((int *) s_data, g_idata, n, (baseIndex == 0) ? __mul24(blockIdx.x, (blockDim.x << 1)):baseIndex, ai, bi, mem_ai, mem_bi, bankOffsetA, bankOffsetB);
+
+    // scan the data in each block
+    prescanBlock<storeSum>(s_data, blockIndex, g_blockSums);
+
+    // write results to device memory
+    storeSharedChunkToMem<isNP2>(g_odata, s_data, n, ai, bi, mem_ai, mem_bi, bankOffsetA, bankOffsetB);
+}
+
+
+__global__ void uniformAdd(int *g_data, int *uniforms, int n, int blockOffset, int baseIndex) {
+    __shared__ float uni;
+    if (threadIdx.x == 0)
+        uni = uniforms[blockIdx.x + blockOffset];
+
+    unsigned int address = __mul24(blockIdx.x, (blockDim.x << 1)) + baseIndex + threadIdx.x;
+
+    __syncthreads();
+
+    // note two adds per thread
+    g_data[address] += uni;
+    g_data[address + blockDim.x] += (threadIdx.x + blockDim.x < n) * uni;
+}
+
 /*
  * This kernel does prefix sum in parallel, to calculate offsets for each block
  */
 template<typename T>
 __device__ inline void encoderKernelP2Generic(void *dx, Nd4jIndex n, void *dz) {
-     extern  __shared__  float temp[];
-
-    int *x = reinterpret_cast<int *> (dx);
-    int *z = reinterpret_cast<int *> (dz);
-
-    int ai = threadIdx.x;
-    int bi = threadIdx.x + (n/2);
-
-    // compute spacing to avoid bank conflicts
-    int bankOffsetA = CONFLICT_FREE_OFFSET(ai);
-    int bankOffsetB = CONFLICT_FREE_OFFSET(bi);
-
-    // Cache the computational window in shared memory
-    TEMP(ai + bankOffsetA) = x[ai];
-    TEMP(bi + bankOffsetB) = x[bi];
-
-    int offset = 1;
-
-    // build the sum in place up the tree
-    for (int d = n/2; d > 0; d >>= 1)
-    {
-        __syncthreads();
-
-        if (threadIdx.x < d)
-        {
-            int ai = offset*(2 * threadIdx.x +1)-1;
-            int bi = offset*(2 * threadIdx.x +2)-1;
-
-            ai += CONFLICT_FREE_OFFSET(ai);
-            bi += CONFLICT_FREE_OFFSET(bi);
-
-            TEMP(bi) += TEMP(ai);
-        }
-
-        offset *= 2;
-    }
-
-    // scan back down the tree
-
-    // clear the last element
-    if (threadIdx.x == 0)
-    {
-        int index = n - 1;
-        index += CONFLICT_FREE_OFFSET(index);
-        TEMP(index) = 0;
-    }
-
-    // traverse down the tree building the scan in place
-    for (int d = 1; d < n; d *= 2)
-    {
-        offset /= 2;
-
-        __syncthreads();
-
-        if (threadIdx.x < d)
-        {
-            int ai = offset*(2 * threadIdx.x + 1)-1;
-            int bi = offset*(2 * threadIdx.x + 2)-1;
-
-            ai += CONFLICT_FREE_OFFSET(ai);
-            bi += CONFLICT_FREE_OFFSET(bi);
-
-            float t  = TEMP(ai);
-            TEMP(ai) = TEMP(bi);
-            TEMP(bi) += t;
-        }
-    }
-
-    __syncthreads();
-
-    // write results to global memory
-    z[ai] = TEMP(ai + bankOffsetA);
-    z[bi] = TEMP(bi + bankOffsetB);
+ // TODO: to be remove
 }
 
 /*
