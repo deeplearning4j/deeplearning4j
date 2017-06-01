@@ -6161,7 +6161,7 @@ void NativeOps::encodeThresholdP2Float(Nd4jPointer *extraPointers, int *dx, Nd4j
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     //encoderKernelP2Float<<<numBlocks, blockSize , 1024 * sizeof(float), *stream>>>(dx, N, dz);
 
-    prescanArrayRecursive(extraPointers, dz, dx, (int) N, 0);
+    prescanArrayRecursive(extraPointers, dz, dx + 1, (int) N, 0);
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }

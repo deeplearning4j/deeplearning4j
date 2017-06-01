@@ -291,7 +291,7 @@ __device__ inline void encoderKernelP3Generic(void *dx, int *offsets, Nd4jIndex 
 	if (threadIdx.x == 0) {
         fb.i_ = z[2];
         threshold = fb.f_;
-	    bo = offsets[blockIdx.x+1];
+	    bo = offsets[blockIdx.x];
 	}
 	__syncthreads();
 

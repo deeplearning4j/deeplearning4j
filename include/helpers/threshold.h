@@ -13,7 +13,7 @@ void prescanArrayRecursive(Nd4jPointer *extras, int *z, int *x, int numElements,
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
     int **g_scanBlockSums = reinterpret_cast<int **>(&extras[2]);
 
-    unsigned int blockSize = 1024; // max size of the thread blocks
+    unsigned int blockSize = 512; // max size of the thread blocks
     unsigned int numBlocks = max(1, (int)ceil((float)numElements / (2.f * blockSize)));
     unsigned int numThreads;
 
