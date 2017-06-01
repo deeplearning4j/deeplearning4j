@@ -19,7 +19,6 @@ package org.datavec.spark.storage;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.MapFile;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.MapFileOutputFormat;
@@ -31,10 +30,11 @@ import org.datavec.api.writable.Writable;
 import org.datavec.hadoop.records.reader.mapfile.record.RecordWritable;
 import org.datavec.hadoop.records.reader.mapfile.record.SequenceRecordWritable;
 import org.datavec.spark.storage.functions.RecordLoadPairFunction;
-import org.datavec.spark.storage.functions.SequenceRecordLoadPairFunction;
 import org.datavec.spark.storage.functions.RecordSavePrepPairFunction;
+import org.datavec.spark.storage.functions.SequenceRecordLoadPairFunction;
 import org.datavec.spark.storage.functions.SequenceRecordSavePrepPairFunction;
 
+import javax.annotation.Nullable;
 import java.util.List;
 
 /**
@@ -75,7 +75,27 @@ public class SparkStorageUtils {
      * @see #saveMapFile(String, JavaRDD)
      */
     public static void saveSequenceFile(String path, JavaRDD<List<Writable>> rdd) {
+        saveSequenceFile(path, rdd, null);
+    }
+
+    /**
+     * Save a {@code JavaRDD<List<Writable>>} to a Hadoop {@link org.apache.hadoop.io.SequenceFile}. Each record is given
+     * a unique (but noncontiguous) {@link LongWritable} key, and values are stored as {@link RecordWritable} instances.
+     * <p>
+     * Use {@link #restoreSequenceFile(String, JavaSparkContext)} to restore values saved with this method.
+     *
+     * @param path           Path to save the sequence file
+     * @param rdd            RDD to save
+     * @param maxOutputFiles Nullable. If non-null: first coalesce the RDD to the specified size (number of partitions)
+     *                       to limit the maximum number of output sequence files
+     * @see #saveSequenceFileSequences(String, JavaRDD)
+     * @see #saveMapFile(String, JavaRDD)
+     */
+    public static void saveSequenceFile(String path, JavaRDD<List<Writable>> rdd, @Nullable Integer maxOutputFiles) {
         path = FilenameUtils.normalize(path, true);
+        if (maxOutputFiles != null) {
+            rdd = rdd.coalesce(maxOutputFiles);
+        }
         JavaPairRDD<List<Writable>, Long> dataIndexPairs = rdd.zipWithUniqueId();    //Note: Long values are unique + NOT contiguous; more efficient than zipWithIndex
         JavaPairRDD<LongWritable, RecordWritable> keyedByIndex = dataIndexPairs.mapToPair(new RecordSavePrepPairFunction());
 
@@ -105,7 +125,27 @@ public class SparkStorageUtils {
      * @see #saveMapFileSequences(String, JavaRDD)
      */
     public static void saveSequenceFileSequences(String path, JavaRDD<List<List<Writable>>> rdd) {
+        saveSequenceFileSequences(path, rdd, null);
+    }
+
+    /**
+     * Save a {@code JavaRDD<List<List<Writable>>>} to a Hadoop {@link org.apache.hadoop.io.SequenceFile}. Each record
+     * is given a unique (but noncontiguous) {@link LongWritable} key, and values are stored as {@link SequenceRecordWritable} instances.
+     * <p>
+     * Use {@link #restoreSequenceFileSequences(String, JavaSparkContext)} to restore values saved with this method.
+     *
+     * @param path           Path to save the sequence file
+     * @param rdd            RDD to save
+     * @param maxOutputFiles Nullable. If non-null: first coalesce the RDD to the specified size (number of partitions)
+     *                       to limit the maximum number of output sequence files
+     * @see #saveSequenceFile(String, JavaRDD)
+     * @see #saveMapFileSequences(String, JavaRDD)
+     */
+    public static void saveSequenceFileSequences(String path, JavaRDD<List<List<Writable>>> rdd, @Nullable Integer maxOutputFiles) {
         path = FilenameUtils.normalize(path, true);
+        if (maxOutputFiles != null) {
+            rdd = rdd.coalesce(maxOutputFiles);
+        }
         JavaPairRDD<List<List<Writable>>, Long> dataIndexPairs = rdd.zipWithUniqueId();    //Note: Long values are unique + NOT contiguous; more efficient than zipWithIndex
         JavaPairRDD<LongWritable, SequenceRecordWritable> keyedByIndex = dataIndexPairs.mapToPair(new SequenceRecordSavePrepPairFunction());
 
@@ -133,7 +173,7 @@ public class SparkStorageUtils {
      * {@link org.datavec.hadoop.records.reader.mapfile.MapFileRecordReader}<br>
      * <b>Note 2</b>: This use a MapFile interval of {@link #DEFAULT_MAP_FILE_INTERVAL}, which is usually suitable for
      * use cases such as {@link org.datavec.hadoop.records.reader.mapfile.MapFileRecordReader}. Use
-     * {@link #saveMapFile(String, JavaRDD, int)} or {@link #saveMapFile(String, JavaRDD, Configuration)}
+     * {@link #saveMapFile(String, JavaRDD, int, Integer)} or {@link #saveMapFile(String, JavaRDD, Configuration, Integer)}
      * to customize this. <br>
      * <p>
      * Use {@link #restoreMapFile(String, JavaSparkContext)} to restore values saved with this method.
@@ -144,7 +184,7 @@ public class SparkStorageUtils {
      * @see #saveSequenceFile(String, JavaRDD)
      */
     public static void saveMapFile(String path, JavaRDD<List<Writable>> rdd) {
-        saveMapFile(path, rdd, DEFAULT_MAP_FILE_INTERVAL);
+        saveMapFile(path, rdd, DEFAULT_MAP_FILE_INTERVAL, null);
     }
 
     /**
@@ -157,18 +197,20 @@ public class SparkStorageUtils {
      * <p>
      * Use {@link #restoreMapFileSequences(String, JavaSparkContext)} to restore values saved with this method.
      *
-     * @param path Path to save the MapFile
-     * @param rdd  RDD to save
-     * @param interval The map file index interval to use. Smaller values may result in the faster look up, at the
-     *                 expense of more memory/disk use. However, usually the increase is relatively minor, due to
-     *                 keys being stored as LongWritable objects
+     * @param path           Path to save the MapFile
+     * @param rdd            RDD to save
+     * @param interval       The map file index interval to use. Smaller values may result in the faster look up, at the
+     *                       expense of more memory/disk use. However, usually the increase is relatively minor, due to
+     *                       keys being stored as LongWritable objects
+     * @param maxOutputFiles Nullable. If non-null: first coalesce the RDD to the specified size (number of partitions)
+     *                       to limit the maximum number of output map files
      * @see #saveMapFileSequences(String, JavaRDD)
      * @see #saveSequenceFile(String, JavaRDD)
      */
-    public static void saveMapFile(String path, JavaRDD<List<Writable>> rdd, int interval) {
+    public static void saveMapFile(String path, JavaRDD<List<Writable>> rdd, int interval, @Nullable Integer maxOutputFiles) {
         Configuration c = new Configuration();
-        c.set("io.map.index.interval", String.valueOf(interval));
-        saveMapFile(path, rdd, c);
+        c.set(MAP_FILE_INDEX_INTERVAL_KEY, String.valueOf(interval));
+        saveMapFile(path, rdd, c, maxOutputFiles);
     }
 
     /**
@@ -181,14 +223,19 @@ public class SparkStorageUtils {
      * <p>
      * Use {@link #restoreMapFileSequences(String, JavaSparkContext)} to restore values saved with this method.
      *
-     * @param path Path to save the MapFile
-     * @param rdd  RDD to save
-     * @param c    Configuration object, used to customise options for the map file
+     * @param path           Path to save the MapFile
+     * @param rdd            RDD to save
+     * @param c              Configuration object, used to customise options for the map file
+     * @param maxOutputFiles Nullable. If non-null: first coalesce the RDD to the specified size (number of partitions)
+     *                       to limit the maximum number of output map files
      * @see #saveMapFileSequences(String, JavaRDD)
      * @see #saveSequenceFile(String, JavaRDD)
      */
-    public static void saveMapFile(String path, JavaRDD<List<Writable>> rdd, Configuration c) {
+    public static void saveMapFile(String path, JavaRDD<List<Writable>> rdd, Configuration c, @Nullable Integer maxOutputFiles) {
         path = FilenameUtils.normalize(path, true);
+        if (maxOutputFiles != null) {
+            rdd = rdd.coalesce(maxOutputFiles);
+        }
         JavaPairRDD<List<Writable>, Long> dataIndexPairs = rdd.zipWithIndex();   //Note: Long values are unique + contiguous, but requires a count
         JavaPairRDD<LongWritable, RecordWritable> keyedByIndex = dataIndexPairs.mapToPair(new RecordSavePrepPairFunction());
 
@@ -220,7 +267,7 @@ public class SparkStorageUtils {
      * {@link org.datavec.hadoop.records.reader.mapfile.MapFileSequenceRecordReader}<br>
      * <b>Note 2</b>: This use a MapFile interval of {@link #DEFAULT_MAP_FILE_INTERVAL}, which is usually suitable for
      * use cases such as {@link org.datavec.hadoop.records.reader.mapfile.MapFileSequenceRecordReader}. Use
-     * {@link #saveMapFileSequences(String, JavaRDD, int)} or {@link #saveMapFileSequences(String, JavaRDD, Configuration)}
+     * {@link #saveMapFileSequences(String, JavaRDD, int, Integer)} or {@link #saveMapFileSequences(String, JavaRDD, Configuration, Integer)}
      * to customize this. <br>
      * <p>
      * Use {@link #restoreMapFileSequences(String, JavaSparkContext)} to restore values saved with this method.
@@ -231,7 +278,7 @@ public class SparkStorageUtils {
      * @see #saveSequenceFile(String, JavaRDD)
      */
     public static void saveMapFileSequences(String path, JavaRDD<List<List<Writable>>> rdd) {
-        saveMapFileSequences(path, rdd, DEFAULT_MAP_FILE_INTERVAL);
+        saveMapFileSequences(path, rdd, DEFAULT_MAP_FILE_INTERVAL, null);
     }
 
     /**
@@ -252,10 +299,10 @@ public class SparkStorageUtils {
      * @see #saveMapFileSequences(String, JavaRDD)
      * @see #saveSequenceFile(String, JavaRDD)
      */
-    public static void saveMapFileSequences(String path, JavaRDD<List<List<Writable>>> rdd, int interval) {
+    public static void saveMapFileSequences(String path, JavaRDD<List<List<Writable>>> rdd, int interval, @Nullable Integer maxOutputFiles) {
         Configuration c = new Configuration();
-        c.set("io.map.index.interval", String.valueOf(interval));
-        saveMapFileSequences(path, rdd, c);
+        c.set(MAP_FILE_INDEX_INTERVAL_KEY, String.valueOf(interval));
+        saveMapFileSequences(path, rdd, c, maxOutputFiles);
     }
 
     /**
@@ -274,8 +321,11 @@ public class SparkStorageUtils {
      * @see #saveMapFileSequences(String, JavaRDD)
      * @see #saveSequenceFile(String, JavaRDD)
      */
-    public static void saveMapFileSequences(String path, JavaRDD<List<List<Writable>>> rdd, Configuration c) {
+    public static void saveMapFileSequences(String path, JavaRDD<List<List<Writable>>> rdd, Configuration c, @Nullable Integer maxOutputFiles) {
         path = FilenameUtils.normalize(path, true);
+        if (maxOutputFiles != null) {
+            rdd = rdd.coalesce(maxOutputFiles);
+        }
         JavaPairRDD<List<List<Writable>>, Long> dataIndexPairs = rdd.zipWithIndex();
         JavaPairRDD<LongWritable, SequenceRecordWritable> keyedByIndex = dataIndexPairs.mapToPair(new SequenceRecordSavePrepPairFunction());
 

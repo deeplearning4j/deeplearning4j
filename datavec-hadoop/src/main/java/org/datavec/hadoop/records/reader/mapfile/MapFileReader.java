@@ -71,8 +71,9 @@ public class MapFileReader<V> implements Closeable {
 
         SequenceFile.Reader.Option[] opts = new SequenceFile.Reader.Option[0];
 
+        Configuration config = new Configuration();
         for( int i=0; i<paths.size(); i++ ) {
-            readers[i] = new MapFile.Reader(new Path(paths.get(i)), new Configuration(), opts);
+            readers[i] = new MapFile.Reader(new Path(paths.get(i)), config, opts);
             if (readers[i].getValueClass() != recordClass) {
                 throw new UnsupportedOperationException("MapFile record class: " + readers[i].getValueClass()
                         + ", but got class " + recordClass + ", path = " + paths.get(i));
