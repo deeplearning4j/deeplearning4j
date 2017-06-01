@@ -2168,7 +2168,8 @@ public class Nd4j {
             INDArray row = write.getRow(i);
             for (int j = 0; j < row.columns(); j++) {
                 sb.append(row.getDouble(j));
-                sb.append(split);
+                if (j < row.columns() - 1) // not the last element
+                    sb.append(split);
             }
             sb.append("\n");
             writer.write(sb.toString());
@@ -2241,12 +2242,12 @@ public class Nd4j {
     public static INDArray readTxtString(InputStream ndarray, String sep) {
         /*
          We could dump an ndarray to a file with the tostring (since that is valid json) and use put/get to parse it as json
-        
+
          But here we leverage our information of the tostring method to be more efficient
          With our current toString format we use tads along dimension (rank-1,rank-2) to write to the array in two dimensional chunks at a time.
          This is more efficient than setting each value at a time with putScalar.
          This also means we can read the file one line at a time instead of loading the whole thing into memory
-        
+
          Future work involves enhancing the write json method to provide more features to make the load more efficient
         */
         int lineNum = 0;
