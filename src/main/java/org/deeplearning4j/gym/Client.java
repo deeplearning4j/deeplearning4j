@@ -165,7 +165,7 @@ public class Client<O, A, AS extends ActionSpace<A>> {
 
     private void uploadPost(JSONObject json) {
         try {
-            ClientUtils.post(url + V1_ROOT + instanceId + UPLOAD, json);
+            ClientUtils.post(url + V1_ROOT + UPLOAD, json);
         } catch (RuntimeException e) {
             Logger logger = Logger.getLogger("Client Upload");
             logger.log(Level.SEVERE, "Impossible to upload: Wrong API key?");
@@ -179,5 +179,7 @@ public class Client<O, A, AS extends ActionSpace<A>> {
         serverShutdown(url);
     }
 
-
+    public ActionSpace getActionSpace(){
+        return actionSpace;
+    }
 }
