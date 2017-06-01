@@ -4776,9 +4776,13 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native void encodeThresholdP1Float(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatBuffer dx, @Cast("Nd4jIndex") long N, IntBuffer dz, float threshold);
     public native void encodeThresholdP1Float(@Cast("Nd4jPointer*") PointerPointer extraPointers, float[] dx, @Cast("Nd4jIndex") long N, int[] dz, float threshold);
 
-    public native void encodeThresholdP2Float(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatPointer dx, IntPointer offsets, @Cast("Nd4jIndex") long N, IntPointer dz);
-    public native void encodeThresholdP2Float(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatBuffer dx, IntBuffer offsets, @Cast("Nd4jIndex") long N, IntBuffer dz);
-    public native void encodeThresholdP2Float(@Cast("Nd4jPointer*") PointerPointer extraPointers, float[] dx, int[] offsets, @Cast("Nd4jIndex") long N, int[] dz);
+    public native void encodeThresholdP2Float(@Cast("Nd4jPointer*") PointerPointer extraPointers, IntPointer dx, @Cast("Nd4jIndex") long N, IntPointer dz);
+    public native void encodeThresholdP2Float(@Cast("Nd4jPointer*") PointerPointer extraPointers, IntBuffer dx, @Cast("Nd4jIndex") long N, IntBuffer dz);
+    public native void encodeThresholdP2Float(@Cast("Nd4jPointer*") PointerPointer extraPointers, int[] dx, @Cast("Nd4jIndex") long N, int[] dz);
+
+    public native void encodeThresholdP3Float(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatPointer dx, IntPointer offsets, @Cast("Nd4jIndex") long N, IntPointer dz);
+    public native void encodeThresholdP3Float(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatBuffer dx, IntBuffer offsets, @Cast("Nd4jIndex") long N, IntBuffer dz);
+    public native void encodeThresholdP3Float(@Cast("Nd4jPointer*") PointerPointer extraPointers, float[] dx, int[] offsets, @Cast("Nd4jIndex") long N, int[] dz);
 
     public native void decodeThresholdFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jIndex") long N, FloatPointer dz);
     public native void decodeThresholdFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jIndex") long N, FloatBuffer dz);

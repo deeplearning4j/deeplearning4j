@@ -292,6 +292,49 @@ public class CompressionTests extends BaseNd4jTest {
 
 
     @Test
+    public void testThresholdCompressionZ() throws Exception {
+        INDArray initial = Nd4j.create(1, 16384);
+        for (int i = 0; i < 96; i++)
+            initial.putScalar(i * 20, 1.0f);
+
+
+        INDArray exp = Nd4j.create(1, 16384);
+        for (int i = 0; i < 96; i++)
+            exp.putScalar(i * 20, 0.1f);
+
+        INDArray exp_d = Nd4j.create(1, 16384);
+        for (int i = 0; i < 96; i++)
+            exp_d.putScalar(i * 20, 0.9f);
+
+        NDArrayCompressor compressor = Nd4j.getCompressor().getCompressor("THRESHOLD");
+        compressor.configure(0.9);
+
+        INDArray compressed = compressor.compress(initial);
+
+        assertEquals(exp, initial);
+
+        log.info("Compressed length: {}", compressed.data().length());
+        log.info("Compressed: {}", Arrays.toString(compressed.data().asInt()));
+
+        INDArray decompressed = compressor.decompress(compressed);
+
+        log.info("Decompressed length: {}", decompressed.lengthLong());
+
+        assertEquals(exp_d, decompressed);
+    }
+
+
+    @Test
+    public void testThresholdCompression0() throws Exception {
+        INDArray initial = Nd4j.rand(1, 300000000);
+
+        NDArrayCompressor compressor = Nd4j.getCompressor().getCompressor("THRESHOLD");
+        compressor.configure(0.09);
+
+        INDArray compressed = compressor.compress(initial);
+    }
+
+    @Test
     public void testThresholdCompression1() throws Exception {
         INDArray initial = Nd4j.create(new double[]{0.0, 0.0, 1e-3, -1e-3, 0.0, 0.0});
         INDArray exp_0 = Nd4j.create(6);
