@@ -128,7 +128,8 @@ __device__ inline void encoderKernelP2Generic(void *dx, int *offsets, Nd4jIndex 
 		__syncthreads();
 
 		if(pred){
-			z[t_u+warpTotals[w_i]+ bo]= value > (T) 0.0f ? tid+1 : -(tid + 1);
+			z[t_u + warpTotals[w_i] + bo + 3]= value > (T) 0.0f ? tid+1 : -(tid + 1);
+			x[tid] = value > (T) 0.0f ? x[tid] - threshold : x[tid] + threshold;
 		}
 	}
 }
@@ -149,8 +150,8 @@ __device__ inline void decoderKernelGeneric(void *dx, Nd4jIndex N, void *dz) {
 
     __shared__ FloatBits fb;
     if (threadIdx.x == 0) {
-        limit = z[0];
-        fb.i_ = z[2];
+        limit = x[0];
+        fb.i_ = x[2];
         threshold = fb.f_;
     }
     __syncthreads();
