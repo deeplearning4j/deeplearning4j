@@ -2130,7 +2130,11 @@ void NativeOps::encodeThresholdP1Float(Nd4jPointer *extraPointers, float *dx, Nd
     // TODO: to be implemented
 }
 
-void NativeOps::encodeThresholdP2Float(Nd4jPointer *extraPointers, float *dx, int *offsets, Nd4jIndex N, int *dz){
+void NativeOps::encodeThresholdP2Float(Nd4jPointer *extraPointers, int *dx, Nd4jIndex N, int *dz) {
+    // TODO: to be implemented
+}
+
+void NativeOps::encodeThresholdP3Float(Nd4jPointer *extraPointers, float *dx, int *offsets, Nd4jIndex N, int *dz){
     // offsets won't be used here
 
     // TODO: to be implemented

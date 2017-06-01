@@ -6153,13 +6153,18 @@ void NativeOps::encodeThresholdP1Float(Nd4jPointer *extras, float *dx, Nd4jIndex
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
-void NativeOps::encodeThresholdP2Float(Nd4jPointer *extraPointers, float *dx, int *offsets, Nd4jIndex N, int *dz){
+
+void NativeOps::encodeThresholdP2Float(Nd4jPointer *extraPointers, int *dx, Nd4jIndex N, int *dz) {
+    // TODO: to be implemented
+}
+
+void NativeOps::encodeThresholdP3Float(Nd4jPointer *extraPointers, float *dx, int *offsets, Nd4jIndex N, int *dz){
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
     int blockSize = 1024;
     int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
 
-    encoderKernelP2Float<<<numBlocks, blockSize , 1024, *stream>>>(dx, offsets, N, dz);
+    encoderKernelP3Float<<<numBlocks, blockSize , 1024, *stream>>>(dx, offsets, N, dz);
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }

@@ -2832,7 +2832,9 @@ public:
 
     void encodeThresholdP1Float(Nd4jPointer *extraPointers, float *dx, Nd4jIndex N, int *dz, float threshold);
 
-    void encodeThresholdP2Float(Nd4jPointer *extraPointers, float *dx, int *offsets, Nd4jIndex N, int *dz);
+    void encodeThresholdP2Float(Nd4jPointer *extraPointers, int *dx, Nd4jIndex N, int *dz);
+
+    void encodeThresholdP3Float(Nd4jPointer *extraPointers, float *dx, int *offsets, Nd4jIndex N, int *dz);
 
     void decodeThresholdFloat(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float *dz);
 };

@@ -76,13 +76,111 @@ __device__ __inline__ int pow2i (int e){
 	return 1<<e;
 }
 
+#define NUM_BANKS 16
+#define LOG_NUM_BANKS 4
+
+// Define this to more rigorously avoid bank conflicts, even at the lower (root) levels of the tree
+//#define ZERO_BANK_CONFLICTS
+
+#ifdef ZERO_BANK_CONFLICTS
+#define CONFLICT_FREE_OFFSET(index) ((index) >> LOG_NUM_BANKS + (index) >> (2 * LOG_NUM_BANKS))
+#else
+#define CONFLICT_FREE_OFFSET(index) ((index) >> LOG_NUM_BANKS)
+#endif
+
+#ifdef CHECK_BANK_CONFLICTS
+#define TEMP(index)   CUT_BANK_CHECKER(temp, index)
+#else
+#define TEMP(index)   temp[index]
+#endif
+
+/*
+ * This kernel does prefix sum in parallel, to calculate offsets for each block
+ */
+template<typename T>
+__device__ inline void encoderKernelP2Generic(void *dx, Nd4jIndex n, void *dz) {
+     extern  __shared__  float temp[];
+
+    int *x = reinterpret_cast<int *> (dx);
+    int *z = reinterpret_cast<int *> (dz);
+
+    int ai = threadIdx.x;
+    int bi = threadIdx.x + (n/2);
+
+    // compute spacing to avoid bank conflicts
+    int bankOffsetA = CONFLICT_FREE_OFFSET(ai);
+    int bankOffsetB = CONFLICT_FREE_OFFSET(bi);
+
+    // Cache the computational window in shared memory
+    TEMP(ai + bankOffsetA) = x[ai];
+    TEMP(bi + bankOffsetB) = x[bi];
+
+    int offset = 1;
+
+    // build the sum in place up the tree
+    for (int d = n/2; d > 0; d >>= 1)
+    {
+        __syncthreads();
+
+        if (threadIdx.x < d)
+        {
+            int ai = offset*(2 * threadIdx.x +1)-1;
+            int bi = offset*(2 * threadIdx.x +2)-1;
+
+            ai += CONFLICT_FREE_OFFSET(ai);
+            bi += CONFLICT_FREE_OFFSET(bi);
+
+            TEMP(bi) += TEMP(ai);
+        }
+
+        offset *= 2;
+    }
+
+    // scan back down the tree
+
+    // clear the last element
+    if (threadIdx.x == 0)
+    {
+        int index = n - 1;
+        index += CONFLICT_FREE_OFFSET(index);
+        TEMP(index) = 0;
+    }
+
+    // traverse down the tree building the scan in place
+    for (int d = 1; d < n; d *= 2)
+    {
+        offset /= 2;
+
+        __syncthreads();
+
+        if (threadIdx.x < d)
+        {
+            int ai = offset*(2 * threadIdx.x + 1)-1;
+            int bi = offset*(2 * threadIdx.x + 2)-1;
+
+            ai += CONFLICT_FREE_OFFSET(ai);
+            bi += CONFLICT_FREE_OFFSET(bi);
+
+            float t  = TEMP(ai);
+            TEMP(ai) = TEMP(bi);
+            TEMP(bi) += t;
+        }
+    }
+
+    __syncthreads();
+
+    // write results to global memory
+    z[ai] = TEMP(ai + bankOffsetA);
+    z[bi] = TEMP(bi + bankOffsetB);
+}
+
 /*
  * PLEASE NOTE: This kernel doesn't allow loop for data. Basically: grid will be huge.
  *
  * Based on: https://github.com/knotman90/cuStreamComp <-- efficient CUDA stream compaction algorithm
  */
 template<typename T>
-__device__ inline void encoderKernelP2Generic(void *dx, int *offsets, Nd4jIndex N, void *dz) {
+__device__ inline void encoderKernelP3Generic(void *dx, int *offsets, Nd4jIndex N, void *dz) {
     T *x = reinterpret_cast<T *> (dx);
     int *z = reinterpret_cast<int *> (dz);
 
@@ -178,16 +276,20 @@ extern "C" __global__ void encoderKernelP1Half(void *dx, Nd4jIndex N, void *dz, 
     encoderKernelP1Generic<float16>(dx, N, dz, threshold);
 }
 
-extern "C" __global__ void encoderKernelP2Float(void *dx, int *offsets, Nd4jIndex N, void *dz) {
-    encoderKernelP2Generic<float>(dx, offsets, N, dz);
+extern "C" __global__ void encoderKernelP2Float(int *dx, Nd4jIndex N, int *dz) {
+    encoderKernelP2Generic<float>(dx, N, dz);
 }
 
-extern "C" __global__ void encoderKernelP2Double(void *dx, int *offsets, Nd4jIndex N, void *dz) {
-    encoderKernelP2Generic<double>(dx, offsets, N, dz);
+extern "C" __global__ void encoderKernelP3Float(void *dx, int *offsets, Nd4jIndex N, void *dz) {
+    encoderKernelP3Generic<float>(dx, offsets, N, dz);
 }
 
-extern "C" __global__ void encoderKernelP2Half(void *dx, int *offsets, Nd4jIndex N, void *dz) {
-    encoderKernelP2Generic<float16>(dx, offsets, N, dz);
+extern "C" __global__ void encoderKernelP3Double(void *dx, int *offsets, Nd4jIndex N, void *dz) {
+    encoderKernelP3Generic<double>(dx, offsets, N, dz);
+}
+
+extern "C" __global__ void encoderKernelP3Half(void *dx, int *offsets, Nd4jIndex N, void *dz) {
+    encoderKernelP3Generic<float16>(dx, offsets, N, dz);
 }
 
 extern "C" __global__ void decoderKernelFloat(void *dx, Nd4jIndex N, void *dz) {
