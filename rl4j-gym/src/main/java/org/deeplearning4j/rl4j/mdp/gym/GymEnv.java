@@ -47,7 +47,7 @@ public class GymEnv<O, A, AS extends ActionSpace<A>> implements MDP<O, A, AS> {
 
     public AS getActionSpace() {
         if (actionTransformer == null)
-            return client.getActionSpace();
+            return (AS) client.getActionSpace();
         else
             return (AS) actionTransformer;
     }
