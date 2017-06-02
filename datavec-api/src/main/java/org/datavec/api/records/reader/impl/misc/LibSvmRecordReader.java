@@ -97,8 +97,7 @@ public class LibSvmRecordReader extends LineRecordReader {
             if (!zeroBasedIndexing)
                 j = j - 1;
 
-            /* TODO: throw an exception here. */
-            assert(j < 0);
+            if (j < 0) throw new IndexOutOfBoundsException("Invalid data, negative index.");
 
             while (j != read) {
                 record.add(new DoubleWritable(0.0));
@@ -120,9 +119,8 @@ public class LibSvmRecordReader extends LineRecordReader {
         if (numFeatures == 0)
             numFeatures = read;
 
-        /* TODO: throw an exception here. */
         if (read > numFeatures)
-            log.warn("Found " + read + " features in record, expected " + numFeatures);
+            throw new IndexOutOfBoundsException("Found " + read + " features in record, expected " + numFeatures);
 
         if (classification && appendLabel || !classification) {
             record.add(new DoubleWritable(response));

@@ -88,7 +88,7 @@ public class CSVSparkTransformServer {
         })));
 
         //return the host information for a given id
-        routingDsl.POST("/transform").routeTo(FunctionUtil.function0((() -> {
+        routingDsl.POST("/transformincremental").routeTo(FunctionUtil.function0((() -> {
             try {
                 CSVRecord record = Json.fromJson(request().body().asJson(), CSVRecord.class);
                 if (record == null)
@@ -101,7 +101,7 @@ public class CSVSparkTransformServer {
         })));
 
         //return the host information for a given id
-        routingDsl.POST("/transformbatch").routeTo(FunctionUtil.function0((() -> {
+        routingDsl.POST("/transform").routeTo(FunctionUtil.function0((() -> {
             try {
                 BatchRecord batch = transform.transform(Json.fromJson(request().body().asJson(), BatchRecord.class));
                 if (batch == null)
@@ -112,7 +112,19 @@ public class CSVSparkTransformServer {
                 return internalServerError();
             }
         })));
-        routingDsl.POST("/transformedbatcharray").routeTo(FunctionUtil.function0((() -> {
+
+        routingDsl.POST("/transformedincrementalarray").routeTo(FunctionUtil.function0((() -> {
+            try {
+                CSVRecord record = Json.fromJson(request().body().asJson(), CSVRecord.class);
+                if (record == null)
+                    return badRequest();
+                return ok(Json.toJson(transform.toArray(record)));
+            } catch (Exception e) {
+                return internalServerError();
+            }
+        })));
+
+        routingDsl.POST("/transformedarray").routeTo(FunctionUtil.function0((() -> {
             try {
                 BatchRecord batchRecord = Json.fromJson(request().body().asJson(), BatchRecord.class);
                 if (batchRecord == null)
@@ -123,19 +135,7 @@ public class CSVSparkTransformServer {
             }
         })));
 
-        routingDsl.POST("/transformedarray").routeTo(FunctionUtil.function0((() -> {
-            try {
-                CSVRecord record = Json.fromJson(request().body().asJson(), CSVRecord.class);
-                if (record == null)
-                    return badRequest();
-                return ok(Json.toJson(transform.toArray(record)));
-            } catch (Exception e) {
-                return internalServerError();
-            }
-        })));
         server = Server.forRouter(routingDsl.build(), Mode.DEV, port);
-
-
     }
 
     /**
