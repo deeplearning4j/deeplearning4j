@@ -53,6 +53,12 @@ void prescanArrayRecursive(Nd4jPointer *extras, int *z, int *x, int numElements,
     dim3 grid(max(1, numBlocks - np2LastBlock), 1, 1);
     dim3 threads(numThreads, 1, 1);
 
+    if (sharedMemSize < 2048)
+        sharedMemSize = 2048;
+
+    if (sharedMemLastBlock < 2048)
+        sharedMemLastBlock = 2048;
+
     // make sure there are no CUDA errors before we start
     //CUT_CHECK_ERROR("prescanArrayRecursive before kernels");
 
