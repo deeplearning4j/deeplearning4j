@@ -14,11 +14,9 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.transform.metadata;
+package org.datavec.api.transform.metadata;
 
 import org.datavec.api.transform.ColumnType;
-import org.datavec.api.transform.metadata.BaseColumnMetaData;
-import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -84,7 +82,7 @@ public class NDArrayMetaData extends BaseColumnMetaData {
     }
 
     @Override
-    public ColumnMetaData clone() {
+    public NDArrayMetaData clone() {
         return new NDArrayMetaData(name, shape.clone());
     }
 }

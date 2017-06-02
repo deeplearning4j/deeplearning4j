@@ -50,7 +50,7 @@ public class DoubleMathOpTransform extends BaseColumnTransform {
     @Override
     public ColumnMetaData getNewColumnMetaData(String newColumnName, ColumnMetaData oldColumnType) {
         if (!(oldColumnType instanceof DoubleMetaData))
-            throw new IllegalStateException("Column is not an integer columnName");
+            throw new IllegalStateException("Column is not an double column");
         DoubleMetaData meta = (DoubleMetaData) oldColumnType;
         Double minValue = meta.getMinAllowedValue();
         Double maxValue = meta.getMaxAllowedValue();

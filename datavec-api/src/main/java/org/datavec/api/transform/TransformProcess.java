@@ -1220,6 +1220,27 @@ public class TransformProcess implements Serializable {
         }
 
         /**
+         * Element-wise NDArray math operation (add, subtract, etc) on an NDArray column
+         *
+         * @param columnName 
+         * @param op
+         * @param value
+         * @return
+         */
+        public Builder ndArrayMathOpTransform(String columnName, MathOp op, double value){
+            try{
+                Class<?> c = Class.forName("org.datavec.api.transform.transform.ndarray.NDArrayMathOpTransform");
+                transform( (Transform)
+                        c.getDeclaredConstructor(String.class, MathOp.class, double.class).newInstance(columnName, op, value));
+            } catch (Exception e){
+                //TODO
+                throw new RuntimeException(e);
+            }
+
+            return this;
+        }
+
+        /**
          * Create the TransformProcess object
          */
         public TransformProcess build() {

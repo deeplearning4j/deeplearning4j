@@ -30,6 +30,8 @@ import org.datavec.api.transform.metadata.*;
 import org.joda.time.DateTimeZone;
 
 import java.io.Serializable;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 /**
@@ -719,6 +721,32 @@ public class Schema implements Serializable {
          */
         public Builder addColumnTime(String columnName, DateTimeZone timeZone, Long minValidValue, Long maxValidValue) {
             addColumn(new TimeMetaData(columnName, timeZone, minValidValue, maxValidValue));
+            return this;
+        }
+
+
+        //TODO fix this
+        private static final String NDARRAY_META_CLASS = "org.datavec.api.transform.metadata.NDArrayMetaData";
+        public Builder addColumnNDArray(String columnName, int[] shape){
+            Class<?> c;
+            try{
+                c = Class.forName(NDARRAY_META_CLASS);
+            }catch (ClassNotFoundException e){
+                throw new RuntimeException("Cannot create NDArray column: NDArrayMetaData not found on classpath. "
+                        + "Missing datavec-nd4j-common dependency?");
+            }
+
+            Constructor<?> constructor;
+            try{
+               constructor = c.getDeclaredConstructor(String.class, int[].class);
+               ColumnMetaData meta = (ColumnMetaData) constructor.newInstance(columnName, shape);
+               addColumn(meta);
+            } catch (NoSuchMethodException e){
+                //Should never happen
+                throw new RuntimeException(e);
+            } catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
+                throw new RuntimeException("Could not create NDArrayMetaData",e);
+            }
             return this;
         }
 

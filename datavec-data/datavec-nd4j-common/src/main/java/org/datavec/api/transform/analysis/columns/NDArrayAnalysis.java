@@ -14,12 +14,11 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.transform.analysis.columns;
+package org.datavec.api.transform.analysis.columns;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.datavec.api.transform.ColumnType;
-import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
 
 /**
  * Created by Alex on 02/06/2017.
