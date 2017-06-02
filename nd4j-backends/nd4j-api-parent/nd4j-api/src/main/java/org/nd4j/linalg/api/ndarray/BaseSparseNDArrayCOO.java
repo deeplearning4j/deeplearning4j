@@ -171,9 +171,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
             int cnt = 0;
             while (indices[0].hasNext()) {
                 int idx = indices[0].next();
-                if(element.getDouble(cnt) != 0) {
-                    putScalar(idx, element.getDouble(cnt));
-                }
+                putScalar(idx, element.getDouble(cnt));
                 cnt++;
             }
             return this;
@@ -194,8 +192,29 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
     @Override
     public INDArray put(int[] indices, INDArray element) {
-        //TODO
-        return null;
+        if (!element.isScalar())
+            throw new IllegalArgumentException("Unable to insert anything but a scalar");
+        if (isRowVector() && indices[0] == 0 && indices.length == 2) {
+            int ix = Shape.offset(shapeInformation);
+            for (int i = 1; i < indices.length; i++)
+                ix += indices[i] * stride(i);
+            if (ix >= values.length())
+                throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indices));
+            System.out.println(indices[1] + " vs " +ix);
+            addOrUpdate(new int[]{0, ix}, element.getDouble(0));
+        } else {
+            int ix = Shape.offset(shapeInformation);
+            for (int i = 0; i < indices.length; i++)
+                if (size(i) != 1)
+                    ix += indices[i] * stride(i);
+            if (ix >= values.length())
+                throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indices));
+            System.out.println(indices[1] + " vs " +ix);
+            addOrUpdate(new int[]{0, ix}, element.getDouble(0));
+        }
+
+
+        return this;
     }
 
     @Override
@@ -221,10 +240,16 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
             if(Arrays.equals(idx, indexes)){
                 // There is already a non-null value at this index
                 // -> update the current value
-               values.put(i, value);
+                if(value == 0){
+                    removeEntry(i);
+                    length--;
+                } else {
+                    values.put(i, value);
+                }
+
                break;
             } else {
-                if(ArrayUtil.anyMore(indexes, idx)){
+                if(ArrayUtil.anyMore(indexes, idx) && value != 0){
                     /* It's a new non-null element
                     * The index and value should be added at the position i
                     * Need to shift the tail to make room for the new element
@@ -258,6 +283,18 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         }
         return buffer;
     }
+    public DataBuffer shiftLeft(DataBuffer buffer, int from, int offset, long datalength){
+        for(int i = from; i<datalength; i++) {
+            buffer.put(i - offset, buffer.getDouble(i));
+        }
+        return buffer;
+    }
+
+    public INDArray removeEntry(int idx){ // TODO move the logic into datatbuffer
+        values = shiftLeft(values, idx + 1, 1, length());
+        indices = shiftLeft(indices, (int)(idx * shape.length() + shape.length()), (int) shape.length(), length()* shape.length());
+        return this;
+    }
 
     /**
      * Returns a subset of this array based on the specified
@@ -287,11 +324,20 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * */
     @Override
     public DataBuffer getVectorCoordinates() {
-        if(isVector()){
-            return indices;
+        int idx;
+        if (isRowVector()) {
+            idx = 1;
+        } else if (isColumnVector()){
+            idx = 0;
         } else {
             throw new UnsupportedOperationException();
         }
+
+        int[] temp = new int[length()];
+        for (int i = 0; i < length(); i++) {
+            temp[i] = getIndicesOf(i).getInt(idx);
+        }
+        return Nd4j.createBuffer(temp);
     }
 
     /**
@@ -346,7 +392,9 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * @return a dataBuffer containing the indices of element
      * */
     public DataBuffer getIndicesOf(int i){
-        int[] arr = Arrays.copyOfRange(indices.asInt(), rank()*i, rank());
+        int from = rank() * i;
+        int to = from + rank();
+        int[] arr = Arrays.copyOfRange(indices.asInt(), from, to);
         return Nd4j.getDataBufferFactory().createInt(arr);
     }
 
