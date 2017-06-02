@@ -1489,9 +1489,23 @@ public abstract class NativeOps extends Pointer {
 
     public abstract void encodeThresholdP1Float(PointerPointer extraPointers, FloatPointer dx, long N, IntPointer dz, float threshold);
 
-    public abstract void encodeThresholdP2Float(PointerPointer extraPointers, IntPointer dx, long N, IntPointer dz);
+    public abstract void encodeThresholdP1Double(PointerPointer extraPointers, DoublePointer dx, long N, IntPointer dz, float threshold);
+
+    public abstract void encodeThresholdP1Half(PointerPointer extraPointers, @Cast("float16*") ShortPointer dx, long N, IntPointer dz, float threshold);
+
+
+    public abstract void encodeThresholdP2Int(PointerPointer extraPointers, IntPointer dx, long N, IntPointer dz);
+
 
     public abstract void encodeThresholdP3Float(PointerPointer extraPointers, FloatPointer dx, IntPointer offsets, long N, IntPointer dz);
 
+    public abstract void encodeThresholdP3Double(PointerPointer extraPointers, DoublePointer dx, IntPointer offsets, long N, IntPointer dz);
+
+    public abstract void encodeThresholdP3Half(PointerPointer extraPointers, @Cast("float16*") ShortPointer dx, IntPointer offsets, long N, IntPointer dz);
+
     public abstract void decodeThresholdFloat(PointerPointer extraPointers, Pointer dx, long N, FloatPointer dz);
+
+    public abstract void decodeThresholdDouble(PointerPointer extraPointers, Pointer dx, long N, DoublePointer dz);
+
+    public abstract void decodeThresholdHalf(PointerPointer extraPointers, Pointer dx, long N, @Cast("float16*") ShortPointer dz);
 }

@@ -197,7 +197,7 @@ public class CudaThreshold extends AbstractCompressor {
 
         DataBuffer offsetsBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(numBlocks, true) : Nd4j.getDataBufferFactory().createInt(numBlocks, true, Nd4j.getMemoryManager().getCurrentWorkspace());
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP2Float(extras, (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer), numBlocks, (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer) );
+        NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP2Int(extras, (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer), numBlocks, (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer) );
         AtomicAllocator.getInstance().getAllocationPoint(offsetsBuffer).tickDeviceWrite();
 
         //log.info("Offsets: {}", Arrays.toString(offsetsBuffer.asInt()));
