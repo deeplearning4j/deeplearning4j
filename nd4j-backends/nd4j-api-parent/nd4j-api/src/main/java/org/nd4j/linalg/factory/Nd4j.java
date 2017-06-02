@@ -5166,6 +5166,54 @@ public class Nd4j {
         return matrix;
     }
 
+    /**
+     * @param data
+     * @param indices
+     * @param shape
+     * @return a INDArray
+     * */
+    public static INDArray createSparseCOO(double[] data, int[][] indices, int[] shape) {
+        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
+
+        return matrix;
+    }
+
+    /**
+     * @param data
+     * @param indices
+     * @param shape
+     * @return a INDArray
+     * */
+    public static INDArray createSparseCOO(float[] data, int[][] indices, int[] shape) {
+        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
+
+        return matrix;
+    }
+
+    /**
+     * @param data
+     * @param indices
+     * @param shape
+     * @return a INDArray
+     * */
+    public static INDArray createSparseCOO(DataBuffer data, DataBuffer indices, int[] shape) {
+        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
+
+        return matrix;
+    }
+    /**
+     * @param data
+     * @param indices
+     * @param shape
+     * @return a INDArray
+     * */
+    public static INDArray createSparseCOO(DataBuffer data, DataBuffer indices, int[] stride, int offset, int[] shape, char ordering) {
+        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, stride, offset, shape, ordering);
+
+        return matrix;
+    }
+
+
     ////////////////////// OTHER ///////////////////////////////
 
 

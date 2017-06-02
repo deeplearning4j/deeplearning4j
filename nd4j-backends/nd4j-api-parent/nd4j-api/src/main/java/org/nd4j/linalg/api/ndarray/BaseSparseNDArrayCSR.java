@@ -43,7 +43,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         // TODO
         this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape);
         init(shape);
-        int valuesSpace = (int) (data.length * THRESHOLD_MEMORY_ALLOCATION) + data.length;
+        int valuesSpace = (int) (data.length * THRESHOLD_MEMORY_ALLOCATION);
         this.values = Nd4j.getDataBufferFactory().createDouble(valuesSpace);
         this.values.setData(data);
         this.columnsPointers = Nd4j.getDataBufferFactory().createInt(valuesSpace);
@@ -304,6 +304,8 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
             throw new UnsupportedOperationException();
         }
     }
+
+
 
     @Override
     public INDArray subArray(int[] offsets, int[] shape, int[] stride) {

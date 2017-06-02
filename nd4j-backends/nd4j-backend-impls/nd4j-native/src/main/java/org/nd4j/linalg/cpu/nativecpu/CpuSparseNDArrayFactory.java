@@ -42,14 +42,22 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     public INDArray createSparseCOO(double[] values, int[][] indices, int[] shape){
         return new SparseNDArrayCOO(values, indices, shape);
     }
+
     @Override
     public INDArray createSparseCOO(float[] values, int[][] indices, int[] shape){
-        return new SparseNDArrayCOO(values, indices, shape);    }
+        return new SparseNDArrayCOO(values, indices, shape);
+    }
+
     @Override
     public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] shape){
-        return new SparseNDArrayCOO(values, indices, shape);    }
+        return new SparseNDArrayCOO(values, indices, shape);
+    }
 
-    //  TODO ->
+    @Override
+    public INDArray createSparseCOO(DataBuffer data, DataBuffer indices, int[] stride, int offset, int[] shape, char ordering) {
+        return new SparseNDArrayCOO(data, indices, stride, offset, shape, ordering);
+    }
+//  TODO ->
 
     @Override
     public IComplexFloat createFloat(float real, float imag) {

@@ -21,7 +21,7 @@ import java.util.List;
 @Slf4j
 public abstract class BaseSparseNDArray implements ISparseNDArray {
 
-    protected static final double THRESHOLD_MEMORY_ALLOCATION = 0.5;
+    protected static final double THRESHOLD_MEMORY_ALLOCATION = 1.5;
     protected transient volatile long nnz = -1;
     protected int rows, columns, rank;
     protected Boolean isVector = null;
@@ -30,6 +30,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     protected long length = -1;
     public static final boolean isSparse = true;
     protected transient volatile DataBuffer shapeInformation;
+    protected int[] javaShapeInformation;
     protected transient DataBuffer shape;
     protected transient DataBuffer stride;
 
@@ -88,8 +89,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     // Override methods from INDArray
     // TODO: Most of them should be reimplemented for each format
-
-
 
     @Override
     public String shapeInfoToString() {
@@ -1401,6 +1400,11 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
 
         return shapeOf().getInt(dimension);
+    }
+
+    protected void setShapeInformation(DataBuffer shapeInfo) {
+        this.shapeInformation = shapeInfo;
+        this.javaShapeInformation = shapeInfo.asInt();
     }
 
     @Override
