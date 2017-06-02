@@ -271,6 +271,11 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createInt(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new IntBuffer(length, initialize, workspace);
+    }
+
+    @Override
     public DataBuffer createDouble(int[] data) {
         return createDouble(data, true);
     }

@@ -204,10 +204,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this.allocationMode = AllocationMode.JAVACPP;
         initTypeAndSize();
 
-        if (dataType() != Type.INT) {
+        //if (dataType() != Type.INT) {
             this.attached = true;
             this.parentWorkspace = workspace;
-        }
+        //}
 
         this.allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
                 new AllocationShape(length, this.elementSize, dataType()), initialize);
@@ -232,6 +232,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asFloatPointer();
             indexer = FloatIndexer.create((FloatPointer) pointer);
         } else if (dataType() == Type.INT) {
+            this.attached = true;
+            this.parentWorkspace = workspace;
+
             this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asIntPointer();
             indexer = IntIndexer.create((IntPointer) pointer);
         } else if (dataType() == Type.HALF) {

@@ -354,6 +354,8 @@ public interface DataBufferFactory {
      */
     DataBuffer createInt(long length, boolean initialize);
 
+    DataBuffer createInt(long length, boolean initialize, MemoryWorkspace workspace);
+
     /**
      * Creates a double data buffer
      *

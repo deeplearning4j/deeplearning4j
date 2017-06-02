@@ -1,11 +1,17 @@
 package org.nd4j.linalg.compression;
 
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -324,14 +330,42 @@ public class CompressionTests extends BaseNd4jTest {
     }
 
 
+    @Ignore
     @Test
     public void testThresholdCompression0() throws Exception {
-        INDArray initial = Nd4j.rand(1, 300000000);
+        INDArray initial = Nd4j.rand(new int[]{1, 150000000}, 119L);
 
         NDArrayCompressor compressor = Nd4j.getCompressor().getCompressor("THRESHOLD");
-        compressor.configure(0.09);
+        compressor.configure(0.999);
 
-        INDArray compressed = compressor.compress(initial);
+        log.info("DTYPE: {}", Nd4j.dataType());
+
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .initialSize(2 * 1024L * 1024L * 1024L)
+                .overallocationLimit(0)
+                .policyAllocation(AllocationPolicy.STRICT)
+                .policyLearning(LearningPolicy.NONE)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .build();
+
+
+        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "IIIA")) {
+            INDArray compressed = compressor.compress(initial.dup());
+        }
+
+        long timeS = 0;
+        for (int i = 0; i < 100; i++) {
+            try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "IIIA")) {
+                INDArray d = initial.dup();
+                long time1 = System.nanoTime();
+                INDArray compressed = compressor.compress(d);
+                long time2 = System.nanoTime();
+                timeS += (time2 - time1) / 1000;
+            }
+        }
+
+
+        log.info("Elapsed time: {} us", (timeS) / 100);
     }
 
     @Test

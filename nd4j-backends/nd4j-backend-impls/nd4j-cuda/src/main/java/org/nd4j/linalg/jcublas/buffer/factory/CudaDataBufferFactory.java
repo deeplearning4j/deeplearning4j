@@ -282,6 +282,11 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createInt(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new CudaIntDataBuffer(length, initialize, workspace);
+    }
+
+    @Override
     public DataBuffer createDouble(int[] data) {
         return new CudaDoubleDataBuffer(ArrayUtil.toDoubles(data));
     }

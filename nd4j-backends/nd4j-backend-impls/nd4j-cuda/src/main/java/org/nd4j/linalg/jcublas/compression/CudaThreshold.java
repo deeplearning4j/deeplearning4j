@@ -4,10 +4,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.FastMath;
-import org.bytedeco.javacpp.FloatPointer;
-import org.bytedeco.javacpp.IntPointer;
-import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.PointerPointer;
+import org.bytedeco.javacpp.*;
 import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.conf.CudaEnvironment;
@@ -23,6 +20,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.AbsValueGreaterThan;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.jcublas.buffer.CudaDoubleDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.nativeblas.NativeOps;
@@ -76,7 +74,7 @@ public class CudaThreshold extends AbstractCompressor {
         //logger.info("Threshold [{}] compression", threshold);
 
         Nd4j.getExecutioner().commit();
-        Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.HOST);
+        //Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.HOST);
 
         DataBuffer buffer = compress(array.data());
         if (buffer == null)
@@ -126,21 +124,23 @@ public class CudaThreshold extends AbstractCompressor {
 
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
-        DataBuffer warpsBuffer = Nd4j.getDataBufferFactory().createInt(numBlocks+1);
+        DataBuffer blocksBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(numBlocks+1, true) : Nd4j.getDataBufferFactory().createInt(numBlocks+1, true, Nd4j.getMemoryManager().getCurrentWorkspace());
         PointerPointer extras = new PointerPointer(32).put(1, context.getOldStream());
 
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP1Float(extras, (FloatPointer) AtomicAllocator.getInstance().getPointer(buffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(warpsBuffer), threshold);
-        AtomicAllocator.getInstance().getAllocationPoint(warpsBuffer).tickDeviceWrite();
+        NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP1Float(extras, (FloatPointer) AtomicAllocator.getInstance().getPointer(buffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer), threshold);
+        AtomicAllocator.getInstance().getAllocationPoint(blocksBuffer).tickDeviceWrite();
 
 
-        int numMatches = warpsBuffer.getInt(0);
-        /*
-        log.info("Totals: {}", numMatches);
+        int numMatches = blocksBuffer.getInt(0);
+
+        //log.info("Totals: {}", numMatches);
+/*
+
         log.info("Number of blocks for compression: {}", numBlocks);
-        log.info("Warps: {}", Arrays.toString(warpsBuffer.asInt()));
+        log.info("BlocksCounts: {}", Arrays.toString(blocksBuffer.asInt()));
 */
-        DataBuffer encodedBuffer = Nd4j.getDataBufferFactory().createInt(3+numMatches);
+        DataBuffer encodedBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(3+numMatches, false) : Nd4j.getDataBufferFactory().createInt(3+numMatches, false, Nd4j.getMemoryManager().getCurrentWorkspace());
         encodedBuffer.put(0, numMatches);
         encodedBuffer.put(1, (int) buffer.length());
         encodedBuffer.put(2, Float.floatToIntBits(threshold));
@@ -170,31 +170,34 @@ public class CudaThreshold extends AbstractCompressor {
             numElts = numPrefixBlocks;
         } while (numElts > 1);
 
-        PointerPointer ptrLevels = new PointerPointer(level);
+        long[] pointers = new long[level];
 
         level = 0;
         numElts = numBlocks;
 
         //  allocating temp buffers for prefux sum
+        DataBuffer tempX = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createDouble(pointers.length, false) : Nd4j.getDataBufferFactory().createDouble(pointers.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+
         do {
             int numPrefixBlocks = Math.max(1, (int)Math.ceil((float)numElts / (2.0f * prefixThreads)));
             if (numPrefixBlocks > 1) {
-                //CUDA_SAFE_CALL(cudaMalloc((void**) &g_scanBlockSums[level++],numBlocks * sizeof(float)));
-                DataBuffer bf = Nd4j.getDataBufferFactory().createInt(numPrefixBlocks);
+                DataBuffer bf = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(numPrefixBlocks, false) : Nd4j.getDataBufferFactory().createInt(numPrefixBlocks, false, Nd4j.getMemoryManager().getCurrentWorkspace());
 
                 buffers.add(bf);
 
-                ptrLevels.put(level++, AtomicAllocator.getInstance().getPointer(bf));
-
-                //log.info("Creating IntBuffer with {} elements", numPrefixBlocks);
+                pointers[level++] = AtomicAllocator.getInstance().getPointer(bf).address();
             }
             numElts = numPrefixBlocks;
         } while (numElts > 1);
-        extras.put(2, ptrLevels);
 
-        DataBuffer offsetsBuffer = Nd4j.getDataBufferFactory().createInt(numBlocks);
 
-        NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP2Float(extras, (IntPointer) AtomicAllocator.getInstance().getPointer(warpsBuffer), numBlocks, (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer) );
+        AtomicAllocator.getInstance().memcpyBlocking(tempX, new LongPointer(pointers), pointers.length * 8, 0);
+
+        extras.put(2, AtomicAllocator.getInstance().getPointer(tempX));
+
+        DataBuffer offsetsBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(numBlocks, false) : Nd4j.getDataBufferFactory().createInt(numBlocks, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP2Float(extras, (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer), numBlocks, (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer) );
         AtomicAllocator.getInstance().getAllocationPoint(offsetsBuffer).tickDeviceWrite();
 
         //log.info("Offsets: {}", Arrays.toString(offsetsBuffer.asInt()));
@@ -207,6 +210,9 @@ public class CudaThreshold extends AbstractCompressor {
         AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
 
         //log.info("Encoded: {}", Arrays.toString(encodedBuffer.asInt()));
+
+        extras.address();
+        tempX.address();
 
         return encodedBuffer;
 
