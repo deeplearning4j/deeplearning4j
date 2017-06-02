@@ -38,7 +38,11 @@ public class ImageWritable implements Writable {
         WritableFactory.getInstance().registerWritableType(WritableType.Image.typeIdx(), ImageWritable.class);
     }
 
-    Frame frame;
+    protected Frame frame;
+
+    public ImageWritable(){
+        //No-arg cosntructor for reflection-based creation of ImageWritable objects
+    }
 
     public ImageWritable(Frame frame) {
         this.frame = frame;
