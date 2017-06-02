@@ -23,6 +23,7 @@ import org.datavec.api.transform.transform.BaseColumnTransform;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -93,6 +94,9 @@ public class NDArrayMathOpTransform extends BaseColumnTransform {
             default:
                 throw new UnsupportedOperationException("Unknown or not supported op: " + mathOp);
         }
+
+        //To avoid threading issues...
+        Nd4j.getExecutioner().commit();
 
         return n;
     }

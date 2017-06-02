@@ -85,7 +85,6 @@ public class TestNDArrayWritableTransforms {
                 new NDArrayWritable(Nd4j.valueArrayOf(1,10,2.0)), new NDArrayWritable(Nd4j.linspace(0,9,10).addi(2.0)));
 
         assertEquals(exp, out);
-
     }
 
 }

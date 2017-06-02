@@ -25,6 +25,7 @@ import org.datavec.api.transform.transform.BaseColumnsMathOpTransform;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
 
@@ -96,6 +97,9 @@ public class NDArrayColumnsMathOpTransform extends BaseColumnsMathOpTransform {
             default:
                 throw new RuntimeException("Unknown MathOp: " + mathOp);
         }
+
+        //To avoid threading issues...
+        Nd4j.getExecutioner().commit();
 
         return new NDArrayWritable(out);
     }

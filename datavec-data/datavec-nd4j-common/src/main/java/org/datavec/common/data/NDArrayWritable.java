@@ -15,9 +15,7 @@
  */
 package org.datavec.common.data;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
@@ -27,6 +25,8 @@ import org.datavec.api.io.WritableComparator;
 import org.datavec.api.writable.ArrayWritable;
 import org.datavec.api.writable.WritableFactory;
 import org.datavec.api.writable.WritableType;
+import org.datavec.common.util.DataInputWrapperStream;
+import org.datavec.common.util.DataOutputWrapperStream;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -37,6 +37,8 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author saudet
  */
 public class NDArrayWritable extends ArrayWritable implements WritableComparable {
+    public static final byte NDARRAY_SER_VERSION_HEADER = 0;
+
     static {
         WritableFactory.getInstance().registerWritableType(WritableType.NDArray.typeIdx(), NDArrayWritable.class);
     }
@@ -50,33 +52,41 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
 
     /** Deserialize into a row vector of default type. */
     public void readFields(DataInput in) throws IOException {
-        long length = in.readLong();
-        if (length == 0) {
-            array = null;
-            return;
+//        long length = in.readLong();
+//        if (length == 0) {
+//            array = null;
+//            return;
+//        }
+//        int type = in.readInt();
+//        if (array == null || array.length() != length) {
+//            if (length >= Integer.MAX_VALUE) {
+//                throw new IllegalArgumentException("Length can not be >= Integer.MAX_VALUE");
+//            }
+//            array = Nd4j.zeros((int) length);
+//        }
+//        if (type == DataBuffer.Type.DOUBLE.ordinal()) {
+//            for (int i = 0; i < length; i++) {
+//                array.putScalar(i, in.readDouble());
+//            }
+//        } else if (type == DataBuffer.Type.FLOAT.ordinal()) {
+//            for (int i = 0; i < length; i++) {
+//                array.putScalar(i, in.readFloat());
+//            }
+//        } else if (type == DataBuffer.Type.INT.ordinal()) {
+//            for (int i = 0; i < length; i++) {
+//                array.putScalar(i, in.readInt());
+//            }
+//        } else {
+//            throw new UnsupportedOperationException("Unsupported data type: " + type);
+//        }
+
+        byte header = in.readByte();
+        if(header != NDARRAY_SER_VERSION_HEADER){
+            throw new IllegalStateException("Unexpected NDArrayWritable version header - stream corrupt?");
         }
-        int type = in.readInt();
-        if (array == null || array.length() != length) {
-            if (length >= Integer.MAX_VALUE) {
-                throw new IllegalArgumentException("Length can not be >= Integer.MAX_VALUE");
-            }
-            array = Nd4j.zeros((int) length);
-        }
-        if (type == DataBuffer.Type.DOUBLE.ordinal()) {
-            for (int i = 0; i < length; i++) {
-                array.putScalar(i, in.readDouble());
-            }
-        } else if (type == DataBuffer.Type.FLOAT.ordinal()) {
-            for (int i = 0; i < length; i++) {
-                array.putScalar(i, in.readFloat());
-            }
-        } else if (type == DataBuffer.Type.INT.ordinal()) {
-            for (int i = 0; i < length; i++) {
-                array.putScalar(i, in.readInt());
-            }
-        } else {
-            throw new UnsupportedOperationException("Unsupported data type: " + type);
-        }
+
+        array = Nd4j.read(new DataInputStream(new DataInputWrapperStream(in)));
+
     }
 
     @Override
@@ -90,34 +100,48 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
             out.writeLong(0);
             return;
         }
-        DataBuffer data = array.data();
-        DataBuffer.Type type = data.dataType();
-        out.writeLong(array.length());
-        out.writeInt(type.ordinal());
-        switch (type) {
-            case DOUBLE: {
-                DoubleBuffer buffer = data.asNioDouble();
-                while (buffer.remaining() > 0) {
-                    out.writeDouble(buffer.get());
-                }
-                return;
-            }
-            case FLOAT: {
-                FloatBuffer buffer = data.asNioFloat();
-                while (buffer.remaining() > 0) {
-                    out.writeFloat(buffer.get());
-                }
-                return;
-            }
-            case INT: {
-                IntBuffer buffer = data.asNioInt();
-                while (buffer.remaining() > 0) {
-                    out.writeInt(buffer.get());
-                }
-                return;
-            }
+
+        INDArray toWrite;
+        if(array.isView()){
+            toWrite = array.dup();
+        } else {
+            toWrite = array;
         }
-        throw new UnsupportedOperationException("Unsupported data type: " + type);
+
+//        DataBuffer data = toWrite.data();
+//        DataBuffer.Type type = data.dataType();
+
+        //Write version header: this allows us to maintain backward compatibility in the future,
+        // with features such as compression and sparse arrays
+        out.writeByte(NDARRAY_SER_VERSION_HEADER);
+        Nd4j.write(toWrite, new DataOutputStream(new DataOutputWrapperStream(out)));
+
+//        out.writeLong(array.length());
+//        out.writeInt(type.ordinal());
+//        switch (type) {
+//            case DOUBLE: {
+//                DoubleBuffer buffer = data.asNioDouble();
+//                while (buffer.remaining() > 0) {
+//                    out.writeDouble(buffer.get());
+//                }
+//                return;
+//            }
+//            case FLOAT: {
+//                FloatBuffer buffer = data.asNioFloat();
+//                while (buffer.remaining() > 0) {
+//                    out.writeFloat(buffer.get());
+//                }
+//                return;
+//            }
+//            case INT: {
+//                IntBuffer buffer = data.asNioInt();
+//                while (buffer.remaining() > 0) {
+//                    out.writeInt(buffer.get());
+//                }
+//                return;
+//            }
+//        }
+//        throw new UnsupportedOperationException("Unsupported data type: " + type);
     }
 
     public void set(INDArray array) {
