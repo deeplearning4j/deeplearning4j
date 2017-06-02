@@ -65,7 +65,7 @@ public class KerasCustomLayerTest {
         // file paths
         String kerasWeightsAndConfigUrl = "http://blob.deeplearning4j.org/models/googlenet_keras_weightsandconfig.h5";
         File cachedKerasFile = new File(System.getProperty("user.tmp"),"googlenet_keras_weightsandconfig.h5");
-        String outputPath = "/home/justin/Downloads/googlenet_dl4j_inference.zip";
+        String outputPath = System.getProperty("user.tmp")+"/googlenet_dl4j_inference.zip";
 
         KerasLayer.registerCustomLayer("PoolHelper", KerasPoolHelper.class);
         KerasLayer.registerCustomLayer("LRN", KerasLRN.class);
