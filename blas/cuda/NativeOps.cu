@@ -6172,7 +6172,7 @@ void NativeOps::encodeThresholdP3Float(Nd4jPointer *extraPointers, float *dx, in
     int blockSize = 1024;
     int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
 
-    encoderKernelP3Float<<<numBlocks, blockSize , 1024, *stream>>>(dx, offsets, N, dz);
+    encoderKernelP3Float<<<numBlocks, blockSize , 4096, *stream>>>(dx, offsets, N, dz);
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
