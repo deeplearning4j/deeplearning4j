@@ -117,7 +117,7 @@ public abstract class BaseColumnsMathOpTransform implements Transform, ColumnOp 
 
         List<ColumnMetaData> newMeta = new ArrayList<>(inputSchema.getColumnMetaData());
 
-        newMeta.add(derivedColumnMetaData(newColumnName));
+        newMeta.add(derivedColumnMetaData(newColumnName, inputSchema));
 
         return inputSchema.newSchema(newMeta);
     }
@@ -207,7 +207,7 @@ public abstract class BaseColumnsMathOpTransform implements Transform, ColumnOp 
         return columnNames()[0];
     }
 
-    protected abstract ColumnMetaData derivedColumnMetaData(String newColumnName);
+    protected abstract ColumnMetaData derivedColumnMetaData(String newColumnName, Schema inputSchema);
 
     protected abstract Writable doOp(Writable... input);
 

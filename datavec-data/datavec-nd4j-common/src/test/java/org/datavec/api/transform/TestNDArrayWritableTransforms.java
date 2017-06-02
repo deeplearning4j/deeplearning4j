@@ -58,4 +58,34 @@ public class TestNDArrayWritableTransforms {
 
     }
 
+    @Test
+    public void testNDArrayColumnsMathOpTransform(){
+
+        Schema s = new Schema.Builder()
+
+                .addColumnDouble("col0")
+                .addColumnNDArray("col1", new int[]{1,10})
+                .addColumnNDArray("col2", new int[]{1,10})
+                .build();
+
+
+        TransformProcess tp = new TransformProcess.Builder(s)
+                .ndArrayColumnsMathOpTransform("myCol", MathOp.Add, "col1", "col2")
+                .build();
+
+        List<String> expColNames = Arrays.asList("col0", "col1", "col2", "myCol");
+        assertEquals(expColNames, tp.getFinalSchema().getColumnNames());
+
+
+        List<Writable> in = Arrays.<Writable>asList(new DoubleWritable(0), new NDArrayWritable(Nd4j.linspace(0,9,10)),
+                new NDArrayWritable(Nd4j.valueArrayOf(1,10,2.0)));
+        List<Writable> out = tp.execute(in);
+
+        List<Writable> exp = Arrays.<Writable>asList(new DoubleWritable(0), new NDArrayWritable(Nd4j.linspace(0,9,10)),
+                new NDArrayWritable(Nd4j.valueArrayOf(1,10,2.0)), new NDArrayWritable(Nd4j.linspace(0,9,10).addi(2.0)));
+
+        assertEquals(exp, out);
+
+    }
+
 }

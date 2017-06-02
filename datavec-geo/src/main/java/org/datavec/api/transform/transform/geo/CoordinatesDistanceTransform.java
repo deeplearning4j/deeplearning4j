@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.geo;
 
+import org.datavec.api.transform.schema.Schema;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -54,7 +55,7 @@ public class CoordinatesDistanceTransform extends BaseColumnsMathOpTransform {
     }
 
     @Override
-    protected ColumnMetaData derivedColumnMetaData(String newColumnName) {
+    protected ColumnMetaData derivedColumnMetaData(String newColumnName, Schema inputSchema) {
         return new DoubleMetaData(newColumnName);
     }
 

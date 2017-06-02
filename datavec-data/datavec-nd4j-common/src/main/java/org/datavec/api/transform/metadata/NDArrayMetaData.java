@@ -16,6 +16,8 @@
 
 package org.datavec.api.transform.metadata;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
@@ -26,6 +28,7 @@ import java.util.Arrays;
 /**
  * Created by Alex on 02/06/2017.
  */
+@Getter
 public class NDArrayMetaData extends BaseColumnMetaData {
 
     private int[] shape;

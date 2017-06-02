@@ -14,7 +14,7 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.api.transform.transform.ndarray;
+package org.datavec.api.transform.ndarray;
 
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
