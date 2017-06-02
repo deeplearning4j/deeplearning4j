@@ -1037,18 +1037,16 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             }
             allocator.memcpyAsync(this, old.getPointers().getHostPointer(), length * elementSize, 0);
             // we're keeping pointer reference for JVM
-            pointer.address(); // ?
+            pointer.address();
 
 
-        //if(getParentWorkspace() != null && dataType() != Type.INT){
         if(isAttached()){
             // do nothing here, that's workspaces
         } else{
-            // todo - release pointers
             AtomicAllocator.getInstance().freeMemory(old);
         }
 
-        return null;
+        return this;
     }
 
     /*
