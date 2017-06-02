@@ -392,6 +392,14 @@ extern "C" __global__ void encoderKernelP3Half(void *dx, int *offsets, Nd4jIndex
 extern "C" __global__ void decoderKernelFloat(void *dx, Nd4jIndex N, void *dz) {
     decoderKernelGeneric<float>(dx, N, dz);
 }
+
+extern "C" __global__ void decoderKernelDouble(void *dx, Nd4jIndex N, void *dz) {
+    decoderKernelGeneric<double>(dx, N, dz);
+}
+
+extern "C" __global__ void decoderKernelHalf(void *dx, Nd4jIndex N, void *dz) {
+    decoderKernelGeneric<float16>(dx, N, dz);
+}
 #endif
 
 template<typename S, typename T>

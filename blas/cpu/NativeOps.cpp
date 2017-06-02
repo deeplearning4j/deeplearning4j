@@ -2126,15 +2126,36 @@ void NativeOps::enableP2P(bool enable) {
     // no-op
 }
 
+void NativeOps::encodeThresholdP1Half(Nd4jPointer *extraPointers, float16 *dx, Nd4jIndex N, int *dz, float threshold) {
+    // TODO: to be implemented
+}
+
 void NativeOps::encodeThresholdP1Float(Nd4jPointer *extraPointers, float *dx, Nd4jIndex N, int *dz, float threshold) {
     // TODO: to be implemented
 }
 
-void NativeOps::encodeThresholdP2Float(Nd4jPointer *extraPointers, int *dx, Nd4jIndex N, int *dz) {
+void NativeOps::encodeThresholdP1Double(Nd4jPointer *extraPointers, double *dx, Nd4jIndex N, int *dz, float threshold) {
+    // TODO: to be implemented
+}
+
+
+void NativeOps::encodeThresholdP2Int(Nd4jPointer *extraPointers, int *dx, Nd4jIndex N, int *dz) {
     // TODO: to be implemented
 }
 
 void NativeOps::encodeThresholdP3Float(Nd4jPointer *extraPointers, float *dx, int *offsets, Nd4jIndex N, int *dz){
+    // offsets won't be used here
+
+    // TODO: to be implemented
+}
+
+void NativeOps::encodeThresholdP3Double(Nd4jPointer *extraPointers, double *dx, int *offsets, Nd4jIndex N, int *dz){
+    // offsets won't be used here
+
+    // TODO: to be implemented
+}
+
+void NativeOps::encodeThresholdP3Half(Nd4jPointer *extraPointers, float16 *dx, int *offsets, Nd4jIndex N, int *dz){
     // offsets won't be used here
 
     // TODO: to be implemented

@@ -6155,12 +6155,32 @@ void NativeOps::encodeThresholdP1Float(Nd4jPointer *extras, float *dx, Nd4jIndex
 }
 
 
+void NativeOps::encodeThresholdP1Double(Nd4jPointer *extras, double *dx, Nd4jIndex N, int *dz, float threshold) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    int blockSize = 1024;
+    int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
+
+    encoderKernelP1Double<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz, threshold);
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
 
 
-void NativeOps::encodeThresholdP2Float(Nd4jPointer *extraPointers, int *dx, Nd4jIndex N, int *dz) {
+void NativeOps::encodeThresholdP1Half(Nd4jPointer *extras, float16 *dx, Nd4jIndex N, int *dz, float threshold) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extras[1]);
+
+    int blockSize = 1024;
+    int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
+
+    encoderKernelP1Half<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz, threshold);
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::encodeThresholdP2Int(Nd4jPointer *extraPointers, int *dx, Nd4jIndex N, int *dz) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     //encoderKernelP2Float<<<numBlocks, blockSize , 1024 * sizeof(float), *stream>>>(dx, N, dz);
 
+    // it
     prescanArrayRecursive(extraPointers, dz, dx + 1, (int) N, 0);
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -6177,6 +6197,30 @@ void NativeOps::encodeThresholdP3Float(Nd4jPointer *extraPointers, float *dx, in
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
+void NativeOps::encodeThresholdP3Double(Nd4jPointer *extraPointers, double *dx, int *offsets, Nd4jIndex N, int *dz){
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    int blockSize = 1024;
+    int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
+
+    encoderKernelP3Double<<<numBlocks, blockSize , 4096, *stream>>>(dx, offsets, N, dz);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+
+void NativeOps::encodeThresholdP3Half(Nd4jPointer *extraPointers, float16 *dx, int *offsets, Nd4jIndex N, int *dz){
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    int blockSize = 1024;
+    int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
+
+    encoderKernelP3Half<<<numBlocks, blockSize , 4096, *stream>>>(dx, offsets, N, dz);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+
 void NativeOps::decodeThresholdFloat(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float *dz){
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
@@ -6185,5 +6229,27 @@ void NativeOps::decodeThresholdFloat(Nd4jPointer *extraPointers, void *dx, Nd4jI
     int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
 
     decoderKernelFloat<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz);
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::decodeThresholdDouble(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, double *dz){
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    // we probably want to have smaller blocks here, memory writes are misaligned anyway
+    int blockSize = 128;
+    int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
+
+    decoderKernelDouble<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz);
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::decodeThresholdHalf(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float16 *dz){
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    // we probably want to have smaller blocks here, memory writes are misaligned anyway
+    int blockSize = 128;
+    int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
+
+    decoderKernelHalf<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz);
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
