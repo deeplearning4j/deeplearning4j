@@ -78,7 +78,7 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
 
     public abstract DataBuffer compress(DataBuffer buffer);
 
-    protected DataBuffer.TypeEx convertType(DataBuffer.Type type) {
+    protected static DataBuffer.TypeEx convertType(DataBuffer.Type type) {
         if (type == DataBuffer.Type.HALF) {
             return DataBuffer.TypeEx.FLOAT16;
         } else if (type == DataBuffer.Type.FLOAT) {
@@ -95,7 +95,7 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
         return convertType(type);
     }
 
-    protected DataBuffer.TypeEx getBufferTypeEx(DataBuffer buffer) {
+    public static DataBuffer.TypeEx getBufferTypeEx(DataBuffer buffer) {
         DataBuffer.Type type = buffer.dataType();
 
         return convertType(type);

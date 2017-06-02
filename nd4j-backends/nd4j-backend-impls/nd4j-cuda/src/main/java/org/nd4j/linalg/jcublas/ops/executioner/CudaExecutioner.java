@@ -2037,6 +2037,145 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     public void commit() {
         ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncOldStream();
     }
+
+
+    @Override
+    public INDArray thresholdEncode(INDArray input, double threshold) {
+        DataBuffer buffer = input.data();
+
+        int numThreads = 1024;
+        int numBlocks = (int) (buffer.length() / numThreads + (buffer.length() % numThreads == 0 ? 0 : 1));
+
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+        DataBuffer blocksBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(numBlocks+1, true) : Nd4j.getDataBufferFactory().createInt(numBlocks+1, true, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
+        PointerPointer extras = extraz.get().put(1, context.getOldStream());
+
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP1Float(extras, (FloatPointer) AtomicAllocator.getInstance().getPointer(buffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer), (float) threshold);
+        AtomicAllocator.getInstance().getAllocationPoint(blocksBuffer).tickDeviceWrite();
+
+
+        int numMatches = blocksBuffer.getInt(0);
+
+        // special case here, nothing to update
+        if (numMatches == 0)
+            return null;
+/*
+        log.info("Totals: {}", numMatches);
+
+
+        log.info("Number of blocks for compression: {}", numBlocks);
+        log.info("BlocksCounts: {}", Arrays.toString(blocksBuffer.asInt()));
+*/
+        DataBuffer encodedBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(3+numMatches, false) : Nd4j.getDataBufferFactory().createInt(3+numMatches, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+        AtomicAllocator.getInstance().getAllocationPoint(encodedBuffer).tickHostWrite();
+        encodedBuffer.put(0, numMatches);
+        encodedBuffer.put(1, (int) buffer.length());
+        encodedBuffer.put(2, Float.floatToIntBits((float) threshold));
+        AtomicAllocator.getInstance().getAllocationPoint(encodedBuffer).tickHostWrite();
+
+
+        int prefixThreads = 512;
+        int numElts = numBlocks;
+        int level = 0;
+        List<DataBuffer> buffers = new ArrayList<>();
+
+        // here we just calculate number of sumBlock arrays
+        do {
+            int numPrefixBlocks = Math.max(1, (int)Math.ceil((float)numElts / (2.0f * prefixThreads)));
+            if (numBlocks > 1) {
+                level++;
+            }
+            numElts = numPrefixBlocks;
+        } while (numElts > 1);
+
+        long[] pointers = new long[level];
+
+        level = 0;
+        numElts = numBlocks;
+
+        //  allocating temp buffers for prefux sum
+        DataBuffer tempX = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createDouble(pointers.length, false) : Nd4j.getDataBufferFactory().createDouble(pointers.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        do {
+            int numPrefixBlocks = Math.max(1, (int)Math.ceil((float)numElts / (2.0f * prefixThreads)));
+            if (numPrefixBlocks > 1) {
+                DataBuffer bf = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(numPrefixBlocks, false) : Nd4j.getDataBufferFactory().createInt(numPrefixBlocks, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+                buffers.add(bf);
+
+                pointers[level++] = AtomicAllocator.getInstance().getPointer(bf).address();
+            }
+            numElts = numPrefixBlocks;
+        } while (numElts > 1);
+
+
+        AtomicAllocator.getInstance().memcpyBlocking(tempX, new LongPointer(pointers), pointers.length * 8, 0);
+
+        extras.put(2, AtomicAllocator.getInstance().getPointer(tempX));
+
+        DataBuffer offsetsBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(numBlocks, true) : Nd4j.getDataBufferFactory().createInt(numBlocks, true, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP2Float(extras, (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer), numBlocks, (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer) );
+        AtomicAllocator.getInstance().getAllocationPoint(offsetsBuffer).tickDeviceWrite();
+
+        //log.info("Offsets: {}", Arrays.toString(offsetsBuffer.asInt()));
+
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP3Float(extras, (FloatPointer) AtomicAllocator.getInstance().getPointer(buffer), (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(encodedBuffer));
+        AtomicAllocator.getInstance().getAllocationPoint(encodedBuffer).tickDeviceWrite();
+        AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
+
+
+        // just to ensure it's not purged
+        extras.address();
+        tempX.address();
+        buffers.getClass();
+
+
+        return Nd4j.createArrayFromShapeBuffer(encodedBuffer, input.shapeInfoDataBuffer());
+    }
+
+    @Override
+    public INDArray thresholdDecode(INDArray encoded, INDArray target) {
+        DataBuffer buffer = encoded.data();
+
+        if (buffer.dataType() != DataBuffer.Type.INT)
+            throw new UnsupportedOperationException();
+
+        long compressedLength = buffer.getInt(0);
+        long originalLength = buffer.getInt(1);
+
+        if (target.lengthLong() != originalLength)
+            throw new ND4JIllegalStateException("originalLength stored in encoded array doesn't match target length");
+
+        DataBuffer result = target.data();
+
+
+
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        nativeOps.memsetAsync(AtomicAllocator.getInstance().getPointer(result), 0,result.length(), 0, context.getOldStream());
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
+        PointerPointer extras = extraz.get().put(1, context.getOldStream());
+
+        //log.info("DEC Source length: {}", buffer.length());
+        //log.info("DEC Source: {}", Arrays.toString(buffer.asInt()));
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().decodeThresholdFloat(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (FloatPointer) AtomicAllocator.getInstance().getPointer(result));
+        AtomicAllocator.getInstance().getAllocationPoint(result).tickDeviceWrite();
+
+        //DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(DataBuffer.TypeEx.THRESHOLD, buffer, getGlobalTypeEx());
+
+        return target;
+    }
 }
 
 
