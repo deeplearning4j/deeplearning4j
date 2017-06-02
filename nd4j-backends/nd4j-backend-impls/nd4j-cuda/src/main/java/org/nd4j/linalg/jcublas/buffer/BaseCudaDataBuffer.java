@@ -1007,9 +1007,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
     @Override
     public DataBuffer reallocate(long length) {
 
+        // we want to be sure this array isn't used anywhere RIGHT AT THIS MOMENT
+        Nd4j.getExecutioner().commit();
+
             AllocationPoint old = allocationPoint;
-            allocationPoint = AtomicAllocator.getInstance().allocateMemory(this,
-                    new AllocationShape(length, elementSize, dataType()), false);
+            allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, dataType()), false);
+
             trackingPoint = allocationPoint.getObjectId();
 
             switch(dataType()){
@@ -1037,10 +1040,12 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             pointer.address(); // ?
 
 
-        if(getParentWorkspace() != null && dataType() != Type.INT){
-            // no need to release the pointers?
+        //if(getParentWorkspace() != null && dataType() != Type.INT){
+        if(isAttached()){
+            // do nothing here, that's workspaces
         } else{
             // todo - release pointers
+            AtomicAllocator.getInstance().freeMemory(old);
         }
 
         return null;

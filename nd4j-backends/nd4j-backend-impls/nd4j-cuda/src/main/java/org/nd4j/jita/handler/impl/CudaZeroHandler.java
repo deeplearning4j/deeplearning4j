@@ -925,8 +925,7 @@ public class CudaZeroHandler implements MemoryHandler {
         } else {
             //                log.info("Free relocateObject: deviceId: {}, pointer: {}", deviceId, dstPoint.getPointers().getDevicePointer().address());
             memoryProvider.free(dstPoint);
-            deviceMemoryTracker.subFromAllocation(Thread.currentThread().getId(), dstPoint.getDeviceId(),
-                            AllocationUtils.getRequiredMemory(dstPoint.getShape()));
+            deviceMemoryTracker.subFromAllocation(Thread.currentThread().getId(), dstPoint.getDeviceId(), AllocationUtils.getRequiredMemory(dstPoint.getShape()));
 
             // we replace original device pointer with new one
             alloc(AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), false);
