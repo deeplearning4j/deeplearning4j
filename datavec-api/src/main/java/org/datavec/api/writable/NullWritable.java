@@ -56,6 +56,11 @@ public class NullWritable implements WritableComparable {
     }
 
     @Override
+    public void writeType(DataOutput out) throws IOException {
+        out.writeShort(WritableType.Null.typeIdx());
+    }
+
+    @Override
     public double toDouble() {
         throw new UnsupportedOperationException("Cannot convert NullWritable to other values");
     }

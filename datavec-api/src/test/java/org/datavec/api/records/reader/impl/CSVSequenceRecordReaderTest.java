@@ -183,6 +183,11 @@ public class CSVSequenceRecordReaderTest {
         }
 
         @Override
+        public void writeType(DataOutput out) throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public double toDouble() {
             throw new UnsupportedOperationException();
         }

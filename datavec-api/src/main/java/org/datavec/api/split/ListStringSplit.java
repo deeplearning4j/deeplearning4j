@@ -128,6 +128,11 @@ public class ListStringSplit implements InputSplit {
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public void writeType(DataOutput out) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
     public List<List<String>> getData() {
         return data;
     }

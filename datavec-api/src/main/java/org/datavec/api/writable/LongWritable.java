@@ -48,6 +48,11 @@ public class LongWritable implements WritableComparable {
         value = in.readLong();
     }
 
+    @Override
+    public void writeType(DataOutput out) throws IOException {
+        out.writeShort(WritableType.Long.typeIdx());
+    }
+
     public void write(DataOutput out) throws IOException {
         out.writeLong(value);
     }

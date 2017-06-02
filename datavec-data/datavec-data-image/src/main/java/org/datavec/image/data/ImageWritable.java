@@ -21,6 +21,8 @@ import java.io.IOException;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameConverter;
 import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.WritableFactory;
+import org.datavec.api.writable.WritableType;
 
 /**
  * Wraps a {@link Frame} to allow serialization within this framework.
@@ -32,8 +34,15 @@ import org.datavec.api.writable.Writable;
  * @see FrameConverter
  */
 public class ImageWritable implements Writable {
+    static {
+        WritableFactory.getInstance().registerWritableType(WritableType.Image.typeIdx(), ImageWritable.class);
+    }
 
-    Frame frame;
+    protected Frame frame;
+
+    public ImageWritable(){
+        //No-arg cosntructor for reflection-based creation of ImageWritable objects
+    }
 
     public ImageWritable(Frame frame) {
         this.frame = frame;
@@ -55,6 +64,11 @@ public class ImageWritable implements Writable {
     @Override
     public void readFields(DataInput in) throws IOException {
         throw new UnsupportedOperationException("Not supported yet.");
+    }
+
+    @Override
+    public void writeType(DataOutput out) throws IOException {
+        out.writeShort(WritableType.Image.typeIdx());
     }
 
     @Override
