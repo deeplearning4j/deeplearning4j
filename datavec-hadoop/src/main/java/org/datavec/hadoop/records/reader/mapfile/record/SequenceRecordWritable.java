@@ -43,16 +43,16 @@ public class SequenceRecordWritable implements Writable {
         WritableFactory wf = WritableFactory.getInstance();
         //Assumption: each step in each record is the same size
         out.writeInt(sequenceRecord.size());
-        if(sequenceRecord.size() > 0){
+        if (sequenceRecord.size() > 0) {
             int valuesPerStep = sequenceRecord.get(0).size();
             out.writeInt(valuesPerStep);
 
-            for(List<org.datavec.api.writable.Writable> step : sequenceRecord){
-                if(step.size() != valuesPerStep){
-                    throw new IllegalStateException("Number of values per time step vary: " + valuesPerStep
-                            + " vs. " + step.size());
+            for (List<org.datavec.api.writable.Writable> step : sequenceRecord) {
+                if (step.size() != valuesPerStep) {
+                    throw new IllegalStateException(
+                                    "Number of values per time step vary: " + valuesPerStep + " vs. " + step.size());
                 }
-                for(org.datavec.api.writable.Writable w : step){
+                for (org.datavec.api.writable.Writable w : step) {
                     wf.writeWithType(w, out);
                 }
             }
@@ -63,13 +63,13 @@ public class SequenceRecordWritable implements Writable {
     public void readFields(DataInput in) throws IOException {
         WritableFactory wf = WritableFactory.getInstance();
         int numSteps = in.readInt();
-        if(numSteps > 0){
+        if (numSteps > 0) {
             int valuesPerStep = in.readInt();
             List<List<org.datavec.api.writable.Writable>> out = new ArrayList<>(numSteps);
 
-            for( int i=0; i<numSteps; i++ ){
+            for (int i = 0; i < numSteps; i++) {
                 List<org.datavec.api.writable.Writable> currStep = new ArrayList<>(valuesPerStep);
-                for( int j=0; j<valuesPerStep; j++ ){
+                for (int j = 0; j < valuesPerStep; j++) {
                     currStep.add(wf.readWithType(in));
                 }
                 out.add(currStep);

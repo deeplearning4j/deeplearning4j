@@ -111,34 +111,34 @@ public class MapFileRecordReader implements RecordReader {
         int dataCount = 0;
         int indexCount = 0;
         List<URI> dataUris = new ArrayList<>();
-        for(URI u : uris){
+        for (URI u : uris) {
             String p = u.getPath();
-            if(p.endsWith("data")){
+            if (p.endsWith("data")) {
                 dataCount++;
                 dataUris.add(u);
-            } else if(p.endsWith("index")){
+            } else if (p.endsWith("index")) {
                 indexCount++;
             }
         }
 
         //Check URIs are correct: we expect one or more /data and /index files...
-        if(dataCount == 0 || indexCount == 0){
-            throw new IllegalStateException("Cannot initialize MapFileSequenceRecordReader: could not find data and " +
-                    "index files in input split");
+        if (dataCount == 0 || indexCount == 0) {
+            throw new IllegalStateException("Cannot initialize MapFileSequenceRecordReader: could not find data and "
+                            + "index files in input split");
         }
-        if(dataCount != indexCount){
+        if (dataCount != indexCount) {
             throw new IllegalStateException("Invalid input: found " + dataCount + " data files but " + indexCount
-                    + " index files. Expect equal number of both for map files");
+                            + " index files. Expect equal number of both for map files");
         }
 
         List<String> mapFilePartRootDirectories = new ArrayList<>(dataUris.size());
-        for( URI u : dataUris ){
+        for (URI u : dataUris) {
             File partRootDir = new File(u).getParentFile();
             mapFilePartRootDirectories.add(partRootDir.getAbsolutePath());
         }
 
 
-        if(dataUris.size() == 1){
+        if (dataUris.size() == 1) {
             //Just parent of /data
             baseDirUri = new File(dataUris.get(0)).getParentFile().toURI();
         } else {
@@ -147,7 +147,7 @@ public class MapFileRecordReader implements RecordReader {
             baseDirUri = new File(dataUris.get(0)).getParentFile().getParentFile().toURI();
         }
 
-        if(mapFileReader != null){
+        if (mapFileReader != null) {
             mapFileReader.close();
         }
 
@@ -275,8 +275,8 @@ public class MapFileRecordReader implements RecordReader {
             meta = null;
         }
 
-        if(listeners != null && !listeners.isEmpty()){
-            for(RecordListener l : listeners){
+        if (listeners != null && !listeners.isEmpty()) {
+            for (RecordListener l : listeners) {
                 l.recordRead(this, rec);
             }
         }

@@ -75,10 +75,8 @@ public class TestMapFileRecordReaderMultipleParts {
         Class<? extends WritableComparable> keyClass = LongWritable.class;
         Class<? extends Writable> valueClass = SequenceRecordWritable.class;
 
-        SequenceFile.Writer.Option[] opts = new SequenceFile.Writer.Option[]{
-                MapFile.Writer.keyClass(keyClass),
-                SequenceFile.Writer.valueClass(valueClass)
-        };
+        SequenceFile.Writer.Option[] opts = new SequenceFile.Writer.Option[] {MapFile.Writer.keyClass(keyClass),
+                        SequenceFile.Writer.valueClass(valueClass)};
 
         tempDirSeq = Files.createTempDir();
         File[] subdirs = new File[3];
@@ -97,12 +95,13 @@ public class TestMapFileRecordReaderMultipleParts {
         seqMap = new HashMap<>();
 
         for (int i = 0; i < 9; i++) {
-            seqMap.put(new LongWritable(i), new SequenceRecordWritable(
-                    Arrays.asList(
-                            Arrays.<org.datavec.api.writable.Writable>asList(new Text(i + "-0"), new IntWritable(3 * i), new DoubleWritable(3*i)),
-                            Arrays.<org.datavec.api.writable.Writable>asList(new Text(i + "-1"), new IntWritable(3 * i + 1), new DoubleWritable(3*i+1.0)),
-                            Arrays.<org.datavec.api.writable.Writable>asList(new Text(i + "-2"), new IntWritable(3 * i + 2), new DoubleWritable(3*i+2.0)))
-            ));
+            seqMap.put(new LongWritable(i), new SequenceRecordWritable(Arrays.asList(
+                            Arrays.<org.datavec.api.writable.Writable>asList(new Text(i + "-0"), new IntWritable(3 * i),
+                                            new DoubleWritable(3 * i)),
+                            Arrays.<org.datavec.api.writable.Writable>asList(new Text(i + "-1"),
+                                            new IntWritable(3 * i + 1), new DoubleWritable(3 * i + 1.0)),
+                            Arrays.<org.datavec.api.writable.Writable>asList(new Text(i + "-2"),
+                                            new IntWritable(3 * i + 2), new DoubleWritable(3 * i + 2.0)))));
         }
 
 
@@ -116,7 +115,7 @@ public class TestMapFileRecordReaderMultipleParts {
             writers[mapFileIdx].append(key, value);
         }
 
-        for( MapFile.Writer m : writers){
+        for (MapFile.Writer m : writers) {
             m.close();
         }
 
@@ -125,10 +124,8 @@ public class TestMapFileRecordReaderMultipleParts {
 
         valueClass = RecordWritable.class;
 
-        opts = new SequenceFile.Writer.Option[]{
-                MapFile.Writer.keyClass(keyClass),
-                SequenceFile.Writer.valueClass(valueClass)
-        };
+        opts = new SequenceFile.Writer.Option[] {MapFile.Writer.keyClass(keyClass),
+                        SequenceFile.Writer.valueClass(valueClass)};
 
         tempDir = Files.createTempDir();
         subdirs = new File[3];
@@ -144,8 +141,8 @@ public class TestMapFileRecordReaderMultipleParts {
 
         recordMap = new HashMap<>();
         for (int i = 0; i < 9; i++) {
-            recordMap.put(new LongWritable(i), new RecordWritable(
-                            Arrays.<org.datavec.api.writable.Writable>asList(new Text(String.valueOf(i)), new IntWritable(i), new DoubleWritable(i))));
+            recordMap.put(new LongWritable(i), new RecordWritable(Arrays.<org.datavec.api.writable.Writable>asList(
+                            new Text(String.valueOf(i)), new IntWritable(i), new DoubleWritable(i))));
         }
 
 
@@ -158,7 +155,7 @@ public class TestMapFileRecordReaderMultipleParts {
             writers[mapFileIdx].append(key, value);
         }
 
-        for( MapFile.Writer m : writers){
+        for (MapFile.Writer m : writers) {
             m.close();
         }
 
@@ -191,15 +188,15 @@ public class TestMapFileRecordReaderMultipleParts {
         assertEquals(seqMap.size(), itk.getNumRecords());
 
         //Check indices for each map file
-        List<Pair<Long,Long>> expReaderExampleIdxs = new ArrayList<>();
-        expReaderExampleIdxs.add(new Pair<>(0L,2L));
-        expReaderExampleIdxs.add(new Pair<>(3L,5L));
-        expReaderExampleIdxs.add(new Pair<>(6L,8L));
+        List<Pair<Long, Long>> expReaderExampleIdxs = new ArrayList<>();
+        expReaderExampleIdxs.add(new Pair<>(0L, 2L));
+        expReaderExampleIdxs.add(new Pair<>(3L, 5L));
+        expReaderExampleIdxs.add(new Pair<>(6L, 8L));
 
         f = LongIndexToKey.class.getDeclaredField("readerIndices");
         f.setAccessible(true);
         assertEquals(expReaderExampleIdxs, f.get(itk));
-//        System.out.println(f.get(itk));
+        //        System.out.println(f.get(itk));
 
         //Check standard iteration order (no randomization)
         assertTrue(seqRR.hasNext());
@@ -227,12 +224,12 @@ public class TestMapFileRecordReaderMultipleParts {
         assertNotNull(order);
 
         int[] expOrder = new int[9];
-        for( int i=0; i<expOrder.length; i++ ){
+        for (int i = 0; i < expOrder.length; i++) {
             expOrder[i] = i;
         }
         RandomUtils.shuffleInPlace(expOrder, new Random(12345));
         assertArrayEquals(expOrder, order);
-//        System.out.println(Arrays.toString(expOrder));
+        //        System.out.println(Arrays.toString(expOrder));
 
         count = 0;
         while (seqRR.hasNext()) {
@@ -256,10 +253,10 @@ public class TestMapFileRecordReaderMultipleParts {
         assertEquals(seqMap.size(), itk.getNumRecords());
 
         //Check indices for each map file
-        List<Pair<Long,Long>> expReaderExampleIdxs = new ArrayList<>();
-        expReaderExampleIdxs.add(new Pair<>(0L,2L));
-        expReaderExampleIdxs.add(new Pair<>(3L,5L));
-        expReaderExampleIdxs.add(new Pair<>(6L,8L));
+        List<Pair<Long, Long>> expReaderExampleIdxs = new ArrayList<>();
+        expReaderExampleIdxs.add(new Pair<>(0L, 2L));
+        expReaderExampleIdxs.add(new Pair<>(3L, 5L));
+        expReaderExampleIdxs.add(new Pair<>(6L, 8L));
 
         f = LongIndexToKey.class.getDeclaredField("readerIndices");
         f.setAccessible(true);
@@ -285,7 +282,7 @@ public class TestMapFileRecordReaderMultipleParts {
         int[] order = (int[]) f.get(rr);
         assertNotNull(order);
         int[] expOrder = new int[9];
-        for( int i=0; i<expOrder.length; i++ ){
+        for (int i = 0; i < expOrder.length; i++) {
             expOrder[i] = i;
         }
         RandomUtils.shuffleInPlace(expOrder, new Random(12345));

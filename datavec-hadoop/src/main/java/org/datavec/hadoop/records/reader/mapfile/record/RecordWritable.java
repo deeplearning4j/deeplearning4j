@@ -41,7 +41,7 @@ public class RecordWritable implements Writable {
     public void write(DataOutput out) throws IOException {
         WritableFactory wf = WritableFactory.getInstance();
         out.writeInt(record.size());
-        for(org.datavec.api.writable.Writable w : record){
+        for (org.datavec.api.writable.Writable w : record) {
             wf.writeWithType(w, out);
         }
     }
@@ -52,7 +52,7 @@ public class RecordWritable implements Writable {
         int numRecords = in.readInt();
 
         record = new ArrayList<>(numRecords);
-        for( int i=0; i<numRecords; i++ ){
+        for (int i = 0; i < numRecords; i++) {
             record.add(wf.readWithType(in));
         }
     }

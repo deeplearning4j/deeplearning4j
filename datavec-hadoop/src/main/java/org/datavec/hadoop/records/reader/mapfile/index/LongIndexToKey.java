@@ -38,13 +38,14 @@ import java.util.List;
  */
 public class LongIndexToKey implements IndexToKey {
 
-    private List<Pair<Long,Long>> readerIndices;
+    private List<Pair<Long, Long>> readerIndices;
 
     @Override
-    public List<Pair<Long,Long>> initialize(MapFile.Reader[] readers, Class<? extends Writable> valueClass) throws IOException {
+    public List<Pair<Long, Long>> initialize(MapFile.Reader[] readers, Class<? extends Writable> valueClass)
+                    throws IOException {
 
-        List<Pair<Long,Long>> l = new ArrayList<>(readers.length);
-        for( MapFile.Reader r : readers ){
+        List<Pair<Long, Long>> l = new ArrayList<>(readers.length);
+        for (MapFile.Reader r : readers) {
             //Get the first and last keys:
             long first = -1;
             long last = -1;
@@ -56,15 +57,15 @@ public class LongIndexToKey implements IndexToKey {
 
             //First key: no method for this for some inexplicable reason :/
             r.reset();
-            Writable v = ReflectionUtils.newInstance(valueClass,null);
+            Writable v = ReflectionUtils.newInstance(valueClass, null);
             r.next(k, v);
             first = k.get();
 
-            l.add(new Pair<>(first,last));
+            l.add(new Pair<>(first, last));
         }
 
         //Check that things are actually contiguous:
-        List<Pair<Long,Long>> sorted = new ArrayList<>(l);
+        List<Pair<Long, Long>> sorted = new ArrayList<>(l);
         Collections.sort(sorted, new Comparator<Pair<Long, Long>>() {
             @Override
             public int compare(Pair<Long, Long> o1, Pair<Long, Long> o2) {
@@ -72,16 +73,18 @@ public class LongIndexToKey implements IndexToKey {
             }
         });
 
-        if(sorted.get(0).getFirst() != 0L){
+        if (sorted.get(0).getFirst() != 0L) {
             throw new UnsupportedOperationException("Minimum key value is not 0: got " + sorted.get(0).getFirst());
         }
 
-        for( int i=0; i<sorted.size()-1; i++ ){
+        for (int i = 0; i < sorted.size() - 1; i++) {
             long currLast = sorted.get(i).getSecond();
-            long nextFirst = sorted.get(i+1).getFirst();
-            if(currLast+1 != nextFirst){
-                throw new IllegalStateException("Keys are not contiguous between readers: first/last indices (inclusive) "
-                        + "are " + sorted + ".\n LongIndexKey assumes unique and contiguous LongWritable keys");
+            long nextFirst = sorted.get(i + 1).getFirst();
+            if (currLast + 1 != nextFirst) {
+                throw new IllegalStateException(
+                                "Keys are not contiguous between readers: first/last indices (inclusive) " + "are "
+                                                + sorted
+                                                + ".\n LongIndexKey assumes unique and contiguous LongWritable keys");
             }
         }
 
@@ -97,11 +100,11 @@ public class LongIndexToKey implements IndexToKey {
     @Override
     public long getNumRecords() throws IOException {
         long max = -1;
-        for(Pair<Long,Long> p : readerIndices){
+        for (Pair<Long, Long> p : readerIndices) {
             max = Math.max(max, p.getSecond());
         }
 
-        if(max <= 0){
+        if (max <= 0) {
             throw new IllegalStateException("Invalid number of keys found: " + max);
         }
 

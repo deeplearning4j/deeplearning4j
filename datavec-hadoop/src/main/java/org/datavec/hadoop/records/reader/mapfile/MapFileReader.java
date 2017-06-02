@@ -45,7 +45,7 @@ public class MapFileReader<V> implements Closeable {
     private MapFile.Reader[] readers;
     private IndexToKey indexToKey;
     private Class<? extends Writable> recordClass;
-    private List<Pair<Long,Long>> recordIndexesEachReader;
+    private List<Pair<Long, Long>> recordIndexesEachReader;
     private Long numRecords;
 
 
@@ -63,7 +63,8 @@ public class MapFileReader<V> implements Closeable {
         this(Collections.singletonList(path), indexToKey, recordClass);
     }
 
-    public MapFileReader(List<String> paths, IndexToKey indexToKey, Class<? extends Writable> recordClass) throws IOException {
+    public MapFileReader(List<String> paths, IndexToKey indexToKey, Class<? extends Writable> recordClass)
+                    throws IOException {
 
         this.indexToKey = indexToKey;
         this.recordClass = recordClass;
@@ -72,11 +73,11 @@ public class MapFileReader<V> implements Closeable {
         SequenceFile.Reader.Option[] opts = new SequenceFile.Reader.Option[0];
 
         Configuration config = new Configuration();
-        for( int i=0; i<paths.size(); i++ ) {
+        for (int i = 0; i < paths.size(); i++) {
             readers[i] = new MapFile.Reader(new Path(paths.get(i)), config, opts);
             if (readers[i].getValueClass() != recordClass) {
                 throw new UnsupportedOperationException("MapFile record class: " + readers[i].getValueClass()
-                        + ", but got class " + recordClass + ", path = " + paths.get(i));
+                                + ", but got class " + recordClass + ", path = " + paths.get(i));
             }
         }
 
@@ -89,7 +90,7 @@ public class MapFileReader<V> implements Closeable {
      * @return  Total number of records and the map file
      */
     public long numRecords() {
-        if(numRecords == null){
+        if (numRecords == null) {
             try {
                 numRecords = indexToKey.getNumRecords();
             } catch (IOException e) {
@@ -109,15 +110,15 @@ public class MapFileReader<V> implements Closeable {
     public V getRecord(long index) throws IOException {
         //First: determine which reader to read from...
         int readerIdx = -1;
-        for( int i=0; i<recordIndexesEachReader.size(); i++ ){
-            Pair<Long,Long> p = recordIndexesEachReader.get(i);
-            if(index >= p.getFirst() && index <= p.getSecond()){
+        for (int i = 0; i < recordIndexesEachReader.size(); i++) {
+            Pair<Long, Long> p = recordIndexesEachReader.get(i);
+            if (index >= p.getFirst() && index <= p.getSecond()) {
                 readerIdx = i;
                 break;
             }
         }
-        if(readerIdx == -1){
-            throw new IllegalStateException("Index not found in any reader: " + index );
+        if (readerIdx == -1) {
+            throw new IllegalStateException("Index not found in any reader: " + index);
         }
 
         WritableComparable key = indexToKey.getKeyForIndex(index);
@@ -130,7 +131,7 @@ public class MapFileReader<V> implements Closeable {
 
     @Override
     public void close() throws IOException {
-        for(MapFile.Reader r : readers){
+        for (MapFile.Reader r : readers) {
             r.close();
         }
     }

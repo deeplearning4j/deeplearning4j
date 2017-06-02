@@ -66,10 +66,8 @@ public class TestMapFileRecordReader {
         Class<? extends WritableComparable> keyClass = LongWritable.class;
         Class<? extends Writable> valueClass = SequenceRecordWritable.class;
 
-        SequenceFile.Writer.Option[] opts = new SequenceFile.Writer.Option[]{
-                MapFile.Writer.keyClass(keyClass),
-                SequenceFile.Writer.valueClass(valueClass)
-        };
+        SequenceFile.Writer.Option[] opts = new SequenceFile.Writer.Option[] {MapFile.Writer.keyClass(keyClass),
+                        SequenceFile.Writer.valueClass(valueClass)};
 
         tempDirSeq = Files.createTempDir();
         seqMapFilePath = new Path("file:///" + tempDirSeq.getAbsolutePath());
@@ -77,26 +75,32 @@ public class TestMapFileRecordReader {
         MapFile.Writer writer = new MapFile.Writer(c, seqMapFilePath, opts);
 
         seqMap = new HashMap<>();
-        seqMap.put(new LongWritable(0), new SequenceRecordWritable(
-                Arrays.asList(
-                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("zero"), new IntWritable(0), new DoubleWritable(0)),
-                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("one"), new IntWritable(1), new DoubleWritable(1.0)),
-                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("two"), new IntWritable(2), new DoubleWritable(2.0)))
-        ));
+        seqMap.put(new LongWritable(0),
+                        new SequenceRecordWritable(Arrays.asList(
+                                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("zero"),
+                                                        new IntWritable(0), new DoubleWritable(0)),
+                                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("one"),
+                                                        new IntWritable(1), new DoubleWritable(1.0)),
+                                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("two"),
+                                                        new IntWritable(2), new DoubleWritable(2.0)))));
 
-        seqMap.put(new LongWritable(1), new SequenceRecordWritable(
-                Arrays.asList(
-                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Bzero"), new IntWritable(10), new DoubleWritable(10)),
-                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Bone"), new IntWritable(11), new DoubleWritable(11.0)),
-                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Btwo"), new IntWritable(12), new DoubleWritable(12.0)))
-        ));
+        seqMap.put(new LongWritable(1),
+                        new SequenceRecordWritable(Arrays.asList(
+                                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Bzero"),
+                                                        new IntWritable(10), new DoubleWritable(10)),
+                                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Bone"),
+                                                        new IntWritable(11), new DoubleWritable(11.0)),
+                                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Btwo"),
+                                                        new IntWritable(12), new DoubleWritable(12.0)))));
 
-        seqMap.put(new LongWritable(2), new SequenceRecordWritable(
-                Arrays.asList(
-                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Czero"), new IntWritable(20), new DoubleWritable(20)),
-                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Cone"), new IntWritable(21), new DoubleWritable(21.0)),
-                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Ctwo"), new IntWritable(22), new DoubleWritable(22.0)))
-        ));
+        seqMap.put(new LongWritable(2),
+                        new SequenceRecordWritable(Arrays.asList(
+                                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Czero"),
+                                                        new IntWritable(20), new DoubleWritable(20)),
+                                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Cone"),
+                                                        new IntWritable(21), new DoubleWritable(21.0)),
+                                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Ctwo"),
+                                                        new IntWritable(22), new DoubleWritable(22.0)))));
 
 
         //Need to write in order
@@ -113,10 +117,8 @@ public class TestMapFileRecordReader {
 
         valueClass = RecordWritable.class;
 
-        opts = new SequenceFile.Writer.Option[]{
-                MapFile.Writer.keyClass(keyClass),
-                SequenceFile.Writer.valueClass(valueClass)
-        };
+        opts = new SequenceFile.Writer.Option[] {MapFile.Writer.keyClass(keyClass),
+                        SequenceFile.Writer.valueClass(valueClass)};
 
         tempDir = Files.createTempDir();
         mapFilePath = new Path("file:///" + tempDir.getAbsolutePath());
@@ -124,16 +126,17 @@ public class TestMapFileRecordReader {
         writer = new MapFile.Writer(c, mapFilePath, opts);
 
         recordMap = new HashMap<>();
-        recordMap.put(new LongWritable(0), new RecordWritable(
-                Arrays.<org.datavec.api.writable.Writable>asList(new Text("zero"), new IntWritable(0), new DoubleWritable(0))));
+        recordMap.put(new LongWritable(0),
+                        new RecordWritable(Arrays.<org.datavec.api.writable.Writable>asList(new Text("zero"),
+                                        new IntWritable(0), new DoubleWritable(0))));
 
-        recordMap.put(new LongWritable(1), new RecordWritable(
-                Arrays.<org.datavec.api.writable.Writable>asList(new Text("one"), new IntWritable(11), new DoubleWritable(11.0)))
-        );
+        recordMap.put(new LongWritable(1),
+                        new RecordWritable(Arrays.<org.datavec.api.writable.Writable>asList(new Text("one"),
+                                        new IntWritable(11), new DoubleWritable(11.0))));
 
-        recordMap.put(new LongWritable(2), new RecordWritable(
-                Arrays.<org.datavec.api.writable.Writable>asList(new Text("two"), new IntWritable(22), new DoubleWritable(22.0)))
-        );
+        recordMap.put(new LongWritable(2),
+                        new RecordWritable(Arrays.<org.datavec.api.writable.Writable>asList(new Text("two"),
+                                        new IntWritable(22), new DoubleWritable(22.0))));
 
 
         //Need to write in order
@@ -188,7 +191,7 @@ public class TestMapFileRecordReader {
         f.setAccessible(true);
         int[] order = (int[]) f.get(seqRR);
         assertNotNull(order);
-        int[] expOrder = new int[]{1, 2, 0};  //Fixed RNG seed -> always this order
+        int[] expOrder = new int[] {1, 2, 0}; //Fixed RNG seed -> always this order
         assertArrayEquals(expOrder, order);
 
         count = 0;
@@ -227,7 +230,7 @@ public class TestMapFileRecordReader {
         f.setAccessible(true);
         int[] order = (int[]) f.get(rr);
         assertNotNull(order);
-        int[] expOrder = new int[]{1, 2, 0};  //Fixed RNG seed -> always this order
+        int[] expOrder = new int[] {1, 2, 0}; //Fixed RNG seed -> always this order
         assertArrayEquals(expOrder, order);
 
         count = 0;

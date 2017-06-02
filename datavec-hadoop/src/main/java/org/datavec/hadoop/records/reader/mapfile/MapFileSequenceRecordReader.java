@@ -83,7 +83,7 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
      * @param rng If non-null, will be used to randomize the order of examples
      *
      */
-    public MapFileSequenceRecordReader(Random rng){
+    public MapFileSequenceRecordReader(Random rng) {
         this(new LongIndexToKey(), rng);
     }
 
@@ -95,7 +95,7 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
      * @param rng If non-null, will be used to randomize the order of examples
      *
      */
-    public MapFileSequenceRecordReader(IndexToKey indexToKey, Random rng){
+    public MapFileSequenceRecordReader(IndexToKey indexToKey, Random rng) {
         this.indexToKey = indexToKey;
         this.rng = rng;
     }
@@ -113,34 +113,34 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
         int dataCount = 0;
         int indexCount = 0;
         List<URI> dataUris = new ArrayList<>();
-        for(URI u : uris){
+        for (URI u : uris) {
             String p = u.getPath();
-            if(p.endsWith("data")){
+            if (p.endsWith("data")) {
                 dataCount++;
                 dataUris.add(u);
-            } else if(p.endsWith("index")){
+            } else if (p.endsWith("index")) {
                 indexCount++;
             }
         }
 
         //Check URIs are correct: we expect one or more /data and /index files...
-        if(dataCount == 0 || indexCount == 0){
-            throw new IllegalStateException("Cannot initialize MapFileSequenceRecordReader: could not find data and " +
-                    "index files in input split");
+        if (dataCount == 0 || indexCount == 0) {
+            throw new IllegalStateException("Cannot initialize MapFileSequenceRecordReader: could not find data and "
+                            + "index files in input split");
         }
-        if(dataCount != indexCount){
+        if (dataCount != indexCount) {
             throw new IllegalStateException("Invalid input: found " + dataCount + " data files but " + indexCount
-                    + " index files. Expect equal number of both for map files");
+                            + " index files. Expect equal number of both for map files");
         }
 
         List<String> mapFilePartRootDirectories = new ArrayList<>(dataUris.size());
-        for( URI u : dataUris ){
+        for (URI u : dataUris) {
             File partRootDir = new File(u).getParentFile();
             mapFilePartRootDirectories.add(partRootDir.getAbsolutePath());
         }
 
 
-        if(dataUris.size() == 1){
+        if (dataUris.size() == 1) {
             //Just parent of /data
             baseDirUri = new File(dataUris.get(0)).getParentFile().toURI();
         } else {
@@ -149,16 +149,16 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
             baseDirUri = new File(dataUris.get(0)).getParentFile().getParentFile().toURI();
         }
 
-        if(mapFileReader != null){
+        if (mapFileReader != null) {
             mapFileReader.close();
         }
 
         this.mapFileReader = new MapFileReader<>(mapFilePartRootDirectories, indexToKey, recordClass);
         this.numSequences = mapFileReader.numRecords();
 
-        if(rng != null){
-            order = new int[(int)numSequences];
-            for( int i=0; i<order.length; i++ ){
+        if (rng != null) {
+            order = new int[(int) numSequences];
+            for (int i = 0; i < order.length; i++) {
                 order[i] = i;
             }
             RandomUtils.shuffleInPlace(order, rng);
@@ -190,34 +190,34 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
         return nextSequence(true);
     }
 
-    private SequenceRecord nextSequence(boolean withMetadata){
-        if(!hasNext()){
+    private SequenceRecord nextSequence(boolean withMetadata) {
+        if (!hasNext()) {
             throw new NoSuchElementException();
         }
 
         SequenceRecordWritable seq;
         long currIdx;
-        if(order != null){
-            currIdx = order[(int)position++];
+        if (order != null) {
+            currIdx = order[(int) position++];
         } else {
             currIdx = position++;
         }
 
-        try{
+        try {
             seq = mapFileReader.getRecord(currIdx);
-        } catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
         RecordMetaData meta;
-        if(withMetadata){
+        if (withMetadata) {
             meta = new RecordMetaDataIndex(currIdx, baseDirUri, MapFileSequenceRecordReader.class);
         } else {
             meta = null;
         }
 
-        if(listeners != null && !listeners.isEmpty()){
-            for(RecordListener l : listeners){
+        if (listeners != null && !listeners.isEmpty()) {
+            for (RecordListener l : listeners) {
                 l.recordRead(this, seq);
             }
         }
@@ -227,14 +227,16 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
 
     @Override
     public SequenceRecord loadSequenceFromMetaData(@NonNull RecordMetaData recordMetaData) throws IOException {
-        long idx = ((RecordMetaDataIndex)recordMetaData).getIndex();
-        return new org.datavec.api.records.impl.SequenceRecord(mapFileReader.getRecord(idx).getSequenceRecord(), recordMetaData);
+        long idx = ((RecordMetaDataIndex) recordMetaData).getIndex();
+        return new org.datavec.api.records.impl.SequenceRecord(mapFileReader.getRecord(idx).getSequenceRecord(),
+                        recordMetaData);
     }
 
     @Override
-    public List<SequenceRecord> loadSequenceFromMetaData( @NonNull List<RecordMetaData> recordMetaDatas) throws IOException {
+    public List<SequenceRecord> loadSequenceFromMetaData(@NonNull List<RecordMetaData> recordMetaDatas)
+                    throws IOException {
         List<SequenceRecord> out = new ArrayList<>(recordMetaDatas.size());
-        for(RecordMetaData r : recordMetaDatas){
+        for (RecordMetaData r : recordMetaDatas) {
             out.add(loadSequenceFromMetaData(r));
         }
         return out;
@@ -268,7 +270,7 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
     @Override
     public void reset() {
         position = 0;
-        if(order != null){
+        if (order != null) {
             RandomUtils.shuffleInPlace(order, rng);
         }
     }
@@ -310,7 +312,7 @@ public class MapFileSequenceRecordReader implements SequenceRecordReader {
 
     @Override
     public void close() throws IOException {
-        if(mapFileReader != null){
+        if (mapFileReader != null) {
             mapFileReader.close();
         }
     }

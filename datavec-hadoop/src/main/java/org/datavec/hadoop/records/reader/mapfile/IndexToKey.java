@@ -36,7 +36,8 @@ public interface IndexToKey {
      *
      * @param readers The underlying map file readers
      */
-    List<Pair<Long,Long>> initialize(MapFile.Reader[] readers, Class<? extends Writable> valueClass) throws IOException;
+    List<Pair<Long, Long>> initialize(MapFile.Reader[] readers, Class<? extends Writable> valueClass)
+                    throws IOException;
 
     /**
      * Get the key for the given index
