@@ -495,7 +495,7 @@ void convertFromThreshold(void *dx, Nd4jIndex N, void *dz) {
     for (int e = 3; e < flimit; e++) {
         int el = x[e];
         int ael = nd4j::math::nd4j_abs<int>(el) - 1;
-        z[ael] = el > 0 ? threshold : -threshold;
+        z[ael] += el > 0 ? threshold : -threshold;
     }
 }
 
