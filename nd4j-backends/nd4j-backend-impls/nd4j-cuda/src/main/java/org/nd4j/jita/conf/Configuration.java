@@ -159,7 +159,7 @@ public class Configuration implements Serializable {
     private long maximumDeviceCache = 512L * 1024L * 1024L;
 
     @Getter
-    private boolean usePreallocation = true;
+    private boolean usePreallocation = false;
 
     @Getter
     private int preallocationCalls = 10;

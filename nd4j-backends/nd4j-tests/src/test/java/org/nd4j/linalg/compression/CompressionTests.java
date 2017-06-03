@@ -315,14 +315,15 @@ public class CompressionTests extends BaseNd4jTest {
         NDArrayCompressor compressor = Nd4j.getCompressor().getCompressor("THRESHOLD");
         compressor.configure(0.9);
 
-        INDArray compressed = compressor.compress(initial);
+        INDArray compressed = Nd4j.getExecutioner().thresholdEncode(initial, 0.9);
 
         assertEquals(exp, initial);
 
         log.info("Compressed length: {}", compressed.data().length());
 //        log.info("Compressed: {}", Arrays.toString(compressed.data().asInt()));
 
-        INDArray decompressed = compressor.decompress(compressed);
+        INDArray decompressed = Nd4j.create(initial.length());
+        Nd4j.getExecutioner().thresholdDecode(compressed, decompressed);
 
         log.info("Decompressed length: {}", decompressed.lengthLong());
 

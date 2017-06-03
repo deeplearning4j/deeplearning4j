@@ -2166,7 +2166,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         long originalLength = buffer.getInt(1);
 
         if (target.lengthLong() != originalLength)
-            throw new ND4JIllegalStateException("originalLength stored in encoded array doesn't match target length");
+            throw new ND4JIllegalStateException("originalLength ["+ originalLength+"] stored in encoded array doesn't match target length ["+ target.lengthLong()+"]");
 
         DataBuffer result = target.data();
 

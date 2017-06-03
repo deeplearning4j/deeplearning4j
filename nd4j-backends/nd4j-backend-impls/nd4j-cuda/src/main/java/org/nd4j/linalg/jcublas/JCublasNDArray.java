@@ -497,8 +497,12 @@ public class JCublasNDArray extends BaseNDArray {
 
         INDArray ret = Nd4j.createArrayFromShapeBuffer(rb, this.shapeInfoDataBuffer());
 
+
         if (blocking)
             Nd4j.getExecutioner().push();
+
+
+        //Nd4j.getExecutioner().commit();
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
@@ -535,6 +539,8 @@ public class JCublasNDArray extends BaseNDArray {
             context.syncOldStream();
         else
             context.syncSpecialStream();
+
+//        AtomicAllocator.getInstance().synchronizeHostData(ret);
 /*
         long time2 = System.currentTimeMillis();
 
