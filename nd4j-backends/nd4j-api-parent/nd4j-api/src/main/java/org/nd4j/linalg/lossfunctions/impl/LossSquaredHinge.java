@@ -16,6 +16,12 @@ import org.nd4j.linalg.lossfunctions.LossUtil;
 public class LossSquaredHinge implements ILossFunction {
 
     public INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        if (labels.size(1) != preOutput.size(1)) {
+            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
+                            + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
+                            + ") ");
+            
+        }
         /* y_hat is -1 or 1
         hinge loss is max(0,1-y_hat*y)
          */
@@ -50,6 +56,12 @@ public class LossSquaredHinge implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        if (labels.size(1) != preOutput.size(1)) {
+            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
+                            + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
+                            + ") ");
+            
+        }
         INDArray scoreArr = scoreArray(labels, preOutput, activationFn, mask);
 
         INDArray bitMaskRowCol = scoreArr.dup();

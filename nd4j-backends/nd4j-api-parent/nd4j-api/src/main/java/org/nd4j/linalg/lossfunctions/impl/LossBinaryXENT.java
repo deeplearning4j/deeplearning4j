@@ -53,6 +53,12 @@ public class LossBinaryXENT implements ILossFunction {
     }
 
     private INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        if (labels.size(1) != preOutput.size(1)) {
+            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
+                            + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
+                            + ") ");
+            
+        }
         INDArray scoreArr;
         if (activationFn instanceof ActivationSoftmax) {
             //Use LogSoftMax op to avoid numerical issues when calculating score
@@ -106,6 +112,12 @@ public class LossBinaryXENT implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        if (labels.size(1) != preOutput.size(1)) {
+            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
+                            + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
+                            + ") ");
+            
+        }
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         INDArray numerator = output.sub(labels);
