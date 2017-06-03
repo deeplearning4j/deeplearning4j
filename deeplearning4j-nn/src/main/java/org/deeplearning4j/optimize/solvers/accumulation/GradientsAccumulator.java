@@ -16,7 +16,7 @@ public interface GradientsAccumulator extends Serializable {
      * @param function
      * @param params
      */
-    void applyUpdate(StepFunction function, INDArray params);
+    void applyUpdate(StepFunction function, INDArray params, INDArray updates);
 
     /**
      * This method applies accumulated updates via given StepFunction
@@ -24,7 +24,7 @@ public interface GradientsAccumulator extends Serializable {
      * @param function
      * @param params
      */
-    void applyUpdate(StepFunction function, INDArray params, double alpha);
+    void applyUpdate(StepFunction function, INDArray params, INDArray updates, double alpha);
 
     /**
      * This method accepts updates suitable for StepFunction, and accumulates/propagates it across all workers

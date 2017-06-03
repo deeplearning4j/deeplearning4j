@@ -1,15 +1,18 @@
 package org.deeplearning4j.optimize.solvers.accumulation;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -18,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class CudaGradientsAccumulator implements GradientsAccumulator{
     protected ThreadLocal<INDArray> accumulator = new ThreadLocal<>();
 
@@ -27,6 +31,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
 
     protected AtomicInteger workersCounter = new AtomicInteger(0);
     protected ThreadLocal<Integer> index = new ThreadLocal<>();
+
+    protected CyclicBarrier barrier;
 
 
     public CudaGradientsAccumulator(int parties) {
@@ -45,6 +51,9 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
         for (int i = 0; i < parties; i++) {
             messages.add(new LinkedBlockingQueue<INDArray>(128));
         }
+
+        handler.initialize(this);
+        barrier = new CyclicBarrier(parties);
     }
 
     /**
@@ -54,15 +63,20 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
      * @param params
      */
     @Override
-    public void applyUpdate(StepFunction function, INDArray params) {
+    public void applyUpdate(StepFunction function, INDArray params, INDArray updates) {
+        // nullify given updates first
+        updates.assign(0.0f);
+
         while (!messages.get(index.get()).isEmpty()) {
             INDArray compressed = messages.get(index.get()).poll();
 
-            // FIXME: pass gradients here, and reuse them
-            INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, null);
+            //log.info("Thread: {}; Compressed: {}", Thread.currentThread().getId(), Arrays.toString(compressed.data().asInt()));
 
-            function.step(params, decoded);
+            // FIXME: pass gradients here, and reuse them
+            INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
         }
+
+        function.step(params, updates);
     }
 
     /**
@@ -73,15 +87,20 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
      * @param alpha
      */
     @Override
-    public void applyUpdate(StepFunction function, INDArray params, double alpha) {
+    public void applyUpdate(StepFunction function, INDArray params, INDArray updates, double alpha) {
+        // nullify given updates first
+        updates.assign(0.0f);
+
         while (!messages.get(index.get()).isEmpty()) {
             INDArray compressed = messages.get(index.get()).poll();
 
-            // FIXME: pass gradients here, and reuse them
-            INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, null);
+            //log.info("Thread: {}; Compressed: {}", Thread.currentThread().getId(), Arrays.toString(compressed.data().asInt()));
 
-            function.step(params, decoded, alpha);
+            // FIXME: pass gradients here, and reuse them
+            INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
         }
+
+        function.step(params, updates, alpha);
     }
 
     /**
@@ -103,6 +122,12 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
         accumulator.get().addi(array);
 
         handler.broadcastUpdates(accumulator.get());
+
+        try {
+            barrier.await();
+        } catch (Exception e) {
+            //
+        }
     }
 
     /**
@@ -116,7 +141,10 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
     public void receiveUpdate(INDArray array) {
         // we're replicating COMPRESSED MESSAGES, decompress will be thread-local
         for (int i = 0; i < parties; i++) {
-            messages.get(i).add(array.unsafeDuplication());
+            INDArray compressed = array.unsafeDuplication();
+            messages.get(i).add(compressed);
+
+            //log.info("Thread: {}; Copy: {}", Thread.currentThread().getId(), Arrays.toString(compressed.data().asInt()));
         }
     }
 
@@ -129,5 +157,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
         accumulator = new ThreadLocal<>();
 
         // throw away message queues
+        for (int i = 0; i < parties; i++) {
+            messages.get(i).clear();
+        }
     }
 }

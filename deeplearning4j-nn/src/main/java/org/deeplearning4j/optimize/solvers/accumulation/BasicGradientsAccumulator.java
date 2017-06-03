@@ -85,7 +85,7 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
      * @param params
      */
     @Override
-    public void applyUpdate(StepFunction function, INDArray params) {
+    public void applyUpdate(StepFunction function, INDArray params, INDArray grad) {
 
         try {
             updatesLock.readLock().lock();
@@ -119,7 +119,7 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
      * @param params
      */
     @Override
-    public void applyUpdate(StepFunction function, INDArray params, double alpha) {
+    public void applyUpdate(StepFunction function, INDArray params, INDArray grad, double alpha) {
 
         try {
             updatesLock.readLock().lock();

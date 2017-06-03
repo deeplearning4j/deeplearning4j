@@ -10,6 +10,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
+import java.util.Arrays;
+
 /**
  * This MessageHandler implementation is suited for debugging mostly, but still can be used in production environment if you really want that.
  * Basic idea: updates are encoded before sharing.
@@ -47,13 +49,20 @@ public class EncodingHandler implements MessageHandler {
     public INDArray encodeUpdates(INDArray updates) {
         // special op should be called here for encoding
 
-        return compressor.compress(updates);
+        //return compressor.compress(updates);
+        INDArray encoded = Nd4j.getExecutioner().thresholdEncode(updates, threshold);
+
+        //if (encoded != null)
+            //log.info("Thread: {}; Encoded: {}", Thread.currentThread().getId(), Arrays.toString(encoded.data().asInt()));
+
+        return encoded;
     }
 
+    @Deprecated
     public INDArray decodeUpdates(INDArray message) {
         // special op should be called here for decoding
 
-        return compressor.decompress(message);
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -61,8 +70,8 @@ public class EncodingHandler implements MessageHandler {
      * @param message
      */
     protected void sendMessage(INDArray message) {
-        INDArray update = decodeUpdates(message);
-        accumulator.receiveUpdate(update);
+        //INDArray update = decodeUpdates(message);
+        accumulator.receiveUpdate(message);
     }
 
     @Override
