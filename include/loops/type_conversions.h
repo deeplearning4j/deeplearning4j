@@ -356,7 +356,7 @@ __device__ inline void decoderKernelGeneric(void *dx, Nd4jIndex N, void *dz) {
         int ael = nd4j::math::nd4j_abs<int>(el) - 1;
 
         // TODO: investigate, if += would work better here, as in "decoded accumulation"
-        z[ael] = el > 0 ? threshold : -threshold;
+        z[ael] += el > 0 ? threshold : -threshold;
     }
 }
 
