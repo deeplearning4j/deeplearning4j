@@ -53,7 +53,8 @@ public class EncodingHandler implements MessageHandler {
         INDArray encoded = Nd4j.getExecutioner().thresholdEncode(updates, threshold);
 
         //if (encoded != null)
-            //log.info("Thread: {}; Encoded: {}", Thread.currentThread().getId(), Arrays.toString(encoded.data().asInt()));
+            //log.info("Encoded length: {}, Original/encoded ratio: {}", encoded.data().length(), String.format("%.3f", encoded.data().length() * 100.0 / updates.lengthLong()));
+            //log.info("Thread: {}; Encoded length: {}", Thread.currentThread().getId(), Arrays.toString(encoded.data().asInt()));
 
         return encoded;
     }

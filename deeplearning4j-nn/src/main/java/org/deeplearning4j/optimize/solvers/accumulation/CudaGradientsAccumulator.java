@@ -4,7 +4,13 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
+import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
@@ -28,13 +34,18 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
     protected int parties;
     protected MessageHandler handler;
     protected List<Queue<INDArray>> messages = new ArrayList<>();
+    protected List<MemoryWorkspace> workspaces = new ArrayList<>();
 
     protected AtomicInteger workersCounter = new AtomicInteger(0);
     protected ThreadLocal<Integer> index = new ThreadLocal<>();
 
     protected CyclicBarrier barrier;
 
+    public CudaGradientsAccumulator(double parties) {
+        this(Nd4j.getAffinityManager().getNumberOfDevices(), 1e-3);
+    }
 
+    // TODO: delete this one maybe?
     public CudaGradientsAccumulator(int parties) {
         this(parties, 1e-3);
     }
@@ -47,10 +58,28 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
         this.parties = parties;
         this.handler = handler;
 
+        // maybe not the best idea in the world, but we'll use cyclic workspace of 25MB to receive updates
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .initialSize(25 * 1024L * 1024L)
+                .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                .policyAllocation(AllocationPolicy.STRICT)
+                .policySpill(SpillPolicy.FAIL)
+                .policyLearning(LearningPolicy.NONE)
+                .build();
+
+        if (parties > Nd4j.getAffinityManager().getNumberOfDevices())
+            throw new ND4JIllegalStateException("Number of parties ["+ parties +"] should be less or equal to number of devices ["+Nd4j.getAffinityManager().getNumberOfDevices()+"]");
+
         // pre-create Queues for local workers
+        int curDev = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
         for (int i = 0; i < parties; i++) {
-            messages.add(new LinkedBlockingQueue<INDArray>(128));
+            messages.add(new LinkedBlockingQueue<INDArray>(64));
+
+            Nd4j.getAffinityManager().unsafeSetDevice(i);
+            workspaces.add(Nd4j.getWorkspaceManager().createNewWorkspace(configuration,"CGA-" + i, i));
         }
+        Nd4j.getAffinityManager().unsafeSetDevice(curDev);
 
         handler.initialize(this);
         barrier = new CyclicBarrier(parties);
@@ -104,6 +133,19 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
     }
 
     /**
+     * This method does initialization of given worker wrt Thread-Device Affinity
+     */
+    @Override
+    public void touch() {
+        if (index.get() == null) {
+            // set index
+            int localIndex = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
+            index.set(localIndex);
+        }
+    }
+
+    /**
      * This method accepts updates suitable for StepFunction, and accumulates/propagates it across all workers
      *
      * @param array
@@ -111,12 +153,11 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
     @Override
     public void storeUpdate(INDArray array) {
 
-        if (index.get() == null) {
+        if (accumulator.get() == null) {
+            // we don't want accumulator to be attached to workspaces
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 accumulator.set(Nd4j.create(array.shape(), array.ordering()));
             }
-
-            index.set(workersCounter.getAndIncrement());
         }
 
         accumulator.get().addi(array);
@@ -141,8 +182,11 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
     public void receiveUpdate(INDArray array) {
         // we're replicating COMPRESSED MESSAGES, decompress will be thread-local
         for (int i = 0; i < parties; i++) {
-            INDArray compressed = array.unsafeDuplication();
-            messages.get(i).add(compressed);
+
+            try (MemoryWorkspace workspace = workspaces.get(i).notifyScopeEntered()) {
+                INDArray compressed = array.unsafeDuplication();
+                messages.get(i).add(compressed);
+            }
 
             //log.info("Thread: {}; Copy: {}", Thread.currentThread().getId(), Arrays.toString(compressed.data().asInt()));
         }

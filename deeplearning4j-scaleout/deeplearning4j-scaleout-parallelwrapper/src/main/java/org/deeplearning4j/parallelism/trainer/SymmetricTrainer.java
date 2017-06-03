@@ -83,6 +83,9 @@ public class SymmetricTrainer extends DefaultTrainer implements CommunicativeTra
         } else if (replicatedModel instanceof MultiLayerNetwork) {
             ((MultiLayerNetwork) replicatedModel).setGradientsAccumulator(accumulator);
         }
+
+        // need to attach this device id to accumulator's workspaces
+        accumulator.touch();
     }
 
 

@@ -46,4 +46,9 @@ public interface GradientsAccumulator extends Serializable {
      * This method resets all accumulated updates (if any)
      */
     void reset();
+
+    /**
+     * This method does initialization of given worker wrt Thread-Device Affinity
+     */
+    void touch();
 }

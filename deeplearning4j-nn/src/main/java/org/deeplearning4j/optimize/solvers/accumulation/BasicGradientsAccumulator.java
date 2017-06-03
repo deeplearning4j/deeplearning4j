@@ -256,4 +256,12 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
 
         updatesLock.writeLock().unlock();
     }
+
+    /**
+     * This method does initialization of given worker wrt Thread-Device Affinity
+     */
+    @Override
+    public void touch() {
+        // no-op
+    }
 }
