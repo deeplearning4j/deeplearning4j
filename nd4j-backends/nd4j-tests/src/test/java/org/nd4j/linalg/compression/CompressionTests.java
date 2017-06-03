@@ -417,6 +417,7 @@ public class CompressionTests extends BaseNd4jTest {
         //Nd4j.getCompressor().getCompressor("THRESHOLD").configure(1e-3);
         INDArray compressed = Nd4j.getExecutioner().thresholdEncode(initial, 1e-3f);
 
+        INDArray copy = compressed.unsafeDuplication();
 
         log.info("Initial array: {}", Arrays.toString(initial.data().asFloat()));
 
@@ -428,6 +429,12 @@ public class CompressionTests extends BaseNd4jTest {
         log.info("Decompressed array: {}", Arrays.toString(decompressed.data().asFloat()));
 
         assertEquals(exp_1, decompressed);
+
+        INDArray decompressed_copy = Nd4j.create(initial.length());
+        Nd4j.getExecutioner().thresholdDecode(copy, decompressed_copy);
+
+        assertFalse(decompressed == decompressed_copy);
+        assertEquals(decompressed, decompressed_copy);
     }
 
     @Test
