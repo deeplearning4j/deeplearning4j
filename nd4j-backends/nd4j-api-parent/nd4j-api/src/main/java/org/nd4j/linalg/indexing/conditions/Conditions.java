@@ -92,16 +92,24 @@ public class Conditions {
         return new GreaterThanOrEqual(value);
     }
 
-    /**
-     *@deprecated 0.6.0 Typo - use {@link #greaterThanOrEqual(Number)}
-     */
-    @Deprecated
-    public static Condition greaterThanOEqual(Number value) {
+    public static Condition greaterThanOrEqual(Number value) {
         return new GreaterThanOrEqual(value);
     }
 
-    public static Condition greaterThanOrEqual(Number value) {
-        return new GreaterThanOrEqual(value);
+    public static Condition absGreaterThanOrEqual(Number value) {
+        return new AbsValueGreaterOrEqualsThan(value);
+    }
+
+    public static Condition absLessThanOrEqual(Number value) {
+        return new AbsValueLessOrEqualsThan(value);
+    }
+
+    public static Condition absGreaterThan(Number value) {
+        return new AbsValueGreaterThan(value);
+    }
+
+    public static Condition absLessThan(Number value) {
+        return new AbsValueLessThan(value);
     }
 
 }

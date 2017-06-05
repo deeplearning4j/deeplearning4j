@@ -81,6 +81,51 @@ public class CudaDataBufferFactory implements DataBufferFactory {
         return null;
     }
 
+    /**
+     * This method will create new DataBuffer of the same dataType & same length
+     *
+     * @param buffer
+     * @return
+     */
+    @Override
+    public DataBuffer createSame(DataBuffer buffer, boolean init) {
+        switch (buffer.dataType()) {
+            case INT:
+                return createInt(buffer.length(), init);
+            case FLOAT:
+                return createFloat(buffer.length(), init);
+            case DOUBLE:
+                return createHalf(buffer.length(), init);
+            case HALF:
+                return createHalf(buffer.length(), init);
+            default:
+                throw new UnsupportedOperationException("Unknown dataType: " + buffer.dataType());
+        }
+    }
+
+    /**
+     * This method will create new DataBuffer of the same dataType & same length
+     *
+     * @param buffer
+     * @param workspace
+     * @return
+     */
+    @Override
+    public DataBuffer createSame(DataBuffer buffer, boolean init, MemoryWorkspace workspace) {
+        switch (buffer.dataType()) {
+            case INT:
+                return createInt(buffer.length(), init, workspace);
+            case FLOAT:
+                return createFloat(buffer.length(), init, workspace);
+            case DOUBLE:
+                return createHalf(buffer.length(), init, workspace);
+            case HALF:
+                return createHalf(buffer.length(), init, workspace);
+            default:
+                throw new UnsupportedOperationException("Unknown dataType: " + buffer.dataType());
+        }
+    }
+
     @Override
     public DataBuffer createFloat(float[] data, MemoryWorkspace workspace) {
         return createFloat(data, true, workspace);
@@ -279,6 +324,11 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     @Override
     public DataBuffer createInt(long length, boolean initialize) {
         return new CudaIntDataBuffer(length, initialize);
+    }
+
+    @Override
+    public DataBuffer createInt(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new CudaIntDataBuffer(length, initialize, workspace);
     }
 
     @Override

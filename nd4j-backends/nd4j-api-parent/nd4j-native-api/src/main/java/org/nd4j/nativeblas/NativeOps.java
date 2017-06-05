@@ -1271,6 +1271,17 @@ public abstract class NativeOps extends Pointer {
 
     ///////////////////////
 
+    public abstract void accumulateHalf(PointerPointer extraPointers, PointerPointer x, @Cast("float16*") ShortPointer z,
+                                     int n, long length);
+
+    public abstract void accumulateFloat(PointerPointer extraPointers, PointerPointer x, FloatPointer z, int n,
+                                      long length);
+
+    public abstract void accumulateDouble(PointerPointer extraPointers, PointerPointer x, DoublePointer z, int n,
+                                       long length);
+
+    ///////////////////////
+
     public abstract void enableP2P(boolean reallyEnable);
 
     public abstract void checkP2P();
@@ -1475,4 +1486,26 @@ public abstract class NativeOps extends Pointer {
     public abstract void tearFloat(PointerPointer extras, FloatPointer tensor, IntPointer xShapeInfo, PointerPointer targets, IntPointer zShapeInfo, IntPointer tadShapeInfo, IntPointer tadOffsets);
 
     public abstract void tearHalf(PointerPointer extras, @Cast("float16*") ShortPointer tensor, IntPointer xShapeInfo, PointerPointer targets, IntPointer zShapeInfo, IntPointer tadShapeInfo, IntPointer tadOffsets);
+
+    public abstract void encodeThresholdP1Float(PointerPointer extraPointers, FloatPointer dx, long N, IntPointer dz, float threshold);
+
+    public abstract void encodeThresholdP1Double(PointerPointer extraPointers, DoublePointer dx, long N, IntPointer dz, float threshold);
+
+    public abstract void encodeThresholdP1Half(PointerPointer extraPointers, @Cast("float16*") ShortPointer dx, long N, IntPointer dz, float threshold);
+
+
+    public abstract void encodeThresholdP2Int(PointerPointer extraPointers, IntPointer dx, long N, IntPointer dz);
+
+
+    public abstract void encodeThresholdP3Float(PointerPointer extraPointers, FloatPointer dx, IntPointer offsets, long N, IntPointer dz);
+
+    public abstract void encodeThresholdP3Double(PointerPointer extraPointers, DoublePointer dx, IntPointer offsets, long N, IntPointer dz);
+
+    public abstract void encodeThresholdP3Half(PointerPointer extraPointers, @Cast("float16*") ShortPointer dx, IntPointer offsets, long N, IntPointer dz);
+
+    public abstract void decodeThresholdFloat(PointerPointer extraPointers, Pointer dx, long N, FloatPointer dz);
+
+    public abstract void decodeThresholdDouble(PointerPointer extraPointers, Pointer dx, long N, DoublePointer dz);
+
+    public abstract void decodeThresholdHalf(PointerPointer extraPointers, Pointer dx, long N, @Cast("float16*") ShortPointer dz);
 }

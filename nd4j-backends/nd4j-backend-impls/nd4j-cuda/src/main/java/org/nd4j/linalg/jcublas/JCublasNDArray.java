@@ -20,6 +20,7 @@
 package org.nd4j.linalg.jcublas;
 
 
+import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -486,19 +487,70 @@ public class JCublasNDArray extends BaseNDArray {
      * @return
      */
     @Override
-    public synchronized INDArray unsafeDuplication() {
-        INDArray ret = Nd4j.createUninitialized(this.shape(), this.ordering());
+    public INDArray unsafeDuplication() {
+        return unsafeDuplication(true);
+    }
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+    @Override
+    public INDArray unsafeDuplication(boolean blocking) {
+        DataBuffer rb = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createSame(this.data, false) : Nd4j.getDataBufferFactory().createSame(this.data, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        INDArray ret = Nd4j.createArrayFromShapeBuffer(rb, this.shapeInfoDataBuffer());
+
+
+        if (blocking)
+            Nd4j.getExecutioner().push();
+
+
+        //Nd4j.getExecutioner().commit();
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
         CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
 
-        allocator.memcpyDevice(ret.data(), allocator.getAllocationPoint(this.data).getDevicePointer(),
-                        this.data.length() * this.data().getElementSize(), 0, context);
-        context.syncOldStream();
+        AllocationPoint srcPoint = allocator.getAllocationPoint(this);
+        AllocationPoint dstPoint = allocator.getAllocationPoint(ret);
 
+        int route = 0;
+//        long time1 = System.currentTimeMillis();
+
+        if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE && srcPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
+            // d2d copy
+            route = 1;
+            NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(dstPoint.getDevicePointer(), srcPoint.getDevicePointer(), this.data.length() * this.data.getElementSize(), CudaConstants.cudaMemcpyDeviceToDevice, blocking ? context.getOldStream() : context.getSpecialStream());
+            dstPoint.tickDeviceWrite();
+        } else if (dstPoint.getAllocationStatus() == AllocationStatus.HOST && srcPoint.getAllocationStatus() == AllocationStatus.DEVICE) {
+            route = 2;
+            NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(dstPoint.getHostPointer(), srcPoint.getDevicePointer(), this.data.length() * this.data.getElementSize(), CudaConstants.cudaMemcpyDeviceToHost, blocking ? context.getOldStream() : context.getSpecialStream());
+            dstPoint.tickHostWrite();
+        } else if (dstPoint.getAllocationStatus() == AllocationStatus.DEVICE && srcPoint.getAllocationStatus() == AllocationStatus.HOST) {
+            route = 3;
+            NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(dstPoint.getDevicePointer(), srcPoint.getHostPointer(), this.data.length() * this.data.getElementSize(), CudaConstants.cudaMemcpyHostToDevice, blocking ? context.getOldStream() : context.getSpecialStream());
+            dstPoint.tickDeviceWrite();
+        } else {
+            route = 4;
+            NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(dstPoint.getHostPointer(), srcPoint.getHostPointer(), this.data.length() * this.data.getElementSize(), CudaConstants.cudaMemcpyHostToHost, blocking ? context.getOldStream() : context.getSpecialStream());
+            dstPoint.tickHostWrite();
+        }
+
+
+        //allocator.memcpyDevice(ret.data(), allocator.getAllocationPoint(this.data).getDevicePointer(), this.data.length() * this.data().getElementSize(), 0, context);
+
+        if (blocking)
+            context.syncOldStream();
+        else
+            context.syncSpecialStream();
+
+//        AtomicAllocator.getInstance().synchronizeHostData(ret);
+/*
+        long time2 = System.currentTimeMillis();
+
+        long bytes = this.data.length() * this.data.getElementSize();
+        long spent = time2 - time1;
+
+        float bw = (1000 * bytes / spent) / 1024 / 1024.0f / 1024; //1000 / spent * bytes / 1024 / 1024 / 1024;
+
+        log.info("Route: [{}]; Blocking: {}; {} bytes; {} ms; Bandwidth: {} GB/s", route, blocking, bytes, spent, String.format("%.2f", bw));
+*/
         return ret;
     }
 
