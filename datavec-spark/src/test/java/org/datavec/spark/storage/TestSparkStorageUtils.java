@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Alex on 30/05/2017.
@@ -73,10 +74,9 @@ public class TestSparkStorageUtils extends BaseSparkTest {
         SparkStorageUtils.saveSequenceFile(path, rdd);
         List<List<Writable>> restored2 = SparkStorageUtils.restoreSequenceFile(path, sc).collect();
 
+        //Sequence file loading + collect iteration order is not guaranteed (depends on number of partitions, etc)
         assertEquals(3, restored2.size());
-        for( int i=0; i<3; i++ ){
-            assertEquals(l.get(i), restored2.get(i));
-        }
+        assertTrue(l.containsAll(restored2) && restored2.containsAll(l));
     }
 
     @Test
@@ -126,10 +126,9 @@ public class TestSparkStorageUtils extends BaseSparkTest {
         SparkStorageUtils.saveSequenceFileSequences(path, rdd);
         List<List<List<Writable>>> restored2 = SparkStorageUtils.restoreSequenceFileSequences(path, sc).collect();
 
+        //Sequence file loading + collect iteration order is not guaranteed (depends on number of partitions, etc)
         assertEquals(3, restored2.size());
-        for( int i=0; i<3; i++ ){
-            assertEquals(l.get(i), restored2.get(i));
-        }
+        assertTrue(l.containsAll(restored2) && restored2.containsAll(l));
     }
 
 
