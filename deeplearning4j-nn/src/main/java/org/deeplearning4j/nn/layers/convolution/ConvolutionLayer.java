@@ -366,7 +366,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
             try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
                     .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
-                i2d = im2col2d.unsafeDuplication();
+                // i2d = im2col2d.unsafeDuplication();
             }
         }
 
@@ -386,7 +386,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if (training && Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceCache)) {
             try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
                     .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
-                preOutput = z.unsafeDuplication();
+                //preOutput = z.unsafeDuplication();
             }
         }
 
