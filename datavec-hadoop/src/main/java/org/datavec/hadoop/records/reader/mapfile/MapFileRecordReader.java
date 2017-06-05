@@ -137,6 +137,9 @@ public class MapFileRecordReader implements RecordReader {
             mapFilePartRootDirectories.add(partRootDir.getAbsolutePath());
         }
 
+        //Sort the paths so we iterate over multi-part MapFiles like part-r-00000, part-r-00001, etc when not randomized
+        Collections.sort(mapFilePartRootDirectories);
+
 
         if (dataUris.size() == 1) {
             //Just parent of /data
