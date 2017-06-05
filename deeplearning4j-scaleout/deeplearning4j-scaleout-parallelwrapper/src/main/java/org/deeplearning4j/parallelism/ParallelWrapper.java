@@ -1,14 +1,16 @@
 package org.deeplearning4j.parallelism;
 
-import com.google.common.base.Preconditions;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.api.storage.listener.RoutingIterationListener;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.callbacks.InterleavedDataSetCallback;
+import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
@@ -16,8 +18,11 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.solvers.accumulation.*;
 import org.deeplearning4j.parallelism.factory.DefaultTrainerContext;
+import org.deeplearning4j.parallelism.factory.SymmetricTrainerContext;
 import org.deeplearning4j.parallelism.factory.TrainerContext;
+import org.deeplearning4j.optimize.listeners.SharedGradient;
 import org.deeplearning4j.parallelism.trainer.Trainer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -42,16 +47,33 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @author raver119@gmail.com
  */
-// TODO: We want this thing to be NUMA-aware in foreseable future
+// TODO: We want this thing to be NUMA-aware in foreseeable future
 @Slf4j
 @Data
 public class ParallelWrapper implements AutoCloseable {
+    public enum TrainingMode {
+        /**
+         * Averaging every X epochs will be applied
+         */
+        AVERAGING,
+
+        /**
+         * Models within ParallelWrapper instance will share gradients updates
+         */
+        SHARED_GRADIENTS,
+
+        /**
+         * This option assumes use of GradientsAccumulator with any MessageHandler
+         */
+        CUSTOM,
+    }
+
     protected Model model;
     protected int workers = 2;
     protected int prefetchSize = 2;
     protected int averagingFrequency = 1;
     protected Trainer[] zoo;
-    private TrainerContext trainerContext = new DefaultTrainerContext();
+    protected TrainerContext trainerContext;
     protected AtomicLong iterationsCounter = new AtomicLong(0);
     protected boolean reportScore = false;
     protected boolean averageUpdaters = true;
@@ -62,7 +84,9 @@ public class ParallelWrapper implements AutoCloseable {
     protected StatsStorageRouter storageRouter;
     protected boolean isMQ;
     protected WorkspaceMode workspaceMode;
-    private Object[] trainerContextArgs;
+    protected Object[] trainerContextArgs;
+
+    @Getter @Setter protected GradientsAccumulator gradientsAccumulator;
 
     private MagicQueue mq;
 
@@ -70,6 +94,7 @@ public class ParallelWrapper implements AutoCloseable {
     Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
         public void uncaughtException(Thread th, Throwable ex) {
             log.error("Uncaught exception: " + ex);
+            ex.printStackTrace();
         }
     };
 
@@ -160,26 +185,29 @@ public class ParallelWrapper implements AutoCloseable {
             if (pos + 1 == workers) {
                 iterationsCounter.incrementAndGet();
 
-                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                    try {
-                        zoo[cnt].waitTillRunning();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                if (zoo[0].averagingRequired()) {
+                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                        try {
+                            zoo[cnt].waitTillRunning();
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+
+                    Nd4j.getMemoryManager().invokeGcOccasionally();
+
+                    /*
+                        average model, and propagate it to whole
+                    */
+                    if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers && zoo[0].averagingRequired()) {
+                        // averaging model
+                        double score = getScore(locker);
+
+                        // averaging updaters state
+                        averageUpdatersState(locker, score);
                     }
                 }
 
-                Nd4j.getMemoryManager().invokeGcOccasionally();
-
-                /*
-                    average model, and propagate it to whole
-                */
-                if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers) {
-                    // averaging model
-                    double score = getScore(locker);
-
-                    // averaging updaters state
-                    averageUpdatersState(locker, score);
-                }
                 locker.set(0);
             }
 
@@ -337,6 +365,27 @@ public class ParallelWrapper implements AutoCloseable {
         this.storageRouter = statsStorage;
     }
 
+    /**
+     * This method will propagate gradients across all workers
+     *
+     * @param gradients
+     */
+    public void broadcastGradients(SharedGradient gradients) {
+        // TODO: add implementation
+        /*
+            Basically all we want here is:
+            1) Ensure length matches parameters length
+            2) Ensure data is acessible from all devices somehow (i.e. it's in HOST-only mode
+         */
+        /*
+        if (zoo[0] instanceof CommunicativeTrainer) {
+            for (int i = 0; i < zoo.length; i++) {
+                ((CommunicativeTrainer) zoo[i]).enqueueGradient(gradients);
+            }
+        }
+        */
+    }
+
 
     /**
      * This method takes DataSetIterator, and starts training over it by scheduling DataSets to different executors
@@ -344,6 +393,7 @@ public class ParallelWrapper implements AutoCloseable {
      * @param source
      */
     public synchronized void fit(@NonNull DataSetIterator source) {
+        log.info("Using workspaceMode {} for training", workspaceMode.name());
         stopFit.set(false);
         createZooIfNeccessary(false);
 
@@ -359,16 +409,12 @@ public class ParallelWrapper implements AutoCloseable {
                     log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
                                     Nd4j.getAffinityManager().getNumberOfDevices());
 
-               // if (mq == null)
-               //     mq = new MagicQueue.Builder().setCapacityPerFlow(prefetchSize).setMode(MagicQueue.Mode.SEQUENTIAL).setType(MagicQueue.Type.DS)
-               //         .setNumberOfBuckets(Nd4j.getAffinityManager().getNumberOfDevices()).build();
-
-
                 iterator = new AsyncDataSetIterator(source, prefetchSize, new LinkedBlockingQueue<>(prefetchSize * workers), true, new InterleavedDataSetCallback(prefetchSize * 2));
 
             } else
                 iterator = new AsyncDataSetIterator(source, prefetchSize);
         }
+
 
         List<Long> nanos = new ArrayList<>();
         AtomicInteger locker = new AtomicInteger(0);
@@ -398,34 +444,37 @@ public class ParallelWrapper implements AutoCloseable {
             /*
                 if all workers are dispatched now, join till all are finished
             */
-            if (pos + 1 == workers ) {
+            if (pos + 1 == workers) {
                 iterationsCounter.incrementAndGet();
 
-                for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                    try {
-                        zoo[cnt].waitTillRunning();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                if (zoo[0].averagingRequired()) {
+                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                        try {
+                            zoo[cnt].waitTillRunning();
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
                     }
-                }
 
-                Nd4j.getMemoryManager().invokeGcOccasionally();
+                    Nd4j.getMemoryManager().invokeGcOccasionally();
 
-                /*
-                    average model, and propagate it to whole
-                */
-                if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers) {
-                    long timeA1 = System.currentTimeMillis();
+                    /*
+                        average model, and propagate it to whole
+                    */
+                    if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers && zoo[0].averagingRequired()) {
+                        long timeA1 = System.currentTimeMillis();
 
-                    // model averaging happens within
-                    double score = getScore(locker);
+                        // model averaging happens within
+                        double score = getScore(locker);
 
-                    // updaters averging happens within (if any)
-                    averageUpdatersState(locker, score);
+                        // updaters averging happens within (if any)
+                        averageUpdatersState(locker, score);
 
-                    long timeA2 = System.currentTimeMillis();
-                    if (reportScore)
-                        log.info("Averaging time: {} ms", timeA2 - timeA1);
+                        long timeA2 = System.currentTimeMillis();
+                        if (reportScore)
+                            log.info("Averaging time: {} ms", timeA2 - timeA1);
+                    }
+
                 }
                 locker.set(0);
             }
@@ -433,8 +482,28 @@ public class ParallelWrapper implements AutoCloseable {
             time1 = System.currentTimeMillis();
         }
 
+        // FIXME: we need to ensure all models are synchronized back to HOST
+        // ensure all threads stopped processing
+        for (int cnt = 0; cnt < workers; cnt++) {
+            try {
+                zoo[cnt].waitTillRunning();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         if (prefetchSize > 0 && source.asyncSupported())
             ((AsyncDataSetIterator) iterator).shutdown();
+
+        // now we transfer models back from workers
+        List<Model> models = new ArrayList<>();
+        for (int i = 0; i < zoo.length; i++) {
+            models.add(zoo[0].getModel());
+        }
+
+        // actual transfer code depends on trainer
+        trainerContext.finalizeTraining(model, models.toArray(new Model[0]));
+
 
         if (zoo != null) {
             for (int i = 0; i < zoo.length; i++) {
@@ -442,16 +511,6 @@ public class ParallelWrapper implements AutoCloseable {
             }
             zoo = null;
         }
-
-        //Collections.sort(nanos);
-        //int pos = (int) (nanos.size() * 0.85);
-        //log.info("p85 ETL time: {} ms; p50 ETL time: {} ms", nanos.get(pos), nanos.get(nanos.size() / 2));
-
-
-        // sanity checks, or the dataset may never average
-        if (!wasAveraged)
-            log.warn("Parameters were never averaged on current fit(). Ratios of batch size, num workers, and averaging frequency may be responsible.");
-        //            throw new IllegalStateException("Parameters were never averaged. Please check batch size ratios, number of workers, and your averaging frequency.");
 
         log.debug("Iterations passed: {}", iterationsCounter.get());
     }
@@ -476,6 +535,7 @@ public class ParallelWrapper implements AutoCloseable {
     }
 
     public static class Builder<T extends Model> {
+        protected TrainingMode trainingMode = TrainingMode.AVERAGING;
         protected T model;
         protected int workers = Nd4j.getAffinityManager().getNumberOfDevices();
         protected int prefetchSize = 16;
@@ -487,6 +547,8 @@ public class ParallelWrapper implements AutoCloseable {
         protected TrainerContext trainerContext = new DefaultTrainerContext();
         protected Object[] trainerContextArgs;
         protected WorkspaceMode workspaceMode = WorkspaceMode.SEPARATE;
+
+        protected GradientsAccumulator accumulator;
 
         /**
          * Transer context args are for calling a
@@ -509,8 +571,7 @@ public class ParallelWrapper implements AutoCloseable {
          * @param trainerContext the trainer factory to use
          * @return builder pattern
          */
-        public Builder trainerFactory(TrainerContext trainerContext) {
-            Preconditions.checkNotNull(trainerContext);
+        public Builder trainerFactory(@NonNull TrainerContext trainerContext) {
             this.trainerContext = trainerContext;
             return this;
         }
@@ -550,6 +611,9 @@ public class ParallelWrapper implements AutoCloseable {
          * @return
          */
         public Builder averagingFrequency(int freq) {
+            if (freq < 0)
+                freq = 0;
+
             this.averagingFrequency = freq;
             return this;
         }
@@ -566,22 +630,6 @@ public class ParallelWrapper implements AutoCloseable {
          */
         public Builder averageUpdaters(boolean reallyAverage) {
             this.averageUpdaters = reallyAverage;
-            return this;
-        }
-
-        /**
-         * This method enables/disable MagicQueue use
-         * If set to true, all datasets will be spread among all available devices at prefetch phase using AsyncDataSetIterator
-         *
-         * PLEASE NOTE: This is experimental feature.
-         *
-         * Default: true
-         *
-         * @param reallyUse
-         * @return
-         */
-        public Builder useMQ(boolean reallyUse) {
-            //this.isMQ = reallyUse;
             return this;
         }
 
@@ -605,15 +653,23 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
         /**
-         * If set to true, legacy averaging method is used. This might be used as fallback on multi-gpu systems without P2P access available.
          *
-         * Default value: false
-         *
-         * @param reallyUse
+         * @param mode
          * @return
          */
-        public Builder useLegacyAveraging(boolean reallyUse) {
-            this.legacyAveraging = reallyUse;
+        public Builder trainingMode(@NonNull TrainingMode mode) {
+            this.trainingMode = mode;
+            return this;
+        }
+
+        /**
+         * This method allows you to specify GradientsAccumulator instance to be used in this ParallelWrapper instance
+         *
+         * @param accumulator
+         * @return
+         */
+        public Builder gradientsAccumulator(@NonNull GradientsAccumulator accumulator) {
+            this.accumulator = accumulator;
             return this;
         }
 
@@ -642,7 +698,35 @@ public class ParallelWrapper implements AutoCloseable {
             wrapper.legacyAveraging = this.legacyAveraging;
             wrapper.isMQ = this.isMQ;
             wrapper.workspaceMode = this.workspaceMode;
+
+
+            switch (trainingMode) {
+                case AVERAGING: {
+                        this.trainerContext = new DefaultTrainerContext();
+                        this.accumulator = null;
+                        log.info("Creating new AveragingTraining instance");
+                    }
+                    break;
+                case SHARED_GRADIENTS: {
+                        this.trainerContext = new SymmetricTrainerContext();
+                        if (this.accumulator == null) {
+                            log.info("Creating new GradientsAccumulator instance");
+                            this.accumulator = new CudaGradientsAccumulator(workers, 1e-3);
+                        }
+                    }
+                    break;
+                case CUSTOM: {
+                        this.trainerContext = new SymmetricTrainerContext();
+                        if (this.accumulator == null)
+                            throw new DL4JInvalidConfigException("Please specify GradientsAccumulator fo encoded gradients mode");
+                    }
+                    break;
+                default:
+                    throw new UnsupportedOperationException("Unknown trainingMode: [" + trainingMode + "]");
+            }
+
             wrapper.trainerContext = this.trainerContext;
+            wrapper.gradientsAccumulator = this.accumulator;
 
             return wrapper;
         }

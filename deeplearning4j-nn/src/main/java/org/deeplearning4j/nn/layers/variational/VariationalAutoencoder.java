@@ -21,6 +21,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.blas.Level1;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
@@ -202,8 +203,12 @@ public class VariationalAutoencoder implements Layer {
                 }
                 activations.put(VariationalAutoencoderParamInitializer.PXZ_PREFIX,
                                 reconstructionDistribution.generateAtMean(pxzDistributionPreOut));
-                for (TrainingListener tl : trainingListeners) {
-                    tl.onForwardPass(this, activations);
+                if (trainingListeners.size() > 0) {
+                    try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                        for (TrainingListener tl : trainingListeners) {
+                            tl.onForwardPass(this, activations);
+                        }
+                    }
                 }
             }
 
@@ -840,6 +845,22 @@ public class VariationalAutoencoder implements Layer {
                 }
             }
         }
+    }
+
+
+    /**
+     * This method ADDS additional IterationListener to existing listeners
+     *
+     * @param listener
+     */
+    @Override
+    public void addListener(IterationListener listener) {
+        if (this.iterationListeners == null) {
+            setListeners(listener);
+            return;
+        }
+
+        iterationListeners.add(listener);
     }
 
     @Override

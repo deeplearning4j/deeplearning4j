@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -48,7 +49,7 @@ import java.util.*;
  */
 public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.Layer> implements Layer {
 
-    protected INDArray input;
+    protected INDArray input, preOutput;
     protected INDArray paramsFlattened;
     protected INDArray gradientsFlattened;
     protected Map<String, INDArray> params;
@@ -120,6 +121,21 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public void setListeners(Collection<IterationListener> listeners) {
         this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
+    }
+
+    /**
+     * This method ADDS additional IterationListener to existing listeners
+     *
+     * @param listener
+     */
+    @Override
+    public void addListener(IterationListener listener) {
+        if (this.iterationListeners == null) {
+            setListeners(listener);
+            return;
+        }
+
+        iterationListeners.add(listener);
     }
 
     @Override

@@ -48,14 +48,17 @@ public class Solver {
     private StepFunction stepFunction;
 
     public void optimize() {
+        initOptimizer();
+
+        optimizer.optimize();
+    }
+
+    public void initOptimizer() {
         if (optimizer == null) {
             try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 optimizer = getOptimizer();
             }
-
         }
-        optimizer.optimize();
-
     }
 
     public ConvexOptimizer getOptimizer() {

@@ -71,4 +71,14 @@ public class ParameterServerTrainerContext implements TrainerContext {
                         .subscriberPort(40625 + threadId).subscriberStream(12 + threadId).build())
                         .replicatedModel(model).threadId(threadId).parallelWrapper(wrapper).useMDS(useMDS).build();
     }
+
+    @Override
+    public void finalizeRound(Model originalModel, Model... models) {
+        // no-op
+    }
+
+    @Override
+    public void finalizeTraining(Model originalModel, Model... models) {
+        // no-op
+    }
 }

@@ -26,9 +26,12 @@ import java.util.concurrent.atomic.AtomicLong;
  * Basic idea is simple: DataSets are coming from DataSetIterator, and their device location is unknown.
  * So, for better performance DataSets should be transparently moved to the devices where they will be used later, and this should be done in background.
  *
+ *
+ * PLEASE NOTE: This class is pending removal, since better behavior was implemented as InterleavedCallback for AsyncDataSetIterator
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class MagicQueue<T> implements BlockingQueue<T> {
     public enum Mode {
         THREADED, SEQUENTIAL,
