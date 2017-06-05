@@ -117,6 +117,9 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
 
     @Override
     public SharedTrainingWorker getWorkerInstance(SparkDl4jMultiLayer network) {
+        /*
+            Here we're going create our worker, which will be passed into corresponding FlatMapFunction
+         */
         return null;
     }
 

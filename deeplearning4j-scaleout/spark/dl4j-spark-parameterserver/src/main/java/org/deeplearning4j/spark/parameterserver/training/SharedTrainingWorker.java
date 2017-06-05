@@ -41,33 +41,37 @@ public class SharedTrainingWorker implements TrainingWorker<SharedTrainingResult
 
     @Override
     public SharedTrainingResult processMinibatch(DataSet dataSet, MultiLayerNetwork network, boolean isLast) {
-        // we're not really going to use this method
-        return null;
+        /*
+            We're not really going to use this method for training.
+            Partitions will be mapped to ParallelWorker threads dynamically, wrt thread/device affinity.
+            So plan is simple: we're going to use individual partitions to feed main worker
+         */
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public SharedTrainingResult processMinibatch(DataSet dataSet, ComputationGraph graph, boolean isLast) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public SharedTrainingResult processMinibatch(MultiDataSet dataSet, ComputationGraph graph, boolean isLast) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Pair<SharedTrainingResult, SparkTrainingStats> processMinibatchWithStats(DataSet dataSet, MultiLayerNetwork network, boolean isLast) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Pair<SharedTrainingResult, SparkTrainingStats> processMinibatchWithStats(DataSet dataSet, ComputationGraph graph, boolean isLast) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Pair<SharedTrainingResult, SparkTrainingStats> processMinibatchWithStats(MultiDataSet dataSet, ComputationGraph graph, boolean isLast) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
