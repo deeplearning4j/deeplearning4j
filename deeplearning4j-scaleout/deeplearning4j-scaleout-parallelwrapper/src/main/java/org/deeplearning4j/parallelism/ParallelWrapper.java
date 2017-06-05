@@ -18,9 +18,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.optimize.solvers.accumulation.BasicGradientsAccumulator;
-import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
-import org.deeplearning4j.optimize.solvers.accumulation.LocalHandler;
+import org.deeplearning4j.optimize.solvers.accumulation.*;
 import org.deeplearning4j.parallelism.factory.DefaultTrainerContext;
 import org.deeplearning4j.parallelism.factory.SymmetricTrainerContext;
 import org.deeplearning4j.parallelism.factory.TrainerContext;
@@ -706,13 +704,14 @@ public class ParallelWrapper implements AutoCloseable {
                 case AVERAGING: {
                         this.trainerContext = new DefaultTrainerContext();
                         this.accumulator = null;
+                        log.info("Creating new AveragingTraining instance");
                     }
                     break;
                 case SHARED_GRADIENTS: {
                         this.trainerContext = new SymmetricTrainerContext();
                         if (this.accumulator == null) {
                             log.info("Creating new GradientsAccumulator instance");
-                            this.accumulator = new BasicGradientsAccumulator(workers, new LocalHandler());
+                            this.accumulator = new CudaGradientsAccumulator(workers, 1e-3);
                         }
                     }
                     break;
