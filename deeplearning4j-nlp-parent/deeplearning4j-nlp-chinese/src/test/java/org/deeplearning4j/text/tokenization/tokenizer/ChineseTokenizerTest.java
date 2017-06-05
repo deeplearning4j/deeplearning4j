@@ -4,12 +4,9 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
-import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.deeplearning4j.models.word2vec.Word2Vec;
 import org.deeplearning4j.text.sentenceiterator.BasicLineIterator;
 import org.deeplearning4j.text.sentenceiterator.SentenceIterator;
@@ -25,8 +22,8 @@ import org.slf4j.LoggerFactory;
  * @Description
  *
  */
+@Slf4j
 public class ChineseTokenizerTest {
-    protected static final Logger log = LoggerFactory.getLogger(ChineseTokenizerTest.class);
 
     private final String toTokenize = "青山绿水和伟大的科学家让世界更美好";
     private final String[] expect = {"青山绿水","和","伟大","的","科学家","让","世界","更","美好"};
@@ -47,6 +44,7 @@ public class ChineseTokenizerTest {
     public void testFindNamesFromText() throws IOException {
         SentenceIterator iter = new BasicLineIterator("src/test/resources/chineseName.txt");
 
+        log.info("load is right!");
         TokenizerFactory tokenizerFactory = new ChineseTokenizerFactory();
         //tokenizerFactory.setTokenPreProcessor(new ChineseTokenizer());
 

@@ -4,7 +4,6 @@ import org.deeplearning4j.text.tokenization.tokenizer.ChineseTokenizer;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizer.Tokenizer;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
-
 import java.io.InputStream;
 
 /**
