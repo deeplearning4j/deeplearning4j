@@ -1,13 +1,11 @@
 package org.nd4j.linalg.api.ndarray;
 
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.ShapeOffsetResolution;
-import org.nd4j.linalg.indexing.SpecifiedIndex;
+import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -64,6 +62,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         // TODO - check if the coordinates are correctly sorted
         this.values = Nd4j.createBuffer(values, 0, values.length());
         this.indices = indices;
+
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, offset,
                 Shape.elementWiseStride(shape, stride, ordering == 'f'), ordering));
     }
@@ -305,7 +304,39 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      */
     @Override
     public INDArray get(INDArrayIndex... indexes) {
-        return null;
+        if (indexes.length == 1 && indexes[0] instanceof NDArrayIndexAll || (indexes.length == 2 && (isRowVector()
+                && indexes[0] instanceof PointIndex && indexes[0].offset() == 0
+                && indexes[1] instanceof NDArrayIndexAll
+                || isColumnVector() && indexes[1] instanceof PointIndex && indexes[0].offset() == 0
+                && indexes[0] instanceof NDArrayIndexAll)))
+            return this;
+
+        indexes = NDArrayIndex.resolve(shapeInfoDataBuffer(), indexes);
+        ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);
+        resolution.exec(indexes);
+
+        if (indexes.length < 1)
+            throw new IllegalStateException("Invalid index found of zero length");
+
+        int[] shape = resolution.getShapes();
+        int numSpecifiedIndex = 0;
+
+        for (int i = 0; i < indexes.length; i++)
+            if (indexes[i] instanceof SpecifiedIndex)
+                numSpecifiedIndex++;
+
+
+        if (shape != null && numSpecifiedIndex > 0) {
+            // TODO create a new ndarray with the specified indexes
+            return null;
+
+        }
+
+        INDArray ret = subArray(resolution);
+        return ret;
+
+
+
     }
 
     public SparseFormat getFormat(){
@@ -377,7 +408,38 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
     @Override
     public INDArray subArray(ShapeOffsetResolution resolution) {
-        return null;
+        int[] offsets = resolution.getOffsets();
+        int[] shape = resolution.getShapes();
+        int[] stride = resolution.getStrides();
+
+        if (offset() + resolution.getOffset() >= Integer.MAX_VALUE)
+            throw new IllegalArgumentException("Offset of array can not be >= Integer.MAX_VALUE");
+        int offset = (int) (offset() + resolution.getOffset());
+
+        int n = shape.length;
+        if (shape.length < 1)
+            //return create(Nd4j.createBuffer(shape)); TODO - how could the shape length be < 1 ?
+        if (offsets.length != n)
+            throw new IllegalArgumentException("Invalid offset " + Arrays.toString(offsets));
+        if (stride.length != n)
+            throw new IllegalArgumentException("Invalid stride " + Arrays.toString(stride));
+
+        if (shape.length == rank() && Shape.contentEquals(shape, shapeOf())) {
+            if (ArrayUtil.isZero(offsets)) {
+                return this;
+            } else {
+                throw new IllegalArgumentException("Invalid subArray offsets");
+            }
+        }
+
+        char newOrder = Shape.getOrder(shape, stride, 1);
+
+        return create(values, indices, Arrays.copyOf(shape, shape.length), stride, offset, newOrder);
+
+    }
+
+    private INDArray create(DataBuffer values, DataBuffer indices, int[] shape, int[] stride, int offset, char newOrder) {
+        return Nd4j.createSparseCOO(values, indices, stride, offset, shape, newOrder);
     }
 
     @Override
@@ -385,12 +447,16 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         throw new UnsupportedOperationException();
     }
 
+
+
     /**
      * Returns the indices of the element in the given index
      *
      * @param i the index of the element
      * @return a dataBuffer containing the indices of element
      * */
+
+
     public DataBuffer getIndicesOf(int i){
         int from = rank() * i;
         int to = from + rank();

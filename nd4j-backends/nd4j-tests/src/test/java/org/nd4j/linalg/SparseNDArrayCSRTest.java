@@ -13,7 +13,7 @@ import static org.junit.Assert.*;
 /**
  * @author Audrey Loeffel
  */
-public class SparseNDArrayTest {
+public class SparseNDArrayCSRTest {
 
     /*
     * [[1 -1 0 -3 0]

@@ -2042,6 +2042,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int[] shape = resolution.getShapes();
         int[] stride = resolution.getStrides();
 
+        System.out.println("DENSE: offsets ["+offsets[0]+", "+offsets[1]+
+        "], shape [+"+shape[0]+", "+ shape[1]+"],"
+        +" stride [" + stride[0]+", "+ stride[1]+"], offset "+ resolution.getOffset());
+
         if (offset() + resolution.getOffset() >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Offset of array can not be >= Integer.MAX_VALUE");
         int offset = (int) (offset() + resolution.getOffset());
