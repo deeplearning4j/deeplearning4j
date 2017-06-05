@@ -63,4 +63,10 @@ public interface Trainer extends Runnable {
      * Start this trainer
      */
     void start();
+
+    /**
+     * This method returns TRUE if this Trainer implementation assumes periodic aver
+     * @return
+     */
+    boolean averagingRequired();
 }

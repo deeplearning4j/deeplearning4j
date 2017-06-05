@@ -107,7 +107,8 @@ public class EarlyStoppingParallelTrainer<T extends Model> implements IEarlyStop
         }
 
         this.wrapper = new ParallelWrapper.Builder<>(model).workers(workers).prefetchBuffer(prefetchBuffer)
-                        .averagingFrequency(averagingFrequency).useLegacyAveraging(useLegacyAveraging)
+                        .averagingFrequency(averagingFrequency)
+                        //.useLegacyAveraging(useLegacyAveraging)
                         .reportScoreAfterAveraging(reportScoreAfterAveraging).build();
     }
 

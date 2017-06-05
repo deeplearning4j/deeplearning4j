@@ -771,6 +771,11 @@ public class TestOptimizers {
             this.conf = conf;
         }
 
+        @Override
+        public void addListener(IterationListener listener) {
+            // no-op
+        }
+
         /**
          * Init the model
          */
