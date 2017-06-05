@@ -46,6 +46,7 @@ import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -1142,6 +1143,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
+    public Number ameanNumber() {
+        return amean(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
     public IComplexNumber meanComplex() {
         throw new UnsupportedOperationException();
 
@@ -1163,6 +1169,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
+    public Number amaxNumber() {
+        return amax(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
     public IComplexNumber maxComplex() {
         throw new UnsupportedOperationException();
     }
@@ -1170,6 +1181,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public Number minNumber() {
         return min(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public Number aminNumber() {
+        return amin(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    @Override
+    public Number scan(Condition condition) {
+        MatchCondition op = new MatchCondition(this, condition);
+        return Nd4j.getExecutioner().exec(op, Integer.MAX_VALUE).getDouble(0);
     }
 
     @Override
@@ -3716,6 +3738,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
+    public INDArray amean(int... dimension) {
+        return Nd4j.getExecutioner().exec(new AMean(this), dimension);
+    }
+
+    @Override
     public INDArray mean(INDArray result, int... dimension) {
         return Nd4j.getExecutioner().exec(new Mean(this, null, result), dimension);
     }
@@ -3754,6 +3781,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.getExecutioner().exec(new Max(this), dimension);
     }
 
+    public INDArray amax(int... dimension) {
+        return Nd4j.getExecutioner().exec(new AMax(this), dimension);
+    }
+
     /**
      * Returns the overall min of this ndarray
      *
@@ -3763,6 +3794,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray min(int... dimension) {
         return Nd4j.getExecutioner().exec(new Min(this), dimension);
+    }
+
+    public INDArray amin(int... dimension) {
+        return Nd4j.getExecutioner().exec(new AMin(this), dimension);
     }
 
     /**

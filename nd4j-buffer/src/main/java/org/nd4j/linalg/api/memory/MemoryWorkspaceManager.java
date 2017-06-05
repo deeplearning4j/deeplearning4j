@@ -3,7 +3,8 @@ package org.nd4j.linalg.api.memory;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 
-import javax.annotation.Nonnull;
+import edu.umd.cs.findbugs.annotations.NonNull;
+
 
 /**
  * This interface describes backend-specific implementations of MemoryWorkspaceManager, basically Factory + Thread-based provider

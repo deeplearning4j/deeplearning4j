@@ -267,4 +267,20 @@ public interface OpExecutioner {
      */
     void commit();
 
+    /**
+     * This method encodes array as thresholds, updating input array at the same time
+     *
+     * @param input
+     * @return encoded array is returned
+     */
+    INDArray thresholdEncode(INDArray input, double threshold);
+
+    /**
+     * This method decodes thresholds array, and puts it into target array
+     *
+     * @param encoded
+     * @param target
+     * @return target is returned
+     */
+    INDArray thresholdDecode(INDArray encoded, INDArray target);
 }

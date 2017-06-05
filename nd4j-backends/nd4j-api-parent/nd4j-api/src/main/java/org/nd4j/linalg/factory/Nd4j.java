@@ -2168,7 +2168,8 @@ public class Nd4j {
             INDArray row = write.getRow(i);
             for (int j = 0; j < row.columns(); j++) {
                 sb.append(row.getDouble(j));
-                sb.append(split);
+                if (j < row.columns() - 1) // not the last element
+                    sb.append(split);
             }
             sb.append("\n");
             writer.write(sb.toString());
@@ -2241,12 +2242,12 @@ public class Nd4j {
     public static INDArray readTxtString(InputStream ndarray, String sep) {
         /*
          We could dump an ndarray to a file with the tostring (since that is valid json) and use put/get to parse it as json
-        
+
          But here we leverage our information of the tostring method to be more efficient
          With our current toString format we use tads along dimension (rank-1,rank-2) to write to the array in two dimensional chunks at a time.
          This is more efficient than setting each value at a time with putScalar.
          This also means we can read the file one line at a time instead of loading the whole thing into memory
-        
+
          Future work involves enhancing the write json method to provide more features to make the load more efficient
         */
         int lineNum = 0;
@@ -5453,6 +5454,58 @@ public class Nd4j {
             int[] shape = Shape.squeeze(toStrip.shape());
             return toStrip.reshape(shape);
         }
+    }
+
+    /**
+     * This method sums given arrays and stores them to a new target array
+     *
+     * @param arrays
+     * @return
+     */
+    public static INDArray accumulate(Collection<INDArray> arrays) {
+        if (arrays == null|| arrays.size() == 0)
+            throw new ND4JIllegalStateException("Input for accumulation is null or empty");
+
+        return accumulate(arrays.toArray(new INDArray[0]));
+    }
+
+    /**
+     * This method sums given arrays and stores them to a new array
+     *
+     * @param arrays
+     * @return
+     */
+    public static INDArray accumulate(INDArray... arrays) {
+        if (arrays == null|| arrays.length == 0)
+            throw new ND4JIllegalStateException("Input for accumulation is null or empty");
+
+        return accumulate(Nd4j.create(arrays[0].shape(), arrays[0].ordering()), arrays);
+    }
+
+    /**
+     * This method sums given arrays and stores them to a given target array
+     *
+     * @param target
+     * @param arrays
+     * @return
+     */
+    public static INDArray accumulate(INDArray target, Collection<INDArray> arrays) {
+
+        return accumulate(target, arrays.toArray(new INDArray[0]));
+    }
+
+    /**
+     * This method sums given arrays and stores them to a given target array
+     *
+     * @param target
+     * @param arrays
+     * @return
+     */
+    public static INDArray accumulate(INDArray target, INDArray[] arrays) {
+        if (arrays == null|| arrays.length == 0)
+            return target;
+
+        return factory().accumulate(target, arrays);
     }
 
     /**

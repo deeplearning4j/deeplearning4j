@@ -6,10 +6,8 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.lang.reflect.Array;
+import java.util.*;
 
 import static org.junit.Assert.assertTrue;
 
@@ -37,7 +35,7 @@ public class BalanceMinibatchesTest extends BaseNd4jTest {
     @Test
     public void testMiniBatchBalanced() {
 
-        int miniBatchSize = 10;
+        int miniBatchSize = 100;
         DataSetIterator iterator = new IrisDataSetIterator(miniBatchSize, 150);
         BalanceMinibatches balanceMinibatches = BalanceMinibatches.builder().dataSetIterator(iterator).miniBatchSize(miniBatchSize)
                 .numLabels(iterator.totalOutcomes()).rootDir(new File("minibatches")).rootSaveDir(new File("minibatchessave")).build();
@@ -46,20 +44,22 @@ public class BalanceMinibatchesTest extends BaseNd4jTest {
 
         assertTrue(iterator.resetSupported()); // this is testing the Iris dataset more than anything
         iterator.reset();
-        List<Double> totalCounts = new ArrayList<Double>(iterator.totalOutcomes());
+        double[] totalCounts = new double[iterator.totalOutcomes()];
+
         while (iterator.hasNext()) {
             Map<Integer, Double> outcomes = iterator.next().labelCounts();
             for (int i = 0; i < iterator.totalOutcomes(); i++) {
-                if (outcomes.containsKey(i)) {
-                    totalCounts.set(i, totalCounts.get(i) + outcomes.get(i));
-                }
+                if (outcomes.containsKey(i))
+                    totalCounts[i] += outcomes.get(i);
             }
         }
 
-        List<Integer> fullBatches = new ArrayList<Integer>(totalCounts.size());
-        for (int i = 0; i < totalCounts.size(); i++) {
-            fullBatches.set(i, totalCounts.get(i).intValue() * iterator.totalOutcomes() / miniBatchSize);
+
+        ArrayList<Integer> fullBatches = new ArrayList(totalCounts.length);
+        for (int i = 0; i < totalCounts.length; i++) {
+            fullBatches.add(iterator.totalOutcomes() * (int) totalCounts[i] / miniBatchSize);
         }
+
 
         // this is the number of batches for which we can balance every class
         int fullyBalanceableBatches = Collections.min(fullBatches);
@@ -67,7 +67,10 @@ public class BalanceMinibatchesTest extends BaseNd4jTest {
         for (int b = 0; b < fullyBalanceableBatches; b++){
             Map<Integer, Double> balancedCounts = balanced.next().labelCounts();
             for (int i = 0; i < iterator.totalOutcomes(); i++) {
-                assertTrue(balancedCounts.containsKey(i) && balancedCounts.get(i) >= miniBatchSize / iterator.totalOutcomes());
+                double bCounts = (balancedCounts.containsKey(i) ? balancedCounts.get(i): 0);
+                assertTrue(
+                        "key " + i + " totalOutcomes: " + iterator.totalOutcomes() + " balancedCounts : " + balancedCounts.containsKey(i) + " val : " + bCounts,
+                        balancedCounts.containsKey(i) && balancedCounts.get(i) >= (double) miniBatchSize / iterator.totalOutcomes());
             }
         }
 

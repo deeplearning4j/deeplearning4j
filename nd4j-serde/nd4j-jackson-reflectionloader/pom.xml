@@ -20,11 +20,18 @@
             <version>${lombok.version}</version>
             <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>org.reflections</groupId>
             <artifactId>reflections</artifactId>
             <version>0.9.10</version>
+            <exclusions>
+              <exclusion>
+                <groupId>com.google.code.findbugs</groupId>
+              </exclusion>
+            </exclusions>
         </dependency>
+
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>jackson</artifactId>

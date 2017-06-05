@@ -93,7 +93,8 @@ public class CpuWorkspace extends Nd4jWorkspace {
 
     @Override
     public synchronized void destroyWorkspace(boolean extended) {
-        log.info("Destroying workspace...");
+        if (isDebug.get())
+            log.info("Destroying workspace...");
 
         currentSize.set(0);
         hostOffset.set(0);

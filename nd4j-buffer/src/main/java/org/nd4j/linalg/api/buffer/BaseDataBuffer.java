@@ -537,8 +537,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asDoublePointer(); //new DoublePointer(length());
             indexer = DoubleIndexer.create((DoublePointer) pointer);
-            if (initialize)
-                fillPointerWithZero();
+
         } else if (dataType() == Type.FLOAT) {
             attached = true;
             parentWorkspace = workspace;
@@ -546,15 +545,14 @@ public abstract class BaseDataBuffer implements DataBuffer {
             pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asFloatPointer(); //new FloatPointer(length());
             setIndexer(FloatIndexer.create((FloatPointer) pointer));
 
-            //            if (initialize)
-            //                fillPointerWithZero();
-
         } else if (dataType() == Type.INT) {
-            pointer = new IntPointer(length());
+            attached = true;
+            parentWorkspace = workspace;
+
+            //pointer = new IntPointer(length());
+            pointer = workspace.alloc(length * getElementSize(), dataType(), initialize).asIntPointer(); //new FloatPointer(length());
             setIndexer(IntIndexer.create((IntPointer) pointer));
 
-            if (initialize)
-                fillPointerWithZero();
         }
     }
 

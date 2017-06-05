@@ -26,6 +26,7 @@ import org.bytedeco.javacpp.indexer.Indexer;
 import org.bytedeco.javacpp.indexer.IntIndexer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 
 import java.nio.ByteBuffer;
 
@@ -53,6 +54,10 @@ public class IntBuffer extends BaseDataBuffer {
 
     public IntBuffer(long length, boolean initialize) {
         super(length, initialize);
+    }
+
+    public IntBuffer(long length, boolean initialize, MemoryWorkspace workspace) {
+        super(length, initialize, workspace);
     }
 
     public IntBuffer(ByteBuffer buffer, int length, int offset) {

@@ -93,6 +93,20 @@ public interface DataBufferFactory {
     DataBuffer createDouble(int offset, int length);
 
     /**
+     * This method will create new DataBuffer of the same dataType & same length
+     * @param buffer
+     * @return
+     */
+    DataBuffer createSame(DataBuffer buffer, boolean init);
+
+    /**
+     * This method will create new DataBuffer of the same dataType & same length
+     * @param buffer
+     * @return
+     */
+    DataBuffer createSame(DataBuffer buffer, boolean init, MemoryWorkspace workspace);
+
+    /**
      * Create a float data buffer
      *
      * @param length the length of the buffer
@@ -353,6 +367,8 @@ public interface DataBufferFactory {
      * @return the create data buffer
      */
     DataBuffer createInt(long length, boolean initialize);
+
+    DataBuffer createInt(long length, boolean initialize, MemoryWorkspace workspace);
 
     /**
      * Creates a double data buffer

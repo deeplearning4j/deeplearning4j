@@ -64,7 +64,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
     public void testAnd5() throws Exception {
         INDArray array = Nd4j.create(new float[] {1e-5f, 1e-5f, 1e-5f, 1e-5f, 1e-5f});
 
-        assertTrue(BooleanIndexing.and(array, Conditions.greaterThanOEqual(1e-5f)));
+        assertTrue(BooleanIndexing.and(array, Conditions.greaterThanOrEqual(1e-5f)));
     }
 
     @Test

@@ -96,7 +96,7 @@ public class CudaContext {
 
     public void syncSpecialStream() {
         if (nativeOps.streamSynchronize(specialStream) == 0)
-            throw new ND4JIllegalStateException("CUDA stream synchronization failed");
+            throw new ND4JIllegalStateException("CUDA special stream synchronization failed");
     }
 
     public void syncOldStream(boolean syncCuBlas) {
