@@ -1,7 +1,12 @@
 package org.nd4j.linalg.api.buffer;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -68,7 +73,25 @@ public class IntDataBufferTests extends BaseNd4jTest {
         assertEquals(6, buffer.capacity());
     }
 
-    @Override
+    @Test
+    public void testReallocationWorkspace() {
+        WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder()
+                .initialSize(10 * 1024L * 1024L)
+                .policyAllocation(AllocationPolicy.STRICT)
+                .policyLearning(LearningPolicy.NONE)
+                .build();
+        MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "SOME_ID");
+
+        DataBuffer buffer = Nd4j.createBuffer(new int[]{1, 2, 3, 4});
+
+        Assert.assertTrue(buffer.isAttached());
+        assertEquals(4, buffer.capacity());
+        buffer.reallocate(6);
+        assertEquals(6, buffer.capacity());
+        workspace.close();
+    }
+
+        @Override
     public char ordering() {
         return 'c';
     }

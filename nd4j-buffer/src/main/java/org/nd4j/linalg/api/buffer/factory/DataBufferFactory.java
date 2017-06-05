@@ -394,6 +394,10 @@ public interface DataBufferFactory {
      */
     DataBuffer createInt(int[] data);
 
+    DataBuffer createInt(int[] data, MemoryWorkspace workspace);
+
+    DataBuffer createInt(int[] data, boolean copy, MemoryWorkspace workspace);
+
     /**
      * Creates a double data buffer
      *

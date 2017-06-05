@@ -232,6 +232,23 @@ public abstract class BaseDataBuffer implements DataBuffer {
     }
 
 
+    public BaseDataBuffer(int[] data, boolean copy, MemoryWorkspace workspace) {
+        allocationMode = AllocUtil.getAllocationModeFromContext();
+        length = data.length;
+        underlyingLength = data.length;
+        attached = true;
+        parentWorkspace = workspace;
+
+        initTypeAndSize();
+
+        //log.info("Allocating FloatPointer from array of {} elements", data.length);
+
+        pointer = workspace.alloc(data.length * getElementSize(), dataType(), false).asIntPointer().put(data);
+        indexer = IntIndexer.create((IntPointer) pointer);
+        //wrappedBuffer = pointer.asByteBuffer();
+    }
+
+
     /**
      *
      * @param data
@@ -1459,7 +1476,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
     public DataBuffer reallocate(long length) {
 
         Pointer oldPointer = pointer;
-        if (getParentWorkspace() != null && dataType() != Type.INT) {
+        if (isAttached()) {
             long capacity = length * getElementSize();
             switch (dataType()) {
                 case DOUBLE:
@@ -1470,6 +1487,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     pointer = getParentWorkspace().alloc(capacity, Type.FLOAT, false).asFloatPointer();
                     indexer = FloatIndexer.create((FloatPointer) pointer);
                     break;
+                case INT:
+                    pointer = getParentWorkspace().alloc(capacity, Type.INT, false).asIntPointer();
+                    indexer = IntIndexer.create((IntPointer) pointer);
+                    break;
+
             }
         } else {
             switch (dataType()) {

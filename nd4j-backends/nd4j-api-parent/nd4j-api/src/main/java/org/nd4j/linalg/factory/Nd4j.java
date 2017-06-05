@@ -1312,7 +1312,8 @@ public class Nd4j {
      */
     public static DataBuffer createBuffer(int[] data) {
         DataBuffer ret;
-        ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(data);
+        ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createInt(data) :
+                DATA_BUFFER_FACTORY_INSTANCE.createInt(data, Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
         return ret;
     }
@@ -6191,6 +6192,8 @@ public class Nd4j {
                 return 4;
             case HALF:
                 return 2;
+            case INT:
+                return 4;
             default:
             case DOUBLE:
                 return 8;
