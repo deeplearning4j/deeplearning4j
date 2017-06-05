@@ -125,14 +125,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> mul(DifferentialFunction<X> i_v) {
-        DifferentialFunction<X> ret;
-
-        if (this == i_v) {
-            ret = i_v.pow(2);
-        } else {
-            ret = i_v.muled(this);
-        }
-        
+        DifferentialFunction<X> ret = muled(i_v);
         return ret;
     }
 

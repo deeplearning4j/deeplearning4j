@@ -5,6 +5,7 @@ import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.model.Label;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.graph.api.BaseGraph;
 import org.nd4j.autodiff.graph.api.Edge;
@@ -38,6 +39,7 @@ import static guru.nidi.graphviz.model.Link.to;
  * @author Alex Black
  */
 @Data
+@EqualsAndHashCode(callSuper = false)
 @Slf4j
 public class Graph<V, E> extends BaseGraph<V, E> {
     private boolean allowMultipleEdges = true;
@@ -46,7 +48,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     private boolean frozen = false;
     private Map<Integer,List<Edge<E>>> incomingEdges;
     private Graph<V,E> graphApply;
-    private AtomicInteger nextVertexId;
+    private int nextVertexId;
 
     public Graph() {
         this(true);
@@ -58,7 +60,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         vertices = new TreeMap<>();
         edges = new HashMap<>();
         this.incomingEdges = new TreeMap<>();
-        nextVertexId = new AtomicInteger(0);
+        nextVertexId = 0;
     }
 
     public Graph(
@@ -72,7 +74,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         this.vertices = vertices;
         this.frozen = frozen;
         this.incomingEdges = incomingEdges;
-        nextVertexId = new AtomicInteger(vertices.size());
+        nextVertexId = vertices.size();
     }
 
     public void addVertex(Vertex<V> vVertex) {
@@ -103,7 +105,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         this.allowMultipleEdges = allowMultipleEdges;
         edges = new HashMap<>();
         this.incomingEdges = new TreeMap<>();
-        nextVertexId = new AtomicInteger(this.vertices.size());
+        nextVertexId = this.vertices.size();
     }
 
     public Graph(List<Vertex<V>> vertices) {
@@ -368,7 +370,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     }
 
     public int nextVertexId() {
-        return nextVertexId.incrementAndGet();
+        return ++nextVertexId; // Make vertexIds start at 1 to uncover array indexing issues.
     }
 }
 

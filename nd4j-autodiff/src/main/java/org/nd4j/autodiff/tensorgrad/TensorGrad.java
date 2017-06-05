@@ -644,6 +644,7 @@ public class TensorGrad {
                 .arr(null)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.reshape(iX.getArrayField(),shape))
                 .varName("reshape(" + iX.getVarName() + ")").tensorGrad(this)
+                .shape(shape)
                 .build();
         addVariable(ret);
         return ret;
@@ -683,12 +684,17 @@ public class TensorGrad {
 
     public TensorGradVariable tensorMmul(TensorGradVariable x,
                                          TensorGradVariable y,
-                                         int[][]dimensions,
+                                         int[][] dimensions,
                                          int argNum) {
+
+        int[] shape = ArrayUtil.getTensorMmulShape(x.getShape(), y.getShape(), dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
                 .arr(null)
-                .differentialFunction(arrayFieldDifferentialFunctionFactory.tensorMmul(x.getArrayField(),y.getArrayField(),dimensions,argNum))
-                .varName("tensorMmul(" + x.getVarName() + "," + y.getVarName() +  ")").tensorGrad(this)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.tensorMmul(x.getArrayField(), y.getArrayField(), dimensions, argNum))
+                .varName("tensorMmul(" + x.getVarName() + "," + y.getVarName() +  ")")
+                .tensorGrad(this)
+                //.shape(shape)
                 .build();
         addVariable(ret);
         return ret;
@@ -696,10 +702,16 @@ public class TensorGrad {
 
 
     public TensorGradVariable cosineSimilarity(TensorGradVariable iX,TensorGradVariable i_y, int...dimensions) {
+        DifferentialFunction<ArrayField> cosim = arrayFieldDifferentialFunctionFactory.cosineSimilarity(
+                iX.getArrayField(),
+                i_y.getArrayField(),
+                dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
                 .arr(null)
-                .differentialFunction(arrayFieldDifferentialFunctionFactory.cosineSimilarity(iX.getArrayField(),i_y.getArrayField(),dimensions))
-                .varName("cosineSimilarity(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .differentialFunction(cosim)
+                .varName("cosineSimilarity(" + iX.getVarName() + "," + i_y.getVarName() +  ")")
+                .tensorGrad(this)
                 .build();
         addVariable(ret);
         return ret;
