@@ -21,7 +21,6 @@
 
 #include <ops/ops.h>
 #include <templatemath.h>
-#include <atomic>
 #include <types/float16.h>
 #include <types/float8.h>
 #include <types/uint8.h>
@@ -441,31 +440,38 @@ void convertToThreshold(void *dx, Nd4jIndex N, void *dz) {
 
     // we use 3 as offset, since first 12 bytes are occupied with header
     int flimit = limit + 3;
-    volatile std::atomic<int> cnt;
-    cnt.store(3);
-    volatile  std::atomic<bool> flag;
-    flag.store(false);
+    volatile int cnt = 3;
+    volatile bool flag = false;
 #pragma omp parallel for schedule(guided) default(shared)
     for (int e = 0; e < N;  e++) {
-        if (flag.load())
+        bool flag_load;
+#pragma omp atomic read
+        flag_load = flag;
+        if (flag_load)
             continue;
 
         T cUpd = x[e];
         if (cUpd >= (T) threshold) {
-            int idx = cnt++;
+            int idx;
+#pragma omp atomic capture
+            idx = cnt++;
 
             if (idx >= flimit) {
-                flag.store(true);
+#pragma omp atomic write
+                flag = true;
                 continue;
             }
 
             z[idx] = e + 1;
             x[e] -= (T) threshold;
         } else if (cUpd <= (T) -threshold) {
-            int idx = cnt++;
+            int idx;
+#pragma omp atomic capture
+            idx = cnt++;
 
             if (idx >= flimit) {
-                flag.store(true);
+#pragma omp atomic write
+                flag = true;
                 continue;
             }
 

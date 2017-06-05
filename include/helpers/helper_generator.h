@@ -12,8 +12,6 @@
 #define MAX_UINT 18446744073709551615LLU
 
 
-#include <mutex>
-
 namespace nd4j {
     namespace random {
 
