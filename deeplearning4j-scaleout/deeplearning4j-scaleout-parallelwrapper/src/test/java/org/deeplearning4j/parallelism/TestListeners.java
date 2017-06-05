@@ -119,7 +119,7 @@ public class TestListeners {
 
         int nWorkers = 2;
         ParallelWrapper wrapper = new ParallelWrapper.Builder(model).workers(nWorkers).averagingFrequency(1)
-                        .reportScoreAfterAveraging(true).useLegacyAveraging(true).build();
+                        .reportScoreAfterAveraging(true).build();
 
         if (listeners != null) {
             wrapper.setListeners(listeners);

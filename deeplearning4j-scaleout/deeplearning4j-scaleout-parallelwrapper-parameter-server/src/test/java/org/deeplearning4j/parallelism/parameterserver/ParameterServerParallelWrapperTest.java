@@ -70,7 +70,7 @@ public class ParameterServerParallelWrapperTest {
         ParallelWrapper parameterServerParallelWrapper =
                         new ParallelWrapper.Builder(model).trainerFactory(new ParameterServerTrainerContext())
                                         .workers(Runtime.getRuntime().availableProcessors())
-                                        .reportScoreAfterAveraging(true).useMQ(true).prefetchBuffer(3).build();
+                                        .reportScoreAfterAveraging(true).prefetchBuffer(3).build();
         parameterServerParallelWrapper.fit(mnistTrain);
 
         Thread.sleep(60000);
