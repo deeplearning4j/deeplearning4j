@@ -84,7 +84,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
     protected void pickReference(MemoryWorkspace workspace) {
         Nd4jWorkspace.GarbageWorkspaceReference reference = new Nd4jWorkspace.GarbageWorkspaceReference(workspace, queue);
-        referenceMap.put(reference.getId()+ "_" + reference.getThreadId(), reference);
+        referenceMap.put(reference.getKey(), reference);
     }
 
     @Override
@@ -241,7 +241,6 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
                             if (pair.getHostPointer() != null) {
 //                                log.info("Deallocating host...");
-                                referenceMap.remove(reference.getId() + "_" + reference.getThreadId());
                                 Nd4j.getMemoryManager().release(pair.getHostPointer(), MemoryKind.HOST);
                             }
                         }
@@ -265,6 +264,8 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
                             if (pair.getDevicePointer() != null)
                                 Nd4j.getMemoryManager().release(pair.getDevicePointer(), MemoryKind.DEVICE);
                         }
+
+                        referenceMap.remove(reference.getKey());
                     }
                 } catch (Exception e) {
                     //
