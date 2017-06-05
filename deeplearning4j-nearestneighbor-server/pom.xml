@@ -7,10 +7,10 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>deeplearning4j-nearestneighbor-server</artifactId>
+    <artifactId>deeplearning4j-nearestneighbor-server_2.11</artifactId>
     <packaging>jar</packaging>
 
-    <name>deeplearning4j-nearestneighbor-server</name>
+    <name>deeplearning4j-nearestneighbor-server_2.11</name>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
