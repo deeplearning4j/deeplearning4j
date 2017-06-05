@@ -14,6 +14,11 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
  * @author raver119@gmail.com
  */
 public class SharedTrainingWorker implements TrainingWorker<SharedTrainingResult> {
+
+    public SharedTrainingWorker() {
+
+    }
+
     @Override
     public void removeHook(TrainingHook trainingHook) {
 
@@ -36,6 +41,7 @@ public class SharedTrainingWorker implements TrainingWorker<SharedTrainingResult
 
     @Override
     public SharedTrainingResult processMinibatch(DataSet dataSet, MultiLayerNetwork network, boolean isLast) {
+        // we're not really going to use this method
         return null;
     }
 
@@ -97,5 +103,10 @@ public class SharedTrainingWorker implements TrainingWorker<SharedTrainingResult
     @Override
     public WorkerConfiguration getDataConfiguration() {
         return null;
+    }
+
+
+    public static class Builder {
+
     }
 }

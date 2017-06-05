@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.parameterserver.training;
 
+import lombok.NonNull;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -15,39 +16,103 @@ import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
-import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
+import org.nd4j.shade.jackson.annotation.PropertyAccessor;
+import org.nd4j.shade.jackson.core.JsonFactory;
+import org.nd4j.shade.jackson.core.JsonProcessingException;
+import org.nd4j.shade.jackson.databind.DeserializationFeature;
+import org.nd4j.shade.jackson.databind.MapperFeature;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
+import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  * @author raver119@gmail.com
  */
 public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult, SharedTrainingWorker> {
+    protected List<TrainingHook> trainingHooks;
+    protected VoidConfiguration voidConfiguration;
 
-    public SharedTrainingMaster() {
+    private static ObjectMapper jsonMapper;
+    private static ObjectMapper yamlMapper;
 
+
+    public SharedTrainingMaster(@NonNull VoidConfiguration voidConfiguration) {
+        this.voidConfiguration = voidConfiguration;
     }
 
     @Override
     public void removeHook(TrainingHook trainingHook) {
-
+        if (trainingHooks != null)
+            trainingHooks.remove(trainingHook);
     }
 
     @Override
-    public void addHook(TrainingHook trainingHook) {
+    public void addHook(@NonNull TrainingHook trainingHook) {
+        if (trainingHooks == null)
+            trainingHooks = new ArrayList<>();
 
+        trainingHooks.add(trainingHook);
     }
 
     @Override
     public String toJson() {
-        return null;
+        ObjectMapper om = getJsonMapper();
+
+        try {
+            return om.writeValueAsString(this);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error producing JSON representation for ParameterAveragingTrainingMaster", e);
+        }
     }
 
     @Override
     public String toYaml() {
-        return null;
+        ObjectMapper om = getYamlMapper();
+
+        try {
+            return om.writeValueAsString(this);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error producing YAML representation for ParameterAveragingTrainingMaster", e);
+        }
+    }
+
+    /**
+     * Create a SharedTrainingMaster instance by deserializing a JSON string that has been serialized with
+     * {@link #toJson()}
+     *
+     * @param jsonStr SharedTrainingMaster configuration serialized as JSON
+     */
+    public static SharedTrainingMaster fromJson(String jsonStr) {
+        ObjectMapper om = getJsonMapper();
+        try {
+            return om.readValue(jsonStr, SharedTrainingMaster.class);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not parse JSON", e);
+        }
+    }
+
+    /**
+     * Create a SharedTrainingMaster instance by deserializing a YAML string that has been serialized with
+     * {@link #toYaml()}
+     *
+     * @param yamlStr SharedTrainingMaster configuration serialized as YAML
+     */
+    public static SharedTrainingMaster fromYaml(String yamlStr) {
+        ObjectMapper om = getYamlMapper();
+        try {
+            return om.readValue(yamlStr, SharedTrainingMaster.class);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not parse YAML", e);
+        }
     }
 
     @Override
@@ -62,7 +127,16 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
 
     @Override
     public void executeTraining(SparkDl4jMultiLayer network, JavaRDD<DataSet> trainingData) {
-
+        /*
+            This method (and other similar methods) is basically one of our entry points, here we'll spawn our training process:
+            1) broadcast everything needed: initial model params, updaters state, conf. Useful for uptraining
+            2) shuffle, if needed
+            3) repartition, if needed
+            4) EXECUTE SILENT WORKER
+            5) invoke training function via mapPartitions
+            6) wait till finished
+            7) do something with final model, i.e. export it somewhere :)
+         */
     }
 
     @Override
@@ -107,7 +181,7 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
 
     @Override
     public void setCollectTrainingStats(boolean collectTrainingStats) {
-
+        // simple enabler/disabler
     }
 
     @Override
@@ -122,12 +196,12 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
 
     @Override
     public void setListeners(Collection<IterationListener> listeners) {
-
+        // optional stuff actually
     }
 
     @Override
     public void setListeners(StatsStorageRouter router, Collection<IterationListener> listeners) {
-
+        // optional stuff actually
     }
 
     @Override
@@ -138,6 +212,31 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
     @Override
     public boolean deleteTempFiles(SparkContext sc) {
         return false;
+    }
+
+    private static synchronized ObjectMapper getJsonMapper() {
+        if (jsonMapper == null) {
+            jsonMapper = getNewMapper(new JsonFactory());
+        }
+        return jsonMapper;
+    }
+
+    private static synchronized ObjectMapper getYamlMapper() {
+        if (yamlMapper == null) {
+            yamlMapper = getNewMapper(new YAMLFactory());
+        }
+        return yamlMapper;
+    }
+
+    private static ObjectMapper getNewMapper(JsonFactory jsonFactory) {
+        ObjectMapper om = new ObjectMapper(jsonFactory);
+        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        om.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+        om.enable(SerializationFeature.INDENT_OUTPUT);
+        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        return om;
     }
 
     protected void doIteration(SparkDl4jMultiLayer network, JavaRDD<DataSet> split, int splitNum, int numSplits) {
@@ -151,23 +250,35 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
         private RepartitionStrategy repartitionStrategy = RepartitionStrategy.Balanced;
         private StorageLevel storageLevel = StorageLevel.MEMORY_ONLY_SER();
         private StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
+        private VoidConfiguration voidConfiguration;
 
         public Builder(int rddDataSetNumExamples) {
             this(1e-3, rddDataSetNumExamples);
         }
 
+        public Builder(@NonNull VoidConfiguration voidConfiguration, int rddDataSetNumExamples) {
+            this(voidConfiguration,1e-3, rddDataSetNumExamples);
+        }
+
         public Builder(double threshold, int rddDataSetNumExamples) {
-            this(null, threshold, rddDataSetNumExamples);
+            // TODO: we need proper default for VoidConfiguration here
+            this(new VoidConfiguration(), null, threshold, rddDataSetNumExamples);
+        }
+
+        public Builder(@NonNull VoidConfiguration voidConfiguration, double threshold, int rddDataSetNumExamples) {
+            this(voidConfiguration, null, threshold, rddDataSetNumExamples);
         }
 
         /**
          *
+         * @param voidConfiguration ParameterServer configuration POJO
          * @param numWorkers
          * @param threshold Update sharing threshold
          * @param rddDataSetNumExamples
          */
-        public Builder(Integer numWorkers, double threshold, int rddDataSetNumExamples) {
+        public Builder(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers, double threshold, int rddDataSetNumExamples) {
             this.threshold = threshold;
+            this.voidConfiguration = voidConfiguration;
         }
 
 

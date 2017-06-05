@@ -23,6 +23,11 @@
             <version>${nd4j.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-parameter-server-node_2.11</artifactId>
+            <version>${nd4j.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>dl4j-spark_2.11</artifactId>
             <version>${project.version}</version>
