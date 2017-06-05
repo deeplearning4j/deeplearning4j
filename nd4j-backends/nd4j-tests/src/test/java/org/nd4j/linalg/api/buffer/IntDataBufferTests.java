@@ -1,6 +1,6 @@
 package org.nd4j.linalg.api.buffer;
 
-import org.junit.Assert;
+
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -14,6 +14,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.io.*;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -84,7 +85,7 @@ public class IntDataBufferTests extends BaseNd4jTest {
 
         DataBuffer buffer = Nd4j.createBuffer(new int[]{1, 2, 3, 4});
 
-        Assert.assertTrue(buffer.isAttached());
+        assertTrue(buffer.isAttached());
         assertEquals(4, buffer.capacity());
         buffer.reallocate(6);
         assertEquals(6, buffer.capacity());

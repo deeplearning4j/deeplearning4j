@@ -23,7 +23,6 @@ import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacpp.indexer.Indexer;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -43,6 +42,7 @@ import java.io.*;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Double data buffer tests
@@ -236,7 +236,7 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
         DataBuffer buffer = Nd4j.createBuffer(new double[]{1, 2, 3, 4});
 
-        Assert.assertTrue(buffer.isAttached());
+        assertTrue(buffer.isAttached());
         assertEquals(4, buffer.capacity());
         buffer.reallocate(6);
         assertEquals(6, buffer.capacity());

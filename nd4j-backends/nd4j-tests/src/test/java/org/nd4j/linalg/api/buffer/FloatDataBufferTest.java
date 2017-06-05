@@ -41,6 +41,7 @@ import java.nio.ByteBuffer;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Float data buffer tests
@@ -235,7 +236,7 @@ public class FloatDataBufferTest extends BaseNd4jTest {
         MemoryWorkspace  workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "SOME_ID");
 
         DataBuffer buffer = Nd4j.createBuffer(new float[]{1, 2, 3, 4});
-        assert(buffer.isAttached());
+        assertTrue(buffer.isAttached());
         assertEquals(4, buffer.capacity());
         buffer.reallocate(6);
         assertEquals(6, buffer.capacity());
