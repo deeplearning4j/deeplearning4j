@@ -16,8 +16,7 @@
 
 package org.datavec.api.transform.reduce;
 
-import org.datavec.api.writable.LongWritable;
-import org.datavec.api.transform.schema.Schema;
+import lombok.Getter;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.condition.Condition;
@@ -25,10 +24,10 @@ import org.datavec.api.transform.condition.ConditionOp;
 import org.datavec.api.transform.condition.column.StringColumnCondition;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.StringMetaData;
-import org.datavec.api.writable.DoubleWritable;
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.Text;
-import org.datavec.api.writable.Writable;
+import org.datavec.api.transform.ops.AggregableMultiOp;
+import org.datavec.api.transform.ops.IAggregableReduceOp;
+import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.writable.*;
 import org.junit.Test;
 
 import java.util.*;
@@ -39,10 +38,10 @@ import static org.junit.Assert.fail;
 /**
  * Created by Alex on 21/03/2016.
  */
-public class TestReduce {
+public class TestMultiOpReduce {
 
     @Test
-    public void testReducerDouble() {
+    public void testMultiOpReducerDouble() {
 
         List<List<Writable>> inputs = new ArrayList<>();
         inputs.add(Arrays.asList((Writable) new Text("someKey"), new DoubleWritable(0)));
@@ -69,8 +68,12 @@ public class TestReduce {
             Reducer reducer = new Reducer.Builder(op).keyColumns("key").build();
 
             reducer.setInputSchema(schema);
+            IAggregableReduceOp<List<Writable>, List<Writable>> accumulator = reducer.aggregableReducer();
 
-            List<Writable> out = reducer.reduce(inputs);
+            for (int i = 0; i < inputs.size(); i++){
+                accumulator.accept(inputs.get(i));
+            }
+            List<Writable> out = accumulator.get();
 
             assertEquals(2, out.size());
 
@@ -109,8 +112,12 @@ public class TestReduce {
             Reducer reducer = new Reducer.Builder(op).keyColumns("key").build();
 
             reducer.setInputSchema(schema);
+            IAggregableReduceOp<List<Writable>, List<Writable>> accumulator = reducer.aggregableReducer();
 
-            List<Writable> out = reducer.reduce(inputs);
+            for (int i = 0; i < inputs.size(); i++){
+                accumulator.accept(inputs.get(i));
+            }
+            List<Writable> out = accumulator.get();
 
             assertEquals(2, out.size());
 
@@ -118,6 +125,43 @@ public class TestReduce {
 
             String msg = op.toString();
             assertEquals(msg, exp.get(op), out.get(1).toDouble(), 1e-5);
+        }
+    }
+
+
+    @Test
+    public void testReduceString() {
+
+        List<List<Writable>> inputs = new ArrayList<>();
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("1")));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("2")));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("3")));
+        inputs.add(Arrays.asList((Writable) new Text("someKey"), new Text("4")));
+
+        Map<ReduceOp, String> exp = new LinkedHashMap<>();
+        exp.put(ReduceOp.Append, "1234");
+        exp.put(ReduceOp.Prepend, "4321");
+
+        for (ReduceOp op : exp.keySet()) {
+
+            Schema schema = new Schema.Builder().addColumnString("key").addColumnsString("column").build();
+
+            Reducer reducer = new Reducer.Builder(op).keyColumns("key").build();
+
+            reducer.setInputSchema(schema);
+            IAggregableReduceOp<List<Writable>, List<Writable>> accumulator = reducer.aggregableReducer();
+
+            for (int i = 0; i < inputs.size(); i++){
+                accumulator.accept(inputs.get(i));
+            }
+            List<Writable> out = accumulator.get();
+
+            assertEquals(2, out.size());
+
+            assertEquals(out.get(0), new Text("someKey"));
+
+            String msg = op.toString();
+            assertEquals(msg, exp.get(op), out.get(1).toString());
         }
     }
 
@@ -152,7 +196,12 @@ public class TestReduce {
 
             reducer.setInputSchema(schema);
 
-            List<Writable> out = reducer.reduce(inputs);
+            IAggregableReduceOp<List<Writable>, List<Writable>> accumulator = reducer.aggregableReducer();
+
+            for (int i = 0; i < inputs.size(); i++){
+                accumulator.accept(inputs.get(i));
+            }
+            List<Writable> out = accumulator.get();
 
             assertEquals(2, out.size());
 
@@ -170,9 +219,10 @@ public class TestReduce {
 
             Reducer reducer = new Reducer.Builder(op).keyColumns("key").build();
             reducer.setInputSchema(schema);
+            IAggregableReduceOp<List<Writable>, List<Writable>> accu = reducer.aggregableReducer();
 
             try {
-                reducer.reduce(inputs);
+                for (List<Writable> i: inputs) accu.accept(i);
                 fail("No exception thrown for invalid input: op=" + op);
             } catch (NumberFormatException e) {
                 //ok
@@ -194,7 +244,7 @@ public class TestReduce {
         inputs.add(Arrays.asList((Writable) new Text("someKey"), new IntWritable(4), new Text("three"),
                         new DoubleWritable(3)));
 
-        List<Writable> expected = Arrays.asList((Writable) new Text("someKey"), new LongWritable(10), new Text("one"),
+        List<Writable> expected = Arrays.asList((Writable) new Text("someKey"), new IntWritable(10), new Text("one"),
                         new DoubleWritable(1));
 
 
@@ -207,7 +257,13 @@ public class TestReduce {
 
         reducer.setInputSchema(schema);
 
-        List<Writable> out = reducer.reduce(inputs);
+
+        IAggregableReduceOp<List<Writable>, List<Writable>> accumulator = reducer.aggregableReducer();
+
+        for (int i = 0; i < inputs.size(); i++){
+            accumulator.accept(inputs.get(i));
+        }
+        List<Writable> out = accumulator.get();
 
         assertEquals(4, out.size());
         assertEquals(expected, out);
@@ -215,7 +271,7 @@ public class TestReduce {
         //Check schema:
         String[] expNames = new String[] {"key", "sum(intCol)", "myCustomReduce(textCol)", "myCustomReduce(doubleCol)"};
         ColumnType[] expTypes =
-                        new ColumnType[] {ColumnType.String, ColumnType.Long, ColumnType.String, ColumnType.String};
+                        new ColumnType[] {ColumnType.String, ColumnType.Integer, ColumnType.String, ColumnType.String};
         Schema outSchema = reducer.transform(schema);
 
         assertEquals(4, outSchema.numColumns());
@@ -225,22 +281,61 @@ public class TestReduce {
         }
     }
 
-    private static class CustomReduceTakeSecond implements ColumnReduction {
+    private static class CustomReduceTakeSecond implements AggregableColumnReduction {
 
         @Override
-        public Writable reduceColumn(List<Writable> columnData) {
+        public IAggregableReduceOp<Writable, List<Writable>> reduceOp() {
             //For testing: let's take the second value
-            return columnData.get(1);
+            return new AggregableMultiOp<>(Collections.<IAggregableReduceOp<Writable, Writable>>singletonList(new AggregableSecond<Writable>()));
         }
 
         @Override
-        public String getColumnOutputName(String columnInputName) {
-            return "myCustomReduce(" + columnInputName + ")";
+        public List<String> getColumnsOutputName(String columnInputName) {
+            return Collections.singletonList("myCustomReduce(" + columnInputName + ")");
         }
 
         @Override
-        public ColumnMetaData getColumnOutputMetaData(String newColumnName, ColumnMetaData columnInputMeta) {
-            return new StringMetaData(newColumnName);
+        public List<ColumnMetaData> getColumnOutputMetaData(List<String> newColumnName, ColumnMetaData columnInputMeta) {
+            ColumnMetaData thiscolumnMeta = new StringMetaData(newColumnName.get(0));
+            return Collections.singletonList(thiscolumnMeta);
+        }
+
+        public static class AggregableSecond<T> implements IAggregableReduceOp<T, Writable> {
+
+            @Getter
+            private T firstMet = null;
+            @Getter
+            private T elem = null;
+
+            @Override
+            public void accept(T element) {
+                if (firstMet == null) firstMet = element;
+                else {
+                    if (elem == null) elem = element;
+                }
+            }
+
+            @Override
+            public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
+                if (accu instanceof AggregableSecond && elem == null){
+                    if (firstMet == null) { // this accumulator is empty, import accu
+                        AggregableSecond<T> accumulator = (AggregableSecond) accu;
+                        T otherFirst = accumulator.getFirstMet();
+                        T otherElement = accumulator.getElem();
+                        if (otherFirst != null) firstMet = otherFirst;
+                        if (otherElement != null) elem = otherElement;
+                    } else { // we have the first element, they may have the rest
+                        AggregableSecond<T> accumulator = (AggregableSecond) accu;
+                        T otherFirst = accumulator.getFirstMet();
+                        if (otherFirst != null) elem = otherFirst;
+                    }
+                }
+            }
+
+            @Override
+            public Writable get() {
+                return UnsafeWritableInjector.inject(elem);
+            }
         }
 
         /**
@@ -342,18 +437,23 @@ public class TestReduce {
 
         reducer.setInputSchema(schema);
 
-        List<Writable> out = reducer.reduce(inputs);
-        List<Writable> expected = Arrays.<Writable>asList(new Text("someKey"), new LongWritable(1 + 3 + 5),
-                        new IntWritable(2), new IntWritable(4));
+        IAggregableReduceOp<List<Writable>, List<Writable>> accumulator = reducer.aggregableReducer();
+
+        for (int i = 0; i < inputs.size(); i++){
+            accumulator.accept(inputs.get(i));
+        }
+        List<Writable> out = accumulator.get();
+        List<Writable> expected = Arrays.<Writable>asList(new Text("someKey"), new IntWritable(1+ 3 + 5),
+                        new LongWritable(2), new LongWritable(4));
 
         assertEquals(4, out.size());
         assertEquals(expected, out);
 
         Schema outSchema = reducer.transform(schema);
         assertEquals(4, outSchema.numColumns());
-        assertEquals(Arrays.asList("key", "sumOfAs", "countUnique(filterCol)", "countUnique(textCol)"),
+        assertEquals(Arrays.asList("key", "sumOfAs", "countunique(filterCol)", "countunique(textCol)"),
                         outSchema.getColumnNames());
-        assertEquals(Arrays.asList(ColumnType.String, ColumnType.Long, ColumnType.Integer, ColumnType.Integer),
+        assertEquals(Arrays.asList(ColumnType.String, ColumnType.Integer, ColumnType.Long, ColumnType.Long),
                         outSchema.getColumnTypes());
     }
 }

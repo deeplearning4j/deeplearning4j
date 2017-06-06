@@ -40,6 +40,7 @@ import java.util.List;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonSubTypes(value = {
+                @JsonSubTypes.Type(value = TrivialColumnCondition.class, name = "TrivialColumnCondition"),
                 @JsonSubTypes.Type(value = CategoricalColumnCondition.class, name = "CategoricalColumnCondition"),
                 @JsonSubTypes.Type(value = DoubleColumnCondition.class, name = "DoubleColumnCondition"),
                 @JsonSubTypes.Type(value = IntegerColumnCondition.class, name = "IntegerColumnCondition"),
@@ -71,7 +72,6 @@ public interface Condition extends Serializable, ColumnOp {
      * false otherwise
      */
     boolean condition(Object input);
-
 
     /**
      * Is the condition satisfied for the current input/sequence?<br>

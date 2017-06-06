@@ -15,7 +15,6 @@ public interface NumericReduceFunction {
         return this.reduce(data.toDoubleArray());
     }
 
-
     default double reduce(FloatColumn data) {
         return this.reduce(data.toDoubleArray());
     }

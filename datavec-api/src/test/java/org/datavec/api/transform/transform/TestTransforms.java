@@ -17,7 +17,7 @@
 package org.datavec.api.transform.transform;
 
 import org.datavec.api.transform.*;
-import org.datavec.api.transform.reduce.IReducer;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.sequence.ReduceSequenceTransform;
@@ -1088,7 +1088,7 @@ public class TestTransforms {
                 .addColumnsDouble("col%d",0,2)
                 .build();
 
-        IReducer reducer = new Reducer.Builder(ReduceOp.Mean)
+        IAssociativeReducer reducer = new Reducer.Builder(ReduceOp.Mean)
                 .countColumns("col1")
                 .maxColumn("col2")
                 .build();
@@ -1102,13 +1102,13 @@ public class TestTransforms {
                 Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)));
 
         List<List<Writable>> exp = Collections.singletonList(
-                Arrays.<Writable>asList(new DoubleWritable(3), new IntWritable(3), new DoubleWritable(8)));
+                Arrays.<Writable>asList(new DoubleWritable(3), new LongWritable(3L), new DoubleWritable(8)));
         List<List<Writable>> act = t.mapSequence(seq);
         assertEquals(exp, act);
 
         Schema expOutSchema = new SequenceSchema.Builder()
                 .addColumnDouble("mean(col0)")
-                .addColumn(new IntegerMetaData("count",0,null))
+                .addColumn(new LongMetaData("count(col1)",0L,null))
                 .addColumnDouble("max(col2)")
                 .build();
 

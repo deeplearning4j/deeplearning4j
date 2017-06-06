@@ -82,6 +82,7 @@
         <geoip2.version>2.8.1</geoip2.version>
         <stream.analytics.version>2.7.0</stream.analytics.version>
         <hadoop.version>2.2.0</hadoop.version>  <!-- Hadoop version used by Spark 1.6.2 and 2.2.1 (and likely others) -->
+        <mm-util-backport-java.version>1.0.1</mm-util-backport-java.version>
     </properties>
 
     <repositories>

@@ -16,7 +16,11 @@
 
 package org.datavec.spark.transform;
 
+import com.sun.corba.se.spi.ior.Writeable;
+import org.apache.spark.api.java.function.Function2;
 import org.datavec.api.berkeley.Iterators;
+import org.datavec.api.transform.ops.IAggregableReduceOp;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.spark.SequenceEmptyRecordFunction;
 import org.datavec.spark.functions.EmptyRecordFunction;
 import org.datavec.spark.transform.join.*;
@@ -36,7 +40,6 @@ import org.datavec.api.transform.join.Join;
 import org.datavec.api.transform.rank.CalculateSortedRank;
 import org.datavec.api.transform.sequence.ConvertToSequence;
 import org.datavec.api.transform.filter.Filter;
-import org.datavec.api.transform.reduce.IReducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.sequence.SequenceSplit;
@@ -215,7 +218,7 @@ public class SparkTransformExecutor {
 
             } else if (d.getConvertToSequence() != null) {
                 //Convert to a sequence...
-                ConvertToSequence cts = d.getConvertToSequence();
+                final ConvertToSequence cts = d.getConvertToSequence();
 
                 //First: convert to PairRDD
                 Schema schema = cts.getInputSchema();
@@ -225,7 +228,7 @@ public class SparkTransformExecutor {
                 JavaPairRDD<List<Writable>, Iterable<List<Writable>>> grouped = withKey.groupByKey();
 
                 //Now: convert to a sequence...
-                currentSequence = grouped.map(new SparkGroupToSequenceFunction<List<Writable>>(cts.getComparator()));
+                currentSequence = grouped.mapValues(new SparkGroupToSequenceFunction(cts.getComparator())).values();
                 currentWritables = null;
             } else if (d.getConvertFromSequence() != null) {
                 //Convert from sequence...
@@ -243,7 +246,7 @@ public class SparkTransformExecutor {
                     throw new IllegalStateException("Error during execution of SequenceSplit: currentSequence is null");
                 currentSequence = currentSequence.flatMap(new SequenceSplitFunction(sequenceSplit));
             } else if (d.getReducer() != null) {
-                IReducer reducer = d.getReducer();
+                final IAssociativeReducer reducer = d.getReducer();
 
                 if (currentWritables == null)
                     throw new IllegalStateException("Error during execution of reduction: current writables are null. "
@@ -251,7 +254,37 @@ public class SparkTransformExecutor {
                 JavaPairRDD<String, List<Writable>> pair =
                                 currentWritables.mapToPair(new MapToPairForReducerFunction(reducer));
 
-                currentWritables = pair.groupByKey().map(new ReducerFunction(reducer));
+
+                currentWritables = pair.aggregateByKey(reducer.aggregableReducer(), new Function2<
+                        IAggregableReduceOp<List<Writable>, List<Writable>>,
+                        List<Writable>,
+                        IAggregableReduceOp<List<Writable>, List<Writable>>>() {
+                    @Override
+                    public IAggregableReduceOp<List<Writable>, List<Writable>> call(
+                            IAggregableReduceOp<List<Writable>, List<Writable>> iAggregableReduceOp,
+                            List<Writable> writables) throws Exception {
+                        iAggregableReduceOp.accept(writables);
+                        return iAggregableReduceOp;
+                    }
+                }, new Function2<
+                        IAggregableReduceOp<List<Writable>, List<Writable>>,
+                        IAggregableReduceOp<List<Writable>, List<Writable>>,
+                        IAggregableReduceOp<List<Writable>, List<Writable>>>() {
+                    @Override
+                    public IAggregableReduceOp<List<Writable>, List<Writable>> call(
+                            IAggregableReduceOp<List<Writable>, List<Writable>> iAggregableReduceOp,
+                            IAggregableReduceOp<List<Writable>, List<Writable>> iAggregableReduceOp2) throws Exception {
+                        iAggregableReduceOp.combine(iAggregableReduceOp2);
+                        return iAggregableReduceOp;
+                    }
+                }).mapValues(new Function<IAggregableReduceOp<List<Writable>, List<Writable>>, List<Writable>>(){
+
+                    @Override
+                    public List<Writable> call(IAggregableReduceOp<List<Writable>, List<Writable>> listIAggregableReduceOp) throws Exception {
+                        return listIAggregableReduceOp.get();
+                    }
+                }).values();
+
             } else if (d.getCalculateSortedRank() != null) {
                 CalculateSortedRank csr = d.getCalculateSortedRank();
 

@@ -14,10 +14,12 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.api.transform.stringreduce;
+package org.datavec.api.transform.reduce;
 
 import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
+import org.datavec.api.transform.ops.AggregableMultiOp;
+import org.datavec.api.transform.ops.IAggregableReduceOp;
 import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;
@@ -25,11 +27,11 @@ import java.util.List;
 
 /**
  * A column reduction defines how a single column should be reduced.
- * Used in conjunction with {@link StringReducer} to provide custom reduction functionality.
+ * Used in conjunction with {@link Reducer} to provide custom reduction functionality.
  *
  * @author Alex Black
  */
-public interface ColumnReduction extends Serializable, ColumnOp {
+public interface AggregableColumnReduction extends Serializable, ColumnOp {
 
     /**
      * Reduce a single column.
@@ -41,7 +43,7 @@ public interface ColumnReduction extends Serializable, ColumnOp {
      * @param columnData The Writable objects for a column
      * @return Writable containing the reduced data
      */
-    Writable reduceColumn(List<Writable> columnData);
+    IAggregableReduceOp<Writable, List<Writable>> reduceOp();
 
     /**
      * Post-reduce: what is the name of the column?
@@ -50,7 +52,7 @@ public interface ColumnReduction extends Serializable, ColumnOp {
      * @param columnInputName Name of the column before reduction
      * @return Name of the column after the reduction
      */
-    String getColumnOutputName(String columnInputName);
+    List<String> getColumnsOutputName(String columnInputName);
 
     /**
      * Post-reduce: what is the metadata (type, etc) for this column?
@@ -59,6 +61,6 @@ public interface ColumnReduction extends Serializable, ColumnOp {
      * @param columnInputMeta Metadata for the column, before reduce
      * @return Metadata for the column, after the reduction
      */
-    ColumnMetaData getColumnOutputMetaData(String newColumnName, ColumnMetaData columnInputMeta);
+    List<ColumnMetaData> getColumnOutputMetaData(List<String> newColumnName, ColumnMetaData columnInputMeta);
 
 }

@@ -141,11 +141,11 @@ public class TableRecords {
                 Schema output = reducer.transform(reducer.getInputSchema());
                 org.datavec.dataframe.filtering.Filter filter =
                                 mapFilterFromCondition(conditionToFilter, inputColumnName, output);
-                reduce = runReduce(reduce.selectWhere(filter), pair.getValue().getReduction(), inputColumnName);
+                reduce = runReduce(reduce.selectWhere(filter), pair.getValue().getReductions().get(0), inputColumnName);
             }
         } else {
-            for (Map.Entry<String, ReduceOp> pair : reducer.getOpMap().entrySet()) {
-                reduce = runReduce(reduce, pair.getValue(), pair.getKey());
+            for (Map.Entry<String, List<ReduceOp>> pair : reducer.getOpMap().entrySet()) {
+                reduce = runReduce(reduce, pair.getValue().get(0), pair.getKey());
             }
         }
 

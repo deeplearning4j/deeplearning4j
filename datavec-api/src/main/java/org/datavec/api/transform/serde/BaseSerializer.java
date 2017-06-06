@@ -29,7 +29,7 @@ import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.filter.Filter;
 import org.datavec.api.transform.rank.CalculateSortedRank;
-import org.datavec.api.transform.reduce.IReducer;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.sequence.SequenceComparator;
 import org.datavec.api.transform.sequence.SequenceSplit;
 
@@ -145,14 +145,14 @@ public abstract class BaseSerializer {
         }
     }
 
-    public String serialize(IReducer[] reducers) {
+    public String serialize(IAssociativeReducer[] reducers) {
         return serializeReducerList(Arrays.asList(reducers));
     }
 
     /**
      * Serialize a list of IReducers
      */
-    public String serializeReducerList(List<IReducer> list) {
+    public String serializeReducerList(List<IAssociativeReducer> list) {
         ObjectMapper om = getObjectMapper();
         try {
             return om.writeValueAsString(new ListWrappers.ReducerList(list));
@@ -233,8 +233,8 @@ public abstract class BaseSerializer {
      * @param str String representation (YAML/JSON) of the IStringReducer
      * @return IStringReducer
      */
-    public IReducer deserializeReducer(String str) {
-        return load(str, IReducer.class);
+    public IAssociativeReducer deserializeReducer(String str) {
+        return load(str, IAssociativeReducer.class);
     }
 
     /**
@@ -317,7 +317,7 @@ public abstract class BaseSerializer {
      * @param str String representation (YAML/JSON) of the IStringReducer list
      * @return {@code List<IStringReducer>}
      */
-    public List<IReducer> deserializeReducerList(String str) {
+    public List<IAssociativeReducer> deserializeReducerList(String str) {
         return load(str, ListWrappers.ReducerList.class).getList();
     }
 

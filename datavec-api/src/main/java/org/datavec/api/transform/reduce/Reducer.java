@@ -16,34 +16,31 @@
 
 package org.datavec.api.transform.reduce;
 
-import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
-import lombok.EqualsAndHashCode;
-import org.datavec.api.writable.DoubleWritable;
-import org.datavec.api.writable.LongWritable;
-import org.datavec.api.writable.Text;
-import org.datavec.api.transform.ColumnType;
-import org.datavec.api.transform.ReduceOp;
-import org.datavec.api.transform.condition.Condition;
-import org.datavec.api.transform.metadata.ColumnMetaData;
-import org.datavec.api.transform.metadata.DoubleMetaData;
-import org.datavec.api.transform.metadata.IntegerMetaData;
-import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.transform.metadata.LongMetaData;
+import com.clearspring.analytics.util.Preconditions;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.Writable;
+import lombok.EqualsAndHashCode;
+import org.datavec.api.transform.ColumnType;
+import org.datavec.api.transform.ReduceOp;
+import org.datavec.api.transform.condition.column.TrivialColumnCondition;
+import org.datavec.api.transform.condition.Condition;
+import org.datavec.api.transform.metadata.*;
+import org.datavec.api.transform.ops.*;
+import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.writable.*;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.io.Serializable;
 import java.util.*;
 
 /**
- * A StringReducer is used to take a set of examples and reduce them.
+ * A Reducer is used to take a set of examples and reduce them.
  * The idea: suppose you have a large number of columns, and you want to combine/reduce the values in each column.<br>
- * StringReducer allows you to specify different reductions for differently for different columns: min, max, sum, mean etc.
+ * Reducer allows you to specify different reductions for differently for different columns: min, max, sum, mean etc.
  * See {@link Builder} and {@link ReduceOp} for the full list.<br>
+ * Note this supports executing multipe reducitons per column: simply call the Builder with Xcolumn() repeatedly
+ * on the same column, or use {@link Reducer.Builder.multipleOpColumns}
  * <p>
  * Uses are:
  * (1) Reducing examples by a key
@@ -54,15 +51,16 @@ import java.util.*;
 @Data
 @JsonIgnoreProperties({"schema", "keyColumnsSet"})
 @EqualsAndHashCode(exclude = {"schema", "keyColumnsSet"})
-public class Reducer implements IReducer {
+public class Reducer implements IAssociativeReducer {
 
     private Schema schema;
     private final List<String> keyColumns;
     private final Set<String> keyColumnsSet;
     private final ReduceOp defaultOp;
-    private final Map<String, ReduceOp> opMap;
-    private Map<String, ColumnReduction> customReductions;
+    private final Map<String, List<ReduceOp>> opMap;
     private Map<String, ConditionalReduction> conditionalReductions;
+    private Map<String, AggregableColumnReduction> customReductions;
+
     private Set<String> ignoreInvalidInColumns;
 
     private Reducer(Builder builder) {
@@ -71,10 +69,10 @@ public class Reducer implements IReducer {
     }
 
     public Reducer(@JsonProperty("keyColumns") List<String> keyColumns, @JsonProperty("defaultOp") ReduceOp defaultOp,
-                    @JsonProperty("opMap") Map<String, ReduceOp> opMap,
-                    @JsonProperty("customReductions") Map<String, ColumnReduction> customReductions,
-                    @JsonProperty("conditionalReductions") Map<String, ConditionalReduction> conditionalReductions,
-                    @JsonProperty("ignoreInvalidInColumns") Set<String> ignoreInvalidInColumns) {
+                   @JsonProperty("opMap") Map<String, List<ReduceOp>> opMap,
+                   @JsonProperty("customReductions") Map<String, AggregableColumnReduction> customReductions,
+                   @JsonProperty("conditionalReductions") Map<String, ConditionalReduction> conditionalReductions,
+                   @JsonProperty("ignoreInvalidInColumns") Set<String> ignoreInvalidInColumns) {
         this.keyColumns = keyColumns;
         this.keyColumnsSet = (keyColumns == null ? null : new HashSet<>(keyColumns));
         this.defaultOp = defaultOp;
@@ -123,15 +121,13 @@ public class Reducer implements IReducer {
                 continue;
             }
 
-            //First: check for a custom reductions on this column
+            //First: check for a custom reduction on this column
             if (customReductions != null && customReductions.containsKey(name)) {
-                ColumnReduction reduction = customReductions.get(name);
+                AggregableColumnReduction reduction = customReductions.get(name);
 
-                String outName = reduction.getColumnOutputName(name);
-                ColumnMetaData outMeta = reduction.getColumnOutputMetaData(outName, inMeta);
-
-                newMeta.add(outMeta);
-
+                List<String> outName = reduction.getColumnsOutputName(name);
+                List<ColumnMetaData> outMeta = reduction.getColumnOutputMetaData(outName, inMeta);
+                newMeta.addAll(outMeta);
                 continue;
             }
 
@@ -139,73 +135,83 @@ public class Reducer implements IReducer {
             if (conditionalReductions != null && conditionalReductions.containsKey(name)) {
                 ConditionalReduction reduction = conditionalReductions.get(name);
 
-                String outName = reduction.getOutputName();
-                ColumnMetaData m = getMetaForColumn(reduction.getReduction(), name, inMeta);
-                m.setName(outName);
-                newMeta.add(m);
-
+                List<String> outNames = reduction.getOutputNames();
+                List<ReduceOp> reductions = reduction.getReductions();
+                for (int j = 0; j < reduction.getReductions().size(); j++){
+                    ReduceOp red = reductions.get(j);
+                    String outName = outNames.get(j);
+                    ColumnMetaData m = getMetaForColumn(red, name, inMeta);
+                    m.setName(outName);
+                    newMeta.add(m);
+                }
                 continue;
             }
 
+
             //Otherwise: get the specified (built-in) reduction op
             //If no reduction op is specified for that column: use the default
-            ReduceOp op = opMap.get(name);
-            if (op == null)
-                op = defaultOp;
-            newMeta.add(getMetaForColumn(op, name, inMeta));
+            List<ReduceOp> lop = opMap.containsKey(name) ? opMap.get(name) : Collections.singletonList(defaultOp);
+            if (lop != null)
+                for (ReduceOp op : lop) {
+                    newMeta.add(getMetaForColumn(op, name, inMeta));
+                }
         }
 
         return schema.newSchema(newMeta);
     }
 
+    private static String getOutNameForColumn(ReduceOp op, String name){
+        return op.name().toLowerCase() + "(" + name + ")";
+    }
+
     private static ColumnMetaData getMetaForColumn(ReduceOp op, String name, ColumnMetaData inMeta) {
         inMeta = inMeta.clone();
         switch (op) {
+            // type-preserving operations
             case Min:
-                inMeta.setName("min(" + name + ")");
-                return inMeta;
             case Max:
-                inMeta.setName("max(" + name + ")");
-                return inMeta;
             case Range:
-                inMeta.setName("range(" + name + ")");
-                return inMeta;
             case TakeFirst:
-                inMeta.setName("first(" + name + ")");
-                return inMeta;
             case TakeLast:
-                inMeta.setName("last(" + name + ")");
+                inMeta.setName(getOutNameForColumn(op, name));
                 return inMeta;
+            case Prod:
             case Sum:
-                String outName = "sum(" + name + ")";
-                //Issue with sum: the input meta data restrictions probably won't hold. But the data _type_ should essentially remain the same
+                String outName = getOutNameForColumn(op, name);
+                //Issue with prod/sum: the input meta data restrictions probably won't hold. But the data _type_ should essentially remain the same
                 ColumnMetaData outMeta;
-                if (inMeta instanceof IntegerMetaData || inMeta instanceof LongMetaData) {
+                if (inMeta instanceof IntegerMetaData)
+                    outMeta = new IntegerMetaData(outName);
+                else if (inMeta instanceof LongMetaData)
                     outMeta = new LongMetaData(outName);
-                } else if (inMeta instanceof DoubleMetaData) {
+                else if (inMeta instanceof FloatMetaData)
+                    outMeta = new FloatMetaData(outName);
+                else if (inMeta instanceof DoubleMetaData)
                     outMeta = new DoubleMetaData(outName);
-                } else {
-                    //Sum doesn't really make sense to sum other column types anyway...
+                else { //Sum/Prod doesn't really make sense to sum other column types anyway...
                     outMeta = inMeta;
                 }
                 outMeta.setName(outName);
                 return outMeta;
             case Mean:
-                return new DoubleMetaData("mean(" + name + ")");
             case Stdev:
-                return new DoubleMetaData("stdev(" + name + ")");
-            case Count:
-                return new IntegerMetaData("count", 0, null);
+            case Variance:
+            case PopulationVariance:
+            case UncorrectedStdDev:
+                return new DoubleMetaData(getOutNameForColumn(op, name));
+            case Append:
+            case Prepend:
+                return new StringMetaData(getOutNameForColumn(op, name));
+            case Count: //Always Long
             case CountUnique:
-                //Always integer
-                return new IntegerMetaData("countUnique(" + name + ")", 0, null);
+                return new LongMetaData(getOutNameForColumn(op, name), 0L, null);
             default:
                 throw new UnsupportedOperationException("Unknown or not implemented op: " + op);
         }
     }
 
     @Override
-    public List<Writable> reduce(List<List<Writable>> examplesList) {
+    public IAggregableReduceOp<List<Writable>, List<Writable>> aggregableReducer() {
         //Go through each writable, and reduce according to whatever strategy is specified
 
         if (schema == null)
@@ -214,74 +220,59 @@ public class Reducer implements IReducer {
         int nCols = schema.numColumns();
         List<String> colNames = schema.getColumnNames();
 
-        List<Writable> out = new ArrayList<>(nCols);
-        List<Writable> tempColumnValues = new ArrayList<>(examplesList.size());
+        List<IAggregableReduceOp<Writable, List<Writable>>> ops = new ArrayList<>(nCols);
+        boolean conditionalActive = (conditionalReductions != null && !conditionalReductions.isEmpty());
+        List<Condition> conditions = new ArrayList<>(nCols);
+
         for (int i = 0; i < nCols; i++) {
             String colName = colNames.get(i);
             if (keyColumnsSet != null && keyColumnsSet.contains(colName)) {
-                //This is a key column -> all values should be identical
-                //Therefore just take the first one
-                out.add(examplesList.get(0).get(i));
+                IAggregableReduceOp<Writable, Writable> first = new AggregatorImpls.AggregableFirst<>();
+                ops.add(new AggregableMultiOp<>(Collections.singletonList(first)));
+                if (conditionalActive) conditions.add(new TrivialColumnCondition(colName));
                 continue;
             }
 
-            //First: Extract out the Writables for the column we are considering here...
-            for (List<Writable> list : examplesList) {
-                tempColumnValues.add(list.get(i));
-            }
 
-            //Second: is this a *custom* reduction column?
+            // is this a *custom* reduction column?
             if (customReductions != null && customReductions.containsKey(colName)) {
-                ColumnReduction reduction = customReductions.get(colName);
-                Writable reducedColumn = reduction.reduceColumn(tempColumnValues);
-                out.add(reducedColumn);
-                tempColumnValues.clear();
+                AggregableColumnReduction reduction = customReductions.get(colName);
+                ops.add(reduction.reduceOp());
                 continue;
             }
 
-            //Third: is this a *conditional* reduction column?
-            //Only practical difference with conditional reductions is we filter the input based on a condition first
-            boolean conditionalOp = false;
-            if (conditionalReductions != null && conditionalReductions.containsKey(colName)) {
-                ConditionalReduction reduction = conditionalReductions.get(colName);
-                Condition c = reduction.getCondition();
-                List<Writable> filteredColumnValues = new ArrayList<>();
-
-                int j = 0;
-                for (List<Writable> example : examplesList) {
-                    if (c.condition(example)) {
-                        filteredColumnValues.add(tempColumnValues.get(j));
-                    }
-                    j++;
-                }
-
-                tempColumnValues = filteredColumnValues;
-                conditionalOp = true;
+            // are we adding global *conditional* reduction column?
+            // Only practical difference with conditional reductions is we filter the input on an all-fields condition first
+            if (conditionalActive) {
+                if (conditionalReductions.containsKey(colName))
+                    conditions.add(conditionalReductions.get(colName).getCondition());
+                else
+                    conditions.add(new TrivialColumnCondition(colName));
             }
 
             //What type of column is this?
             ColumnType type = schema.getType(i);
 
-            //What op are we performing on this column?
-            ReduceOp op = (conditionalOp ? conditionalReductions.get(colName).getReduction() : opMap.get(colName));
-            if (op == null)
-                op = defaultOp;
+            //What ops are we performing on this column?
+            boolean conditionalOp = conditionalActive && conditionalReductions.containsKey(colName);
+            List<ReduceOp> lop = (conditionalOp ? conditionalReductions.get(colName).getReductions() : opMap.get(colName));
+            if (lop == null || lop.isEmpty())
+                lop = Collections.singletonList(defaultOp);
 
             //Execute the reduction, store the result
-            out.add(ReductionUtils.reduceColumn(op, type, tempColumnValues, ignoreInvalidInColumns.contains(colName),
-                            schema.getMetaData(i)));
-
-            tempColumnValues.clear();
+            ops.add(AggregableReductionUtils.reduceColumn(lop, type, ignoreInvalidInColumns.contains(colName), schema.getMetaData(i)));
         }
 
-        return out;
+        if (conditionalActive) {
+            return new DispatchWithConditionOp<>(ops, conditions);
+        } else {
+            return new DispatchOp<>(ops);
+        }
     }
-
-
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder("StringReducer(");
+        StringBuilder sb = new StringBuilder("Reducer(");
         if (keyColumns != null) {
             sb.append("keyColumns=").append(keyColumns).append(",");
         }
@@ -306,15 +297,15 @@ public class Reducer implements IReducer {
     public static class Builder {
 
         private ReduceOp defaultOp;
-        private Map<String, ReduceOp> opMap = new HashMap<>();
-        private Map<String, ColumnReduction> customReductions = new HashMap<>();
+        private Map<String, List<ReduceOp>> opMap = new HashMap<>();
+        private Map<String, AggregableColumnReduction> customReductions = new HashMap<>();
         private Map<String, ConditionalReduction> conditionalReductions = new HashMap<>();
         private Set<String> ignoreInvalidInColumns = new HashSet<>();
         private String[] keyColumns;
 
 
         /**
-         * Create a StringReducer builder, and set the default column reduction operation.
+         * Create a Reducer builder, and set the default column reduction operation.
          * For any columns that aren't specified explicitly, they will use the default reduction operation.
          * If a column does have a reduction operation explicitly specified, then it will override
          * the default specified here.
@@ -339,11 +330,27 @@ public class Reducer implements IReducer {
 
         private Builder add(ReduceOp op, String[] cols) {
             for (String s : cols) {
-                opMap.put(s, op);
+                List<ReduceOp> ops = new ArrayList<>();
+                if (opMap.containsKey(s))
+                    ops.addAll(opMap.get(s));
+                ops.add(op);
+                opMap.put(s, ops);
             }
             return this;
         }
 
+        private Builder addAll(List<ReduceOp> ops, String[] cols) {
+            for (String s : cols) {
+                List<ReduceOp> theseOps = new ArrayList<>();
+                if (opMap.containsKey(s))
+                    theseOps.addAll(opMap.get(s));
+                theseOps.addAll(ops);
+                opMap.put(s, theseOps);
+            }
+            return this;
+        }
+
+        public Builder multipleOpColmumns(List<ReduceOp> ops, String... columns){ return addAll(ops, columns); }
         /**
          * Reduce the specified columns by taking the minimum value
          */
@@ -366,6 +373,13 @@ public class Reducer implements IReducer {
         }
 
         /**
+         * Reduce the specified columns by taking the product of values
+         */
+        public Builder prodColumns(String... columns) {
+            return add(ReduceOp.Prod, columns);
+        }
+
+        /**
          * Reduce the specified columns by taking the mean of the values
          */
         public Builder meanColumns(String... columns) {
@@ -377,6 +391,25 @@ public class Reducer implements IReducer {
          */
         public Builder stdevColumns(String... columns) {
             return add(ReduceOp.Stdev, columns);
+        }
+
+        /**
+         * Reduce the specified columns by taking the uncorrected standard deviation of the values
+         */
+        public Builder uncorrectedStdevColumns(String... columns) {
+            return add(ReduceOp.Stdev, columns);
+        }
+        /**
+         * Reduce the specified columns by taking the variance of the values
+         */
+        public Builder variance(String... columns) {
+            return add(ReduceOp.Variance, columns);
+        }
+        /**
+         * Reduce the specified columns by taking the population variance of the values
+         */
+        public Builder populationVariance(String... columns) {
+            return add(ReduceOp.PopulationVariance, columns);
         }
 
         /**
@@ -415,28 +448,56 @@ public class Reducer implements IReducer {
         }
 
         /**
+         * Reduce the specified columns by taking the concatenation of all content
+         * Beware, the output will be huge!
+         */
+        public Builder appendColumns(String... columns) { return add(ReduceOp.Append, columns); }
+
+        /**
+         * Reduce the specified columns by taking the concatenation of all content in the reverse order
+         * Beware, the output will be huge!
+         */
+        public Builder prependColumns(String... columns) { return add(ReduceOp.Prepend, columns); }
+
+        /**
          * Reduce the specified column using a custom column reduction functionality.
          *
          * @param column          Column to execute the custom reduction functionality on
          * @param columnReduction Column reduction to execute on that column
          */
-        public Builder customReduction(String column, ColumnReduction columnReduction) {
+        public Builder customReduction(String column, AggregableColumnReduction columnReduction) {
             customReductions.put(column, columnReduction);
             return this;
         }
 
         /**
-         * Conditional reduction: apply the reduce on a specified column, where the reduction occurs *only* on those
+         * Conditional reduction: apply the reduces on a specified column, where the reduction occurs *only* on those
          * examples where the condition returns true. Examples where the condition does not apply (returns false) are
          * ignored/excluded.
          *
          * @param column     Name of the column to execute the conditional reduction on
          * @param outputName Name of the column, after the reduction has been executed
-         * @param reduction  Reduction to execute
+         * @param reductions  Reductions to execute
+         * @param condition  Condition to use in the reductions
+         */
+        public Builder conditionalReduction(String column, List<String> outputNames, List<ReduceOp> reductions, Condition condition) {
+            Preconditions.checkArgument(outputNames.size() == reductions.size(), "Conditional reductions should provide names for every column");
+            this.conditionalReductions.put(column, new ConditionalReduction(column, outputNames, reductions, condition));
+            return this;
+        }
+
+        /**
+         * Conditional reduction: apply the reduces on a specified column, where the reduction occurs *only* on those
+         * examples where the condition returns true. Examples where the condition does not apply (returns false) are
+         * ignored/excluded.
+         *
+         * @param column     Name of the column to execute the conditional reduction on
+         * @param outputName Name of the column, after the reduction has been executed
+         * @param reductions  Reductions to execute
          * @param condition  Condition to use in the reductions
          */
         public Builder conditionalReduction(String column, String outputName, ReduceOp reduction, Condition condition) {
-            this.conditionalReductions.put(column, new ConditionalReduction(column, outputName, reduction, condition));
+            this.conditionalReductions.put(column, new ConditionalReduction(column, Collections.singletonList(outputName), Collections.singletonList(reduction), condition));
             return this;
         }
 
@@ -458,12 +519,13 @@ public class Reducer implements IReducer {
         }
     }
 
+
     @AllArgsConstructor
     @Data
     public static class ConditionalReduction implements Serializable {
         private final String columnName;
-        private final String outputName;
-        private final ReduceOp reduction;
+        private final List<String> outputNames;
+        private final List<ReduceOp> reductions;
         private final Condition condition;
     }
 

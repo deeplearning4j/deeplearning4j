@@ -16,11 +16,12 @@
 
 package org.datavec.api.transform.reduce;
 
+import org.datavec.api.transform.ops.IAggregableReduceOp;
+import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
-import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;
 import java.util.List;
@@ -32,8 +33,8 @@ import java.util.List;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = Reducer.class, name = "StringReducer")})
-public interface IReducer extends Serializable {
+@JsonSubTypes(value = {@JsonSubTypes.Type(value = Reducer.class, name = "Reducer")})
+public interface IAssociativeReducer extends Serializable {
 
     /**
      *
@@ -55,11 +56,11 @@ public interface IReducer extends Serializable {
     Schema transform(Schema schema);
 
     /**
-     *
+     * An aggregation that has the property that reduce(List(reduce(List(l1, l2)), l3)) = reduce(List(l1, reduce(List(l2, l3)))
      * @param examplesList
      * @return
      */
-    List<Writable> reduce(List<List<Writable>> examplesList);
+     IAggregableReduceOp<List<Writable>, List<Writable>> aggregableReducer();
 
     /**
      *

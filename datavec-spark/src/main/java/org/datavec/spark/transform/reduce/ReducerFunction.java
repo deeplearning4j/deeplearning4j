@@ -19,7 +19,7 @@ package org.datavec.spark.transform.reduce;
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.Function;
 import org.datavec.api.writable.Writable;
-import org.datavec.api.transform.reduce.IReducer;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
 import scala.Tuple2;
 
 import java.util.ArrayList;
@@ -32,16 +32,17 @@ import java.util.List;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class ReducerFunction implements Function<Tuple2<String, Iterable<List<Writable>>>, List<Writable>> {
+public class ReducerFunction implements Function<Iterable<List<Writable>>, List<Writable>> {
 
-    private final IReducer reducer;
+    private final IAssociativeReducer reducer;
 
     @Override
-    public List<Writable> call(Tuple2<String, Iterable<List<Writable>>> t2) throws Exception {
-        List<List<Writable>> list = new ArrayList<>();
-        for (List<Writable> c : t2._2()) {
-            list.add(c);
+    public List<Writable> call(Iterable<List<Writable>> lists) throws Exception {
+
+        for (List<Writable> c : lists) {
+            reducer.aggregableReducer().accept(c);
         }
-        return reducer.reduce(list);
+
+        return reducer.aggregableReducer().get();
     }
 }

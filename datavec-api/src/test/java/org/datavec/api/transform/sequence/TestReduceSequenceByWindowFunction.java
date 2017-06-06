@@ -16,17 +16,15 @@
 
 package org.datavec.api.transform.sequence;
 
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.LongWritable;
+import org.datavec.api.transform.reduce.Reducer;
+import org.datavec.api.writable.*;
 import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.Transform;
-import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.sequence.window.ReduceSequenceByWindowTransform;
 import org.datavec.api.transform.sequence.window.TimeWindowFunction;
 import org.datavec.api.transform.sequence.window.WindowFunction;
-import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
@@ -76,16 +74,17 @@ public class TestReduceSequenceByWindowFunction {
         assertEquals(4, postApply.size());
 
 
-        List<Writable> exp0 = Arrays.asList((Writable) new LongWritable(1451606400000L), new LongWritable(0 + 1 + 2));
+        List<Writable> exp0 = Arrays.asList((Writable) new LongWritable(1451606400000L), new IntWritable(0 + 1 + 2));
         assertEquals(exp0, postApply.get(0));
 
-        List<Writable> exp1 = Arrays.asList((Writable) new LongWritable(1451606400000L + 1000L), new LongWritable(3));
+        List<Writable> exp1 = Arrays.asList((Writable) new LongWritable(1451606400000L + 1000L), new IntWritable(3));
         assertEquals(exp1, postApply.get(1));
 
-        List<Writable> exp2 = Arrays.asList((Writable) new LongWritable(0L), new LongWritable(0));
+        // here, takefirst of an empty window -> nullwritable makes more sense
+        List<Writable> exp2 = Arrays.asList((Writable) NullWritable.INSTANCE, NullWritable.INSTANCE);
         assertEquals(exp2, postApply.get(2));
 
-        List<Writable> exp3 = Arrays.asList((Writable) new LongWritable(1451606400000L + 3000L), new LongWritable(9));
+        List<Writable> exp3 = Arrays.asList((Writable) new LongWritable(1451606400000L + 3000L), new IntWritable(9));
         assertEquals(exp3, postApply.get(3));
     }
 

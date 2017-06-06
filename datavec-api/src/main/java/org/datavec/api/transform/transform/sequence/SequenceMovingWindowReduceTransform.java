@@ -23,7 +23,8 @@ import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;
-import org.datavec.api.transform.reduce.ReductionUtils;
+import org.datavec.api.transform.ops.IAggregableReduceOp;
+import org.datavec.api.transform.reduce.AggregableReductionUtils;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.writable.Writable;
@@ -178,7 +179,11 @@ public class SequenceMovingWindowReduceTransform implements Transform {
             if(window.size() < lookback && edgeCaseHandling == EdgeCaseHandling.SpecifiedValue){
                 reduced = edgeCaseValue;
             } else {
-                reduced = ReductionUtils.reduceColumn(op, columnType, window, false, null );
+                IAggregableReduceOp<Writable, List<Writable>> reductionOp = AggregableReductionUtils.reduceColumn(Collections.singletonList(op), columnType, false, null);
+                for (Writable w : window){
+                    reductionOp.accept(w);
+                }
+                reduced = reductionOp.get().get(0);
             }
             ArrayList<Writable> outThisStep = new ArrayList<>(sequence.get(i).size()+1);
             outThisStep.addAll(sequence.get(i));
