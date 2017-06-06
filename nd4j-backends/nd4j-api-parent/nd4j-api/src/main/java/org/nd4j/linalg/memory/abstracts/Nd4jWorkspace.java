@@ -696,6 +696,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         private Long threadId;
         private Queue<PointersPair> pinnedPointers;
         private List<PointersPair> externalPointers;
+        private String key;
 
         public GarbageWorkspaceReference(MemoryWorkspace referent, ReferenceQueue<? super MemoryWorkspace> queue) {
             super(referent, queue);
@@ -705,6 +706,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             this.threadId = referent.getThreadId();
             this.pinnedPointers = ((Nd4jWorkspace) referent).pinnedAllocations;
             this.externalPointers = ((Nd4jWorkspace) referent).externalAllocations;
+
+            this.key = id + "_" + threadId;
         }
     }
 }
