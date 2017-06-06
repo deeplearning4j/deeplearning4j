@@ -287,7 +287,9 @@ __device__ inline void encoderKernelP3Generic(void *dx, int *offsets, Nd4jIndex 
     __shared__ float threshold;
     __shared__ FloatBits fb;
 	__shared__ int bo;
+	__shared__ int limit;
 	if (threadIdx.x == 0) {
+	    limit = z[0];
         fb.i_ = z[2];
         threshold = fb.f_;
 	    bo = offsets[blockIdx.x];
@@ -322,8 +324,11 @@ __device__ inline void encoderKernelP3Generic(void *dx, int *offsets, Nd4jIndex 
 		__syncthreads();
 
 		if(pred){
-			z[t_u + warpTotals[w_i] + bo + 3]= value > (T) 0.0f ? tid+1 : -(tid + 1);
-			x[tid] = value > (T) 0.0f ? x[tid] - threshold : x[tid] + threshold;
+		    int idx = t_u + warpTotals[w_i] + bo + 3;
+		    if (idx < limit + 3) {
+			    z[idx]= value > (T) 0.0f ? tid+1 : -(tid + 1);
+			    x[tid] = value > (T) 0.0f ? x[tid] - threshold : x[tid] + threshold;
+			}
 		}
 	}
 }
