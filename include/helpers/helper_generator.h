@@ -10,7 +10,8 @@
 #endif
 
 #ifdef _MSC_VER
-#include <mutex>
+// include for uint64_t on MSVC
+#include <stdint.h>
 #endif
 
 #define MAX_UINT 18446744073709551615LLU
