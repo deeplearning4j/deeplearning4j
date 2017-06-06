@@ -2165,6 +2165,14 @@ void NativeOps::decodeThresholdFloat(Nd4jPointer *extraPointers, void *dx, Nd4jI
     // TODO: to be implemented
 }
 
+void NativeOps::decodeThresholdHalf(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float16 *dz){
+    // TODO: to be implemented
+}
+
+void NativeOps::decodeThresholdDouble(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, double *dz){
+    // TODO: to be implemented
+}
+
 bool NativeOps::isP2PAvailable() {
     // always TRUE for cpu backend
     return true;
