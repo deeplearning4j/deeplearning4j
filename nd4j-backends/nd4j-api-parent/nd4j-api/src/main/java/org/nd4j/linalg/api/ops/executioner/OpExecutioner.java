@@ -275,6 +275,15 @@ public interface OpExecutioner {
      */
     INDArray thresholdEncode(INDArray input, double threshold);
 
+
+    /**
+     * This method encodes array as thresholds, updating input array at the same time
+     *
+     * @param input
+     * @return encoded array is returned
+     */
+    INDArray thresholdEncode(INDArray input, double threshold, Integer boundary);
+
     /**
      * This method decodes thresholds array, and puts it into target array
      *

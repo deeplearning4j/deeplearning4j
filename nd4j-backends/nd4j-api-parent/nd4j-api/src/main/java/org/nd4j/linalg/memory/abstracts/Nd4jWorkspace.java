@@ -555,7 +555,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             if (diff > 0 && !trimmedMode.get() && deviceOffset.get() > 0) {
 
                 if (isDebug.get())
-                    log.info("Align to [{}]; diff: [{}]; block size: [{}]; currentOffset: [{}]; workspaceSize: [{}]; trimmedMode: {}", initialBlockSize.get(), diff, cycleAllocations.get(), deviceOffset.get(), currentSize.get(), trimmedMode.get());
+                    log.info("Worskpace [{}]: Align to [{}]; diff: [{}]; block size: [{}]; currentOffset: [{}]; workspaceSize: [{}]; trimmedMode: {}", id, initialBlockSize.get(), diff, cycleAllocations.get(), deviceOffset.get(), currentSize.get(), trimmedMode.get());
 
                 deviceOffset.getAndAdd(diff);
                 hostOffset.getAndAdd(diff);

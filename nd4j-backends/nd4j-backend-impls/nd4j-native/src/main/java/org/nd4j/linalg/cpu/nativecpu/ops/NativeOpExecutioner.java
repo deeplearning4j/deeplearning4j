@@ -1236,15 +1236,22 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
     }
 
-
     @Override
     public INDArray thresholdEncode(INDArray input, double threshold) {
+        return thresholdEncode(input, threshold, null);
+    }
+
+    @Override
+    public INDArray thresholdEncode(INDArray input, double threshold, Integer boundary) {
 
         MatchCondition condition = new MatchCondition(input, Conditions.absGreaterThanOrEqual(threshold));
         int cntAbs = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
 
         if (cntAbs == 0)
             return null;
+
+        if (boundary != null)
+            cntAbs = Math.min(cntAbs, boundary);
 
         DataBuffer buffer = input.data();
 

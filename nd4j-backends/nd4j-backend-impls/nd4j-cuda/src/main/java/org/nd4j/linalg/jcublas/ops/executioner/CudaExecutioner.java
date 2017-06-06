@@ -2038,9 +2038,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncOldStream();
     }
 
-
     @Override
-    public INDArray thresholdEncode(INDArray input, double threshold) {
+    public INDArray thresholdEncode(INDArray input, double threshold, Integer boundary) {
         DataBuffer buffer = input.data();
 
         int numThreads = 1024;
@@ -2073,6 +2072,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         // special case here, nothing to update
         if (numMatches == 0)
             return null;
+
+        if (boundary != null && numMatches > boundary)  {
+            numMatches = boundary;
+            blocksBuffer.put(0, numMatches);
+        }
+
 /*
         log.info("Totals: {}", numMatches);
 
@@ -2153,6 +2158,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 
         return Nd4j.createArrayFromShapeBuffer(encodedBuffer, input.shapeInfoDataBuffer());
+    }
+
+
+    @Override
+    public INDArray thresholdEncode(INDArray input, double threshold) {
+        return thresholdEncode(input, threshold, null);
     }
 
     @Override

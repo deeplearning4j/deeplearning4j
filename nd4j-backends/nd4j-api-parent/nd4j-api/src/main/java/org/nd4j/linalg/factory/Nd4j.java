@@ -79,8 +79,6 @@ import org.nd4j.linalg.fft.FFTInstance;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.memory.MemoryManager;
 import org.nd4j.linalg.memory.provider.BasicWorkspaceManager;
-import org.nd4j.linalg.memory.stash.BasicStashManager;
-import org.nd4j.linalg.memory.stash.StashManager;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -168,7 +166,6 @@ public class Nd4j {
     protected static Class<? extends BasicConstantHandler> constantProviderClazz;
     protected static Class<? extends BasicAffinityManager> affinityManagerClazz;
     protected static Class<? extends BasicMemoryManager> memoryManagerClazz;
-    protected static Class<? extends BasicStashManager> stashManagerClazz;
 
     protected static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
     protected static BlasWrapper BLAS_WRAPPER_INSTANCE;
@@ -183,7 +180,6 @@ public class Nd4j {
     protected static ConstantHandler constantHandler;
     protected static AffinityManager affinityManager;
     protected static MemoryManager memoryManager;
-    protected static StashManager stashManager;
 
     protected static AtomicBoolean fallbackMode;
 
@@ -6302,15 +6298,5 @@ public class Nd4j {
      */
     public static INDArray createFromNpyFile(File file) {
         return INSTANCE.createFromNpyFile(file);
-    }
-
-
-    /**
-     * This method returns StashManager instance
-     *
-     * @return
-     */
-    private static StashManager getStashManager() {
-        return stashManager;
     }
 }
