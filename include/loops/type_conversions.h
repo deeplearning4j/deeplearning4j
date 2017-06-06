@@ -325,7 +325,7 @@ __device__ inline void encoderKernelP3Generic(void *dx, int *offsets, Nd4jIndex 
 
 		if(pred){
 		    int idx = t_u + warpTotals[w_i] + bo + 3;
-		    if (idx < limit) {
+		    if (idx < limit + 3) {
 			    z[idx]= value > (T) 0.0f ? tid+1 : -(tid + 1);
 			    x[tid] = value > (T) 0.0f ? x[tid] - threshold : x[tid] + threshold;
 			}
