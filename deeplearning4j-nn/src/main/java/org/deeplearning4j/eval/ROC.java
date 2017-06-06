@@ -128,7 +128,7 @@ public class ROC extends BaseEvaluation<ROC> {
             Condition condLeq = Conditions.lessThanOrEqual(currThreshold);
 
             if(ppc == null){
-                ppc = positivePredictedClassColumn.dup();
+                ppc = positivePredictedClassColumn.dup(positiveActualClassColumn.ordering());
             } else {
                 ppc.assign(positivePredictedClassColumn);
             }
