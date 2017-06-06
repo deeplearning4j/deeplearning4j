@@ -9,6 +9,10 @@
 #include <inttypes.h>
 #endif
 
+#ifdef _MSC_VER
+#include <mutex>
+#endif
+
 #define MAX_UINT 18446744073709551615LLU
 
 
