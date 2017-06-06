@@ -47,8 +47,8 @@ public class DefaultTrainer extends Thread implements Trainer {
     protected Model replicatedModel;
 
     // TODO: make queue size configurable
-    @Builder.Default protected LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>(2);
-    @Builder.Default protected LinkedBlockingQueue<MultiDataSet> queueMDS = new LinkedBlockingQueue<>(2);
+    @Builder.Default protected LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>(1);
+    @Builder.Default protected LinkedBlockingQueue<MultiDataSet> queueMDS = new LinkedBlockingQueue<>(1);
     @Builder.Default protected AtomicInteger running = new AtomicInteger(0);
     @Builder.Default protected AtomicBoolean shouldUpdate = new AtomicBoolean(false);
     @Builder.Default protected AtomicBoolean shouldStop = new AtomicBoolean(false);
@@ -73,9 +73,9 @@ public class DefaultTrainer extends Thread implements Trainer {
     @Override
     public void feedMultiDataSet(@NonNull MultiDataSet dataSet, long etlTime) {
         setupIfNeccessary();
-        running.incrementAndGet();
         try {
             queueMDS.put(dataSet);
+            running.incrementAndGet();
         } catch (InterruptedException e) {
             // do nothing
         }
@@ -89,10 +89,10 @@ public class DefaultTrainer extends Thread implements Trainer {
     @Override
     public void feedDataSet(DataSet dataSet, long etlTime) {
         setupIfNeccessary();
-        running.incrementAndGet();
         if (dataSet != null) {
             try {
                 queue.put(dataSet);
+                running.incrementAndGet();
             } catch (InterruptedException e) {
                 // do nothing
             }
@@ -154,9 +154,9 @@ public class DefaultTrainer extends Thread implements Trainer {
 
     protected void setupIfNeccessary() {
         if (queue == null)
-            queue = new LinkedBlockingQueue<>(2);
+            queue = new LinkedBlockingQueue<>(1);
         if (queueMDS == null)
-            queueMDS = new LinkedBlockingQueue<>(2);
+            queueMDS = new LinkedBlockingQueue<>(1);
         if (running == null)
             running = new AtomicInteger(0);
         if (shouldStop == null)
@@ -285,7 +285,7 @@ public class DefaultTrainer extends Thread implements Trainer {
                 while (!shouldStop.get()) {
                     DataSet dataSet = null;
                     if (nullMode == null || !nullMode.get())
-                        dataSet = queue.poll(100, TimeUnit.MILLISECONDS);
+                        dataSet = queue.poll(10, TimeUnit.MILLISECONDS);
                     else {
                         // this code branch is for debugging only, please ignore :)
                         if (nullDataSet == null)
@@ -323,7 +323,7 @@ public class DefaultTrainer extends Thread implements Trainer {
             } else {
                 // loop for MultiDataSet
                 while (!shouldStop.get()) {
-                    MultiDataSet dataSet = queueMDS.poll(100, TimeUnit.MILLISECONDS);
+                    MultiDataSet dataSet = queueMDS.poll(10, TimeUnit.MILLISECONDS);
                     if (dataSet != null) {
 
                         // just fitting
@@ -361,6 +361,7 @@ public class DefaultTrainer extends Thread implements Trainer {
     public void waitTillRunning() {
         while (running.get() != 0) {
             // if Trainer thread got exception during training - rethrow it here
+            //log.info("Thread {} running {}", Thread.currentThread().getId(), running.get());
             if (thrownException != null)
                 throw new RuntimeException(thrownException);
 

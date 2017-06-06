@@ -214,6 +214,20 @@ public class ParallelWrapper implements AutoCloseable {
             time1 = System.currentTimeMillis();
         }
 
+
+        log.info("Stopping everyone...");
+
+        // ensure all threads stopped processing
+        for (int cnt = 0; cnt < workers; cnt++) {
+            try {
+                zoo[cnt].waitTillRunning();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        log.info("Shutting down iterator...");
+
         if (prefetchSize > 0 && source.asyncSupported())
             ((AsyncMultiDataSetIterator) iterator).shutdown();
 
@@ -397,7 +411,9 @@ public class ParallelWrapper implements AutoCloseable {
         stopFit.set(false);
         createZooIfNeccessary(false);
 
-        if (source.asyncSupported())
+
+
+        if (source.resetSupported())
             source.reset();
 
         DataSetIterator iterator = source;
@@ -483,6 +499,8 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
         // FIXME: we need to ensure all models are synchronized back to HOST
+        log.info("Stopping everyone...");
+
         // ensure all threads stopped processing
         for (int cnt = 0; cnt < workers; cnt++) {
             try {
@@ -491,6 +509,8 @@ public class ParallelWrapper implements AutoCloseable {
                 throw new RuntimeException(e);
             }
         }
+
+        log.info("Shutting down iterator...");
 
         if (prefetchSize > 0 && source.asyncSupported())
             ((AsyncDataSetIterator) iterator).shutdown();

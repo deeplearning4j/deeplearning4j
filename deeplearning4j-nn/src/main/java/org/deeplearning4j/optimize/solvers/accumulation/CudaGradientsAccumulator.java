@@ -20,6 +20,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -79,7 +80,9 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
             messages.add(new LinkedBlockingQueue<INDArray>(64));
 
             Nd4j.getAffinityManager().unsafeSetDevice(i);
-            workspaces.add(Nd4j.getWorkspaceManager().createNewWorkspace(configuration,"CGA-" + i, i));
+            MemoryWorkspace ws = Nd4j.getWorkspaceManager().createNewWorkspace(configuration,"CGA-" + i, i);
+            //ws.enableDebug(true);
+            workspaces.add(ws);
 
             locks.add(new ReentrantLock());
         }
@@ -169,7 +172,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
         handler.broadcastUpdates(accumulator.get());
 
         try {
-            barrier.await();
+            barrier.await(100, TimeUnit.MILLISECONDS);
         } catch (Exception e) {
             //
         }
