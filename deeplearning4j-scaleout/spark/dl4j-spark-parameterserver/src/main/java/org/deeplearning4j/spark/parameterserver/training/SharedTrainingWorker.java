@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.parameterserver.training;
 
+import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -7,6 +8,7 @@ import org.deeplearning4j.spark.api.TrainingHook;
 import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
+import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
@@ -15,8 +17,11 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
  */
 public class SharedTrainingWorker implements TrainingWorker<SharedTrainingResult> {
 
-    public SharedTrainingWorker() {
+    private final Broadcast<NetBroadcastTuple> broadcast;
 
+    public SharedTrainingWorker(Broadcast<NetBroadcastTuple> broadcast) {
+        // our initial model is stored here.
+        this.broadcast = broadcast;
     }
 
     @Override
@@ -31,11 +36,13 @@ public class SharedTrainingWorker implements TrainingWorker<SharedTrainingResult
 
     @Override
     public MultiLayerNetwork getInitialModel() {
+        // This method will be called ONLY once, in master thread
         return null;
     }
 
     @Override
     public ComputationGraph getInitialModelGraph() {
+        // This method will be called ONLY once, in master thread
         return null;
     }
 

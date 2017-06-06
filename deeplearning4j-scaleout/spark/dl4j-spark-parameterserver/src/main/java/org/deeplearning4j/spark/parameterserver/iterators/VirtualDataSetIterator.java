@@ -9,9 +9,15 @@ import java.util.List;
 /**
  * This DataSetIterator implementation does accumulation of DataSets from different Spark executors, wrt Thread/Device Affinity
  *
+ *
  * @author raver119@gmail.com
  */
 public class VirtualDataSetIterator implements ParallelDataSetIterator {
+
+    /**
+     * Basic idea here is simple: this DataSetIterator will take in multiple lazy Iterator<DataSet>,
+     * and will push them is round-robin manner to ParallelWrapper workers
+     */
 
     @Override
     public void attachThread(int producer) {
