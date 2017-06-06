@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * This GradientsAccumulator is suited for CUDA backend.
@@ -35,6 +36,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
     protected MessageHandler handler;
     protected List<Queue<INDArray>> messages = new ArrayList<>();
     protected List<MemoryWorkspace> workspaces = new ArrayList<>();
+    protected List<ReentrantLock> locks = new ArrayList<>();
 
     protected AtomicInteger workersCounter = new AtomicInteger(0);
     protected ThreadLocal<Integer> index = new ThreadLocal<>();
@@ -78,6 +80,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
 
             Nd4j.getAffinityManager().unsafeSetDevice(i);
             workspaces.add(Nd4j.getWorkspaceManager().createNewWorkspace(configuration,"CGA-" + i, i));
+
+            locks.add(new ReentrantLock());
         }
         Nd4j.getAffinityManager().unsafeSetDevice(curDev);
 
@@ -183,10 +187,15 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
         // we're replicating COMPRESSED MESSAGES, decompress will be thread-local
         for (int i = 0; i < parties; i++) {
 
+            // we don't want to have same workspace to be accessible by 2 different threads for now
+            locks.get(i).lock();
+
             try (MemoryWorkspace workspace = workspaces.get(i).notifyScopeEntered()) {
                 INDArray compressed = array.unsafeDuplication();
                 messages.get(i).add(compressed);
             }
+
+            locks.get(i).unlock();
 
             //log.info("Thread: {}; Copy: {}", Thread.currentThread().getId(), Arrays.toString(compressed.data().asInt()));
         }
