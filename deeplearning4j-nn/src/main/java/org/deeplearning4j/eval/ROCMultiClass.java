@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -101,10 +102,14 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
                                             + " vs. expected number of label classes = " + countActualPositive.length);
         }
 
+        INDArray ppc = null;
+        INDArray itp = null;
+        INDArray ifp = null;
         for (int i = 0; i < countActualPositive.length; i++) {
             //Iterate over each class
             INDArray positiveActualColumn = labels.getColumn(i);
             INDArray positivePredictedColumn = predictions.getColumn(i);
+            INDArray negativeActualColumn = positiveActualColumn.rsub(1.0);
 
             //Increment global counts - actual positive/negative observed
             long currBatchPositiveActualCount = positiveActualColumn.sumNumber().intValue();
@@ -120,7 +125,12 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
                 Condition condGeq = Conditions.greaterThanOrEqual(currThreshold);
                 Condition condLeq = Conditions.lessThanOrEqual(currThreshold);
 
-                Op op = new CompareAndSet(positivePredictedColumn.dup(), 1.0, condGeq);
+                if(ppc == null){
+                    ppc = positivePredictedColumn.dup(positivePredictedColumn.ordering());
+                } else {
+                    ppc.assign(positivePredictedColumn);
+                }
+                Op op = new CompareAndSet(ppc, 1.0, condGeq);
                 INDArray predictedClass1 = Nd4j.getExecutioner().execAndReturn(op);
                 op = new CompareAndSet(predictedClass1, 0.0, condLeq);
                 predictedClass1 = Nd4j.getExecutioner().execAndReturn(op);
@@ -128,9 +138,17 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
 
                 //True positives: occur when positive predicted class and actual positive actual class...
                 //False positive occurs when positive predicted class, but negative actual class
-                INDArray isTruePositive = predictedClass1.mul(positiveActualColumn); //If predicted == 1 and actual == 1 at this threshold: 1x1 = 1. 0 otherwise
-                INDArray negativeActualColumn = positiveActualColumn.rsub(1.0);
-                INDArray isFalsePositive = predictedClass1.mul(negativeActualColumn); //If predicted == 1 and actual == 0 at this threshold: 1x1 = 1. 0 otherwise
+                INDArray isTruePositive;    // = predictedClass1.mul(positiveActualColumn); //If predicted == 1 and actual == 1 at this threshold: 1x1 = 1. 0 otherwise
+                INDArray isFalsePositive;   // = predictedClass1.mul(negativeActualColumn); //If predicted == 1 and actual == 0 at this threshold: 1x1 = 1. 0 otherwise
+                if(itp == null){
+                    isTruePositive = predictedClass1.mul(positiveActualColumn);
+                    isFalsePositive = predictedClass1.mul(negativeActualColumn);
+                    itp = isTruePositive;
+                    ifp = isFalsePositive;
+                } else {
+                    isTruePositive = Nd4j.getExecutioner().execAndReturn(new MulOp(predictedClass1, positiveActualColumn, itp));
+                    isFalsePositive = Nd4j.getExecutioner().execAndReturn(new MulOp(predictedClass1, negativeActualColumn, ifp));
+                }
 
                 //Counts for this batch:
                 int truePositiveCount = isTruePositive.sumNumber().intValue();

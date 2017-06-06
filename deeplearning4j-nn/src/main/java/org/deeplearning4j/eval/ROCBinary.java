@@ -8,6 +8,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -102,6 +103,9 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
         addInPlace(countActualNegative, countActualNegThisBatch);
 
         //Here: calculate true positive rate (TPR) vs. false positive rate (FPR) at different threshold
+        INDArray ppc = null;
+        INDArray itp = null;
+        INDArray ifp = null;
         double step = 1.0 / thresholdSteps;
         for (int i = 0; i <= thresholdSteps; i++) {
             double currThreshold = i * step;
@@ -110,15 +114,29 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
             Condition condGeq = Conditions.greaterThanOrEqual(currThreshold);
             Condition condLeq = Conditions.lessThanOrEqual(currThreshold);
 
-            Op op = new CompareAndSet(networkPredictions.dup(), 1.0, condGeq);
+            if(ppc == null){
+                ppc = networkPredictions.dup(networkPredictions.ordering());
+            } else {
+                ppc.assign(networkPredictions);
+            }
+            Op op = new CompareAndSet(ppc, 1.0, condGeq);
             INDArray predictedClass1 = Nd4j.getExecutioner().execAndReturn(op);
             op = new CompareAndSet(predictedClass1, 0.0, condLeq);
             predictedClass1 = Nd4j.getExecutioner().execAndReturn(op);
 
             //True positives: occur whet the predicted and actual are both 1s
             //False positives: occur when predicted 1, actual is 0
-            INDArray isTruePositive = predictedClass1.mul(actual1);
-            INDArray isFalsePositive = predictedClass1.mul(actual0);
+            INDArray isTruePositive;    // = predictedClass1.mul(actual1);
+            INDArray isFalsePositive;   //= predictedClass1.mul(actual0);
+            if(i == 0){
+                isTruePositive = predictedClass1.mul(actual1);
+                isFalsePositive = predictedClass1.mul(actual0);
+                itp = isTruePositive;
+                ifp = isFalsePositive;
+            } else {
+                isTruePositive = Nd4j.getExecutioner().execAndReturn(new MulOp(predictedClass1, actual1, itp));
+                isFalsePositive = Nd4j.getExecutioner().execAndReturn(new MulOp(predictedClass1, actual0, ifp));
+            }
 
             //Apply mask array:
             if (maskArray != null) {
