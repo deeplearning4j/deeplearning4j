@@ -23,12 +23,37 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.*;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**
  * Created by Alex on 02/06/2017.
  */
 public class TestWritableSerialization {
+
+    @Test
+    public void testWritableSerializationSingle() throws Exception {
+
+        INDArray arrC = Nd4j.rand(new int[]{1,1},'c');
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutput da = new DataOutputStream(baos);
+
+        NDArrayWritable wC = new NDArrayWritable(arrC);
+        wC.write(da);
+
+        byte[] b = baos.toByteArray();
+
+        NDArrayWritable w2C = new NDArrayWritable();
+
+        ByteArrayInputStream bais = new ByteArrayInputStream(b);
+        DataInput din = new DataInputStream(bais);
+
+        w2C.readFields(din);
+
+
+        assertEquals(arrC, w2C.get());
+    }
 
     @Test
     public void testWritableSerialization() throws Exception {

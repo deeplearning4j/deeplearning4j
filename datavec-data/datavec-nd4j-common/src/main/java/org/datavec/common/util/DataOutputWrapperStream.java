@@ -32,6 +32,6 @@ public class DataOutputWrapperStream extends OutputStream {
 
     @Override
     public void write(int b) throws IOException {
-        underlying.writeByte(b);
+        underlying.write(b);
     }
 }

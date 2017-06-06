@@ -34,6 +34,11 @@ public class DataInputWrapperStream extends InputStream {
 
     @Override
     public int read() throws IOException {
-        return underlying.readInt();
+        /*From InputStream.read() javadoc:
+        "Reads the next byte of data from the input stream. The value byte is
+         returned as an <code>int</code> in the range <code>0</code> to
+         <code>255</code>."
+         */
+        return underlying.readUnsignedByte();   //readByte() -> EOF exception :/
     }
 }
