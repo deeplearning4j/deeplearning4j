@@ -22,18 +22,12 @@ Restrict content to the feature at hand; broader, more conceptual discussions ha
 
 ## <a name="description">Description</a>
 
-The deeplearning4j-modelimport module provides routines for importing 
-neural network models originally configured and trained using [Keras](https://keras.io/), a popular 
-Python deep learning library that provides 
-abstraction layers on top of Deeplearning4j, [Theano](http://deeplearning.net/software/theano/) 
-and [TensorFlow](https://www.tensorflow.org)backends. 
+The deeplearning4j-modelimport module provides routines for importing neural network models originally configured and trained using [Keras](https://keras.io/), a popular Python deep learning library that provides abstraction layers on top of Deeplearning4j, [Theano](http://deeplearning.net/software/theano/) and [TensorFlow](https://www.tensorflow.org)backends. 
 You can learn more about saving Keras models on the Keras [FAQ Page](https://keras.io/getting-started/faq/#how-can-i-save-a-keras-model). 
 
-
-Keras Model Import Video
+### Keras Model Import Video
 
 We have a [screencast](https://www.youtube.com/watch?v=Cran8wsZLN4) that demonstrates model import. 
-
 
 ***NOTE***
 We also have begun work on having DeepLearning4J function directly as a Keras backend. See [DL4J Python API](https://deeplearning4j.org/keras)

@@ -1,5 +1,5 @@
 ----
-title:初心者のためのMNIST
+title: 初心者のためのMNIST
 layout: default
 ---
 
@@ -76,7 +76,7 @@ layout: default
   </code></pre>
   <h5>.seed(rngSeed)</h5>
   <p>このパラメータはある特定のランダムに生成された重み初期化を使用します。あるサンプルを何回も実行し、毎回開始時に新しい重みをランダムに生成すると、結果（F1値や正答率）にかなりの違いが生じるかもしれません。というのは、初期の重みが異なるとアルゴリズムでエラースケープの極小値が異なってしまうかもしれないからです。重みを同じランダムなものに保っておくと、他の条件を平等に保ったまま、他のハイパーパラメータをより正確に調節することによる効果のみに限って確認することができます。</p>
-  <h5>.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)</h4>
+  <h5>.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)</h5>
   <p>確率的勾配降下法（Stochastic gradient descent；SGD）は、コスト関数を最適化するのに一般に使用される方法です。エラーを最小限に抑える確率的勾配降下法や他の最適化アルゴリズムについて知るには、<a href="https://www.coursera.org/learn/machine-learning" target="_blank">Andrew Ng's Machine Learning course（Andrew Ng氏の機械学習コース）</a>、弊社の<a href="http://deeplearning4j.org/glossary#stochasticgradientdescent" target="_blank">グロッサリー</a>にある確率的勾配降下法の定義をご参照ください。</p>
   <h5>.iterations(1)</h5>
   <p>ニューラルネットワークのイテレーションを行うごとに、学習を一歩進めたことになります。つまり、モデルの重み更新を一回行ったことになるのです。ネットワークはデータを目の当たりにし、そのデータについて推論し、その推論がどのくらい間違っていたかに基づいて自身のパラメータを修正します。従って、イテレーションを多く行えば行うほど、ニューラルネットワークはより多く進歩し、学習し、エラーを最小限に抑えることができるのです。</p>

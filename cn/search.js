@@ -453,4 +453,40 @@ var PAGES = [{
 "title": "使用DeepLearning4J所需的Maven配置",
 "description": "本页将介绍在使用DeepLearning4J之前如何设置Maven以及pom.xml文件。Maven依赖一个名为pom.xml的配置文件。本页将协助您配置该文件中的依赖项。",
 "tags": ["maven", "配置", "pom", "依赖", "可视化", "生成图标", "arbiter", "dependent", "setup", "configuration", "超参数", "hyperparameter"]
+},
+{
+"url": "https://deeplearning4j.org/cn/rbm-mnist-tutorial",
+"title": "MNIST数据集与受限玻尔兹曼机",
+"description": "MNIST是一个大型手写数字数据集，用于训练神经网络及其他算法进行图像识别，其定型集有6万幅图像，测试集有1万幅图像。",
+"tags": ["mnist", "rbms", "受限玻尔兹曼机", "教程", "nist", "手写"]
+},
+{
+"url": "https://deeplearning4j.org/cn/multilayer-configuration",
+"title": "MultiLayerConfiguration类",
+"description": "MultiLayerConfiguration（多层网络配置）类是在Deeplearning4j中创建深度学习网络的基础构建器。以下是多层网络配置的参数及其默认设置。",
+"tags": ["多层", "multilayer", "configuration", "多层神经网络", "基础构建器", "多层网络", "hiddenlayersizes", "usedropconnect", "list", "override","MultiLayerConfiguration"]
+},
+{
+"url": "https://deeplearning4j.org/cn/neuralnet-configuration",
+"title": "NeuralNetConfiguration类",
+"description": "DL4J中的所有神经网络均以NeuralNetConfiguration构建器为基础创建。该对象极其灵活，无论您需要实现什么类型的神经网络层，几乎都可以通过它来构建。这个类的参数组合及配置可用于设定不同类型的层，包括受限玻尔兹曼机（RBM）、深度置信网络（DBN）、卷积神经网络（CNN）、自动编码器等。",
+"tags": ["NeuralNetConfiguration", "基础创建", "神经网络", "构建", "基础构建器", "activationFunction", "applySparsity", "batch", "constrainGradientToUnitNorm", "convolutionType","corruptionLevel","dist","corruptionLevel","dropOut","filterSize","hiddenUnit","inputPreProcessor","iterations","lossFunction","learningRate","minimize","momentum","momentumAfter","nIn","nOut","numIterations","numLineSearchIterations","optimizationAlgo","preProcessor","renderWeightsEveryNumEpochs","resetAdaGradIterations","rng","stride","sparsity","stepFunction","useAdaGrad","useRegularization","variables","visibleUnit","weightInit","weightShape"]
+},
+{
+"url": "https://deeplearning4j.org/cn/recursiveneuraltensornetwork",
+"title": "递归神经张量网络",
+"description": "递归神经张量网络（RNTN）是适合用于自然语言处理的神经网络。RNTN呈树状结构，在每个节点上都有一个神经网络。您可以用RNTN来进行边界切分，判定词组属于正面还是负面，也可以对整个句子进行这些操作。",
+"tags": ["递归", "rntn", "递归神经张量网络", "nlp", "word2vec", "自然语言", "词", "数据加工", "词性", "语句","词袋"]
+},
+{
+"url": "https://deeplearning4j.org/cn/osx",
+"title": "在OSX上进行安装",
+"description": "示范如何在 Mac OSX 上设置 Deeplearning4j。",
+"tags": ["OSX", "Mac", "入门", "新手", "如何", "开始", "怎样", "java", "intellij", "设置","maven"]
+},
+{
+"url": "https://deeplearning4j.org/cn/linux",
+"title": "在Linux上进行安装",
+"description": "示范如何在 Linux 上设置 Deeplearning4j。",
+"tags": ["linux", "入门", "新手", "如何", "开始", "怎样", "java", "intellij", "设置","maven"]
 }];

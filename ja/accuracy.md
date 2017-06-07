@@ -1,5 +1,5 @@
-- - -
-title:ディープラーニングの精度
+---
+title: ディープラーニングの精度
 layout: default
 ---
 

@@ -150,7 +150,7 @@ DL4JをSparkで使用するには、deeplearning4j-sparkの依存関係を含め
         </dependency>
 ```
 
-```_${scala.binary.version}```は```_2.10```または```_2.11```であるべきで、ご利用のSparkのバージョンと一致していなければならないことにご注意ください。
+※ ```_${scala.binary.version}```は```_2.10```または```_2.11```であるべきで、ご利用のSparkのバージョンと一致していなければならないことにご注意ください。
 
 
 ## <a name="examples">Sparkを使った例のリポジトリ</a>

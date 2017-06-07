@@ -3,7 +3,7 @@ title: "Deep Learning Comp Sheet: Deeplearning4j vs. Torch vs. Theano vs. Caffe 
 layout: default
 ---
 
-# Comparing Frameworks: Deeplearning4j, Torch, Theano, TensorFlow, Caffe, Paddle, MxNet, Keras & CNTK
+# Comparing Top Deep Learning Frameworks: Deeplearning4j, Torch, Theano, TensorFlow, Caffe, Paddle, MxNet, Keras & CNTK
 
 Deeplearning4j is distinguished from other frameworks in its API languages, intent and integrations. DL4J is a JVM-based, industry-focused, commercially supported, **distributed deep-learning framework** that solves problems involving massive amounts of data in a reasonable amount of time. It integrates with Kafka, Hadoop and [Spark](./spark) using an arbitrary number of [GPUs](./gpu) or [CPUs](./native), and it has [a number you can call](http://www.skymind.io/contact) if anything breaks. 
 
