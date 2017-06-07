@@ -1255,6 +1255,20 @@ public class TransformProcess implements Serializable {
             return this;
         }
 
+        public Builder ndArrayMathFunctionTransform(String columnName, MathFunction mathFunction){
+            //TODO is there a better way to do this?
+            try{
+                Class<?> c = Class.forName("org.datavec.api.transform.ndarray.NDArrayMathFunctionTransform");
+                transform( (Transform)
+                        c.getDeclaredConstructor(String.class, MathFunction.class).newInstance(columnName, mathFunction));
+            } catch (Exception e){
+                //TODO
+                throw new RuntimeException(e);
+            }
+
+            return this;
+        }
+
         /**
          * Create the TransformProcess object
          */
