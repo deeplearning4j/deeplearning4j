@@ -1,5 +1,5 @@
 /*
- *  * Copyright 2016 Skymind, Inc.
+ *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -17,22 +17,29 @@
 package org.datavec.api.transform.analysis.columns;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import org.datavec.api.transform.ColumnType;
+
+import java.util.*;
 
 /**
  * Created by Alex on 02/06/2017.
  */
 @AllArgsConstructor
+@Builder(builderClassName = "Builder", builderMethodName = "Builder")
 @Data
 public class NDArrayAnalysis implements ColumnAnalysis {
 
-    private long count;
+    private long countTotal;
+    private long countNull;
+    private long minLength;
+    private long maxLength;
+    private long totalNDArrayValues;
+    private Map<Integer,Long> countsByRank;
+    private double minValue;
+    private double maxValue;
 
-    @Override
-    public long getCountTotal() {
-        return count;
-    }
 
     @Override
     public ColumnType getColumnType() {
@@ -41,6 +48,19 @@ public class NDArrayAnalysis implements ColumnAnalysis {
 
     @Override
     public String toString(){
-        return "NDArrayAnalysis(count=" + count + ")";
+        Map<Integer,Long> sortedCountsByRank = new LinkedHashMap<>();
+        List<Integer> keys = new ArrayList<>(countsByRank == null ? Collections.<Integer>emptySet() : countsByRank.keySet());
+        Collections.sort(keys);
+        for(Integer i : keys ){
+            sortedCountsByRank.put(i, countsByRank.get(i));
+        }
+
+        return "NDArrayAnalysis(countTotal=" + countTotal
+                + ",countNull=" + countNull + ",minLength=" + minLength + ",maxLength=" + maxLength
+                + ",totalValuesAllNDArrays=" + totalNDArrayValues + ",minValue=" + minValue
+                + ",maxValue=" + maxValue + ",countsByNDArrayRank=" + sortedCountsByRank
+                + ")";
     }
+
+
 }
