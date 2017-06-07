@@ -16,10 +16,12 @@
 
 package org.datavec.spark.transform.analysis;
 
+import org.apache.commons.io.FilenameUtils;
 import org.apache.spark.util.StatCounter;
 import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.analysis.columns.*;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.ui.HtmlAnalysis;
 import org.datavec.api.writable.*;
 import org.datavec.common.data.NDArrayWritable;
 import org.datavec.spark.BaseSparkTest;
@@ -29,6 +31,9 @@ import org.joda.time.DateTimeZone;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -41,7 +46,7 @@ import static org.junit.Assert.assertTrue;
 public class TestAnalysis extends BaseSparkTest {
 
     @Test
-    public void TestAnalysis() {
+    public void testAnalysis() throws Exception {
 
         Schema schema = new Schema.Builder()
                 .addColumnInteger("intCol")
@@ -127,6 +132,11 @@ public class TestAnalysis extends BaseSparkTest {
         assertEquals(10.0, bucketsD[bucketsD.length - 1], 0.0);
         assertEquals(1, countD[0]);
         assertEquals(1, countD[countD.length - 1]);
+
+        File f = Files.createTempFile("datavec_spark_analysis_UITest",".html").toFile();
+        System.out.println(f.getAbsolutePath());
+        f.deleteOnExit();
+        HtmlAnalysis.createHtmlAnalysisFile(da, f);
     }
 
 
