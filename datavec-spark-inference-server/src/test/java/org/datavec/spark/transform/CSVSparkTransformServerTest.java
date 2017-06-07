@@ -87,11 +87,11 @@ public class CSVSparkTransformServerTest {
                         .header("accept", "application/json").header("Content-Type", "application/json")
                         .body(batchRecord).asObject(BatchRecord.class).getBody();
 
-        Base64NDArrayBody array = Unirest.post("http://localhost:9050/transformedincrementalarray")
+        Base64NDArrayBody array = Unirest.post("http://localhost:9050/transformincrementalarray")
                         .header("accept", "application/json").header("Content-Type", "application/json").body(record)
                         .asObject(Base64NDArrayBody.class).getBody();
 
-        Base64NDArrayBody batchArray1 = Unirest.post("http://localhost:9050/transformedarray")
+        Base64NDArrayBody batchArray1 = Unirest.post("http://localhost:9050/transformarray")
                         .header("accept", "application/json").header("Content-Type", "application/json")
                         .body(batchRecord).asObject(Base64NDArrayBody.class).getBody();
 
