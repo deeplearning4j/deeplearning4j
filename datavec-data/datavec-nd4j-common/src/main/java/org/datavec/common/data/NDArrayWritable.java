@@ -17,6 +17,8 @@ package org.datavec.common.data;
 
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+
 import org.datavec.api.io.WritableComparable;
 import org.datavec.api.io.WritableComparator;
 import org.datavec.api.writable.ArrayWritable;
@@ -24,9 +26,13 @@ import org.datavec.api.writable.WritableFactory;
 import org.datavec.api.writable.WritableType;
 import org.datavec.common.util.DataInputWrapperStream;
 import org.datavec.common.util.DataOutputWrapperStream;
+import org.datavec.common.util.NDArrayUtils;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import javax.annotation.Nonnull;
 
 /**
  * A Writable that basically wraps an INDArray.
@@ -40,28 +46,34 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
     static {
         WritableFactory.getInstance().registerWritableType(WritableType.NDArray.typeIdx(), NDArrayWritable.class);
     }
-    private INDArray array = null;
 
-    public NDArrayWritable() {}
+    private INDArray array = null;
+    private Integer hash = null;
+
+    public NDArrayWritable() {
+    }
 
     public NDArrayWritable(INDArray array) {
         set(array);
     }
 
-    /** Deserialize into a row vector of default type. */
+    /**
+     * Deserialize into a row vector of default type.
+     */
     public void readFields(DataInput in) throws IOException {
         DataInputStream dis = new DataInputStream(new DataInputWrapperStream(in));
         byte header = dis.readByte();
-        if(header != NDARRAY_SER_VERSION_HEADER && header != NDARRAY_SER_VERSION_HEADER_NULL){
+        if (header != NDARRAY_SER_VERSION_HEADER && header != NDARRAY_SER_VERSION_HEADER_NULL) {
             throw new IllegalStateException("Unexpected NDArrayWritable version header - stream corrupt?");
         }
 
-        if(header == NDARRAY_SER_VERSION_HEADER_NULL){
+        if (header == NDARRAY_SER_VERSION_HEADER_NULL) {
             array = null;
             return;
         }
 
         array = Nd4j.read(dis);
+        hash = null;
     }
 
     @Override
@@ -69,7 +81,9 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
         out.writeShort(WritableType.NDArray.typeIdx());
     }
 
-    /** Serialize array data linearly. */
+    /**
+     * Serialize array data linearly.
+     */
     public void write(DataOutput out) throws IOException {
         if (array == null) {
             out.write(NDARRAY_SER_VERSION_HEADER_NULL);
@@ -77,7 +91,7 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
         }
 
         INDArray toWrite;
-        if(array.isView()){
+        if (array.isView()) {
             toWrite = array.dup();
         } else {
             toWrite = array;
@@ -91,6 +105,7 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
 
     public void set(INDArray array) {
         this.array = array;
+        this.hash = null;
     }
 
     public INDArray get() {
@@ -104,101 +119,161 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
         if (!(o instanceof NDArrayWritable)) {
             return false;
         }
-        NDArrayWritable other = (NDArrayWritable) o;
-        DataBuffer thisData = this.array.data();
-        DataBuffer otherData = other.array.data();
-        DataBuffer.Type thisType = thisData.dataType();
-        DataBuffer.Type otherType = otherData.dataType();
-        if (thisType != otherType) {
-            throw new IllegalArgumentException("Data types must be the same.");
+        INDArray io = ((NDArrayWritable) o).get();
+
+        if (this.array == null && io != null || this.array != null && io == null) {
+            return false;
         }
-        switch (thisType) {
-            case DOUBLE:
-                return thisData.asNioDouble().equals(otherData.asNioDouble());
-            case FLOAT:
-                return thisData.asNioFloat().equals(otherData.asNioFloat());
-            case INT:
-                return thisData.asNioInt().equals(otherData.asNioInt());
+
+        if (this.array == null) {
+            //Both are null
+            return true;
         }
-        throw new UnsupportedOperationException("Unsupported data type: " + thisType);
+
+        //For NDArrayWritable: we use strict equality. Otherwise, we can have a.equals(b) but a.hashCode() != b.hashCode()
+        return this.array.equalsWithEps(io, 0.0);
+
+
+//        NDArrayWritable other = (NDArrayWritable) o;
+//        DataBuffer thisData = this.array.data();
+//        DataBuffer otherData = other.array.data();
+//        DataBuffer.Type thisType = thisData.dataType();
+//        DataBuffer.Type otherType = otherData.dataType();
+//        if (thisType != otherType) {
+//            throw new IllegalArgumentException("Data types must be the same.");
+//        }
+//        switch (thisType) {
+//            case DOUBLE:
+//                return thisData.asNioDouble().equals(otherData.asNioDouble());
+//            case FLOAT:
+//                return thisData.asNioFloat().equals(otherData.asNioFloat());
+//            case INT:
+//                return thisData.asNioInt().equals(otherData.asNioInt());
+//        }
+//        throw new UnsupportedOperationException("Unsupported data type: " + thisType);
     }
+
 
     public int hashCode() {
-        DataBuffer data = array.data();
-        DataBuffer.Type type = data.dataType();
-        switch (type) {
-            case DOUBLE:
-                return data.asNioDouble().hashCode();
-            case FLOAT:
-                return data.asNioFloat().hashCode();
-            case INT:
-                return data.asNioInt().hashCode();
+        if (hash != null) {
+            return hash;
         }
-        throw new UnsupportedOperationException("Unsupported data type: " + type);
+
+        //Hashcode needs to be invariant to array order - otherwise, equal arrays can have different hash codes
+        // for example, C vs. F order arrays with otherwise identical contents
+
+        if (array == null) {
+            hash = 0;
+            return hash;
+        }
+
+        int hash = Arrays.hashCode(array.shape());
+        int length = array.length();
+        NdIndexIterator iter = new NdIndexIterator('c', array.shape());
+        for (int i = 0; i < length; i++) {
+            hash ^= NDArrayUtils.hashCode(array.getDouble(iter.next()));
+        }
+
+        this.hash = hash;
+        return hash;
     }
 
-    public int compareTo(Object o) {
+    @Override
+    public int compareTo(@Nonnull Object o) {
         NDArrayWritable other = (NDArrayWritable) o;
-        DataBuffer thisData = this.array.data();
-        DataBuffer otherData = other.array.data();
-        DataBuffer.Type thisType = thisData.dataType();
-        DataBuffer.Type otherType = otherData.dataType();
-        if (thisType != otherType) {
-            throw new IllegalArgumentException("Data types must be the same.");
+
+        //Conventions used here for ordering NDArrays: x.compareTo(y): -ve if x < y, 0 if x == y, +ve if x > y
+        //Null first
+        //Then smallest rank first
+        //Then smallest length first
+        //Then sort by shape
+        //Then sort by contents
+        //The idea: avoid comparing contents for as long as possible
+
+        if (this.array == null) {
+            if (other.array == null) {
+                return 0;
+            }
+            return -1;
         }
-        switch (thisType) {
-            case DOUBLE:
-                return thisData.asNioDouble().compareTo(otherData.asNioDouble());
-            case FLOAT:
-                return thisData.asNioFloat().compareTo(otherData.asNioFloat());
-            case INT:
-                return thisData.asNioInt().compareTo(otherData.asNioInt());
+        if (other.array == null) {
+            return 1;
         }
-        throw new UnsupportedOperationException("Unsupported data type: " + thisType);
+
+        if (this.array.rank() != other.array.rank()) {
+            return Integer.compare(array.rank(), other.array.rank());
+        }
+
+        if (array.length() != other.array.length()) {
+            return Long.compare(array.length(), other.array.length());
+        }
+
+        for (int i = 0; i < array.rank(); i++) {
+            if (Integer.compare(array.size(i), other.array.size(i)) != 0) {
+                return Integer.compare(array.size(i), other.array.size(i));
+            }
+        }
+
+        //At this point: same rank, length, shape
+        NdIndexIterator iter = new NdIndexIterator('c', array.shape());
+        while(iter.hasNext()){
+            int[] nextPos = iter.next();
+            double d1 = array.getDouble(nextPos);
+            double d2 = other.array.getDouble(nextPos);
+
+            if(Double.compare(d1,d2) != 0){
+                return Double.compare(d1,d2);
+            }
+        }
+
+        //Same rank, length, shape and contents: must be equal
+        return 0;
     }
 
     public String toString() {
         return array.toString();
     }
 
-    /** A Comparator optimized for ArrayWritable. */
-    public static class Comparator extends WritableComparator {
-        public Comparator() {
-            super(NDArrayWritable.class);
-        }
-
-        public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
-            ByteBuffer buffer1 = ByteBuffer.wrap(b1, s1, l1);
-            ByteBuffer buffer2 = ByteBuffer.wrap(b2, s2, l2);
-            long length1 = buffer1.getLong();
-            long length2 = buffer2.getLong();
-            if (length1 == 0 && length2 == 0) {
-                return 0;
-            } else if (length1 == 0) {
-                return (int) Math.max(-length2, Integer.MIN_VALUE);
-            } else if (length2 == 0) {
-                return (int) Math.min(length1, Integer.MAX_VALUE);
-            }
-            int type1 = buffer1.getInt();
-            int type2 = buffer2.getInt();
-            if (type1 != type2) {
-                throw new IllegalArgumentException("Data types must be the same.");
-            }
-            if (type1 == DataBuffer.Type.DOUBLE.ordinal()) {
-                return buffer1.asDoubleBuffer().compareTo(buffer2.asDoubleBuffer());
-            } else if (type1 == DataBuffer.Type.FLOAT.ordinal()) {
-                return buffer1.asFloatBuffer().compareTo(buffer2.asFloatBuffer());
-            } else if (type1 == DataBuffer.Type.INT.ordinal()) {
-                return buffer1.asIntBuffer().compareTo(buffer2.asIntBuffer());
-            } else {
-                throw new UnsupportedOperationException("Unsupported data type: " + type1);
-            }
-        }
-    }
-
-    static { // register this comparator
-        WritableComparator.define(NDArrayWritable.class, new Comparator());
-    }
+//    /**
+//     * A Comparator optimized for ArrayWritable.
+//     */
+//    public static class Comparator extends WritableComparator {
+//        public Comparator() {
+//            super(NDArrayWritable.class);
+//        }
+//
+//        public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
+//            ByteBuffer buffer1 = ByteBuffer.wrap(b1, s1, l1);
+//            ByteBuffer buffer2 = ByteBuffer.wrap(b2, s2, l2);
+//            long length1 = buffer1.getLong();
+//            long length2 = buffer2.getLong();
+//            if (length1 == 0 && length2 == 0) {
+//                return 0;
+//            } else if (length1 == 0) {
+//                return (int) Math.max(-length2, Integer.MIN_VALUE);
+//            } else if (length2 == 0) {
+//                return (int) Math.min(length1, Integer.MAX_VALUE);
+//            }
+//            int type1 = buffer1.getInt();
+//            int type2 = buffer2.getInt();
+//            if (type1 != type2) {
+//                throw new IllegalArgumentException("Data types must be the same.");
+//            }
+//            if (type1 == DataBuffer.Type.DOUBLE.ordinal()) {
+//                return buffer1.asDoubleBuffer().compareTo(buffer2.asDoubleBuffer());
+//            } else if (type1 == DataBuffer.Type.FLOAT.ordinal()) {
+//                return buffer1.asFloatBuffer().compareTo(buffer2.asFloatBuffer());
+//            } else if (type1 == DataBuffer.Type.INT.ordinal()) {
+//                return buffer1.asIntBuffer().compareTo(buffer2.asIntBuffer());
+//            } else {
+//                throw new UnsupportedOperationException("Unsupported data type: " + type1);
+//            }
+//        }
+//    }
+//
+//    static { // register this comparator
+//        WritableComparator.define(NDArrayWritable.class, new Comparator());
+//    }
 
     @Override
     public long length() {

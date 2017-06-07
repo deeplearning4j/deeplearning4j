@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 02/06/2017.
  */
-public class TestWritableSerialization {
+public class TestWritablesAndSerialization {
 
     @Test
     public void testWritableSerializationSingle() throws Exception {
@@ -85,6 +85,44 @@ public class TestWritableSerialization {
 
         assertEquals(arrC, w2C.get());
         assertEquals(arrF, w2F.get());
+    }
+
+    @Test
+    public void testWritableEqualsHashCodeOrdering() throws Exception {
+        //NDArrayWritable implements WritableComparable - we need to make sure this operates as expected...
+
+        //First: check C vs. F order, same contents
+        INDArray arrC = Nd4j.rand(new int[]{10,20},'c');
+        INDArray arrF = arrC.dup('f');
+
+        NDArrayWritable wC = new NDArrayWritable(arrC);
+        NDArrayWritable wF = new NDArrayWritable(arrF);
+
+        assertEquals(wC, wF);
+        assertEquals(wC.hashCode(), wF.hashCode());
+
+        int compare = wC.compareTo(wF);
+        assertEquals(0, compare);
+
+
+        //Check order conventions:
+        //Null first
+        //Then smallest rank first
+        //Then smallest length first
+        //Then sort by shape
+        //Then sort by contents, element-wise
+
+        assertEquals(-1, new NDArrayWritable(null).compareTo(new NDArrayWritable(Nd4j.create(1))));
+        assertEquals(-1, new NDArrayWritable(Nd4j.create(1,1)).compareTo(new NDArrayWritable(Nd4j.create(1,1,1))));
+        assertEquals(-1, new NDArrayWritable(Nd4j.create(1,1)).compareTo(new NDArrayWritable(Nd4j.create(1,2))));
+        assertEquals(-1, new NDArrayWritable(Nd4j.create(1,3)).compareTo(new NDArrayWritable(Nd4j.create(3,1))));
+        assertEquals(-1, new NDArrayWritable(Nd4j.create(new double[]{1.0,2.0,3.0})).compareTo(new NDArrayWritable(Nd4j.create(new double[]{1.0,2.0,3.1}))));
+
+        assertEquals(1, new NDArrayWritable(Nd4j.create(1)).compareTo(new NDArrayWritable(null)));
+        assertEquals(1, new NDArrayWritable(Nd4j.create(1,1, 1)).compareTo(new NDArrayWritable(Nd4j.create(1,1))));
+        assertEquals(1, new NDArrayWritable(Nd4j.create(1,2)).compareTo(new NDArrayWritable(Nd4j.create(1,1))));
+        assertEquals(1, new NDArrayWritable(Nd4j.create(3,1)).compareTo(new NDArrayWritable(Nd4j.create(1,3))));
+        assertEquals(1, new NDArrayWritable(Nd4j.create(new double[]{1.0,2.0,3.1})).compareTo(new NDArrayWritable(Nd4j.create(new double[]{1.0,2.0,3.0}))));
     }
 
 }
