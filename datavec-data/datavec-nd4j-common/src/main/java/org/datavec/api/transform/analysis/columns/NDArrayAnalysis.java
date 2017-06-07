@@ -39,6 +39,8 @@ public class NDArrayAnalysis implements ColumnAnalysis {
     private Map<Integer,Long> countsByRank;
     private double minValue;
     private double maxValue;
+    protected double[] histogramBuckets;
+    protected long[] histogramBucketCounts;
 
 
     @Override
@@ -58,8 +60,7 @@ public class NDArrayAnalysis implements ColumnAnalysis {
         return "NDArrayAnalysis(countTotal=" + countTotal
                 + ",countNull=" + countNull + ",minLength=" + minLength + ",maxLength=" + maxLength
                 + ",totalValuesAllNDArrays=" + totalNDArrayValues + ",minValue=" + minValue
-                + ",maxValue=" + maxValue + ",countsByNDArrayRank=" + sortedCountsByRank
-                + ")";
+                + ",maxValue=" + maxValue + ",countsByNDArrayRank=" + sortedCountsByRank + ")";
     }
 
 

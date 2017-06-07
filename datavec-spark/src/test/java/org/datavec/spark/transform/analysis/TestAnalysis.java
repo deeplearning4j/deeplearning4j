@@ -41,7 +41,7 @@ import static org.junit.Assert.assertTrue;
 public class TestAnalysis extends BaseSparkTest {
 
     @Test
-    public void TestAnalysisBasic() {
+    public void TestAnalysis() {
 
         Schema schema = new Schema.Builder()
                 .addColumnInteger("intCol")
@@ -66,10 +66,10 @@ public class TestAnalysis extends BaseSparkTest {
         DataAnalysis da = AnalyzeSpark.analyze(schema, rdd);
         String daString = da.toString();
 
-        //        System.out.println(da);
+                System.out.println(da);
 
         List<ColumnAnalysis> ca = da.getColumnAnalysis();
-        assertEquals(4, ca.size());
+        assertEquals(5, ca.size());
 
         assertTrue(ca.get(0) instanceof IntegerAnalysis);
         assertTrue(ca.get(1) instanceof DoubleAnalysis);
@@ -117,7 +117,8 @@ public class TestAnalysis extends BaseSparkTest {
         assertNotNull(ta.getHistogramBuckets());
         assertNotNull(ta.getHistogramBucketCounts());
 
-
+        assertNotNull(na.getHistogramBuckets());
+        assertNotNull(na.getHistogramBucketCounts());
 
         double[] bucketsD = dba.getHistogramBuckets();
         long[] countD = dba.getHistogramBucketCounts();

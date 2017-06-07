@@ -268,6 +268,9 @@ public class AnalyzeSpark {
             } else if (ca instanceof StringAnalysis) {
                 ((StringAnalysis) ca).setHistogramBuckets(hc.getBins());
                 ((StringAnalysis) ca).setHistogramBucketCounts(hc.getCounts());
+            } else if (ca instanceof NDArrayAnalysis) {
+                ((NDArrayAnalysis) ca).setHistogramBuckets(hc.getBins());
+                ((NDArrayAnalysis) ca).setHistogramBucketCounts(hc.getCounts());
             }
         }
 
