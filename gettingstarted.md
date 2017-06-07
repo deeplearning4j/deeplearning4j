@@ -61,6 +61,20 @@ If you use Eclipse, you will need to install the Maven plugin for Eclipse: [ecli
 Michael Depies has written this guide to [installing Deeplearning4j on Eclipse](https://depiesml.wordpress.com/2015/08/26/dl4j-gettingstarted/).
 
 
+## Model Zoo
+
+As of 0.9.0 (or 0.8.1-SNAPSHOT), Deeplearning4j has a new native model zoo that can be accessed and instantiated directly from DL4J. Gone are the days of copying model configs from Github. The model zoo also includes pretrained weights for different datasets that are downloaded automatically and checked for integrity. 🚀
+
+Setting up a pretrained model with weights trained on ImageNet are as easy as:
+
+```
+ZooModel zooModel = new VGG16();
+ComputationGraph pretrainedNet = zooModel.initPretrained(PretrainedType.IMAGENET);
+```
+
+Learn more about the new zoo [here](/model-zoo).
+
+
 ## <a name="trouble">Troubleshooting</a>
 
 * Please feel free to ask us about error messages on our [Gitter Live Chat](https://gitter.im/deeplearning4j/deeplearning4j). When you post your question, please have the following information ready (it will really speed things up!):
