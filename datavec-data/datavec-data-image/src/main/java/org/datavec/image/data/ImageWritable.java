@@ -81,19 +81,23 @@ public class ImageWritable implements Writable {
 
     @Override
     public boolean equals(Object obj) {
-        Frame f2 = ((ImageWritable)obj).getFrame();
+        if (obj instanceof ImageWritable) {
+            Frame f2 = ((ImageWritable) obj).getFrame();
 
-        Buffer[] b1 = this.frame.image;
-        Buffer[] b2 = f2.image;
+            Buffer[] b1 = this.frame.image;
+            Buffer[] b2 = f2.image;
 
-        if (b1.length != b2.length)
-            return false;
-
-        for (int i = 0; i < b1.length; i++) {
-            if (b1[i].equals(b2[i]) == false)
+            if (b1.length != b2.length)
                 return false;
-        }
 
-        return true;
+            for (int i = 0; i < b1.length; i++) {
+                if (b1[i].equals(b2[i]) == false)
+                    return false;
+            }
+
+            return true;
+        } else {
+            return false;
+        }
     }
 }

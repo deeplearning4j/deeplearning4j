@@ -385,9 +385,9 @@ public class NativeImageLoader extends BaseImageLoader {
 
     public void asMatrixView(Mat image, INDArray view) throws IOException {
         if (imageTransform != null && converter != null) {
-            ImageWritable writable = new ImageWritable(converter.convert(image));
+            ImageWritable writable = new ImageWritable(NativeImageLoader.converter.convert(image));
             writable = imageTransform.transform(writable);
-            image = converter.convert(writable.getFrame());
+            image = NativeImageLoader.converter.convert(writable.getFrame());
         }
 
         if (channels > 0 && image.channels() != channels) {
@@ -442,10 +442,10 @@ public class NativeImageLoader extends BaseImageLoader {
     }
 
     public INDArray asMatrix(Mat image) throws IOException {
-        if (imageTransform != null && converter != null) {
-            ImageWritable writable = new ImageWritable(converter.convert(image));
+        if (imageTransform != null && NativeImageLoader.converter != null) {
+            ImageWritable writable = new ImageWritable(NativeImageLoader.converter.convert(image));
             writable = imageTransform.transform(writable);
-            image = converter.convert(writable.getFrame());
+            image = NativeImageLoader.converter.convert(writable.getFrame());
         }
 
         if (channels > 0 && image.channels() != channels) {
@@ -535,6 +535,14 @@ public class NativeImageLoader extends BaseImageLoader {
         return scaled;
     }
 
+
+    /**
+     * Convert a file to a INDArray
+     *
+     * @param f the image to convert
+     * @return INDArray
+     * @throws IOException
+     */
     public ImageWritable asWritable(File f) throws IOException {
         try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f))) {
             byte[] bytes = IOUtils.toByteArray(bis);
@@ -548,19 +556,20 @@ public class NativeImageLoader extends BaseImageLoader {
                 pixDestroy(pix);
             }
 
-            if (converter == null) {
-                throw new IOException("need to initialize converter");
-            }
-            ImageWritable writable = new ImageWritable(converter.convert(image));
+            ImageWritable writable = new ImageWritable(NativeImageLoader.converter.convert(image));
             return writable;
         }
     }
 
+    /**
+     * Convert ImageWritable to INDArray
+     *
+     * @param writable ImageWritable to convert
+     * @return INDArray
+     * @throws IOException
+     */
     public INDArray asMatrix(ImageWritable writable) throws IOException {
-        if (converter == null) {
-            throw new IOException("need to initialize converter");
-        }
-        Mat image = converter.convert(writable.getFrame());
+        Mat image = NativeImageLoader.converter.convert(writable.getFrame());
         return asMatrix(image);
     }
 }
