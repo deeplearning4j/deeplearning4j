@@ -1113,7 +1113,7 @@ public class CudaZeroHandler implements MemoryHandler {
         if (!deviceAllocations.get(deviceId).containsKey(objectId))
             throw new IllegalStateException("Can't happen ever");
 
-        deviceAllocations.get(deviceId).remove(objectId);
+        forget(point, AllocationStatus.DEVICE);
 
         if (deviceAllocations.get(deviceId).containsKey(objectId))
             throw new IllegalStateException("Can't happen ever");
@@ -1134,7 +1134,7 @@ public class CudaZeroHandler implements MemoryHandler {
      */
     @Override
     public void purgeZeroObject(Long bucketId, Long objectId, AllocationPoint point, boolean copyback) {
-        zeroAllocations.get(bucketId).remove(objectId);
+        forget(point, AllocationStatus.HOST);
 
         flowController.waitTillReleased(point);
 
@@ -1146,6 +1146,15 @@ public class CudaZeroHandler implements MemoryHandler {
 
         long reqMem = AllocationUtils.getRequiredMemory(point.getShape()) * -1;
         zeroUseCounter.addAndGet(reqMem);
+    }
+
+    @Override
+    public void forget(AllocationPoint point, AllocationStatus location) {
+        if (location == AllocationStatus.DEVICE) {
+            deviceAllocations.get(point.getDeviceId()).remove(point.getObjectId());
+        } else if (location == AllocationStatus.HOST) {
+            zeroAllocations.get(point.getBucketId()).remove(point.getObjectId());
+        }
     }
 
 

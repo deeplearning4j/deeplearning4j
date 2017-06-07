@@ -372,9 +372,11 @@ public class AtomicAllocator implements Allocator {
             this.getMemoryHandler().getMemoryProvider().free(point);
             point.setAllocationStatus(AllocationStatus.HOST);
             this.getMemoryHandler().getMemoryProvider().free(point);
+            this.getMemoryHandler().forget(point, AllocationStatus.DEVICE);
         } else {
             // call it only once
             this.getMemoryHandler().getMemoryProvider().free(point);
+            this.getMemoryHandler().forget(point, AllocationStatus.HOST);
         }
 
         allocationsMap.remove(point.getObjectId());
