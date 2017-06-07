@@ -390,10 +390,13 @@ public class TransformProcess implements Serializable {
     }
 
     private static ObjectMapper reinitializeMapperWithSubtypes(ObjectMapper mapper) {
+        return reinitializeMapperWithSubtypes(mapper,
+                Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IAssociativeReducer.class));
+    }
+
+    public static ObjectMapper reinitializeMapperWithSubtypes(ObjectMapper mapper, List<Class<?>> classes) {
         //Register concrete subtypes for JSON serialization
 
-        List<Class<?>> classes =
-                        Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IAssociativeReducer.class);
         List<String> classNames = new ArrayList<>(6);
         for (Class<?> c : classes)
             classNames.add(c.getName());

@@ -108,7 +108,7 @@ public class NDArrayMathOpTransform extends BaseColumnTransform {
         //To avoid threading issues...
         Nd4j.getExecutioner().commit();
 
-        return n;
+        return new NDArrayWritable(a);
     }
 
     @Override
