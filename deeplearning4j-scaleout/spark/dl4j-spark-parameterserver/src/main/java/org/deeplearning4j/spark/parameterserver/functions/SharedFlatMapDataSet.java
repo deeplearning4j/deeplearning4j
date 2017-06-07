@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.parameterserver.functions;
 
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
+import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.parameterserver.pw.SharedTrainingWrapper;
@@ -12,11 +13,20 @@ import java.util.Iterator;
 /**
  * @author raver119@gmail.com
  */
-class FlatMapSharedFunction<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<DataSet>, R> {
+
+public class SharedFlatMapDataSet<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, R> {
+
+    public SharedFlatMapDataSet(TrainingWorker<R> worker) {
+        super(new SharedFlatMapDataSetAdapter<R>(worker));
+    }
+}
+
+
+class SharedFlatMapDataSetAdapter<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<DataSet>, R> {
 
     private final SharedTrainingWorker worker;
 
-    public FlatMapSharedFunction(TrainingWorker<R> worker) {
+    public SharedFlatMapDataSetAdapter(TrainingWorker<R> worker) {
         // we're not going to have anything but Shared classes here ever
         this.worker = (SharedTrainingWorker) worker;
     }

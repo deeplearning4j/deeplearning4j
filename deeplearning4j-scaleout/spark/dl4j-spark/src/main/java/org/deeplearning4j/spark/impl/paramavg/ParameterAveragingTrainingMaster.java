@@ -80,42 +80,42 @@ import java.util.*;
 public class ParameterAveragingTrainingMaster
                 implements TrainingMaster<ParameterAveragingTrainingResult, ParameterAveragingTrainingWorker> {
 
-    private static final int COALESCE_THRESHOLD = 3;
-    private static ObjectMapper jsonMapper;
-    private static ObjectMapper yamlMapper;
+    protected static final int COALESCE_THRESHOLD = 3;
+    protected static ObjectMapper jsonMapper;
+    protected static ObjectMapper yamlMapper;
 
-    private boolean saveUpdater;
-    private Integer numWorkers;
-    private int rddDataSetNumExamples;
-    private int batchSizePerWorker;
-    private int averagingFrequency;
-    private int aggregationDepth;
-    private int prefetchNumBatches;
-    private boolean collectTrainingStats;
-    private ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper stats;
-    private int iterationCount = 0;
-    private Repartition repartition;
-    private RepartitionStrategy repartitionStrategy;
+    protected boolean saveUpdater;
+    protected Integer numWorkers;
+    protected int rddDataSetNumExamples;
+    protected int batchSizePerWorker;
+    protected int averagingFrequency;
+    protected int aggregationDepth;
+    protected int prefetchNumBatches;
+    protected boolean collectTrainingStats;
+    protected ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper stats;
+    protected int iterationCount = 0;
+    protected Repartition repartition;
+    protected RepartitionStrategy repartitionStrategy;
     @JsonSerialize(using = StorageLevelSerializer.class)
     @JsonDeserialize(using = StorageLevelDeserializer.class)
-    private StorageLevel storageLevel;
+    protected StorageLevel storageLevel;
     @JsonSerialize(using = StorageLevelSerializer.class)
     @JsonDeserialize(using = StorageLevelDeserializer.class)
-    private StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
-    private RDDTrainingApproach rddTrainingApproach = RDDTrainingApproach.Export;
-    private String exportDirectory = null;
-    private Random rng;
+    protected StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
+    protected RDDTrainingApproach rddTrainingApproach = RDDTrainingApproach.Export;
+    protected String exportDirectory = null;
+    protected Random rng;
 
-    private Collection<TrainingHook> trainingHookList;
-    private int lastExportedRDDId = Integer.MIN_VALUE;
-    private String lastRDDExportPath;
-    private final String trainingMasterUID;
+    protected Collection<TrainingHook> trainingHookList;
+    protected int lastExportedRDDId = Integer.MIN_VALUE;
+    protected String lastRDDExportPath;
+    protected final String trainingMasterUID;
 
     //Listeners etc
-    private Collection<IterationListener> listeners;
-    private StatsStorageRouter statsStorage;
+    protected Collection<IterationListener> listeners;
+    protected StatsStorageRouter statsStorage;
 
-    private ParameterAveragingTrainingMaster() {
+    protected ParameterAveragingTrainingMaster() {
         // no-arg constructor for Jackson
 
         String jvmuid = UIDProvider.getJVMUID();
@@ -124,7 +124,7 @@ public class ParameterAveragingTrainingMaster
         this.rng = new Random();
     }
 
-    private ParameterAveragingTrainingMaster(Builder builder) {
+    protected ParameterAveragingTrainingMaster(Builder builder) {
         this.saveUpdater = builder.saveUpdater;
         this.numWorkers = builder.numWorkers;
         this.rddDataSetNumExamples = builder.rddDataSetNumExamples;
@@ -205,21 +205,21 @@ public class ParameterAveragingTrainingMaster
         this.rng = new Random();
     }
 
-    private static synchronized ObjectMapper getJsonMapper() {
+    protected static synchronized ObjectMapper getJsonMapper() {
         if (jsonMapper == null) {
             jsonMapper = getNewMapper(new JsonFactory());
         }
         return jsonMapper;
     }
 
-    private static synchronized ObjectMapper getYamlMapper() {
+    protected static synchronized ObjectMapper getYamlMapper() {
         if (yamlMapper == null) {
             yamlMapper = getNewMapper(new YAMLFactory());
         }
         return yamlMapper;
     }
 
-    private static ObjectMapper getNewMapper(JsonFactory jsonFactory) {
+    protected static ObjectMapper getNewMapper(JsonFactory jsonFactory) {
         ObjectMapper om = new ObjectMapper(jsonFactory);
         om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
@@ -342,11 +342,11 @@ public class ParameterAveragingTrainingMaster
                         getRouterProvider());
     }
 
-    private int numObjectsEachWorker(int numExamplesEachRddObject) {
+    protected int numObjectsEachWorker(int numExamplesEachRddObject) {
         return batchSizePerWorker * averagingFrequency / numExamplesEachRddObject;
     }
 
-    private int getNumDataSetObjectsPerSplit(int numExamplesEachRddObject) {
+    protected int getNumDataSetObjectsPerSplit(int numExamplesEachRddObject) {
         int dataSetObjectsPerSplit;
         if (numExamplesEachRddObject == 1) {
             dataSetObjectsPerSplit = numWorkers * batchSizePerWorker * averagingFrequency;
@@ -377,7 +377,7 @@ public class ParameterAveragingTrainingMaster
         }
     }
 
-    private <T, Repr extends JavaRDDLike<T, Repr>> long getTotalDataSetObjectCount(JavaRDDLike<T, Repr> trainingData) {
+    protected <T, Repr extends JavaRDDLike<T, Repr>> long getTotalDataSetObjectCount(JavaRDDLike<T, Repr> trainingData) {
         if (collectTrainingStats)
             stats.logCountStart();
         long totalDataSetObjectCount = trainingData.count();
@@ -386,7 +386,7 @@ public class ParameterAveragingTrainingMaster
         return totalDataSetObjectCount;
     }
 
-    private <T, Repr> JavaPairRDD<T, Repr>[] getSplitRDDs(JavaPairRDD<T, Repr> trainingData,
+    protected <T, Repr> JavaPairRDD<T, Repr>[] getSplitRDDs(JavaPairRDD<T, Repr> trainingData,
                     int totalDataSetObjectCount) {
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit(rddDataSetNumExamples);
 
@@ -399,7 +399,7 @@ public class ParameterAveragingTrainingMaster
         return splits;
     }
 
-    private <T> JavaRDD<T>[] getSplitRDDs(JavaRDD<T> trainingData, int totalDataSetObjectCount,
+    protected <T> JavaRDD<T>[] getSplitRDDs(JavaRDD<T> trainingData, int totalDataSetObjectCount,
                     int examplesPerDataSetObject) {
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit(examplesPerDataSetObject);
 
@@ -412,7 +412,7 @@ public class ParameterAveragingTrainingMaster
         return splits;
     }
 
-    private void executeTrainingDirect(SparkDl4jMultiLayer network, JavaRDD<DataSet> trainingData) {
+    protected void executeTrainingDirect(SparkDl4jMultiLayer network, JavaRDD<DataSet> trainingData) {
         if (collectTrainingStats)
             stats.logFitStart();
         //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
@@ -471,7 +471,7 @@ public class ParameterAveragingTrainingMaster
         executeTrainingPathsHelper(network, trainingDataPaths, rddDataSetNumExamples);
     }
 
-    private void executeTrainingPathsHelper(SparkDl4jMultiLayer network, JavaRDD<String> trainingDataPaths,
+    protected void executeTrainingPathsHelper(SparkDl4jMultiLayer network, JavaRDD<String> trainingDataPaths,
                     int dataSetObjectsNumExamples) {
         if (numWorkers == null)
             numWorkers = network.getSparkContext().defaultParallelism();
@@ -518,7 +518,7 @@ public class ParameterAveragingTrainingMaster
         }
     }
 
-    private void executeTrainingDirect(SparkComputationGraph graph, JavaRDD<MultiDataSet> trainingData) {
+    protected void executeTrainingDirect(SparkComputationGraph graph, JavaRDD<MultiDataSet> trainingData) {
         if (collectTrainingStats)
             stats.logFitStart();
         //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
@@ -630,7 +630,7 @@ public class ParameterAveragingTrainingMaster
         executeTrainingPathsMDSHelper(network, trainingMultiDataPaths, rddDataSetNumExamples);
     }
 
-    private void executeTrainingPathsMDSHelper(SparkComputationGraph network, JavaRDD<String> trainingMultiDataPaths,
+    protected void executeTrainingPathsMDSHelper(SparkComputationGraph network, JavaRDD<String> trainingMultiDataPaths,
                     int dataSetObjectsNumExamples) {
         if (numWorkers == null)
             numWorkers = network.getSparkContext().defaultParallelism();
@@ -699,7 +699,7 @@ public class ParameterAveragingTrainingMaster
     }
 
 
-    private void doIteration(SparkDl4jMultiLayer network, JavaRDD<DataSet> split, int splitNum, int numSplits) {
+    protected void doIteration(SparkDl4jMultiLayer network, JavaRDD<DataSet> split, int splitNum, int numSplits) {
         log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
                         splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
         if (collectTrainingStats)
@@ -724,7 +724,7 @@ public class ParameterAveragingTrainingMaster
             stats.logMapPartitionsEnd(nPartitions);
     }
 
-    private void doIterationPDS(SparkDl4jMultiLayer network, SparkComputationGraph graph,
+    protected void doIterationPDS(SparkDl4jMultiLayer network, SparkComputationGraph graph,
                     JavaRDD<PortableDataStream> split, int splitNum, int numSplits) {
         log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
                         splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
@@ -753,7 +753,7 @@ public class ParameterAveragingTrainingMaster
             stats.logMapPartitionsEnd(nPartitions);
     }
 
-    private void doIterationPaths(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<String> split,
+    protected void doIterationPaths(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<String> split,
                     int splitNum, int numSplits, int dataSetObjectNumExamples) {
         log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
                         splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
@@ -782,7 +782,7 @@ public class ParameterAveragingTrainingMaster
             stats.logMapPartitionsEnd(nPartitions);
     }
 
-    private void doIterationPathsMDS(SparkComputationGraph graph, JavaRDD<String> split, int splitNum, int numSplits,
+    protected void doIterationPathsMDS(SparkComputationGraph graph, JavaRDD<String> split, int splitNum, int numSplits,
                     int dataSetObjectNumExamples) {
         log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
                         splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
@@ -809,7 +809,7 @@ public class ParameterAveragingTrainingMaster
             stats.logMapPartitionsEnd(nPartitions);
     }
 
-    private void doIteration(SparkComputationGraph graph, JavaRDD<MultiDataSet> split, int splitNum, int numSplits) {
+    protected void doIteration(SparkComputationGraph graph, JavaRDD<MultiDataSet> split, int splitNum, int numSplits) {
         log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
                         splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
         if (collectTrainingStats)
@@ -830,7 +830,7 @@ public class ParameterAveragingTrainingMaster
             stats.logMapPartitionsEnd(nPartitions);
     }
 
-    private void doIterationPDS_MDS(SparkComputationGraph graph, JavaRDD<PortableDataStream> split, int splitNum,
+    protected void doIterationPDS_MDS(SparkComputationGraph graph, JavaRDD<PortableDataStream> split, int splitNum,
                     int numSplits) {
         log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
                         splitNum, numSplits, batchSizePerWorker, averagingFrequency, numWorkers);
@@ -857,7 +857,7 @@ public class ParameterAveragingTrainingMaster
     }
 
 
-    private void processResults(SparkDl4jMultiLayer network, SparkComputationGraph graph,
+    protected void processResults(SparkDl4jMultiLayer network, SparkComputationGraph graph,
                     JavaRDD<ParameterAveragingTrainingResult> results, int splitNum, int totalSplits) {
         //Need to do parameter averaging, and where necessary also do averaging of the updaters
         //Let's do all of this in ONE step, such that we don't have extra synchronization costs
@@ -943,7 +943,7 @@ public class ParameterAveragingTrainingMaster
     }
 
 
-    private JavaRDD<String> exportIfRequired(JavaSparkContext sc, JavaRDD<DataSet> trainingData) {
+    protected JavaRDD<String> exportIfRequired(JavaSparkContext sc, JavaRDD<DataSet> trainingData) {
         ExportSupport.assertExportSupported(sc);
         if (collectTrainingStats)
             stats.logExportStart();
@@ -977,7 +977,7 @@ public class ParameterAveragingTrainingMaster
         return sc.textFile(baseDir + "paths/");
     }
 
-    private JavaRDD<String> exportIfRequiredMDS(JavaSparkContext sc, JavaRDD<MultiDataSet> trainingData) {
+    protected JavaRDD<String> exportIfRequiredMDS(JavaSparkContext sc, JavaRDD<MultiDataSet> trainingData) {
         ExportSupport.assertExportSupported(sc);
         if (collectTrainingStats)
             stats.logExportStart();
@@ -1011,7 +1011,7 @@ public class ParameterAveragingTrainingMaster
         return sc.textFile(baseDir + "paths/");
     }
 
-    private String export(JavaRDD<DataSet> trainingData) {
+    protected String export(JavaRDD<DataSet> trainingData) {
         String baseDir = getBaseDirForRDD(trainingData);
         String dataDir = baseDir + "data/";
         String pathsDir = baseDir + "paths/";
@@ -1027,7 +1027,7 @@ public class ParameterAveragingTrainingMaster
         return baseDir;
     }
 
-    private String exportMDS(JavaRDD<MultiDataSet> trainingData) {
+    protected String exportMDS(JavaRDD<MultiDataSet> trainingData) {
         String baseDir = getBaseDirForRDD(trainingData);
         String dataDir = baseDir + "data/";
         String pathsDir = baseDir + "paths/";
@@ -1043,7 +1043,7 @@ public class ParameterAveragingTrainingMaster
         return baseDir;
     }
 
-    private String getBaseDirForRDD(JavaRDD<?> rdd) {
+    protected String getBaseDirForRDD(JavaRDD<?> rdd) {
         if (exportDirectory == null) {
             exportDirectory = getDefaultExportDirectory(rdd.context());
         }
@@ -1051,7 +1051,7 @@ public class ParameterAveragingTrainingMaster
         return exportDirectory + (exportDirectory.endsWith("/") ? "" : "/") + trainingMasterUID + "/" + rdd.id() + "/";
     }
 
-    private boolean deleteTempDir(JavaSparkContext sc, String tempDirPath) {
+    protected boolean deleteTempDir(JavaSparkContext sc, String tempDirPath) {
         log.info("Attempting to delete temporary directory: {}", tempDirPath);
 
         Configuration hadoopConfiguration = sc.hadoopConfiguration();
@@ -1072,7 +1072,7 @@ public class ParameterAveragingTrainingMaster
         }
     }
 
-    private String getDefaultExportDirectory(SparkContext sc) {
+    protected String getDefaultExportDirectory(SparkContext sc) {
         String hadoopTmpDir = sc.hadoopConfiguration().get("hadoop.tmp.dir");
         if (!hadoopTmpDir.endsWith("/") && !hadoopTmpDir.endsWith("\\"))
             hadoopTmpDir = hadoopTmpDir + "/";
@@ -1080,7 +1080,7 @@ public class ParameterAveragingTrainingMaster
     }
 
 
-    private StatsStorageRouterProvider getRouterProvider() {
+    protected StatsStorageRouterProvider getRouterProvider() {
         if (statsStorage == null)
             return null; //Not needed
         return new VanillaStatsStorageRouterProvider();
@@ -1088,21 +1088,21 @@ public class ParameterAveragingTrainingMaster
 
 
     public static class Builder {
-        private boolean saveUpdater;
-        private Integer numWorkers;
-        private int rddDataSetNumExamples;
-        private int batchSizePerWorker = 16;
-        private int averagingFrequency = 5;
-        private int aggregationDepth = 2;
-        private int prefetchNumBatches = 0;
-        private Repartition repartition = Repartition.Always;
-        private RepartitionStrategy repartitionStrategy = RepartitionStrategy.Balanced;
-        private StorageLevel storageLevel = StorageLevel.MEMORY_ONLY_SER();
-        private StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
-        private RDDTrainingApproach rddTrainingApproach = RDDTrainingApproach.Export;
-        private String exportDirectory = null;
-        private Long rngSeed;
-        private Collection<TrainingHook> trainingHooks;
+        protected boolean saveUpdater;
+        protected Integer numWorkers;
+        protected int rddDataSetNumExamples;
+        protected int batchSizePerWorker = 16;
+        protected int averagingFrequency = 5;
+        protected int aggregationDepth = 2;
+        protected int prefetchNumBatches = 0;
+        protected Repartition repartition = Repartition.Always;
+        protected RepartitionStrategy repartitionStrategy = RepartitionStrategy.Balanced;
+        protected StorageLevel storageLevel = StorageLevel.MEMORY_ONLY_SER();
+        protected StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
+        protected RDDTrainingApproach rddTrainingApproach = RDDTrainingApproach.Export;
+        protected String exportDirectory = null;
+        protected Long rngSeed;
+        protected Collection<TrainingHook> trainingHooks;
 
 
         /**

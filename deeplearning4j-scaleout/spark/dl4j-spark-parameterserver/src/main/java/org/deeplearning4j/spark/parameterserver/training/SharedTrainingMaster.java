@@ -1,21 +1,26 @@
 package org.deeplearning4j.spark.parameterserver.training;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.input.PortableDataStream;
 import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.optimize.api.IterationListener;
-import org.deeplearning4j.spark.api.Repartition;
-import org.deeplearning4j.spark.api.RepartitionStrategy;
-import org.deeplearning4j.spark.api.TrainingHook;
-import org.deeplearning4j.spark.api.TrainingMaster;
+import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
+import org.deeplearning4j.spark.api.worker.ExecuteWorkerFlatMap;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
+import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
+import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingResult;
+import org.deeplearning4j.spark.parameterserver.functions.SharedFlatMapDataSet;
+import org.deeplearning4j.spark.util.SparkUtils;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
@@ -30,19 +35,31 @@ import org.nd4j.shade.jackson.databind.SerializationFeature;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult, SharedTrainingWorker> {
     protected List<TrainingHook> trainingHooks;
     protected VoidConfiguration voidConfiguration;
 
     private static ObjectMapper jsonMapper;
     private static ObjectMapper yamlMapper;
+
+    protected Integer numWorkers;
+    protected RDDTrainingApproach rddTrainingApproach;
+    protected StorageLevel storageLevel;
+
+    protected boolean collectTrainingStats;
+    protected int rddDataSetNumExamples;
+    protected int batchSizePerWorker;
+
+    protected Repartition repartition;
+    protected RepartitionStrategy repartitionStrategy;
+
+    protected Random rng;
 
 
     public SharedTrainingMaster(@NonNull VoidConfiguration voidConfiguration) {
@@ -128,6 +145,79 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
         return null;
     }
 
+    protected int numObjectsEachWorker(int numExamplesEachRddObject) {
+        return 0;//batchSizePerWorker * averagingFrequency / numExamplesEachRddObject;
+    }
+
+    protected int getNumDataSetObjectsPerSplit(int numExamplesEachRddObject) {
+        int dataSetObjectsPerSplit;
+        if (numExamplesEachRddObject == 1) {
+            dataSetObjectsPerSplit = numWorkers * batchSizePerWorker; // * averagingFrequency;
+        } else {
+            int numDataSetObjsReqEachWorker = numObjectsEachWorker(numExamplesEachRddObject);
+            if (numDataSetObjsReqEachWorker < 1) {
+                //In this case: more examples in a DataSet object than we actually require
+                //For example, 100 examples in DataSet, with batchSizePerWorker=50 and averagingFrequency=1
+                numDataSetObjsReqEachWorker = 1;
+            }
+
+            dataSetObjectsPerSplit = numDataSetObjsReqEachWorker * numWorkers;
+        }
+        return dataSetObjectsPerSplit;
+    }
+
+    protected <T> JavaRDD<T>[] getSplitRDDs(JavaRDD<T> trainingData, int totalDataSetObjectCount,
+                                            int examplesPerDataSetObject) {
+        int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit(examplesPerDataSetObject);
+
+//        if (collectTrainingStats)
+//            stats.logSplitStart();
+
+        JavaRDD<T>[] splits = SparkUtils.balancedRandomSplit(totalDataSetObjectCount, dataSetObjectsPerSplit,
+                trainingData, rng.nextLong());
+
+//      if (collectTrainingStats)
+//          stats.logSplitEnd();
+
+        return splits;
+    }
+
+    protected <T, Repr extends JavaRDDLike<T, Repr>> long getTotalDataSetObjectCount(JavaRDDLike<T, Repr> trainingData) {
+//        if (collectTrainingStats)
+//            stats.logCountStart();
+
+        long totalDataSetObjectCount = trainingData.count();
+
+//        if (collectTrainingStats)
+//            stats.logCountEnd();
+
+        return totalDataSetObjectCount;
+    }
+
+    protected void executeTrainingDirect(SparkDl4jMultiLayer network, JavaRDD<DataSet> trainingData) {
+        // TODO: implement stats
+//        if (collectTrainingStats)
+//            stats.logFitStart();
+
+        //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
+        // number of minibatches between averagings
+        //But to do that, wee need to know: (a) the number of examples, and (b) the number of workers
+        if (storageLevel != null)
+            trainingData.persist(storageLevel);
+
+        long totalDataSetObjectCount = getTotalDataSetObjectCount(trainingData);
+        JavaRDD<DataSet>[] splits = getSplitRDDs(trainingData, (int) totalDataSetObjectCount, rddDataSetNumExamples);
+
+        int splitNum = 1;
+        for (JavaRDD<DataSet> split : splits) {
+            doIteration(network, split, splitNum++, splits.length);
+        }
+
+        // TODO: implement stats
+//        if (collectTrainingStats)
+//            stats.logFitEnd((int) totalDataSetObjectCount);
+    }
+
     @Override
     public void executeTraining(SparkDl4jMultiLayer network, JavaRDD<DataSet> trainingData) {
         /*
@@ -140,6 +230,14 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
             6) wait till finished
             7) do something with final model, i.e. export it somewhere :)
          */
+        if (numWorkers == null)
+            numWorkers = network.getSparkContext().defaultParallelism();
+
+        if (rddTrainingApproach == RDDTrainingApproach.Direct) {
+            executeTrainingDirect(network, trainingData);
+        } else {
+            //Export data if required (or, use cached export)
+        }
     }
 
     @Override
@@ -244,16 +342,48 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
 
     protected void doIteration(SparkDl4jMultiLayer network, JavaRDD<DataSet> split, int splitNum, int numSplits) {
         // TODO: here we'll basically call for mapPartition
+
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
+                splitNum, numSplits, batchSizePerWorker, 0, numWorkers);
+
+//        if (collectTrainingStats)
+//            stats.logMapPartitionsStart();
+
+        JavaRDD<DataSet> splitData = split;
+//        if (collectTrainingStats)
+//            stats.logRepartitionStart();
+
+        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy, numObjectsEachWorker(rddDataSetNumExamples), numWorkers);
+        int nPartitions = splitData.partitions().size();
+
+//        if (collectTrainingStats && repartition != Repartition.Never)
+//            stats.logRepartitionEnd();
+
+
+        FlatMapFunction<Iterator<DataSet>, SharedTrainingResult> function = new SharedFlatMapDataSet<>(getWorkerInstance(network));
+
+        JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
+
+        // meh
+        result.count();
+//        processResults(network, null, result, splitNum, numSplits);
+
+//        if (collectTrainingStats)
+//            stats.logMapPartitionsEnd(nPartitions);
     }
 
 
     public static class Builder {
         protected double threshold;
-        private Repartition repartition = Repartition.Always;
-        private RepartitionStrategy repartitionStrategy = RepartitionStrategy.Balanced;
-        private StorageLevel storageLevel = StorageLevel.MEMORY_ONLY_SER();
-        private StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
-        private VoidConfiguration voidConfiguration;
+        protected Repartition repartition = Repartition.Always;
+        protected RepartitionStrategy repartitionStrategy = RepartitionStrategy.Balanced;
+        protected StorageLevel storageLevel = StorageLevel.MEMORY_ONLY_SER();
+        protected StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
+        protected VoidConfiguration voidConfiguration;
+        protected RDDTrainingApproach rddTrainingApproach = RDDTrainingApproach.Export;
+        protected long rngSeed;
+        protected String exportDirectory = null;
+        protected Integer numWorkers;
 
         public Builder(int rddDataSetNumExamples) {
             this(1e-3, rddDataSetNumExamples);
@@ -318,6 +448,43 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
          */
         public Builder storageLevel(StorageLevel storageLevel) {
             this.storageLevel = storageLevel;
+            return this;
+        }
+
+        /**
+         * The approach to use when training on a {@code RDD<DataSet>} or {@code RDD<MultiDataSet>}.
+         * Default: {@link RDDTrainingApproach#Export}, which exports data to a temporary directory first
+         *
+         * @param rddTrainingApproach Training approach to use when training from a {@code RDD<DataSet>} or {@code RDD<MultiDataSet>}
+         */
+        public Builder rddTrainingApproach(RDDTrainingApproach rddTrainingApproach) {
+            this.rddTrainingApproach = rddTrainingApproach;
+            return this;
+        }
+
+        /**
+         * When {@link #rddTrainingApproach(RDDTrainingApproach)} is set to {@link RDDTrainingApproach#Export} (as it is by default)
+         * the data is exported to a temporary directory first.
+         * <p>
+         * Default: null. -> use {hadoop.tmp.dir}/dl4j/. In this case, data is exported to {hadoop.tmp.dir}/dl4j/SOME_UNIQUE_ID/<br>
+         * If you specify a directory, the directory {exportDirectory}/SOME_UNIQUE_ID/ will be used instead.
+         *
+         * @param exportDirectory Base directory to export data
+         */
+        public Builder exportDirectory(String exportDirectory) {
+            this.exportDirectory = exportDirectory;
+            return this;
+        }
+
+        /**
+         * Random number generator seed, used mainly for enforcing repeatable splitting on RDDs
+         * Default: no seed set (i.e., random seed)
+         *
+         * @param rngSeed RNG seed
+         * @return
+         */
+        public Builder rngSeed(long rngSeed) {
+            this.rngSeed = rngSeed;
             return this;
         }
 
