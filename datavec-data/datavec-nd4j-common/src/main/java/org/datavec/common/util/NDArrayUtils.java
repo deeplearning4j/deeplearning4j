@@ -34,5 +34,4 @@ public class NDArrayUtils {
         return (int)(bits ^ (bits >>> 32));
     }
 
-
 }
