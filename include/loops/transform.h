@@ -93,7 +93,11 @@
         (55,simdOps::LogX) ,\
         (59,simdOps::Not) ,\
         (61,simdOps::RectifiedTanh) ,\
-        (62,simdOps::RectifiedTanhDerivative)
+        (62,simdOps::RectifiedTanhDerivative) ,\
+        (63,simdOps::Sinh) ,\
+        (64,simdOps::Cosh) ,\
+        (65,simdOps::Tan) ,\
+        (66,simdOps::TanDerivative)
 
 
 

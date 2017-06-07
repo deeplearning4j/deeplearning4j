@@ -56,6 +56,9 @@ template<typename T>
 		template<typename T>
         math_def inline T nd4j_cos(T val);
 
+        template<typename T>
+        math_def inline T nd4j_cosh(T val);
+
 		template<typename T>
         math_def inline T nd4j_exp(T val);
 
@@ -283,7 +286,7 @@ template<typename T>
 #ifdef NATIVE_HALFS
             return hceil(val.data)
 #else
-			return ceilf(val);
+			return ceilf((float) val);
 #endif
 		}
 
@@ -307,7 +310,7 @@ template<typename T>
 #ifdef NATIVE_HALFS
 			return hcos(val.data);
 #else
-			return cosf(val);
+			return cosf((float) val);
 #endif
 		}
 
@@ -325,6 +328,27 @@ template<typename T>
         math_def inline int nd4j_cos<int>(int val) {
 			return cosf((float) val);
 		}
+
+
+        template<>
+        math_def inline float16 nd4j_cosh<float16>(float16 val) {
+            return coshf((float) val);
+        }
+
+        template<>
+        math_def inline float nd4j_cosh<float>(float val) {
+            return coshf(val);
+        }
+
+        template<>
+        math_def inline double nd4j_cosh<double>(double val) {
+            return cosh(val);
+        }
+
+        template<>
+        math_def inline int nd4j_cosh<int>(int val) {
+            return coshf((float) val);
+        }
 
 
 		template<>

@@ -744,16 +744,6 @@ namespace simdOps {
 		}
 	};
 
-	template<typename T>
-	class Sinh {
-	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
-
-		op_def static T op(T d1, T *params) {
-			return nd4j::math::nd4j_sinh<T>(d1);
-		}
-	};
 
 	template<typename T>
 	class Sqrt {
@@ -878,19 +868,6 @@ namespace simdOps {
 			return nd4j::math::nd4j_atanh<T>(d1);
 		}
 	};
-
-	template<typename T>
-	class Tan {
-	public:
-		no_op_exec_special
-		no_op_exec_special_cuda
-
-		op_def static T op(T d1, T *params) {
-			return nd4j::math::nd4j_tan<T>(d1);
-		}
-	};
-
-
 
 	template<typename T>
 	class TanhDerivative {
@@ -1110,6 +1087,51 @@ namespace simdOps {
 			return nd4j::math::nd4j_asin<T>(d1);
 		}
 	};
+
+	template<typename T>
+	class Sinh {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_sinh<T>(d1);
+		}
+	};
+
+	template<typename T>
+	class Cosh {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_cosh<T>(d1);
+		}
+	};
+
+
+	template<typename T>
+	class Tan {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static T op(T d1, T *params) {
+			return nd4j::math::nd4j_tan<T>(d1);
+		}
+	};
+
+    template<typename T>
+    class TanDerivative {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static T op(T d1, T *params) {
+            return  (T) 1.0f / (T) nd4j::math::nd4j_pow<T>(nd4j::math::nd4j_cos<T>(d1), (T) 2.0f);
+        }
+    };
 
     template<typename T>
     class ASinh {
