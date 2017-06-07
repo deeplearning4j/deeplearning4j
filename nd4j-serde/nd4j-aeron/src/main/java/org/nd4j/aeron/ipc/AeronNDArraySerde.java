@@ -176,7 +176,7 @@ public class AeronNDArraySerde {
         //get the shape buffer length to create the shape information buffer
         int shapeBufferLength = Shape.shapeInfoLength(rank);
         //create the ndarray shape information
-        DataBuffer shapeBuff = Nd4j.createBuffer(new int[shapeBufferLength]);
+        DataBuffer shapeBuff = Nd4j.createBufferDetached(new int[shapeBufferLength]);
 
         //compute the databuffer type from the index
         DataBuffer.Type type = DataBuffer.Type.values()[byteBuffer.getInt()];

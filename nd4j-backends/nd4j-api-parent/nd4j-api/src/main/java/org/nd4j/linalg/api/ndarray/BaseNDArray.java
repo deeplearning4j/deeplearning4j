@@ -2065,8 +2065,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int offset = (int) (offset() + resolution.getOffset());
 
         int n = shape.length;
+
+        // FIXME: shapeInfo should be used here
         if (shape.length < 1)
-            return create(Nd4j.createBuffer(shape));
+            return create(Nd4j.createBufferDetached(shape));
         if (offsets.length != n)
             throw new IllegalArgumentException("Invalid offset " + Arrays.toString(offsets));
         if (stride.length != n)
@@ -2088,8 +2090,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray subArray(int[] offsets, int[] shape, int[] stride) {
         int n = shape.length;
+
+        // FIXME: shapeInfo should be used here
         if (shape.length < 1)
-            return create(Nd4j.createBuffer(shape));
+            return create(Nd4j.createBufferDetached(shape));
         if (offsets.length != n)
             throw new IllegalArgumentException("Invalid offset " + Arrays.toString(offsets));
         if (stride.length != n)
