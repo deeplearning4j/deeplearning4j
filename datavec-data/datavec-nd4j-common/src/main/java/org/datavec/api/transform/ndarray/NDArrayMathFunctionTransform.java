@@ -42,11 +42,10 @@ public class NDArrayMathFunctionTransform extends BaseColumnTransform {
 
     private final MathFunction mathFunction;
 
-    public NDArrayMathFunctionTransform(@JsonProperty("columnName") String columnName, MathFunction mathFunction) {
+    public NDArrayMathFunctionTransform(@JsonProperty("columnName") String columnName,
+                                        @JsonProperty("mathFunction") MathFunction mathFunction) {
         super(columnName);
         this.mathFunction = mathFunction;
-
-
     }
 
     @Override

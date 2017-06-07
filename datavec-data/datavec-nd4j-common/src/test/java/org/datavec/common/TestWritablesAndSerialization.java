@@ -16,6 +16,7 @@
 
 package org.datavec.common;
 
+import org.datavec.api.transform.metadata.NDArrayMetaData;
 import org.datavec.common.data.NDArrayWritable;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -23,13 +24,33 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.*;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * Created by Alex on 02/06/2017.
  */
 public class TestWritablesAndSerialization {
+
+    @Test
+    public void testIsValid(){
+
+        //Test for isValid, which uses reflection
+
+        NDArrayMetaData meta = new NDArrayMetaData("col", new int[]{1,10});
+
+        NDArrayWritable valid = new NDArrayWritable(Nd4j.create(1,10));
+        NDArrayWritable invalid = new NDArrayWritable(Nd4j.create(1,5));
+        NDArrayWritable invalid2 = new NDArrayWritable(null);
+
+
+        assertTrue(meta.isValid(valid));
+        assertFalse(meta.isValid(invalid));
+        assertFalse(meta.isValid(invalid2));
+
+        assertTrue(meta.isValid(valid.get()));
+        assertFalse(meta.isValid(invalid.get()));
+        assertFalse(meta.isValid(invalid2.get()));
+    }
 
     @Test
     public void testWritableSerializationSingle() throws Exception {

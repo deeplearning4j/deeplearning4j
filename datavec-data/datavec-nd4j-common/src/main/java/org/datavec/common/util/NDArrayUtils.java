@@ -16,12 +16,22 @@
 
 package org.datavec.common.util;
 
+import org.datavec.api.transform.metadata.NDArrayMetaData;
+import org.datavec.api.writable.Writable;
+import org.datavec.common.data.NDArrayWritable;
+import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.Arrays;
+
 /**
- * Created by Alex on 07/06/2017.
+ * Utility methods for NDArrayWritable operations
+ *
+ * @author Alex Black
  */
 public class NDArrayUtils {
 
-    private NDArrayUtils(){ }
+    private NDArrayUtils() {
+    }
 
     /**
      * hashCode method, taken from Java 1.8 Double.hashCode(double) method
@@ -31,7 +41,57 @@ public class NDArrayUtils {
      */
     public static int hashCode(double value) {
         long bits = Double.doubleToLongBits(value);
-        return (int)(bits ^ (bits >>> 32));
+        return (int) (bits ^ (bits >>> 32));
+    }
+
+    /**
+     * Determine if the given writable value is valid for the given NDArrayMetaData
+     *
+     * @param meta     Meta data
+     * @param writable Writable to check
+     * @return True if valid, false otherwise
+     */
+    public static boolean isValid(NDArrayMetaData meta, Writable writable) {
+        if (!(writable instanceof NDArrayWritable)) {
+            return false;
+        }
+        INDArray arr = ((NDArrayWritable) writable).get();
+        if (arr == null) {
+            return false;
+        }
+        int[] shape = meta.getShape();
+        if (meta.isAllowVarLength()) {
+            for (int i = 0; i < shape.length; i++) {
+                if (shape[i] < 0) {
+                    continue;
+                }
+                if (shape[i] != arr.size(i)) {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            return Arrays.equals(shape, arr.shape());
+        }
+    }
+
+    /**
+     * Determine if the given Object is valid for the given NDArrayMetaData
+     *
+     * @param meta  Meta data
+     * @param input Object to check
+     * @return True if valid, false otherwise
+     */
+    public static boolean isValid(NDArrayMetaData meta, Object input) {
+        if(input == null) {
+            return false;
+        } else if (input instanceof Writable) {
+            return isValid(meta, (Writable) input);
+        } else if (input instanceof INDArray) {
+            return isValid(meta, new NDArrayWritable((INDArray) input));
+        } else {
+            throw new UnsupportedOperationException("Unknown object type: " + input.getClass());
+        }
     }
 
 }
