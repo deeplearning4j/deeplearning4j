@@ -15,24 +15,20 @@
  */
 package org.datavec.common.data;
 
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-
 import org.datavec.api.io.WritableComparable;
-import org.datavec.api.io.WritableComparator;
 import org.datavec.api.writable.ArrayWritable;
 import org.datavec.api.writable.WritableFactory;
 import org.datavec.api.writable.WritableType;
 import org.datavec.common.util.DataInputWrapperStream;
 import org.datavec.common.util.DataOutputWrapperStream;
 import org.datavec.common.util.NDArrayUtils;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import javax.annotation.Nonnull;
+import java.io.*;
+import java.util.Arrays;
 
 /**
  * A Writable that basically wraps an INDArray.
@@ -132,28 +128,9 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
 
         //For NDArrayWritable: we use strict equality. Otherwise, we can have a.equals(b) but a.hashCode() != b.hashCode()
         return this.array.equalsWithEps(io, 0.0);
-
-
-//        NDArrayWritable other = (NDArrayWritable) o;
-//        DataBuffer thisData = this.array.data();
-//        DataBuffer otherData = other.array.data();
-//        DataBuffer.Type thisType = thisData.dataType();
-//        DataBuffer.Type otherType = otherData.dataType();
-//        if (thisType != otherType) {
-//            throw new IllegalArgumentException("Data types must be the same.");
-//        }
-//        switch (thisType) {
-//            case DOUBLE:
-//                return thisData.asNioDouble().equals(otherData.asNioDouble());
-//            case FLOAT:
-//                return thisData.asNioFloat().equals(otherData.asNioFloat());
-//            case INT:
-//                return thisData.asNioInt().equals(otherData.asNioInt());
-//        }
-//        throw new UnsupportedOperationException("Unsupported data type: " + thisType);
     }
 
-
+    @Override
     public int hashCode() {
         if (hash != null) {
             return hash;
@@ -233,47 +210,6 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
     public String toString() {
         return array.toString();
     }
-
-//    /**
-//     * A Comparator optimized for ArrayWritable.
-//     */
-//    public static class Comparator extends WritableComparator {
-//        public Comparator() {
-//            super(NDArrayWritable.class);
-//        }
-//
-//        public int compare(byte[] b1, int s1, int l1, byte[] b2, int s2, int l2) {
-//            ByteBuffer buffer1 = ByteBuffer.wrap(b1, s1, l1);
-//            ByteBuffer buffer2 = ByteBuffer.wrap(b2, s2, l2);
-//            long length1 = buffer1.getLong();
-//            long length2 = buffer2.getLong();
-//            if (length1 == 0 && length2 == 0) {
-//                return 0;
-//            } else if (length1 == 0) {
-//                return (int) Math.max(-length2, Integer.MIN_VALUE);
-//            } else if (length2 == 0) {
-//                return (int) Math.min(length1, Integer.MAX_VALUE);
-//            }
-//            int type1 = buffer1.getInt();
-//            int type2 = buffer2.getInt();
-//            if (type1 != type2) {
-//                throw new IllegalArgumentException("Data types must be the same.");
-//            }
-//            if (type1 == DataBuffer.Type.DOUBLE.ordinal()) {
-//                return buffer1.asDoubleBuffer().compareTo(buffer2.asDoubleBuffer());
-//            } else if (type1 == DataBuffer.Type.FLOAT.ordinal()) {
-//                return buffer1.asFloatBuffer().compareTo(buffer2.asFloatBuffer());
-//            } else if (type1 == DataBuffer.Type.INT.ordinal()) {
-//                return buffer1.asIntBuffer().compareTo(buffer2.asIntBuffer());
-//            } else {
-//                throw new UnsupportedOperationException("Unsupported data type: " + type1);
-//            }
-//        }
-//    }
-//
-//    static { // register this comparator
-//        WritableComparator.define(NDArrayWritable.class, new Comparator());
-//    }
 
     @Override
     public long length() {
