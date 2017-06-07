@@ -20,7 +20,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Created by agibsonccc on 12/24/16.
  */
-public class CSVSparkTransformerTest {
+public class CSVSparkTransformTest {
     @Test
     public void testTransformer() throws Exception {
         List<Writable> input = new ArrayList<>();
@@ -41,7 +41,6 @@ public class CSVSparkTransformerTest {
         INDArray fromBase64 = Nd4jBase64.fromBase64(body.getNdarray());
         assertTrue(fromBase64.isVector());
         System.out.println("Base 64ed array " + fromBase64);
-
     }
 
     @Test
@@ -68,8 +67,5 @@ public class CSVSparkTransformerTest {
         INDArray fromBase64 = Nd4jBase64.fromBase64(body.getNdarray());
         assertTrue(fromBase64.isMatrix());
         System.out.println("Base 64ed array " + fromBase64);
-
     }
-
-
 }
