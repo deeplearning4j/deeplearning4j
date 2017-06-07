@@ -24,7 +24,9 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Created by Alex on 02/06/2017.
+ * A simple class to wrap a {@link DataInput} instance in an {@link InputStream}
+ *
+ * @author Alex Black
  */
 @AllArgsConstructor
 public class DataInputWrapperStream extends InputStream {
@@ -38,7 +40,8 @@ public class DataInputWrapperStream extends InputStream {
         "Reads the next byte of data from the input stream. The value byte is
          returned as an <code>int</code> in the range <code>0</code> to
          <code>255</code>."
+         Therefore: we need to use readUnsignedByte(), with returns 0 to 255. readByte() returns -128 to 127
          */
-        return underlying.readUnsignedByte();   //readByte() -> EOF exception :/
+        return underlying.readUnsignedByte();
     }
 }

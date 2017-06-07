@@ -34,7 +34,7 @@ public class TestWritableSerialization {
     @Test
     public void testWritableSerializationSingle() throws Exception {
 
-        INDArray arrC = Nd4j.rand(new int[]{1,1},'c');
+        INDArray arrC = Nd4j.rand(new int[]{1,10},'c');
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutput da = new DataOutputStream(baos);

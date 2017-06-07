@@ -23,7 +23,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Created by Alex on 02/06/2017.
+ * A simple class to wrap a {@link DataOutput} instance in an {@link OutputStream}
+ *
+ * @author Alex Black
  */
 @AllArgsConstructor
 public class DataOutputWrapperStream extends OutputStream {
@@ -32,6 +34,8 @@ public class DataOutputWrapperStream extends OutputStream {
 
     @Override
     public void write(int b) throws IOException {
+        //write(int) method: "Writes to the output stream the eight low-order bits of the argument b. The 24 high-order
+        // bits of b are ignored."
         underlying.write(b);
     }
 }
