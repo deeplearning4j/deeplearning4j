@@ -113,7 +113,7 @@ public class CSVSparkTransformServer {
             }
         })));
 
-        routingDsl.POST("/transformedincrementalarray").routeTo(FunctionUtil.function0((() -> {
+        routingDsl.POST("/transformincrementalarray").routeTo(FunctionUtil.function0((() -> {
             try {
                 CSVRecord record = Json.fromJson(request().body().asJson(), CSVRecord.class);
                 if (record == null)
@@ -124,7 +124,7 @@ public class CSVSparkTransformServer {
             }
         })));
 
-        routingDsl.POST("/transformedarray").routeTo(FunctionUtil.function0((() -> {
+        routingDsl.POST("/transformarray").routeTo(FunctionUtil.function0((() -> {
             try {
                 BatchRecord batchRecord = Json.fromJson(request().body().asJson(), BatchRecord.class);
                 if (batchRecord == null)
