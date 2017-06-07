@@ -19,14 +19,18 @@ package org.datavec.api.transform.analysis.columns;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.datavec.api.transform.ColumnType;
 
 import java.util.*;
 
 /**
- * Created by Alex on 02/06/2017.
+ * Column analysis class for NDArray columns
+ *
+ * @author Alex Black
  */
 @AllArgsConstructor
+@NoArgsConstructor  //For Jackson/json
 @Builder(builderClassName = "Builder", builderMethodName = "Builder")
 @Data
 public class NDArrayAnalysis implements ColumnAnalysis {

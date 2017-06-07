@@ -98,6 +98,13 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class TransformProcess implements Serializable {
 
+    //Class names for NDArray transforms: these are instantiated using reflection, as NDArray transforms are not
+    // defined in datavec-api
+    private static final String NDARRAY_MATH_OP_TRANSFORM_CLASS = "org.datavec.api.transform.ndarray.NDArrayMathOpTransform";
+    private static final String NDARRAY_COLUMNS_MATH_OP_TRANSFORM_CLASS = "org.datavec.api.transform.ndarray.NDArrayColumnsMathOpTransform";
+    private static final String NDARRAY_MATH_FUNCTION_TRANSFORM_CLASS = "org.datavec.api.transform.ndarray.NDArrayMathFunctionTransform";
+
+
     private final Schema initialSchema;
     private List<DataAction> actionList;
 
@@ -1222,48 +1229,68 @@ public class TransformProcess implements Serializable {
         /**
          * Element-wise NDArray math operation (add, subtract, etc) on an NDArray column
          *
-         * @param columnName
-         * @param op
-         * @param value
-         * @return
+         * @param columnName Name of the NDArray column to perform the operation on
+         * @param op         Operation to perform
+         * @param value      Value for the operation
          */
         public Builder ndArrayMathOpTransform(String columnName, MathOp op, double value){
-            //TODO is there a better way to do this?
             try{
-                Class<?> c = Class.forName("org.datavec.api.transform.ndarray.NDArrayMathOpTransform");
+                //Use reflection, as NDArray transforms are not defined in datavec-api
+                Class<?> c = Class.forName(NDARRAY_MATH_OP_TRANSFORM_CLASS);
                 transform( (Transform)
                         c.getDeclaredConstructor(String.class, MathOp.class, double.class).newInstance(columnName, op, value));
+            } catch (ClassNotFoundException e){
+                throw new RuntimeException("Could not find class " + NDARRAY_MATH_OP_TRANSFORM_CLASS + "; " +
+                        "datavec-nd4j-common (required for ND4J NDArray transforms) is not on the classpath?");
             } catch (Exception e){
-                //TODO
-                throw new RuntimeException(e);
+                throw new RuntimeException("Could not instantiate transform: " + NDARRAY_MATH_OP_TRANSFORM_CLASS, e);
             }
 
             return this;
         }
 
+        /**
+         * Perform an element wise mathematical operation (such as add, subtract, multiply) on NDArray columns.
+         * The existing columns are unchanged, a new NDArray column is added
+         *
+         * @param newColumnName Name of the new NDArray column
+         * @param mathOp        Operation to perform
+         * @param columnNames   Name of the columns used as input to the operation
+         */
         public Builder ndArrayColumnsMathOpTransform(String newColumnName, MathOp mathOp, String... columnNames){
-            //TODO is there a better way to do this?
             try{
-                Class<?> c = Class.forName("org.datavec.api.transform.ndarray.NDArrayColumnsMathOpTransform");
+                //Use reflection, as NDArray transforms are not defined in datavec-api
+                Class<?> c = Class.forName(NDARRAY_COLUMNS_MATH_OP_TRANSFORM_CLASS);
                 transform( (Transform)
                         c.getDeclaredConstructor(String.class, MathOp.class, String[].class).newInstance(newColumnName, mathOp, columnNames));
+            } catch (ClassNotFoundException e){
+                throw new RuntimeException("Could not find class " + NDARRAY_COLUMNS_MATH_OP_TRANSFORM_CLASS + "; " +
+                        "datavec-nd4j-common (required for ND4J NDArray transforms) is not on the classpath?");
             } catch (Exception e){
-                //TODO
-                throw new RuntimeException(e);
+                throw new RuntimeException("Could not instantiate transform: " + NDARRAY_COLUMNS_MATH_OP_TRANSFORM_CLASS, e);
             }
 
             return this;
         }
 
+        /**
+         * Apply an element wise mathematical function (sin, tanh, abs etc) to an NDArray column. This operation is
+         * performed in place.
+         *
+         * @param columnName   Name of the column to perform the operation on
+         * @param mathFunction Mathematical function to apply
+         */
         public Builder ndArrayMathFunctionTransform(String columnName, MathFunction mathFunction){
-            //TODO is there a better way to do this?
-            try{
-                Class<?> c = Class.forName("org.datavec.api.transform.ndarray.NDArrayMathFunctionTransform");
-                transform( (Transform)
+            try {
+                //Use reflection, as NDArray transforms are not defined in datavec-api
+                Class<?> c = Class.forName(NDARRAY_MATH_FUNCTION_TRANSFORM_CLASS);
+                transform((Transform)
                         c.getDeclaredConstructor(String.class, MathFunction.class).newInstance(columnName, mathFunction));
+            } catch (ClassNotFoundException e){
+                throw new RuntimeException("Could not find class " + NDARRAY_MATH_FUNCTION_TRANSFORM_CLASS + "; " +
+                        "datavec-nd4j-common (required for ND4J NDArray transforms) is not on the classpath?");
             } catch (Exception e){
-                //TODO
-                throw new RuntimeException(e);
+                throw new RuntimeException("Could not instantiate transform: " + NDARRAY_MATH_FUNCTION_TRANSFORM_CLASS, e);
             }
 
             return this;

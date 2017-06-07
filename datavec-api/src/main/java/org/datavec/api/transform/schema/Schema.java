@@ -52,6 +52,9 @@ import java.util.*;
 @JsonSubTypes(value = {@JsonSubTypes.Type(value = SequenceSchema.class, name = "SequenceSchema"),})
 public class Schema implements Serializable {
 
+    //Use reflection to instantiate NDArray column metadata, as these are defined in another (optional) package
+    private static final String NDARRAY_META_CLASS = "org.datavec.api.transform.metadata.NDArrayMetaData";
+
     private List<String> columnNames;
     @JsonProperty("columns")
     private List<ColumnMetaData> columnMetaData;
@@ -724,9 +727,13 @@ public class Schema implements Serializable {
             return this;
         }
 
-
-        //TODO fix this
-        private static final String NDARRAY_META_CLASS = "org.datavec.api.transform.metadata.NDArrayMetaData";
+        /**
+         * Add an NDArray column.<br>
+         * Note that ND4J NDArray operations require that datavec-nd4j-common is added as a dependency
+         *
+         * @param columnName Name of the column
+         * @param shape      shape of the NDArray column. Use -1 in entries to specify as "variable length" in that dimension
+         */
         public Builder addColumnNDArray(String columnName, int[] shape){
             Class<?> c;
             try{
@@ -740,14 +747,13 @@ public class Schema implements Serializable {
             try{
                constructor = c.getDeclaredConstructor(String.class, int[].class);
                ColumnMetaData meta = (ColumnMetaData) constructor.newInstance(columnName, shape);
-               addColumn(meta);
+               return addColumn(meta);
             } catch (NoSuchMethodException e){
                 //Should never happen
-                throw new RuntimeException(e);
+                throw new RuntimeException("Could not create NDArrayMetaData instance (constructor not found)", e);
             } catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
-                throw new RuntimeException("Could not create NDArrayMetaData",e);
+                throw new RuntimeException("Could not create NDArrayMetaData instance",e);
             }
-            return this;
         }
 
         /**

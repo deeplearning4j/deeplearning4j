@@ -28,15 +28,25 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * Created by Alex on 02/06/2017.
+ * Perform an NDArray/scalar element wise operation, such as X.addi(scalar).
+ * Element wise operations are performed in place on each value of the underlying INDArray
+ *
+ * @author Alex Black
  */
 public class NDArrayMathOpTransform extends BaseColumnTransform {
 
     private final MathOp mathOp;
     private final double scalar;
 
-    public NDArrayMathOpTransform(@JsonProperty("columnName") String columnName, @JsonProperty("mathOp") MathOp mathOp,
-                                 @JsonProperty("scalar") double scalar) {
+    /**
+     *
+     * @param columnName Name of the column to perform the operation on
+     * @param mathOp     Operation to perform
+     * @param scalar     Scalar value for the operation
+     */
+    public NDArrayMathOpTransform(@JsonProperty("columnName") String columnName,
+                                  @JsonProperty("mathOp") MathOp mathOp,
+                                  @JsonProperty("scalar") double scalar) {
         super(columnName);
         this.mathOp = mathOp;
         this.scalar = scalar;
@@ -44,11 +54,11 @@ public class NDArrayMathOpTransform extends BaseColumnTransform {
 
     @Override
     public ColumnMetaData getNewColumnMetaData(String newName, ColumnMetaData oldColumnType) {
-        if(!(oldColumnType instanceof NDArrayMetaData)){
+        if (!(oldColumnType instanceof NDArrayMetaData)) {
             throw new IllegalStateException("Column " + newName + " is not a NDArray column");
         }
 
-        NDArrayMetaData oldMeta = (NDArrayMetaData)oldColumnType;
+        NDArrayMetaData oldMeta = (NDArrayMetaData) oldColumnType;
         NDArrayMetaData newMeta = oldMeta.clone();
         newMeta.setName(newName);
 
@@ -57,14 +67,14 @@ public class NDArrayMathOpTransform extends BaseColumnTransform {
 
     @Override
     public NDArrayWritable map(Writable w) {
-        if(!(w instanceof NDArrayWritable)){
+        if (!(w instanceof NDArrayWritable)) {
             throw new IllegalArgumentException("Input writable is not an NDArrayWritable: is " + w.getClass());
         }
 
-        //TODO is in-place always safe?
+        //Make a copy - can't always assume that the original INDArray won't be used again in the future
         NDArrayWritable n = ((NDArrayWritable) w);
-        INDArray a = n.get();
-        switch (mathOp){
+        INDArray a = n.get().dup();
+        switch (mathOp) {
             case Add:
                 a.addi(scalar);
                 break;
@@ -108,7 +118,7 @@ public class NDArrayMathOpTransform extends BaseColumnTransform {
 
     @Override
     public Object map(Object input) {
-        if(input instanceof INDArray){
+        if (input instanceof INDArray) {
             return map(new NDArrayWritable((INDArray) input)).get();
         }
         throw new RuntimeException("Unsupported class: " + input.getClass());

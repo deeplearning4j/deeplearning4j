@@ -16,34 +16,39 @@
 
 package org.datavec.api.transform.metadata;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.*;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
 /**
- * Created by Alex on 02/06/2017.
+ * Meta data class for NDArray columns
+ *
+ * @author Alex Black
  */
-@Getter
+@Data
+@EqualsAndHashCode(callSuper = true)
+@JsonIgnoreProperties("allowVarLength")
 public class NDArrayMetaData extends BaseColumnMetaData {
 
     private int[] shape;
     private boolean allowVarLength;
 
     /**
-     *
-     * @param name
-     * @param shape
+     * @param name  Name of the NDArray column
+     * @param shape shape of the NDArray column. Use -1 in entries to specify as "variable length" in that dimension
      */
-    public NDArrayMetaData(String name, int[] shape) {
+    public NDArrayMetaData(@JsonProperty("name") String name, @JsonProperty("shape") int[] shape) {
         super(name);
         this.shape = shape;
-        for( int i : shape ){
-            if(i < 0){
+        for (int i : shape) {
+            if (i < 0) {
                 allowVarLength = true;
                 break;
             }
@@ -57,19 +62,19 @@ public class NDArrayMetaData extends BaseColumnMetaData {
 
     @Override
     public boolean isValid(Writable writable) {
-        if(!(writable instanceof NDArrayWritable)){
+        if (!(writable instanceof NDArrayWritable)) {
             return false;
         }
         INDArray arr = ((NDArrayWritable) writable).get();
-        if(arr == null){
+        if (arr == null) {
             return false;
         }
-        if(allowVarLength){
-            for( int i=0; i<shape.length; i++ ){
+        if (allowVarLength) {
+            for (int i = 0; i < shape.length; i++) {
                 if (shape[i] < 0) {
                     continue;
                 }
-                if(shape[i] != arr.size(i)){
+                if (shape[i] != arr.size(i)) {
                     return false;
                 }
             }
@@ -81,7 +86,13 @@ public class NDArrayMetaData extends BaseColumnMetaData {
 
     @Override
     public boolean isValid(Object input) {
-        return isValid((Writable)input);
+        if (input instanceof Writable) {
+            return isValid((Writable) input);
+        } else if (input instanceof INDArray) {
+            return isValid(new NDArrayWritable((INDArray) input));
+        } else {
+            throw new UnsupportedOperationException("Unknown object type: " + input.getClass());
+        }
     }
 
     @Override

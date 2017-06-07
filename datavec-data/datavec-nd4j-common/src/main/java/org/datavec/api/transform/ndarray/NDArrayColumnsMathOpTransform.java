@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.ndarray;
 
+import lombok.Data;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -26,15 +27,21 @@ import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
 /**
- * Created by Alex on 02/06/2017.
+ * Perform an element wise mathematical operation on 2 or more NDArray columns
+ *
+ * @author Alex Black
  */
+@Data
 public class NDArrayColumnsMathOpTransform extends BaseColumnsMathOpTransform {
 
-    public NDArrayColumnsMathOpTransform(String newColumnName, MathOp mathOp, String... columns) {
+    public NDArrayColumnsMathOpTransform(@JsonProperty("newColumnName") String newColumnName,
+                                         @JsonProperty("mathOp") MathOp mathOp,
+                                         @JsonProperty("columns") String... columns) {
         super(newColumnName, mathOp, columns);
     }
 

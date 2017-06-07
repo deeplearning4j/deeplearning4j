@@ -28,7 +28,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Created by Alex on 07/06/2017.
+ * A counter for performing analysis on NDArray columns
+ *
+ * @author Alex Black
  */
 public class NDArrayAnalysisCounter implements AnalysisCounter<NDArrayAnalysisCounter> {
 
