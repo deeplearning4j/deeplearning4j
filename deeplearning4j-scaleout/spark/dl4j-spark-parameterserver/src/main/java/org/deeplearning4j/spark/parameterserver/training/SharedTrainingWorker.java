@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.parameterserver.training;
 
+import lombok.Getter;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -18,8 +19,8 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
  */
 public class SharedTrainingWorker implements TrainingWorker<SharedTrainingResult> {
 
-    private final Broadcast<NetBroadcastTuple> broadcastModel;
-    private final Broadcast<SharedTrainingConfiguration> broadcastConfiguration;
+    @Getter private final Broadcast<NetBroadcastTuple> broadcastModel;
+    @Getter private final Broadcast<SharedTrainingConfiguration> broadcastConfiguration;
 
     public SharedTrainingWorker(Broadcast<NetBroadcastTuple> broadcastModel, Broadcast<SharedTrainingConfiguration> broadcastConfiguration) {
         // our initial model is stored here.

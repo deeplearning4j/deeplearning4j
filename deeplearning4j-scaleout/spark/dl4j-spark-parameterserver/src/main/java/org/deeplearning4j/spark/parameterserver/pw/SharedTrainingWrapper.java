@@ -8,10 +8,14 @@ import org.deeplearning4j.optimize.solvers.accumulation.MessageHandler;
 import org.deeplearning4j.parallelism.ParallelWrapper;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualDataSetIterator;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualMultiDataSetIterator;
+import org.deeplearning4j.spark.parameterserver.networking.SilentTrainingDriver;
 import org.deeplearning4j.spark.parameterserver.networking.WiredEncodingHandler;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingWorker;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
+import org.nd4j.parameterserver.distributed.VoidParameterServer;
+import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.transport.Transport;
 
 import java.util.Iterator;
 import java.util.List;
@@ -88,6 +92,12 @@ public class SharedTrainingWrapper {
                     .messageHandler(handler)
                     .encodingThreshold(1e-3)
                     .build();
+
+            Transport transport = null;
+
+            // now we're attaching VoidParameterServer to GradientsAccumulator
+            VoidConfiguration voidConfiguration = worker.getBroadcastConfiguration().getValue().getVoidConfiguration();
+            VoidParameterServer.getInstance().init(voidConfiguration, transport, new SilentTrainingDriver(accumulator));
 
             wrapper = new ParallelWrapper.Builder<>(model)
                     // TODO: we should define proper num workers here, better suiting current environment

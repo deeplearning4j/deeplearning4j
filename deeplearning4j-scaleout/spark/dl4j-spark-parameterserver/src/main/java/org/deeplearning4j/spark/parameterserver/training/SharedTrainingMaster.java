@@ -13,6 +13,7 @@ import org.apache.spark.input.PortableDataStream;
 import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
@@ -33,6 +34,10 @@ import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.ExecutionMode;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
+import org.nd4j.parameterserver.distributed.enums.TransportType;
+import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
+import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
+import org.nd4j.parameterserver.distributed.transport.Transport;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.PropertyAccessor;
 import org.nd4j.shade.jackson.core.JsonFactory;
@@ -81,6 +86,7 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
     // better ignore
     protected transient Broadcast<NetBroadcastTuple> broadcastModel;
     protected transient Broadcast<SharedTrainingConfiguration> broadcastConfiguration;
+    protected transient Transport transport;
 
     protected SharedTrainingMaster() {
         // just a stub for ser/de
@@ -307,7 +313,13 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
             7) do something with final model, i.e. export it somewhere :)
          */
         // first of all, we're instantiating ParameterServer shard here
-        VoidParameterServer.getInstance().init(voidConfiguration, null, new SilentTrainingDriver(null));
+        Transport transport = voidConfiguration.getTransportType() == TransportType.ROUTED ? new RoutedTransport() : voidConfiguration.getTransportType() == TransportType.BROADCAST ? new MulticastTransport() : this.transport;
+
+        if (transport == null)
+            throw new DL4JInvalidConfigException("No Transport implementation was defined for this training session!");
+
+        // TODO: use proper params here, and proper stepFunction, derived from network. Maybe silently initialize it? :)
+        VoidParameterServer.getInstance().init(voidConfiguration, transport, new SilentTrainingDriver(null, null));
 
         if (numWorkers == null)
             numWorkers = network.getSparkContext().defaultParallelism();
@@ -466,6 +478,7 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
         protected String exportDirectory = null;
         protected Integer numWorkers;
         protected boolean collectTrainingStats;
+        protected Transport transport;
 
         public Builder(int rddDataSetNumExamples) {
             this(1e-3, rddDataSetNumExamples);
@@ -477,8 +490,11 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
 
         public Builder(double threshold, int rddDataSetNumExamples) {
             this(VoidConfiguration.builder()
-                    .executionMode(ExecutionMode.DISTRIBUTED)
+                    .executionMode(ExecutionMode.MANAGED)
                     .forcedRole(NodeRole.SHARD)
+
+                    // we're setting controller to Spark Master
+                    .controllerAddress(System.getenv("SPARK_PUBLIC_DNS"))
                     .build(), null, threshold, rddDataSetNumExamples);
         }
 
@@ -598,8 +614,21 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
             return this;
         }
 
+        /**
+         * Optional method: Transport implementation to be used as TransportType.CUSTOM for VoidParameterAveraging method
+         *
+         * @param transport
+         * @return
+         */
+        public Builder transport(Transport transport) {
+            this.transport = transport;
+            return this;
+        }
+
         public SharedTrainingMaster build() {
             SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach, storageLevel, true, repartitionStrategy, repartition, threshold);
+            if (transport != null)
+                master.transport = this.transport;
 
             return master;
         }
