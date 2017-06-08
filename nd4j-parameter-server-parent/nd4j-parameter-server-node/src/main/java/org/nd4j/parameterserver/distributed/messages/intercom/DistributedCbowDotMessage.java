@@ -4,7 +4,6 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.enums.ExecutionMode;
 import org.nd4j.parameterserver.distributed.logic.storage.WordVectorStorage;
@@ -12,9 +11,7 @@ import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
 import org.nd4j.parameterserver.distributed.messages.aggregations.DotAggregation;
 import org.nd4j.parameterserver.distributed.messages.requests.CbowRequestMessage;
-import org.nd4j.parameterserver.distributed.messages.requests.SkipGramRequestMessage;
 import org.nd4j.parameterserver.distributed.training.impl.CbowTrainer;
-import org.nd4j.parameterserver.distributed.training.impl.SkipGramTrainer;
 
 import java.util.Arrays;
 
@@ -110,7 +107,7 @@ public class DistributedCbowDotMessage extends BaseVoidMessage implements Distri
             dot.setTargetId((short) -1);
             dot.setOriginatorId(getOriginatorId());
             transport.putMessage(dot);
-        } else if (voidConfiguration.getExecutionMode() == ExecutionMode.DISTRIBUTED) {
+        } else if (voidConfiguration.getExecutionMode() == ExecutionMode.SHARDED) {
             // send this message to everyone
             DotAggregation dot = new DotAggregation(taskId, (short) voidConfiguration.getNumberOfShards(), shardIndex,
                             result);

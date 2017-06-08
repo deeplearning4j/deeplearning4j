@@ -428,7 +428,7 @@
         <maven-play2-plugin.version>1.0.0-beta5</maven-play2-plugin.version>
         <jcommander.version>1.27</jcommander.version>
         <playframework.version>2.4.6</playframework.version>
-        <lombok.version>1.16.10</lombok.version>
+        <lombok.version>1.16.16</lombok.version>
         <jackson.version>2.5.1</jackson.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>4.12</junit.version>
