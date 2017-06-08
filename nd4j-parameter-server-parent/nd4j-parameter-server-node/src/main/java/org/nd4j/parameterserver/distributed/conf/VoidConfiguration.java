@@ -6,6 +6,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.enums.ExecutionMode;
 import org.nd4j.parameterserver.distributed.enums.FaultToleranceStrategy;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
+import org.nd4j.parameterserver.distributed.enums.TransportType;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -31,6 +32,7 @@ public class VoidConfiguration implements Serializable {
 
     @Builder.Default private List<String> shardAddresses = new ArrayList<>();
     @Builder.Default private List<String> backupAddresses = new ArrayList<>();
+    @Builder.Default private TransportType transportType = TransportType.ROUTED;
 
     // this is very important parameter
     private String networkMask;
