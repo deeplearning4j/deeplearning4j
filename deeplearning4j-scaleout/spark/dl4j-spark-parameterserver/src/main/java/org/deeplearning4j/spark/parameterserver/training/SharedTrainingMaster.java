@@ -8,22 +8,30 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaRDDLike;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.input.PortableDataStream;
 import org.apache.spark.storage.StorageLevel;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.ExecuteWorkerFlatMap;
+import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingResult;
+import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMasterStats;
+import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
 import org.deeplearning4j.spark.parameterserver.functions.SharedFlatMapDataSet;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.enums.ExecutionMode;
+import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.PropertyAccessor;
 import org.nd4j.shade.jackson.core.JsonFactory;
@@ -45,9 +53,6 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
     protected List<TrainingHook> trainingHooks;
     protected VoidConfiguration voidConfiguration;
 
-    private static ObjectMapper jsonMapper;
-    private static ObjectMapper yamlMapper;
-
     protected Integer numWorkers;
     protected RDDTrainingApproach rddTrainingApproach;
     protected StorageLevel storageLevel;
@@ -56,14 +61,41 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
     protected int rddDataSetNumExamples;
     protected int batchSizePerWorker;
 
+    // TODO: this option should be abstracted, if we decide to generalize this trainingmaster
+    protected double threshold;
+
     protected Repartition repartition;
     protected RepartitionStrategy repartitionStrategy;
+
+    protected ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper stats;
 
     protected Random rng;
 
 
-    public SharedTrainingMaster(@NonNull VoidConfiguration voidConfiguration) {
+    // safe to ignore
+    private static ObjectMapper jsonMapper;
+    private static ObjectMapper yamlMapper;
+
+
+    // better ignore
+    protected transient Broadcast<NetBroadcastTuple> broadcastModel;
+    protected transient Broadcast<SharedTrainingConfiguration> broadcastConfiguration;
+
+    protected SharedTrainingMaster() {
+        // just a stub for ser/de
+    }
+
+    public SharedTrainingMaster(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers, RDDTrainingApproach rddTrainingApproach, StorageLevel storageLevel, boolean collectTrainingStats, RepartitionStrategy repartitionStrategy, Repartition repartition, double threshold) {
         this.voidConfiguration = voidConfiguration;
+        this.repartition = repartition;
+        this.repartitionStrategy = repartitionStrategy;
+        this.numWorkers = numWorkers;
+        this.rddTrainingApproach = rddTrainingApproach;
+        this.repartitionStrategy = repartitionStrategy;
+        this.repartition = repartition;
+        this.storageLevel = storageLevel;
+        this.collectTrainingStats = collectTrainingStats;
+        this.threshold = threshold;
     }
 
     @Override
@@ -137,12 +169,57 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
         /*
             Here we're going create our worker, which will be passed into corresponding FlatMapFunction
          */
-        return null;
+        NetBroadcastTuple tuple = new NetBroadcastTuple(network.getNetwork().getLayerWiseConfigurations(),
+                network.getNetwork().params(), network.getNetwork().getUpdater().getStateViewArray());
+
+        SharedTrainingConfiguration configuration = SharedTrainingConfiguration.builder()
+                .threshold(threshold)
+                .voidConfiguration(voidConfiguration)
+                .build();
+
+        if (collectTrainingStats)
+            stats.logBroadcastStart();
+
+        if (broadcastModel == null)
+            broadcastModel = network.getSparkContext().broadcast(tuple);
+
+        if (broadcastConfiguration == null)
+            broadcastConfiguration = network.getSparkContext().broadcast(configuration);
+
+        if (collectTrainingStats)
+            stats.logBroadcastEnd();
+
+        SharedTrainingWorker worker = new SharedTrainingWorker(broadcastModel, broadcastConfiguration);
+
+        return worker;
     }
 
     @Override
     public SharedTrainingWorker getWorkerInstance(SparkComputationGraph graph) {
-        return null;
+        NetBroadcastTuple tuple = new NetBroadcastTuple(graph.getNetwork().getConfiguration(),
+                graph.getNetwork().params(), graph.getNetwork().getUpdater().getStateViewArray());
+
+        SharedTrainingConfiguration configuration = SharedTrainingConfiguration.builder()
+                .threshold(threshold)
+                .voidConfiguration(voidConfiguration)
+
+                .build();
+
+        if (collectTrainingStats)
+            stats.logBroadcastStart();
+
+        if (broadcastModel == null)
+            broadcastModel = graph.getSparkContext().broadcast(tuple);
+
+        if (broadcastConfiguration == null)
+            broadcastConfiguration = graph.getSparkContext().broadcast(configuration);
+
+        if (collectTrainingStats)
+            stats.logBroadcastEnd();
+
+        SharedTrainingWorker worker = new SharedTrainingWorker(broadcastModel, broadcastConfiguration);
+
+        return worker;
     }
 
     protected int numObjectsEachWorker(int numExamplesEachRddObject) {
@@ -170,34 +247,33 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
                                             int examplesPerDataSetObject) {
         int dataSetObjectsPerSplit = getNumDataSetObjectsPerSplit(examplesPerDataSetObject);
 
-//        if (collectTrainingStats)
-//            stats.logSplitStart();
+        if (collectTrainingStats)
+            stats.logSplitStart();
 
         JavaRDD<T>[] splits = SparkUtils.balancedRandomSplit(totalDataSetObjectCount, dataSetObjectsPerSplit,
                 trainingData, rng.nextLong());
 
-//      if (collectTrainingStats)
-//          stats.logSplitEnd();
+      if (collectTrainingStats)
+          stats.logSplitEnd();
 
         return splits;
     }
 
     protected <T, Repr extends JavaRDDLike<T, Repr>> long getTotalDataSetObjectCount(JavaRDDLike<T, Repr> trainingData) {
-//        if (collectTrainingStats)
-//            stats.logCountStart();
+        if (collectTrainingStats)
+            stats.logCountStart();
 
         long totalDataSetObjectCount = trainingData.count();
 
-//        if (collectTrainingStats)
-//            stats.logCountEnd();
+        if (collectTrainingStats)
+            stats.logCountEnd();
 
         return totalDataSetObjectCount;
     }
 
     protected void executeTrainingDirect(SparkDl4jMultiLayer network, JavaRDD<DataSet> trainingData) {
-        // TODO: implement stats
-//        if (collectTrainingStats)
-//            stats.logFitStart();
+        if (collectTrainingStats)
+            stats.logFitStart();
 
         //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
         // number of minibatches between averagings
@@ -213,9 +289,8 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
             doIteration(network, split, splitNum++, splits.length);
         }
 
-        // TODO: implement stats
-//        if (collectTrainingStats)
-//            stats.logFitEnd((int) totalDataSetObjectCount);
+        if (collectTrainingStats)
+            stats.logFitEnd((int) totalDataSetObjectCount);
     }
 
     @Override
@@ -230,6 +305,9 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
             6) wait till finished
             7) do something with final model, i.e. export it somewhere :)
          */
+        // first of all, we're instantiating ParameterServer shard here
+        VoidParameterServer.getInstance().init();
+
         if (numWorkers == null)
             numWorkers = network.getSparkContext().defaultParallelism();
 
@@ -374,7 +452,7 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
 
 
     public static class Builder {
-        protected double threshold;
+        protected double threshold = 1e-3;
         protected Repartition repartition = Repartition.Always;
         protected RepartitionStrategy repartitionStrategy = RepartitionStrategy.Balanced;
         protected StorageLevel storageLevel = StorageLevel.MEMORY_ONLY_SER();
@@ -384,6 +462,7 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
         protected long rngSeed;
         protected String exportDirectory = null;
         protected Integer numWorkers;
+        protected boolean collectTrainingStats;
 
         public Builder(int rddDataSetNumExamples) {
             this(1e-3, rddDataSetNumExamples);
@@ -394,8 +473,10 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
         }
 
         public Builder(double threshold, int rddDataSetNumExamples) {
-            // TODO: we need proper default for VoidConfiguration here
-            this(new VoidConfiguration(), null, threshold, rddDataSetNumExamples);
+            this(VoidConfiguration.builder()
+                    .executionMode(ExecutionMode.DISTRIBUTED)
+                    .forcedRole(NodeRole.SHARD)
+                    .build(), null, threshold, rddDataSetNumExamples);
         }
 
         public Builder(@NonNull VoidConfiguration voidConfiguration, double threshold, int rddDataSetNumExamples) {
@@ -414,14 +495,28 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
             this.voidConfiguration = voidConfiguration;
         }
 
+        /**
+         * Enable/disable collection of training statistics
+         * @param reallyConnect
+         * @return
+         */
+        public Builder collectTrainingStats(boolean reallyConnect) {
+            this.collectTrainingStats = reallyConnect;
+            return this;
+        }
 
-        public Builder repartionData(Repartition repartition) {
+        /**
+         *
+         * @param repartition
+         * @return
+         */
+        public Builder repartitionData(Repartition repartition) {
             this.repartition = repartition;
             return this;
         }
 
         /**
-         * Used in conjunction with {@link #repartionData(Repartition)} (which defines <i>when</i> repartitioning should be
+         * Used in conjunction with {@link #repartitionData(Repartition)} (which defines <i>when</i> repartitioning should be
          * conducted), repartitionStrategy defines <i>how</i> the repartitioning should be done. See {@link RepartitionStrategy}
          * for details
          *
@@ -488,10 +583,22 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
             return this;
         }
 
+        /**
+         * Threshold for updates encoding
+         *
+         * Default value: 1e-3
+         * @param threshold
+         * @return
+         */
+        public Builder updatesThreshold(double threshold) {
+            this.threshold = threshold;
+            return this;
+        }
+
         public SharedTrainingMaster build() {
+            SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach, storageLevel, true, repartitionStrategy, repartition, threshold);
 
-
-            return null;
+            return master;
         }
     }
 }

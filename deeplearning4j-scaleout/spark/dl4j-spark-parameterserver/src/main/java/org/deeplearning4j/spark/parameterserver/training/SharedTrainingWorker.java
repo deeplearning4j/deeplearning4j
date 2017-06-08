@@ -9,6 +9,7 @@ import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
+import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
@@ -17,11 +18,13 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
  */
 public class SharedTrainingWorker implements TrainingWorker<SharedTrainingResult> {
 
-    private final Broadcast<NetBroadcastTuple> broadcast;
+    private final Broadcast<NetBroadcastTuple> broadcastModel;
+    private final Broadcast<SharedTrainingConfiguration> broadcastConfiguration;
 
-    public SharedTrainingWorker(Broadcast<NetBroadcastTuple> broadcast) {
+    public SharedTrainingWorker(Broadcast<NetBroadcastTuple> broadcastModel, Broadcast<SharedTrainingConfiguration> broadcastConfiguration) {
         // our initial model is stored here.
-        this.broadcast = broadcast;
+        this.broadcastModel = broadcastModel;
+        this.broadcastConfiguration = broadcastConfiguration;
     }
 
     @Override
@@ -114,10 +117,5 @@ public class SharedTrainingWorker implements TrainingWorker<SharedTrainingResult
     @Override
     public WorkerConfiguration getDataConfiguration() {
         return null;
-    }
-
-
-    public static class Builder {
-
     }
 }

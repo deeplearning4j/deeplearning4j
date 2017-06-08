@@ -2,6 +2,7 @@ package org.deeplearning4j.spark.parameterserver.networking;
 
 import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.parameterserver.distributed.VoidParameterServer;
 
 /**
  * This MessageHandler implementation does the same as EncodingHandler, plus additionally:
@@ -32,6 +33,7 @@ public class WiredEncodingHandler extends EncodingHandler {
     protected void sendMessage(INDArray message) {
         // here we'll send our stuff to other executores over the wire
         // and let's pray for udp broadcast availability
+
         super.sendMessage(message);
     }
 }
