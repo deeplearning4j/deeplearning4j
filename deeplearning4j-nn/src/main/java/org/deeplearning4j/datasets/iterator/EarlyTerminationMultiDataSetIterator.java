@@ -6,7 +6,8 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 /**
  * Builds an iterator that terminates once the number of minibatches returned with .next() is equal to a specified number
- * Note that this essentially restricts the data to this specified number of minibatches.
+ * Note that a call to .next(num) is counted as a call to return a minibatch regardless of the value of num
+ * This essentially restricts the data to this specified number of minibatches.
  */
 public class EarlyTerminationMultiDataSetIterator implements MultiDataSetIterator {
 
@@ -21,13 +22,14 @@ public class EarlyTerminationMultiDataSetIterator implements MultiDataSetIterato
      * @param terminationPoint, minibatches after which hasNext() will return false
      */
     public EarlyTerminationMultiDataSetIterator(MultiDataSetIterator underlyingIterator, int terminationPoint) {
+        if (terminationPoint <= 0 ) throw new IllegalArgumentException("Termination point (the number of calls to .next() or .next(num)) has to be > 0");
         this.underlyingIterator = underlyingIterator;
         this.terminationPoint = terminationPoint;
     }
 
     @Override
     public MultiDataSet next(int num) {
-        minibatchCount += num;
+        minibatchCount ++;
         return underlyingIterator.next(num);
     }
 
