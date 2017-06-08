@@ -6,19 +6,26 @@ import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.optimize.solvers.accumulation.CudaGradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.MessageHandler;
 import org.deeplearning4j.parallelism.ParallelWrapper;
+import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualDataSetIterator;
+import org.deeplearning4j.spark.parameterserver.iterators.VirtualIterator;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualMultiDataSetIterator;
 import org.deeplearning4j.spark.parameterserver.networking.SilentTrainingDriver;
 import org.deeplearning4j.spark.parameterserver.networking.WiredEncodingHandler;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingWorker;
+import org.deeplearning4j.spark.parameterserver.util.BlockingObserver;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.enums.TransportType;
+import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
+import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Observer;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -41,6 +48,8 @@ public class SharedTrainingWrapper {
 
     protected AtomicBoolean isFirst = new AtomicBoolean(false);
 
+    protected ThreadLocal<BlockingObserver> observer = new ThreadLocal<>();
+
     protected SharedTrainingWrapper() {
 
         // instantiate some stuff here
@@ -58,7 +67,18 @@ public class SharedTrainingWrapper {
      * @param iterator
      */
     public void attachDS(Iterator<DataSet> iterator) {
-        iteratorsDS.add(iterator);
+        // we're creating our Observable wrapper
+        VirtualIterator<DataSet> wrapped = new VirtualIterator<>(iterator);
+
+        // and creating Observer which will be used to monitor progress within iterator
+        BlockingObserver obs = new BlockingObserver();
+        wrapped.addObserver(obs);
+
+        // putting that "somewhere"
+        iteratorsDS.add(wrapped);
+
+        // storing observer into ThreadLocal, since we're going to use that later
+        observer.set(obs);
     }
 
     /**
@@ -77,6 +97,9 @@ public class SharedTrainingWrapper {
         if (isFirst.compareAndSet(false, true)) {
             // getting model from worker, and instantiating PW
 
+            SharedTrainingConfiguration trainingConfiguration = worker.getBroadcastConfiguration().getValue();
+            VoidConfiguration voidConfiguration = worker.getBroadcastConfiguration().getValue().getVoidConfiguration();
+
             Model model = worker.getInitialModel();
             if (model == null)
                 model = worker.getInitialModelGraph();
@@ -84,31 +107,31 @@ public class SharedTrainingWrapper {
             if (model == null)
                 throw new DL4JInvalidConfigException("No model was defined for training");
 
-            // TODO: make threshold configurable here
-            MessageHandler handler = new WiredEncodingHandler(1e-3);
+            MessageHandler handler = new WiredEncodingHandler(trainingConfiguration.getThreshold());
 
             // this accumulator will provide sharing gradients over network, via WiredEncodedHandler
             CudaGradientsAccumulator accumulator = new CudaGradientsAccumulator.Builder(2)
                     .messageHandler(handler)
-                    .encodingThreshold(1e-3)
+                    .encodingThreshold(trainingConfiguration.getThreshold())
                     .build();
 
-            Transport transport = null;
+
+            // FIXME: implement support for Custom transport implementation
+            Transport transport = voidConfiguration.getTransportType() == TransportType.ROUTED ? new RoutedTransport() : voidConfiguration.getTransportType() == TransportType.BROADCAST ? new MulticastTransport() : null;
+
+            if (transport == null)
+                throw new DL4JInvalidConfigException("No Transport implementation was defined for this training session!");
 
             // now we're attaching VoidParameterServer to GradientsAccumulator
-            VoidConfiguration voidConfiguration = worker.getBroadcastConfiguration().getValue().getVoidConfiguration();
             VoidParameterServer.getInstance().init(voidConfiguration, transport, new SilentTrainingDriver(accumulator));
 
             wrapper = new ParallelWrapper.Builder<>(model)
                     // TODO: we should define proper num workers here, better suiting current environment
                     .workers(4)
-                    // TODO: add configuration for workspaceMode here, or derive it from model?
-                    .workspaceMode(WorkspaceMode.SEPARATE)
+                    .workspaceMode(trainingConfiguration.getWorkspaceMode())
                     .trainingMode(ParallelWrapper.TrainingMode.CUSTOM)
                     .gradientsAccumulator(accumulator)
-
-                    // TODO: decide, what do we want wrt prefetch
-                    .prefetchBuffer(2)
+                    .prefetchBuffer(trainingConfiguration.getPrefetchSize())
                     .build();
 
             // TODO: optionally we might be waiting until we have >1 splits delivered
@@ -122,7 +145,14 @@ public class SharedTrainingWrapper {
                 throw new DL4JInvalidConfigException("No iterators were defined for training");
 
         } else {
-            // no-op i guess, or blocking call right here
+            // blocking call right here, all non-master threads will be blocked here
+            try {
+                //observer.get().waitTillDone();
+                observer.get().wait();
+            } catch (InterruptedException e) {
+                // FIXME: we don't really need to throw it again, it's here only for debugging purposes
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -135,7 +165,10 @@ public class SharedTrainingWrapper {
     }
 
 
-    public void blockUntilFinished() {
-        // do something and block
+    public void blockUntilFinished() throws InterruptedException {
+        if (observer.get() != null)
+            observer.get().wait();
+        else
+            throw new IllegalStateException("This method can't be called before iterators initialization");
     }
 }

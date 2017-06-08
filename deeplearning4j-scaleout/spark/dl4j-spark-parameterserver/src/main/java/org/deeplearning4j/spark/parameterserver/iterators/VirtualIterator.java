@@ -14,7 +14,7 @@ import java.util.function.Consumer;
  *
  * @author raver119@gmail.com
  */
-public class VirtualIterator<E> implements Iterator<E> {
+public class VirtualIterator<E> extends java.util.Observable implements Iterator<E> {
     // TODO: use AsyncIterator here?
     protected Iterator<E> iterator;
     protected AtomicBoolean state = new AtomicBoolean(true);
@@ -28,6 +28,10 @@ public class VirtualIterator<E> implements Iterator<E> {
     public boolean hasNext() {
         boolean u = iterator.hasNext();
         state.compareAndSet(true, u);
+        if (!state.get()) {
+            this.setChanged();
+            notifyObservers();
+        }
         return u;
     }
 
@@ -51,7 +55,6 @@ public class VirtualIterator<E> implements Iterator<E> {
      * This method blocks until underlying Iterator is depleted
      */
     public void blockUntilDepleted() {
-        // FIXME: implement Observer/Observable here, any blocking notification pattern will work here
         while (state.get())
             LockSupport.parkNanos(1000L);
     }

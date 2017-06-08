@@ -289,12 +289,9 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
             trainingData.persist(storageLevel);
 
         long totalDataSetObjectCount = getTotalDataSetObjectCount(trainingData);
-        JavaRDD<DataSet>[] splits = getSplitRDDs(trainingData, (int) totalDataSetObjectCount, rddDataSetNumExamples);
 
-        int splitNum = 1;
-        for (JavaRDD<DataSet> split : splits) {
-            doIteration(network, split, splitNum++, splits.length);
-        }
+        // since this is real distributed training, we don't need to split data
+        doIteration(network, trainingData, 1, 1);
 
         if (collectTrainingStats)
             stats.logFitEnd((int) totalDataSetObjectCount);
@@ -318,19 +315,23 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
         if (transport == null)
             throw new DL4JInvalidConfigException("No Transport implementation was defined for this training session!");
 
-        // TODO: use proper params here, and proper stepFunction, derived from network. Maybe silently initialize it? :)
-        VoidParameterServer.getInstance().init(voidConfiguration, transport, new SilentTrainingDriver(null, null));
+        // TODO: Alex, any better ideas here? Plus, if we're not on SGD updater, we might want to eventually dump updater to Master?
+        if (!network.getNetwork().isInitCalled())
+            network.getNetwork().init();
+
+        // this instance will be SilentWorker - it'll accept and apply messages, but won't contribute to training
+        VoidParameterServer.getInstance().init(voidConfiguration, transport, new SilentTrainingDriver(network.getNetwork().params(), network.getNetwork().getOptimizer().getStepFunction()));
 
         if (numWorkers == null)
             numWorkers = network.getSparkContext().defaultParallelism();
 
-
         // at this moment we have coordinator server up (master works as coordinator)
         if (rddTrainingApproach == RDDTrainingApproach.Direct) {
             executeTrainingDirect(network, trainingData);
-        } else {
+        } else if (rddTrainingApproach == RDDTrainingApproach.Export){
             //Export data if required (or, use cached export)
-        }
+        } else
+            throw new DL4JInvalidConfigException("Unknown RDDtrainingApproach [" + rddTrainingApproach + "] was specified!");
     }
 
     @Override
@@ -439,30 +440,35 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
         log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
                 splitNum, numSplits, batchSizePerWorker, 0, numWorkers);
 
-//        if (collectTrainingStats)
-//            stats.logMapPartitionsStart();
+        if (collectTrainingStats)
+            stats.logMapPartitionsStart();
 
         JavaRDD<DataSet> splitData = split;
-//        if (collectTrainingStats)
-//            stats.logRepartitionStart();
+
+        if (collectTrainingStats)
+            stats.logRepartitionStart();
 
         splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy, numObjectsEachWorker(rddDataSetNumExamples), numWorkers);
         int nPartitions = splitData.partitions().size();
 
-//        if (collectTrainingStats && repartition != Repartition.Never)
-//            stats.logRepartitionEnd();
+        if (collectTrainingStats && repartition != Repartition.Never)
+            stats.logRepartitionEnd();
 
 
         FlatMapFunction<Iterator<DataSet>, SharedTrainingResult> function = new SharedFlatMapDataSet<>(getWorkerInstance(network));
 
         JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
 
-        // meh
-        result.count();
+        // meh, just to invoke previous function
+        long cnt = result.count();
+
+        log.info("Results count: {}", cnt);
+
+        // TODO: implement something here
 //        processResults(network, null, result, splitNum, numSplits);
 
-//        if (collectTrainingStats)
-//            stats.logMapPartitionsEnd(nPartitions);
+        if (collectTrainingStats)
+            stats.logMapPartitionsEnd(nPartitions);
     }
 
 

@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.parameterserver.networking;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
@@ -18,6 +19,7 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage> {
     protected transient INDArray params;
     protected transient StepFunction stepFunction;
@@ -32,10 +34,12 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
     protected transient Clipboard clipboard;
 
     public SilentTrainingDriver(@NonNull GradientsAccumulator accumulator) {
+        log.info("Creating TrainingDriver for worker...");
         this.accumulator = accumulator;
     }
 
     public SilentTrainingDriver(@NonNull INDArray params, @NonNull StepFunction stepFunction) {
+        log.info("Creating TrainingDriver for master...");
         this.params = params;
         this.stepFunction = stepFunction;
     }

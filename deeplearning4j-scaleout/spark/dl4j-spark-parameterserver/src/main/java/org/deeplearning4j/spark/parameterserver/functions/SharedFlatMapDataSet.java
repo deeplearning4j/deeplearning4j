@@ -44,10 +44,8 @@ class SharedFlatMapDataSetAdapter<R extends TrainingResult> implements FlatMapFu
         SharedTrainingWrapper.getInstance().attachDS(dataSetIterator);
 
         // first callee will become master, others will obey and die
-        SharedTrainingWrapper.getInstance().run(worker);
-
         // all threads in this executor will be blocked here until training finished
-        SharedTrainingWrapper.getInstance().blockUntilFinished();
+        SharedTrainingWrapper.getInstance().run(worker);
 
         // TODO: return result here, probably singleton list though
         return null;
