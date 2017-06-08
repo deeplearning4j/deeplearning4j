@@ -250,6 +250,18 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
         }
 
         /**
+         * This method allows to specify MessageHandler instance
+         *
+         * Default value: EncodingHandler
+         * @param handler
+         * @return
+         */
+        public Builder messageHandler(@NonNull MessageHandler handler) {
+            this.handler = handler;
+            return this;
+        }
+
+        /**
          * This method allows to set encoding threshold for this accumulator instance
          *
          * Default value: 1e-3
