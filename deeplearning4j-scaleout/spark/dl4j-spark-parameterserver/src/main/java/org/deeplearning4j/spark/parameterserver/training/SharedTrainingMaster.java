@@ -25,6 +25,7 @@ import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingResult;
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMasterStats;
 import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
 import org.deeplearning4j.spark.parameterserver.functions.SharedFlatMapDataSet;
+import org.deeplearning4j.spark.parameterserver.networking.SilentTrainingDriver;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -306,11 +307,13 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
             7) do something with final model, i.e. export it somewhere :)
          */
         // first of all, we're instantiating ParameterServer shard here
-        VoidParameterServer.getInstance().init();
+        VoidParameterServer.getInstance().init(voidConfiguration, null, new SilentTrainingDriver(null));
 
         if (numWorkers == null)
             numWorkers = network.getSparkContext().defaultParallelism();
 
+
+        // at this moment we have coordinator server up (master works as coordinator)
         if (rddTrainingApproach == RDDTrainingApproach.Direct) {
             executeTrainingDirect(network, trainingData);
         } else {
