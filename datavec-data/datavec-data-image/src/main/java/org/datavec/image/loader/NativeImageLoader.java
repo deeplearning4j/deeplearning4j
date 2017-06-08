@@ -49,7 +49,7 @@ public class NativeImageLoader extends BaseImageLoader {
                     "png", "tif", "tiff", "exr", "webp", "BMP", "GIF", "JPG", "JPEG", "JP2", "PBM", "PGM", "PPM", "PNM",
                     "PNG", "TIF", "TIFF", "EXR", "WEBP"};
 
-    protected static OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
+    protected OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
 
     /**
      * Loads images with no scaling or conversion.
@@ -59,7 +59,7 @@ public class NativeImageLoader extends BaseImageLoader {
     /**
      * Instantiate an image with the given
      * height and width
-     * @param height the height to load*
+     * @param height the height to load
      * @param width  the width to load
     
      */
@@ -385,9 +385,9 @@ public class NativeImageLoader extends BaseImageLoader {
 
     public void asMatrixView(Mat image, INDArray view) throws IOException {
         if (imageTransform != null && converter != null) {
-            ImageWritable writable = new ImageWritable(NativeImageLoader.converter.convert(image));
+            ImageWritable writable = new ImageWritable(converter.convert(image));
             writable = imageTransform.transform(writable);
-            image = NativeImageLoader.converter.convert(writable.getFrame());
+            image = converter.convert(writable.getFrame());
         }
 
         if (channels > 0 && image.channels() != channels) {
@@ -442,10 +442,10 @@ public class NativeImageLoader extends BaseImageLoader {
     }
 
     public INDArray asMatrix(Mat image) throws IOException {
-        if (imageTransform != null && NativeImageLoader.converter != null) {
-            ImageWritable writable = new ImageWritable(NativeImageLoader.converter.convert(image));
+        if (imageTransform != null && converter != null) {
+            ImageWritable writable = new ImageWritable(converter.convert(image));
             writable = imageTransform.transform(writable);
-            image = NativeImageLoader.converter.convert(writable.getFrame());
+            image = converter.convert(writable.getFrame());
         }
 
         if (channels > 0 && image.channels() != channels) {
@@ -556,7 +556,7 @@ public class NativeImageLoader extends BaseImageLoader {
                 pixDestroy(pix);
             }
 
-            ImageWritable writable = new ImageWritable(NativeImageLoader.converter.convert(image));
+            ImageWritable writable = new ImageWritable(converter.convert(image));
             return writable;
         }
     }
@@ -569,7 +569,7 @@ public class NativeImageLoader extends BaseImageLoader {
      * @throws IOException
      */
     public INDArray asMatrix(ImageWritable writable) throws IOException {
-        Mat image = NativeImageLoader.converter.convert(writable.getFrame());
+        Mat image = converter.convert(writable.getFrame());
         return asMatrix(image);
     }
 }

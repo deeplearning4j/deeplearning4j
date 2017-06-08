@@ -91,7 +91,7 @@ public class ImageWritable implements Writable {
                 return false;
 
             for (int i = 0; i < b1.length; i++) {
-                if (b1[i].equals(b2[i]) == false)
+                if (!b1[i].equals(b2[i]))
                     return false;
             }
 
