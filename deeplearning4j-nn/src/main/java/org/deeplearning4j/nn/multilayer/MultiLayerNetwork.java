@@ -356,7 +356,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
 
     @Override
     public ConvexOptimizer getOptimizer() {
-        throw new UnsupportedOperationException();
+        return solver.getOptimizer();
     }
 
     @Override
