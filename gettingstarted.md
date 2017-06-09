@@ -60,10 +60,10 @@ If you use Eclipse, you will need to install the Maven plugin for Eclipse: [ecli
 
 Michael Depies has written this guide to [installing Deeplearning4j on Eclipse](https://depiesml.wordpress.com/2015/08/26/dl4j-gettingstarted/).
 
-If you just want to get the examples running within Eclipse you can also directly checkout the project from SCM:
+If you just want to get the examples running within Eclipse and without using command line at all you can also directly checkout the project from SCM:
 
 * In an empty workspace, import via "Check out Maven Project from SCM" and click on "Next"
-* Paste the git repo url: https://github.com/deeplearning4j/dl4j-examples.git
+* Paste the git repo url: https://github.com/deeplearning4j/dl4j-examples.git (In case you don't see "git" in the dropdown click on the "Find more SCM connectors in the m2e Marketplace" link on the bottom, right of the dialog
 * Click on Finish (..and wait, it will take some time)
 
 You might get some errors in the pom.xml validator, ignore this for now.
