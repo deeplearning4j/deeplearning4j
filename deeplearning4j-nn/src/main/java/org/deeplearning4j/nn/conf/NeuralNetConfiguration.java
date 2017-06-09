@@ -116,6 +116,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     protected double lrPolicyPower;
     protected boolean pretrain;
 
+    // this field defines preOutput cache
+    protected CacheMode cacheMode;
+
     //Counter for the number of parameter updates so far for this layer.
     //Note that this is only used for pretrain layers (RBM, VAE) - MultiLayerConfiguration and ComputationGraphConfiguration
     //contain counters for standard backprop training.
@@ -275,7 +278,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                             .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                             .tBPTTBackwardLength(tbpttBackLength).cnnInputSize(this.cnnInputSize)
                             .setInputType(this.inputType).trainingWorkspaceMode(globalConfig.trainingWorkspaceMode)
-                            .inferenceWorkspaceMode(globalConfig.inferenceWorkspaceMode).confs(list).build();
+                            .inferenceWorkspaceMode(globalConfig.inferenceWorkspaceMode).cacheMode(cacheMode).confs(list).build();
         }
 
     }
@@ -563,8 +566,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected double lrPolicyPower = Double.NaN;
         protected boolean pretrain = false;
 
-        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
-        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SINGLE;
+        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.SEPARATE;
+        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
+        protected CacheMode cacheMode = CacheMode.NONE;
 
         protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;
 
@@ -828,6 +832,16 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          */
         public Builder dist(Distribution dist) {
             this.dist = dist;
+            return this;
+        }
+
+        /**
+         * This method allows to configure preOutput cache configuration
+         * @param cacheMode
+         * @return
+         */
+        public Builder cacheMode(@NonNull CacheMode cacheMode) {
+            this.cacheMode = cacheMode;
             return this;
         }
 
@@ -1121,6 +1135,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             conf.lrPolicySteps = lrPolicySteps;
             conf.lrPolicyPower = lrPolicyPower;
             conf.pretrain = pretrain;
+            conf.cacheMode = this.cacheMode;
             String layerName;
             if (layer == null || layer.getLayerName() == null)
                 layerName = "Layer not named";

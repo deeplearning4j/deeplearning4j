@@ -71,6 +71,10 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     @Setter
     protected WorkspaceMode inferenceWorkspaceMode;
 
+    @Getter
+    @Setter
+    protected CacheMode cacheMode;
+
     //Counter for the number of parameter updates so far
     // This is important for learning rate schedules, for example, and is stored here to ensure it is persisted
     // for Spark and model serialization
@@ -318,8 +322,9 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         @Deprecated
         protected int[] cnnInputSize;
 
-        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
-        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SINGLE;
+        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.SEPARATE;
+        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
+        protected CacheMode cacheMode = CacheMode.NONE;
 
         /**
          * Specify the processors.
@@ -464,6 +469,16 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        /**
+         * This method does configuration of Cache Mode for preOutput()
+         * @param cacheMode
+         * @return
+         */
+        public Builder cacheMode(@NonNull CacheMode cacheMode) {
+            this.cacheMode = cacheMode;
+            return this;
+        }
+
         public MultiLayerConfiguration build() {
             if (cnnInputSize != null) {
                 new ConvolutionLayerSetup(this, cnnInputSize[0], cnnInputSize[1], cnnInputSize[2]);
@@ -539,6 +554,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.tbpttBackLength = tbpttBackLength;
             conf.trainingWorkspaceMode = trainingWorkspaceMode;
             conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
+            conf.cacheMode = this.cacheMode;
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
             return conf;
 

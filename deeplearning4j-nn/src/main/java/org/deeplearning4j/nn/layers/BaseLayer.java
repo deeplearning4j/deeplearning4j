@@ -23,6 +23,7 @@ import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -65,14 +66,19 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     protected INDArray maskArray;
     protected MaskState maskState;
     protected Solver solver;
+    protected CacheMode cacheMode;
 
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
+
+        this.cacheMode = conf.getCacheMode();
+        if (cacheMode == null)
+            this.cacheMode = CacheMode.NONE;
     }
 
     public BaseLayer(NeuralNetConfiguration conf, INDArray input) {
+        this(conf);
         this.input = input;
-        this.conf = conf;
     }
 
     protected LayerConfT layerConf() {

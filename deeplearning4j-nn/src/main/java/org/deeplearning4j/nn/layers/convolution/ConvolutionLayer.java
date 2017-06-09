@@ -15,6 +15,7 @@ package org.deeplearning4j.nn.layers.convolution;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -362,13 +363,27 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         z = Shape.newShapeNoCopy(z, new int[] {outW, outH, miniBatch, outDepth}, true);
         z = z.permute(2, 3, 1, 0);
 
-        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceCache)) {
+        // preOutput() cache handling
+        if (cacheMode == CacheMode.NONE) {
+            // just do nothing
+        } else if (cacheMode == CacheMode.HOST) {
+            // we push this thing to CACHE workspace, which will be HOST on both cpu & cuda backend
+            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceCache)) {
 
-            try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                    .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
-                // i2d = im2col2d.unsafeDuplication();
+                try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
+                    i2d = im2col2d.unsafeDuplication();
+                }
+            }
+        } else if (cacheMode == CacheMode.DEVICE) {
+            // just put to external workspace
+            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
+
+                try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
+                     i2d = im2col2d.unsafeDuplication();
+                }
             }
         }
+
 
         return new Pair<>(z, forBackprop ? im2col2d : null);
     }
@@ -382,11 +397,26 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         INDArray z = preOutput(training);
 
-        // we do cache only if cache workspace exists. Skip otherwise
-        if (training && Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceCache)) {
-            try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
-                    .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
-                //preOutput = z.unsafeDuplication();
+        // preOutput() cache handling
+        if (training) {
+            if (cacheMode == CacheMode.NONE) {
+                // just do nothing
+            } else if (cacheMode == CacheMode.HOST) {
+                // we push this thing to CACHE workspace, which will be HOST on both cpu & cuda backend
+                if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceCache)) {
+
+                    try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
+                        preOutput = z.unsafeDuplication();
+                    }
+                }
+            } else if (cacheMode == CacheMode.DEVICE) {
+                // just put to external workspace
+                if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
+
+                    try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
+                        preOutput = z.unsafeDuplication();
+                    }
+                }
             }
         }
 
