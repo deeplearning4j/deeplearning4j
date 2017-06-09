@@ -577,7 +577,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @return                IEvaluation instance
      */
     public <T extends IEvaluation> T doEvaluation(JavaRDD<DataSet> data, T emptyEvaluation, int evalBatchSize) {
-        IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(sc.broadcast(conf.toJson()),
+        IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(false, sc.broadcast(conf.toJson()),
                 sc.broadcast(network.params()), evalBatchSize, emptyEvaluation);
         JavaRDD<T> evaluations = data.mapPartitions(evalFn);
         return evaluations.reduce(new IEvaluationReduceFunction<T>());
