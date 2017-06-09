@@ -1,81 +1,93 @@
 package org.deeplearning4j.datasets.iterator;
 
+import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.MultiDataSetIteratorAdapter;
+import org.junit.Rule;
 import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.MultiDataSet;
+import org.junit.rules.ExpectedException;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
-import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by susaneraly on 6/8/17.
  */
 public class EarlyTerminationMultiDataSetIteratorTest {
 
+    int minibatchSize = 5;
+    int numExamples = 105;
+    @Rule
+    public final ExpectedException exception = ExpectedException.none();
+
     @Test
     public void testNextAndReset() throws Exception {
-        int minibatchSize = 5;
-        int numExamples = 20;
+
         int terminateAfter = 2;
 
-        int count = 0;
-        List<org.nd4j.linalg.dataset.api.MultiDataSet> someMDS = new ArrayList<>();
-        while (count < numExamples) {
-            INDArray[] feat = new INDArray[1];
-            feat[0] = Nd4j.rand(1, 7);
-            INDArray[] labs = new INDArray[2];
-            labs[0] = Nd4j.rand(1, 2);
-            labs[1] = Nd4j.rand(1, 2);
-            someMDS.add(new MultiDataSet(feat,labs));
-        }
+        MultiDataSetIterator iter = new MultiDataSetIteratorAdapter(new MnistDataSetIterator(minibatchSize, numExamples));
 
-        MultiDataSetIterator iter = new IteratorMultiDataSetIterator(someMDS.iterator(),minibatchSize);
-        EarlyTerminationMultiDataSetIterator earlyEndIter = new EarlyTerminationMultiDataSetIterator(iter,terminateAfter);
-        /*
-        DataSetIterator iter = new MnistDataSetIterator(minibatchSize,numExamples);
-        EarlyTerminationDataSetIterator earlyEndIter = new EarlyTerminationDataSetIterator(iter,terminateAfter);
+        int count = 0;
+        List<MultiDataSet> seenMDS = new ArrayList<>();
+        while (count < terminateAfter) {
+            seenMDS.add(iter.next());
+            count++;
+        }
+        iter.reset();
+
+        EarlyTerminationMultiDataSetIterator earlyEndIter = new EarlyTerminationMultiDataSetIterator(iter, terminateAfter);
 
         assertTrue(earlyEndIter.hasNext());
-        int batchesSeen = 0;
-        List<DataSet> seenData = new ArrayList<>();
+        count = 0;
         while (earlyEndIter.hasNext()) {
-            DataSet path = earlyEndIter.next();
-            assertFalse(path == null);
-            seenData.add(path);
-            batchesSeen++;
+            MultiDataSet path = earlyEndIter.next();
+            assertEquals(path.getFeatures()[0], seenMDS.get(count).getFeatures()[0]);
+            assertEquals(path.getLabels()[0], seenMDS.get(count).getLabels()[0]);
+            count++;
         }
-        assertEquals(batchesSeen,terminateAfter);
+        assertEquals(count, terminateAfter);
 
+        //check data is repeated
         earlyEndIter.reset();
-        batchesSeen = 0;
+        count = 0;
         while (earlyEndIter.hasNext()) {
-            DataSet path = earlyEndIter.next();
-            assertEquals(seenData.get(batchesSeen).getFeatures(),path.getFeatures());
-            assertEquals(seenData.get(batchesSeen).getLabels(),path.getLabels());
-            batchesSeen++;
+            MultiDataSet path = earlyEndIter.next();
+            assertEquals(path.getFeatures()[0], seenMDS.get(count).getFeatures()[0]);
+            assertEquals(path.getLabels()[0], seenMDS.get(count).getLabels()[0]);
+            count++;
         }
-        */
     }
 
     @Test
     public void testNextNum() throws IOException {
-        /*
-        int minibatchSize = 10;
-        int numExamples = 105;
-        int terminateAfter = 2;
+        int terminateAfter = 1;
 
-        DataSetIterator iter = new MnistDataSetIterator(minibatchSize,numExamples);
-        EarlyTerminationDataSetIterator earlyEndIter = new EarlyTerminationDataSetIterator(iter,terminateAfter);
+        MultiDataSetIterator iter = new MultiDataSetIteratorAdapter(new MnistDataSetIterator(minibatchSize, numExamples));
+        EarlyTerminationMultiDataSetIterator earlyEndIter = new EarlyTerminationMultiDataSetIterator(iter, terminateAfter);
 
         earlyEndIter.next(10);
-        earlyEndIter.next(10);
-        assertEquals(earlyEndIter.hasNext(),false);
+        assertEquals(false, earlyEndIter.hasNext());
 
         earlyEndIter.reset();
-        assertEquals(earlyEndIter.hasNext(),true);
-        */
+        assertEquals(true, earlyEndIter.hasNext());
     }
+
+    @Test
+    public void testCallstoNextNotAllowed() throws IOException {
+        int terminateAfter = 1;
+
+        MultiDataSetIterator iter = new MultiDataSetIteratorAdapter(new MnistDataSetIterator(minibatchSize, numExamples));
+        EarlyTerminationMultiDataSetIterator earlyEndIter = new EarlyTerminationMultiDataSetIterator(iter, terminateAfter);
+
+        earlyEndIter.next(10);
+        iter.reset();
+        exception.expect(RuntimeException.class);
+        earlyEndIter.next(10);
+    }
+
 }

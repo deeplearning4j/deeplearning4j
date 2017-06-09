@@ -29,8 +29,13 @@ public class EarlyTerminationMultiDataSetIterator implements MultiDataSetIterato
 
     @Override
     public MultiDataSet next(int num) {
-        minibatchCount ++;
-        return underlyingIterator.next(num);
+        if (minibatchCount < terminationPoint) {
+            minibatchCount++;
+            return underlyingIterator.next(num);
+        }
+        else {
+            throw new RuntimeException("Calls to next have exceeded termination point.");
+        }
     }
 
     @Override
@@ -55,6 +60,7 @@ public class EarlyTerminationMultiDataSetIterator implements MultiDataSetIterato
 
     @Override
     public void reset() {
+        minibatchCount = 0;
         underlyingIterator.reset();
     }
 
@@ -65,8 +71,13 @@ public class EarlyTerminationMultiDataSetIterator implements MultiDataSetIterato
 
     @Override
     public MultiDataSet next() {
-        minibatchCount++;
-        return underlyingIterator.next();
+        if (minibatchCount < terminationPoint) {
+            minibatchCount++;
+            return underlyingIterator.next();
+        }
+        else {
+            throw new RuntimeException("Calls to next have exceeded termination point.");
+        }
     }
 
     @Override

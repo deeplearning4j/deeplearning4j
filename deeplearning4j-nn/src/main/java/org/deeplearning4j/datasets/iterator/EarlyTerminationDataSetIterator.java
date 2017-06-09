@@ -31,8 +31,13 @@ public class EarlyTerminationDataSetIterator implements DataSetIterator {
 
     @Override
     public DataSet next(int num) {
-        minibatchCount++;
-        return underlyingIterator.next(num);
+        if (minibatchCount < terminationPoint) {
+            minibatchCount++;
+            return underlyingIterator.next(num);
+        }
+        else {
+            throw new RuntimeException("Calls to next have exceeded termination point.");
+        }
     }
 
     @Override
@@ -103,8 +108,13 @@ public class EarlyTerminationDataSetIterator implements DataSetIterator {
 
     @Override
     public DataSet next() {
-        minibatchCount++;
-        return underlyingIterator.next();
+        if (minibatchCount < terminationPoint) {
+            minibatchCount++;
+            return underlyingIterator.next();
+        }
+        else {
+            throw new RuntimeException("Calls to next have exceeded termination point.");
+        }
     }
 
     @Override
