@@ -41,7 +41,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
     protected ThreadLocal<Integer> index = new ThreadLocal<>();
     protected long initialMemory = 100 * 1024 * 1024L;
     protected int queueSize = 5;
-    protected double boundary = 1.0;
+    protected Double boundary = 1.0;
 
     protected CyclicBarrier barrier;
 
@@ -58,7 +58,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
         this(parties, new EncodingHandler(threshold), 100 * 1024 * 1024L, 10, 1.0);
     }
 
-    protected CudaGradientsAccumulator(int parties, @NonNull MessageHandler handler, long initialMemory, int queueSize, double boundary) {
+    protected CudaGradientsAccumulator(int parties, @NonNull MessageHandler handler, long initialMemory, int queueSize, Double boundary) {
         this.parties = parties;
         this.handler = handler;
         this.initialMemory = initialMemory;
@@ -314,8 +314,9 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
                     handler = new EncodingHandler(threshold, boundary);
             }
 
+            CudaGradientsAccumulator accumulator = new CudaGradientsAccumulator(parties, handler, initialMemory, queueSize, boundary);
 
-            return new CudaGradientsAccumulator(parties, handler, initialMemory, queueSize, boundary);
+            return accumulator;
         }
     }
 }

@@ -103,6 +103,9 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
         this.storageLevel = storageLevel;
         this.collectTrainingStats = collectTrainingStats;
         this.threshold = threshold;
+
+        if (collectTrainingStats)
+            stats = new ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper();
     }
 
     @Override
@@ -448,7 +451,7 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
         if (collectTrainingStats)
             stats.logRepartitionStart();
 
-        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy, numObjectsEachWorker(rddDataSetNumExamples), numWorkers);
+       // splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy, numObjectsEachWorker(rddDataSetNumExamples), numWorkers);
         int nPartitions = splitData.partitions().size();
 
         if (collectTrainingStats && repartition != Repartition.Never)

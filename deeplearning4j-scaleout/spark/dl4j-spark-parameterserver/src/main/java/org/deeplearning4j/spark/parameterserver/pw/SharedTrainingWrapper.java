@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.parameterserver.pw;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
@@ -36,6 +37,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class SharedTrainingWrapper {
     public static SharedTrainingWrapper INSTANCE = new SharedTrainingWrapper();
     protected ParallelWrapper wrapper;
@@ -96,6 +98,7 @@ public class SharedTrainingWrapper {
          */
         if (isFirst.compareAndSet(false, true)) {
             // getting model from worker, and instantiating PW
+            log.info("Starting ParallelWrapper at thread {}", Thread.currentThread().getId());
 
             SharedTrainingConfiguration trainingConfiguration = worker.getBroadcastConfiguration().getValue();
             VoidConfiguration voidConfiguration = worker.getBroadcastConfiguration().getValue().getVoidConfiguration();

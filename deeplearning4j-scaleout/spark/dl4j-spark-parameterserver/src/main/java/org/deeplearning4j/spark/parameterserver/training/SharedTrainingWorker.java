@@ -3,6 +3,8 @@ package org.deeplearning4j.spark.parameterserver.training;
 import lombok.Getter;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.spark.api.TrainingHook;
@@ -41,13 +43,40 @@ public class SharedTrainingWorker implements TrainingWorker<SharedTrainingResult
     @Override
     public MultiLayerNetwork getInitialModel() {
         // This method will be called ONLY once, in master thread
-        return null;
+        NetBroadcastTuple tuple = broadcastModel.getValue();
+        if (tuple.getConfiguration() != null) {
+            MultiLayerConfiguration conf = tuple.getConfiguration();
+            MultiLayerNetwork network = new MultiLayerNetwork(conf);
+            network.init();
+
+            if (tuple.getParameters() != null)
+                network.setParams(tuple.getParameters());
+
+            // we can assign properly, without
+            if (tuple.getUpdaterState() != null)
+                network.getUpdater().getStateViewArray().assign(tuple.getUpdaterState());
+
+            return network;
+        } else return null;
     }
 
     @Override
     public ComputationGraph getInitialModelGraph() {
         // This method will be called ONLY once, in master thread
-        return null;
+        NetBroadcastTuple tuple = broadcastModel.getValue();
+        if (tuple.getGraphConfiguration() != null) {
+            ComputationGraphConfiguration conf = tuple.getGraphConfiguration();
+            ComputationGraph network = new ComputationGraph(conf);
+            network.init();
+
+            if (tuple.getParameters() != null)
+                network.setParams(tuple.getParameters());
+
+            if (tuple.getUpdaterState() != null)
+                network.getUpdater().getUpdaterStateViewArray().assign(tuple.getUpdaterState());
+
+            return network;
+        } else return null;
     }
 
     @Override
