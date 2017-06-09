@@ -212,7 +212,9 @@ public class NativeImageLoader extends BaseImageLoader {
             image = convert(pix);
             pixDestroy(pix);
         }
-        return asMatrix(image);
+        INDArray a = asMatrix(image);
+        image.deallocate();
+        return a;
     }
 
     /**
@@ -380,6 +382,7 @@ public class NativeImageLoader extends BaseImageLoader {
         if (image == null)
             throw new RuntimeException();
         asMatrixView(image, view);
+        image.deallocate();
     }
 
     public void asMatrixView(File f, INDArray view) throws IOException {
@@ -389,69 +392,22 @@ public class NativeImageLoader extends BaseImageLoader {
     }
 
     public void asMatrixView(Mat image, INDArray view) throws IOException {
-        if (imageTransform != null && converter != null) {
-            ImageWritable writable = new ImageWritable(converter.convert(image));
-            writable = imageTransform.transform(writable);
-            image = converter.convert(writable.getFrame());
-        }
-
-        if (channels > 0 && image.channels() != channels) {
-            int code = -1;
-            switch (image.channels()) {
-                case 1:
-                    switch (channels) {
-                        case 3:
-                            code = CV_GRAY2BGR;
-                            break;
-                        case 4:
-                            code = CV_GRAY2RGBA;
-                            break;
-                    }
-                    break;
-                case 3:
-                    switch (channels) {
-                        case 1:
-                            code = CV_BGR2GRAY;
-                            break;
-                        case 4:
-                            code = CV_BGR2RGBA;
-                            break;
-                    }
-                    break;
-                case 4:
-                    switch (channels) {
-                        case 1:
-                            code = CV_RGBA2GRAY;
-                            break;
-                        case 3:
-                            code = CV_RGBA2BGR;
-                            break;
-                    }
-                    break;
-            }
-            if (code < 0) {
-                throw new IOException("Cannot convert from " + image.channels() + " to " + channels + " channels.");
-            }
-            Mat newimage = new Mat();
-            cvtColor(image, newimage, code);
-            image = newimage;
-        }
-        if (centerCropIfNeeded) {
-            image = centerCropIfNeeded(image);
-        }
-        image = scalingIfNeed(image);
-
-        fillNDArray(image, view);
-
-        image.data();
+        transformImage(image, view);
     }
 
     public INDArray asMatrix(Mat image) throws IOException {
+        INDArray ret = transformImage(image, null);
+
+        return ret.reshape(ArrayUtil.combine(new int[] {1}, ret.shape()));
+    }
+
+    protected INDArray transformImage(Mat image, INDArray ret) throws IOException {
         if (imageTransform != null && converter != null) {
             ImageWritable writable = new ImageWritable(converter.convert(image));
             writable = imageTransform.transform(writable);
             image = converter.convert(writable.getFrame());
         }
+        Mat image2 = null, image3 = null, image4 = null;
 
         if (channels > 0 && image.channels() != channels) {
             int code = -1;
@@ -490,24 +446,44 @@ public class NativeImageLoader extends BaseImageLoader {
             if (code < 0) {
                 throw new IOException("Cannot convert from " + image.channels() + " to " + channels + " channels.");
             }
-            Mat newimage = new Mat();
-            cvtColor(image, newimage, code);
-            image = newimage;
+            image2 = new Mat();
+            cvtColor(image, image2, code);
+            image = image2;
         }
         if (centerCropIfNeeded) {
-            image = centerCropIfNeeded(image);
+            image3 = centerCropIfNeeded(image);
+            if (image3 != image) {
+                image = image3;
+            } else {
+                image3 = null;
+            }
         }
-        image = scalingIfNeed(image);
+        image4 = scalingIfNeed(image);
+        if (image4 != image) {
+            image = image4;
+        } else {
+            image4 = null;
+        }
 
-        int rows = image.rows();
-        int cols = image.cols();
-        int channels = image.channels();
-        INDArray ret = Nd4j.create(channels, rows, cols);
-
+        if (ret == null) {
+            int rows = image.rows();
+            int cols = image.cols();
+            int channels = image.channels();
+            ret = Nd4j.create(channels, rows, cols);
+        }
         fillNDArray(image, ret);
 
         image.data(); // dummy call to make sure it does not get deallocated prematurely
-        return ret.reshape(ArrayUtil.combine(new int[] {1}, ret.shape()));
+        if (image2 != null) {
+            image2.deallocate();
+        }
+        if (image3 != null) {
+            image3.deallocate();
+        }
+        if (image4 != null) {
+            image4.deallocate();
+        }
+        return ret;
     }
 
     // TODO build flexibility on where to crop the image
