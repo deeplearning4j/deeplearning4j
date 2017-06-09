@@ -60,6 +60,12 @@ If you use Eclipse, you will need to install the Maven plugin for Eclipse: [ecli
 
 Michael Depies has written this guide to [installing Deeplearning4j on Eclipse](https://depiesml.wordpress.com/2015/08/26/dl4j-gettingstarted/).
 
+If you just want to get the examples running within Eclipse you can also directly checkout the project from SCM:
+
+* In an empty workspace, import via "Check out Maven Project from SCM" and click on "Next"
+* Paste the git repo url: https://github.com/deeplearning4j/dl4j-examples.git
+* Click on Finish
+
 
 ## Model Zoo
 
