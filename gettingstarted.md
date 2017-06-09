@@ -64,7 +64,17 @@ If you just want to get the examples running within Eclipse you can also directl
 
 * In an empty workspace, import via "Check out Maven Project from SCM" and click on "Next"
 * Paste the git repo url: https://github.com/deeplearning4j/dl4j-examples.git
-* Click on Finish
+* Click on Finish (..and wait, it will take some time)
+
+You might get some errors in the pom.xml validator, ignore this for now.
+
+Test it!
+
+Find the file called XorExample.java in the org.deeplearning4j.examples.feedforward.xor packege in the src/main/java folder of the dl4j-examples project. Right-click and "Run as Java-Application":
+
+You should see an output like this:
+
+Congratulations, you can start coding!
 
 
 ## Model Zoo
