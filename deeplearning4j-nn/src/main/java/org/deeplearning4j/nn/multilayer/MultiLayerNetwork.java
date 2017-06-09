@@ -2725,8 +2725,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     out = this.silentOutput(features, false);
                 }
 
-                for(T evaluation: evaluations)
-                evaluation.eval(labels, out, lMask);
+                try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                    for (T evaluation : evaluations)
+                        evaluation.eval(labels, out, lMask);
+                }
             }
 
             clearLayerMaskArrays();

@@ -2958,8 +2958,10 @@ public class ComputationGraph implements Serializable, Model {
                 setLayerMaskArrays(featuresMasks, labelMasks);
                 INDArray[] out = silentOutput(false, features);
 
-                for (T evaluation : evaluations)
-                    evaluation.eval(labels, out[0], labelMask);
+                try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                    for (T evaluation : evaluations)
+                        evaluation.eval(labels, out[0], labelMask);
+                }
             }
 
             clearLayerMaskArrays();
