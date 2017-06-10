@@ -6,6 +6,7 @@ import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -116,6 +117,9 @@ public class ROC extends BaseEvaluation<ROC> {
 
         //Here: calculate true positive rate (TPR) vs. false positive rate (FPR) at different threshold
 
+        INDArray ppc = null;
+        INDArray itp = null;
+        INDArray ifp = null;
         for (int i = 0; i <= thresholdSteps; i++) {
             double currThreshold = i * step;
 
@@ -123,7 +127,12 @@ public class ROC extends BaseEvaluation<ROC> {
             Condition condGeq = Conditions.greaterThanOrEqual(currThreshold);
             Condition condLeq = Conditions.lessThanOrEqual(currThreshold);
 
-            Op op = new CompareAndSet(positivePredictedClassColumn.dup(), 1.0, condGeq);
+            if(ppc == null){
+                ppc = positivePredictedClassColumn.dup(positiveActualClassColumn.ordering());
+            } else {
+                ppc.assign(positivePredictedClassColumn);
+            }
+            Op op = new CompareAndSet(ppc, 1.0, condGeq);
             INDArray predictedClass1 = Nd4j.getExecutioner().execAndReturn(op);
             op = new CompareAndSet(predictedClass1, 0.0, condLeq);
             predictedClass1 = Nd4j.getExecutioner().execAndReturn(op);
@@ -131,8 +140,17 @@ public class ROC extends BaseEvaluation<ROC> {
 
             //True positives: occur when positive predicted class and actual positive actual class...
             //False positive occurs when positive predicted class, but negative actual class
-            INDArray isTruePositive = predictedClass1.mul(positiveActualClassColumn); //If predicted == 1 and actual == 1 at this threshold: 1x1 = 1. 0 otherwise
-            INDArray isFalsePositive = predictedClass1.mul(negativeActualClassColumn); //If predicted == 1 and actual == 0 at this threshold: 1x1 = 1. 0 otherwise
+            INDArray isTruePositive;    // = predictedClass1.mul(positiveActualClassColumn); //If predicted == 1 and actual == 1 at this threshold: 1x1 = 1. 0 otherwise
+            INDArray isFalsePositive;   // = predictedClass1.mul(negativeActualClassColumn); //If predicted == 1 and actual == 0 at this threshold: 1x1 = 1. 0 otherwise
+            if(i == 0){
+                isTruePositive = predictedClass1.mul(positiveActualClassColumn);
+                isFalsePositive = predictedClass1.mul(negativeActualClassColumn);
+                itp = isTruePositive;
+                ifp = isFalsePositive;
+            } else {
+                isTruePositive = Nd4j.getExecutioner().execAndReturn(new MulOp(predictedClass1, positiveActualClassColumn, itp));
+                isFalsePositive = Nd4j.getExecutioner().execAndReturn(new MulOp(predictedClass1, negativeActualClassColumn, ifp));
+            }
 
             //Counts for this batch:
             int truePositiveCount = isTruePositive.sumNumber().intValue();

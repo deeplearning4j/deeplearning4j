@@ -788,7 +788,7 @@ public class ComputationGraph implements Serializable, Model {
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch - where appropriate
         if (iterator.asyncSupported()) {
             dataSetIterator = new AsyncDataSetIterator(iterator,
-                            Math.min(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 4),
+                            Math.min(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 2),
                             configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE);
             destructable = true;
         } else
@@ -898,7 +898,7 @@ public class ComputationGraph implements Serializable, Model {
         MultiDataSetIterator multiDataSetIterator;
         if (multi.asyncSupported()) {
             multiDataSetIterator = new AsyncMultiDataSetIterator(multi,
-                            Math.max(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 4),
+                            Math.max(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 2),
                             configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE);
             destructable = true;
         } else
@@ -2958,8 +2958,10 @@ public class ComputationGraph implements Serializable, Model {
                 setLayerMaskArrays(featuresMasks, labelMasks);
                 INDArray[] out = silentOutput(false, features);
 
-                for (T evaluation : evaluations)
-                    evaluation.eval(labels, out[0], labelMask);
+                try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                    for (T evaluation : evaluations)
+                        evaluation.eval(labels, out[0], labelMask);
+                }
             }
 
             clearLayerMaskArrays();
