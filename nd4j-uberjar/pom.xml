@@ -60,7 +60,7 @@
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-kryo</artifactId>
+        <artifactId>nd4j-kryo_2.11</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -70,7 +70,7 @@
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-camel-routes</artifactId>
+        <artifactId>nd4j-kafka_2.11</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -115,12 +115,12 @@
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-cuda</artifactId>
+        <artifactId>nd4j-cuda-8.0</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-cuda-platform</artifactId>
+        <artifactId>nd4j-cuda-8.0-platform</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -135,7 +135,7 @@
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-parameter-server-server</artifactId>
+        <artifactId>nd4j-parameter-server</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -145,12 +145,12 @@
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-parameterserver-model</artifactId>
+        <artifactId>nd4j-parameter-server-model</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-parameter-server-status</artifactId>
+        <artifactId>nd4j-parameter-server-status_2.11</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -160,7 +160,7 @@
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-parameter-server-node</artifactId>
+        <artifactId>nd4j-parameter-server-node_2.11</artifactId>
         <version>${project.version}</version>
       </dependency>
     </dependencies>
@@ -195,10 +195,11 @@
                   <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                   </transformer>
                 </transformers>
+                <minimizeJar>true</minimizeJar>
               </configuration>
               <executions>
                 <execution>
-                  <phase>install</phase>
+                  <phase>package</phase>
                   <goals>
                     <goal>shade</goal>
                   </goals>
