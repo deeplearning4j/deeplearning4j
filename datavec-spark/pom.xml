@@ -125,7 +125,6 @@
 
 
         <!-- Test scope dependencies -->
-
         <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-data-image</artifactId>

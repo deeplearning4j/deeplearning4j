@@ -16,6 +16,8 @@
 
 package org.datavec.api.writable;
 
+import lombok.NonNull;
+
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -60,7 +62,7 @@ public class WritableFactory {
      * @param writableTypeKey Key for the Writable
      * @param writableClass   Class for the given key. Must have a no-arg constructor
      */
-    public void registerWritableType(short writableTypeKey, Class<? extends Writable> writableClass){
+    public void registerWritableType(short writableTypeKey, @NonNull Class<? extends Writable> writableClass){
         if (map.containsKey(writableTypeKey)) {
             throw new UnsupportedOperationException("Key " + writableTypeKey + " is already registered to type "
                     + map.get(writableTypeKey) + " and cannot be registered to " + writableClass);

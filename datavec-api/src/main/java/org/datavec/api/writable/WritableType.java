@@ -86,6 +86,7 @@ public enum WritableType {
             case Text:
                 return Text.class;
             case NDArray:
+                return NDArrayWritable.class;
             case Image:
             default:
                 return null;
