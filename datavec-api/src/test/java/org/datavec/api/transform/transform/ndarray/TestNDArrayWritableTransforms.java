@@ -1,5 +1,5 @@
 /*
- *  * Copyright 2016 Skymind, Inc.
+ *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -14,13 +14,17 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.api.transform;
+package org.datavec.api.transform.transform.ndarray;
 
+import org.datavec.api.transform.Distance;
+import org.datavec.api.transform.MathFunction;
+import org.datavec.api.transform.MathOp;
+import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.datavec.common.data.NDArrayWritable;
+import org.datavec.api.writable.NDArrayWritable;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -48,7 +52,7 @@ public class TestNDArrayWritableTransforms {
 
 
         TransformProcess tp = new TransformProcess.Builder(s)
-                .ndArrayScalarOpTransform("col1",MathOp.Add, 100)
+                .ndArrayScalarOpTransform("col1", MathOp.Add, 100)
                 .build();
 
         List<Writable> in = Arrays.<Writable>asList(new DoubleWritable(0), new NDArrayWritable(Nd4j.linspace(0,9,10)), new Text("str0"));

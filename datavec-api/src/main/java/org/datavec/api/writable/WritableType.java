@@ -45,7 +45,6 @@ public enum WritableType {
      */
     public boolean isCoreWritable(){
         switch (this){
-            case NDArray:
             case Image:
                 return false;
             default:

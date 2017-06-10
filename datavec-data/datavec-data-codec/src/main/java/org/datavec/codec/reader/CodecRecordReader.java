@@ -19,7 +19,7 @@ package org.datavec.codec.reader;
 import org.apache.commons.compress.utils.IOUtils;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.writable.Writable;
-import org.datavec.common.RecordConverter;
+import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.image.loader.ImageLoader;
 import org.jcodec.api.FrameGrab;
 import org.jcodec.api.JCodecException;

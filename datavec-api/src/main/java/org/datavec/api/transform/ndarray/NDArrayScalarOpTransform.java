@@ -21,7 +21,7 @@ import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.NDArrayMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;
 import org.datavec.api.writable.Writable;
-import org.datavec.common.data.NDArrayWritable;
+import org.datavec.api.writable.NDArrayWritable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;

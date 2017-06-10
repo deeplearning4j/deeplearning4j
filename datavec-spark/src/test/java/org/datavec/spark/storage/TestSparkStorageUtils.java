@@ -23,7 +23,7 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.datavec.common.data.NDArrayWritable;
+import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.spark.BaseSparkTest;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;

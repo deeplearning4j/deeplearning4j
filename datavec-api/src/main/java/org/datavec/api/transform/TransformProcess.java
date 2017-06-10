@@ -20,6 +20,10 @@ import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ClassUtils;
 import org.datavec.api.transform.filter.ConditionFilter;
+import org.datavec.api.transform.ndarray.NDArrayColumnsMathOpTransform;
+import org.datavec.api.transform.ndarray.NDArrayDistanceTransform;
+import org.datavec.api.transform.ndarray.NDArrayMathFunctionTransform;
+import org.datavec.api.transform.ndarray.NDArrayScalarOpTransform;
 import org.datavec.api.transform.sequence.*;
 import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
 import org.datavec.api.transform.transform.integer.IntegerToOneHotTransform;
@@ -96,14 +100,6 @@ import java.util.concurrent.TimeUnit;
 @Data
 @Slf4j
 public class TransformProcess implements Serializable {
-
-    //Class names for NDArray transforms: these are instantiated using reflection, as NDArray transforms are not
-    // defined in datavec-api
-    private static final String NDARRAY_SCALAR_OP_TRANSFORM_CLASS = "org.datavec.api.transform.ndarray.NDArrayScalarOpTransform";
-    private static final String NDARRAY_COLUMNS_MATH_OP_TRANSFORM_CLASS = "org.datavec.api.transform.ndarray.NDArrayColumnsMathOpTransform";
-    private static final String NDARRAY_MATH_FUNCTION_TRANSFORM_CLASS = "org.datavec.api.transform.ndarray.NDArrayMathFunctionTransform";
-    private static final String NDARRAY_DISTANCE_TRANSFORM_CLASS = "org.datavec.api.transform.ndarray.NDArrayDistanceTransform";
-
 
     private final Schema initialSchema;
     private List<DataAction> actionList;
@@ -1237,19 +1233,7 @@ public class TransformProcess implements Serializable {
          * @param value      Value for the operation
          */
         public Builder ndArrayScalarOpTransform(String columnName, MathOp op, double value){
-            try{
-                //Use reflection, as NDArray transforms are not defined in datavec-api
-                Class<?> c = Class.forName(NDARRAY_SCALAR_OP_TRANSFORM_CLASS);
-                transform( (Transform)
-                        c.getDeclaredConstructor(String.class, MathOp.class, double.class).newInstance(columnName, op, value));
-            } catch (ClassNotFoundException e){
-                throw new RuntimeException("Could not find class " + NDARRAY_SCALAR_OP_TRANSFORM_CLASS + "; " +
-                        "datavec-nd4j-common (required for ND4J NDArray transforms) is not on the classpath?");
-            } catch (Exception e){
-                throw new RuntimeException("Could not instantiate transform: " + NDARRAY_SCALAR_OP_TRANSFORM_CLASS, e);
-            }
-
-            return this;
+            return transform(new NDArrayScalarOpTransform(columnName, op, value));
         }
 
         /**
@@ -1261,19 +1245,7 @@ public class TransformProcess implements Serializable {
          * @param columnNames   Name of the columns used as input to the operation
          */
         public Builder ndArrayColumnsMathOpTransform(String newColumnName, MathOp mathOp, String... columnNames){
-            try{
-                //Use reflection, as NDArray transforms are not defined in datavec-api
-                Class<?> c = Class.forName(NDARRAY_COLUMNS_MATH_OP_TRANSFORM_CLASS);
-                transform( (Transform)
-                        c.getDeclaredConstructor(String.class, MathOp.class, String[].class).newInstance(newColumnName, mathOp, columnNames));
-            } catch (ClassNotFoundException e){
-                throw new RuntimeException("Could not find class " + NDARRAY_COLUMNS_MATH_OP_TRANSFORM_CLASS + "; " +
-                        "datavec-nd4j-common (required for ND4J NDArray transforms) is not on the classpath?");
-            } catch (Exception e){
-                throw new RuntimeException("Could not instantiate transform: " + NDARRAY_COLUMNS_MATH_OP_TRANSFORM_CLASS, e);
-            }
-
-            return this;
+            return transform(new NDArrayColumnsMathOpTransform(newColumnName, mathOp, columnNames));
         }
 
         /**
@@ -1284,19 +1256,7 @@ public class TransformProcess implements Serializable {
          * @param mathFunction Mathematical function to apply
          */
         public Builder ndArrayMathFunctionTransform(String columnName, MathFunction mathFunction){
-            try {
-                //Use reflection, as NDArray transforms are not defined in datavec-api
-                Class<?> c = Class.forName(NDARRAY_MATH_FUNCTION_TRANSFORM_CLASS);
-                transform((Transform)
-                        c.getDeclaredConstructor(String.class, MathFunction.class).newInstance(columnName, mathFunction));
-            } catch (ClassNotFoundException e){
-                throw new RuntimeException("Could not find class " + NDARRAY_MATH_FUNCTION_TRANSFORM_CLASS + "; " +
-                        "datavec-nd4j-common (required for ND4J NDArray transforms) is not on the classpath?");
-            } catch (Exception e){
-                throw new RuntimeException("Could not instantiate transform: " + NDARRAY_MATH_FUNCTION_TRANSFORM_CLASS, e);
-            }
-
-            return this;
+            return transform(new NDArrayMathFunctionTransform(columnName, mathFunction));
         }
 
         /**
@@ -1309,20 +1269,7 @@ public class TransformProcess implements Serializable {
          * @param secondCol     second column to use in the distance calculation
          */
         public Builder ndArrayDistanceTransform(String newColumnName, Distance distance, String firstCol, String secondCol) {
-            try {
-                //Use reflection, as NDArray transforms are not defined in datavec-api
-                Class<?> c = Class.forName(NDARRAY_DISTANCE_TRANSFORM_CLASS);
-                transform((Transform)
-                        c.getDeclaredConstructor(String.class, Distance.class, String.class, String.class)
-                                .newInstance(newColumnName, distance, firstCol, secondCol));
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException("Could not find class " + NDARRAY_DISTANCE_TRANSFORM_CLASS + "; " +
-                        "datavec-nd4j-common (required for ND4J NDArray transforms) is not on the classpath?");
-            } catch (Exception e) {
-                throw new RuntimeException("Could not instantiate transform: " + NDARRAY_DISTANCE_TRANSFORM_CLASS, e);
-            }
-
-            return this;
+            return transform(new NDArrayDistanceTransform(newColumnName, distance, firstCol, secondCol));
         }
 
         /**

@@ -78,7 +78,7 @@ public class WritableFactory {
     }
 
     /**
-     * Create a new risible instance (using reflection) given the specified key
+     * Create a new writable instance (using reflection) given the specified key
      *
      * @param writableTypeKey Key to create a new writable instance for
      * @return A new (empty/default) Writable instance

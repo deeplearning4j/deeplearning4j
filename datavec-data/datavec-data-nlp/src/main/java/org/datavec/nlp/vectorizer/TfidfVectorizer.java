@@ -21,7 +21,7 @@ import org.datavec.api.berkeley.Counter;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaDataURI;
 import org.datavec.api.records.reader.RecordReader;
-import org.datavec.common.data.NDArrayWritable;
+import org.datavec.api.writable.NDArrayWritable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 

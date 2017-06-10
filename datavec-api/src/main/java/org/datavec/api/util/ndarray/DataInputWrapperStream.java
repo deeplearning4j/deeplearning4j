@@ -1,5 +1,5 @@
 /*
- *  * Copyright 2016 Skymind, Inc.
+ *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.common.util;
+package org.datavec.api.util.ndarray;
 
 import lombok.AllArgsConstructor;
 

@@ -14,8 +14,12 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.api.transform;
+package org.datavec.api.transform.transform.ndarray;
 
+import org.datavec.api.transform.MathFunction;
+import org.datavec.api.transform.MathOp;
+import org.datavec.api.transform.Transform;
+import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.ndarray.NDArrayColumnsMathOpTransform;
 import org.datavec.api.transform.ndarray.NDArrayMathFunctionTransform;
 import org.datavec.api.transform.ndarray.NDArrayScalarOpTransform;

@@ -16,7 +16,11 @@
 
 package org.datavec.api.transform.schema;
 
+import lombok.EqualsAndHashCode;
+import org.datavec.api.transform.ColumnType;
+import org.datavec.api.transform.metadata.*;
 import org.datavec.api.writable.*;
+import org.joda.time.DateTimeZone;
 import org.nd4j.shade.jackson.annotation.*;
 import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
@@ -24,14 +28,8 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import org.nd4j.shade.jackson.datatype.joda.JodaModule;
-import lombok.EqualsAndHashCode;
-import org.datavec.api.transform.ColumnType;
-import org.datavec.api.transform.metadata.*;
-import org.joda.time.DateTimeZone;
 
 import java.io.Serializable;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 /**
@@ -51,9 +49,6 @@ import java.util.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonSubTypes(value = {@JsonSubTypes.Type(value = SequenceSchema.class, name = "SequenceSchema"),})
 public class Schema implements Serializable {
-
-    //Use reflection to instantiate NDArray column metadata, as these are defined in another (optional) package
-    private static final String NDARRAY_META_CLASS = "org.datavec.api.transform.metadata.NDArrayMetaData";
 
     private List<String> columnNames;
     @JsonProperty("columns")
@@ -728,32 +723,13 @@ public class Schema implements Serializable {
         }
 
         /**
-         * Add an NDArray column.<br>
-         * Note that ND4J NDArray operations require that datavec-nd4j-common is added as a dependency
+         * Add an NDArray column
          *
          * @param columnName Name of the column
          * @param shape      shape of the NDArray column. Use -1 in entries to specify as "variable length" in that dimension
          */
         public Builder addColumnNDArray(String columnName, int[] shape){
-            Class<?> c;
-            try{
-                c = Class.forName(NDARRAY_META_CLASS);
-            }catch (ClassNotFoundException e){
-                throw new RuntimeException("Cannot create NDArray column: NDArrayMetaData not found on classpath. "
-                        + "Missing datavec-nd4j-common dependency?");
-            }
-
-            Constructor<?> constructor;
-            try{
-               constructor = c.getDeclaredConstructor(String.class, int[].class);
-               ColumnMetaData meta = (ColumnMetaData) constructor.newInstance(columnName, shape);
-               return addColumn(meta);
-            } catch (NoSuchMethodException e){
-                //Should never happen
-                throw new RuntimeException("Could not create NDArrayMetaData instance (constructor not found)", e);
-            } catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
-                throw new RuntimeException("Could not create NDArrayMetaData instance",e);
-            }
+            return addColumn(new NDArrayMetaData(columnName, shape));
         }
 
         /**

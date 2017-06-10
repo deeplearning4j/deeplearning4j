@@ -1,5 +1,5 @@
-/*-
- *  * Copyright 2016 Skymind, Inc.
+/*
+ *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -13,15 +13,12 @@
  *  *    See the License for the specific language governing permissions and
  *  *    limitations under the License.
  */
-package org.datavec.common.data;
+package org.datavec.api.writable;
 
 import org.datavec.api.io.WritableComparable;
-import org.datavec.api.writable.ArrayWritable;
-import org.datavec.api.writable.WritableFactory;
-import org.datavec.api.writable.WritableType;
-import org.datavec.common.util.DataInputWrapperStream;
-import org.datavec.common.util.DataOutputWrapperStream;
-import org.datavec.common.util.NDArrayUtils;
+import org.datavec.api.util.MathUtils;
+import org.datavec.api.util.ndarray.DataInputWrapperStream;
+import org.datavec.api.util.ndarray.DataOutputWrapperStream;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,10 +35,6 @@ import java.util.Arrays;
 public class NDArrayWritable extends ArrayWritable implements WritableComparable {
     public static final byte NDARRAY_SER_VERSION_HEADER_NULL = 0;
     public static final byte NDARRAY_SER_VERSION_HEADER = 1;
-
-    static {
-        WritableFactory.getInstance().registerWritableType(WritableType.NDArray.typeIdx(), NDArrayWritable.class);
-    }
 
     private INDArray array = null;
     private Integer hash = null;
@@ -148,7 +141,7 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
         int length = array.length();
         NdIndexIterator iter = new NdIndexIterator('c', array.shape());
         for (int i = 0; i < length; i++) {
-            hash ^= NDArrayUtils.hashCode(array.getDouble(iter.next()));
+            hash ^= MathUtils.hashCode(array.getDouble(iter.next()));
         }
 
         this.hash = hash;

@@ -26,7 +26,7 @@ import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.writable.Writable;
-import org.datavec.common.RecordConverter;
+import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.image.loader.NativeImageLoader;
 
 /**

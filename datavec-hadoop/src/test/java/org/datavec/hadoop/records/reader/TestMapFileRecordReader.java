@@ -29,7 +29,7 @@ import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
-import org.datavec.common.data.NDArrayWritable;
+import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.hadoop.records.reader.mapfile.MapFileRecordReader;
 import org.datavec.hadoop.records.reader.mapfile.MapFileSequenceRecordReader;
 import org.datavec.hadoop.records.reader.mapfile.record.RecordWritable;

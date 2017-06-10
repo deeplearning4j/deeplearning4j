@@ -61,11 +61,6 @@
             <artifactId>cleartk-opennlp-tools</artifactId>
             <version>${cleartk.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-nd4j-common</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>org.nd4j</groupId>

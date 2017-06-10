@@ -10,7 +10,7 @@ import org.datavec.spark.transform.DataFrames;
 
 import java.util.List;
 
-import org.datavec.common.data.NDArrayWritable;
+import org.datavec.api.writable.NDArrayWritable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 

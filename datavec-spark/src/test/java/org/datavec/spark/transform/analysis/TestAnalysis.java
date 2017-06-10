@@ -16,14 +16,13 @@
 
 package org.datavec.spark.transform.analysis;
 
-import org.apache.commons.io.FilenameUtils;
 import org.apache.spark.util.StatCounter;
 import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.analysis.columns.*;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.ui.HtmlAnalysis;
 import org.datavec.api.writable.*;
-import org.datavec.common.data.NDArrayWritable;
+import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.transform.AnalyzeSpark;
 import org.apache.spark.api.java.JavaRDD;
@@ -32,7 +31,6 @@ import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.util.*;
 

@@ -19,11 +19,13 @@ package org.datavec.api.transform.metadata;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
+import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.lang.reflect.Method;
+import java.util.Arrays;
 
 /**
  * Meta data class for NDArray columns
@@ -60,12 +62,39 @@ public class NDArrayMetaData extends BaseColumnMetaData {
 
     @Override
     public boolean isValid(Writable writable) {
-        return isValid(this, writable);
+        if (!(writable instanceof NDArrayWritable)) {
+            return false;
+        }
+        INDArray arr = ((NDArrayWritable) writable).get();
+        if (arr == null) {
+            return false;
+        }
+        if (allowVarLength) {
+            for (int i = 0; i < shape.length; i++) {
+                if (shape[i] < 0) {
+                    continue;
+                }
+                if (shape[i] != arr.size(i)) {
+                    return false;
+                }
+            }
+            return true;
+        } else {
+            return Arrays.equals(shape, arr.shape());
+        }
     }
 
     @Override
     public boolean isValid(Object input) {
-        return isValid(this, input);
+        if(input == null) {
+            return false;
+        } else if (input instanceof Writable) {
+            return isValid((Writable) input);
+        } else if (input instanceof INDArray) {
+            return isValid(new NDArrayWritable((INDArray) input));
+        } else {
+            throw new UnsupportedOperationException("Unknown object type: " + input.getClass());
+        }
     }
 
     @Override
@@ -73,52 +102,4 @@ public class NDArrayMetaData extends BaseColumnMetaData {
         return new NDArrayMetaData(name, shape.clone());
     }
 
-    private static Method utilsIsValid;
-    private static boolean isValid(NDArrayMetaData meta, Writable writable){
-        //Reflection magic: We want to define NDArrayMetaData in datavec-api (if not: have to add custom metadata support
-        // for jackson/json just for this)
-        //Alternatively, we move NDArrayWritable to datavec-api, from datavec-nd4j-common
-        if(utilsIsValid == null){
-            synchronized (NDArrayMetaData.class){
-                if(utilsIsValid == null){   //To avoid race condition
-                    try{
-                        utilsIsValid = Class.forName("org.datavec.common.util.NDArrayUtils")
-                                .getMethod("isValid", NDArrayMetaData.class, Writable.class);
-                    }catch (ClassNotFoundException | NoSuchMethodException e){
-                        throw new RuntimeException("Could not find NDArrayUtils methods; datavec-nd4j-common may not be"
-                                + " on classpath?");
-                    }
-                }
-            }
-        }
-
-        try{
-            return (Boolean)utilsIsValid.invoke(null, meta, writable);
-        }catch (Exception e){
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static Method utilsIsValidObject;
-    private static boolean isValid(NDArrayMetaData meta, Object input){
-        if(utilsIsValidObject == null){
-            synchronized (NDArrayMetaData.class){
-                if(utilsIsValidObject == null){   //To avoid race condition
-                    try{
-                        utilsIsValidObject = Class.forName("org.datavec.common.util.NDArrayUtils")
-                                .getMethod("isValid", NDArrayMetaData.class, Object.class);
-                    }catch (ClassNotFoundException | NoSuchMethodException e){
-                        throw new RuntimeException("Could not find NDArrayUtils methods; datavec-nd4j-common may not be"
-                                + " on classpath?");
-                    }
-                }
-            }
-        }
-
-        try{
-            return (Boolean)utilsIsValidObject.invoke(null, meta, input);
-        }catch (Exception e){
-            throw new RuntimeException(e);
-        }
-    }
 }

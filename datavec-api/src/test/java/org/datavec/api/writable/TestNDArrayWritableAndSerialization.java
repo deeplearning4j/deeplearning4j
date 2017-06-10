@@ -1,5 +1,5 @@
 /*
- *  * Copyright 2016 Skymind, Inc.
+ *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
  *  *    you may not use this file except in compliance with the License.
@@ -14,10 +14,10 @@
  *  *    limitations under the License.
  */
 
-package org.datavec.common;
+package org.datavec.api.writable;
 
 import org.datavec.api.transform.metadata.NDArrayMetaData;
-import org.datavec.common.data.NDArrayWritable;
+import org.datavec.api.writable.NDArrayWritable;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -29,12 +29,10 @@ import static org.junit.Assert.*;
 /**
  * Created by Alex on 02/06/2017.
  */
-public class TestWritablesAndSerialization {
+public class TestNDArrayWritableAndSerialization {
 
     @Test
     public void testIsValid(){
-
-        //Test for isValid, which uses reflection
 
         NDArrayMetaData meta = new NDArrayMetaData("col", new int[]{1,10});
 

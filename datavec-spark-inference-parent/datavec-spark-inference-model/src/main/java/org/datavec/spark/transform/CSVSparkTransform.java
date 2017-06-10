@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.writable.Writable;
-import org.datavec.common.RecordConverter;
+import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.spark.transform.model.Base64NDArrayBody;
 import org.datavec.spark.transform.model.BatchRecord;
 import org.datavec.spark.transform.model.CSVRecord;
