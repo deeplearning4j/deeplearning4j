@@ -16,58 +16,15 @@
 
 package org.datavec.api.transform;
 
-import org.datavec.api.transform.condition.BooleanCondition;
-import org.datavec.api.transform.condition.Condition;
-import org.datavec.api.transform.condition.ConditionOp;
-import org.datavec.api.transform.condition.column.*;
-import org.datavec.api.transform.condition.string.StringRegexColumnCondition;
-import org.datavec.api.transform.filter.ConditionFilter;
-import org.datavec.api.transform.filter.Filter;
-import org.datavec.api.transform.filter.FilterInvalidValues;
 import org.datavec.api.transform.ndarray.NDArrayColumnsMathOpTransform;
 import org.datavec.api.transform.ndarray.NDArrayMathFunctionTransform;
-import org.datavec.api.transform.ndarray.NDArrayMathOpTransform;
-import org.datavec.api.transform.rank.CalculateSortedRank;
-import org.datavec.api.transform.reduce.IAssociativeReducer;
-import org.datavec.api.transform.reduce.Reducer;
+import org.datavec.api.transform.ndarray.NDArrayScalarOpTransform;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.transform.sequence.ConvertFromSequence;
-import org.datavec.api.transform.sequence.ConvertToSequence;
-import org.datavec.api.transform.sequence.SequenceComparator;
-import org.datavec.api.transform.sequence.SequenceSplit;
-import org.datavec.api.transform.sequence.comparator.NumericalColumnComparator;
-import org.datavec.api.transform.sequence.comparator.StringComparator;
-import org.datavec.api.transform.sequence.split.SequenceSplitTimeSeparation;
-import org.datavec.api.transform.sequence.split.SplitMaxLengthSequence;
 import org.datavec.api.transform.serde.JsonSerializer;
 import org.datavec.api.transform.serde.YamlSerializer;
-import org.datavec.api.transform.transform.categorical.CategoricalToIntegerTransform;
-import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
-import org.datavec.api.transform.transform.categorical.IntegerToCategoricalTransform;
-import org.datavec.api.transform.transform.categorical.StringToCategoricalTransform;
-import org.datavec.api.transform.transform.column.DuplicateColumnsTransform;
-import org.datavec.api.transform.transform.column.RemoveColumnsTransform;
-import org.datavec.api.transform.transform.column.RenameColumnsTransform;
-import org.datavec.api.transform.transform.column.ReorderColumnsTransform;
-import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
-import org.datavec.api.transform.transform.doubletransform.*;
-import org.datavec.api.transform.transform.integer.IntegerColumnsMathOpTransform;
-import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
-import org.datavec.api.transform.transform.integer.ReplaceEmptyIntegerWithValueTransform;
-import org.datavec.api.transform.transform.integer.ReplaceInvalidWithIntegerTransform;
-import org.datavec.api.transform.transform.longtransform.LongColumnsMathOpTransform;
-import org.datavec.api.transform.transform.longtransform.LongMathOpTransform;
-import org.datavec.api.transform.transform.string.*;
-import org.datavec.api.transform.transform.time.DeriveColumnsFromTimeTransform;
-import org.datavec.api.transform.transform.time.StringToTimeTransform;
-import org.datavec.api.transform.transform.time.TimeMathOpTransform;
-import org.datavec.api.writable.comparator.DoubleWritableComparator;
-import org.joda.time.DateTimeFieldType;
-import org.joda.time.DateTimeZone;
 import org.junit.Test;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
@@ -86,7 +43,7 @@ public class TestYamlJsonSerde {
         Transform[] transforms = new Transform[] {
                 new NDArrayColumnsMathOpTransform("newCol", MathOp.Divide, "in1", "in2"),
                 new NDArrayMathFunctionTransform("inCol", MathFunction.SQRT),
-                new NDArrayMathOpTransform("inCol", MathOp.ScalarMax, 3.0)
+                new NDArrayScalarOpTransform("inCol", MathOp.ScalarMax, 3.0)
         };
 
         for (Transform t : transforms) {
@@ -136,7 +93,7 @@ public class TestYamlJsonSerde {
                 .integerMathOp("firstCol", MathOp.Add, 1)
                 .ndArrayColumnsMathOpTransform("added",MathOp.Add, "nd1a","nd1b")
                 .ndArrayMathFunctionTransform("nd2", MathFunction.SQRT)
-                .ndArrayMathOpTransform("nd3", MathOp.Multiply, 2.0)
+                .ndArrayScalarOpTransform("nd3", MathOp.Multiply, 2.0)
                 .build();
 
         String asJson = tp.toJson();

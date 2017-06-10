@@ -74,7 +74,6 @@ import org.datavec.api.transform.analysis.columns.NumericalColumnAnalysis;
 import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
 import lombok.Data;
 import org.datavec.api.transform.analysis.DataAnalysis;
-import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
 import org.datavec.api.writable.comparator.WritableComparator;
@@ -100,7 +99,7 @@ public class TransformProcess implements Serializable {
 
     //Class names for NDArray transforms: these are instantiated using reflection, as NDArray transforms are not
     // defined in datavec-api
-    private static final String NDARRAY_MATH_OP_TRANSFORM_CLASS = "org.datavec.api.transform.ndarray.NDArrayMathOpTransform";
+    private static final String NDARRAY_SCALAR_OP_TRANSFORM_CLASS = "org.datavec.api.transform.ndarray.NDArrayScalarOpTransform";
     private static final String NDARRAY_COLUMNS_MATH_OP_TRANSFORM_CLASS = "org.datavec.api.transform.ndarray.NDArrayColumnsMathOpTransform";
     private static final String NDARRAY_MATH_FUNCTION_TRANSFORM_CLASS = "org.datavec.api.transform.ndarray.NDArrayMathFunctionTransform";
 
@@ -1236,17 +1235,17 @@ public class TransformProcess implements Serializable {
          * @param op         Operation to perform
          * @param value      Value for the operation
          */
-        public Builder ndArrayMathOpTransform(String columnName, MathOp op, double value){
+        public Builder ndArrayScalarOpTransform(String columnName, MathOp op, double value){
             try{
                 //Use reflection, as NDArray transforms are not defined in datavec-api
-                Class<?> c = Class.forName(NDARRAY_MATH_OP_TRANSFORM_CLASS);
+                Class<?> c = Class.forName(NDARRAY_SCALAR_OP_TRANSFORM_CLASS);
                 transform( (Transform)
                         c.getDeclaredConstructor(String.class, MathOp.class, double.class).newInstance(columnName, op, value));
             } catch (ClassNotFoundException e){
-                throw new RuntimeException("Could not find class " + NDARRAY_MATH_OP_TRANSFORM_CLASS + "; " +
+                throw new RuntimeException("Could not find class " + NDARRAY_SCALAR_OP_TRANSFORM_CLASS + "; " +
                         "datavec-nd4j-common (required for ND4J NDArray transforms) is not on the classpath?");
             } catch (Exception e){
-                throw new RuntimeException("Could not instantiate transform: " + NDARRAY_MATH_OP_TRANSFORM_CLASS, e);
+                throw new RuntimeException("Could not instantiate transform: " + NDARRAY_SCALAR_OP_TRANSFORM_CLASS, e);
             }
 
             return this;

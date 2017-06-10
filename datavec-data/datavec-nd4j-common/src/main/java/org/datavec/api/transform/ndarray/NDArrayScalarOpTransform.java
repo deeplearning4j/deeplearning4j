@@ -33,7 +33,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  *
  * @author Alex Black
  */
-public class NDArrayMathOpTransform extends BaseColumnTransform {
+public class NDArrayScalarOpTransform extends BaseColumnTransform {
 
     private final MathOp mathOp;
     private final double scalar;
@@ -44,9 +44,9 @@ public class NDArrayMathOpTransform extends BaseColumnTransform {
      * @param mathOp     Operation to perform
      * @param scalar     Scalar value for the operation
      */
-    public NDArrayMathOpTransform(@JsonProperty("columnName") String columnName,
-                                  @JsonProperty("mathOp") MathOp mathOp,
-                                  @JsonProperty("scalar") double scalar) {
+    public NDArrayScalarOpTransform(@JsonProperty("columnName") String columnName,
+                                    @JsonProperty("mathOp") MathOp mathOp,
+                                    @JsonProperty("scalar") double scalar) {
         super(columnName);
         this.mathOp = mathOp;
         this.scalar = scalar;
@@ -113,7 +113,7 @@ public class NDArrayMathOpTransform extends BaseColumnTransform {
 
     @Override
     public String toString() {
-        return "NDArrayMathOpTransform(mathOp=" + mathOp + ",scalar=" + scalar + ")";
+        return "NDArrayScalarOpTransform(mathOp=" + mathOp + ",scalar=" + scalar + ")";
     }
 
     @Override

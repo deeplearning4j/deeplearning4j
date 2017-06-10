@@ -47,7 +47,7 @@ public class TestNDArrayWritableTransforms {
 
 
         TransformProcess tp = new TransformProcess.Builder(s)
-                .ndArrayMathOpTransform("col1",MathOp.Add, 100)
+                .ndArrayScalarOpTransform("col1",MathOp.Add, 100)
                 .build();
 
         List<Writable> in = Arrays.<Writable>asList(new DoubleWritable(0), new NDArrayWritable(Nd4j.linspace(0,9,10)), new Text("str0"));
