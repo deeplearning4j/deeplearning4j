@@ -102,6 +102,7 @@ public class TransformProcess implements Serializable {
     private static final String NDARRAY_SCALAR_OP_TRANSFORM_CLASS = "org.datavec.api.transform.ndarray.NDArrayScalarOpTransform";
     private static final String NDARRAY_COLUMNS_MATH_OP_TRANSFORM_CLASS = "org.datavec.api.transform.ndarray.NDArrayColumnsMathOpTransform";
     private static final String NDARRAY_MATH_FUNCTION_TRANSFORM_CLASS = "org.datavec.api.transform.ndarray.NDArrayMathFunctionTransform";
+    private static final String NDARRAY_DISTANCE_TRANSFORM_CLASS = "org.datavec.api.transform.ndarray.NDArrayDistanceTransform";
 
 
     private final Schema initialSchema;
@@ -1293,6 +1294,32 @@ public class TransformProcess implements Serializable {
                         "datavec-nd4j-common (required for ND4J NDArray transforms) is not on the classpath?");
             } catch (Exception e){
                 throw new RuntimeException("Could not instantiate transform: " + NDARRAY_MATH_FUNCTION_TRANSFORM_CLASS, e);
+            }
+
+            return this;
+        }
+
+        /**
+         * Calculate a distance (cosine similarity, Euclidean, Manhattan) on two equal-sized NDArray columns. This
+         * operation adds a new Double column (with the specified name) with the result.
+         *
+         * @param newColumnName Name of the new column (result) to add
+         * @param distance      Distance to apply
+         * @param firstCol      first column to use in the distance calculation
+         * @param secondCol     second column to use in the distance calculation
+         */
+        public Builder ndArrayDistanceTransform(String newColumnName, Distance distance, String firstCol, String secondCol) {
+            try {
+                //Use reflection, as NDArray transforms are not defined in datavec-api
+                Class<?> c = Class.forName(NDARRAY_DISTANCE_TRANSFORM_CLASS);
+                transform((Transform)
+                        c.getDeclaredConstructor(String.class, Distance.class, String.class, String.class)
+                                .newInstance(newColumnName, distance, firstCol, secondCol));
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException("Could not find class " + NDARRAY_DISTANCE_TRANSFORM_CLASS + "; " +
+                        "datavec-nd4j-common (required for ND4J NDArray transforms) is not on the classpath?");
+            } catch (Exception e) {
+                throw new RuntimeException("Could not instantiate transform: " + NDARRAY_DISTANCE_TRANSFORM_CLASS, e);
             }
 
             return this;

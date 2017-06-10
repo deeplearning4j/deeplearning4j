@@ -34,7 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Calculate the distance (cosine similarity, Euclidean, Manhattan) between two INDArrays
+ * Calculate the distance (cosine similarity, EUCLIDEAN, MANHATTAN) between two INDArrays
  *
  * @author Alex Black
  */
@@ -87,13 +87,13 @@ public class NDArrayDistanceTransform implements Transform {
 
         double d;
         switch (distance) {
-            case Cosine:
+            case COSINE:
                 d = Transforms.cosineSim(arr1, arr2);
                 break;
-            case Euclidean:
+            case EUCLIDEAN:
                 d = Transforms.euclideanDistance(arr1, arr2);
                 break;
-            case Manhattan:
+            case MANHATTAN:
                 d = Transforms.manhattanDistance(arr1, arr2);
                 break;
             default:

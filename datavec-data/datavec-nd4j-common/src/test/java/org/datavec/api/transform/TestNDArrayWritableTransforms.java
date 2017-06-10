@@ -22,6 +22,7 @@ import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.data.NDArrayWritable;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
@@ -118,6 +119,45 @@ public class TestNDArrayWritableTransforms {
         List<Writable> exp = Arrays.<Writable>asList(new DoubleWritable(0),
                 new NDArrayWritable(Transforms.sin(Nd4j.linspace(0,9,10))),
                 new NDArrayWritable(Transforms.sqrt(Nd4j.valueArrayOf(1,10,2.0))));
+
+        assertEquals(exp, out);
+    }
+
+
+    @Test
+    public void testNDArrayDistanceTransform(){
+
+        Schema s = new Schema.Builder()
+
+                .addColumnDouble("col0")
+                .addColumnNDArray("col1", new int[]{1,10})
+                .addColumnNDArray("col2", new int[]{1,10})
+                .build();
+
+
+        TransformProcess tp = new TransformProcess.Builder(s)
+                .ndArrayDistanceTransform("dist", Distance.COSINE, "col1", "col2")
+                .build();
+
+
+
+        List<String> expColNames = Arrays.asList("col0", "col1", "col2", "dist");
+        assertEquals(expColNames, tp.getFinalSchema().getColumnNames());
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray arr1 = Nd4j.rand(1,10);
+        INDArray arr2 = Nd4j.rand(1,10);
+        double cosine = Transforms.cosineSim(arr1, arr2);
+
+        List<Writable> in = Arrays.<Writable>asList(new DoubleWritable(0),
+                new NDArrayWritable(arr1.dup()),
+                new NDArrayWritable(arr2.dup()));
+        List<Writable> out = tp.execute(in);
+
+        List<Writable> exp = Arrays.<Writable>asList(new DoubleWritable(0),
+                new NDArrayWritable(arr1),
+                new NDArrayWritable(arr2),
+                new DoubleWritable(cosine));
 
         assertEquals(exp, out);
     }
