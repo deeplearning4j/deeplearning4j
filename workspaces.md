@@ -10,7 +10,7 @@ The basic idea is very simple. You can do your stuff within a workspace(s), and 
 ## Neural Networks:
 For DL4J users, workspaces provide better performance out of box. All you need to do is choose affordable modes for the training & inference of a given model.
 
- .trainingWorkspaceMode(WorkspaceMode.SEPARATE) and/or .inferenceWorkspaceMode(WorkspaceMode.SINGLE) in your neural network configuration. 
+ `.trainingWorkspaceMode(WorkspaceMode.SEPARATE)` and/or `.inferenceWorkspaceMode(WorkspaceMode.SINGLE)` in your neural network configuration. 
 
 The difference between **SEPARATE** and **SINGLE** workspaces is a tradeoff between the performance & memory footprint:
 * **SEPARATE** is slightly slower but uses less memory.
