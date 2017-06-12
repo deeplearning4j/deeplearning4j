@@ -15,25 +15,24 @@
  */
 package org.datavec.image.transform;
 
+import org.bytedeco.javacpp.indexer.UByteIndexer;
+import org.bytedeco.javacv.CanvasFrame;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.datavec.api.berkeley.Pair;
+import org.datavec.api.util.ClassPathResource;
+import org.datavec.image.data.ImageWritable;
+import org.datavec.image.loader.NativeImageLoader;
+import org.junit.Ignore;
+import org.junit.Test;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
-import org.bytedeco.javacpp.indexer.UByteIndexer;
-import org.bytedeco.javacv.CanvasFrame;
-import org.datavec.api.berkeley.Pair;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.bytedeco.javacv.Frame;
-import org.bytedeco.javacv.OpenCVFrameConverter;
-import org.datavec.image.data.ImageWritable;
-
-import static org.bytedeco.javacpp.opencv_imgproc.COLOR_BGR2YCrCb;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
 
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
+import static org.junit.Assert.*;
 
 /**
  *
@@ -255,6 +254,34 @@ public class TestImageTransform {
             assertEquals(f.imageChannels, frame.imageChannels);
         }
         assertEquals(null, transform.transform(null));
+    }
+
+    /**
+     * This test code is kind of a manual test using specific image(largestblobtest.jpg)
+     * with particular thresholds(blur size, thresholds for edge detector)
+     * The cropped largest blob size should be 74x61
+     * because we use a specific image and thresholds
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testLargestBlobCropTransform() throws Exception {
+        java.io.File f1 = new ClassPathResource("testimages/largestblobtest.jpg").getFile();
+        NativeImageLoader loader = new NativeImageLoader();
+        ImageWritable writable = loader.asWritable(f1);
+
+        ImageTransform showOrig = new ShowImageTransform("Original Image", 50);
+        showOrig.transform(writable);
+
+        ImageTransform transform = new LargestBlobCropTransform(null, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE, 3, 3, 100, 300, true);
+        ImageWritable w = transform.transform(writable);
+
+        ImageTransform showTrans = new ShowImageTransform("Largest Blob", 50);
+        showTrans.transform(w);
+        Frame newFrame = w.getFrame();
+
+        assertEquals(newFrame.imageHeight, 74);
+        assertEquals(newFrame.imageWidth, 61);
     }
 
     public static ImageWritable makeRandomImage(int height, int width, int channels) {
