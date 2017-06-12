@@ -76,11 +76,12 @@ public class VirtualDataSetIterator implements ParallelDataSetIterator {
     @Override
     public boolean hasNext() {
         // just checking if that's not the last iterator, or if that's the last one - check if it has something
-        return iterators.size() < position.get() || iterators.get(position.get()).hasNext();
+        return position.get() < iterators.size() - 1 || (position.get() < iterators.size() && iterators.get(position.get()).hasNext());
     }
 
     @Override
     public DataSet next() {
+        // TODO: this solution isn't ideal, it assumes non-empty iterators all the time. Would be nice to do something here
         if (!iterators.get(position.get()).hasNext())
             position.getAndIncrement();
 

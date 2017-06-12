@@ -150,7 +150,7 @@ public class SharedTrainingWrapper {
             else
                 throw new DL4JInvalidConfigException("No iterators were defined for training");
 
-            log.info("Master thread finished training...");
+            isFirst.set(false);
         } else {
             // blocking call right here, all non-master threads will be blocked here
             try {

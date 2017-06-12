@@ -5,9 +5,11 @@ import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.parameterserver.pw.SharedTrainingWrapper;
+import org.deeplearning4j.spark.parameterserver.training.SharedTrainingResult;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingWorker;
 import org.nd4j.linalg.dataset.DataSet;
 
+import java.util.Collections;
 import java.util.Iterator;
 
 /**
@@ -48,6 +50,6 @@ class SharedFlatMapDataSetAdapter<R extends TrainingResult> implements FlatMapFu
         SharedTrainingWrapper.getInstance().run(worker);
 
         // TODO: return result here, probably singleton list though
-        return null;
+        return Collections.singletonList((R) new SharedTrainingResult());
     }
 }

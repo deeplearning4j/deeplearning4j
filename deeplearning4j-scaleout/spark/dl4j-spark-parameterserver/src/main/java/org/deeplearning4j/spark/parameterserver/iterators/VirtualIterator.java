@@ -3,6 +3,7 @@ package org.deeplearning4j.spark.parameterserver.iterators;
 import javafx.beans.InvalidationListener;
 import javafx.beans.Observable;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -14,6 +15,7 @@ import java.util.function.Consumer;
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class VirtualIterator<E> extends java.util.Observable implements Iterator<E> {
     // TODO: use AsyncIterator here?
     protected Iterator<E> iterator;
