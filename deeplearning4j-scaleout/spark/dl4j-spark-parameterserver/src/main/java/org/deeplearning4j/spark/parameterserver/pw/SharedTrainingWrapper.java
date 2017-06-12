@@ -133,7 +133,7 @@ public class SharedTrainingWrapper {
 
             wrapper = new ParallelWrapper.Builder<>(model)
                     // TODO: we should define proper num workers here, better suiting current environment
-                    .workers(4)
+                    .workers(2)
                     .workspaceMode(trainingConfiguration.getWorkspaceMode())
                     .trainingMode(ParallelWrapper.TrainingMode.CUSTOM)
                     .gradientsAccumulator(accumulator)
@@ -150,11 +150,12 @@ public class SharedTrainingWrapper {
             else
                 throw new DL4JInvalidConfigException("No iterators were defined for training");
 
+            log.info("Master thread finished training...");
         } else {
             // blocking call right here, all non-master threads will be blocked here
             try {
-                //observer.get().waitTillDone();
-                observer.get().wait();
+                observer.get().waitTillDone();
+                //observer.get().wait();
             } catch (InterruptedException e) {
                 // FIXME: we don't really need to throw it again, it's here only for debugging purposes
                 throw new RuntimeException(e);

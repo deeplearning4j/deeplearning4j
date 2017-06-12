@@ -33,7 +33,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
 
     protected int parties;
     protected MessageHandler handler;
-    protected List<Queue<INDArray>> messages = new ArrayList<>();
+    protected List<BlockingQueue<INDArray>> messages = new ArrayList<>();
     protected List<MemoryWorkspace> workspaces = new ArrayList<>();
     protected List<ReentrantLock> locks = new ArrayList<>();
 
@@ -86,8 +86,11 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
         for (int i = 0; i < parties; i++) {
             messages.add(new LinkedBlockingQueue<INDArray>(queueSize));
 
-            Nd4j.getAffinityManager().unsafeSetDevice(i);
-            MemoryWorkspace ws = Nd4j.getWorkspaceManager().createNewWorkspace(configuration,"CGA-" + i, i);
+            // we don't want device index to step out of boundaries here
+            int cDevice = numDevices > 1 ? i % numDevices : 0;
+
+            Nd4j.getAffinityManager().unsafeSetDevice(cDevice);
+            MemoryWorkspace ws = Nd4j.getWorkspaceManager().createNewWorkspace(configuration,"CGA-" + i, cDevice);
             //ws.enableDebug(true);
             workspaces.add(ws);
 
@@ -110,16 +113,18 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
         // nullify given updates first
         updates.assign(0.0f);
 
+        int cnt = 0;
         while (!messages.get(index.get()).isEmpty()) {
             INDArray compressed = messages.get(index.get()).poll();
 
-            //log.info("Thread: {}; Compressed: {}", Thread.currentThread().getId(), Arrays.toString(compressed.data().asInt()));
-
-            // FIXME: pass gradients here, and reuse them
             INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+            cnt++;
         }
 
-        function.step(params, updates);
+        // TODO: average updates probably?
+
+        if (cnt > 0)
+            function.step(params, updates);
     }
 
     /**
@@ -134,16 +139,18 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
         // nullify given updates first
         updates.assign(0.0f);
 
+        int cnt = 0;
         while (!messages.get(index.get()).isEmpty()) {
             INDArray compressed = messages.get(index.get()).poll();
 
-            //log.info("Thread: {}; Compressed: {}", Thread.currentThread().getId(), Arrays.toString(compressed.data().asInt()));
-
-            // FIXME: pass gradients here, and reuse them
             INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+            cnt++;
         }
 
-        function.step(params, updates, alpha);
+        // TODO: average updates? might have sense
+
+        if (cnt > 0)
+            function.step(params, updates, alpha);
     }
 
     /**
@@ -153,9 +160,19 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
     public void touch() {
         if (index.get() == null) {
             // set index
-            int localIndex = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+            int numDevces = Nd4j.getAffinityManager().getNumberOfDevices();
 
-            index.set(localIndex);
+            /*
+                if we have > 1 computational device, we assign workers to workspaces "as is", as provided via AffinityManager
+             */
+            if (numDevces > 1 && parties > 1) {
+                int localIndex = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
+                index.set(localIndex);
+            } else {
+                // if we have only 1 device (like cpu system, or single gpu), just attach consumer via flat index
+                index.set(workersCounter.getAndIncrement());
+            }
         }
     }
 
@@ -208,7 +225,12 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
                     throw new ND4JIllegalStateException("Not enough memory to handle update: ["+ array.data().length() * Nd4j.sizeOfDataType(array.data().dataType())+" bytes required]. Please increase memory amount for GradientsAccumulator");
 
                 INDArray compressed = array.unsafeDuplication();
-                messages.get(i).add(compressed);
+                try {
+                    messages.get(i).put(compressed);
+                } catch (InterruptedException e) {
+                    log.info("Something bad at index_{}", i);
+                    throw new RuntimeException(e);
+                }
             }
 
             locks.get(i).unlock();

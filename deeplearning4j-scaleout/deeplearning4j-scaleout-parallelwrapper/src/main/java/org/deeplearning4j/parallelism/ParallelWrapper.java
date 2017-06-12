@@ -85,6 +85,7 @@ public class ParallelWrapper implements AutoCloseable {
     protected boolean isMQ;
     protected WorkspaceMode workspaceMode;
     protected Object[] trainerContextArgs;
+    protected boolean debug = false;
 
     @Getter @Setter protected GradientsAccumulator gradientsAccumulator;
 
@@ -215,7 +216,8 @@ public class ParallelWrapper implements AutoCloseable {
         }
 
 
-        log.info("Stopping everyone...");
+        if (debug)
+            log.info("Stopping everyone...");
 
         // ensure all threads stopped processing
         for (int cnt = 0; cnt < workers; cnt++) {
@@ -226,7 +228,8 @@ public class ParallelWrapper implements AutoCloseable {
             }
         }
 
-        log.info("Shutting down iterator...");
+        if (debug)
+            log.info("Shutting down iterator...");
 
         if (prefetchSize > 0 && source.asyncSupported())
             ((AsyncMultiDataSetIterator) iterator).shutdown();
@@ -435,10 +438,11 @@ public class ParallelWrapper implements AutoCloseable {
         List<Long> nanos = new ArrayList<>();
         AtomicInteger locker = new AtomicInteger(0);
         long time1 = System.currentTimeMillis();
+        log.info("Starting ParallelWrapper training round...");
+        long intcnt = 0;
         while (iterator.hasNext() && !stopFit.get()) {
-        //int intcnt = 0;
         //while (intcnt < 1000) {
-            //intcnt++;
+            intcnt++;
             DataSet dataSet = iterator.next();
             long time2 = System.currentTimeMillis();
             long lastEtlTime = time2 - time1;
@@ -451,6 +455,10 @@ public class ParallelWrapper implements AutoCloseable {
              now dataSet should be dispatched to next free workers, until all workers are busy. And then we should block till all finished.
             */
             int pos = locker.getAndIncrement();
+
+            if (debug)
+                log.info("Feeding dataset {} to worker {}", intcnt, pos);
+
             if (zoo == null)
                 throw new IllegalStateException(
                         "ParallelWrapper.shutdown() has been called too early and will fail from this point forward.");
@@ -498,8 +506,8 @@ public class ParallelWrapper implements AutoCloseable {
             time1 = System.currentTimeMillis();
         }
 
-        // FIXME: we need to ensure all models are synchronized back to HOST
-        log.info("Stopping everyone...");
+        if (debug)
+            log.info("Stopping everyone...");
 
         // ensure all threads stopped processing
         for (int cnt = 0; cnt < workers; cnt++) {
@@ -510,7 +518,8 @@ public class ParallelWrapper implements AutoCloseable {
             }
         }
 
-        log.info("Shutting down iterator...");
+        if (debug)
+            log.info("Shutting down iterator...");
 
         if (prefetchSize > 0 && source.asyncSupported())
             ((AsyncDataSetIterator) iterator).shutdown();
@@ -532,7 +541,8 @@ public class ParallelWrapper implements AutoCloseable {
             zoo = null;
         }
 
-        log.debug("Iterations passed: {}", iterationsCounter.get());
+        if (debug)
+            log.info("Iterations passed: {}", iterationsCounter.get());
     }
 
 
