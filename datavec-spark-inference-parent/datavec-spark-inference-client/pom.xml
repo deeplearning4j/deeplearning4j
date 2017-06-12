@@ -11,13 +11,13 @@
     <packaging>jar</packaging>
 
     <name>datavec-spark-inference-client</name>
-    <url>http://maven.apache.org</url>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
 
     <dependencies>
-
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-spark-inference-model</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
     </dependencies>
 </project>
