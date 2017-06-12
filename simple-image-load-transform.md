@@ -116,8 +116,7 @@ pipeline.add(new Pair<>(flip, 0.5));
 ImageTransform transform = new PipelineImageTransform(pipeline, shuffle);
 ```
 The pipeline can also be randomly shuffled with each transform in order to increase the available dataset.  
-If you set `shuffle` as true, you can get a image pipelines that randomly execute.
- 
+If you set `shuffle` to true, you can get an image pipeline that executes each transformation at random. 
 
 * Initialize the record reader with the train data and the transform chain
 
@@ -127,9 +126,9 @@ recordReader.initialize(trainData,transform);
 
 
 
-## JavaCV , OpenCV and FFmpeg Filters
+## JavaCV, OpenCV and FFmpeg Filters
 
-FFmpeg and OpenCV provide open source libraries for filtering and transforming images and video. Access to ffmpeg filters in versions 7.2 and above is available by adding the following to your pom.xml file, replacing the version with the current version. 
+FFmpeg and OpenCV provide open source libraries for filtering and transforming images and video. Access to FFmpeg filters in versions 7.2 and above is available by adding the following to your pom.xml file, replacing the version with the current version. 
 
 ```
 <dependency> 
@@ -147,7 +146,7 @@ Documentation
 
 
 ## Handing off to fit
-Deeplearning4j's neural net's take either a dataset or a dataset iterator to fit too. These are fundamental concepts for our framework. Please refer to other examples for how to use an iterator. Here is how you contruct a dataset iterator from an image record reader.
+Deeplearning4j's neural nets take either a dataset or a dataset iterator to fit too. These are fundamental concepts for our framework. Please refer to other examples for how to use an iterator. Here is how you contruct a dataset iterator from an image record reader.
 
 ~~~java
 DataSetIterator dataIter = new RecordReaderDataSetIterator(recordReader, 10, 1, outputNum);
