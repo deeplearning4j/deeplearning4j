@@ -33,7 +33,7 @@
         <module>datavec-camel</module>
         <module>datavec-dataframe</module>
         <module>datavec-local</module>
-        <module>datavec-spark-inference-server</module>
+        <module>datavec-spark-inference-parent</module>
     </modules>
     <name>DataVec</name>
 
@@ -561,7 +561,7 @@
                   <directory>datavec-camel</directory>
                   <directory>datavec-dataframe</directory>
                   <directory>datavec-local</directory>
-                  <directory>datavec-spark-inference-server</directory>
+                  <directory>datavec-spark-inference-parent</directory>
                 </directories>
               </configuration>
             </plugin>
