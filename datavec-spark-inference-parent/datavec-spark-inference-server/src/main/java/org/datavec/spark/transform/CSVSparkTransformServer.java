@@ -76,13 +76,27 @@ public class CSVSparkTransformServer implements DataVecTransformService {
                     "to /transformprocess");
         }
 
+
+        //return the host information for a given id
+        routingDsl.GET("/transformprocess").routeTo(FunctionUtil.function0((() -> {
+            try {
+                if(transform == null)
+                    return badRequest();
+                log.info("Transform process initialized");
+                return ok(Json.toJson(transform.getTransformProcess()));
+            } catch (Exception e) {
+                e.printStackTrace();
+                return internalServerError();
+            }
+        })));
+
         //return the host information for a given id
         routingDsl.POST("/transformprocess").routeTo(FunctionUtil.function0((() -> {
             try {
                 TransformProcess transformProcess = TransformProcess.fromJson(request().body().asJson().toString());
                 setTransformProcess(transformProcess);
                 log.info("Transform process initialized");
-                return ok(Json.toJson(Collections.singletonMap("status","started")));
+                return ok(Json.toJson(transformProcess));
             } catch (Exception e) {
                 e.printStackTrace();
                 return internalServerError();
