@@ -49,11 +49,10 @@ public class DataVecTransformClient implements DataVecTransformService {
      */
     @Override
     public void setTransformProcess(TransformProcess transformProcess) {
-        try {
-            TransformProcess transformProcess2 = Unirest.post(url + "/transformprocess")
+        try {Unirest.post(url + "/transformprocess")
                     .header("accept", "application/json")
                     .header("Content-Type", "application/json")
-                    .body(transformProcess).asObject(TransformProcess.class).getBody();
+                    .body(transformProcess).asJson();
 
         } catch (UnirestException e) {
             e.printStackTrace();
