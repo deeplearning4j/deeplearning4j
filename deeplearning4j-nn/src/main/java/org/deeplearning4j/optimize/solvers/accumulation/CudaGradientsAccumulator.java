@@ -74,8 +74,11 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
                 .policyLearning(LearningPolicy.NONE)
                 .build();
 
-        if (parties > Nd4j.getAffinityManager().getNumberOfDevices())
-            throw new ND4JIllegalStateException("Number of parties ["+ parties +"] should be less or equal to number of devices ["+Nd4j.getAffinityManager().getNumberOfDevices()+"]");
+        int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+
+        // we are going to take single-device systems as edge case: cpu & small models at single-gpu systems.
+        if (parties > numDevices && numDevices != 1)
+            throw new ND4JIllegalStateException("Number of parties ["+ parties +"] should be less or equal to number of devices [" + numDevices + "]");
 
         // pre-create Queues for local workers
         int curDev = Nd4j.getAffinityManager().getDeviceForCurrentThread();

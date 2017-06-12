@@ -57,6 +57,9 @@ public class SharedTrainingWrapper {
         // instantiate some stuff here
         iteratorsDS = new CopyOnWriteArrayList<>();
         iteratorsMDS = new CopyOnWriteArrayList<>();
+
+        // now we're creating DataSetIterators, to feed ParallelWrapper
+        iteratorDS = new VirtualDataSetIterator(iteratorsDS);
     }
 
     public static SharedTrainingWrapper getInstance() {

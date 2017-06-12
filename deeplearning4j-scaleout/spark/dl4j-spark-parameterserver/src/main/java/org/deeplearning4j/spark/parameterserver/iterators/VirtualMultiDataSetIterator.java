@@ -1,9 +1,13 @@
 package org.deeplearning4j.spark.parameterserver.iterators;
 
+import lombok.NonNull;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.ParallelMultiDataSetIterator;
+
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * This MultiDataSetIterator implementation does accumulation of MultiDataSets from different Spark executors, wrt Thread/Device Affinity
@@ -11,6 +15,13 @@ import org.nd4j.linalg.dataset.api.iterator.ParallelMultiDataSetIterator;
  * @author raver119@gmail.com
  */
 public class VirtualMultiDataSetIterator implements ParallelMultiDataSetIterator {
+
+    protected final List<Iterator<MultiDataSet>> iterators;
+
+    public VirtualMultiDataSetIterator(@NonNull List<Iterator<MultiDataSet>> iterators) {
+        this.iterators = iterators;
+    }
+
     @Override
     public MultiDataSet next(int num) {
         return null;
