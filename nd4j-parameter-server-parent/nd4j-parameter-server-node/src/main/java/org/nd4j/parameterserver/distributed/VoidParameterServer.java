@@ -444,6 +444,10 @@ public class VoidParameterServer {
         //transport.sendMessage(message);
     }
 
+    public synchronized void execDistributedImmediately(@NonNull TrainingMessage message) {
+        transport.sendMessageToAllShards(message);
+    }
+
     public void execDistributed(@NonNull Frame<? extends TrainingMessage> messages) {
         transport.sendMessage(messages);
     }

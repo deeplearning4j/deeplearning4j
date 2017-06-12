@@ -4814,6 +4814,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native void decodeThresholdHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jIndex") long N, @Cast("float16*") ShortPointer dz);
     public native void decodeThresholdHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jIndex") long N, @Cast("float16*") ShortBuffer dz);
     public native void decodeThresholdHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jIndex") long N, @Cast("float16*") short[] dz);
+
+
+    public native int deviceSynchronize();
 }
 
 

@@ -355,6 +355,8 @@ public class RoutedTransport extends BaseTransport {
             return;
         }
 
+        //log.info("sI_{} {}: message class: {}", shardIndex, nodeRole, message.getClass().getSimpleName());
+
         RetransmissionHandler.TransmissionStatus result;
 
         int targetShard = router.assignTarget(message);
