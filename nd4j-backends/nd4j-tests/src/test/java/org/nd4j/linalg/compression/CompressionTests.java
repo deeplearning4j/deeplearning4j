@@ -16,6 +16,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -472,6 +474,28 @@ public class CompressionTests extends BaseNd4jTest {
 
         assertEquals(900, initial.sumNumber().doubleValue(), 0.01);
 
+    }
+
+    @Test
+    public void testThresholdSerialization1() throws Exception {
+        INDArray initial = Nd4j.create(new double[]{-1.0, -2.0, 0.0, 0.0, 1.0, 1.0});
+        INDArray exp_0 = Nd4j.create(new double[]{-1.0 + 1e-3, -2.0 + 1e-3, 0.0, 0.0, 1.0 - 1e-3, 1.0 - 1e-3});
+        INDArray exp_1 = Nd4j.create(new double[]{-1e-3, -1e-3, 0.0, 0.0, 1e-3, 1e-3});
+
+        //Nd4j.getCompressor().getCompressor("THRESHOLD").configure(1e-3);
+        INDArray compressed = Nd4j.getExecutioner().thresholdEncode(initial, 1e-3f);
+
+        assertEquals(exp_0, initial);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Nd4j.write(baos, compressed);
+
+        INDArray serialized = Nd4j.read(new ByteArrayInputStream(baos.toByteArray()));
+
+        INDArray decompressed_copy = Nd4j.create(initial.length());
+        Nd4j.getExecutioner().thresholdDecode(serialized, decompressed_copy);
+
+        assertEquals(exp_1, decompressed_copy);
     }
 
     @Override

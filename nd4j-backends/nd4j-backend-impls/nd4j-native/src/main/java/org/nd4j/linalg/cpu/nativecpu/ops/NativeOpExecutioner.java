@@ -1295,7 +1295,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         float threshold = buffer.getInt(2);
 
         if (target.lengthLong() != originalLength)
-            throw new ND4JIllegalStateException("originalLength stored in encoded array doesn't match target length");
+            throw new ND4JIllegalStateException("originalLength ["+ originalLength+"] stored in encoded array doesn't match target length ["+ target.lengthLong()+"]");
 
         DataBuffer.TypeEx typeDst = AbstractCompressor.getBufferTypeEx(target.data());
 
