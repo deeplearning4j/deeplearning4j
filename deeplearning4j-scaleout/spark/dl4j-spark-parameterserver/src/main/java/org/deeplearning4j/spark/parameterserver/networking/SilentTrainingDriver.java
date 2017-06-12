@@ -7,6 +7,7 @@ import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.spark.parameterserver.networking.messages.SilentUpdatesMessage;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.logic.Storage;
 import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
@@ -22,6 +23,7 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
 @Slf4j
 public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage> {
     protected transient INDArray params;
+    protected transient INDArray updates;
     protected transient StepFunction stepFunction;
 
     protected transient GradientsAccumulator accumulator;
@@ -33,6 +35,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
     protected transient Storage storage;
     protected transient Clipboard clipboard;
 
+
     public SilentTrainingDriver(@NonNull GradientsAccumulator accumulator) {
         log.info("Creating TrainingDriver for worker...");
         this.accumulator = accumulator;
@@ -42,6 +45,9 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
         log.info("Creating TrainingDriver for master...");
         this.params = params;
         this.stepFunction = stepFunction;
+
+        // params are always the same size
+        this.updates = Nd4j.create(params.shape(), params.ordering());
     }
 
     @Override
@@ -58,15 +64,27 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
             2) propagate this message to everyone
          */
         // if accumulator is defined, we're working at Worker level, so it's not our problem what happens inside
-        if (accumulator != null)
+        if (accumulator != null) {
+            if (message.getOriginatorId() == transport.getShardIndex()) {
+                return;
+            };
+
             accumulator.receiveUpdate(message.getUpdates());
-        else if (params != null && stepFunction != null)
-            stepFunction.step();
-        else
+        } else if (params != null && stepFunction != null) {
+            // master invokes everything
+            synchronized (this) {
+                // TODO: change this to memset?
+                updates.assign(0.0f);
+
+                Nd4j.getExecutioner().thresholdDecode(message.getUpdates(), updates);
+
+                stepFunction.step(params, updates);
+            }
+        } else
             throw new DL4JInvalidConfigException("Neither GradientsAccumulator or StepFunction is defined!");
 
-        transport.sendMessageToAllShards(message);
-
+        // TODO: we should echo this message to everyone but this shard
+        //transport.sendMessageToAllShards(message);
     }
 
     @Override

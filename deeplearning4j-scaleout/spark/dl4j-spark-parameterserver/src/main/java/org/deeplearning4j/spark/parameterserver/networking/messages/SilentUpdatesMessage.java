@@ -1,6 +1,7 @@
 package org.deeplearning4j.spark.parameterserver.networking.messages;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.apache.commons.lang3.SerializationUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -13,12 +14,14 @@ import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 import org.nd4j.parameterserver.distributed.messages.RequestMessage;
 import org.nd4j.parameterserver.distributed.messages.TrainingMessage;
 import org.nd4j.parameterserver.distributed.messages.VoidMessage;
+import org.nd4j.parameterserver.distributed.messages.requests.CbowRequestMessage;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class SilentUpdatesMessage extends BaseVoidMessage implements TrainingMessage, RequestMessage  {
 
     @Getter protected INDArray updates;
@@ -35,12 +38,16 @@ public class SilentUpdatesMessage extends BaseVoidMessage implements TrainingMes
 
     @Override
     public void attachContext(VoidConfiguration voidConfiguration, TrainingDriver<? extends TrainingMessage> trainer, Clipboard clipboard, Transport transport, Storage storage, NodeRole role, short shardIndex) {
-
+        this.voidConfiguration = voidConfiguration;
+        this.trainer = trainer;
+        this.transport = transport;
     }
 
     @Override
     public void processMessage() {
         // basically no-op?
+        TrainingDriver<SilentUpdatesMessage> tr = (TrainingDriver<SilentUpdatesMessage>) trainer;
+        tr.startTraining(this);
     }
 
     @Override
