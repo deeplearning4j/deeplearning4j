@@ -53,7 +53,10 @@ public class SharedTrainingWrapper {
     protected ThreadLocal<BlockingObserver> observer = new ThreadLocal<>();
 
     protected SharedTrainingWrapper() {
+        init();
+    }
 
+    protected void init() {
         // instantiate some stuff here
         iteratorsDS = new CopyOnWriteArrayList<>();
         iteratorsMDS = new CopyOnWriteArrayList<>();
@@ -119,6 +122,7 @@ public class SharedTrainingWrapper {
             CudaGradientsAccumulator accumulator = new CudaGradientsAccumulator.Builder(2)
                     .messageHandler(handler)
                     .encodingThreshold(trainingConfiguration.getThreshold())
+                    .memoryParameters(200 * 1024 * 1024L, 4)
                     .build();
 
 
@@ -149,6 +153,12 @@ public class SharedTrainingWrapper {
                 wrapper.fit(iteratorMDS);
             else
                 throw new DL4JInvalidConfigException("No iterators were defined for training");
+
+
+            // reset everything
+            wrapper.shutdown();
+            init();
+
 
             isFirst.set(false);
         } else {

@@ -190,8 +190,8 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
         if (collectTrainingStats)
             stats.logBroadcastStart();
 
-        if (broadcastModel == null)
-            broadcastModel = network.getSparkContext().broadcast(tuple);
+        //if (broadcastModel == null)
+        broadcastModel = network.getSparkContext().broadcast(tuple);
 
         if (broadcastConfiguration == null)
             broadcastConfiguration = network.getSparkContext().broadcast(configuration);
@@ -218,8 +218,8 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
         if (collectTrainingStats)
             stats.logBroadcastStart();
 
-        if (broadcastModel == null)
-            broadcastModel = graph.getSparkContext().broadcast(tuple);
+        //if (broadcastModel == null)
+        broadcastModel = graph.getSparkContext().broadcast(tuple);
 
         if (broadcastConfiguration == null)
             broadcastConfiguration = graph.getSparkContext().broadcast(configuration);
