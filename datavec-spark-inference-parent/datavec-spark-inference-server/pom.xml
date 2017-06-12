@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>datavec-parent</artifactId>
+        <artifactId>datavec-spark-inference-parent</artifactId>
         <groupId>org.datavec</groupId>
         <version>0.8.1-SNAPSHOT</version>
     </parent>
@@ -24,7 +24,11 @@
       </plugins>
   </build>
     <dependencies>
-
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-spark-inference-model</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-spark_2.11</artifactId>
