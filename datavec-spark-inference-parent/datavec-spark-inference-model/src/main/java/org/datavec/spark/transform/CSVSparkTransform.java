@@ -1,6 +1,7 @@
 package org.datavec.spark.transform;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.RecordConverter;
@@ -21,7 +22,9 @@ import java.util.List;
  * @author Adan Gibson
  */
 @AllArgsConstructor
+
 public class CSVSparkTransform {
+    @Getter
     private TransformProcess transformProcess;
 
     /**
@@ -61,7 +64,6 @@ public class CSVSparkTransform {
 
     /**
      * Runs the transform process
-     * for the {@link CSVSparkTransformServer}
      * @param batch the record to transform
      * @return the transformed record
      */
@@ -82,7 +84,6 @@ public class CSVSparkTransform {
 
     /**
      * Runs the transform process
-     * for the {@link CSVSparkTransformServer}
      * @param record the record to transform
      * @return the transformed record
      */
