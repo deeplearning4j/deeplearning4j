@@ -381,8 +381,7 @@
                 <generateGitPropertiesFile>true</generateGitPropertiesFile>
                 <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
                 <gitDescribe>
-                  <skip>false</skip>
-                  <always>true</always>
+                  <skip>true</skip>
                 </gitDescribe>
               </configuration>
             </plugin>
