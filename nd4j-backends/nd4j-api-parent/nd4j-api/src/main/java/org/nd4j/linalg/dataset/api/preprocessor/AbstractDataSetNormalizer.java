@@ -18,7 +18,7 @@ import org.nd4j.linalg.dataset.api.preprocessor.stats.NormalizerStats;
  */
 @EqualsAndHashCode(callSuper = false)
 public abstract class AbstractDataSetNormalizer<S extends NormalizerStats> extends AbstractNormalizer
-                implements DataNormalization {
+        implements DataNormalization {
     protected NormalizerStrategy<S> strategy;
     @Setter(AccessLevel.PROTECTED)
     private S featureStats;
@@ -65,12 +65,10 @@ public abstract class AbstractDataSetNormalizer<S extends NormalizerStats> exten
     }
 
     protected S getFeatureStats() {
-        assertIsFit();
         return featureStats;
     }
 
     protected S getLabelStats() {
-        assertIsFit();
         return labelStats;
     }
 
