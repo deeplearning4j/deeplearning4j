@@ -20,6 +20,7 @@ public class SharedTrainingConfiguration implements Serializable{
 
     @Builder.Default protected WorkspaceMode workspaceMode = WorkspaceMode.SEPARATE;
     @Builder.Default protected int prefetchSize = 2;
+    @Builder.Default protected boolean epochReset = false;
 
     // TODO: decide, if we abstract this one out, or not
     protected double threshold;

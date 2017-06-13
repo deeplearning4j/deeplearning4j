@@ -248,6 +248,9 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
         // just replace accumulator, gc will do the rest
         accumulator = new ThreadLocal<>();
 
+        // resetting this counter too
+        workersCounter.set(0);
+
         // throw away message queues
         for (int i = 0; i < parties; i++) {
             messages.get(i).clear();

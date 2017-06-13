@@ -51,6 +51,7 @@ public class SharedTrainingWrapper {
     protected AtomicBoolean isFirst = new AtomicBoolean(false);
 
     protected ThreadLocal<BlockingObserver> observer = new ThreadLocal<>();
+    protected CudaGradientsAccumulator accumulator;
 
     protected SharedTrainingWrapper() {
         init();
@@ -75,6 +76,7 @@ public class SharedTrainingWrapper {
      * @param iterator
      */
     public void attachDS(Iterator<DataSet> iterator) {
+        log.info("Attaching thread...");
         // we're creating our Observable wrapper
         VirtualIterator<DataSet> wrapped = new VirtualIterator<>(iterator);
 
@@ -104,45 +106,56 @@ public class SharedTrainingWrapper {
          */
         if (isFirst.compareAndSet(false, true)) {
             // getting model from worker, and instantiating PW
-            log.info("Starting ParallelWrapper at thread {}", Thread.currentThread().getId());
+            try {
+                Thread.sleep(5000);
+            } catch (Exception e) {
+                //
+            }
 
             SharedTrainingConfiguration trainingConfiguration = worker.getBroadcastConfiguration().getValue();
             VoidConfiguration voidConfiguration = worker.getBroadcastConfiguration().getValue().getVoidConfiguration();
 
-            Model model = worker.getInitialModel();
-            if (model == null)
-                model = worker.getInitialModelGraph();
+            // now we're attaching VoidParameterServer to GradientsAccumulator, but doing that only once
+            if (wrapper == null) {
+                log.info("Starting ParallelWrapper at thread {}", Thread.currentThread().getId());
 
-            if (model == null)
-                throw new DL4JInvalidConfigException("No model was defined for training");
+                Model model = worker.getInitialModel();
+                if (model == null)
+                    model = worker.getInitialModelGraph();
 
-            MessageHandler handler = new WiredEncodingHandler(trainingConfiguration.getThreshold());
+                if (model == null)
+                    throw new DL4JInvalidConfigException("No model was defined for training");
 
-            // this accumulator will provide sharing gradients over network, via WiredEncodedHandler
-            CudaGradientsAccumulator accumulator = new CudaGradientsAccumulator.Builder(2)
-                    .messageHandler(handler)
-                    .encodingThreshold(trainingConfiguration.getThreshold())
-                    .memoryParameters(200 * 1024 * 1024L, 4)
-                    .build();
+                MessageHandler handler = new WiredEncodingHandler(trainingConfiguration.getThreshold());
+
+                // this accumulator will provide sharing gradients over network, via WiredEncodedHandler. But we create it only once
+                if (accumulator == null) {
+                    accumulator = new CudaGradientsAccumulator.Builder(2)
+                            .messageHandler(handler)
+                            .encodingThreshold(trainingConfiguration.getThreshold())
+                            // TODO: make this configurable
+                            .memoryParameters(200 * 1024 * 1024L, 10)
+                            .build();
+
+                    // FIXME: implement support for Custom transport implementation
+                    Transport transport = voidConfiguration.getTransportType() == TransportType.ROUTED ? new RoutedTransport() : voidConfiguration.getTransportType() == TransportType.BROADCAST ? new MulticastTransport() : null;
+
+                    if (transport == null)
+                        throw new DL4JInvalidConfigException("No Transport implementation was defined for this training session!");
 
 
-            // FIXME: implement support for Custom transport implementation
-            Transport transport = voidConfiguration.getTransportType() == TransportType.ROUTED ? new RoutedTransport() : voidConfiguration.getTransportType() == TransportType.BROADCAST ? new MulticastTransport() : null;
+                    VoidParameterServer.getInstance().init(voidConfiguration, transport, new SilentTrainingDriver(accumulator));
+                }
 
-            if (transport == null)
-                throw new DL4JInvalidConfigException("No Transport implementation was defined for this training session!");
-
-            // now we're attaching VoidParameterServer to GradientsAccumulator
-            VoidParameterServer.getInstance().init(voidConfiguration, transport, new SilentTrainingDriver(accumulator));
-
-            wrapper = new ParallelWrapper.Builder<>(model)
-                    // TODO: we should define proper num workers here, better suiting current environment
-                    .workers(2)
-                    .workspaceMode(trainingConfiguration.getWorkspaceMode())
-                    .trainingMode(ParallelWrapper.TrainingMode.CUSTOM)
-                    .gradientsAccumulator(accumulator)
-                    .prefetchBuffer(trainingConfiguration.getPrefetchSize())
-                    .build();
+                wrapper = new ParallelWrapper.Builder<>(model)
+                        // TODO: we should define proper num workers here, better suiting current environment
+                        .workers(2)
+                        .workspaceMode(trainingConfiguration.getWorkspaceMode())
+                        .trainingMode(ParallelWrapper.TrainingMode.CUSTOM)
+                        .gradientsAccumulator(accumulator)
+                        .prefetchBuffer(trainingConfiguration.getPrefetchSize())
+                        .build();
+            }
 
             // TODO: optionally we might be waiting until we have >1 splits delivered
 
@@ -155,17 +168,29 @@ public class SharedTrainingWrapper {
                 throw new DL4JInvalidConfigException("No iterators were defined for training");
 
 
-            // reset everything
-            wrapper.shutdown();
+            // conditionally shutdown & reset ParallelWrapper
+            if (trainingConfiguration.isEpochReset()) {
+                wrapper.shutdown();
+                wrapper = null;
+            }
+
+            // reset iterators too
             init();
+
+            // and accumulator, to reset its states
+            accumulator.reset();
 
 
             isFirst.set(false);
+
+            log.info("Master thread done...");
         } else {
             // blocking call right here, all non-master threads will be blocked here
             try {
                 observer.get().waitTillDone();
                 //observer.get().wait();
+
+                log.info("Feeder thread done...");
             } catch (InterruptedException e) {
                 // FIXME: we don't really need to throw it again, it's here only for debugging purposes
                 throw new RuntimeException(e);
