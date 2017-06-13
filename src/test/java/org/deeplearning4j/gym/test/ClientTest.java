@@ -5,6 +5,7 @@ import org.deeplearning4j.gym.Client;
 import org.deeplearning4j.gym.ClientFactory;
 import org.deeplearning4j.gym.ClientUtils;
 import org.deeplearning4j.gym.StepReply;
+import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Box;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.json.JSONObject;
@@ -92,7 +93,7 @@ public class ClientTest {
 
             for (int j = 0; j < maxSteps; j++) {
 
-                Integer action = client.getActionSpace().randomAction();
+                Integer action = ((ActionSpace<Integer>)client.getActionSpace()).randomAction();
                 StepReply<Box> step = client.step(action);
                 reward += step.getReward();
 
