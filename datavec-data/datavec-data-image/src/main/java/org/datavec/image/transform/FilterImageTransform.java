@@ -37,29 +37,11 @@ import static org.bytedeco.javacpp.avutil.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class FilterImageTransform extends BaseImageTransform {
 
-    /**
-     * see the javadoc comments of this class
-     */
     private FFmpegFrameFilter filter;
 
-    /**
-     * filter strings to use
-     */
     private String filters;
-
-    /**
-     * width    of the input images
-     */
     private int width;
-
-    /**
-     * height   of the input images
-     */
     private int height;
-
-    /**
-     * channels of the input images
-     */
     private int channels;
 
     /** Calls {@code this(filters, width, height, 3)}. */
