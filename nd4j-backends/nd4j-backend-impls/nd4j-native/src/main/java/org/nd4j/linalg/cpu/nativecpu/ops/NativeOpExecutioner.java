@@ -1247,7 +1247,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         MatchCondition condition = new MatchCondition(input, Conditions.absGreaterThanOrEqual(threshold));
         int cntAbs = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
 
-        if (cntAbs == 0)
+        if (cntAbs < 10)
             return null;
 
         if (boundary != null)

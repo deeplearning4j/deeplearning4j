@@ -2070,7 +2070,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         int numMatches = blocksBuffer.getInt(0);
 
         // special case here, nothing to update
-        if (numMatches == 0)
+        if (numMatches < 10)
             return null;
 
         if (boundary != null && numMatches > boundary)  {
