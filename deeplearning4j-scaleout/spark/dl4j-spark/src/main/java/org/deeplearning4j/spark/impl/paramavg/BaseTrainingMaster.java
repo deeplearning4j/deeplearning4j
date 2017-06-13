@@ -7,13 +7,14 @@ import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.deeplearning4j.spark.api.TrainingMaster;
-import org.deeplearning4j.spark.api.TrainingResult;
-import org.deeplearning4j.spark.api.TrainingWorker;
+import org.apache.spark.storage.StorageLevel;
+import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.data.BatchAndExportDataSetsFunction;
 import org.deeplearning4j.spark.data.BatchAndExportMultiDataSetsFunction;
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMasterStats;
 import org.deeplearning4j.spark.impl.paramavg.util.ExportSupport;
+import org.deeplearning4j.spark.util.serde.StorageLevelDeserializer;
+import org.deeplearning4j.spark.util.serde.StorageLevelSerializer;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
@@ -23,6 +24,8 @@ import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.IOException;
@@ -49,6 +52,17 @@ public abstract class BaseTrainingMaster<R extends TrainingResult, W extends Tra
     protected Random rng;
 
     protected String trainingMasterUID;
+
+
+    protected Repartition repartition;
+    protected RepartitionStrategy repartitionStrategy;
+    @JsonSerialize(using = StorageLevelSerializer.class)
+    @JsonDeserialize(using = StorageLevelDeserializer.class)
+    protected StorageLevel storageLevel;
+    @JsonSerialize(using = StorageLevelSerializer.class)
+    @JsonDeserialize(using = StorageLevelDeserializer.class)
+    protected StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
+    protected RDDTrainingApproach rddTrainingApproach = RDDTrainingApproach.Export;
 
     protected BaseTrainingMaster() {
 

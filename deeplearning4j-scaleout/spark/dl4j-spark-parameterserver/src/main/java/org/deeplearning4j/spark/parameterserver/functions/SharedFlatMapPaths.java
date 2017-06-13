@@ -5,9 +5,8 @@ import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
-import org.deeplearning4j.spark.parameterserver.callbacks.DataSetDeserializationCallback;
+import org.deeplearning4j.spark.iterator.PathSparkDataSetIterator;
 import org.deeplearning4j.spark.parameterserver.callbacks.PortableDataStreamCallback;
-import org.deeplearning4j.spark.parameterserver.iterators.PdsIterator;
 import org.deeplearning4j.spark.parameterserver.pw.SharedTrainingWrapper;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingResult;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingWorker;
@@ -16,45 +15,34 @@ import org.nd4j.linalg.dataset.DataSet;
 import java.util.Collections;
 import java.util.Iterator;
 
-public class SharedFlatMapPDS<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<PortableDataStream>, R> {
+/**
+ *
+ * @author raver119@gmail.com
+ */
+public class SharedFlatMapPaths<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<String>, R> {
 
-    public SharedFlatMapPDS(TrainingWorker<R> worker) {
-        this(worker, null);
-    }
-
-    public SharedFlatMapPDS(TrainingWorker<R> worker, PortableDataStreamCallback callback) {
-        super(new SharedFlatMapPDSAdapter<R>(worker, callback));
+    public SharedFlatMapPaths(TrainingWorker<R> worker) {
+        super(new SharedFlatMapPathsAdapter<R>(worker));
     }
 }
 
 
-class SharedFlatMapPDSAdapter<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<PortableDataStream>, R> {
+class SharedFlatMapPathsAdapter<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<String>, R> {
 
     protected final SharedTrainingWorker worker;
-    protected final PortableDataStreamCallback callback;
 
-    public SharedFlatMapPDSAdapter(TrainingWorker<R> worker) {
-        this(worker, null);
-    }
-
-    public SharedFlatMapPDSAdapter(TrainingWorker<R> worker, PortableDataStreamCallback callback) {
+    public SharedFlatMapPathsAdapter(TrainingWorker<R> worker) {
         // we're not going to have anything but Shared classes here ever
         this.worker = (SharedTrainingWorker) worker;
-
-
-        if (callback == null) {
-            this.callback = new DataSetDeserializationCallback();
-        } else {
-            this.callback = callback;
-        }
     }
 
     @Override
-    public Iterable<R> call(Iterator<PortableDataStream> dataSetIterator) throws Exception {
-        // we want to process PDS somehow, and convert to DataSet after all
+    public Iterable<R> call(Iterator<String> dataSetIterator) throws Exception {
+        // here we'll be converting out Strings coming out of iterator to DataSets
+        // PathSparkDataSetIterator does that for us
 
         // iterator should be silently attached to VirtualDataSetIterator, and used appropriately
-        SharedTrainingWrapper.getInstance().attachDS(new PdsIterator(dataSetIterator, callback));
+        SharedTrainingWrapper.getInstance().attachDS(new PathSparkDataSetIterator(dataSetIterator));
 
         // first callee will become master, others will obey and die
         SharedTrainingWrapper.getInstance().run(worker);

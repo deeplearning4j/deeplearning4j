@@ -90,15 +90,7 @@ public class ParameterAveragingTrainingMaster extends BaseTrainingMaster<Paramet
     protected int aggregationDepth;
     protected int prefetchNumBatches;
     protected int iterationCount = 0;
-    protected Repartition repartition;
-    protected RepartitionStrategy repartitionStrategy;
-    @JsonSerialize(using = StorageLevelSerializer.class)
-    @JsonDeserialize(using = StorageLevelDeserializer.class)
-    protected StorageLevel storageLevel;
-    @JsonSerialize(using = StorageLevelSerializer.class)
-    @JsonDeserialize(using = StorageLevelDeserializer.class)
-    protected StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
-    protected RDDTrainingApproach rddTrainingApproach = RDDTrainingApproach.Export;
+
 
 
     protected Collection<TrainingHook> trainingHookList;
