@@ -12,6 +12,9 @@ import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.api.WorkerConfiguration;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
+import org.deeplearning4j.spark.impl.paramavg.BaseTrainingWorker;
+import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingResult;
+import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingWorker;
 import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -19,7 +22,7 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 /**
  * @author raver119@gmail.com
  */
-public class SharedTrainingWorker implements TrainingWorker<SharedTrainingResult> {
+public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResult> implements TrainingWorker<SharedTrainingResult> {
 
     @Getter private final Broadcast<NetBroadcastTuple> broadcastModel;
     @Getter private final Broadcast<SharedTrainingConfiguration> broadcastConfiguration;
@@ -101,17 +104,17 @@ public class SharedTrainingWorker implements TrainingWorker<SharedTrainingResult
 
     @Override
     public Pair<SharedTrainingResult, SparkTrainingStats> processMinibatchWithStats(DataSet dataSet, MultiLayerNetwork network, boolean isLast) {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
     public Pair<SharedTrainingResult, SparkTrainingStats> processMinibatchWithStats(DataSet dataSet, ComputationGraph graph, boolean isLast) {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
     public Pair<SharedTrainingResult, SparkTrainingStats> processMinibatchWithStats(MultiDataSet dataSet, ComputationGraph graph, boolean isLast) {
-        throw new UnsupportedOperationException();
+        return null;
     }
 
     @Override
@@ -120,7 +123,7 @@ public class SharedTrainingWorker implements TrainingWorker<SharedTrainingResult
     }
 
     @Override
-    public SharedTrainingResult getFinalResult(ComputationGraph graph) {
+    public SharedTrainingResult getFinalResult(ComputationGraph network) {
         return null;
     }
 

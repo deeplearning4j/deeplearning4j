@@ -21,6 +21,7 @@ import org.deeplearning4j.spark.api.worker.ExecuteWorkerFlatMap;
 import org.deeplearning4j.spark.api.worker.NetBroadcastTuple;
 import org.deeplearning4j.spark.impl.graph.SparkComputationGraph;
 import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
+import org.deeplearning4j.spark.impl.paramavg.BaseTrainingMaster;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingResult;
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMasterStats;
@@ -56,7 +57,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult, SharedTrainingWorker> {
+public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResult, SharedTrainingWorker> implements TrainingMaster<SharedTrainingResult, SharedTrainingWorker> {
     protected List<TrainingHook> trainingHooks;
     protected VoidConfiguration voidConfiguration;
 
