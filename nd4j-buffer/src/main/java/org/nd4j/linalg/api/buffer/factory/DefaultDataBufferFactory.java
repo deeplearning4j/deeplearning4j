@@ -336,6 +336,14 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createInt(int[] data, MemoryWorkspace workspace){
+        return createInt(data, true, workspace);
+    }
+    @Override
+    public DataBuffer createInt(int[] data, boolean copy, MemoryWorkspace workspace){
+        return new IntBuffer(data, copy, workspace);
+    }
+    @Override
     public DataBuffer createDouble(double[] data) {
         return createDouble(data, true);
     }
@@ -481,7 +489,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
         doublePointer.capacity(length);
         doublePointer.limit(length);
         doublePointer.position(0);
-        return new DoubleBuffer(doublePointer, DoubleIndexer.create(doublePointer),length);
+        return new DoubleBuffer(doublePointer, DoubleIndexer.create(doublePointer), length);
     }
 
     /**
@@ -494,7 +502,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
         intPointer.capacity(length);
         intPointer.limit(length);
         intPointer.position(0);
-        return new IntBuffer(intPointer, IntIndexer.create(intPointer),length);
+        return new IntBuffer(intPointer, IntIndexer.create(intPointer), length);
     }
 
     /**
@@ -507,7 +515,7 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
         floatPointer.capacity(length);
         floatPointer.limit(length);
         floatPointer.position(0);
-        return new FloatBuffer(floatPointer, FloatIndexer.create(floatPointer),length);
+        return new FloatBuffer(floatPointer, FloatIndexer.create(floatPointer), length);
     }
 
 
