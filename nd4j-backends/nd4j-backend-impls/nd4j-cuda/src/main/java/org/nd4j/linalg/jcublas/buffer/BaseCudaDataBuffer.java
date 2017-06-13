@@ -151,8 +151,21 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this(data, copy, 0);
     }
 
+    public BaseCudaDataBuffer(int[] data, boolean copy, MemoryWorkspace workspace) {
+        this(data, copy, 0, workspace);
+    }
+
     public BaseCudaDataBuffer(int[] data, boolean copy, long offset) {
         this(data.length, 4, false);
+        this.offset = offset;
+        this.originalOffset = offset;
+        this.length = data.length - offset;
+        this.underlyingLength = data.length;
+        set(data, this.length, offset, offset);
+    }
+
+    public BaseCudaDataBuffer(int[] data, boolean copy, long offset, MemoryWorkspace workspace) {
+        this(data.length, 4, false, workspace);
         this.offset = offset;
         this.originalOffset = offset;
         this.length = data.length - offset;

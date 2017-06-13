@@ -53,6 +53,10 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         super(length, 4);
     }
 
+    public CudaIntDataBuffer(long length, MemoryWorkspace workspace) {
+        super(length, 4, workspace);
+    }
+
     public CudaIntDataBuffer(long length, boolean initialize) {
         super(length, 4, initialize);
     }
@@ -78,8 +82,17 @@ public class CudaIntDataBuffer extends BaseCudaDataBuffer {
         setData(data);
     }
 
+    public CudaIntDataBuffer(int[] data, MemoryWorkspace workspace) {
+        this(data.length, workspace);
+        setData(data);
+    }
+
     public CudaIntDataBuffer(int[] data, boolean copy) {
         super(data, copy);
+    }
+
+    public CudaIntDataBuffer(int[] data, boolean copy, MemoryWorkspace workspace) {
+        super(data, copy, workspace);
     }
 
     public CudaIntDataBuffer(int[] data, boolean copy, int offset) {

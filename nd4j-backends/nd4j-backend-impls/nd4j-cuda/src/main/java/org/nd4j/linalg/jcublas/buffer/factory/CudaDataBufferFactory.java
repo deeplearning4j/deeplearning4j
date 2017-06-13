@@ -137,6 +137,16 @@ public class CudaDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createInt(int[] data, MemoryWorkspace workspace) {
+        return new CudaIntDataBuffer(data, workspace);
+    }
+
+    @Override
+    public DataBuffer createInt(int[] data, boolean copy, MemoryWorkspace workspace) {
+        return new CudaIntDataBuffer(data, copy, workspace);
+    }
+
+    @Override
     public DataBuffer createInt(int offset, ByteBuffer buffer, int length) {
         return new CudaIntDataBuffer(buffer, length, offset);
     }
