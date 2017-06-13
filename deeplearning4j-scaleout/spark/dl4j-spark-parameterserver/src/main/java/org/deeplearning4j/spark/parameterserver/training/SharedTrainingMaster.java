@@ -50,6 +50,7 @@ import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author raver119@gmail.com
@@ -77,6 +78,8 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
 
     protected Random rng;
 
+    protected AtomicBoolean isFirstRun;
+
 
     // safe to ignore
     private static ObjectMapper jsonMapper;
@@ -103,6 +106,7 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
         this.storageLevel = storageLevel;
         this.collectTrainingStats = collectTrainingStats;
         this.threshold = threshold;
+        this.isFirstRun = new AtomicBoolean(false);
 
         if (collectTrainingStats)
             stats = new ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper();
@@ -322,8 +326,9 @@ public class SharedTrainingMaster implements TrainingMaster<SharedTrainingResult
         if (!network.getNetwork().isInitCalled())
             network.getNetwork().init();
 
-        // this instance will be SilentWorker - it'll accept and apply messages, but won't contribute to training
-        VoidParameterServer.getInstance().init(voidConfiguration, transport, new SilentTrainingDriver(network.getNetwork().params(), network.getNetwork().getOptimizer().getStepFunction()));
+        // this instance will be SilentWorker - it'll accept and apply messages, but won't contribute to training. And we init it only once
+        if (isFirstRun.compareAndSet(false, true))
+            VoidParameterServer.getInstance().init(voidConfiguration, transport, new SilentTrainingDriver(network.getNetwork().params(), network.getNetwork().getOptimizer().getStepFunction()));
 
         if (numWorkers == null)
             numWorkers = network.getSparkContext().defaultParallelism();
