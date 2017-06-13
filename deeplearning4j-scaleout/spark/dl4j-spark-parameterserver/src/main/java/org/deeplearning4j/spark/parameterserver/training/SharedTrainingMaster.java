@@ -236,6 +236,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     }
 
     protected int numObjectsEachWorker(int numExamplesEachRddObject) {
+        // FIXME !!!!!!!!1111oneone1eleven
         return 0;//batchSizePerWorker * averagingFrequency / numExamplesEachRddObject;
     }
 
@@ -304,8 +305,27 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     }
 
 
-    protected void executeTrainingPathsHelper(SparkDl4jMultiLayer network, JavaRDD<String> trainingDataPaths,
-                                              int dataSetObjectsNumExamples) {
+    protected void executeTrainingDirect(SparkComputationGraph network, JavaRDD<DataSet> trainingData) {
+        if (collectTrainingStats)
+            stats.logFitStart();
+
+        //For "vanilla" parameter averaging training, we need to split the full data set into batches of size N, such that we can process the specified
+        // number of minibatches between averagings
+        //But to do that, wee need to know: (a) the number of examples, and (b) the number of workers
+        if (storageLevel != null)
+            trainingData.persist(storageLevel);
+
+        long totalDataSetObjectCount = getTotalDataSetObjectCount(trainingData);
+
+        // since this is real distributed training, we don't need to split data
+        doIteration(network, trainingData, 1, 1);
+
+        if (collectTrainingStats)
+            stats.logFitEnd((int) totalDataSetObjectCount);
+    }
+
+
+    protected void executeTrainingPathsHelper(SparkDl4jMultiLayer network, JavaRDD<String> trainingDataPaths, int dataSetObjectsNumExamples) {
         if (numWorkers == null)
             numWorkers = network.getSparkContext().defaultParallelism();
 
@@ -323,19 +343,47 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             stats.logFitEnd((int) totalDataSetObjectCount);
     }
 
-    @Override
-    public void executeTraining(SparkDl4jMultiLayer network, JavaRDD<DataSet> trainingData) {
-        /*
-            This method (and other similar methods) is basically one of our entry points, here we'll spawn our training process:
-            1) broadcast everything needed: initial model params, updaters state, conf. Useful for uptraining
-            2) shuffle, if needed
-            3) repartition, if needed
-            4) EXECUTE SILENT WORKER
-            5) invoke training function via mapPartitions
-            6) wait till finished
-            7) do something with final model, i.e. export it somewhere :)
-         */
+    protected void executeTrainingPathsHelper(SparkComputationGraph network, JavaRDD<String> trainingDataPaths, int dataSetObjectsNumExamples) {
+        if (numWorkers == null)
+            numWorkers = network.getSparkContext().defaultParallelism();
+
+        if (collectTrainingStats)
+            stats.logFitStart();
+
+        if (storageLevelStreams != null)
+            trainingDataPaths.persist(storageLevelStreams);
+
+        long totalDataSetObjectCount = getTotalDataSetObjectCount(trainingDataPaths);
+
+        doIterationPaths(null, network, trainingDataPaths, 1, 1, dataSetObjectsNumExamples);
+
+        if (collectTrainingStats)
+            stats.logFitEnd((int) totalDataSetObjectCount);
+    }
+
+    protected void prepareNetworkAndStuff(SparkComputationGraph network) {
+        if (numWorkers == null)
+            numWorkers = network.getSparkContext().defaultParallelism();
+
         // first of all, we're instantiating ParameterServer shard here
+        Transport transport = voidConfiguration.getTransportType() == TransportType.ROUTED ? new RoutedTransport() : voidConfiguration.getTransportType() == TransportType.BROADCAST ? new MulticastTransport() : this.transport;
+
+        if (transport == null)
+            throw new DL4JInvalidConfigException("No Transport implementation was defined for this training session!");
+
+        // it's safe to call init on CompGraph, it has isInit check within
+        network.getNetwork().init();
+
+        // this instance will be SilentWorker - it'll accept and apply messages, but won't contribute to training. And we init it only once
+        if (isFirstRun.compareAndSet(false, true))
+            VoidParameterServer.getInstance().init(voidConfiguration, transport, new SilentTrainingDriver(network.getNetwork().params(), network.getNetwork().getOptimizer().getStepFunction()));
+    }
+
+    protected void prepareNetworkAndStuff(SparkDl4jMultiLayer network) {
+        // first of all, we're instantiating ParameterServer shard here\
+        if (numWorkers == null)
+            numWorkers = network.getSparkContext().defaultParallelism();
+
         Transport transport = voidConfiguration.getTransportType() == TransportType.ROUTED ? new RoutedTransport() : voidConfiguration.getTransportType() == TransportType.BROADCAST ? new MulticastTransport() : this.transport;
 
         if (transport == null)
@@ -348,9 +396,22 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         // this instance will be SilentWorker - it'll accept and apply messages, but won't contribute to training. And we init it only once
         if (isFirstRun.compareAndSet(false, true))
             VoidParameterServer.getInstance().init(voidConfiguration, transport, new SilentTrainingDriver(network.getNetwork().params(), network.getNetwork().getOptimizer().getStepFunction()));
+    }
 
-        if (numWorkers == null)
-            numWorkers = network.getSparkContext().defaultParallelism();
+    @Override
+    public void executeTraining(SparkDl4jMultiLayer network, JavaRDD<DataSet> trainingData) {
+        /*
+            This method (and other similar methods) is basically one of our entry points, here we'll spawn our training process:
+            1) broadcast everything needed: initial model params, updaters state, conf. Useful for uptraining
+            2) shuffle, if needed
+            3) repartition, if needed
+            4) EXECUTE SILENT WORKER
+            5) invoke training function via mapPartitions
+            6) wait till finished
+            7) do something with final model, i.e. export it somewhere :)
+         */
+
+        prepareNetworkAndStuff(network);
 
         // at this moment we have coordinator server up (master works as coordinator)
         if (rddTrainingApproach == RDDTrainingApproach.Direct) {
@@ -365,27 +426,45 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     @Override
     public void executeTraining(SparkDl4jMultiLayer network, JavaPairRDD<String, PortableDataStream> trainingData) {
+        prepareNetworkAndStuff(network);
 
+        doIterationPDS(network, null, trainingData.values(), 1, 1);
     }
 
     @Override
     public void executeTrainingPaths(SparkDl4jMultiLayer network, JavaRDD<String> trainingDataPaths) {
+        prepareNetworkAndStuff(network);
 
+        executeTrainingPathsHelper(network, trainingDataPaths, batchSizePerWorker);
     }
 
     @Override
     public void executeTraining(SparkComputationGraph graph, JavaRDD<DataSet> trainingData) {
+        prepareNetworkAndStuff(graph);
 
+        // at this moment we have coordinator server up (master works as coordinator)
+        if (rddTrainingApproach == RDDTrainingApproach.Direct) {
+            executeTrainingDirect(graph, trainingData);
+        } else if (rddTrainingApproach == RDDTrainingApproach.Export){
+            //Export data if required (or, use cached export)
+            JavaRDD<String> paths = exportIfRequired(graph.getSparkContext(), trainingData);
+            executeTrainingPathsHelper(graph, paths, batchSizePerWorker);
+        } else
+            throw new DL4JInvalidConfigException("Unknown RDDtrainingApproach [" + rddTrainingApproach + "] was specified!");
     }
 
     @Override
     public void executeTraining(SparkComputationGraph network, JavaPairRDD<String, PortableDataStream> trainingData) {
+        prepareNetworkAndStuff(network);
 
+        doIterationPDS(null, network, trainingData.values(), 1, 1);
     }
 
     @Override
     public void executeTrainingPaths(SparkComputationGraph network, JavaRDD<String> trainingDataPaths) {
+        prepareNetworkAndStuff(network);
 
+        executeTrainingPathsHelper(network, trainingDataPaths, batchSizePerWorker);
     }
 
     @Override
@@ -405,12 +484,12 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     @Override
     public void setCollectTrainingStats(boolean collectTrainingStats) {
-        // simple enabler/disabler
+        this.collectTrainingStats = collectTrainingStats;
     }
 
     @Override
     public boolean getIsCollectTrainingStats() {
-        return false;
+        return collectTrainingStats;
     }
 
     @Override
@@ -450,7 +529,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats)
             stats.logRepartitionStart();
 
-       // splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy, numObjectsEachWorker(rddDataSetNumExamples), numWorkers);
+        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy, numObjectsEachWorker(rddDataSetNumExamples), numWorkers);
         int nPartitions = splitData.partitions().size();
 
         if (collectTrainingStats && repartition != Repartition.Never)
@@ -473,7 +552,46 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             stats.logMapPartitionsEnd(nPartitions);
     }
 
+    protected void doIteration(SparkComputationGraph network, JavaRDD<DataSet> split, int splitNum, int numSplits) {
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
+                splitNum, numSplits, batchSizePerWorker, 0, numWorkers);
+
+        if (collectTrainingStats)
+            stats.logMapPartitionsStart();
+
+        JavaRDD<DataSet> splitData = split;
+
+        if (collectTrainingStats)
+            stats.logRepartitionStart();
+
+        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy, numObjectsEachWorker(rddDataSetNumExamples), numWorkers);
+        int nPartitions = splitData.partitions().size();
+
+        if (collectTrainingStats && repartition != Repartition.Never)
+            stats.logRepartitionEnd();
+
+
+        FlatMapFunction<Iterator<DataSet>, SharedTrainingResult> function = new SharedFlatMapDataSet<>(getWorkerInstance(network));
+
+        JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
+
+        // meh, just to invoke previous function
+        long cnt = result.count();
+
+        log.info("Results count: {}", cnt);
+
+        // TODO: implement something here
+//        processResults(network, null, result, splitNum, numSplits);
+
+        if (collectTrainingStats)
+            stats.logMapPartitionsEnd(nPartitions);
+    }
+
+
     protected void doIterationPaths(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<String> split, int splitNum, int numSplits, int dataSetObjectNumExamples) {
+        if (network == null && graph == null)
+            throw new DL4JInvalidConfigException("Both MLN & CompGraph are NULL");
+
         log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers", splitNum, numSplits, batchSizePerWorker, 0, numWorkers);
         if (collectTrainingStats)
             stats.logMapPartitionsStart();
@@ -490,8 +608,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (collectTrainingStats && repartition != Repartition.Never)
             stats.logRepartitionEnd();
 
-        // FIXME: implement !!!!
-        FlatMapFunction<Iterator<String>, SharedTrainingResult> function = new SharedFlatMapPaths<>(getWorkerInstance(network));
+        FlatMapFunction<Iterator<String>, SharedTrainingResult> function = new SharedFlatMapPaths<>(network != null ? getWorkerInstance(network) : getWorkerInstance(graph));
 
 
         JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
