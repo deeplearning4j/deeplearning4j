@@ -674,6 +674,9 @@
               <configuration>
                 <generateGitPropertiesFile>true</generateGitPropertiesFile>
                 <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+                <gitDescribe>
+                  <skip>true</skip>
+                </gitDescribe>
               </configuration>
             </plugin>
 
