@@ -81,12 +81,6 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     protected AtomicBoolean isFirstRun;
 
-
-    // safe to ignore
-    private static ObjectMapper jsonMapper;
-    private static ObjectMapper yamlMapper;
-
-
     // better ignore
     protected transient Broadcast<NetBroadcastTuple> broadcastModel;
     protected transient Broadcast<SharedTrainingConfiguration> broadcastConfiguration;
@@ -416,31 +410,6 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     @Override
     public boolean deleteTempFiles(SparkContext sc) {
         return false;
-    }
-
-    private static synchronized ObjectMapper getJsonMapper() {
-        if (jsonMapper == null) {
-            jsonMapper = getNewMapper(new JsonFactory());
-        }
-        return jsonMapper;
-    }
-
-    private static synchronized ObjectMapper getYamlMapper() {
-        if (yamlMapper == null) {
-            yamlMapper = getNewMapper(new YAMLFactory());
-        }
-        return yamlMapper;
-    }
-
-    private static ObjectMapper getNewMapper(JsonFactory jsonFactory) {
-        ObjectMapper om = new ObjectMapper(jsonFactory);
-        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        om.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-        om.enable(SerializationFeature.INDENT_OUTPUT);
-        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-        return om;
     }
 
     protected void doIteration(SparkDl4jMultiLayer network, JavaRDD<DataSet> split, int splitNum, int numSplits) {

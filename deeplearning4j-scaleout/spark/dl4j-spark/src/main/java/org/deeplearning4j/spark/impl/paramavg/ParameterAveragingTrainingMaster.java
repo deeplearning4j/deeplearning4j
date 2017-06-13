@@ -77,22 +77,18 @@ import java.util.*;
 @EqualsAndHashCode(exclude = {"stats", "listeners", "iterationCount", "rng", "lastExportedRDDId", "lastRDDExportPath",
                 "trainingMasterUID"})
 @Slf4j
-public class ParameterAveragingTrainingMaster
-                implements TrainingMaster<ParameterAveragingTrainingResult, ParameterAveragingTrainingWorker> {
+public class ParameterAveragingTrainingMaster extends BaseTrainingMaster<ParameterAveragingTrainingResult, ParameterAveragingTrainingWorker> implements TrainingMaster<ParameterAveragingTrainingResult, ParameterAveragingTrainingWorker> {
 
     protected static final int COALESCE_THRESHOLD = 3;
-    protected static ObjectMapper jsonMapper;
-    protected static ObjectMapper yamlMapper;
+
 
     protected boolean saveUpdater;
     protected Integer numWorkers;
     protected int rddDataSetNumExamples;
-    protected int batchSizePerWorker;
+
     protected int averagingFrequency;
     protected int aggregationDepth;
     protected int prefetchNumBatches;
-    protected boolean collectTrainingStats;
-    protected ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper stats;
     protected int iterationCount = 0;
     protected Repartition repartition;
     protected RepartitionStrategy repartitionStrategy;
@@ -103,13 +99,10 @@ public class ParameterAveragingTrainingMaster
     @JsonDeserialize(using = StorageLevelDeserializer.class)
     protected StorageLevel storageLevelStreams = StorageLevel.MEMORY_ONLY();
     protected RDDTrainingApproach rddTrainingApproach = RDDTrainingApproach.Export;
-    protected String exportDirectory = null;
-    protected Random rng;
+
 
     protected Collection<TrainingHook> trainingHookList;
-    protected int lastExportedRDDId = Integer.MIN_VALUE;
-    protected String lastRDDExportPath;
-    protected final String trainingMasterUID;
+
 
     //Listeners etc
     protected Collection<IterationListener> listeners;
@@ -205,30 +198,7 @@ public class ParameterAveragingTrainingMaster
         this.rng = new Random();
     }
 
-    protected static synchronized ObjectMapper getJsonMapper() {
-        if (jsonMapper == null) {
-            jsonMapper = getNewMapper(new JsonFactory());
-        }
-        return jsonMapper;
-    }
 
-    protected static synchronized ObjectMapper getYamlMapper() {
-        if (yamlMapper == null) {
-            yamlMapper = getNewMapper(new YAMLFactory());
-        }
-        return yamlMapper;
-    }
-
-    protected static ObjectMapper getNewMapper(JsonFactory jsonFactory) {
-        ObjectMapper om = new ObjectMapper(jsonFactory);
-        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        om.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-        om.enable(SerializationFeature.INDENT_OUTPUT);
-        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-        return om;
-    }
 
     /**
      * Remove a training hook from the worker
@@ -942,142 +912,6 @@ public class ParameterAveragingTrainingMaster
         }
     }
 
-
-    protected JavaRDD<String> exportIfRequired(JavaSparkContext sc, JavaRDD<DataSet> trainingData) {
-        ExportSupport.assertExportSupported(sc);
-        if (collectTrainingStats)
-            stats.logExportStart();
-
-        //Two possibilities here:
-        // 1. We've seen this RDD before (i.e., multiple epochs training case)
-        // 2. We have not seen this RDD before
-        //    (a) And we haven't got any stored data -> simply export
-        //    (b) And we previously exported some data from a different RDD -> delete the last data
-        int currentRDDUid = trainingData.id(); //Id is a "A unique ID for this RDD (within its SparkContext)."
-
-        String baseDir;
-        if (lastExportedRDDId == Integer.MIN_VALUE) {
-            //Haven't seen a RDD<DataSet> yet in this training master -> export data
-            baseDir = export(trainingData);
-        } else {
-            if (lastExportedRDDId == currentRDDUid) {
-                //Use the already-exported data again for another epoch
-                baseDir = getBaseDirForRDD(trainingData);
-            } else {
-                //The new RDD is different to the last one
-                // Clean up the data for the last one, and export
-                deleteTempDir(sc, lastRDDExportPath);
-                baseDir = export(trainingData);
-            }
-        }
-
-        if (collectTrainingStats)
-            stats.logExportEnd();
-
-        return sc.textFile(baseDir + "paths/");
-    }
-
-    protected JavaRDD<String> exportIfRequiredMDS(JavaSparkContext sc, JavaRDD<MultiDataSet> trainingData) {
-        ExportSupport.assertExportSupported(sc);
-        if (collectTrainingStats)
-            stats.logExportStart();
-
-        //Two possibilities here:
-        // 1. We've seen this RDD before (i.e., multiple epochs training case)
-        // 2. We have not seen this RDD before
-        //    (a) And we haven't got any stored data -> simply export
-        //    (b) And we previously exported some data from a different RDD -> delete the last data
-        int currentRDDUid = trainingData.id(); //Id is a "A unique ID for this RDD (within its SparkContext)."
-
-        String baseDir;
-        if (lastExportedRDDId == Integer.MIN_VALUE) {
-            //Haven't seen a RDD<DataSet> yet in this training master -> export data
-            baseDir = exportMDS(trainingData);
-        } else {
-            if (lastExportedRDDId == currentRDDUid) {
-                //Use the already-exported data again for another epoch
-                baseDir = getBaseDirForRDD(trainingData);
-            } else {
-                //The new RDD is different to the last one
-                // Clean up the data for the last one, and export
-                deleteTempDir(sc, lastRDDExportPath);
-                baseDir = exportMDS(trainingData);
-            }
-        }
-
-        if (collectTrainingStats)
-            stats.logExportEnd();
-
-        return sc.textFile(baseDir + "paths/");
-    }
-
-    protected String export(JavaRDD<DataSet> trainingData) {
-        String baseDir = getBaseDirForRDD(trainingData);
-        String dataDir = baseDir + "data/";
-        String pathsDir = baseDir + "paths/";
-
-        log.info("Initiating RDD<DataSet> export at {}", baseDir);
-        JavaRDD<String> paths = trainingData
-                        .mapPartitionsWithIndex(new BatchAndExportDataSetsFunction(batchSizePerWorker, dataDir), true);
-        paths.saveAsTextFile(pathsDir);
-        log.info("RDD<DataSet> export complete at {}", baseDir);
-
-        lastExportedRDDId = trainingData.id();
-        lastRDDExportPath = baseDir;
-        return baseDir;
-    }
-
-    protected String exportMDS(JavaRDD<MultiDataSet> trainingData) {
-        String baseDir = getBaseDirForRDD(trainingData);
-        String dataDir = baseDir + "data/";
-        String pathsDir = baseDir + "paths/";
-
-        log.info("Initiating RDD<MultiDataSet> export at {}", baseDir);
-        JavaRDD<String> paths = trainingData.mapPartitionsWithIndex(
-                        new BatchAndExportMultiDataSetsFunction(batchSizePerWorker, dataDir), true);
-        paths.saveAsTextFile(pathsDir);
-        log.info("RDD<MultiDataSet> export complete at {}", baseDir);
-
-        lastExportedRDDId = trainingData.id();
-        lastRDDExportPath = baseDir;
-        return baseDir;
-    }
-
-    protected String getBaseDirForRDD(JavaRDD<?> rdd) {
-        if (exportDirectory == null) {
-            exportDirectory = getDefaultExportDirectory(rdd.context());
-        }
-
-        return exportDirectory + (exportDirectory.endsWith("/") ? "" : "/") + trainingMasterUID + "/" + rdd.id() + "/";
-    }
-
-    protected boolean deleteTempDir(JavaSparkContext sc, String tempDirPath) {
-        log.info("Attempting to delete temporary directory: {}", tempDirPath);
-
-        Configuration hadoopConfiguration = sc.hadoopConfiguration();
-        FileSystem fileSystem;
-        try {
-            fileSystem = FileSystem.get(new URI(tempDirPath), hadoopConfiguration);
-        } catch (URISyntaxException | IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        try {
-            fileSystem.delete(new Path(tempDirPath), true);
-            log.info("Deleted temporary directory: {}", tempDirPath);
-            return true;
-        } catch (IOException e) {
-            log.warn("Could not delete temporary directory: {}", tempDirPath, e);
-            return false;
-        }
-    }
-
-    protected String getDefaultExportDirectory(SparkContext sc) {
-        String hadoopTmpDir = sc.hadoopConfiguration().get("hadoop.tmp.dir");
-        if (!hadoopTmpDir.endsWith("/") && !hadoopTmpDir.endsWith("\\"))
-            hadoopTmpDir = hadoopTmpDir + "/";
-        return hadoopTmpDir + "dl4j/";
-    }
 
 
     protected StatsStorageRouterProvider getRouterProvider() {
