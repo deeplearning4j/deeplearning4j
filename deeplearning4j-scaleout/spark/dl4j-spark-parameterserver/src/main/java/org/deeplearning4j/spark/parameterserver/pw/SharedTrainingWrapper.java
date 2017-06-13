@@ -77,6 +77,7 @@ public class SharedTrainingWrapper {
      */
     public void attachDS(Iterator<DataSet> iterator) {
         log.info("Attaching thread...");
+
         // we're creating our Observable wrapper
         VirtualIterator<DataSet> wrapped = new VirtualIterator<>(iterator);
 
@@ -97,7 +98,20 @@ public class SharedTrainingWrapper {
      * @param iterator
      */
     public void attachMDS(Iterator<MultiDataSet> iterator) {
-        iteratorsMDS.add(iterator);
+        log.info("Attaching thread...");
+
+        // we're creating our Observable wrapper
+        VirtualIterator<MultiDataSet> wrapped = new VirtualIterator<>(iterator);
+
+        // and creating Observer which will be used to monitor progress within iterator
+        BlockingObserver obs = new BlockingObserver();
+        wrapped.addObserver(obs);
+
+        // putting that "somewhere"
+        iteratorsMDS.add(wrapped);
+
+        // storing observer into ThreadLocal, since we're going to use that later
+        observer.set(obs);
     }
 
     public void run(SharedTrainingWorker worker) {
