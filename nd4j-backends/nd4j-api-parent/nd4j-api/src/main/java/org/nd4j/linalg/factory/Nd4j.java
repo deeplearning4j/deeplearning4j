@@ -1255,6 +1255,17 @@ public class Nd4j {
         return type == DataBuffer.Type.DOUBLE ? createBuffer(new double[length]) : createBuffer(new float[length]);
     }
 
+
+    public static DataBuffer createBufferDetached(int[] shape, DataBuffer.Type type) {
+        int length = ArrayUtil.prod(shape);
+        if (type == DataBuffer.Type.INT)
+            return createBufferDetached(new int[length]);
+        else if (type == DataBuffer.Type.HALF)
+            return createBufferDetached(new float[length]);
+
+        return type == DataBuffer.Type.DOUBLE ? createBufferDetached(new double[length]) : createBufferDetached(new float[length]);
+    }
+
     /**
      * Creates a buffer of the specified type
      * and length with the given byte buffer.
@@ -2416,7 +2427,7 @@ public class Nd4j {
      * @throws IOException
      */
     public static INDArray read(DataInputStream dis) throws IOException {
-        DataBuffer shapeInformation = Nd4j.createBuffer(new int[1], DataBuffer.Type.INT);
+        DataBuffer shapeInformation = Nd4j.createBufferDetached(new int[1], DataBuffer.Type.INT);
         shapeInformation.read(dis);
         int length = Shape.length(shapeInformation);
         DataBuffer data = CompressedDataBuffer.readUnknown(dis, length);
