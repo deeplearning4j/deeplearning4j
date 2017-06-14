@@ -121,11 +121,13 @@ public class ShiftVertexTest {
 				{2.9,3.1,3.7}
 		});
 		double sf = 4.1;
+		// Actually, given that I'm using a sigmoid on the output,
+		// these should really be between 0 and 1
 		INDArray target = Nd4j.create(new double[][]{
-				{ 4.3, 4.7, 5.3, 5.9, 6.1 },
-				{ 6.7, 7.1, 7.3, 7.9, 8.3 },
-				{ 8.9, 9.7,10.1,10.3,10.7 },
-				{10.9,11.3,12.7,13.1,13.7 }
+				{ 0.05, 0.10, 0.15, 0.20, 0.25 },
+				{ 0.30, 0.35, 0.40, 0.45, 0.50 },
+				{ 0.55, 0.60, 0.65, 0.70, 0.75 },
+				{ 0.80, 0.85, 0.90, 0.95, 0.99 }
 		});
 		
 		ComputationGraphConfiguration cgc = new NeuralNetConfiguration.Builder()
