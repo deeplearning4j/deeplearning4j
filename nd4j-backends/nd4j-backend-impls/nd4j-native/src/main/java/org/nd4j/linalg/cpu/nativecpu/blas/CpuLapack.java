@@ -31,7 +31,7 @@ public class CpuLapack extends BaseLapack {
             (FloatPointer)A.data().addressPointer(), 
             getLda(A), (IntPointer)IPIV.data().addressPointer()
             );
-        if( status != 0 ) {
+        if( status < 0 ) {
             throw new BlasException( "Failed to execute sgetrf", status ) ;
         }
     }
@@ -41,7 +41,7 @@ public class CpuLapack extends BaseLapack {
         int status = LAPACKE_dgetrf(getColumnOrder(A), M, N, (DoublePointer)A.data().addressPointer(), 
             getLda(A), (IntPointer)IPIV.data().addressPointer()
             );
-        if( status != 0 ) {
+        if( status < 0 ) {
             throw new BlasException( "Failed to execute dgetrf", status ) ;
         }
     }

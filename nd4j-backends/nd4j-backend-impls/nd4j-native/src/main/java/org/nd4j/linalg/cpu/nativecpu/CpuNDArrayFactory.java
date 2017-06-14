@@ -782,6 +782,41 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         return ret;
     }
 
+    public INDArray accumulate(INDArray target, INDArray... arrays) {
+
+        if (arrays == null || arrays.length == 0)
+            throw new RuntimeException("Input arrays are missing");
+
+        if (arrays.length == 1)
+            return target.addi(arrays[0]);
+
+        long len = target.lengthLong();
+
+        PointerPointer dataPointers = new PointerPointer(arrays.length);
+
+        for (int i = 0; i < arrays.length; i++) {
+            Nd4j.getCompressor().autoDecompress(arrays[i]);
+
+            if (arrays[i].elementWiseStride() != 1)
+                throw new ND4JIllegalStateException("Native accumulation is applicable only to continuous INDArrays");
+
+            if (arrays[i].lengthLong() != len)
+                throw new ND4JIllegalStateException("All arrays should have equal length for accumulation");
+
+            dataPointers.put(i, arrays[i].data().addressPointer());
+        }
+
+        if (target.data().dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.accumulateDouble(null, dataPointers, (DoublePointer) target.data().addressPointer(), arrays.length, len);
+        } else if (target.data().dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.accumulateFloat(null, dataPointers, (FloatPointer) target.data().addressPointer(), arrays.length, len);
+        } else {
+            nativeOps.accumulateHalf(null, dataPointers, (ShortPointer) target.data().addressPointer(), arrays.length, len);
+        }
+
+        return target;
+    }
+
     /**
      * This method averages input arrays, and returns averaged array
      *
@@ -1090,8 +1125,11 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
             descriptor.setCompressedLength(source.length() * elementSize);
             buffer = new CompressedDataBuffer(pointer, descriptor);
         } else {
+            CompressedDataBuffer compressed = (CompressedDataBuffer) source;
+            CompressionDescriptor descriptor = compressed.getCompressionDescriptor();
+
             // decompression mode
-            buffer = Nd4j.createBuffer(source.length(), false);
+            buffer = Nd4j.createBuffer(descriptor.getNumberOfElements(), false);
         }
 
         convertDataEx(typeSrc, source, typeDst, buffer);

@@ -191,6 +191,11 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
+    public INDArray accumulate(INDArray target, INDArray... arrays) {
+        return null;
+    }
+
+    @Override
     public INDArray average(INDArray target, Collection<INDArray> arrays) {
         return null;
     }

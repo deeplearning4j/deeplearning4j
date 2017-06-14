@@ -271,6 +271,56 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
     }
 
     @Override
+    public DataBuffer createInt(long length, boolean initialize, MemoryWorkspace workspace) {
+        return new IntBuffer(length, initialize, workspace);
+    }
+
+    /**
+     * This method will create new DataBuffer of the same dataType & same length
+     *
+     * @param buffer
+     * @return
+     */
+    @Override
+    public DataBuffer createSame(DataBuffer buffer, boolean init) {
+        switch (buffer.dataType()) {
+            case INT:
+                return createInt(buffer.length(), init);
+            case FLOAT:
+                return createFloat(buffer.length(), init);
+            case DOUBLE:
+                return createHalf(buffer.length(), init);
+            case HALF:
+                return createHalf(buffer.length(), init);
+            default:
+                throw new UnsupportedOperationException("Unknown dataType: " + buffer.dataType());
+        }
+    }
+
+    /**
+     * This method will create new DataBuffer of the same dataType & same length
+     *
+     * @param buffer
+     * @param workspace
+     * @return
+     */
+    @Override
+    public DataBuffer createSame(DataBuffer buffer, boolean init, MemoryWorkspace workspace) {
+        switch (buffer.dataType()) {
+            case INT:
+                return createInt(buffer.length(), init, workspace);
+            case FLOAT:
+                return createFloat(buffer.length(), init, workspace);
+            case DOUBLE:
+                return createHalf(buffer.length(), init, workspace);
+            case HALF:
+                return createHalf(buffer.length(), init, workspace);
+            default:
+                throw new UnsupportedOperationException("Unknown dataType: " + buffer.dataType());
+        }
+    }
+
+    @Override
     public DataBuffer createDouble(int[] data) {
         return createDouble(data, true);
     }
@@ -285,6 +335,14 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
         return createInt(data, true);
     }
 
+    @Override
+    public DataBuffer createInt(int[] data, MemoryWorkspace workspace){
+        return createInt(data, true, workspace);
+    }
+    @Override
+    public DataBuffer createInt(int[] data, boolean copy, MemoryWorkspace workspace){
+        return new IntBuffer(data, copy, workspace);
+    }
     @Override
     public DataBuffer createDouble(double[] data) {
         return createDouble(data, true);

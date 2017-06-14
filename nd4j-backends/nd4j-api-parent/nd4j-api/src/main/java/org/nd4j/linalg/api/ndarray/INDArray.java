@@ -1586,7 +1586,27 @@ public interface INDArray extends Serializable {
      */
     INDArray mean(INDArray result, int... dimension);
 
+    /**
+     * Returns the absolute overall mean of this ndarray
+     *
+     * @param dimension the dimension to getScalar the mean along
+     * @return the mean along the specified dimension of this ndarray
+     */
+    INDArray amean(int... dimension);
+
+    /**
+     * Returns the overall mean of this ndarray
+     *
+     * @return the mean along the specified dimension of this ndarray
+     */
     Number meanNumber();
+
+    /**
+     * Returns the absolute overall mean of this ndarray
+     *
+     * @return the mean along the specified dimension of this ndarray
+     */
+    Number ameanNumber();
 
     IComplexNumber meanComplex();
 
@@ -1620,7 +1640,7 @@ public interface INDArray extends Serializable {
     IComplexNumber varComplex();
 
     /**
-     * Returns the overall max of this ndarray
+     * Returns the overall max of this ndarray along given dimensions
      *
      * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
@@ -1628,10 +1648,24 @@ public interface INDArray extends Serializable {
     INDArray max(int... dimension);
 
     /**
+     * Returns the absolute overall max of this ndarray along given dimensions
      *
+     * @param dimension the dimension to getScalar the mean along
+     * @return the mean along the specified dimension of this ndarray
+     */
+    INDArray amax(int... dimension);
+
+    /**
+     * Returns max value in this INDArray
      * @return
      */
     Number maxNumber();
+
+    /**
+     * Returns absolute max value in this INDArray
+     * @return
+     */
+    Number amaxNumber();
 
     /**
      *
@@ -1647,7 +1681,19 @@ public interface INDArray extends Serializable {
      */
     INDArray min(int... dimension);
 
+    INDArray amin(int... dimension);
+
+    /**
+     * Returns min value in this INDArray
+     * @return
+     */
     Number minNumber();
+
+    /**
+     * Returns absolute min value in this INDArray
+     * @return
+     */
+    Number aminNumber();
 
     IComplexNumber minComplex();
 
@@ -1659,7 +1705,13 @@ public interface INDArray extends Serializable {
      */
     INDArray sum(int... dimension);
 
-
+    /**
+     * This method takes boolean condition, and returns number of elements matching this condition
+     *
+     * @param condition
+     * @return
+     */
+    Number scan(Condition condition);
 
     /**
      * Returns the sum along the last dimension of this ndarray
@@ -2323,6 +2375,9 @@ public interface INDArray extends Serializable {
     boolean equalsWithEps(Object o, double eps);
 
     INDArray unsafeDuplication();
+
+
+    INDArray unsafeDuplication(boolean blocking);
 
     /**
      * Remainder operator

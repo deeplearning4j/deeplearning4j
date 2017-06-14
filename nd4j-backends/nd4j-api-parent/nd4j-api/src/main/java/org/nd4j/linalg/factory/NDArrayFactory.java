@@ -484,6 +484,16 @@ public interface NDArrayFactory {
 
 
     /**
+     * This method sums given arrays to target
+     *
+     * @param target
+     * @param arrays
+     * @return
+     */
+    INDArray accumulate(INDArray target, INDArray... arrays);
+
+
+    /**
      * This method averages input arrays, and returns averaged array
      *
      * @param arrays

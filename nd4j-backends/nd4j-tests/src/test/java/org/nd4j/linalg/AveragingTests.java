@@ -112,6 +112,54 @@ public class AveragingTests extends BaseNd4jTest {
     }
 
 
+
+    @Test
+    public void testAccumulation1() {
+        INDArray array1 = Nd4j.create(100).assign(1.0);
+        INDArray array2 = Nd4j.create(100).assign(2.0);
+        INDArray array3 = Nd4j.create(100).assign(3.0);
+        INDArray exp = Nd4j.create(100).assign(6.0);
+
+        INDArray accum = Nd4j.accumulate(new INDArray[] {array1, array2, array3});
+
+        assertEquals(exp, accum);
+    }
+
+
+    @Test
+    public void testAccumulation2() {
+        INDArray array1 = Nd4j.create(100).assign(1.0);
+        INDArray array2 = Nd4j.create(100).assign(2.0);
+        INDArray array3 = Nd4j.create(100).assign(3.0);
+        INDArray target = Nd4j.create(100);
+        INDArray exp = Nd4j.create(100).assign(6.0);
+
+        INDArray accum = Nd4j.accumulate(target, new INDArray[] {array1, array2, array3});
+
+        assertEquals(exp, accum);
+        assertTrue(accum == target);
+    }
+
+
+    @Test
+    public void testAccumulation3() {
+        // we want to ensure that cuda backend is able to launch this op on cpu
+        Nd4j.getAffinityManager().allowCrossDeviceAccess(false);
+
+        INDArray array1 = Nd4j.create(100).assign(1.0);
+        INDArray array2 = Nd4j.create(100).assign(2.0);
+        INDArray array3 = Nd4j.create(100).assign(3.0);
+        INDArray target = Nd4j.create(100);
+        INDArray exp = Nd4j.create(100).assign(6.0);
+
+        INDArray accum = Nd4j.accumulate(target, new INDArray[] {array1, array2, array3});
+
+        assertEquals(exp, accum);
+        assertTrue(accum == target);
+
+        Nd4j.getAffinityManager().allowCrossDeviceAccess(true);
+    }
+
     @Override
     public char ordering() {
         return 'c';

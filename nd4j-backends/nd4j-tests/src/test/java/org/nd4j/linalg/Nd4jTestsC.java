@@ -62,6 +62,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -4162,6 +4164,45 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         assertEquals(out, out2);
         assertTrue(res == out2);
+    }
+
+
+    @Test
+    public void tesAbsReductions1() throws Exception {
+        INDArray array = Nd4j.create(new double[]{-1, -2, -3, -4});
+
+        assertEquals(4, array.amaxNumber().intValue());
+    }
+
+
+    @Test
+    public void tesAbsReductions2() throws Exception {
+        INDArray array = Nd4j.create(new double[]{-1, -2, -3, -4});
+
+        assertEquals(1, array.aminNumber().intValue());
+    }
+
+
+    @Test
+    public void tesAbsReductions3() throws Exception {
+        INDArray array = Nd4j.create(new double[]{-2, -2, 2, 2});
+
+        assertEquals(2, array.ameanNumber().intValue());
+    }
+
+
+    @Test
+    public void tesAbsReductions4() throws Exception {
+        INDArray array = Nd4j.create(new double[]{-2, -2, 2, 2});
+
+        assertEquals(4, array.scan(Conditions.absGreaterThanOrEqual(0.0)).intValue());
+    }
+
+    @Test
+    public void tesAbsReductions5() throws Exception {
+        INDArray array = Nd4j.create(new double[]{-2, 0.0, 2, 2});
+
+        assertEquals(3, array.scan(Conditions.absGreaterThan(0.0)).intValue());
     }
 
     @Override

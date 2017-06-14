@@ -19,16 +19,4 @@ public class ImmortalFloatPointer extends FloatPointer {
         this.limit = pointer.limit();
         this.position = 0;
     }
-
-    @Override
-    public void deallocate() {
-        log.info("deallocate 1");
-        //super.deallocate();
-    }
-
-    @Override
-    public void deallocate(boolean deallocate) {
-        log.info("deallocate 2");
-        //  super.deallocate(deallocate);
-    }
 }

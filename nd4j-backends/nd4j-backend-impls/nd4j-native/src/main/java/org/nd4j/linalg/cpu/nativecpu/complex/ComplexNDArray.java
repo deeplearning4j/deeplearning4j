@@ -357,4 +357,9 @@ public class ComplexNDArray extends BaseComplexNDArray {
     public INDArray unsafeDuplication() {
         throw new UnsupportedOperationException("Not implemented yet");
     }
+
+    @Override
+    public INDArray unsafeDuplication(boolean blocking) {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
 }

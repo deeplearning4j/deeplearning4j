@@ -19,6 +19,12 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 public class LossKLD implements ILossFunction {
 
     private INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        if (labels.size(1) != preOutput.size(1)) {
+            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
+                            + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
+                            + ") ");
+            
+        }
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         // Clip output and labels to be between Nd4j.EPS_THREsHOLD and 1, i.e. a valid non-zero probability
@@ -56,6 +62,12 @@ public class LossKLD implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        if (labels.size(1) != preOutput.size(1)) {
+            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
+                            + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
+                            + ") ");
+            
+        }
         //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 

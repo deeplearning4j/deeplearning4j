@@ -20,6 +20,45 @@ import java.util.List;
  */
 @Slf4j
 public abstract class BaseSparseNDArray implements ISparseNDArray {
+    @Override
+    public INDArray amean(int... dimension) {
+        return null;
+    }
+
+    @Override
+    public Number ameanNumber() {
+        return null;
+    }
+
+    @Override
+    public INDArray amax(int... dimension) {
+        return null;
+    }
+
+    @Override
+    public Number amaxNumber() {
+        return null;
+    }
+
+    @Override
+    public INDArray amin(int... dimension) {
+        return null;
+    }
+
+    @Override
+    public Number aminNumber() {
+        return null;
+    }
+
+    @Override
+    public Number scan(Condition condition) {
+        return null;
+    }
+
+    @Override
+    public INDArray unsafeDuplication(boolean blocking) {
+        return null;
+    }
 
     protected static final double THRESHOLD_MEMORY_ALLOCATION = 1.5;
     protected transient volatile long nnz = -1;

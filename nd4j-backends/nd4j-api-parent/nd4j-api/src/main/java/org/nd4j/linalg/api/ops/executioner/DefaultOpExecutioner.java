@@ -557,4 +557,20 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public void commit() {
         // no-op
     }
+
+
+    @Override
+    public INDArray thresholdEncode(INDArray input, double threshold) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public INDArray thresholdEncode(INDArray input, double threshold, Integer boundary) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public INDArray thresholdDecode(INDArray encoded, INDArray target) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
 }
