@@ -527,7 +527,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     @Override
     public void executeTrainingMDS(SparkComputationGraph network, JavaPairRDD<String, PortableDataStream> trainingData) {
+        prepareNetworkAndStuff(network);
 
+        doIterationMultiPDS(network, trainingData.values(), 1, 1);
     }
 
     @Override
@@ -553,16 +555,6 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     @Override
     public void setListeners(StatsStorageRouter router, Collection<IterationListener> listeners) {
         // optional stuff actually
-    }
-
-    @Override
-    public boolean deleteTempFiles(JavaSparkContext sc) {
-        return false;
-    }
-
-    @Override
-    public boolean deleteTempFiles(SparkContext sc) {
-        return false;
     }
 
     protected void doIteration(SparkDl4jMultiLayer network, JavaRDD<DataSet> split, int splitNum, int numSplits) {
@@ -757,6 +749,35 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             stats.logRepartitionEnd();
 
         FlatMapFunction<Iterator<PortableDataStream>, SharedTrainingResult> function = new SharedFlatMapPDS<>(getWorkerInstance(network));
+
+
+        JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
+
+//        processResults(network, graph, result, splitNum, numSplits);
+
+        if (collectTrainingStats)
+            stats.logMapPartitionsEnd(nPartitions);
+    }
+
+
+    protected void doIterationMultiPDS(SparkComputationGraph graph, JavaRDD<PortableDataStream> split, int splitNum, int numSplits) {
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
+                splitNum, numSplits, batchSizePerWorker, 0, numWorkers);
+        if (collectTrainingStats)
+            stats.logMapPartitionsStart();
+
+        JavaRDD<PortableDataStream> splitData = split;
+        if (collectTrainingStats)
+            stats.logRepartitionStart();
+
+        splitData = SparkUtils.repartition(splitData, repartition, repartitionStrategy, numObjectsEachWorker(rddDataSetNumExamples), numWorkers);
+
+        int nPartitions = splitData.partitions().size();
+
+        if (collectTrainingStats && repartition != Repartition.Never)
+            stats.logRepartitionEnd();
+
+        FlatMapFunction<Iterator<PortableDataStream>, SharedTrainingResult> function = new SharedFlatMapMultiPDS<>(getWorkerInstance(graph));
 
 
         JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);

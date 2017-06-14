@@ -46,9 +46,8 @@ class SharedFlatMapMultiDataSetAdapter<R extends TrainingResult> implements Flat
 
         // first callee will become master, others will obey and die
         // all threads in this executor will be blocked here until training finished
-        SharedTrainingWrapper.getInstance().run(worker);
+        SharedTrainingResult result = SharedTrainingWrapper.getInstance().run(worker);
 
-        // TODO: return result here, probably singleton list though
-        return Collections.singletonList((R) new SharedTrainingResult());
+        return Collections.singletonList((R) result);
     }
 }

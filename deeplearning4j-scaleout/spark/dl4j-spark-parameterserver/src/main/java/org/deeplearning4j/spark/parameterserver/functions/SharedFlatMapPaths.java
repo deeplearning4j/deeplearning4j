@@ -45,12 +45,8 @@ class SharedFlatMapPathsAdapter<R extends TrainingResult> implements FlatMapFunc
         SharedTrainingWrapper.getInstance().attachDS(new PathSparkDataSetIterator(dataSetIterator));
 
         // first callee will become master, others will obey and die
-        SharedTrainingWrapper.getInstance().run(worker);
+        SharedTrainingResult result = SharedTrainingWrapper.getInstance().run(worker);
 
-        // all threads in this executor will be blocked here until training finished
-        SharedTrainingWrapper.getInstance().blockUntilFinished();
-
-        // TODO: return result here, probably singleton list though
-        return Collections.singletonList((R) new SharedTrainingResult());
+        return Collections.singletonList((R) result);
     }
 }

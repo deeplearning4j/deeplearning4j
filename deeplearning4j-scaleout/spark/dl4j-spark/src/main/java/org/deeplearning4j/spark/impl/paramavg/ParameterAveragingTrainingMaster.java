@@ -650,15 +650,6 @@ public class ParameterAveragingTrainingMaster extends BaseTrainingMaster<Paramet
         this.listeners = listeners;
     }
 
-    @Override
-    public boolean deleteTempFiles(JavaSparkContext sc) {
-        return lastRDDExportPath == null || deleteTempDir(sc, lastRDDExportPath);
-    }
-
-    @Override
-    public boolean deleteTempFiles(SparkContext sc) {
-        return deleteTempFiles(new JavaSparkContext(sc));
-    }
 
 
     protected void doIteration(SparkDl4jMultiLayer network, JavaRDD<DataSet> split, int splitNum, int numSplits) {

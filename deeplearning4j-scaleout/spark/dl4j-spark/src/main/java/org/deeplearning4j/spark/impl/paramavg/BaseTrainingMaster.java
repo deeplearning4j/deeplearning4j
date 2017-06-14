@@ -232,4 +232,16 @@ public abstract class BaseTrainingMaster<R extends TrainingResult, W extends Tra
         return hadoopTmpDir + "dl4j/";
     }
 
+
+    @Override
+    public boolean deleteTempFiles(JavaSparkContext sc) {
+        return lastRDDExportPath == null || deleteTempDir(sc, lastRDDExportPath);
+    }
+
+    @Override
+    public boolean deleteTempFiles(SparkContext sc) {
+        return deleteTempFiles(new JavaSparkContext(sc));
+    }
+
+
 }

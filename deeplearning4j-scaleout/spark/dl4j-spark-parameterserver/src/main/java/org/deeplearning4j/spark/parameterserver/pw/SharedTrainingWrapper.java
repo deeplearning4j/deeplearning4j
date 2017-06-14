@@ -13,6 +13,7 @@ import org.deeplearning4j.spark.parameterserver.iterators.VirtualIterator;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualMultiDataSetIterator;
 import org.deeplearning4j.spark.parameterserver.networking.SilentTrainingDriver;
 import org.deeplearning4j.spark.parameterserver.networking.WiredEncodingHandler;
+import org.deeplearning4j.spark.parameterserver.training.SharedTrainingResult;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingWorker;
 import org.deeplearning4j.spark.parameterserver.util.BlockingObserver;
 import org.nd4j.linalg.dataset.DataSet;
@@ -114,7 +115,7 @@ public class SharedTrainingWrapper {
         observer.set(obs);
     }
 
-    public void run(SharedTrainingWorker worker) {
+    public SharedTrainingResult run(SharedTrainingWorker worker) {
         /*
             first call instantiates pw, messenger etc, and gets in charge here.
          */
@@ -198,6 +199,9 @@ public class SharedTrainingWrapper {
             isFirst.set(false);
 
             log.info("Master thread done...");
+
+            // TODO: we want to give back updaters here
+            return new SharedTrainingResult();
         } else {
             // blocking call right here, all non-master threads will be blocked here
             try {
@@ -205,6 +209,9 @@ public class SharedTrainingWrapper {
                 //observer.get().wait();
 
                 log.info("Feeder thread done...");
+
+                //  nothing to do here, just give away empty result
+                return new SharedTrainingResult();
             } catch (InterruptedException e) {
                 // FIXME: we don't really need to throw it again, it's here only for debugging purposes
                 throw new RuntimeException(e);
