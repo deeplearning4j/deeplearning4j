@@ -77,10 +77,13 @@ namespace randomOps {
         no_exec_special_cuda
 
         method_XY
-        method_X
 
         random_def T op(Nd4jIndex idx, Nd4jIndex length, nd4j::random::RandomBuffer *helper, T *extraParams) {
-            return extraParams[0] < helper->relativeT<T>(idx) ? (T) 1.0 : (T) 0.0f;
+            return extraParams[0] >= helper->relativeT<T>(idx) ? (T) 1.0f : (T) 0.0f;
+        }
+
+        random_def T op(T valueX, Nd4jIndex idx, Nd4jIndex length, nd4j::random::RandomBuffer *helper, T *extraParams) {
+            return valueX >= helper->relativeT<T>(idx) ? (T) 1.0f : (T) 0.0f;
         }
     };
 
