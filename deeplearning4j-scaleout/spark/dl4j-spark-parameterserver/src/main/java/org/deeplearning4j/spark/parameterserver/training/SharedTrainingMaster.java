@@ -69,7 +69,6 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     protected boolean collectTrainingStats;
     protected int rddDataSetNumExamples;
-    protected int batchSizePerWorker;
 
     // TODO: this option should be abstracted, if we decide to generalize this trainingmaster
     protected double threshold;
@@ -92,10 +91,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         // just a stub for ser/de
     }
 
-    public SharedTrainingMaster(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers, RDDTrainingApproach rddTrainingApproach, StorageLevel storageLevel, boolean collectTrainingStats, RepartitionStrategy repartitionStrategy, Repartition repartition, double threshold) {
+    public SharedTrainingMaster(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers, RDDTrainingApproach rddTrainingApproach, StorageLevel storageLevel, boolean collectTrainingStats, RepartitionStrategy repartitionStrategy, Repartition repartition, double threshold, int batchSizePerWorker) {
         this.voidConfiguration = voidConfiguration;
-        this.repartition = repartition;
-        this.repartitionStrategy = repartitionStrategy;
         this.numWorkers = numWorkers;
         this.rddTrainingApproach = rddTrainingApproach;
         this.repartitionStrategy = repartitionStrategy;
@@ -104,6 +101,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         this.collectTrainingStats = collectTrainingStats;
         this.threshold = threshold;
         this.isFirstRun = new AtomicBoolean(false);
+        this.batchSizePerWorker = batchSizePerWorker;
+        this.rddDataSetNumExamples = batchSizePerWorker;
 
         if (collectTrainingStats)
             stats = new ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper();
@@ -234,8 +233,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     }
 
     protected int numObjectsEachWorker(int numExamplesEachRddObject) {
-        // FIXME !!!!!!!!1111oneone1eleven
-        return 0;//batchSizePerWorker * averagingFrequency / numExamplesEachRddObject;
+        return batchSizePerWorker / numExamplesEachRddObject;
     }
 
     protected int getNumDataSetObjectsPerSplit(int numExamplesEachRddObject) {
@@ -802,6 +800,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         protected Integer numWorkers;
         protected boolean collectTrainingStats;
         protected Transport transport;
+        protected int batchSize;
 
         public Builder(int rddDataSetNumExamples) {
             this(1e-3, rddDataSetNumExamples);
@@ -938,6 +937,17 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         /**
+         * Batch size
+         *
+         * @param batchSize
+         * @return
+         */
+        public Builder batchSizePerWorker(int batchSize) {
+            this.batchSize = batchSize;
+            return this;
+        }
+
+        /**
          * Optional method: Transport implementation to be used as TransportType.CUSTOM for VoidParameterAveraging method
          *
          * @param transport
@@ -949,7 +959,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         public SharedTrainingMaster build() {
-            SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach, storageLevel, true, repartitionStrategy, repartition, threshold);
+            SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach, storageLevel, true, repartitionStrategy, repartition, threshold, batchSize);
             if (transport != null)
                 master.transport = this.transport;
 

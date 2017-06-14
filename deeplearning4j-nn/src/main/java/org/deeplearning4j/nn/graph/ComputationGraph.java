@@ -353,6 +353,8 @@ public class ComputationGraph implements Serializable, Model {
         if (initCalled)
             return;
 
+        log.info("Starting ComputationGraph with WorkspaceModes set to [training: {}; inference: {}]", configuration.getTrainingWorkspaceMode(), configuration.getInferenceWorkspaceMode());
+
         //First: build topological ordering, based on configuration. Used for forward pass, backprop and order of parameters/gradients
         topologicalOrder = topologicalSortOrder();
 

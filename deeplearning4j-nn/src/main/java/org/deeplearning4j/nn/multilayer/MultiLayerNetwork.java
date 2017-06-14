@@ -461,6 +461,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
         if (initCalled)
             return;
 
+        log.info("Starting MultiLayerNetwork with WorkspaceModes set to [training: {}; inference: {}]", layerWiseConfigurations.getTrainingWorkspaceMode(), layerWiseConfigurations.getInferenceWorkspaceMode());
+
         int nLayers = getnLayers();
 
         if (nLayers < 1)
