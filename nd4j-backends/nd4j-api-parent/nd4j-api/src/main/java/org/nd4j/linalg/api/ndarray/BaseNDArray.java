@@ -2042,9 +2042,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int[] shape = resolution.getShapes();
         int[] stride = resolution.getStrides();
 
-        System.out.println("DENSE: offsets ["+offsets[0]+", "+offsets[1]+
-        "], shape [+"+shape[0]+", "+ shape[1]+"],"
-        +" stride [" + stride[0]+", "+ stride[1]+"], offset "+ resolution.getOffset());
+        //System.out.println("DENSE: offsets ["+offsets[0]+", "+offsets[1]+
+        //"], shape [+"+shape[0]+", "+ shape[1]+"],"
+        //+" stride [" + stride[0]+", "+ stride[1]+"], offset "+ resolution.getOffset());
 
         if (offset() + resolution.getOffset() >= Integer.MAX_VALUE)
             throw new IllegalArgumentException("Offset of array can not be >= Integer.MAX_VALUE");
@@ -3990,7 +3990,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                         || isColumnVector() && indexes[1] instanceof PointIndex && indexes[0].offset() == 0
                                         && indexes[0] instanceof NDArrayIndexAll)))
             return this;
-
 
         indexes = NDArrayIndex.resolve(shapeInfoDataBuffer(), indexes);
         ShapeOffsetResolution resolution = new ShapeOffsetResolution(this);

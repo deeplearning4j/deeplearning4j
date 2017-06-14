@@ -24,9 +24,9 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
     public BaseSparseNDArrayCOO(double[] values, int[][] indices, int[] shape){
 
-        checkArgument(indices.length == shape.length);
-        checkArgument(values.length == indices[0].length);
-        ;
+        checkArgument(indices[0].length == shape.length);
+        checkArgument(values.length == indices.length);
+
         // TODO - check if the coordinates are correctly sorted
         this.values = Nd4j.createBuffer(values);
         this.indices = Nd4j.createBuffer(ArrayUtil.flatten(indices));
@@ -346,6 +346,10 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     @Override
     public DataBuffer data(){
         return values;
+    }
+
+    public DataBuffer getIndices(){
+        return indices;
     }
 
     /**

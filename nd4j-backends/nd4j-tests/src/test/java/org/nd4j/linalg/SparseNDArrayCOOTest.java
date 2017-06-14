@@ -2,12 +2,17 @@ package org.nd4j.linalg;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.ndarray.BaseSparseNDArray;
 import org.nd4j.linalg.api.ndarray.BaseSparseNDArrayCOO;
 import org.nd4j.linalg.api.ndarray.BaseSparseNDArrayCSR;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.util.ArrayUtil;
 
+import javax.sound.midi.Soundbank;
 import java.sql.DatabaseMetaData;
 
 import static org.junit.Assert.*;
@@ -66,10 +71,17 @@ public class SparseNDArrayCOOTest {
         INDArray denseView = array.get(NDArrayIndex.interval(0,2), NDArrayIndex.interval(0, 2));
 
         // test with sparse :
-        INDArray sparseNDArray;
+        double[] values = {1, 2, 3, 4};
+        int[][] indices = {{0,3},{1, 2}, {2, 1}, {3, 4}};
+        INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new int[]{5, 5});
 
         // subarray in the top right corner
-        BaseSparseNDArrayCSR sparseView ;
+        BaseSparseNDArrayCOO sparseView = (BaseSparseNDArrayCOO) sparseNDArray.get(NDArrayIndex.interval(0,2), NDArrayIndex.interval(0, 2));
+        assertEquals(denseView.shapeInfoDataBuffer(), sparseView.shapeInfoDataBuffer());
+        double[] currentValues = sparseView.data().asDouble();
+        assertArrayEquals(values, currentValues, 1e-5);
+
+        assertArrayEquals(ArrayUtil.flatten(indices), sparseView.getIndices().asInt());
     }
 
     @Test
@@ -126,8 +138,31 @@ public class SparseNDArrayCOOTest {
         // Test with dense ndarray
         double[] data = {0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0};
         INDArray array = Nd4j.create(data, new int[]{5,5}, 0, 'c');
-        System.out.println("dense matrix: \n" + array.toString());
         INDArray denseView = array.get(NDArrayIndex.interval(1, 4), NDArrayIndex.point(2));
+        System.out.println("dense matrix: \n" + array.toString());
 
+    }
+
+    @Test
+    public void shouldTakeView3dimensionArray(){
+        double[] data = new double[]{2, 0, 0, 0, 0, 1, 4, 3};
+        int[] shape = new int[]{2, 2, 2};
+        INDArray array = Nd4j.create(data, shape, 0, 'c');
+        System.out.println("GET");
+        INDArray denseView = array.get(NDArrayIndex.all(), NDArrayIndex.point(1), NDArrayIndex.point(1));
+        System.out.println("Shape info full array : " + array.shapeInfoDataBuffer().toString());
+        System.out.println("dense matrix: \n" + array.toString());
+        System.out.println("Shape info view : " + denseView.shapeInfoDataBuffer().toString());
+        System.out.println("dense view: \n" + denseView.toString());
+        assert(denseView.isColumnVector());
+
+    }
+
+    @Test
+    public void rdm(){
+        INDArray arr = Nd4j.rand(new int[]{2, 3, 4, 5});
+        INDArray v = arr.get(NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.interval(2,3), NDArrayIndex.interval(1, 3));
+        System.out.println(arr);
+        System.out.println(v);
     }
 }
