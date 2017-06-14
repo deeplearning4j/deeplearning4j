@@ -16,13 +16,17 @@ import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.indexing.conditions.IsNaN;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.*;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Alex on 04/11/2016.
@@ -245,17 +249,22 @@ public class ROCTest {
         labels3d.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all())
                         .assign(actual2d.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()));
 
-        ROC rocExp = new ROC(10);
-        rocExp.eval(actual2d, predictions2d);
+        for( int steps : new int[]{10, 0}) {        //0 steps: exact
+            ROC rocExp = new ROC(steps);
+            rocExp.eval(actual2d, predictions2d);
 
-        ROC rocAct = new ROC(10);
-        rocAct.evalTimeSeries(labels3d, predictions3d);
+            ROC rocAct = new ROC(steps);
+            rocAct.evalTimeSeries(labels3d, predictions3d);
 
-        assertEquals(rocExp.calculateAUC(), rocAct.calculateAUC(), 1e-6);
-        List<ROC.ROCValue> expValues = rocExp.getResults();
-        List<ROC.ROCValue> actValues = rocAct.getResults();
+            assertEquals(rocExp.calculateAUC(), rocAct.calculateAUC(), 1e-6);
 
-        assertEquals(expValues, actValues);
+            if(steps > 0) {
+                List<ROC.ROCValue> expValues = rocExp.getResults();
+                List<ROC.ROCValue> actValues = rocAct.getResults();
+
+                assertEquals(expValues, actValues);
+            }
+        }
     }
 
     @Test
@@ -293,17 +302,21 @@ public class ROCTest {
         mask.get(NDArrayIndex.point(1), NDArrayIndex.all()).assign(1);
 
 
-        ROC rocExp = new ROC(10);
-        rocExp.eval(actual2d, predictions2d);
+        for( int steps : new int[]{20, 0}) {        //0 steps: exact
+            ROC rocExp = new ROC(steps);
+            rocExp.eval(actual2d, predictions2d);
 
-        ROC rocAct = new ROC(10);
-        rocAct.evalTimeSeries(labels3d, predictions3d, mask);
+            ROC rocAct = new ROC(steps);
+            rocAct.evalTimeSeries(labels3d, predictions3d, mask);
 
-        assertEquals(rocExp.calculateAUC(), rocAct.calculateAUC(), 1e-6);
-        List<ROC.ROCValue> expValues = rocExp.getResults();
-        List<ROC.ROCValue> actValues = rocAct.getResults();
+            assertEquals(rocExp.calculateAUC(), rocAct.calculateAUC(), 1e-6);
+            if(steps > 0) {
+                List<ROC.ROCValue> expValues = rocExp.getResults();
+                List<ROC.ROCValue> actValues = rocAct.getResults();
 
-        assertEquals(expValues, actValues);
+                assertEquals(expValues, actValues);
+            }
+        }
     }
 
 
@@ -324,25 +337,26 @@ public class ROCTest {
             labels.putScalar(i, r.nextInt(2), 1.0);
         }
 
-        int numSteps = 30;
-        ROC roc = new ROC(numSteps);
-        roc.eval(labels, predictions);
+        for( int numSteps : new int[]{30, 0}) { //Steps = 0: exact
+            ROC roc = new ROC(numSteps);
+            roc.eval(labels, predictions);
 
-        ROCMultiClass rocMultiClass = new ROCMultiClass(numSteps);
-        rocMultiClass.eval(labels, predictions);
+            ROCMultiClass rocMultiClass = new ROCMultiClass(numSteps);
+            rocMultiClass.eval(labels, predictions);
 
-        double auc = roc.calculateAUC();
-        double auc1 = rocMultiClass.calculateAUC(1);
+            double auc = roc.calculateAUC();
+            double auc1 = rocMultiClass.calculateAUC(1);
 
-        assertEquals(auc, auc1, 1e-6);
+            assertEquals(auc, auc1, 1e-6);
 
-        double[][] rocPoints = roc.getResultsAsArray();
-        double[][] rocPoints0 = rocMultiClass.getResultsAsArray(1);
+            double[][] rocPoints = roc.getResultsAsArray();
+            double[][] rocPoints0 = rocMultiClass.getResultsAsArray(1);
 
-        assertEquals(rocPoints.length, rocPoints0.length);
-        for (int i = 0; i < rocPoints[0].length; i++) {
-            assertEquals(rocPoints[0][i], rocPoints0[0][i], 1e-6);
-            assertEquals(rocPoints[1][i], rocPoints0[1][i], 1e-6);
+            assertEquals(rocPoints.length, rocPoints0.length);
+            for (int i = 0; i < rocPoints[0].length; i++) {
+                assertEquals(rocPoints[0][i], rocPoints0[0][i], 1e-6);
+                assertEquals(rocPoints[1][i], rocPoints0[1][i], 1e-6);
+            }
         }
     }
 
@@ -373,73 +387,80 @@ public class ROCTest {
         labels2.getColumn(0).addi(labels3.getColumn(1));
         labels2.getColumn(1).addi(labels3.getColumn(2));
 
-        int numSteps = 30;
+        for(int numSteps : new int[]{30, 0}) {  //Steps = 0: exact
 
-        ROCMultiClass rocMultiClass3 = new ROCMultiClass(numSteps);
-        ROCMultiClass rocMultiClass2 = new ROCMultiClass(numSteps);
+            ROCMultiClass rocMultiClass3 = new ROCMultiClass(numSteps);
+            ROCMultiClass rocMultiClass2 = new ROCMultiClass(numSteps);
 
-        rocMultiClass3.eval(labels3, predictions3);
-        rocMultiClass2.eval(labels2, predictions2);
+            rocMultiClass3.eval(labels3, predictions3);
+            rocMultiClass2.eval(labels2, predictions2);
 
-        double auc3 = rocMultiClass3.calculateAUC(2);
-        double auc2 = rocMultiClass2.calculateAUC(1);
+            double auc3 = rocMultiClass3.calculateAUC(2);
+            double auc2 = rocMultiClass2.calculateAUC(1);
 
-        assertEquals(auc2, auc3, 1e-6);
+            assertEquals(auc2, auc3, 1e-6);
 
-        double[][] roc3 = rocMultiClass3.getResultsAsArray(2);
-        double[][] roc2 = rocMultiClass2.getResultsAsArray(1);
+            double[][] roc3 = rocMultiClass3.getResultsAsArray(2);
+            double[][] roc2 = rocMultiClass2.getResultsAsArray(1);
 
-        assertEquals(2, roc3.length);
-        assertEquals(2, roc2.length);
+            assertEquals(2, roc3.length);
+            assertEquals(2, roc2.length);
 
-        assertArrayEquals(roc2[0], roc3[0], 1e-6);
-        assertArrayEquals(roc2[1], roc3[1], 1e-6);
+            assertArrayEquals(roc2[0], roc3[0], 1e-6);
+            assertArrayEquals(roc2[1], roc3[1], 1e-6);
+        }
     }
 
     @Test
     public void testROCMerging() {
-
         int nArrays = 10;
         int minibatch = 64;
         int nROCs = 3;
-        int steps = 20;
 
-        Nd4j.getRandom().setSeed(12345);
-        Random r = new Random(12345);
+        for( int steps : new int[]{0}) {        //0 steps: exact
+//            int steps = 20;
 
-        List<ROC> rocList = new ArrayList<>();
-        for (int i = 0; i < nROCs; i++) {
-            rocList.add(new ROC(steps));
-        }
+            Nd4j.getRandom().setSeed(12345);
+            Random r = new Random(12345);
 
-        ROC single = new ROC(steps);
-        for (int i = 0; i < nArrays; i++) {
-            INDArray p = Nd4j.rand(minibatch, 2);
-            p.diviColumnVector(p.sum(1));
-
-            INDArray l = Nd4j.zeros(minibatch, 2);
-            for (int j = 0; j < minibatch; j++) {
-                l.putScalar(j, r.nextInt(2), 1.0);
+            List<ROC> rocList = new ArrayList<>();
+            for (int i = 0; i < nROCs; i++) {
+                rocList.add(new ROC(steps));
             }
 
-            single.eval(l, p);
+            ROC single = new ROC(steps);
+            for (int i = 0; i < nArrays; i++) {
+                INDArray p = Nd4j.rand(minibatch, 2);
+                p.diviColumnVector(p.sum(1));
 
-            ROC other = rocList.get(i % rocList.size());
-            other.eval(l, p);
+                INDArray l = Nd4j.zeros(minibatch, 2);
+                for (int j = 0; j < minibatch; j++) {
+                    l.putScalar(j, r.nextInt(2), 1.0);
+                }
+
+                single.eval(l, p);
+
+                ROC other = rocList.get(i % rocList.size());
+                other.eval(l, p);
+            }
+
+            ROC first = rocList.get(0);
+            for (int i = 1; i < nROCs; i++) {
+                first.merge(rocList.get(i));
+            }
+
+            double singleAUC = single.calculateAUC();
+            assertTrue(singleAUC >= 0.0 && singleAUC <= 1.0);
+            assertEquals(singleAUC, first.calculateAUC(), 1e-6);
+
+            if(steps > 0) {
+                double[][] rocSingle = single.getResultsAsArray();
+                double[][] rocMerge = first.getResultsAsArray();
+
+                assertArrayEquals(rocSingle[0], rocMerge[0], 1e-6);
+                assertArrayEquals(rocSingle[1], rocMerge[1], 1e-6);
+            }
         }
-
-        ROC first = rocList.get(0);
-        for (int i = 1; i < nROCs; i++) {
-            first.merge(rocList.get(i));
-        }
-
-        assertEquals(single.calculateAUC(), first.calculateAUC(), 1e-6);
-
-        double[][] rocSingle = single.getResultsAsArray();
-        double[][] rocMerge = first.getResultsAsArray();
-
-        assertArrayEquals(rocSingle[0], rocMerge[0], 1e-6);
-        assertArrayEquals(rocSingle[1], rocMerge[1], 1e-6);
     }
 
 
@@ -450,46 +471,49 @@ public class ROCTest {
         int minibatch = 64;
         int nROCs = 3;
         int nClasses = 3;
-        int steps = 20;
 
-        Nd4j.getRandom().setSeed(12345);
-        Random r = new Random(12345);
+        for( int steps : new int[]{20, 0}) {        //0 steps: exact
+//            int steps = 20;
 
-        List<ROCMultiClass> rocList = new ArrayList<>();
-        for (int i = 0; i < nROCs; i++) {
-            rocList.add(new ROCMultiClass(steps));
-        }
+            Nd4j.getRandom().setSeed(12345);
+            Random r = new Random(12345);
 
-        ROCMultiClass single = new ROCMultiClass(steps);
-        for (int i = 0; i < nArrays; i++) {
-            INDArray p = Nd4j.rand(minibatch, nClasses);
-            p.diviColumnVector(p.sum(1));
-
-            INDArray l = Nd4j.zeros(minibatch, nClasses);
-            for (int j = 0; j < minibatch; j++) {
-                l.putScalar(j, r.nextInt(nClasses), 1.0);
+            List<ROCMultiClass> rocList = new ArrayList<>();
+            for (int i = 0; i < nROCs; i++) {
+                rocList.add(new ROCMultiClass(steps));
             }
 
-            single.eval(l, p);
+            ROCMultiClass single = new ROCMultiClass(steps);
+            for (int i = 0; i < nArrays; i++) {
+                INDArray p = Nd4j.rand(minibatch, nClasses);
+                p.diviColumnVector(p.sum(1));
 
-            ROCMultiClass other = rocList.get(i % rocList.size());
-            other.eval(l, p);
-        }
+                INDArray l = Nd4j.zeros(minibatch, nClasses);
+                for (int j = 0; j < minibatch; j++) {
+                    l.putScalar(j, r.nextInt(nClasses), 1.0);
+                }
 
-        ROCMultiClass first = rocList.get(0);
-        for (int i = 1; i < nROCs; i++) {
-            first.merge(rocList.get(i));
-        }
+                single.eval(l, p);
 
-        for (int i = 0; i < nClasses; i++) {
+                ROCMultiClass other = rocList.get(i % rocList.size());
+                other.eval(l, p);
+            }
 
-            assertEquals(single.calculateAUC(i), first.calculateAUC(i), 1e-6);
+            ROCMultiClass first = rocList.get(0);
+            for (int i = 1; i < nROCs; i++) {
+                first.merge(rocList.get(i));
+            }
 
-            double[][] rocSingle = single.getResultsAsArray(i);
-            double[][] rocMerge = first.getResultsAsArray(i);
+            for (int i = 0; i < nClasses; i++) {
 
-            assertArrayEquals(rocSingle[0], rocMerge[0], 1e-6);
-            assertArrayEquals(rocSingle[1], rocMerge[1], 1e-6);
+                assertEquals(single.calculateAUC(i), first.calculateAUC(i), 1e-6);
+
+                double[][] rocSingle = single.getResultsAsArray(i);
+                double[][] rocMerge = first.getResultsAsArray(i);
+
+                assertArrayEquals(rocSingle[0], rocMerge[0], 1e-6);
+                assertArrayEquals(rocSingle[1], rocMerge[1], 1e-6);
+            }
         }
     }
 
@@ -517,22 +541,25 @@ public class ROCTest {
             net.fit(ds);
         }
 
-        ROCMultiClass roc = net.evaluateROCMultiClass(iter, 32);
+        for( int steps : new int[]{32, 0}){ //Steps = 0: exact
 
-        INDArray f = ds.getFeatures();
-        INDArray l = ds.getLabels();
-        INDArray out = net.output(f);
-        ROCMultiClass manual = new ROCMultiClass(32);
-        manual.eval(l, out);
+            ROCMultiClass roc = net.evaluateROCMultiClass(iter, steps);
 
-        for (int i = 0; i < 3; i++) {
-            assertEquals(manual.calculateAUC(i), roc.calculateAUC(i), 1e-6);
+            INDArray f = ds.getFeatures();
+            INDArray l = ds.getLabels();
+            INDArray out = net.output(f);
+            ROCMultiClass manual = new ROCMultiClass(steps);
+            manual.eval(l, out);
 
-            double[][] rocCurve = roc.getResultsAsArray(i);
-            double[][] rocManual = manual.getResultsAsArray(i);
+            for (int i = 0; i < 3; i++) {
+                assertEquals(manual.calculateAUC(i), roc.calculateAUC(i), 1e-6);
 
-            assertArrayEquals(rocCurve[0], rocManual[0], 1e-6);
-            assertArrayEquals(rocCurve[1], rocManual[1], 1e-6);
+                double[][] rocCurve = roc.getResultsAsArray(i);
+                double[][] rocManual = manual.getResultsAsArray(i);
+
+                assertArrayEquals(rocCurve[0], rocManual[0], 1e-6);
+                assertArrayEquals(rocCurve[1], rocManual[1], 1e-6);
+            }
         }
     }
 
@@ -544,27 +571,36 @@ public class ROCTest {
         //at threshold 0.331 to 0.66: tp=1, fp=0, fn=1, tn=1 prec=1/1=1, recall=1/2=0.5
         //at threshold 0.661 to 1.0:  tp=0, fp=0, fn=2, tn=1 prec=0/0=1, recall=0/2=0
 
-        //area: 1.0
-        ROC r = new ROC(10);
-        INDArray zero = Nd4j.zeros(1);
-        INDArray one = Nd4j.ones(1);
-        r.eval(zero, Nd4j.create(new double[]{0.25}));
-        r.eval(one, Nd4j.create(new double[]{0.33}));
-        r.eval(one, Nd4j.create(new double[]{0.66}));
+        for( int steps : new int[]{10, 0}) {    //0 steps = exact
+            //area: 1.0
+            ROC r = new ROC(10);
+            INDArray zero = Nd4j.zeros(1);
+            INDArray one = Nd4j.ones(1);
+            r.eval(zero, Nd4j.create(new double[]{0.25}));
+            r.eval(one, Nd4j.create(new double[]{0.33}));
+            r.eval(one, Nd4j.create(new double[]{0.66}));
 
-        assertEquals(1.0, r.calculateAUCPR(), 1e-6);
+            assertEquals(1.0, r.calculateAUCPR(), 1e-6);
 
-        //Assume 2 positive examples, at 0.33 and 0.66 predicted, 1 negative example at 0.5 prob
-        //at threshold 0 to 0.33: tp=2, fp=1, fn=0, tn=0 prec=2/(2+1)=0.666, recall=2/2=1.0
-        //at threshold 0.331 to 0.5: tp=1, fp=1, fn=1, tn=0 prec=1/2=0.5, recall=1/2=0.5
-        //at threshold 0.51 to 0.66: tp=1, fp=0, fn=1, tn=1 prec=1/1=1, recall=1/2=0.5
-        //at threshold 0.661 to 1.0:  tp=0, fp=0, fn=2, tn=1 prec=0/0=1, recall=0/2=0
-        //Area: 0.5 + 0.25 + 0.5*0.5*(0.66666-0.5) = 0.5+0.25+0.04165 = 0.79165
-        //But, we use 10 steps so the calculation might not match this exactly, but should be close
-        r = new ROC(10);
-        r.eval(one, Nd4j.create(new double[]{0.33}));
-        r.eval(zero, Nd4j.create(new double[]{0.5}));
-        r.eval(one, Nd4j.create(new double[]{0.66}));
-        assertEquals(0.79165, r.calculateAUCPR(), 1e-4);
+            //Assume 2 positive examples, at 0.33 and 0.66 predicted, 1 negative example at 0.5 prob
+            //at threshold 0 to 0.33: tp=2, fp=1, fn=0, tn=0 prec=2/(2+1)=0.666, recall=2/2=1.0
+            //at threshold 0.331 to 0.5: tp=1, fp=1, fn=1, tn=0 prec=1/2=0.5, recall=1/2=0.5
+            //at threshold 0.51 to 0.66: tp=1, fp=0, fn=1, tn=1 prec=1/1=1, recall=1/2=0.5
+            //at threshold 0.661 to 1.0:  tp=0, fp=0, fn=2, tn=1 prec=0/0=1, recall=0/2=0
+            //Area: 0.5 + 0.25 + 0.5*0.5*(0.66666-0.5) = 0.5+0.25+0.04165 = 0.7916666666667
+            //But, we use 10 steps so the calculation might not match this exactly, but should be close
+            r = new ROC(10);
+            r.eval(one, Nd4j.create(new double[]{0.33}));
+            r.eval(zero, Nd4j.create(new double[]{0.5}));
+            r.eval(one, Nd4j.create(new double[]{0.66}));
+
+            double precision;
+            if(steps == 0){
+                precision = 1e-8;
+            } else {
+                precision = 1e-4;
+            }
+            assertEquals(0.7916666666667, r.calculateAUCPR(), precision);
+        }
     }
 }
