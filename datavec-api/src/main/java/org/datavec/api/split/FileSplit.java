@@ -17,10 +17,17 @@
 package org.datavec.api.split;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.*;
 import org.datavec.api.util.RandomUtils;
+import org.datavec.api.util.files.URIUtil;
 import org.nd4j.linalg.collection.CompactHeapStringList;
 
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 
 /**
@@ -81,7 +88,9 @@ public class FileSplit extends BaseInputSplit {
             // translated to existed locations
             throw new IllegalArgumentException("No such file or directory: " + rootDir.getAbsolutePath());
         else if (rootDir.isDirectory()) {
-            subFiles = FileUtils.listFiles(rootDir, allowFormat, recursive);
+            subFiles = new LinkedList<>();
+            listFiles(subFiles, rootDir.toPath(), allowFormat, recursive);
+
             uriStrings = new CompactHeapStringList();
 
             if (randomize) {
@@ -92,8 +101,8 @@ public class FileSplit extends BaseInputSplit {
                 RandomUtils.shuffleInPlace(iterationOrder, random);
             }
             for (File f : subFiles) {
-                uriStrings.add(f.toURI().toString());
-                length += f.length();
+                uriStrings.add(URIUtil.fileToURI(f).toString());
+                ++length;
             }
         } else {
             // Lists one file
@@ -129,6 +138,34 @@ public class FileSplit extends BaseInputSplit {
 
     public File getRootDir() {
         return rootDir;
+    }
+
+    private Collection<File> listFiles(Collection<File> fileNames, Path dir, String[] allowedFormats, boolean recursive) {
+        IOFileFilter filter;
+        if(allowedFormats==null) {
+            filter = new RegexFileFilter(".*");
+        } else {
+            filter = new SuffixFileFilter(allowedFormats);
+        }
+
+        try(DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+            for (Path path : stream) {
+                if(Files.isDirectory(path) && recursive) {
+                    listFiles(fileNames, path, allowedFormats, recursive);
+                } else {
+                    if(allowedFormats==null) {
+                        fileNames.add(path.toFile());
+                    } else {
+                        if (filter.accept(path.toFile())) {
+                            fileNames.add(path.toFile());
+                        }
+                    }
+                }
+            }
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+        return fileNames;
     }
 }
 

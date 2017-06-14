@@ -44,6 +44,11 @@ public class DoubleWritable implements WritableComparable {
         value = in.readDouble();
     }
 
+    @Override
+    public void writeType(DataOutput out) throws IOException {
+        out.writeShort(WritableType.Double.typeIdx());
+    }
+
     public void write(DataOutput out) throws IOException {
         out.writeDouble(value);
     }

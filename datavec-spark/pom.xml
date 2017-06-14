@@ -101,6 +101,12 @@
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.11</artifactId>
             <version>${spark.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>jsr305</artifactId>
+              </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -108,6 +114,22 @@
             <artifactId>datavec-api</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.clearspring.analytics</groupId>
+            <artifactId>stream</artifactId>
+            <version>${stream.analytics.version}</version>
+        </dependency>
+
+        <!-- For map/sequence file integrations -->
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-hadoop</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+
+
+        <!-- Test scope dependencies -->
 
         <dependency>
             <groupId>org.datavec</groupId>
@@ -135,12 +157,6 @@
             <artifactId>nd4j-native</artifactId>
             <version>${nd4j.version}</version>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.clearspring.analytics</groupId>
-            <artifactId>stream</artifactId>
-            <version>${stream.analytics.version}</version>
         </dependency>
     </dependencies>
 

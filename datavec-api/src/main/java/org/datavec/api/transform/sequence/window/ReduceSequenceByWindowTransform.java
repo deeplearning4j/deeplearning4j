@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.sequence.window;
 
+import org.datavec.api.transform.ops.IAggregableReduceOp;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
@@ -23,7 +24,7 @@ import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.Transform;
-import org.datavec.api.transform.reduce.IReducer;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.schema.SequenceSchema;
 
 import java.util.ArrayList;
@@ -40,11 +41,11 @@ import java.util.List;
 @EqualsAndHashCode(exclude = {"inputSchema"})
 public class ReduceSequenceByWindowTransform implements Transform {
 
-    private IReducer reducer;
+    private IAssociativeReducer reducer;
     private WindowFunction windowFunction;
     private Schema inputSchema;
 
-    public ReduceSequenceByWindowTransform(@JsonProperty("reducer") IReducer reducer,
+    public ReduceSequenceByWindowTransform(@JsonProperty("reducer") IAssociativeReducer reducer,
                     @JsonProperty("windowFunction") WindowFunction windowFunction) {
         this.reducer = reducer;
         this.windowFunction = windowFunction;
@@ -92,8 +93,9 @@ public class ReduceSequenceByWindowTransform implements Transform {
         List<List<Writable>> out = new ArrayList<>();
 
         for (List<List<Writable>> window : sequenceAsWindows) {
-            List<Writable> reduced = reducer.reduce(window);
-            out.add(reduced);
+            IAggregableReduceOp<List<Writable>, List<Writable>> accu = reducer.aggregableReducer();
+            for (List<Writable> l: window) accu.accept(l);
+            out.add(accu.get());
         }
 
         return out;

@@ -97,6 +97,10 @@
           <groupId>com.google.guava</groupId>
         </exclusion>
         <exclusion>
+          <artifactId>annotations</artifactId>
+          <groupId>com.google.code.findbugs</groupId>
+        </exclusion>
+        <exclusion>
           <artifactId>snakeyaml</artifactId>
           <groupId>org.yaml</groupId>
         </exclusion>

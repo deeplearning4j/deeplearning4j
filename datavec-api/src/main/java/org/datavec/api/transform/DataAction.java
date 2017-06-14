@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform;
 
+import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import lombok.Data;
 import org.datavec.api.transform.filter.Filter;
@@ -24,7 +25,7 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.sequence.ConvertFromSequence;
 import org.datavec.api.transform.sequence.ConvertToSequence;
 import org.datavec.api.transform.sequence.SequenceSplit;
-import org.datavec.api.transform.reduce.IReducer;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
 
 import java.io.Serializable;
 
@@ -43,7 +44,7 @@ public class DataAction implements Serializable {
     private ConvertToSequence convertToSequence;
     private ConvertFromSequence convertFromSequence;
     private SequenceSplit sequenceSplit;
-    private IReducer reducer;
+    private IAssociativeReducer reducer;
     private CalculateSortedRank calculateSortedRank;
 
     public DataAction() {
@@ -70,7 +71,7 @@ public class DataAction implements Serializable {
         this.sequenceSplit = sequenceSplit;
     }
 
-    public DataAction(IReducer reducer) {
+    public DataAction(IAssociativeReducer reducer) {
         this.reducer = reducer;
     }
 

@@ -19,7 +19,8 @@ package org.datavec.api.transform.sequence;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
-import org.datavec.api.transform.reduce.IReducer;
+import org.datavec.api.transform.ops.IAggregableReduceOp;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.sequence.window.WindowFunction;
@@ -42,10 +43,10 @@ import java.util.List;
 @EqualsAndHashCode(exclude = {"inputSchema"})
 public class ReduceSequenceTransform implements Transform {
 
-    private IReducer reducer;
+    private IAssociativeReducer reducer;
     private Schema inputSchema;
 
-    public ReduceSequenceTransform(@JsonProperty("reducer") IReducer reducer) {
+    public ReduceSequenceTransform(@JsonProperty("reducer") IAssociativeReducer reducer) {
         this.reducer = reducer;
     }
 
@@ -81,7 +82,9 @@ public class ReduceSequenceTransform implements Transform {
 
     @Override
     public List<List<Writable>> mapSequence(List<List<Writable>> sequence) {
-        return Collections.singletonList(reducer.reduce(sequence));
+        IAggregableReduceOp<List<Writable>, List<Writable>> accu = reducer.aggregableReducer();
+        for (List<Writable> l : sequence) accu.accept(l);
+        return Collections.singletonList(accu.get());
     }
 
     /**

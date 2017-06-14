@@ -16,7 +16,7 @@
 
 package org.datavec.api.transform;
 
-import org.datavec.api.transform.reduce.ColumnReduction;
+import org.datavec.api.transform.reduce.AggregableColumnReduction;
 import org.datavec.api.transform.reduce.Reducer;
 
 /**ReduceOp defines the type of column reductions that can be used when reducing
@@ -34,14 +34,20 @@ import org.datavec.api.transform.reduce.Reducer;
  * TakeLast: Take the last possible value in the list<br>
  *
  * <b>Note</b>: For custom reduction operations with {@link Reducer}
- * , use the {@link ColumnReduction}
+ * , use the {@link AggregableColumnReduction}
  * functionality.
  *
  * @author Alex Black
  */
 public enum ReduceOp {
     Prod, Min, Max, Range, //Max - Min
-    Sum, Mean, Stdev, Count, CountUnique, TakeFirst, //First value
+    Append, Prepend, // String operations : concatenate, concatenate with commuted arguments
+    Sum, Mean,
+    Stdev,  // with Bessel's correction
+    UncorrectedStdDev, //without
+    Variance, // with Bessel's correction
+    PopulationVariance, // without
+    Count, CountUnique, TakeFirst, //First value
     TakeLast //Last value
 
 }

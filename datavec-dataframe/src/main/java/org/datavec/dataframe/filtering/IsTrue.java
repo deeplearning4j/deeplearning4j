@@ -3,7 +3,7 @@ package org.datavec.dataframe.filtering;
 import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.util.Selection;
 
-import javax.annotation.concurrent.Immutable;
+import net.jcip.annotations.Immutable;
 
 /**
  * A boolean filtering. For symmetry with IsFalse

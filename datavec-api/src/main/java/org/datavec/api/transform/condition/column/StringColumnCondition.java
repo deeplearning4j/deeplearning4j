@@ -22,6 +22,7 @@ import org.datavec.api.transform.condition.SequenceConditionMode;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.condition.ConditionOp;
 
+import java.util.List;
 import java.util.Set;
 
 /**

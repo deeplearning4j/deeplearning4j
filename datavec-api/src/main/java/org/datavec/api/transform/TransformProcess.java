@@ -24,6 +24,8 @@ import org.datavec.api.transform.sequence.*;
 import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
 import org.datavec.api.transform.transform.integer.IntegerToOneHotTransform;
 import org.datavec.api.transform.transform.sequence.SequenceMovingWindowReduceTransform;
+import org.datavec.api.transform.transform.sequence.SequenceOffsetTransform;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.transform.string.AppendStringColumnTransform;
 import org.datavec.api.transform.transform.string.ConvertToString;
 import org.datavec.api.transform.transform.string.ReplaceStringTransform;
@@ -72,7 +74,7 @@ import org.datavec.api.transform.analysis.columns.NumericalColumnAnalysis;
 import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
 import lombok.Data;
 import org.datavec.api.transform.analysis.DataAnalysis;
-import org.datavec.api.transform.reduce.IReducer;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
 import org.datavec.api.writable.comparator.WritableComparator;
@@ -138,7 +140,7 @@ public class TransformProcess implements Serializable {
                 d.getSequenceSplit().setInputSchema(currInputSchema);
                 continue; //no change to sequence schema
             } else if (d.getReducer() != null) {
-                IReducer reducer = d.getReducer();
+                IAssociativeReducer reducer = d.getReducer();
                 reducer.setInputSchema(currInputSchema);
                 currInputSchema = reducer.transform(currInputSchema);
             } else if (d.getCalculateSortedRank() != null) {
@@ -202,7 +204,7 @@ public class TransformProcess implements Serializable {
             } else if (d.getSequenceSplit() != null) {
                 continue; //Sequence split -> no change to schema
             } else if (d.getReducer() != null) {
-                IReducer reducer = d.getReducer();
+                IAssociativeReducer reducer = d.getReducer();
                 currInputSchema = reducer.transform(currInputSchema);
             } else if (d.getCalculateSortedRank() != null) {
                 CalculateSortedRank csr = d.getCalculateSortedRank();
@@ -269,9 +271,9 @@ public class TransformProcess implements Serializable {
                 currValues = t.mapSequence(currValues);
 
             } else if (d.getFilter() != null) {
-                //                Filter f = d.getFilter();
-                //                if (f.removeExample(currValues)) return null;
-                throw new RuntimeException("Sequence filtering not yet implemnted here");
+                if(d.getFilter().removeSequence(currValues)){
+                    return null;
+                }
             } else if (d.getConvertToSequence() != null) {
                 throw new RuntimeException(
                                 "Cannot execute examples individually: TransformProcess contains a ConvertToSequence operation");
@@ -282,7 +284,7 @@ public class TransformProcess implements Serializable {
                 throw new RuntimeException(
                                 "Cannot execute examples individually: TransformProcess contains a SequenceSplit operation");
             } else {
-                throw new RuntimeException("Unknown action: " + d);
+                throw new RuntimeException("Unknown or not supported action: " + d);
             }
         }
 
@@ -384,7 +386,7 @@ public class TransformProcess implements Serializable {
         //Register concrete subtypes for JSON serialization
 
         List<Class<?>> classes =
-                        Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IReducer.class);
+                        Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IAssociativeReducer.class);
         List<String> classNames = new ArrayList<>(6);
         for (Class<?> c : classes)
             classNames.add(c.getName());
@@ -393,7 +395,7 @@ public class TransformProcess implements Serializable {
 
         if (subtypesClassCache == null) {
             List<Class<?>> interfaces =
-                            Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IReducer.class);
+                            Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IAssociativeReducer.class);
             List<Class<?>> classesList = Arrays.<Class<?>>asList();
 
             Collection<URL> urls = ClasspathHelper.forClassLoader();
@@ -986,6 +988,21 @@ public class TransformProcess implements Serializable {
             return this;
         }
 
+        /**
+         * Perform a sequence of operation on the specified columns. Note that this also truncates sequences by the
+         * specified offset amount by default. Use {@code transform(new SequenceOffsetTransform(...)} to change this.
+         * See {@link SequenceOffsetTransform} for details on exactly what this operation does and how.
+         *
+         * @param columnsToOffset Columns to offset
+         * @param offsetAmount    Amount to offset the specified columns by (positive offset: 'columnsToOffset' are
+         *                        moved to later time steps)
+         * @param operationType   Whether the offset should be done in-place or by adding a new column
+         */
+        public Builder offsetSequence(List<String> columnsToOffset, int offsetAmount, SequenceOffsetTransform.OperationType operationType){
+            return transform(new SequenceOffsetTransform(columnsToOffset, offsetAmount, operationType,
+                    SequenceOffsetTransform.EdgeHandling.TrimSequence, null));
+        }
+
 
         /**
          * Reduce (i.e., aggregate/combine) a set of examples (typically by key).
@@ -993,7 +1010,7 @@ public class TransformProcess implements Serializable {
          *
          * @param reducer Reducer to use
          */
-        public Builder reduce(IReducer reducer) {
+        public Builder reduce(IAssociativeReducer reducer) {
             actionList.add(new DataAction(reducer));
             return this;
         }
@@ -1005,7 +1022,7 @@ public class TransformProcess implements Serializable {
          *
          * @param reducer        Reducer to use to reduce each window
          */
-        public Builder reduceSequence(IReducer reducer) {
+        public Builder reduceSequence(IAssociativeReducer reducer) {
             actionList.add(new DataAction(new ReduceSequenceTransform(reducer)));
             convertFromSequence();
             return this;
@@ -1019,7 +1036,7 @@ public class TransformProcess implements Serializable {
          * @param reducer        Reducer to use to reduce each window
          * @param windowFunction Window function to find apply on each sequence individually
          */
-        public Builder reduceSequenceByWindow(IReducer reducer, WindowFunction windowFunction) {
+        public Builder reduceSequenceByWindow(IAssociativeReducer reducer, WindowFunction windowFunction) {
             actionList.add(new DataAction(new ReduceSequenceByWindowTransform(reducer, windowFunction)));
             return this;
         }

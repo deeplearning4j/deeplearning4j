@@ -16,6 +16,7 @@
 
 package org.datavec.spark.transform.utils;
 
+import org.apache.hadoop.conf.Configuration;
 import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.schema.Schema;
 import org.apache.commons.io.IOUtils;
@@ -79,7 +80,18 @@ public class SparkUtils {
      * @param sc         Spark context
      */
     public static void writeStringToFile(String path, String toWrite, SparkContext sc) throws IOException {
-        FileSystem fileSystem = FileSystem.get(sc.hadoopConfiguration());
+        writeStringToFile(path, toWrite, sc.hadoopConfiguration());
+    }
+
+    /**
+     * Write a String to a file (on HDFS or local) in UTF-8 format
+     *
+     * @param path         Path to write to
+     * @param toWrite      String to write
+     * @param hadoopConfig Hadoop configuration, for example from SparkContext.hadoopConfiguration()
+     */
+    public static void writeStringToFile(String path, String toWrite, Configuration hadoopConfig) throws IOException {
+        FileSystem fileSystem = FileSystem.get(hadoopConfig);
         try (BufferedOutputStream bos = new BufferedOutputStream(fileSystem.create(new Path(path)))) {
             bos.write(toWrite.getBytes("UTF-8"));
         }
@@ -102,7 +114,17 @@ public class SparkUtils {
      * @param sc      Spark context
      */
     public static String readStringFromFile(String path, SparkContext sc) throws IOException {
-        FileSystem fileSystem = FileSystem.get(sc.hadoopConfiguration());
+        return readStringFromFile(path, sc.hadoopConfiguration());
+    }
+
+    /**
+     * Read a UTF-8 format String from HDFS (or local)
+     *
+     * @param path         Path to write the string
+     * @param hadoopConfig Hadoop configuration, for example from SparkContext.hadoopConfiguration()
+     */
+    public static String readStringFromFile(String path, Configuration hadoopConfig) throws IOException {
+        FileSystem fileSystem = FileSystem.get(hadoopConfig);
         try (BufferedInputStream bis = new BufferedInputStream(fileSystem.open(new Path(path)))) {
             byte[] asBytes = IOUtils.toByteArray(bis);
             return new String(asBytes, "UTF-8");
@@ -128,7 +150,18 @@ public class SparkUtils {
      * @param sc         Spark context
      */
     public static void writeObjectToFile(String path, Object toWrite, SparkContext sc) throws IOException {
-        FileSystem fileSystem = FileSystem.get(sc.hadoopConfiguration());
+        writeObjectToFile(path, toWrite, sc.hadoopConfiguration());
+    }
+
+    /**
+     * Write an object to HDFS (or local) using default Java object serialization
+     *
+     * @param path       Path to write the object to
+     * @param toWrite    Object to write
+     * @param hadoopConfig Hadoop configuration, for example from SparkContext.hadoopConfiguration()
+     */
+    public static void writeObjectToFile(String path, Object toWrite, Configuration hadoopConfig) throws IOException {
+        FileSystem fileSystem = FileSystem.get(hadoopConfig);
         try (BufferedOutputStream bos = new BufferedOutputStream(fileSystem.create(new Path(path)))) {
             ObjectOutputStream oos = new ObjectOutputStream(bos);
             oos.writeObject(toWrite);
@@ -156,7 +189,19 @@ public class SparkUtils {
      * @param <T>     Type of the object to read
      */
     public static <T> T readObjectFromFile(String path, Class<T> type, SparkContext sc) throws IOException {
-        FileSystem fileSystem = FileSystem.get(sc.hadoopConfiguration());
+        return readObjectFromFile(path, type, sc.hadoopConfiguration());
+    }
+
+    /**
+     * Read an object from HDFS (or local) using default Java object serialization
+     *
+     * @param path         File to read
+     * @param type         Class of the object to read
+     * @param hadoopConfig Hadoop configuration, for example from SparkContext.hadoopConfiguration()
+     * @param <T>          Type of the object to read
+     */
+    public static <T> T readObjectFromFile(String path, Class<T> type, Configuration hadoopConfig) throws IOException {
+        FileSystem fileSystem = FileSystem.get(hadoopConfig);
         try (ObjectInputStream ois = new ObjectInputStream(new BufferedInputStream(fileSystem.open(new Path(path))))) {
             Object o;
             try {

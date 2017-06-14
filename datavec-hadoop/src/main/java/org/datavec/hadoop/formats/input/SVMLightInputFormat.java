@@ -25,6 +25,7 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.hadoop.records.reader.SVMLightRecordReader;
 
+import java.io.DataOutput;
 import java.io.IOException;
 
 /**
@@ -44,6 +45,4 @@ public class SVMLightInputFormat extends BaseInputFormat {
         reader.initialize(split);
         return reader;
     }
-
-
 }

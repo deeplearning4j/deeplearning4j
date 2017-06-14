@@ -22,7 +22,7 @@ import org.datavec.api.transform.DataAction;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.filter.Filter;
-import org.datavec.api.transform.reduce.IReducer;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.sequence.SequenceComparator;
 
 import java.util.List;
@@ -68,9 +68,9 @@ public class ListWrappers {
 
     @Getter
     public static class ReducerList {
-        private List<IReducer> list;
+        private List<IAssociativeReducer> list;
 
-        public ReducerList(@JsonProperty("list") List<IReducer> list) {
+        public ReducerList(@JsonProperty("list") List<IAssociativeReducer> list) {
             this.list = list;
         }
     }

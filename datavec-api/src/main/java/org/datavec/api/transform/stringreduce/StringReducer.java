@@ -22,6 +22,7 @@ import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.StringReduceOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.StringMetaData;
+import org.datavec.api.transform.reduce.ColumnReduction;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;

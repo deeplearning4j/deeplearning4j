@@ -92,17 +92,28 @@ public class CSVRecordReader extends LineRecordReader {
         this.quote = conf.get(QUOTE, null);
     }
 
-    @Override
-    public List<Writable> next() {
+    private boolean skipLines() {
         if (!skippedLines && skipNumLines > 0) {
             for (int i = 0; i < skipNumLines; i++) {
-                if (!hasNext()) {
-                    return new ArrayList<>();
+                if (!super.hasNext()) {
+                    return false;
                 }
                 super.next();
             }
             skippedLines = true;
         }
+        return true;
+    }
+
+    @Override
+    public boolean hasNext() {
+        return skipLines() && super.hasNext();
+    }
+
+    @Override
+    public List<Writable> next() {
+        if (!skipLines())
+            throw new NoSuchElementException("No next element found!");
         Text t = (Text) super.next().iterator().next();
         String val = t.toString();
         return parseLine(val);

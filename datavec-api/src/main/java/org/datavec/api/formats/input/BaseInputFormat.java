@@ -62,4 +62,9 @@ public abstract class BaseInputFormat implements InputFormat {
     public long toLong() {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public void writeType(DataOutput out) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 }

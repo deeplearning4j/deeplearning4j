@@ -17,7 +17,7 @@
 package org.datavec.api.transform.transform;
 
 import org.datavec.api.transform.*;
-import org.datavec.api.transform.reduce.IReducer;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.sequence.ReduceSequenceTransform;
@@ -27,6 +27,7 @@ import org.datavec.api.transform.transform.column.*;
 import org.datavec.api.transform.transform.integer.*;
 import org.datavec.api.transform.transform.sequence.SequenceDifferenceTransform;
 import org.datavec.api.transform.transform.sequence.SequenceMovingWindowReduceTransform;
+import org.datavec.api.transform.transform.sequence.SequenceOffsetTransform;
 import org.datavec.api.writable.*;
 import org.datavec.api.transform.condition.column.IntegerColumnCondition;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
@@ -1087,7 +1088,7 @@ public class TestTransforms {
                 .addColumnsDouble("col%d",0,2)
                 .build();
 
-        IReducer reducer = new Reducer.Builder(ReduceOp.Mean)
+        IAssociativeReducer reducer = new Reducer.Builder(ReduceOp.Mean)
                 .countColumns("col1")
                 .maxColumn("col2")
                 .build();
@@ -1101,13 +1102,13 @@ public class TestTransforms {
                 Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)));
 
         List<List<Writable>> exp = Collections.singletonList(
-                Arrays.<Writable>asList(new DoubleWritable(3), new IntWritable(3), new DoubleWritable(8)));
+                Arrays.<Writable>asList(new DoubleWritable(3), new LongWritable(3L), new DoubleWritable(8)));
         List<List<Writable>> act = t.mapSequence(seq);
         assertEquals(exp, act);
 
         Schema expOutSchema = new SequenceSchema.Builder()
                 .addColumnDouble("mean(col0)")
-                .addColumn(new IntegerMetaData("count",0,null))
+                .addColumn(new LongMetaData("count(col1)",0L,null))
                 .addColumnDouble("max(col2)")
                 .build();
 
@@ -1180,6 +1181,110 @@ public class TestTransforms {
 
         assertEquals(expTrimFirst, tFirst.mapSequence(seq));
         assertEquals(expTrimLast, tLast.mapSequence(seq));
+    }
 
+
+    @Test
+    public void testSequenceOffsetTransform(){
+
+        List<List<Writable>> seq = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)),
+                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)),
+                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11)));
+
+        Schema schema = new SequenceSchema.Builder().addColumnsDouble("col%d",0,2).build();
+
+        //First: test InPlace
+        List<List<Writable>> exp1 = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(1), new DoubleWritable(8)),
+                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(4), new DoubleWritable(11)));
+
+        List<List<Writable>> exp2 = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(7), new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(10), new DoubleWritable(5)));
+
+        //In-place + trim
+        SequenceOffsetTransform t_inplace_trim_p2 = new SequenceOffsetTransform(Collections.singletonList("col1"),
+                2, SequenceOffsetTransform.OperationType.InPlace, SequenceOffsetTransform.EdgeHandling.TrimSequence, null);
+        SequenceOffsetTransform t_inplace_trim_m2 = new SequenceOffsetTransform(Collections.singletonList("col1"),
+                -2, SequenceOffsetTransform.OperationType.InPlace, SequenceOffsetTransform.EdgeHandling.TrimSequence, null);
+        t_inplace_trim_p2.setInputSchema(schema);
+        t_inplace_trim_m2.setInputSchema(schema);
+
+        assertEquals(exp1, t_inplace_trim_p2.mapSequence(seq));
+        assertEquals(exp2, t_inplace_trim_m2.mapSequence(seq));
+
+
+        //In-place + specified
+        SequenceOffsetTransform t_inplace_specified_p2 = new SequenceOffsetTransform(Collections.singletonList("col1"),
+                2, SequenceOffsetTransform.OperationType.InPlace, SequenceOffsetTransform.EdgeHandling.SpecifiedValue, NullWritable.INSTANCE);
+        SequenceOffsetTransform t_inplace_specified_m2 = new SequenceOffsetTransform(Collections.singletonList("col1"),
+                -2, SequenceOffsetTransform.OperationType.InPlace, SequenceOffsetTransform.EdgeHandling.SpecifiedValue, NullWritable.INSTANCE);
+        t_inplace_specified_p2.setInputSchema(schema);
+        t_inplace_specified_m2.setInputSchema(schema);
+
+        List<List<Writable>> exp3 = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), NullWritable.INSTANCE, new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), NullWritable.INSTANCE, new DoubleWritable(5)),
+                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(1), new DoubleWritable(8)),
+                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(4), new DoubleWritable(11)));
+        List<List<Writable>> exp4 = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(7), new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(10), new DoubleWritable(5)),
+                Arrays.<Writable>asList(new DoubleWritable(6), NullWritable.INSTANCE, new DoubleWritable(8)),
+                Arrays.<Writable>asList(new DoubleWritable(9), NullWritable.INSTANCE, new DoubleWritable(11)));
+
+        assertEquals(exp3, t_inplace_specified_p2.mapSequence(seq));
+        assertEquals(exp4, t_inplace_specified_m2.mapSequence(seq));
+
+
+
+
+        //Second: test NewColumn
+        List<List<Writable>> exp1a = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(1), new DoubleWritable(8)),
+                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(4), new DoubleWritable(11)));
+
+        List<List<Writable>> exp2a = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(7), new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(10), new DoubleWritable(5)));
+        SequenceOffsetTransform t_newcol_trim_p2 = new SequenceOffsetTransform(Collections.singletonList("col1"),
+                2, SequenceOffsetTransform.OperationType.NewColumn, SequenceOffsetTransform.EdgeHandling.TrimSequence, null);
+        SequenceOffsetTransform t_newcol_trim_m2 = new SequenceOffsetTransform(Collections.singletonList("col1"),
+                -2, SequenceOffsetTransform.OperationType.NewColumn, SequenceOffsetTransform.EdgeHandling.TrimSequence, null);
+        t_newcol_trim_p2.setInputSchema(schema);
+        t_newcol_trim_m2.setInputSchema(schema);
+
+        assertEquals(exp1a, t_newcol_trim_p2.mapSequence(seq));
+        assertEquals(exp2a, t_newcol_trim_m2.mapSequence(seq));
+
+        List<List<Writable>> exp3a = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), NullWritable.INSTANCE, new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), NullWritable.INSTANCE, new DoubleWritable(5)),
+                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(1), new DoubleWritable(8)),
+                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(4), new DoubleWritable(11)));
+        List<List<Writable>> exp4a = Arrays.asList(
+                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(7), new DoubleWritable(2)),
+                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(10), new DoubleWritable(5)),
+                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), NullWritable.INSTANCE, new DoubleWritable(8)),
+                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), NullWritable.INSTANCE, new DoubleWritable(11)));
+
+        SequenceOffsetTransform t_newcol_specified_p2 = new SequenceOffsetTransform(Collections.singletonList("col1"),
+                2, SequenceOffsetTransform.OperationType.NewColumn, SequenceOffsetTransform.EdgeHandling.SpecifiedValue, NullWritable.INSTANCE);
+        SequenceOffsetTransform t_newcol_specified_m2 = new SequenceOffsetTransform(Collections.singletonList("col1"),
+                -2, SequenceOffsetTransform.OperationType.NewColumn, SequenceOffsetTransform.EdgeHandling.SpecifiedValue, NullWritable.INSTANCE);
+        t_newcol_specified_p2.setInputSchema(schema);
+        t_newcol_specified_m2.setInputSchema(schema);
+
+        assertEquals(exp3a, t_newcol_specified_p2.mapSequence(seq));
+        assertEquals(exp4a, t_newcol_specified_m2.mapSequence(seq));
+
+
+        //Finally: check edge case
+        assertEquals(Collections.emptyList(), t_inplace_trim_p2.mapSequence(exp1));
+        assertEquals(Collections.emptyList(), t_inplace_trim_m2.mapSequence(exp1));
+        assertEquals(Collections.emptyList(), t_newcol_trim_p2.mapSequence(exp1));
+        assertEquals(Collections.emptyList(), t_newcol_trim_m2.mapSequence(exp1));
     }
 }

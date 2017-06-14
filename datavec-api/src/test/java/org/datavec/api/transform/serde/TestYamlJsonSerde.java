@@ -26,7 +26,7 @@ import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.filter.Filter;
 import org.datavec.api.transform.filter.FilterInvalidValues;
 import org.datavec.api.transform.rank.CalculateSortedRank;
-import org.datavec.api.transform.reduce.IReducer;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.sequence.ConvertFromSequence;
@@ -320,10 +320,10 @@ public class TestYamlJsonSerde {
 
     @Test
     public void testReducer() {
-        IReducer[] reducers = new IReducer[] {new Reducer.Builder(ReduceOp.TakeFirst).keyColumns("KeyCol")
+        IAssociativeReducer[] reducers = new IAssociativeReducer[] {new Reducer.Builder(ReduceOp.TakeFirst).keyColumns("KeyCol")
                         .stdevColumns("Stdev").minColumns("min").countUniqueColumns("B").build()};
 
-        for (IReducer r : reducers) {
+        for (IAssociativeReducer r : reducers) {
             String yaml = y.serialize(r);
             String json = j.serialize(r);
 
@@ -331,8 +331,8 @@ public class TestYamlJsonSerde {
             //            System.out.println(json);
             //            System.out.println();
 
-            IReducer t2 = y.deserializeReducer(yaml);
-            IReducer t3 = j.deserializeReducer(json);
+            IAssociativeReducer t2 = y.deserializeReducer(yaml);
+            IAssociativeReducer t3 = j.deserializeReducer(json);
             assertEquals(r, t2);
             assertEquals(r, t3);
         }
@@ -345,8 +345,8 @@ public class TestYamlJsonSerde {
         //        System.out.println("\n\n\n\n");
         //        System.out.println(listAsYaml);
 
-        List<IReducer> lFromYaml = y.deserializeReducerList(listAsYaml);
-        List<IReducer> lFromJson = j.deserializeReducerList(listAsJson);
+        List<IAssociativeReducer> lFromYaml = y.deserializeReducerList(listAsYaml);
+        List<IAssociativeReducer> lFromJson = j.deserializeReducerList(listAsJson);
 
         assertEquals(Arrays.asList(reducers), y.deserializeReducerList(arrAsYaml));
         assertEquals(Arrays.asList(reducers), j.deserializeReducerList(arrAsJson));

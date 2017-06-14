@@ -66,7 +66,7 @@ public class TestImageRecordReader {
             assertEquals(2, l.size());
         }
 
-        assertEquals(6, out.size());
+        assertEquals(7, out.size());
 
         rr.reset();
         List<List<Writable>> out2 = new ArrayList<>();
@@ -135,8 +135,8 @@ public class TestImageRecordReader {
             out1.add(rr.next());
             order1.add(rr.getCurrentFile());
         }
-        assertEquals(6, out1.size());
-        assertEquals(6, order1.size());
+        assertEquals(7, out1.size());
+        assertEquals(7, order1.size());
 
         rr.reset();
         List<List<Writable>> out2 = new ArrayList<>();
@@ -145,8 +145,8 @@ public class TestImageRecordReader {
             out2.add(rr.next());
             order2.add(rr.getCurrentFile());
         }
-        assertEquals(6, out2.size());
-        assertEquals(6, order2.size());
+        assertEquals(7, out2.size());
+        assertEquals(7, order2.size());
 
         assertNotEquals(out1, out2);
         assertNotEquals(order1, order2);
@@ -163,7 +163,7 @@ public class TestImageRecordReader {
             rr2.next();
             order3.add(rr2.getCurrentFile());
         }
-        assertEquals(6, order3.size());
+        assertEquals(7, order3.size());
 
         assertNotEquals(order1, order3);
     }

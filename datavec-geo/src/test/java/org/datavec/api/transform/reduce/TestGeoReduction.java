@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.reduce;
 
+import org.datavec.api.transform.ops.IAggregableReduceOp;
 import org.datavec.api.writable.*;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.schema.Schema;
@@ -50,7 +51,9 @@ public class TestGeoReduction {
 
         reducer.setInputSchema(schema);
 
-        List<Writable> out = reducer.reduce(inputs);
+        IAggregableReduceOp<List<Writable>, List<Writable>> aggregableReduceOp = reducer.aggregableReducer();
+        for (List<Writable> l: inputs) aggregableReduceOp.accept(l);
+        List<Writable> out = aggregableReduceOp.get();
 
         assertEquals(2, out.size());
         assertEquals(expected, out);

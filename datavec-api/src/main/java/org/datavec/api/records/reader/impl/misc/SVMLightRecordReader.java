@@ -87,9 +87,8 @@ public class SVMLightRecordReader extends LineRecordReader {
             if (numAttributes <= 0)
                 numAttributes = max;
 
-            /* TODO: throw an exception here. */
             if (max > numAttributes)
-                log.warn("Found " + max + " features in record, expected " + numAttributes);
+                throw new IndexOutOfBoundsException("Found " + max + " features in record, expected " + numAttributes);
 
             // read values into array
             tok = new StringTokenizer(val, " \t");
@@ -112,7 +111,8 @@ public class SVMLightRecordReader extends LineRecordReader {
                     index--;
 
                 /* TODO: throw an exception here. */
-                assert(index < 0);
+                if (index < 0) throw new IndexOutOfBoundsException("Invalid data : found negative index");
+
                 if (index > numAttributesAdded) {
                     int totalDiff = Math.abs(numAttributesAdded - index);
                     for (int i = numAttributesAdded; i < index; i++) {

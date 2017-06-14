@@ -23,7 +23,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeMap;
 
-import javax.annotation.Nullable;
+import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * An implementation of {@link IntRangeSet} backed by a {@link TreeMap}.

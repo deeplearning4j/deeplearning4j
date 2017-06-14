@@ -26,6 +26,7 @@ import java.io.*;
 
 /** A WritableComparable for floats. */
 public class FloatWritable implements WritableComparable {
+
     private float value;
 
     public FloatWritable() {}
@@ -46,6 +47,11 @@ public class FloatWritable implements WritableComparable {
 
     public void readFields(DataInput in) throws IOException {
         value = in.readFloat();
+    }
+
+    @Override
+    public void writeType(DataOutput out) throws IOException {
+        out.writeShort(WritableType.Float.typeIdx());
     }
 
     public void write(DataOutput out) throws IOException {
