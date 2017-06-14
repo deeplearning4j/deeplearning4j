@@ -97,7 +97,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
         return LSTMHelpers.backpropGradientHelper(this.conf, this.layerConf().getGateActivationFn(), this.input,
                         recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY,
-                        GravesLSTMParamInitializer.BIAS_KEY, gradientViews, null, true);
+                        GravesLSTMParamInitializer.BIAS_KEY, gradientViews, maskArray, true);
     }
 
 
@@ -144,7 +144,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
         return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
                         recurrentWeights, inputWeights, biases, training, prevOutputActivations, prevMemCellState,
-                        forBackprop, true, GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, null, true);
+                        forBackprop, true, GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, maskArray, true);
     }
 
     @Override
