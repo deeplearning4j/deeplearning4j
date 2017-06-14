@@ -36,22 +36,36 @@ import java.util.*;
 public class ROC extends BaseEvaluation<ROC> {
 
     private  int thresholdSteps;
-
     private long countActualPositive;
     private long countActualNegative;
-
     private final Map<Double, CountsForThreshold> counts = new LinkedHashMap<>();
 
+    private Double auc;
+    private Double auprc;
+
+    private boolean isExact;
+    private INDArray probAndLabel;
+    private long exampleCount = 0L;
+
     /**
-     * @param thresholdSteps Number of threshold steps to use for the ROC calculation
+     * @param thresholdSteps Number of threshold steps to use for the ROC calculation. If set to 0: use exact calculation
      */
     public ROC(int thresholdSteps) {
-        this.thresholdSteps = thresholdSteps;
 
-        double step = 1.0 / thresholdSteps;
-        for (int i = 0; i <= thresholdSteps; i++) {
-            double currThreshold = i * step;
-            counts.put(currThreshold, new CountsForThreshold(currThreshold));
+        if(thresholdSteps > 0){
+            this.thresholdSteps = thresholdSteps;
+
+            double step = 1.0 / thresholdSteps;
+            for (int i = 0; i <= thresholdSteps; i++) {
+                double currThreshold = i * step;
+                counts.put(currThreshold, new CountsForThreshold(currThreshold));
+            }
+
+            isExact = false;
+        } else {
+            //Exact
+
+            isExact = true;
         }
     }
 
@@ -61,11 +75,19 @@ public class ROC extends BaseEvaluation<ROC> {
         countActualNegative = 0L;
         counts.clear();
 
-        double step = 1.0 / thresholdSteps;
-        for (int i = 0; i <= thresholdSteps; i++) {
-            double currThreshold = i * step;
-            counts.put(currThreshold, new CountsForThreshold(currThreshold));
+        if(isExact){
+            probAndLabel = null;
+            exampleCount = 0;
+        } else {
+            double step = 1.0 / thresholdSteps;
+            for (int i = 0; i <= thresholdSteps; i++) {
+                double currThreshold = i * step;
+                counts.put(currThreshold, new CountsForThreshold(currThreshold));
+            }
         }
+
+        auc = null;
+        auprc = null;
     }
 
     @Override
@@ -161,6 +183,9 @@ public class ROC extends BaseEvaluation<ROC> {
             thresholdCounts.incrementTruePositive(truePositiveCount);
             thresholdCounts.incrementFalsePositive(falsePositiveCount);
         }
+
+        auc = null;
+        auprc = null;
     }
 
     /**
@@ -170,6 +195,11 @@ public class ROC extends BaseEvaluation<ROC> {
      */
     @JsonIgnore
     public List<ROCValue> getResults() {
+        if(isExact){
+            //Might change this in the future
+            throw new IllegalStateException("Cannot get points from exact ROC calculation");
+        }
+
         List<ROCValue> out = new ArrayList<>(counts.size());
 
         for (Map.Entry<Double, CountsForThreshold> entry : counts.entrySet()) {
@@ -186,6 +216,11 @@ public class ROC extends BaseEvaluation<ROC> {
 
     @JsonIgnore
     public List<PrecisionRecallPoint> getPrecisionRecallCurve() {
+        if(isExact){
+            //Might change this in the future
+            throw new IllegalStateException("Cannot get points from exact ROC calculation");
+        }
+
         //Precision: (true positive count) / (true positive count + false positive count) == true positive rate
         //Recall: (true positive count) / (true positive count + false negative count) = (TP count) / (total dataset positives)
 
@@ -231,6 +266,11 @@ public class ROC extends BaseEvaluation<ROC> {
      */
     @JsonIgnore
     public double[][] getResultsAsArray() {
+        if(isExact){
+            //Might change this in the future
+            throw new IllegalStateException("Cannot get points from exact ROC calculation");
+        }
+
         double[][] out = new double[2][thresholdSteps + 1];
         int i = 0;
         for (Map.Entry<Double, CountsForThreshold> entry : counts.entrySet()) {
@@ -252,23 +292,76 @@ public class ROC extends BaseEvaluation<ROC> {
      * @return AUC
      */
     public double calculateAUC() {
-        //Calculate AUC using trapezoidal rule
-        List<ROCValue> list = getResults();
-
-        //Given the points
-        double auc = 0.0;
-        for (int i = 0; i < list.size() - 1; i++) {
-            ROCValue left = list.get(i);
-            ROCValue right = list.get(i + 1);
-
-            //y axis: TPR
-            //x axis: FPR
-            double deltaX = Math.abs(right.getFalsePositiveRate() - left.getFalsePositiveRate()); //Iterating in threshold order, so FPR decreases as threshold increases
-            double avg = (left.getTruePositiveRate() + right.getTruePositiveRate()) / 2.0;
-
-            auc += deltaX * avg;
+        if(auc != null){
+            return auc;
         }
-        return auc;
+
+
+        if(isExact){
+            //http://www.cs.waikato.ac.nz/~remco/roc.pdf section 2
+
+            INDArray sorted = Nd4j.sortRows(probAndLabel, 0, true);
+            INDArray isNegative = sorted.getColumn(0).rsubi(1.0);
+
+            //Cumulative sum:
+            int length = isNegative.length();
+            INDArray cumSumNeg = Nd4j.create(length, 1);
+            double runningSumNeg = 0.0;
+
+            for( int i=0; i<length; i++ ){
+                runningSumNeg += isNegative.getDouble(i);
+                cumSumNeg.putScalar(i, runningSumNeg);
+            }
+
+            //sequentially processing the class values c1,..., cn the curve starts in the origin and goes one unit up
+            //for every negative outcome the curve goes one unit to the right
+
+            //Here: have "length" points, but we want these indexed as 1 to n
+            double aucSum = 0.0;
+            for( int i=0; i<=length; i++ ){
+                double currY = i;
+                double nextY = i+1;
+                double currX;
+                double nextX;
+
+                if(i == 0){
+                    currX = 0.0;
+                } else {
+                    currX = cumSumNeg.getDouble(i-1);
+                }
+
+                if(i == length){
+                    nextX = 1.0;
+                } else {
+                    nextX = cumSumNeg.getDouble(i);
+                }
+
+                aucSum += (nextY+currY) / (2.0 * (nextX - currX));
+            }
+
+            this.auc = aucSum;
+            return aucSum;
+        } else {
+            //Calculate AUC using trapezoidal rule
+            List<ROCValue> list = getResults();
+
+            //Given the points
+            double auc = 0.0;
+            for (int i = 0; i < list.size() - 1; i++) {
+                ROCValue left = list.get(i);
+                ROCValue right = list.get(i + 1);
+
+                //y axis: TPR
+                //x axis: FPR
+                double deltaX = Math.abs(right.getFalsePositiveRate() - left.getFalsePositiveRate()); //Iterating in threshold order, so FPR decreases as threshold increases
+                double avg = (left.getTruePositiveRate() + right.getTruePositiveRate()) / 2.0;
+
+                auc += deltaX * avg;
+            }
+
+            this.auc = auc;
+            return auc;
+        }
     }
 
     /**
@@ -277,6 +370,15 @@ public class ROC extends BaseEvaluation<ROC> {
      * @return
      */
     public double calculateAUCPR(){
+
+        if(auprc != null){
+            return auprc;
+        }
+
+        if(isExact){
+            throw new UnsupportedOperationException("Not yet implemented");
+        }
+
         List<PrecisionRecallPoint> prCurve = getPrecisionRecallCurve();
         //Sorting by recall is unnecessary: recall increases as threshold increases, and PR curve points are
         //sorted by threshold by default
