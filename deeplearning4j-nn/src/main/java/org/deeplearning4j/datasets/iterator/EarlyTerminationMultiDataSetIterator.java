@@ -76,7 +76,7 @@ public class EarlyTerminationMultiDataSetIterator implements MultiDataSetIterato
             return underlyingIterator.next();
         }
         else {
-            throw new RuntimeException("Calls to next have exceeded termination point.");
+            throw new RuntimeException("Calls to next have exceeded the allotted number of minibatches.");
         }
     }
 
