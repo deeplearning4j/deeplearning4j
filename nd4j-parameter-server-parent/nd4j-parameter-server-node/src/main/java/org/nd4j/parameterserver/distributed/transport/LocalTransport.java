@@ -149,4 +149,9 @@ public class LocalTransport implements Transport {
     public int getPort() {
         return 0;
     }
+
+    @Override
+    public void addShard(String ip, int port) {
+        // no-op
+    }
 }

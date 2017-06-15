@@ -555,4 +555,9 @@ public abstract class BaseTransport implements Transport {
     public int numberOfKnownShards() {
         return 0;
     }
+
+    @Override
+    public void addShard(String ip, int port) {
+        // no-op
+    }
 }

@@ -31,6 +31,9 @@ public interface Transport {
 
     void addClient(String ip, int port);
 
+
+    void addShard(String ip, int port);
+
     /**
      * This method does initialization of Transport instance
      *

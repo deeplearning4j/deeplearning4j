@@ -501,6 +501,21 @@ public class RoutedTransport extends BaseTransport {
         //        }
     }
 
+
+    @Override
+    public synchronized void addShard(String ip, int port) {
+        Long hash = HashUtil.getLongHash(ip + ":" + port);
+
+        RemoteConnection connection = RemoteConnection.builder().ip(ip).port(port)
+                .publication(aeron.addPublication("aeron:udp?endpoint=" + ip + ":" + port,
+                        voidConfiguration.getStreamId()))
+                .longHash(hash)
+                .locker(new Object()).activated(new AtomicBoolean(false)).build();
+
+        log.info("sI_{} {}: Adding SHARD: [{}] to {}:{}", shardIndex, nodeRole, hash, ip, port);
+        shards.add(connection);
+    }
+
     @Override
     public synchronized void addClient(String ip, int port) {
         Long hash = HashUtil.getLongHash(ip + ":" + port);
@@ -527,6 +542,7 @@ public class RoutedTransport extends BaseTransport {
         private Publication publication;
         private Object locker;
         private AtomicBoolean activated;
+        protected long longHash;
 
 
 
