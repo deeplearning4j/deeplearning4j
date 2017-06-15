@@ -97,7 +97,9 @@
         (63,simdOps::Sinh) ,\
         (64,simdOps::Cosh) ,\
         (65,simdOps::Tan) ,\
-        (66,simdOps::TanDerivative)
+        (66,simdOps::TanDerivative) ,\
+        (67,simdOps::SELU) ,\
+        (68,simdOps::SELUDerivative)
 
 
 

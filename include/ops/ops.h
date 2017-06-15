@@ -48,6 +48,9 @@
 #define op_def _Pragma("omp declare simd") inline
 #endif
 
+#define SELU_ALPHA 1.6732632423543772848170429916717
+#define SELU_LAMBDA 1.0507009873554804934193349852946
+
 
 
 
@@ -1062,6 +1065,28 @@ namespace simdOps {
 			return nd4j::math::nd4j_leakyrelu<T>(d1, params[0]);
 		}
 	};
+
+    template<typename T>
+    class SELU {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static T op(T d1, T *params) {
+            return d1 > (T) 0.0f ? (T) SELU_LAMBDA * d1 : (T) SELU_LAMBDA * ((T) SELU_ALPHA * nd4j::math::nd4j_exp<T>(d1) - (T) SELU_ALPHA);
+        }
+    };
+
+    template<typename T>
+    class SELUDerivative {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static T op(T d1, T *params) {
+            return d1 > (T) 0.0f ? (T) SELU_LAMBDA : (T) SELU_LAMBDA * nd4j::math::nd4j_exp<T>(d1);
+        }
+    };
 
 	template<typename T>
 	class LeakyRELUDerivative {
