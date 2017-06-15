@@ -160,6 +160,12 @@ public class SharedTrainingWrapper {
 
 
                     VoidParameterServer.getInstance().init(voidConfiguration, transport, new SilentTrainingDriver(accumulator));
+
+                    // we should introduce ourselves to controller
+                    String localIP = System.getenv("SPARK_PUBLIC_DNS");
+
+                    // TODO: if localIP is null - use original ip discovery available in VoidParameterServer
+
                 }
 
                 wrapper = new ParallelWrapper.Builder<>(model)

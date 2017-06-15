@@ -399,6 +399,13 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (numWorkers == null)
             numWorkers = network.getSparkContext().defaultParallelism();
 
+        // set current box as controller, if field is unset
+        if (voidConfiguration.getControllerAddress() == null)
+            voidConfiguration.setControllerAddress(System.getenv("SPARK_PUBLIC_DNS"));
+
+        if (voidConfiguration.getControllerAddress() == null)
+            throw new DL4JInvalidConfigException("Can't get Spark Master local address. Please specify it manually using VoidConfiguration.setControllerAddress(String) method");
+
         // first of all, we're instantiating ParameterServer shard here
         Transport transport = voidConfiguration.getTransportType() == TransportType.ROUTED ? new RoutedTransport() : voidConfiguration.getTransportType() == TransportType.BROADCAST ? new MulticastTransport() : this.transport;
 
@@ -417,6 +424,13 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         // first of all, we're instantiating ParameterServer shard here\
         if (numWorkers == null)
             numWorkers = network.getSparkContext().defaultParallelism();
+
+        // set current box as controller, if field is unset
+        if (voidConfiguration.getControllerAddress() == null)
+            voidConfiguration.setControllerAddress(System.getenv("SPARK_PUBLIC_DNS"));
+
+        if (voidConfiguration.getControllerAddress() == null)
+            throw new DL4JInvalidConfigException("Can't get Spark Master local address. Please specify it manually using VoidConfiguration.setControllerAddress(String) method");
 
         Transport transport = voidConfiguration.getTransportType() == TransportType.ROUTED ? new RoutedTransport() : voidConfiguration.getTransportType() == TransportType.BROADCAST ? new MulticastTransport() : this.transport;
 
