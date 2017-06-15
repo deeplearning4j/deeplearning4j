@@ -34,6 +34,9 @@ import org.nd4j.linalg.api.ops.Op;
  */
 public class SELUDerivative extends BaseTransformOp {
 
+    private static final double SELU_ALPHA = 1.6732632423543772848170429916717;
+    private static final double SELU_LAMBDA = 1.0507009873554804934193349852946;
+
     public SELUDerivative() {}
 
     public SELUDerivative(INDArray x, INDArray z) {
@@ -75,22 +78,22 @@ public class SELUDerivative extends BaseTransformOp {
 
     @Override
     public float op(float origin, float other) {
-        return 1.0f / (float) FastMath.pow(FastMath.cos(origin), 2);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public double op(double origin, double other) {
-        return 1.0f / (float) FastMath.pow(FastMath.cos(origin), 2);
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public double op(double origin) {
-        return 1.0f / (float) FastMath.pow(FastMath.cos(origin), 2);
+    public double op(double d1) {
+        return d1 > 0.0f ? SELU_LAMBDA : SELU_LAMBDA * FastMath.exp(d1);
     }
 
     @Override
-    public float op(float origin) {
-        return 1.0f / (float) FastMath.pow(FastMath.cos(origin), 2);
+    public float op(float d1) {
+        return d1 > 0.0f ? (float) SELU_LAMBDA : (float) SELU_LAMBDA * (float) FastMath.exp(d1);
     }
 
     @Override
