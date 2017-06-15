@@ -33,24 +33,9 @@ import static org.bytedeco.javacpp.opencv_core.Rect;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CropImageTransform extends BaseImageTransform<Mat> {
 
-    /**
-     * maximum cropping of the top of the image (pixels)
-     */
     private int cropTop;
-
-    /**
-     * maximum cropping of the left of the image (pixels)
-     */
     private int cropLeft;
-
-    /**
-     * maximum cropping of the bottom of the image (pixels)
-     */
     private int cropBottom;
-
-    /**
-     * maximum cropping of the right of the image (pixels)
-     */
     private int cropRight;
 
     /** Calls {@code this(null, crop, crop, crop, crop)}. */

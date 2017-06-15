@@ -41,24 +41,9 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class RotateImageTransform extends BaseImageTransform<Mat> {
 
-    /**
-     * maximum deviation in x of center of rotation (relative to image center)
-     */
     private float centerx;
-
-    /**
-     * maximum deviation in y of center of rotation (relative to image center)
-     */
     private float centery;
-
-    /**
-     * maximum rotation (degrees)
-     */
     private float angle;
-
-    /**
-     * maximum scaling (relative to 1)
-     */
     private float scale;
 
     @Getter

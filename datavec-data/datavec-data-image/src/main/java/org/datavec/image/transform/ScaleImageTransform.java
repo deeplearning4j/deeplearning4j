@@ -35,14 +35,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.resize;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ScaleImageTransform extends BaseImageTransform<Mat> {
 
-    /**
-     * maximum scaling in width of the image (pixels)
-     */
     private float dx;
-
-    /**
-     * maximum scaling in height of the image (pixels)
-     */
     private float dy;
 
     /** Calls {@code this(null, delta, delta)}. */

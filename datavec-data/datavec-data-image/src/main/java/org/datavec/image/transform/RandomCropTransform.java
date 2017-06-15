@@ -37,14 +37,7 @@ import static org.bytedeco.javacpp.opencv_core.Rect;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class RandomCropTransform extends BaseImageTransform<Mat> {
 
-    /**
-     * width of transformed output
-     */
     protected int outputHeight;
-
-    /**
-     * height of transformed output
-     */
     protected int outputWidth;
     protected org.nd4j.linalg.api.rng.Random rng;
 

@@ -41,16 +41,6 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class WarpImageTransform extends BaseImageTransform<Mat> {
 
-    /**
-     * deltas[0] maximum warping in x for the top-left corner (pixels)
-     * deltas[1] maximum warping in y for the top-left corner (pixels)
-     * deltas[2] maximum warping in x for the top-right corner (pixels)
-     * deltas[3] maximum warping in y for the top-right corner (pixels)
-     * deltas[4] maximum warping in x for the bottom-right corner (pixels)
-     * deltas[5] maximum warping in y for the bottom-right corner (pixels)
-     * deltas[6] maximum warping in x for the bottom-left corner (pixels)
-     * deltas[7] maximum warping in y for the bottom-left corner (pixels)
-     */
     private float[] deltas;
 
     @Getter

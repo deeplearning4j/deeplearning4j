@@ -37,14 +37,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.resize;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ResizeImageTransform extends BaseImageTransform<opencv_core.Mat> {
 
-    /**
-     * new Width for the outcome images
-     */
     private int newHeight;
-
-    /**
-     * new Height for the outcome images
-     */
     private int newWidth;
 
     /**
