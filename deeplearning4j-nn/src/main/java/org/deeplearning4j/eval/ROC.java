@@ -38,12 +38,14 @@ public class ROC extends BaseEvaluation<ROC> {
 
     private static final int EXACT_ALLOC_BLOCK_SIZE = 10000;
 
-    private  int thresholdSteps;
+    private int thresholdSteps;
     private long countActualPositive;
     private long countActualNegative;
     private final Map<Double, CountsForThreshold> counts = new LinkedHashMap<>();
 
+    @Getter(AccessLevel.PRIVATE)
     private Double auc;
+    @Getter(AccessLevel.PRIVATE)
     private Double auprc;
 
     private boolean isExact;
@@ -311,22 +313,60 @@ public class ROC extends BaseEvaluation<ROC> {
     @JsonIgnore
     public double[][] getResultsAsArray() {
         if(isExact){
-            //Might change this in the future
-            throw new IllegalStateException("Cannot get points from exact ROC calculation");
-        }
+            INDArray sorted = Nd4j.sortRows(probAndLabel, 0, true);
+            INDArray isPositive = sorted.getColumn(0);
+            INDArray isNegative = sorted.getColumn(0).rsub(1.0);
 
-        double[][] out = new double[2][thresholdSteps + 1];
-        int i = 0;
-        for (Map.Entry<Double, CountsForThreshold> entry : counts.entrySet()) {
-            CountsForThreshold c = entry.getValue();
-            double tpr = c.getCountTruePositive() / ((double) countActualPositive);
-            double fpr = c.getCountFalsePositive() / ((double) countActualNegative);
+            INDArray cumSumPos = isPositive.cumsum(-1);
+            INDArray cumSumNeg = isNegative.cumsum(-1);
 
-            out[0][i] = fpr;
-            out[1][i] = tpr;
-            i++;
+            int totalPositives = isPositive.sumNumber().intValue();
+            int totalNegatives = isPositive.length() - totalPositives;
+            int length = isNegative.length();
+
+            double[] xOut = new double[length+1];
+            double[] yOut = new double[length+1];
+            int outUsed = 0;
+            for( int i=1; i<=length; i++ ){
+                //Y axis: TPR = sum(TP at current threshold) / totalPositives
+                //X axis: FPR = sum(FP at current threshold) / totalNegatives
+
+                double x_fpr = cumSumNeg.getDouble(i-1) / totalNegatives;
+                double y_tpr = cumSumPos.getDouble(i-1) / totalPositives;
+
+                //Only add this to the output if it differs from the last point...
+                if(x_fpr != xOut[outUsed] || y_tpr != yOut[outUsed]){
+                    xOut[outUsed] = x_fpr;
+                    yOut[outUsed] = y_tpr;
+                    outUsed++;
+                }
+            }
+
+            xOut[outUsed] = 1.0;
+            yOut[outUsed] = 1.0;
+            outUsed++;
+
+            if(outUsed < xOut.length){
+                xOut = Arrays.copyOfRange(xOut, 0, outUsed);
+                yOut = Arrays.copyOfRange(yOut, 0, outUsed);
+            }
+
+            return new double[][]{xOut, yOut};
+        } else {
+
+            double[][] out = new double[2][thresholdSteps + 1];
+            int i = 0;
+            for (Map.Entry<Double, CountsForThreshold> entry : counts.entrySet()) {
+                CountsForThreshold c = entry.getValue();
+                double tpr = c.getCountTruePositive() / ((double) countActualPositive);
+                double fpr = c.getCountFalsePositive() / ((double) countActualNegative);
+
+                out[0][i] = fpr;
+                out[1][i] = tpr;
+                i++;
+            }
+            return out;
         }
-        return out;
     }
 
     /**
