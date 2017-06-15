@@ -1333,4 +1333,17 @@ public class MathUtils {
     public static double randomDoubleBetween(double begin, double end) {
         return begin + (Math.random() * ((end - begin)));
     }
+
+
+
+    /**
+     * hashCode method, taken from Java 1.8 Double.hashCode(double) method
+     *
+     * @param value Double value to hash
+     * @return Hash code for the double value
+     */
+    public static int hashCode(double value) {
+        long bits = Double.doubleToLongBits(value);
+        return (int) (bits ^ (bits >>> 32));
+    }
 }

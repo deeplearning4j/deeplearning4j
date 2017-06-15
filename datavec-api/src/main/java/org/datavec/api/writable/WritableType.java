@@ -31,13 +31,20 @@ public enum WritableType {
     NDArray,
     Image;
 
+    //NOTE TO DEVELOPERS:
+    //In the current implementation, the order (ordinal idx) for the WritableType values matters.
+    //New writables can be added to the end of the list, but not between exiting types, as this will change the
+    //ordinal value for all writable types that follow, which will mess up serialization in some cases (like Spark
+    // sequence and map files)
+    //Alternatively, modify WritableType.typeIdx() to ensure backward compatibility
+
+
     /**
      *
      * @return True if Writable is defined in datavec-api, false otherwise
      */
     public boolean isCoreWritable(){
         switch (this){
-            case NDArray:
             case Image:
                 return false;
             default:
@@ -79,6 +86,7 @@ public enum WritableType {
             case Text:
                 return Text.class;
             case NDArray:
+                return NDArrayWritable.class;
             case Image:
             default:
                 return null;

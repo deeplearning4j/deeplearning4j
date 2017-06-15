@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.transform.doubletransform;
 
+import org.datavec.api.transform.schema.Schema;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -49,7 +50,7 @@ public class DoubleColumnsMathOpTransform extends BaseColumnsMathOpTransform {
     }
 
     @Override
-    protected ColumnMetaData derivedColumnMetaData(String newColumnName) {
+    protected ColumnMetaData derivedColumnMetaData(String newColumnName, Schema inputSchema) {
         return new DoubleMetaData(newColumnName);
     }
 

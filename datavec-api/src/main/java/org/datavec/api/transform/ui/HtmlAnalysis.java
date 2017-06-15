@@ -39,7 +39,9 @@ import java.io.*;
 import java.util.*;
 
 /**
- * Created by Alex on 25/03/2016.
+ * Utilities for rendering {@link DataAnalysis} objects as HTML
+ *
+ * @author Alex Black
  */
 public class HtmlAnalysis {
 
@@ -47,6 +49,14 @@ public class HtmlAnalysis {
 
     }
 
+    /**
+     * Render a data analysis object as a HTML file. This will produce a summary table, along charts for
+     * numerical columns. The contents of the HTML file are returned as a String, which should be written
+     * to a .html file.
+     *
+     * @param analysis Data analysis object to render
+     * @see #createHtmlAnalysisFile(DataAnalysis, File)
+     */
     public static String createHtmlAnalysisString(DataAnalysis analysis) throws Exception {
         Configuration cfg = new Configuration(new Version(2, 3, 23));
 
@@ -110,6 +120,11 @@ public class HtmlAnalysis {
                     buckets = da.getHistogramBuckets();
                     counts = da.getHistogramBucketCounts();
                     break;
+                case NDArray:
+                    NDArrayAnalysis na = (NDArrayAnalysis) ca;
+                    buckets = na.getHistogramBuckets();
+                    counts = na.getHistogramBucketCounts();
+                    break;
                 case Categorical:
                 case Time:
                 case Bytes:
@@ -163,6 +178,13 @@ public class HtmlAnalysis {
         return stringWriter.toString();
     }
 
+    /**
+     * Render a data analysis object as a HTML file. This will produce a summary table, along charts for
+     * numerical columns
+     *
+     * @param dataAnalysis Data analysis object to render
+     * @param output       Output file (should have extension .html)
+     */
     public static void createHtmlAnalysisFile(DataAnalysis dataAnalysis, File output) throws Exception {
 
         String str = createHtmlAnalysisString(dataAnalysis);

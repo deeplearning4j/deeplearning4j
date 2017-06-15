@@ -23,7 +23,7 @@ import org.datavec.api.transform.metadata.*;
  */
 public enum ColumnType {
     String, Integer, Long, Double, Float, Categorical, Time, Bytes, //Arbitrary byte[] data
-    Boolean;
+    Boolean, NDArray;
 
     public ColumnMetaData newColumnMetaData(String columnName) {
         switch (this) {
@@ -44,6 +44,9 @@ public enum ColumnType {
             case Categorical:
                 throw new UnsupportedOperationException(
                                 "Cannot create new categorical column using this method: categorical state names would be unknown");
+            case NDArray:
+                throw new UnsupportedOperationException(
+                        "Cannot create new NDArray column using this method: shape information would be unknown");
             default: //And Bytes
                 throw new UnsupportedOperationException("Unknown or not supported column type: " + this);
         }

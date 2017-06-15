@@ -16,7 +16,11 @@
 
 package org.datavec.api.transform.schema;
 
+import lombok.EqualsAndHashCode;
+import org.datavec.api.transform.ColumnType;
+import org.datavec.api.transform.metadata.*;
 import org.datavec.api.writable.*;
+import org.joda.time.DateTimeZone;
 import org.nd4j.shade.jackson.annotation.*;
 import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
@@ -24,10 +28,6 @@ import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import org.nd4j.shade.jackson.datatype.joda.JodaModule;
-import lombok.EqualsAndHashCode;
-import org.datavec.api.transform.ColumnType;
-import org.datavec.api.transform.metadata.*;
-import org.joda.time.DateTimeZone;
 
 import java.io.Serializable;
 import java.util.*;
@@ -720,6 +720,16 @@ public class Schema implements Serializable {
         public Builder addColumnTime(String columnName, DateTimeZone timeZone, Long minValidValue, Long maxValidValue) {
             addColumn(new TimeMetaData(columnName, timeZone, minValidValue, maxValidValue));
             return this;
+        }
+
+        /**
+         * Add an NDArray column
+         *
+         * @param columnName Name of the column
+         * @param shape      shape of the NDArray column. Use -1 in entries to specify as "variable length" in that dimension
+         */
+        public Builder addColumnNDArray(String columnName, int[] shape){
+            return addColumn(new NDArrayMetaData(columnName, shape));
         }
 
         /**

@@ -20,6 +20,10 @@ import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ClassUtils;
 import org.datavec.api.transform.filter.ConditionFilter;
+import org.datavec.api.transform.ndarray.NDArrayColumnsMathOpTransform;
+import org.datavec.api.transform.ndarray.NDArrayDistanceTransform;
+import org.datavec.api.transform.ndarray.NDArrayMathFunctionTransform;
+import org.datavec.api.transform.ndarray.NDArrayScalarOpTransform;
 import org.datavec.api.transform.sequence.*;
 import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
 import org.datavec.api.transform.transform.integer.IntegerToOneHotTransform;
@@ -74,7 +78,6 @@ import org.datavec.api.transform.analysis.columns.NumericalColumnAnalysis;
 import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
 import lombok.Data;
 import org.datavec.api.transform.analysis.DataAnalysis;
-import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
 import org.datavec.api.writable.comparator.WritableComparator;
@@ -383,10 +386,13 @@ public class TransformProcess implements Serializable {
     }
 
     private static ObjectMapper reinitializeMapperWithSubtypes(ObjectMapper mapper) {
+        return reinitializeMapperWithSubtypes(mapper,
+                Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IAssociativeReducer.class));
+    }
+
+    public static ObjectMapper reinitializeMapperWithSubtypes(ObjectMapper mapper, List<Class<?>> classes) {
         //Register concrete subtypes for JSON serialization
 
-        List<Class<?>> classes =
-                        Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IAssociativeReducer.class);
         List<String> classNames = new ArrayList<>(6);
         for (Class<?> c : classes)
             classNames.add(c.getName());
@@ -1217,6 +1223,53 @@ public class TransformProcess implements Serializable {
          */
         public Builder replaceStringTransform(String columnName, Map<String, String> mapping) {
             return transform(new ReplaceStringTransform(columnName, mapping));
+        }
+
+        /**
+         * Element-wise NDArray math operation (add, subtract, etc) on an NDArray column
+         *
+         * @param columnName Name of the NDArray column to perform the operation on
+         * @param op         Operation to perform
+         * @param value      Value for the operation
+         */
+        public Builder ndArrayScalarOpTransform(String columnName, MathOp op, double value){
+            return transform(new NDArrayScalarOpTransform(columnName, op, value));
+        }
+
+        /**
+         * Perform an element wise mathematical operation (such as add, subtract, multiply) on NDArray columns.
+         * The existing columns are unchanged, a new NDArray column is added
+         *
+         * @param newColumnName Name of the new NDArray column
+         * @param mathOp        Operation to perform
+         * @param columnNames   Name of the columns used as input to the operation
+         */
+        public Builder ndArrayColumnsMathOpTransform(String newColumnName, MathOp mathOp, String... columnNames){
+            return transform(new NDArrayColumnsMathOpTransform(newColumnName, mathOp, columnNames));
+        }
+
+        /**
+         * Apply an element wise mathematical function (sin, tanh, abs etc) to an NDArray column. This operation is
+         * performed in place.
+         *
+         * @param columnName   Name of the column to perform the operation on
+         * @param mathFunction Mathematical function to apply
+         */
+        public Builder ndArrayMathFunctionTransform(String columnName, MathFunction mathFunction){
+            return transform(new NDArrayMathFunctionTransform(columnName, mathFunction));
+        }
+
+        /**
+         * Calculate a distance (cosine similarity, Euclidean, Manhattan) on two equal-sized NDArray columns. This
+         * operation adds a new Double column (with the specified name) with the result.
+         *
+         * @param newColumnName Name of the new column (result) to add
+         * @param distance      Distance to apply
+         * @param firstCol      first column to use in the distance calculation
+         * @param secondCol     second column to use in the distance calculation
+         */
+        public Builder ndArrayDistanceTransform(String newColumnName, Distance distance, String firstCol, String secondCol) {
+            return transform(new NDArrayDistanceTransform(newColumnName, distance, firstCol, secondCol));
         }
 
         /**

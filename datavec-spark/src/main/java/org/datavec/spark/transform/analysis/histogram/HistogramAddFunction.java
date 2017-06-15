@@ -69,6 +69,9 @@ public class HistogramAddFunction implements Function2<List<HistogramCounter>, L
                     case Bytes:
                         histogramCounters.add(null); //TODO
                         break;
+                    case NDArray:
+                        histogramCounters.add(new NDArrayHistogramCounter(minsMaxes[i][0], minsMaxes[i][1], nBins));
+                        break;
                     default:
                         throw new IllegalArgumentException("Unknown column type: " + ct);
                 }

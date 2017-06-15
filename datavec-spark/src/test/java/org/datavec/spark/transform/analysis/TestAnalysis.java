@@ -20,13 +20,18 @@ import org.apache.spark.util.StatCounter;
 import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.analysis.columns.*;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.ui.HtmlAnalysis;
 import org.datavec.api.writable.*;
+import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.transform.AnalyzeSpark;
 import org.apache.spark.api.java.JavaRDD;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.File;
+import java.nio.file.Files;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -39,35 +44,41 @@ import static org.junit.Assert.assertTrue;
 public class TestAnalysis extends BaseSparkTest {
 
     @Test
-    public void TestAnalysisBasic() {
+    public void testAnalysis() throws Exception {
 
-        Schema schema = new Schema.Builder().addColumnInteger("intCol").addColumnDouble("doubleCol")
-                        .addColumnTime("timeCol", DateTimeZone.UTC).addColumnCategorical("catCol", "A", "B").build();
+        Schema schema = new Schema.Builder()
+                .addColumnInteger("intCol")
+                .addColumnDouble("doubleCol")
+                .addColumnTime("timeCol", DateTimeZone.UTC)
+                .addColumnCategorical("catCol", "A", "B")
+                .addColumnNDArray("ndarray", new int[]{1,10})
+                .build();
 
         List<List<Writable>> data = new ArrayList<>();
         data.add(Arrays.asList((Writable) new IntWritable(0), new DoubleWritable(1.0), new LongWritable(1000),
-                        new Text("A")));
+                        new Text("A"), new NDArrayWritable(Nd4j.valueArrayOf(10,100.0))));
         data.add(Arrays.asList((Writable) new IntWritable(5), new DoubleWritable(0.0), new LongWritable(2000),
-                        new Text("A")));
+                        new Text("A"), new NDArrayWritable(Nd4j.valueArrayOf(10,200.0))));
         data.add(Arrays.asList((Writable) new IntWritable(3), new DoubleWritable(10.0), new LongWritable(3000),
-                        new Text("A")));
+                        new Text("A"), new NDArrayWritable(Nd4j.valueArrayOf(10,300.0))));
         data.add(Arrays.asList((Writable) new IntWritable(-1), new DoubleWritable(-1.0), new LongWritable(20000),
-                        new Text("B")));
+                        new Text("B"), new NDArrayWritable(Nd4j.valueArrayOf(10,400.0))));
 
         JavaRDD<List<Writable>> rdd = sc.parallelize(data);
 
         DataAnalysis da = AnalyzeSpark.analyze(schema, rdd);
         String daString = da.toString();
 
-        //        System.out.println(da);
+                System.out.println(da);
 
         List<ColumnAnalysis> ca = da.getColumnAnalysis();
-        assertEquals(4, ca.size());
+        assertEquals(5, ca.size());
 
         assertTrue(ca.get(0) instanceof IntegerAnalysis);
         assertTrue(ca.get(1) instanceof DoubleAnalysis);
         assertTrue(ca.get(2) instanceof TimeAnalysis);
         assertTrue(ca.get(3) instanceof CategoricalAnalysis);
+        assertTrue(ca.get(4) instanceof NDArrayAnalysis);
 
         IntegerAnalysis ia = (IntegerAnalysis) ca.get(0);
         assertEquals(-1, ia.getMin());
@@ -90,6 +101,16 @@ public class TestAnalysis extends BaseSparkTest {
         assertEquals(3L, (long) map.get("A"));
         assertEquals(1L, (long) map.get("B"));
 
+        NDArrayAnalysis na = (NDArrayAnalysis) ca.get(4);
+        assertEquals(4, na.getCountTotal());
+        assertEquals(0, na.getCountNull());
+        assertEquals(10, na.getMinLength());
+        assertEquals(10, na.getMaxLength());
+        assertEquals(4*10, na.getTotalNDArrayValues());
+        assertEquals(Collections.singletonMap(2,4L), na.getCountsByRank());
+        assertEquals(100.0, na.getMinValue(), 0.0);
+        assertEquals(400.0, na.getMaxValue(), 0.0);
+
         assertNotNull(ia.getHistogramBuckets());
         assertNotNull(ia.getHistogramBucketCounts());
 
@@ -99,7 +120,8 @@ public class TestAnalysis extends BaseSparkTest {
         assertNotNull(ta.getHistogramBuckets());
         assertNotNull(ta.getHistogramBucketCounts());
 
-
+        assertNotNull(na.getHistogramBuckets());
+        assertNotNull(na.getHistogramBucketCounts());
 
         double[] bucketsD = dba.getHistogramBuckets();
         long[] countD = dba.getHistogramBucketCounts();
@@ -108,6 +130,11 @@ public class TestAnalysis extends BaseSparkTest {
         assertEquals(10.0, bucketsD[bucketsD.length - 1], 0.0);
         assertEquals(1, countD[0]);
         assertEquals(1, countD[countD.length - 1]);
+
+        File f = Files.createTempFile("datavec_spark_analysis_UITest",".html").toFile();
+        System.out.println(f.getAbsolutePath());
+        f.deleteOnExit();
+        HtmlAnalysis.createHtmlAnalysisFile(da, f);
     }
 
 
