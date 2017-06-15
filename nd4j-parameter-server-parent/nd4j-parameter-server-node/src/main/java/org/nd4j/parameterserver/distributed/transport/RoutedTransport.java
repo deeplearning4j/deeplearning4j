@@ -308,6 +308,16 @@ public class RoutedTransport extends BaseTransport {
     }
 
     @Override
+    public int numberOfKnownClients() {
+        return clients.size();
+    }
+
+    @Override
+    public int numberOfKnownShards() {
+        return shards.size();
+    }
+
+    @Override
     protected void shutdownSilent() {
         // closing shards
         shards.forEach((rc) -> {

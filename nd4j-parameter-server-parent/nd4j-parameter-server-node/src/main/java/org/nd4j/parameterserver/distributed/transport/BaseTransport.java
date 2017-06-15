@@ -545,4 +545,14 @@ public abstract class BaseTransport implements Transport {
     public int getPort() {
         return port;
     }
+
+    @Override
+    public int numberOfKnownClients() {
+        return 0;
+    }
+
+    @Override
+    public int numberOfKnownShards() {
+        return 0;
+    }
 }

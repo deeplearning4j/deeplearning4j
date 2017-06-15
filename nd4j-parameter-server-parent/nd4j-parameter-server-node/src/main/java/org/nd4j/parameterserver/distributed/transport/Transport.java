@@ -103,4 +103,16 @@ public interface Transport {
      * This method stops transport system.
      */
     void shutdown();
+
+    /**
+     * This method returns number of known Clients
+     * @return
+     */
+    int numberOfKnownClients();
+
+    /**
+     * This method returns number of known Shards
+     * @return
+     */
+    int numberOfKnownShards();
 }
