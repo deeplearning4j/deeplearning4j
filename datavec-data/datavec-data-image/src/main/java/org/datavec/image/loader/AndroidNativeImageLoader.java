@@ -16,11 +16,15 @@
 package org.datavec.image.loader;
 
 import android.graphics.Bitmap;
-import java.io.IOException;
+import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.AndroidFrameConverter;
-import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.bytedeco.javacv.FrameConverter;
 import org.datavec.image.transform.ImageTransform;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Segregates functionality specific to Android that is not available on Java SE.
@@ -29,7 +33,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class AndroidNativeImageLoader extends NativeImageLoader {
 
-    AndroidFrameConverter converter2 = new AndroidFrameConverter();
+    protected Map<Long, AndroidFrameConverter> androidConverter = new HashMap<>();
 
     public AndroidNativeImageLoader() {}
 
@@ -58,9 +62,9 @@ public class AndroidNativeImageLoader extends NativeImageLoader {
     }
 
     public INDArray asMatrix(Bitmap image) throws IOException {
-        if (converter == null) {
-            converter = new OpenCVFrameConverter.ToMat();
-        }
+        FrameConverter<opencv_core.Mat> converter = getSafeConverter(Thread.currentThread().getId());
+        AndroidFrameConverter converter2 = getSafeAndroidFrameConverter(Thread.currentThread().getId());
+
         return asMatrix(converter.convert(converter2.convert(image)));
     }
 
@@ -72,6 +76,22 @@ public class AndroidNativeImageLoader extends NativeImageLoader {
     @Override
     public INDArray asMatrix(Object image) throws IOException {
         return image instanceof Bitmap ? asMatrix((Bitmap)image) : null;
+    }
+
+    /**
+     * Returns thread-safe AndroidFrameConverter
+     *
+     * @param threadId
+     * @return
+     */
+    protected AndroidFrameConverter getSafeAndroidFrameConverter(long threadId) {
+        if (androidConverter.containsKey(threadId)) {
+            return androidConverter.get(Thread.currentThread().getId());
+        }else {
+            AndroidFrameConverter converter = new AndroidFrameConverter();
+            androidConverter.put(threadId, converter);
+            return converter;
+        }
     }
 
 }

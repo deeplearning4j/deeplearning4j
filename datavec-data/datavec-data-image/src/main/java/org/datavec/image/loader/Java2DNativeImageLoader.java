@@ -15,12 +15,16 @@
  */
 package org.datavec.image.loader;
 
-import java.awt.image.BufferedImage;
-import java.io.IOException;
+import org.bytedeco.javacpp.opencv_core;
+import org.bytedeco.javacv.FrameConverter;
 import org.bytedeco.javacv.Java2DFrameConverter;
-import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.transform.ImageTransform;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Segregates functionality specific to Java 2D that is not available on Android.
@@ -29,7 +33,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class Java2DNativeImageLoader extends NativeImageLoader {
 
-    Java2DFrameConverter converter2 = new Java2DFrameConverter();
+    protected Map<Long, Java2DFrameConverter> java2dConverter = new HashMap<>();
 
     public Java2DNativeImageLoader() {}
 
@@ -58,9 +62,9 @@ public class Java2DNativeImageLoader extends NativeImageLoader {
     }
 
     public INDArray asMatrix(BufferedImage image) throws IOException {
-        if (converter == null) {
-            converter = new OpenCVFrameConverter.ToMat();
-        }
+        FrameConverter<opencv_core.Mat> converter = getSafeConverter(Thread.currentThread().getId());
+        Java2DFrameConverter converter2 = getSafeJava2DFrameConverter(Thread.currentThread().getId());
+
         return asMatrix(converter.convert(converter2.convert(image)));
     }
 
@@ -72,6 +76,22 @@ public class Java2DNativeImageLoader extends NativeImageLoader {
     @Override
     public INDArray asMatrix(Object image) throws IOException {
         return image instanceof BufferedImage ? asMatrix((BufferedImage)image) : null;
+    }
+
+    /**
+     * Returns thread-safe Java2DFrameConverter
+     *
+     * @param threadId
+     * @return
+     */
+    protected Java2DFrameConverter getSafeJava2DFrameConverter(long threadId) {
+        if (java2dConverter.containsKey(threadId)) {
+            return java2dConverter.get(Thread.currentThread().getId());
+        }else {
+            Java2DFrameConverter converter = new Java2DFrameConverter();
+            java2dConverter.put(threadId, converter);
+            return converter;
+        }
     }
 
 }

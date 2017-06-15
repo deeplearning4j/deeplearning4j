@@ -15,10 +15,11 @@
  */
 package org.datavec.image.transform;
 
-import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.bytedeco.javacv.FrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 
+import java.util.HashMap;
 import java.util.Random;
 
 import static org.bytedeco.javacpp.opencv_core.Mat;
@@ -64,7 +65,7 @@ public class ColorConversionTransform extends BaseImageTransform {
     public ColorConversionTransform(Random random, int conversionCode) {
         super(random);
         this.conversionCode = conversionCode;
-        converter = new OpenCVFrameConverter.ToMat();
+        this.safeConverter = new HashMap<>();
     }
 
     /**
@@ -80,6 +81,9 @@ public class ColorConversionTransform extends BaseImageTransform {
         if (image == null) {
             return null;
         }
+
+        FrameConverter<Mat> converter = getSafeConverter(Thread.currentThread().getId());
+
         Mat mat = (Mat) converter.convert(image.getFrame());
 
         Mat result = new Mat();
@@ -93,5 +97,8 @@ public class ColorConversionTransform extends BaseImageTransform {
         return new ImageWritable(converter.convert(result));
     }
 
+    protected FrameConverter<Mat> getSafeConverter(long threadId) {
+        return getSafeMatConverter(threadId);
+    }
 
 }

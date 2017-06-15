@@ -15,13 +15,17 @@
  */
 package org.datavec.image.transform;
 
+import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.FFmpegFrameFilter;
+import org.bytedeco.javacv.FrameConverter;
 import org.bytedeco.javacv.FrameFilter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import static org.bytedeco.javacpp.avutil.*;
@@ -33,11 +37,11 @@ import static org.bytedeco.javacpp.avutil.*;
  * @author saudet
  * @see FFmpegFrameFilter
  */
-@JsonIgnoreProperties({"filter", "converter"})
+@JsonIgnoreProperties({"safeFilter", "safeConverter"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class FilterImageTransform extends BaseImageTransform {
 
-    private FFmpegFrameFilter filter;
+    private Map<Long, FFmpegFrameFilter> safeFilter;
 
     private String filters;
     private int width;
@@ -67,19 +71,7 @@ public class FilterImageTransform extends BaseImageTransform {
         this.width = width;
         this.height = height;
         this.channels = channels;
-
-        int pixelFormat = channels == 1 ? AV_PIX_FMT_GRAY8
-                        : channels == 3 ? AV_PIX_FMT_BGR24 : channels == 4 ? AV_PIX_FMT_RGBA : AV_PIX_FMT_NONE;
-        if (pixelFormat == AV_PIX_FMT_NONE) {
-            throw new IllegalArgumentException("Unsupported number of channels: " + channels);
-        }
-        try {
-            filter = new FFmpegFrameFilter(filters, width, height);
-            filter.setPixelFormat(pixelFormat);
-            filter.start();
-        } catch (FrameFilter.Exception e) {
-            throw new RuntimeException(e);
-        }
+        this.safeFilter = new HashMap<>();
     }
 
     @Override
@@ -87,6 +79,9 @@ public class FilterImageTransform extends BaseImageTransform {
         if (image == null) {
             return null;
         }
+
+        FrameFilter filter = getSafeFilter(Thread.currentThread().getId());
+
         try {
             filter.push(image.getFrame());
             image = new ImageWritable(filter.pull());
@@ -94,6 +89,27 @@ public class FilterImageTransform extends BaseImageTransform {
             throw new RuntimeException(e);
         }
         return image;
+    }
+
+    protected FFmpegFrameFilter getSafeFilter(long threadId) {
+        if (safeFilter.containsKey(threadId)) {
+            return safeFilter.get(Thread.currentThread().getId());
+        }else {
+            int pixelFormat = channels == 1 ? AV_PIX_FMT_GRAY8
+                    : channels == 3 ? AV_PIX_FMT_BGR24 : channels == 4 ? AV_PIX_FMT_RGBA : AV_PIX_FMT_NONE;
+            if (pixelFormat == AV_PIX_FMT_NONE) {
+                throw new IllegalArgumentException("Unsupported number of channels: " + channels);
+            }
+
+            FFmpegFrameFilter filter = new FFmpegFrameFilter(filters, width, height);
+            filter.setPixelFormat(pixelFormat);
+            safeConverter.put(threadId, filter);
+            return filter;
+        }
+    }
+
+    protected FrameConverter<opencv_core.Mat> getSafeConverter(long threadId) {
+        throw new UnsupportedOperationException("Converters are not used in FilterImageTransform");
     }
 
 }
