@@ -35,6 +35,16 @@ public class LocalTransport implements Transport {
 
     }
 
+    @Override
+    public int numberOfKnownClients() {
+        return 0;
+    }
+
+    @Override
+    public int numberOfKnownShards() {
+        return 0;
+    }
+
     /**
      * @param message
      */
