@@ -573,15 +573,16 @@ public class ROCTest {
         //at threshold 0.661 to 1.0:  tp=0, fp=0, fn=2, tn=1 prec=0/0=1, recall=0/2=0
 
         for( int steps : new int[]{10, 0}) {    //0 steps = exact
+            String msg = "Steps = " + steps;
             //area: 1.0
-            ROC r = new ROC(10);
+            ROC r = new ROC(steps);
             INDArray zero = Nd4j.zeros(1);
             INDArray one = Nd4j.ones(1);
             r.eval(zero, Nd4j.create(new double[]{0.25}));
             r.eval(one, Nd4j.create(new double[]{0.33}));
             r.eval(one, Nd4j.create(new double[]{0.66}));
 
-            assertEquals(1.0, r.calculateAUCPR(), 1e-6);
+            assertEquals(msg, 1.0, r.calculateAUCPR(), 1e-6);
 
             //Assume 2 positive examples, at 0.33 and 0.66 predicted, 1 negative example at 0.5 prob
             //at threshold 0 to 0.33: tp=2, fp=1, fn=0, tn=0 prec=2/(2+1)=0.666, recall=2/2=1.0
@@ -590,7 +591,7 @@ public class ROCTest {
             //at threshold 0.661 to 1.0:  tp=0, fp=0, fn=2, tn=1 prec=0/0=1, recall=0/2=0
             //Area: 0.5 + 0.25 + 0.5*0.5*(0.66666-0.5) = 0.5+0.25+0.04165 = 0.7916666666667
             //But, we use 10 steps so the calculation might not match this exactly, but should be close
-            r = new ROC(10);
+            r = new ROC(steps);
             r.eval(one, Nd4j.create(new double[]{0.33}));
             r.eval(zero, Nd4j.create(new double[]{0.5}));
             r.eval(one, Nd4j.create(new double[]{0.66}));
@@ -601,7 +602,7 @@ public class ROCTest {
             } else {
                 precision = 1e-4;
             }
-            assertEquals(0.7916666666667, r.calculateAUCPR(), precision);
+            assertEquals(msg, 0.7916666666667, r.calculateAUCPR(), precision);
         }
     }
 }
