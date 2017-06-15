@@ -121,7 +121,7 @@ public class ROC extends BaseEvaluation<ROC> {
         boolean singleOutput = labels.size(1) == 1;
 
         if(isExact){
-            //Exact approach: simply add them to the
+            //Exact approach: simply add them to the storage for later computation/use
 
             if(probAndLabel == null){
                 //Do initial allocation
@@ -345,46 +345,50 @@ public class ROC extends BaseEvaluation<ROC> {
             //http://www.cs.waikato.ac.nz/~remco/roc.pdf section 2
 
             INDArray sorted = Nd4j.sortRows(probAndLabel, 0, true);
-            INDArray isNegative = sorted.getColumn(0).rsubi(1.0);
+            INDArray isPositive = sorted.getColumn(0);
+            INDArray isNegative = sorted.getColumn(0).rsub(1.0);
+
+            INDArray cumSumPos = isPositive.cumsum(-1);
+            INDArray cumSumNeg = isNegative.cumsum(-1);
+
+            int totalPositives = isPositive.sumNumber().intValue();
+            int totalNegatives = isPositive.length() - totalPositives;
 
             //Cumulative sum:
             int length = isNegative.length();
-            INDArray cumSumNeg = Nd4j.create(length, 1);
-            double runningSumNeg = 0.0;
-
-            for( int i=0; i<length; i++ ){
-                runningSumNeg += isNegative.getDouble(i);
-                cumSumNeg.putScalar(i, runningSumNeg);
-            }
-
-            //sequentially processing the class values c1,..., cn the curve starts in the origin and goes one unit up
-            //for every negative outcome the curve goes one unit to the right
 
             //Here: have "length" points, but we want these indexed as 1 to n
             double aucSum = 0.0;
             for( int i=0; i<=length; i++ ){
-                double currY = i;
-                double nextY = i+1;
-                double currX;
-                double nextX;
+                //Y axis: TPR = sum(TP at current threshold) / totalPositives
+                //X axis: FPR = sum(FP at current threshold) / totalNegatives
 
-                if(i == 0){
-                    currX = 0.0;
+                double x_fpr;
+                double x_fpr_next;
+
+                double y_tpr;
+                double y_tpr_next;
+
+                if( i > 0 ){
+                    x_fpr = cumSumNeg.getDouble(i-1) / totalNegatives;
+                    y_tpr = cumSumPos.getDouble(i-1) / totalPositives;
                 } else {
-                    currX = cumSumNeg.getDouble(i-1);
+                    y_tpr = 0.0;
+                    x_fpr = 0.0;
                 }
 
-                if(i == length){
-                    nextX = 1.0;
+                if( i < length){
+                    x_fpr_next = cumSumNeg.getDouble(i) / totalNegatives;
+                    y_tpr_next = cumSumPos.getDouble(i) / totalPositives;
                 } else {
-                    nextX = cumSumNeg.getDouble(i);
+                    x_fpr_next = 1.0;
+                    y_tpr_next = 1.0;
                 }
 
-                currY /= count
 
-                double dx = (nextX - currX);
+                double dx = (x_fpr_next - x_fpr);
                 if(dx > 0.0) {
-                    aucSum += (nextY + currY) / (2.0 * dx);
+                    aucSum += (y_tpr_next + y_tpr) / (2.0 * dx);
                 }
             }
 

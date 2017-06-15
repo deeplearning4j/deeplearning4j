@@ -542,6 +542,7 @@ public class ROCTest {
         }
 
         for( int steps : new int[]{32, 0}){ //Steps = 0: exact
+            System.out.println("steps: " + steps);
 
             ROCMultiClass roc = net.evaluateROCMultiClass(iter, steps);
 
