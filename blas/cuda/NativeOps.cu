@@ -5994,6 +5994,7 @@ Nd4jPointer NativeOps::initRandom(Nd4jPointer *extraPointers, long seed, long bu
 
 	// and copy it to gpu
     cudaMemcpyAsync(ptrDev, ptrHost, bufferSize * 8, cudaMemcpyHostToDevice, *stream);
+	checkCudaErrors(cudaStreamSynchronize(*stream));
 
     return buffer;
 }
