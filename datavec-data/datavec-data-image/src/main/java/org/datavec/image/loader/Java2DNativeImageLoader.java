@@ -53,15 +53,40 @@ public class Java2DNativeImageLoader extends NativeImageLoader {
         super(other);
     }
 
+    /**
+     * Returns {@code asMatrix(image, false).ravel()}.
+     */
     public INDArray asRowVector(BufferedImage image) throws IOException {
-        return asMatrix(image).ravel();
+        return asMatrix(image, false).ravel();
     }
 
+    /**
+     * Returns {@code asMatrix(image, false)}.
+     */
     public INDArray asMatrix(BufferedImage image) throws IOException {
+        return asMatrix(image, false);
+    }
+
+    /**
+     * Returns {@code asMatrix(image, flipChannels).ravel()}.
+     */
+    public INDArray asRowVector(BufferedImage image, boolean flipChannels) throws IOException {
+        return asMatrix(image, flipChannels).ravel();
+    }
+
+    /**
+     * Loads a {@link INDArray} from a {@link BufferedImage}.
+     *
+     * @param image as a BufferedImage
+     * @param flipChannels to have a format like TYPE_INT_RGB (ARGB) output as BGRA, etc
+     * @return the loaded matrix
+     * @throws IOException
+     */
+    public INDArray asMatrix(BufferedImage image, boolean flipChannels) throws IOException {
         if (converter == null) {
             converter = new OpenCVFrameConverter.ToMat();
         }
-        return asMatrix(converter.convert(converter2.convert(image)));
+        return asMatrix(converter.convert(converter2.getFrame(image, 1.0, flipChannels)));
     }
 
     @Override
