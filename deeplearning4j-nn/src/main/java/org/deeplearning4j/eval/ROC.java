@@ -52,11 +52,17 @@ public class ROC extends BaseEvaluation<ROC> {
     private boolean isExact;
     private INDArray probAndLabel;
     private int exampleCount = 0;
+    private boolean rocRemoveRedundantPts;
 
     /**
      * @param thresholdSteps Number of threshold steps to use for the ROC calculation. If set to 0: use exact calculation
      */
     public ROC(int thresholdSteps) {
+        this(thresholdSteps, true);
+    }
+
+
+    public ROC(int thresholdSteps, boolean rocRemoveRedundantPts) {
 
         if (thresholdSteps > 0) {
             this.thresholdSteps = thresholdSteps;
@@ -73,6 +79,7 @@ public class ROC extends BaseEvaluation<ROC> {
 
             isExact = true;
         }
+        this.rocRemoveRedundantPts = rocRemoveRedundantPts;
     }
 
     protected INDArray getProbAndLabelUsed() {
@@ -243,7 +250,7 @@ public class ROC extends BaseEvaluation<ROC> {
     }
 
     /**
-     * @deprecated Use {@link #getRocCurve()}
+     * @deprecated Use {@link #getPrecisionRecallCurveAsArray()}
      */
     @JsonIgnore
     @Deprecated
@@ -263,7 +270,7 @@ public class ROC extends BaseEvaluation<ROC> {
         List<ROCValue> out = new ArrayList<>();
 
         double[][] asArray = getRocCurveAsArray();  //Threshold, fpr, tpr
-        int n = asArray.length;
+        int n = asArray[0].length;
         for (int i = 0; i < n; i++) {
             out.add(new ROCValue(asArray[0][i], asArray[2][i], asArray[1][i])); //ROCValue: thresh, tpr, fpr
         }
@@ -392,73 +399,70 @@ public class ROC extends BaseEvaluation<ROC> {
     public double[][] getRocCurveAsArray() {
 
         if (isExact) {
+            //Sort ascending. As we decrease threshold, more are predicted positive.
+            //if(prob <= threshold> predict 0, otherwise predict 1
+            //So, as we iterate from i=0..length, first 0 to i (inclusive) are predicted class 1, all others are predicted class 0
             INDArray pl = getProbAndLabelUsed();
-            INDArray sorted = Nd4j.sortRows(pl, 0, true);
+            INDArray sorted = Nd4j.sortRows(pl, 0, false);
             INDArray isPositive = sorted.getColumn(1);
             INDArray isNegative = sorted.getColumn(1).rsub(1.0);
 
-//            System.out.println(sorted);
-            System.out.println(new NDArrayStrings(8).format(sorted));
-
             INDArray cumSumPos = isPositive.cumsum(-1);
             INDArray cumSumNeg = isNegative.cumsum(-1);
+            int length = sorted.size(0);
 
-            int totalPositives = isPositive.sumNumber().intValue();
-            int totalNegatives = isPositive.length() - totalPositives;
-            int length = isNegative.length();
+            INDArray t = Nd4j.create(new int[]{length+2,1});
+            t.put(new INDArrayIndex[]{NDArrayIndex.interval(1,length+1),NDArrayIndex.all()}, sorted.getColumn(0));
 
-            double[] tOut = new double[length + 2];
-            double[] x_fpr_out = new double[length + 2];
-            double[] y_tpr_out = new double[length + 2];
-            int lastOutPos = 0;
-            for (int i = 1; i <= length; i++) { //Start at 1 -> xOut[0] and yOut[0] == 0.0 by design
-                //Y axis: TPR = sum(TP at current threshold) / totalPositives
-                //X axis: FPR = sum(FP at current threshold) / totalNegatives
+            INDArray fpr = Nd4j.create(new int[]{length+2,1});
+            fpr.put(new INDArrayIndex[]{NDArrayIndex.interval(1,length+1),NDArrayIndex.all()}, cumSumNeg.div(countActualNegative));
 
-                tOut[i] = pl.getDouble(i - 1, 0);
-                double x_fpr = cumSumNeg.getDouble(i - 1) / totalNegatives;
-                double y_tpr = cumSumPos.getDouble(i - 1) / totalPositives;
+            INDArray tpr = Nd4j.create(new int[]{length+2,1});
+            tpr.put(new INDArrayIndex[]{NDArrayIndex.interval(1,length+1),NDArrayIndex.all()}, cumSumPos.div(countActualPositive));
 
-                lastOutPos++;
-                x_fpr_out[lastOutPos] = x_fpr;
-                y_tpr_out[lastOutPos] = y_tpr;
-            }
+            //Edge cases
+            t.putScalar(0, 0, 1.0);
+            fpr.putScalar(0, 0, 0.0);
+            tpr.putScalar(0, 0, 0.0);
+            fpr.putScalar(length+1, 0, 1.0);
+            tpr.putScalar(length+1, 0, 1.0);
 
-            lastOutPos++;
-            x_fpr_out[lastOutPos] = 1.0;
-            y_tpr_out[lastOutPos] = 1.0;
 
+            double[] x_fpr_out = fpr.data().asDouble();
+            double[] y_tpr_out = tpr.data().asDouble();
+            double[] tOut = t.data().asDouble();
 
             //Note: we can have multiple FPR for a given TPR, and multiple TPR for a given FPR
             //These can be omitted, without changing the area (as long as we keep the edge points)
-            double[] t_compacted = new double[tOut.length];
-            double[] x_fpr_compacted = new double[x_fpr_out.length];
-            double[] y_tpr_compacted = new double[y_tpr_out.length];
-            lastOutPos = -1;
-            for (int i = 0; i < tOut.length; i++) {
+            if(rocRemoveRedundantPts) {
+                double[] t_compacted = new double[tOut.length];
+                double[] x_fpr_compacted = new double[x_fpr_out.length];
+                double[] y_tpr_compacted = new double[y_tpr_out.length];
+                int lastOutPos = -1;
+                for (int i = 0; i < tOut.length; i++) {
 
-                boolean keep;
-                if(i == 0 || i == tOut.length -1){
-                    keep = true;
-                } else {
-                    boolean ommitSameTPR = y_tpr_out[i - 1] == y_tpr_out[i] && y_tpr_out[i] == y_tpr_out[i + 1];
-                    boolean ommitSameFPR = x_fpr_out[i - 1] == x_fpr_out[i] && x_fpr_out[i] == x_fpr_out[i + 1];
-                    keep = !ommitSameFPR && !ommitSameTPR;
+                    boolean keep;
+                    if (i == 0 || i == tOut.length - 1) {
+                        keep = true;
+                    } else {
+                        boolean ommitSameTPR = y_tpr_out[i - 1] == y_tpr_out[i] && y_tpr_out[i] == y_tpr_out[i + 1];
+                        boolean ommitSameFPR = x_fpr_out[i - 1] == x_fpr_out[i] && x_fpr_out[i] == x_fpr_out[i + 1];
+                        keep = !ommitSameFPR && !ommitSameTPR;
+                    }
+
+                    if (keep) {
+                        lastOutPos++;
+                        t_compacted[lastOutPos] = tOut[i];
+                        y_tpr_compacted[lastOutPos] = y_tpr_out[i];
+                        x_fpr_compacted[lastOutPos] = x_fpr_out[i];
+                    }
                 }
 
-                if (keep) {
-                    lastOutPos++;
-                    t_compacted[lastOutPos] = tOut[i];
-                    y_tpr_compacted[lastOutPos] = y_tpr_out[i];
-                    x_fpr_compacted[lastOutPos] = x_fpr_out[i];
+                if (lastOutPos < x_fpr_out.length - 1) {
+                    tOut = Arrays.copyOfRange(t_compacted, 0, lastOutPos + 1);
+                    x_fpr_out = Arrays.copyOfRange(x_fpr_compacted, 0, lastOutPos + 1);
+                    y_tpr_out = Arrays.copyOfRange(y_tpr_compacted, 0, lastOutPos + 1);
                 }
-            }
-
-
-            if (lastOutPos < x_fpr_out.length-1) {
-                tOut = Arrays.copyOfRange(t_compacted, 0, lastOutPos+1);
-                x_fpr_out = Arrays.copyOfRange(x_fpr_compacted, 0, lastOutPos+1);
-                y_tpr_out = Arrays.copyOfRange(y_tpr_compacted, 0, lastOutPos+1);
             }
 
             return new double[][]{tOut, x_fpr_out, y_tpr_out};
@@ -498,10 +502,10 @@ public class ROC extends BaseEvaluation<ROC> {
         //Given the points
         double auc = 0.0;
         for (int i = 0; i < nPoints - 1; i++) {
-            double fprLeft = rocAsArray[0][i];
-            double tprLeft = rocAsArray[1][i];
-            double fprRight = rocAsArray[0][i + 1];
-            double tprRight = rocAsArray[1][i + 1];
+            double fprLeft = rocAsArray[1][i];
+            double tprLeft = rocAsArray[2][i];
+            double fprRight = rocAsArray[1][i + 1];
+            double tprRight = rocAsArray[2][i + 1];
 
             //y axis: TPR
             //x axis: FPR

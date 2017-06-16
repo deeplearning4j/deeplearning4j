@@ -193,9 +193,10 @@ public class ROCTest {
         List<ROC.ROCValue> list = roc.getResults();
         double[][] asArray = roc.getResultsAsArray();
 
-        assertEquals(2, asArray.length);
+        assertEquals(3, asArray.length);
         assertEquals(11, asArray[0].length);
         assertEquals(11, asArray[1].length);
+        assertEquals(11, asArray[2].length);
 
         assertEquals(11, list.size()); //0 + 10 steps
         for (int i = 0; i < 11; i++) {
@@ -211,8 +212,9 @@ public class ROCTest {
             double atpr = v.getTruePositiveRate();
             assertEquals(etpr, atpr, 1e-5);
 
-            assertEquals(v.getFalsePositiveRate(), asArray[0][i], 1e-6);
-            assertEquals(v.getTruePositiveRate(), asArray[1][i], 1e-6);
+            assertEquals(v.getThreshold(), asArray[0][i], 1e-6);
+            assertEquals(v.getFalsePositiveRate(), asArray[1][i], 1e-6);
+            assertEquals(v.getTruePositiveRate(), asArray[2][i], 1e-6);
 
             //            System.out.println(v.getFalsePositiveRate() + "\t" + v.getTruePositiveRate());
         }
@@ -635,6 +637,27 @@ public class ROCTest {
         [ 0.99401459  0.96130674  0.92961609  0.79082252  0.74771481  0.67687371
           0.65641118  0.64247533  0.46759901  0.31637555  0.20456028  0.18391881
           0.17091426  0.0083883 ]
+
+        p, r, t = precision_recall_curve(label, prob)
+
+        Precision
+        [ 0.39285714  0.37037037  0.38461538  0.36        0.33333333  0.34782609
+          0.36363636  0.38095238  0.35        0.31578947  0.27777778  0.29411765
+          0.3125      0.33333333  0.28571429  0.30769231  0.33333333  0.36363636
+          0.4         0.33333333  0.25        0.28571429  0.33333333  0.4         0.25
+          0.33333333  0.5         1.          1.        ]
+        Recall
+        [ 1.          0.90909091  0.90909091  0.81818182  0.72727273  0.72727273
+          0.72727273  0.72727273  0.63636364  0.54545455  0.45454545  0.45454545
+          0.45454545  0.45454545  0.36363636  0.36363636  0.36363636  0.36363636
+          0.36363636  0.27272727  0.18181818  0.18181818  0.18181818  0.18181818
+          0.09090909  0.09090909  0.09090909  0.09090909  0.        ]
+        Threshold
+        [ 0.17091426  0.18391881  0.20456028  0.29870371  0.31637555  0.32558468
+          0.43964461  0.46759901  0.56772503  0.5955447   0.64247533  0.6531771
+          0.65356987  0.65641118  0.67687371  0.71745362  0.72368535  0.72968908
+          0.74771481  0.74890664  0.79082252  0.80981255  0.87217591  0.92961609
+          0.96130674  0.96451452  0.9646476   0.99401459]
          */
 
         double[] p = new double[]{0.92961609, 0.31637555, 0.18391881, 0.20456028, 0.56772503, 0.5955447, 0.96451452,
@@ -644,29 +667,64 @@ public class ROCTest {
 
         double[] l = new double[]{1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1};
 
-        double[] fpr_skl = new double[]{0.0, 0.15789474, 0.15789474, 0.31578947, 0.31578947, 0.52631579, 0.52631579, 0.68421053, 0.68421053, 0.84210526, 0.84210526, 0.89473684, 0.89473684, 1.0};
-        double[] tpr_skl = new double[]{0.09090909, 0.09090909, 0.18181818, 0.18181818, 0.36363636, 0.36363636, 0.45454545, 0.45454545, 0.72727273, 0.72727273, 0.90909091, 0.90909091, 1.0, 1.0};
-
-        double[] thr_skl = new double[]{0.99401459, 0.96130674, 0.92961609, 0.79082252, 0.74771481, 0.67687371, 0.65641118, 0.64247533, 0.46759901, 0.31637555, 0.20456028, 0.18391881, 0.17091426, 0.0083883};
+        double[] fpr_skl = new double[]{0.0, 0.0, 0.15789474, 0.15789474, 0.31578947, 0.31578947, 0.52631579, 0.52631579, 0.68421053, 0.68421053, 0.84210526, 0.84210526, 0.89473684, 0.89473684, 1.0};
+        double[] tpr_skl = new double[]{0.0, 0.09090909, 0.09090909, 0.18181818, 0.18181818, 0.36363636, 0.36363636, 0.45454545, 0.45454545, 0.72727273, 0.72727273, 0.90909091, 0.90909091, 1.0, 1.0};
+        //Note the change to the last value: same TPR and FPR at 0.0083883 and 0.0 -> we add the 0.0 threshold edge case + combine with the previous one. Same result
+        double[] thr_skl = new double[]{1.0, 0.99401459, 0.96130674, 0.92961609, 0.79082252, 0.74771481, 0.67687371, 0.65641118, 0.64247533, 0.46759901, 0.31637555, 0.20456028, 0.18391881, 0.17091426, 0.0};
 
         INDArray prob = Nd4j.create(p, new int[]{30,1});
         INDArray label = Nd4j.create(l, new int[]{30,1});
+
         ROC roc = new ROC(0);
         roc.eval(label, prob);
 
-
         double[][] rocCurve = roc.getRocCurveAsArray(); //threshold, fpr, tpr
 
-        System.out.println("FPR: " + Arrays.toString(rocCurve[1]));
-        System.out.println("TPR: " + Arrays.toString(rocCurve[2]));
+//        System.out.println("Thr: " + Arrays.toString(rocCurve[0]));
+//        System.out.println("FPR: " + Arrays.toString(rocCurve[1]));
+//        System.out.println("TPR: " + Arrays.toString(rocCurve[2]));
+//        System.out.println("AUC: " + roc.calculateAUC());
 
+        assertArrayEquals(thr_skl, rocCurve[0], 1e-6);
         assertArrayEquals(fpr_skl, rocCurve[1], 1e-6);
-
+        assertArrayEquals(tpr_skl, rocCurve[2], 1e-6);
 
         double auc = roc.calculateAUC();
-        double aucExp = 0.459330143541;
+        double aucExpSKL = 0.459330143541;
+        assertEquals(aucExpSKL, auc, 1e-6);
 
-        assertEquals(aucExp, auc, 1e-6);
 
+
+        //Check PR curve
+        double[][] prCurve = roc.getPrecisionRecallCurveAsArray();
+
+        double[] precision_skl = {0.39285714, 0.37037037, 0.38461538, 0.36, 0.33333333, 0.34782609, 0.36363636,
+                0.38095238, 0.35, 0.31578947, 0.27777778, 0.29411765, 0.3125, 0.33333333, 0.28571429, 0.30769231,
+                0.33333333, 0.36363636, 0.4, 0.33333333, 0.25, 0.28571429, 0.33333333, 0.4, 0.25, 0.33333333, 0.5,
+                1.0, 1.0};
+        double[] recall_skl = {1.0, 0.90909091, 0.90909091, 0.81818182, 0.72727273, 0.72727273, 0.72727273,
+                0.72727273, 0.63636364, 0.54545455, 0.45454545, 0.45454545, 0.45454545, 0.45454545, 0.36363636,
+                0.36363636, 0.36363636, 0.36363636, 0.36363636, 0.27272727, 0.18181818, 0.18181818, 0.18181818,
+                0.18181818, 0.09090909, 0.09090909, 0.09090909, 0.09090909, 0.0};
+        double[] threshold_skl = {0.17091426, 0.18391881, 0.20456028, 0.29870371, 0.31637555, 0.32558468, 0.43964461,
+                0.46759901, 0.56772503, 0.5955447, 0.64247533, 0.6531771, 0.65356987, 0.65641118, 0.67687371,
+                0.71745362, 0.72368535, 0.72968908, 0.74771481, 0.74890664, 0.79082252, 0.80981255, 0.87217591,
+                0.92961609, 0.96130674, 0.96451452, 0.9646476, 0.99401459};
+
+        System.out.println("Prec: " + Arrays.toString(precision_skl));
+        System.out.println("Rec: " + Arrays.toString(recall_skl));
+        System.out.println("Thr: " + Arrays.toString(threshold_skl));
+
+        assertArrayEquals(threshold_skl, prCurve[0], 1e-6);
+        assertArrayEquals(precision_skl, prCurve[1], 1e-6);
+        assertArrayEquals(recall_skl, prCurve[2], 1e-6);
+
+
+        //Check edge case: perfect classifier
+        prob = Nd4j.create(new double[]{0.1,0.2, 0.5, 0.9}, new int[]{4,1});
+        label = Nd4j.create(new double[]{0,0,1,1}, new int[]{4,1});
+        roc = new ROC(0);
+        roc.eval(label, prob);
+        assertEquals(1.0, roc.calculateAUC(), 1e-8);
     }
 }
