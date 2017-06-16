@@ -433,6 +433,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             throw new DL4JInvalidConfigException("Can't get Spark Master local address. Please specify it manually using VoidConfiguration.setControllerAddress(String) method");
 
         // we're forcing proper defaults
+        log.info("Setting controller address to {}:{}", voidConfiguration.getControllerAddress(), voidConfiguration.getUnicastPort());
         voidConfiguration.setShardAddresses(voidConfiguration.getControllerAddress());
         voidConfiguration.setNumberOfShards(1);
 
