@@ -7,6 +7,7 @@ import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.enums.ExecutionMode;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.*;
 import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
@@ -191,8 +192,7 @@ public class VoidParameterServer {
                 this.transport = transport;
 
                 // first we need to check, if our current IP matches designated shards or backup
-                if (nodeRole == NodeRole.NONE && (voidConfiguration.getForcedRole() == null
-                                || voidConfiguration.getForcedRole() == NodeRole.NONE)) {
+                if (nodeRole == NodeRole.NONE && (voidConfiguration.getForcedRole() == null || voidConfiguration.getForcedRole() == NodeRole.NONE)) {
                     Pair<NodeRole, String> pair = null;
                     if (voidConfiguration.getShardAddresses().size() == 1
                                     && voidConfiguration.getShardAddresses().get(0).contains("127.0.0.1")) {
@@ -239,8 +239,10 @@ public class VoidParameterServer {
                     if (nodeRole == NodeRole.NONE)
                         nodeRole = voidConfiguration.getForcedRole();
 
-                    this.transport.init(voidConfiguration, clipboard, nodeRole, "127.0.0.1",
-                                    voidConfiguration.getUnicastPort(), shardIndex);
+                    // if we're using forced roles here, we'll assume that controllerAddress belongs to this box
+                    String localIp = voidConfiguration.getExecutionMode() == ExecutionMode.MANAGED ? voidConfiguration.getControllerAddress() : "127.0.0.1";
+
+                    this.transport.init(voidConfiguration, clipboard, nodeRole, localIp, voidConfiguration.getUnicastPort(), shardIndex);
                 }
 
 
