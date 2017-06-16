@@ -66,6 +66,12 @@ public interface Transport {
     void sendMessageToAllShards(VoidMessage message);
 
     /**
+     *
+     * @param message
+     */
+    void sendMessageToAllClients(VoidMessage message, Long... exclusions);
+
+    /**
      * This method accepts message from network
      *
      * @param message

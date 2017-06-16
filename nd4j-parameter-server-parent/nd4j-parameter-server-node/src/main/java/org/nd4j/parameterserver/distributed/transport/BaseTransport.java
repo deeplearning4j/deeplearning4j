@@ -560,4 +560,9 @@ public abstract class BaseTransport implements Transport {
     public void addShard(String ip, int port) {
         // no-op
     }
+
+    @Override
+    public void sendMessageToAllClients(VoidMessage message, Long... exclusions) {
+        // no-op
+    }
 }

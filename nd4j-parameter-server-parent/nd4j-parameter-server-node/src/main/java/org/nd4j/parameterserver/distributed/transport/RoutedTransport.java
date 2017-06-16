@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.lang.System.setProperty;
 
@@ -160,9 +161,74 @@ public class RoutedTransport extends BaseTransport {
 
         router.init(voidConfiguration, this);
         this.originatorId = HashUtil.getLongHash(this.getIp() + ":" + this.getPort());
+    }
 
 
+    @Override
+    public void sendMessageToAllClients(VoidMessage message, Long... exclusions) {
+        if (nodeRole != NodeRole.SHARD)
+            throw new ND4JIllegalStateException("Only SHARD allowed to send messages to all Clients");
 
+        final DirectBuffer buffer = message.asUnsafeBuffer();
+
+        // no need to search for matches above number of then exclusions
+        final AtomicInteger cnt = new AtomicInteger(0);
+
+        clients.values().parallelStream().filter(rc -> {
+            // we skip exclusions here
+            if (exclusions != null && cnt.get() < exclusions.length) {
+                for (Long exclude : exclusions)
+                    if (exclude.longValue() == rc.getLongHash()) {
+                        cnt.incrementAndGet();
+                        return false;
+                    }
+            } return true;
+        }).forEach((rc)->{
+            RetransmissionHandler.TransmissionStatus res;
+            long retr = 0;
+            boolean delivered = false;
+
+            while (!delivered) {
+                // still stupid. maybe use real reentrant lock here?
+                synchronized (rc.locker) {
+                    res = RetransmissionHandler.getTransmissionStatus(rc.getPublication().offer(buffer));
+                }
+
+                switch (res) {
+                    case NOT_CONNECTED: {
+                        if (!rc.getActivated().get()) {
+                            retr++;
+
+                            if (retr > 20)
+                                throw new ND4JIllegalStateException(
+                                        "Can't connect to Shard: [" + rc.getPublication().channel() + "]");
+
+                            try {
+                                Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                            } catch (Exception e) {
+                                // no-op
+                            }
+                        } else {
+                            throw new ND4JIllegalStateException("Shards reassignment is to be implemented yet");
+                        }
+                    }
+                    break;
+                    case ADMIN_ACTION:
+                    case BACKPRESSURE: {
+                        try {
+                            Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                        } catch (Exception e) {
+                            // no-op
+                        }
+                    }
+                    break;
+                    case MESSAGE_SENT:
+                        delivered = true;
+                        rc.getActivated().set(true);
+                        break;
+                }
+            }
+        });
     }
 
     /**

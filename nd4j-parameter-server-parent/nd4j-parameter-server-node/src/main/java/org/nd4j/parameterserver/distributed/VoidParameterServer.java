@@ -476,4 +476,31 @@ public class VoidParameterServer {
 
         return response.getPayload();
     }
+
+    /**
+     * This method sends given message to all Shards
+     *
+     * @param message
+     */
+    public synchronized void sendMessageToAllShards(@NonNull VoidMessage message) {
+        transport.sendMessageToAllShards(message);
+    }
+
+    /**
+     * This method sends given message to all Clients
+     *
+     * @param message
+     */
+    public void sendMessageToAllClients(@NonNull VoidMessage message) {
+        this.sendMessageToAllClients(message, null);
+    }
+
+    /**
+     * This method sends given message to all Clients, excluding
+     *
+     * @param message
+     */
+    public synchronized void sendMessageToAllClients(@NonNull VoidMessage message, Long... exclusions) {
+        transport.sendMessageToAllClients(message);
+    }
 }
