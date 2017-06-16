@@ -62,7 +62,7 @@ Michael Depies has written this guide to [installing Deeplearning4j on Eclipse](
 
 ## <a name="eclipse_mvn_scm_checkout">Using DL4J Examples in Eclipse with direct checkout from GIT via the Maven plugin</a> 
 
-If you just want to get the examples running within Eclipse and without using command line at all you can also directly checkout the project from SCM:
+If you just want to get the examples running within Eclipse and without using command line at all you can also directly checkout the project from Eclipse's built-in Source Control Management (SCM):
 
 * In an empty workspace, import via "Check out Maven Project from SCM" and click on "Next"
 ![Alt text](./img/dl4j_mvn_scm_checkout1.png)
