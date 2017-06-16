@@ -8,6 +8,7 @@ import org.apache.commons.io.FileUtils;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.schema.Schema;
 
+import org.deeplearning4j.nearestneighbor.model.Base64NDArrayBody;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborRequest;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborsResult;
 import org.deeplearning4j.nearestneighbor.model.NearstNeighborsResults;
@@ -85,6 +86,17 @@ public class NearestNeighborsServerTest {
                 .asObject(NearstNeighborsResults.class).getBody();
 
         assertEquals(1,csvRecord.getResults().size());
+
+        Base64NDArrayBody base64NDArrayBody = Base64NDArrayBody
+                .builder().k(1).ndarray(Nd4jBase64.base64String(arr.slice(0))).build();
+
+        NearstNeighborsResults csvRecord2 = Unirest.post("http://localhost:9050/knnnew")
+                .header("accept", "application/json")
+                .header("Content-Type", "application/json")
+                .body(base64NDArrayBody)
+                .asObject(NearstNeighborsResults.class).getBody();
+        assertEquals(1,csvRecord2.getResults().size());
+
 
     }
 
