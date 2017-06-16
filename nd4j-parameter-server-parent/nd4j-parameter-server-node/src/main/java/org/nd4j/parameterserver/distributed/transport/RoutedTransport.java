@@ -174,7 +174,7 @@ public class RoutedTransport extends BaseTransport {
 
         clients.values().parallelStream().filter(rc -> {
             // do not send message back to yourself :)
-            if (rc.getLongHash() == this.originatorId)
+            if (rc.getLongHash() == this.originatorId || rc.getLongHash() == 0)
                 return false;
 
             // we skip exclusions here
