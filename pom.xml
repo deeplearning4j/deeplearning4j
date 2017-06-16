@@ -60,7 +60,7 @@
         <typesafe.config.version>1.3.0</typesafe.config.version>
         <py4j.version>0.10.4</py4j.version>
         <jcommander.version>1.27</jcommander.version>
-        <javacpp.version>1.3.2</javacpp.version>
+        <javacpp.version>1.3.3-SNAPSHOT</javacpp.version>
         <javacpp-presets.version>1.3</javacpp-presets.version>
         <nd4j.version>0.8.1-SNAPSHOT</nd4j.version>
         <deeplearning4j.version>0.8.1-SNAPSHOT</deeplearning4j.version>
