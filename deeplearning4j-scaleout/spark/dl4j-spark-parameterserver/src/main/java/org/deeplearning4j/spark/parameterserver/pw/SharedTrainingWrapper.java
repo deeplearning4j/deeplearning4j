@@ -22,6 +22,7 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
+import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
@@ -160,6 +161,13 @@ public class SharedTrainingWrapper {
                     if (transport == null)
                         throw new DL4JInvalidConfigException("No Transport implementation was defined for this training session!");
 
+                    // let's check for spark local edge case
+                    if (!VoidParameterServer.getInstance().isInit()) {
+                        // all nodes that are NOT master - enforced to be Clients
+                        voidConfiguration.setForcedRole(NodeRole.CLIENT);
+
+                        // TODO: tbd: let's allow one of executor nodes to be silent worker maybe? or this going to be too expensive?
+                    }
 
                     VoidParameterServer.getInstance().init(voidConfiguration, transport, new SilentTrainingDriver(accumulator));
 
