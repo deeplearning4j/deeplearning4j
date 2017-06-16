@@ -88,12 +88,12 @@ public class SELUDerivative extends BaseTransformOp {
 
     @Override
     public double op(double d1) {
-        return d1 > 0.0f ? SELU_LAMBDA : SELU_LAMBDA * FastMath.exp(d1);
+        return d1 > 0.0f ? SELU_LAMBDA :  SELU_ALPHA * SELU_LAMBDA * FastMath.exp(d1);
     }
 
     @Override
     public float op(float d1) {
-        return d1 > 0.0f ? (float) SELU_LAMBDA : (float) SELU_LAMBDA * (float) FastMath.exp(d1);
+        return d1 > 0.0f ? (float) SELU_LAMBDA : (float) SELU_ALPHA *  (float) SELU_LAMBDA * (float) FastMath.exp(d1);
     }
 
     @Override
