@@ -13,11 +13,13 @@ import org.deeplearning4j.spark.parameterserver.iterators.VirtualIterator;
 import org.deeplearning4j.spark.parameterserver.iterators.VirtualMultiDataSetIterator;
 import org.deeplearning4j.spark.parameterserver.networking.SilentTrainingDriver;
 import org.deeplearning4j.spark.parameterserver.networking.WiredEncodingHandler;
+import org.deeplearning4j.spark.parameterserver.networking.messages.SilentIntroductoryMessage;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingResult;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingWorker;
 import org.deeplearning4j.spark.parameterserver.util.BlockingObserver;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.TransportType;
@@ -162,15 +164,31 @@ public class SharedTrainingWrapper {
                     VoidParameterServer.getInstance().init(voidConfiguration, transport, new SilentTrainingDriver(accumulator));
 
                     // we should introduce ourselves to controller
+                    // FIXME: if localIP is null - use original ip discovery available in VoidParameterServer
                     String localIP = System.getenv("SPARK_PUBLIC_DNS");
 
-                    // TODO: if localIP is null - use original ip discovery available in VoidParameterServer
+                    // FIXME: do we need port here, in case of Multicast/Broadcast Transport?
+                    SilentIntroductoryMessage sim = new SilentIntroductoryMessage(localIP, voidConfiguration.getUnicastPort());
 
+                    // we're sending this message to all shards, though it's just one Shard by design here - Spark Master
+                    VoidParameterServer.getInstance().sendMessageToAllShards(sim);
+
+                    // after initialization finished, we're ok to actually start training
                 }
 
+                /*
+                    Plan is simple here: if there's defined field in SharedTrainingConfiguration - use that.
+                    If no - try to guess something
+                 */
+                int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+
+                int numWorkers = trainingConfiguration.getNumberOfWorkersPerNode() > 0 ? trainingConfiguration.getNumberOfWorkersPerNode() : numDevices > 1 ? numDevices : 2;
+
+                if (numDevices > 1 && numWorkers > numDevices)
+                    log.warn("WARNING! Using more workers then number of available computational devices!");
+
                 wrapper = new ParallelWrapper.Builder<>(model)
-                        // TODO: we should define proper num workers here, better suiting current environment
-                        .workers(2)
+                        .workers(numWorkers)
                         .workspaceMode(trainingConfiguration.getWorkspaceMode())
                         .trainingMode(ParallelWrapper.TrainingMode.CUSTOM)
                         .gradientsAccumulator(accumulator)

@@ -6,6 +6,7 @@ import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.spark.parameterserver.networking.messages.SilentUpdatesMessage;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
@@ -48,7 +49,9 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
         this.stepFunction = stepFunction;
 
         // params are always the same size
-        this.updates = Nd4j.create(params.shape(), params.ordering());
+        try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            this.updates = Nd4j.create(params.shape(), params.ordering());
+        }
     }
 
     @Override
@@ -84,9 +87,10 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
         } else
             throw new DL4JInvalidConfigException("Neither GradientsAccumulator or StepFunction is defined!");
 
-        // TODO: we should echo this message to everyone but this shard, but only if there's > 1 shard/client available
-        if (transport.numberOfKnownShards() != 0 || transport.numberOfKnownClients() != 0) {
-            //transport.sendMessageToAllShards(message);
+        // we should echo this message to everyone but this shard, but only if there's > 1 shard/client available
+        if (transport.numberOfKnownClients() > 1) {
+            log.info("Resending message, skipping {}", message.getOriginatorId());
+            transport.sendMessageToAllClients(message, message.getOriginatorId());
         }
     }
 

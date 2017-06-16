@@ -1,11 +1,13 @@
 package org.deeplearning4j.spark.parameterserver.networking.messages;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
 
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 public class SilentIntroductoryMessage extends BaseVoidMessage {
     protected String localIp;
     protected int port;
@@ -27,7 +29,14 @@ public class SilentIntroductoryMessage extends BaseVoidMessage {
             or, we can skip direct addressing here, use passive addressing instead, like in client mode?
          */
 
-        transport.addShard(localIp, port);
-        //transport.addClient(localIp, port);
+        log.info("Adding client {}:{}", localIp, port);
+        //transport.addShard(localIp, port);
+        transport.addClient(localIp, port);
+    }
+
+    @Override
+    public boolean isBlockingMessage() {
+        // this is blocking message, we want to get reply back before going further
+        return true;
     }
 }
