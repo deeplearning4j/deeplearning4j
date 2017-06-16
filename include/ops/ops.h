@@ -1084,7 +1084,7 @@ namespace simdOps {
         no_op_exec_special_cuda
 
         op_def static T op(T d1, T *params) {
-            return d1 > (T) 0.0f ? (T) SELU_LAMBDA : (T) SELU_LAMBDA * nd4j::math::nd4j_exp<T>(d1);
+            return d1 > (T) 0.0f ? (T) SELU_LAMBDA : (T) SELU_ALPHA * (T) SELU_LAMBDA * nd4j::math::nd4j_exp<T>(d1);
         }
     };
 
