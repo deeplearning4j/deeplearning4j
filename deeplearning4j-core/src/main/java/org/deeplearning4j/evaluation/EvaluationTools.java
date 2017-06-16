@@ -134,12 +134,12 @@ public class EvaluationTools {
      * @param classNames     Names of the classes. May be null
      */
     public static String rocChartToHtml(ROCMultiClass rocMultiClass, List<String> classNames) {
-        long[] actualCountPositive = rocMultiClass.getCountActualPositive();
-        long[] actualCountNegative = rocMultiClass.getCountActualNegative();
 
-        List<Component> components = new ArrayList<>(actualCountPositive.length);
-        for (int i = 0; i < actualCountPositive.length; i++) {
-            double[][] points = rocMultiClass.getResultsAsArray(i);
+        int n = rocMultiClass.getNumClasses();
+
+        List<Component> components = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            double[][] points = rocMultiClass.getRocCurveAsArray(i);
             String headerText = "Class " + i;
             if (classNames != null && classNames.size() > i) {
                 headerText += " (" + classNames.get(i) + ")";
@@ -151,7 +151,7 @@ public class EvaluationTools {
 
             Component headerDivLeft = new ComponentDiv(HEADER_DIV_TEXT_PAD_STYLE);
             Component headerDiv = new ComponentDiv(HEADER_DIV_STYLE, new ComponentText(headerText, HEADER_TEXT_STYLE));
-            Component c = getRocFromPoints(ROC_TITLE, points, actualCountPositive[i], actualCountNegative[i],
+            Component c = getRocFromPoints(ROC_TITLE, points, rocMultiClass.getCountActualPositive(i), rocMultiClass.getCountActualNegative(i),
                             rocMultiClass.calculateAUC(i), rocMultiClass.calculateAUCPR(i));
             Component c2 = getPRCharts(PR_TITLE, PR_THRESHOLD_TITLE, rocMultiClass.getPrecisionRecallCurve(i));
             components.add(headerDivLeft);

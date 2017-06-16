@@ -402,14 +402,15 @@ public class ROCTest {
 
             assertEquals(auc2, auc3, 1e-6);
 
-            double[][] roc3 = rocMultiClass3.getResultsAsArray(2);
-            double[][] roc2 = rocMultiClass2.getResultsAsArray(1);
+            double[][] roc3 = rocMultiClass3.getRocCurveAsArray(2);
+            double[][] roc2 = rocMultiClass2.getRocCurveAsArray(1);
 
-            assertEquals(2, roc3.length);
-            assertEquals(2, roc2.length);
+            assertEquals(3, roc3.length);
+            assertEquals(3, roc2.length);
 
             assertArrayEquals(roc2[0], roc3[0], 1e-6);
             assertArrayEquals(roc2[1], roc3[1], 1e-6);
+            assertArrayEquals(roc2[2], roc3[2], 1e-6);
         }
     }
 
@@ -539,7 +540,7 @@ public class ROCTest {
 
         iter.setPreProcessor(ns);
 
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < 10; i++) {
             net.fit(ds);
         }
 
@@ -549,6 +550,8 @@ public class ROCTest {
             iter.reset();
             ROCMultiClass roc = net.evaluateROCMultiClass(iter, steps);
 
+            iter.reset();
+            ds = iter.next();
             INDArray f = ds.getFeatures();
             INDArray l = ds.getLabels();
             INDArray out = net.output(f);
@@ -557,13 +560,16 @@ public class ROCTest {
 
             for (int i = 0; i < 3; i++) {
                 System.out.println("i = " + i);
-                assertEquals(manual.calculateAUC(i), roc.calculateAUC(i), 1e-6);
+                double rocExp = manual.calculateAUC(i);
+                double rocAct = roc.calculateAUC(i);
+                assertEquals(rocExp, rocAct, 1e-6);
 
-                double[][] rocCurve = roc.getResultsAsArray(i);
-                double[][] rocManual = manual.getResultsAsArray(i);
+                double[][] rocCurve = roc.getRocCurveAsArray(i);
+                double[][] rocManual = manual.getRocCurveAsArray(i);
 
                 assertArrayEquals(rocCurve[0], rocManual[0], 1e-6);
                 assertArrayEquals(rocCurve[1], rocManual[1], 1e-6);
+                assertArrayEquals(rocCurve[2], rocManual[2], 1e-6);
             }
         }
     }

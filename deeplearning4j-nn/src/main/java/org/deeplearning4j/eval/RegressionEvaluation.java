@@ -1,5 +1,6 @@
 package org.deeplearning4j.eval;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Abs;
@@ -22,6 +23,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@Data
 @EqualsAndHashCode(callSuper = true)
 public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
@@ -267,6 +269,12 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     }
 
     public int numColumns() {
+        if(columnNames == null){
+            if(exampleCountPerColumn == null){
+                return 0;
+            }
+            return exampleCountPerColumn.size(1);
+        }
         return columnNames.size();
     }
 

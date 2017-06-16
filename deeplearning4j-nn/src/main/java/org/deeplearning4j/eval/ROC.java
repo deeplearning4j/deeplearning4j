@@ -33,9 +33,9 @@ import java.util.*;
  *
  * @author Alex Black
  */
-@Getter
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
+@Data
 public class ROC extends BaseEvaluation<ROC> {
 
     private static final int EXACT_ALLOC_BLOCK_SIZE = 10000;
@@ -301,6 +301,7 @@ public class ROC extends BaseEvaluation<ROC> {
      *
      * @return
      */
+    @JsonIgnore
     public double[][] getPrecisionRecallCurveAsArray() {
 
         double[] thresholdOut;

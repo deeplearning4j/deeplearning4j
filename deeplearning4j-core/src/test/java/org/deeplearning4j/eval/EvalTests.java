@@ -1,8 +1,10 @@
 package org.deeplearning4j.eval;
 
 import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Created by agibsonccc on 5/16/17.
@@ -29,7 +31,9 @@ public class EvalTests {
 
 
         RegressionEvaluation regressionEvaluation =  new RegressionEvaluation(1);
+        regressionEvaluation.eval(Nd4j.create(10,1), Nd4j.ones(10,1));
         json = regressionEvaluation.toJson();
+        System.out.println(json);
         assertEquals(regressionEvaluation,BaseEvaluation.fromJson(json,RegressionEvaluation.class));
 
         EvaluationBinary evaluationBinary = new EvaluationBinary();
@@ -47,7 +51,7 @@ public class EvalTests {
         regressionEvaluation.averagerootMeanSquaredError();
 
 
-
+        fail("Need to test exact ROC implemnetations + write better tests before merging");
     }
 
 }
