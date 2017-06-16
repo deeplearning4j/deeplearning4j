@@ -78,12 +78,12 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
                 return;
             };
 
-            log.info("Applying message {} at Worker", updatesCount.incrementAndGet());
+            log.info("Applying message {}/{} at Worker", message.getUpdateId(), updatesCount.incrementAndGet());
 
             accumulator.receiveUpdate(message.getUpdates());
         } else if (params != null && stepFunction != null) {
 
-            log.info("Applying message {} at Master", updatesCount.incrementAndGet());
+            log.info("Applying message {}/{} at Master", message.getUpdateId(), updatesCount.incrementAndGet());
             // master invokes everything
             synchronized (this) {
                 // TODO: change this to memset?

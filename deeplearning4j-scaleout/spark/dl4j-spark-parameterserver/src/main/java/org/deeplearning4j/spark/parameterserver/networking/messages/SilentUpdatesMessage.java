@@ -24,6 +24,7 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
 @Slf4j
 public class SilentUpdatesMessage extends BaseVoidMessage implements TrainingMessage, RequestMessage  {
 
+    @Getter protected long updateId;
     @Getter protected INDArray updates;
     protected long frameId;
 
@@ -31,8 +32,9 @@ public class SilentUpdatesMessage extends BaseVoidMessage implements TrainingMes
         // just for ser/de
     }
 
-    public SilentUpdatesMessage(INDArray encodedUpdates) {
+    public SilentUpdatesMessage(INDArray encodedUpdates, long updateId) {
         this.updates = encodedUpdates;
+        this.updateId = updateId;
     }
 
 

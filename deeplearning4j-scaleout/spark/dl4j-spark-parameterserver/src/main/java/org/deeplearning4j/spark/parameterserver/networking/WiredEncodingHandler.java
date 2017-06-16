@@ -45,8 +45,9 @@ public class WiredEncodingHandler extends EncodingHandler {
         // Send this message away
         // FIXME: do something with unsafe duplication, which is bad in case of Local Spark
         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()){
-            log.info("Sending message {} to Shard", updatesCounter.incrementAndGet());
-            VoidParameterServer.getInstance().execDistributedImmediately(new SilentUpdatesMessage(message.unsafeDuplication()));
+            long updateId = updatesCounter.getAndIncrement();
+            log.info("Sending message {} to Shard", updateId);
+            VoidParameterServer.getInstance().execDistributedImmediately(new SilentUpdatesMessage(message.unsafeDuplication(), updateId));
         }
 
 
