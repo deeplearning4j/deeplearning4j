@@ -186,6 +186,8 @@ public class RoutedTransport extends BaseTransport {
                     }
             } return true;
         }).forEach((rc)->{
+            log.info("Sending message to {}", rc.getLongHash());
+
             RetransmissionHandler.TransmissionStatus res;
             long retr = 0;
             boolean delivered = false;
