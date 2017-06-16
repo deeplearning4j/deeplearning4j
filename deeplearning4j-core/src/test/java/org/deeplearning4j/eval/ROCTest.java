@@ -572,7 +572,8 @@ public class ROCTest {
         //at threshold 0.331 to 0.66: tp=1, fp=0, fn=1, tn=1 prec=1/1=1, recall=1/2=0.5
         //at threshold 0.661 to 1.0:  tp=0, fp=0, fn=2, tn=1 prec=0/0=1, recall=0/2=0
 
-        for( int steps : new int[]{10, 0}) {    //0 steps = exact
+//        for( int steps : new int[]{10, 0}) {    //0 steps = exact
+        for( int steps : new int[]{0}) {    //0 steps = exact
             String msg = "Steps = " + steps;
             //area: 1.0
             ROC r = new ROC(steps);
@@ -582,7 +583,10 @@ public class ROCTest {
             r.eval(one, Nd4j.create(new double[]{0.33}));
             r.eval(one, Nd4j.create(new double[]{0.66}));
 
-            assertEquals(msg, 1.0, r.calculateAUCPR(), 1e-6);
+            double[][] prc = r.getPrecisionRecallCurveAsArray();
+
+            double auprc = r.calculateAUCPR();
+            assertEquals(msg, 1.0, auprc, 1e-6);
 
             //Assume 2 positive examples, at 0.33 and 0.66 predicted, 1 negative example at 0.5 prob
             //at threshold 0 to 0.33: tp=2, fp=1, fn=0, tn=0 prec=2/(2+1)=0.666, recall=2/2=1.0
@@ -604,5 +608,65 @@ public class ROCTest {
             }
             assertEquals(msg, 0.7916666666667, r.calculateAUCPR(), precision);
         }
+    }
+
+
+    @Test
+    public void testRocAucExact(){
+
+        //Check the implementation vs. Scikitlearn
+        /*
+        np.random.seed(12345)
+        prob = np.random.rand(30,1)
+        label = np.random.randint(0,2,(30,1))
+
+        fpr, tpr, thr = sklearn.metrics.roc_curve(label, prob)
+        auc = sklearn.metrics.auc(fpr, tpr)
+
+        fpr
+        [ 0.          0.15789474  0.15789474  0.31578947  0.31578947  0.52631579
+          0.52631579  0.68421053  0.68421053  0.84210526  0.84210526  0.89473684
+          0.89473684  1.        ]
+        tpr
+        [ 0.09090909  0.09090909  0.18181818  0.18181818  0.36363636  0.36363636
+          0.45454545  0.45454545  0.72727273  0.72727273  0.90909091  0.90909091
+          1.          1.        ]
+        threshold
+        [ 0.99401459  0.96130674  0.92961609  0.79082252  0.74771481  0.67687371
+          0.65641118  0.64247533  0.46759901  0.31637555  0.20456028  0.18391881
+          0.17091426  0.0083883 ]
+         */
+
+        double[] p = new double[]{0.92961609, 0.31637555, 0.18391881, 0.20456028, 0.56772503, 0.5955447, 0.96451452,
+                0.6531771, 0.74890664, 0.65356987, 0.74771481, 0.96130674, 0.0083883 , 0.10644438, 0.29870371,
+                0.65641118, 0.80981255, 0.87217591, 0.9646476 , 0.72368535, 0.64247533, 0.71745362, 0.46759901,
+                0.32558468, 0.43964461, 0.72968908, 0.99401459, 0.67687371, 0.79082252, 0.17091426};
+
+        double[] l = new double[]{1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1};
+
+        double[] fpr_skl = new double[]{0.0, 0.15789474, 0.15789474, 0.31578947, 0.31578947, 0.52631579, 0.52631579, 0.68421053, 0.68421053, 0.84210526, 0.84210526, 0.89473684, 0.89473684, 1.0};
+        double[] tpr_skl = new double[]{0.09090909, 0.09090909, 0.18181818, 0.18181818, 0.36363636, 0.36363636, 0.45454545, 0.45454545, 0.72727273, 0.72727273, 0.90909091, 0.90909091, 1.0, 1.0};
+
+        double[] thr_skl = new double[]{0.99401459, 0.96130674, 0.92961609, 0.79082252, 0.74771481, 0.67687371, 0.65641118, 0.64247533, 0.46759901, 0.31637555, 0.20456028, 0.18391881, 0.17091426, 0.0083883};
+
+        INDArray prob = Nd4j.create(p, new int[]{30,1});
+        INDArray label = Nd4j.create(l, new int[]{30,1});
+        ROC roc = new ROC(0);
+        roc.eval(label, prob);
+
+
+        double[][] rocCurve = roc.getRocCurveAsArray(); //threshold, fpr, tpr
+
+        System.out.println("FPR: " + Arrays.toString(rocCurve[1]));
+        System.out.println("TPR: " + Arrays.toString(rocCurve[2]));
+
+        assertArrayEquals(fpr_skl, rocCurve[1], 1e-6);
+
+
+        double auc = roc.calculateAUC();
+        double aucExp = 0.459330143541;
+
+        assertEquals(aucExp, auc, 1e-6);
+
     }
 }

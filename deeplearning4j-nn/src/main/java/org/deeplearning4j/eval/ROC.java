@@ -13,6 +13,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 
 import java.io.Serializable;
@@ -57,7 +58,7 @@ public class ROC extends BaseEvaluation<ROC> {
      */
     public ROC(int thresholdSteps) {
 
-        if(thresholdSteps > 0){
+        if (thresholdSteps > 0) {
             this.thresholdSteps = thresholdSteps;
 
             double step = 1.0 / thresholdSteps;
@@ -74,11 +75,11 @@ public class ROC extends BaseEvaluation<ROC> {
         }
     }
 
-    protected INDArray getProbAndLabelUsed(){
-        if(probAndLabel == null || exampleCount == 0){
+    protected INDArray getProbAndLabelUsed() {
+        if (probAndLabel == null || exampleCount == 0) {
             return null;
         }
-        return probAndLabel.get(NDArrayIndex.interval(0,exampleCount), NDArrayIndex.all());
+        return probAndLabel.get(NDArrayIndex.interval(0, exampleCount), NDArrayIndex.all());
     }
 
     @Override
@@ -87,7 +88,7 @@ public class ROC extends BaseEvaluation<ROC> {
         countActualNegative = 0L;
         counts.clear();
 
-        if(isExact){
+        if (isExact) {
             probAndLabel = null;
             exampleCount = 0;
         } else {
@@ -120,36 +121,36 @@ public class ROC extends BaseEvaluation<ROC> {
             evalTimeSeries(labels, predictions);
         }
         if (labels.rank() > 2 || predictions.rank() > 2 || labels.size(1) != predictions.size(1)
-                        || labels.size(1) > 2) {
+                || labels.size(1) > 2) {
             throw new IllegalArgumentException("Invalid input data shape: labels shape = "
-                            + Arrays.toString(labels.shape()) + ", predictions shape = "
-                            + Arrays.toString(predictions.shape()) + "; require rank 2 array with size(1) == 1 or 2");
+                    + Arrays.toString(labels.shape()) + ", predictions shape = "
+                    + Arrays.toString(predictions.shape()) + "; require rank 2 array with size(1) == 1 or 2");
         }
 
         double step = 1.0 / thresholdSteps;
         boolean singleOutput = labels.size(1) == 1;
 
-        if(isExact){
+        if (isExact) {
             //Exact approach: simply add them to the storage for later computation/use
 
-            if(probAndLabel == null){
+            if (probAndLabel == null) {
                 //Do initial allocation
                 int initialSize = Math.max(labels.size(0), EXACT_ALLOC_BLOCK_SIZE);
-                probAndLabel = Nd4j.create(initialSize, 2); //First col: probability of class 1. Second col: "is class 1"
+                probAndLabel = Nd4j.create(new int[]{initialSize, 2}, 'c'); //First col: probability of class 1. Second col: "is class 1"
             }
 
             //Allocate a larger array if necessary
-            if(exampleCount + labels.size(0) >= probAndLabel.size(0)){
+            if (exampleCount + labels.size(0) >= probAndLabel.size(0)) {
                 int newSize = probAndLabel.size(0) + Math.max(EXACT_ALLOC_BLOCK_SIZE, labels.size(0));
-                INDArray newProbAndLabel = Nd4j.create(newSize, 2);
-                newProbAndLabel.assign(probAndLabel.get(NDArrayIndex.interval(0,exampleCount), NDArrayIndex.all()));
+                INDArray newProbAndLabel = Nd4j.create(new int[]{newSize, 2}, 'c');
+                newProbAndLabel.assign(probAndLabel.get(NDArrayIndex.interval(0, exampleCount), NDArrayIndex.all()));
                 probAndLabel = newProbAndLabel;
             }
 
             //put values
             INDArray probClass1;
             INDArray labelClass1;
-            if(singleOutput){
+            if (singleOutput) {
                 probClass1 = predictions;
                 labelClass1 = labels;
             } else {
@@ -157,10 +158,10 @@ public class ROC extends BaseEvaluation<ROC> {
                 labelClass1 = labels.getColumn(1);
             }
             int currMinibatchSize = labels.size(0);
-            probAndLabel.get(NDArrayIndex.interval(exampleCount, exampleCount+currMinibatchSize), NDArrayIndex.point(0))
+            probAndLabel.get(NDArrayIndex.interval(exampleCount, exampleCount + currMinibatchSize), NDArrayIndex.point(0))
                     .assign(probClass1);
 
-            probAndLabel.get(NDArrayIndex.interval(exampleCount, exampleCount+currMinibatchSize), NDArrayIndex.point(0))
+            probAndLabel.get(NDArrayIndex.interval(exampleCount, exampleCount + currMinibatchSize), NDArrayIndex.point(1))
                     .assign(labelClass1);
 
             int countClass1CurrMinibatch = labelClass1.sumNumber().intValue();
@@ -263,7 +264,7 @@ public class ROC extends BaseEvaluation<ROC> {
 
         double[][] asArray = getRocCurveAsArray();  //Threshold, fpr, tpr
         int n = asArray.length;
-        for( int i=0; i<n; i++ ){
+        for (int i = 0; i < n; i++) {
             out.add(new ROCValue(asArray[0][i], asArray[2][i], asArray[1][i])); //ROCValue: thresh, tpr, fpr
         }
         return out;
@@ -278,7 +279,7 @@ public class ROC extends BaseEvaluation<ROC> {
         double[][] asArr = getPrecisionRecallCurveAsArray();
         int length = asArr[0].length;
         List<PrecisionRecallPoint> out = new ArrayList<>(length);
-        for( int i=0; i<length; i++ ){
+        for (int i = 0; i < length; i++) {
             out.add(new PrecisionRecallPoint(asArr[0][i], asArr[1][i], asArr[2][i]));
         }
         return out;
@@ -298,34 +299,44 @@ public class ROC extends BaseEvaluation<ROC> {
         double[] precisionOut;
         double[] recallOut;
 
-        if(isExact){
+        if (isExact) {
             INDArray pl = getProbAndLabelUsed();
             INDArray sorted = Nd4j.sortRows(pl, 0, true);
             INDArray isPositive = sorted.getColumn(0);
 
             INDArray cumSumPos = isPositive.cumsum(-1);
-            int length = isPositive.length();
+            int numPredictions = isPositive.length();
 
-            thresholdOut = new double[length+1];
-            precisionOut = new double[length+1];
-            recallOut = new double[length+1];
+            //Num predictions + 2: (+2) is for 0 and 1 threshold
+            thresholdOut = new double[numPredictions + 2];
+            precisionOut = new double[numPredictions + 2];
+            recallOut = new double[numPredictions + 2];
 
             //Precision: sum(TP) / sum(predicted pos at threshold)
             //Recall: sum(TP) / total actual positives
 
-            for( int i=1; i<=length; i++ ){ //Start at 1 -> threshold/precision/recall[0] == 0.0 by design
-                double tpCountAtThreshold = cumSumPos.getDouble(i-1);
-                    thresholdOut[i] = sorted.getDouble(i - 1, 0);
+            //Edge case: threshold of 0.0. All predicted negative, recall = 0.0
+            // TP = 0, PP at threshold = 0 -> 0 / 0 -> use 1.0
+            //But Recall = 0
+            precisionOut[0] = 1.0;
 
+            for (int i = 1; i <= numPredictions; i++) { //Start at 1 -> threshold/precision/recall[0] == 0.0 by design
+                double tpCountAtThreshold = cumSumPos.getDouble(i - 1);
+                thresholdOut[i] = sorted.getDouble(i - 1, 0);
                 precisionOut[i] = tpCountAtThreshold / i;
                 recallOut[i] = tpCountAtThreshold / countActualPositive;
             }
+
+            //Threshold of 1.0: all predicted as positive
+            thresholdOut[numPredictions + 1] = 1.0;
+            precisionOut[numPredictions + 1] = countActualPositive / (double) numPredictions;
+            recallOut[numPredictions + 1] = 1.0;
         } else {
             thresholdOut = new double[counts.size()];
             precisionOut = new double[counts.size()];
             recallOut = new double[counts.size()];
 
-            int i=0;
+            int i = 0;
             for (Map.Entry<Double, CountsForThreshold> entry : counts.entrySet()) {
                 double t = entry.getKey();
                 CountsForThreshold c = entry.getValue();
@@ -380,11 +391,14 @@ public class ROC extends BaseEvaluation<ROC> {
     @JsonIgnore
     public double[][] getRocCurveAsArray() {
 
-        if(isExact){
+        if (isExact) {
             INDArray pl = getProbAndLabelUsed();
             INDArray sorted = Nd4j.sortRows(pl, 0, true);
-            INDArray isPositive = sorted.getColumn(0);
-            INDArray isNegative = sorted.getColumn(0).rsub(1.0);
+            INDArray isPositive = sorted.getColumn(1);
+            INDArray isNegative = sorted.getColumn(1).rsub(1.0);
+
+//            System.out.println(sorted);
+            System.out.println(new NDArrayStrings(8).format(sorted));
 
             INDArray cumSumPos = isPositive.cumsum(-1);
             INDArray cumSumNeg = isNegative.cumsum(-1);
@@ -393,36 +407,61 @@ public class ROC extends BaseEvaluation<ROC> {
             int totalNegatives = isPositive.length() - totalPositives;
             int length = isNegative.length();
 
-            double[] tOut = new double[length+1];
-            double[] xOut = new double[length+1];
-            double[] yOut = new double[length+1];
-            int outUsed = 0;
-            for( int i=1; i<=length; i++ ){ //Start at 1 -> xOut[0] and yOut[0] == 0.0 by design
+            double[] tOut = new double[length + 2];
+            double[] x_fpr_out = new double[length + 2];
+            double[] y_tpr_out = new double[length + 2];
+            int lastOutPos = 0;
+            for (int i = 1; i <= length; i++) { //Start at 1 -> xOut[0] and yOut[0] == 0.0 by design
                 //Y axis: TPR = sum(TP at current threshold) / totalPositives
                 //X axis: FPR = sum(FP at current threshold) / totalNegatives
 
-                tOut[i] = pl.getDouble(i-1, 0);
-                double x_fpr = cumSumNeg.getDouble(i-1) / totalNegatives;
-                double y_tpr = cumSumPos.getDouble(i-1) / totalPositives;
+                tOut[i] = pl.getDouble(i - 1, 0);
+                double x_fpr = cumSumNeg.getDouble(i - 1) / totalNegatives;
+                double y_tpr = cumSumPos.getDouble(i - 1) / totalPositives;
 
-                //Only add this to the output if it differs from the last point...
-                if(x_fpr != xOut[outUsed] || y_tpr != yOut[outUsed]){
-                    xOut[outUsed] = x_fpr;
-                    yOut[outUsed] = y_tpr;
-                    outUsed++;
+                lastOutPos++;
+                x_fpr_out[lastOutPos] = x_fpr;
+                y_tpr_out[lastOutPos] = y_tpr;
+            }
+
+            lastOutPos++;
+            x_fpr_out[lastOutPos] = 1.0;
+            y_tpr_out[lastOutPos] = 1.0;
+
+
+            //Note: we can have multiple FPR for a given TPR, and multiple TPR for a given FPR
+            //These can be omitted, without changing the area (as long as we keep the edge points)
+            double[] t_compacted = new double[tOut.length];
+            double[] x_fpr_compacted = new double[x_fpr_out.length];
+            double[] y_tpr_compacted = new double[y_tpr_out.length];
+            lastOutPos = -1;
+            for (int i = 0; i < tOut.length; i++) {
+
+                boolean keep;
+                if(i == 0 || i == tOut.length -1){
+                    keep = true;
+                } else {
+                    boolean ommitSameTPR = y_tpr_out[i - 1] == y_tpr_out[i] && y_tpr_out[i] == y_tpr_out[i + 1];
+                    boolean ommitSameFPR = x_fpr_out[i - 1] == x_fpr_out[i] && x_fpr_out[i] == x_fpr_out[i + 1];
+                    keep = !ommitSameFPR && !ommitSameTPR;
+                }
+
+                if (keep) {
+                    lastOutPos++;
+                    t_compacted[lastOutPos] = tOut[i];
+                    y_tpr_compacted[lastOutPos] = y_tpr_out[i];
+                    x_fpr_compacted[lastOutPos] = x_fpr_out[i];
                 }
             }
 
-            xOut[outUsed] = 1.0;
-            yOut[outUsed] = 1.0;
-            outUsed++;
 
-            if(outUsed < xOut.length){
-                xOut = Arrays.copyOfRange(xOut, 0, outUsed);
-                yOut = Arrays.copyOfRange(yOut, 0, outUsed);
+            if (lastOutPos < x_fpr_out.length-1) {
+                tOut = Arrays.copyOfRange(t_compacted, 0, lastOutPos+1);
+                x_fpr_out = Arrays.copyOfRange(x_fpr_compacted, 0, lastOutPos+1);
+                y_tpr_out = Arrays.copyOfRange(y_tpr_compacted, 0, lastOutPos+1);
             }
 
-            return new double[][]{tOut, xOut, yOut};
+            return new double[][]{tOut, x_fpr_out, y_tpr_out};
         } else {
 
             double[][] out = new double[3][thresholdSteps + 1];
@@ -448,7 +487,7 @@ public class ROC extends BaseEvaluation<ROC> {
      * @return AUC
      */
     public double calculateAUC() {
-        if(auc != null){
+        if (auc != null) {
             return auc;
         }
 
@@ -458,11 +497,11 @@ public class ROC extends BaseEvaluation<ROC> {
 
         //Given the points
         double auc = 0.0;
-        for (int i = 0; i < nPoints-1; i++) {
+        for (int i = 0; i < nPoints - 1; i++) {
             double fprLeft = rocAsArray[0][i];
             double tprLeft = rocAsArray[1][i];
-            double fprRight = rocAsArray[0][i+1];
-            double tprRight = rocAsArray[1][i+1];
+            double fprRight = rocAsArray[0][i + 1];
+            double tprRight = rocAsArray[1][i + 1];
 
             //y axis: TPR
             //x axis: FPR
@@ -481,9 +520,9 @@ public class ROC extends BaseEvaluation<ROC> {
      *
      * @return
      */
-    public double calculateAUCPR(){
+    public double calculateAUCPR() {
 
-        if(auprc != null){
+        if (auprc != null) {
             return auprc;
         }
 
@@ -491,18 +530,18 @@ public class ROC extends BaseEvaluation<ROC> {
         int n = prcurve[0].length;
 
         double prArea = 0.0;
-        for( int i=0; i<n-1; i++ ){
+        for (int i = 0; i < n - 1; i++) {
             double pLeft = prcurve[1][i];
             double rLeft = prcurve[2][i];
-            double pRight = prcurve[1][i+1];
-            double rRight = prcurve[2][i+1];
+            double pRight = prcurve[1][i + 1];
+            double rRight = prcurve[2][i + 1];
 
             double deltaX = Math.abs(rLeft - rRight);  //Going from highest recall (at 0 threshold) to lowest recall (at 1.0 threshold)
-            if(deltaX == 0){
+            if (deltaX == 0) {
                 continue;
             }
-            double avgY = (pLeft+pRight) / 2.0;
-            prArea += deltaX*avgY;
+            double avgY = (pLeft + pRight) / 2.0;
+            prArea += deltaX * avgY;
         }
 
         auprc = prArea;
@@ -519,31 +558,31 @@ public class ROC extends BaseEvaluation<ROC> {
     public void merge(ROC other) {
         if (this.thresholdSteps != other.thresholdSteps) {
             throw new UnsupportedOperationException(
-                            "Cannot merge ROC instances with different numbers of threshold steps ("
-                                            + this.thresholdSteps + " vs. " + other.thresholdSteps + ")");
+                    "Cannot merge ROC instances with different numbers of threshold steps ("
+                            + this.thresholdSteps + " vs. " + other.thresholdSteps + ")");
         }
         this.countActualPositive += other.countActualPositive;
         this.countActualNegative += other.countActualNegative;
         this.auc = null;
         this.auprc = null;
 
-        if(isExact){
+        if (isExact) {
 
-            if(other.exampleCount == 0){
+            if (other.exampleCount == 0) {
                 return;
             }
 
-            if(this.exampleCount == 0){
+            if (this.exampleCount == 0) {
                 this.exampleCount = other.exampleCount;
                 this.probAndLabel = other.probAndLabel;
                 return;
             }
 
-            if(this.exampleCount + other.exampleCount > this.probAndLabel.size(0)){
+            if (this.exampleCount + other.exampleCount > this.probAndLabel.size(0)) {
                 //Allocate new array
                 int newSize = this.probAndLabel.size(0) + Math.max(other.probAndLabel.size(0), EXACT_ALLOC_BLOCK_SIZE);
                 INDArray newProbAndLabel = Nd4j.create(newSize, 2);
-                newProbAndLabel.assign(probAndLabel.get(NDArrayIndex.interval(0,exampleCount), NDArrayIndex.all()));
+                newProbAndLabel.assign(probAndLabel.get(NDArrayIndex.interval(0, exampleCount), NDArrayIndex.all()));
                 probAndLabel = newProbAndLabel;
             }
 
@@ -567,18 +606,18 @@ public class ROC extends BaseEvaluation<ROC> {
     @Data
     @NoArgsConstructor
     public static class ROCValue {
-        private  double threshold;
-        private  double truePositiveRate;
-        private  double falsePositiveRate;
+        private double threshold;
+        private double truePositiveRate;
+        private double falsePositiveRate;
     }
 
     @AllArgsConstructor
     @Data
     @NoArgsConstructor
     public static class PrecisionRecallPoint {
-        private  double classiferThreshold;
-        private  double precision;
-        private  double recall;
+        private double classiferThreshold;
+        private double precision;
+        private double recall;
     }
 
     @AllArgsConstructor
