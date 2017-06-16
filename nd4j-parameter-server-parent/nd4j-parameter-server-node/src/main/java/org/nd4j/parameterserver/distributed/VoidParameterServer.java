@@ -155,6 +155,14 @@ public class VoidParameterServer {
     }
 
     /**
+     * This method returns True if initialization was started AND was finished, false otherwise
+     * @return
+     */
+    public boolean isInit() {
+        return initFinished.get();
+    }
+
+    /**
      * This method starts ParameterServer instance
      *
      * PLEASE NOTE: This method is blocking for first caller only
