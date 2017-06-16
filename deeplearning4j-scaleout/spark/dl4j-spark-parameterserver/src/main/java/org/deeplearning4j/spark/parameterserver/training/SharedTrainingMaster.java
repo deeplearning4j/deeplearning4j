@@ -432,6 +432,10 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (voidConfiguration.getControllerAddress() == null)
             throw new DL4JInvalidConfigException("Can't get Spark Master local address. Please specify it manually using VoidConfiguration.setControllerAddress(String) method");
 
+        // we're forcing proper defaults
+        voidConfiguration.setShardAddresses(voidConfiguration.getControllerAddress());
+        voidConfiguration.setNumberOfShards(1);
+
         Transport transport = voidConfiguration.getTransportType() == TransportType.ROUTED ? new RoutedTransport() : voidConfiguration.getTransportType() == TransportType.BROADCAST ? new MulticastTransport() : this.transport;
 
         if (transport == null)
