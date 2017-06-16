@@ -88,7 +88,27 @@ public class NearestNeighborsServer {
             }
         })));
 
+        routingDsl.POST("/knnnew").routeTo(FunctionUtil.function0((() -> {
+            try {
+                Base64NDArrayBody record = Json.fromJson(request().body().asJson(), Base64NDArrayBody.class);
+                INDArray arr = Nd4jBase64.fromBase64(record.getNdarray());
+                List<DataPoint> results = new ArrayList<>();
+                List<Double> distances =new ArrayList<>();
+                tree.search(new DataPoint(points.size(0) + 1,arr,invert),record.getK(),results,distances);
+                if (record == null)
+                    return badRequest();
+                List<NearestNeighborsResult> nnResult = new ArrayList<>();
+                for(DataPoint dataPoint : results) {
+                    nnResult.add(new NearestNeighborsResult(dataPoint.getIndex()));
+                }
+                NearstNeighborsResults results2 = NearstNeighborsResults.builder().results(nnResult).build();
+                return ok(Json.toJson(results2));
 
+            } catch (Exception e) {
+                e.printStackTrace();
+                return internalServerError();
+            }
+        })));
         server = Server.forRouter(routingDsl.build(), Mode.DEV, port);
 
 
