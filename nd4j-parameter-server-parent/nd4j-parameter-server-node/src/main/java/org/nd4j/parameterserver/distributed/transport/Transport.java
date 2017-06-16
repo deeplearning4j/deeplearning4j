@@ -124,4 +124,10 @@ public interface Transport {
      * @return
      */
     int numberOfKnownShards();
+
+    /**
+     * This method returns ID of this Transport instance
+     * @return
+     */
+    long getOwnOriginatorId();
 }

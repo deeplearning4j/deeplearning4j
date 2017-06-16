@@ -44,8 +44,6 @@ public class RoutedTransport extends BaseTransport {
     @Setter
     protected ClientRouter router;
 
-    protected long originatorId;
-
     public RoutedTransport() {
         //
     }

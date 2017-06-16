@@ -160,4 +160,9 @@ public class LocalTransport implements Transport {
     public void sendMessageToAllClients(VoidMessage message, Long... exclusions) {
         // no-op
     }
+
+    @Override
+    public long getOwnOriginatorId() {
+        return 0;
+    }
 }

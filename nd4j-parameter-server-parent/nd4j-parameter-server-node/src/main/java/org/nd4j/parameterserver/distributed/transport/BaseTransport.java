@@ -75,11 +75,18 @@ public abstract class BaseTransport implements Transport {
 
     protected ThreadingModel threadingModel = ThreadingModel.DEDICATED_THREADS;
 
+    protected long originatorId;
+
     // TODO: make this auto-configurable
     @Getter
     protected short targetIndex = 0;
     @Getter
     protected short shardIndex = 0;
+
+    @Override
+    public long getOwnOriginatorId() {
+        return originatorId;
+    }
 
     @Override
     public MeaningfulMessage sendMessageAndGetResponse(@NonNull VoidMessage message) {
