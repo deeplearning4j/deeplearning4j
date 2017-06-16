@@ -164,7 +164,7 @@ public class SharedTrainingWrapper {
                     // let's check for spark local edge case
                     if (!VoidParameterServer.getInstance().isInit()) {
                         // all nodes that are NOT master - enforced to be Clients
-                        voidConfiguration.setForcedRole(NodeRole.CLIENT);
+                        voidConfiguration.setForcedRole(null);
 
                         // TODO: tbd: let's allow one of executor nodes to be silent worker maybe? or this going to be too expensive?
                     }
