@@ -312,6 +312,9 @@ public class RoutedTransport extends BaseTransport {
                         rc.getActivated().set(true);
                         break;
                 }
+
+                if (!delivered)
+                    log.info("Attempting to resend message");
             }
         });
     }
