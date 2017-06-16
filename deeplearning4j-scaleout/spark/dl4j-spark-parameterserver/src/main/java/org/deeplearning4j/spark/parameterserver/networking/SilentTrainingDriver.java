@@ -17,6 +17,8 @@ import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
  * This TrainingDriver implementation is suited ONLY for Spark Master, and handles application & redistribution of incoming encoded messages across distributed network
  *
@@ -32,6 +34,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
 
     protected transient VoidConfiguration voidConfiguration;
     protected transient Transport transport;
+    protected transient AtomicLong updatesCount;
 
     // these 2 are not used here
     protected transient Storage storage;
@@ -41,12 +44,14 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
     public SilentTrainingDriver(@NonNull GradientsAccumulator accumulator) {
         log.info("Creating TrainingDriver for worker...");
         this.accumulator = accumulator;
+        this.updatesCount = new AtomicLong(0);
     }
 
     public SilentTrainingDriver(@NonNull INDArray params, @NonNull StepFunction stepFunction) {
         log.info("Creating TrainingDriver for master...");
         this.params = params;
         this.stepFunction = stepFunction;
+        this.updatesCount = new AtomicLong(0);
 
         // params are always the same size
         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
@@ -69,16 +74,16 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
          */
         // if accumulator is defined, we're working at Worker level, so it's not our problem what happens inside
         if (accumulator != null) {
-            if (message.getOriginatorId() == transport.getShardIndex()) {
+            if (message.getOriginatorId() == transport.getOwnOriginatorId()) {
                 return;
             };
 
-            log.info("Applying message at Worker");
+            log.info("Applying message {} at Worker", updatesCount.incrementAndGet());
 
             accumulator.receiveUpdate(message.getUpdates());
         } else if (params != null && stepFunction != null) {
 
-            log.info("Applying message at Master");
+            log.info("Applying message {} at Master", updatesCount.incrementAndGet());
             // master invokes everything
             synchronized (this) {
                 // TODO: change this to memset?
