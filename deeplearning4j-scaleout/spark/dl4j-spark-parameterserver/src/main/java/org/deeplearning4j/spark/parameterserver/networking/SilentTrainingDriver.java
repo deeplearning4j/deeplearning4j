@@ -97,7 +97,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
             // we should echo this message to everyone but this shard, but only if there's > 1 shard/client available
             if (transport.numberOfKnownClients() > 1) {
                 //log.info("Resending message, skipping {}", message.getOriginatorId());
-                transport.sendMessageToAllClients(message, message.getOriginatorId());
+                transport.sendMessageToAllClients(message, message.getOriginatorId(), transport.getOwnOriginatorId());
             }
         } else
             throw new DL4JInvalidConfigException("Neither GradientsAccumulator or StepFunction is defined!");

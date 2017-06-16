@@ -1,5 +1,6 @@
 package org.deeplearning4j.spark.parameterserver.networking;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.optimize.solvers.accumulation.EncodingHandler;
 import org.deeplearning4j.spark.parameterserver.networking.messages.SilentUpdatesMessage;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -7,13 +8,17 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 /**
  * This MessageHandler implementation does the same as EncodingHandler, plus additionally:
  * sends encoded messages over the wire + receives encoded messages from outer parties
  *
  * @author raver119@gmail.com
  */
+@Slf4j
 public class WiredEncodingHandler extends EncodingHandler {
+    protected AtomicLong updatesCounter = new AtomicLong(0);
 
     public WiredEncodingHandler() {
         super();
@@ -40,6 +45,7 @@ public class WiredEncodingHandler extends EncodingHandler {
         // Send this message away
         // FIXME: do something with unsafe duplication, which is bad in case of Local Spark
         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()){
+            log.info("Sending message {} to Shard", updatesCounter.incrementAndGet());
             VoidParameterServer.getInstance().execDistributedImmediately(new SilentUpdatesMessage(message.unsafeDuplication()));
         }
 
