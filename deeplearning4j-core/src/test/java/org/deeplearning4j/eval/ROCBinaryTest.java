@@ -63,12 +63,12 @@ public class ROCBinaryTest {
                 assertEquals(anExp, an);
 
                 List<ROC.PrecisionRecallPoint> pExp = r.getPrecisionRecallCurve();
-                List<ROCBinary.PrecisionRecallPoint> p = rb.getPrecisionRecallCurve(i);
+                List<ROC.PrecisionRecallPoint> p = rb.getPrecisionRecallCurve(i);
                 assertEquals(pExp.size(), p.size());
 
                 for (int j = 0; j < pExp.size(); j++) {
                     ROC.PrecisionRecallPoint a = pExp.get(j);
-                    ROCBinary.PrecisionRecallPoint b = p.get(j);
+                    ROC.PrecisionRecallPoint b = p.get(j);
                     assertEquals(a.getClassiferThreshold(), b.getClassiferThreshold(), eps);
                     assertEquals(a.getPrecision(), b.getPrecision(), eps);
                     assertEquals(a.getRecall(), b.getRecall(), eps);
@@ -143,8 +143,8 @@ public class ROCBinaryTest {
         assertEquals(rb.stats(), rbMasked.stats());
 
         for (int i = 0; i < 3; i++) {
-            List<ROCBinary.PrecisionRecallPoint> pExp = rb.getPrecisionRecallCurve(i);
-            List<ROCBinary.PrecisionRecallPoint> p = rbMasked.getPrecisionRecallCurve(i);
+            List<ROC.PrecisionRecallPoint> pExp = rb.getPrecisionRecallCurve(i);
+            List<ROC.PrecisionRecallPoint> p = rbMasked.getPrecisionRecallCurve(i);
 
             assertEquals(pExp, p);
         }

@@ -351,7 +351,7 @@ public class ROCTest {
 
             assertEquals(auc, auc1, 1e-6);
 
-            double[][] rocPoints = roc.getResultsAsArray();
+            double[][] rocPoints = roc.getRocCurveAsArray();
             double[][] rocPoints0 = rocMultiClass.getResultsAsArray(1);
 
             assertEquals(rocPoints.length, rocPoints0.length);
@@ -546,6 +546,7 @@ public class ROCTest {
         for( int steps : new int[]{32, 0}){ //Steps = 0: exact
             System.out.println("steps: " + steps);
 
+            iter.reset();
             ROCMultiClass roc = net.evaluateROCMultiClass(iter, steps);
 
             INDArray f = ds.getFeatures();
@@ -555,6 +556,7 @@ public class ROCTest {
             manual.eval(l, out);
 
             for (int i = 0; i < 3; i++) {
+                System.out.println("i = " + i);
                 assertEquals(manual.calculateAUC(i), roc.calculateAUC(i), 1e-6);
 
                 double[][] rocCurve = roc.getResultsAsArray(i);
