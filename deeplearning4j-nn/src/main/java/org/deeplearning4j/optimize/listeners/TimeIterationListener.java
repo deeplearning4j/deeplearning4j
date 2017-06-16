@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Time Iteration Listener.
@@ -36,7 +37,9 @@ public class TimeIterationListener implements IterationListener {
     private boolean invoked;
     private long start;
     private int iterationCount;
-    private static final Logger log = LoggerFactory.getLogger(TimeIterationListener.class );
+    private AtomicLong iterationCounter = new AtomicLong(0);
+
+    private static final Logger log = LoggerFactory.getLogger( TimeIterationListener.class );
     
     /**
      * Constructor
@@ -63,7 +66,7 @@ public class TimeIterationListener implements IterationListener {
     @Override
     public void iterationDone( Model model, int iteration)
     {
-        int currentIteration = iteration + 1;
+        long currentIteration = iterationCounter.incrementAndGet();
         long elapsed = System.currentTimeMillis() - start;
         long remaining = (iterationCount - currentIteration) * elapsed / currentIteration;
         long minutes = remaining / ( 1000 * 60 );
