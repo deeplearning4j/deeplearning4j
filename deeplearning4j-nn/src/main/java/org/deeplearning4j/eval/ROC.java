@@ -1,6 +1,7 @@
 package org.deeplearning4j.eval;
 
 import lombok.*;
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -308,36 +309,61 @@ public class ROC extends BaseEvaluation<ROC> {
 
         if (isExact) {
             INDArray pl = getProbAndLabelUsed();
-            INDArray sorted = Nd4j.sortRows(pl, 0, true);
-            INDArray isPositive = sorted.getColumn(0);
+            INDArray sorted = Nd4j.sortRows(pl, 0, false);
+            INDArray isPositive = sorted.getColumn(1);
+            INDArray isNegative = isPositive.rsub(1.0);
 
             INDArray cumSumPos = isPositive.cumsum(-1);
-            int numPredictions = isPositive.length();
+            INDArray cumSumNeg = isNegative.cumsum(-1);
+            int length = sorted.size(0);
 
-            //Num predictions + 2: (+2) is for 0 and 1 threshold
-            thresholdOut = new double[numPredictions + 2];
-            precisionOut = new double[numPredictions + 2];
-            recallOut = new double[numPredictions + 2];
+            /*
+            Sort descending. As we iterate: decrease probability threshold T... all values <= T are predicted
+            as class 0, all others are predicted as class 1
 
-            //Precision: sum(TP) / sum(predicted pos at threshold)
-            //Recall: sum(TP) / total actual positives
+            Precision:  sum(TP) / sum(predicted pos at threshold)
+            Recall:     sum(TP) / total actual positives
 
-            //Edge case: threshold of 0.0. All predicted negative, recall = 0.0
-            // TP = 0, PP at threshold = 0 -> 0 / 0 -> use 1.0
-            //But Recall = 0
-            precisionOut[0] = 1.0;
+            predicted positive at threshold: # values <= threshold, i.e., just i
+             */
 
-            for (int i = 1; i <= numPredictions; i++) { //Start at 1 -> threshold/precision/recall[0] == 0.0 by design
-                double tpCountAtThreshold = cumSumPos.getDouble(i - 1);
-                thresholdOut[i] = sorted.getDouble(i - 1, 0);
-                precisionOut[i] = tpCountAtThreshold / i;
-                recallOut[i] = tpCountAtThreshold / countActualPositive;
+            INDArray t = Nd4j.create(new int[]{length+2,1});
+            t.put(new INDArrayIndex[]{NDArrayIndex.interval(1,length+1),NDArrayIndex.all()}, sorted.getColumn(0));
+
+            INDArray linspace = Nd4j.linspace(1, length, length);
+            INDArray precision = cumSumPos.div(linspace);
+            INDArray prec = Nd4j.create(new int[]{length+2,1});
+            prec.put(new INDArrayIndex[]{NDArrayIndex.interval(1,length+1),NDArrayIndex.all()}, precision);
+
+            //Recall/TPR
+            INDArray rec = Nd4j.create(new int[]{length+2,1});
+            rec.put(new INDArrayIndex[]{NDArrayIndex.interval(1,length+1),NDArrayIndex.all()}, cumSumPos.div(countActualPositive));
+
+            //Edge cases
+            t.putScalar(0, 0, 1.0);
+            prec.putScalar(0, 0, 1.0);
+            rec.putScalar(0, 0, 0.0);
+            prec.putScalar(length+1, 0, cumSumPos.getDouble(cumSumPos.length()-1) / length);
+            rec.putScalar(length+1, 0, 1.0);
+
+            thresholdOut = t.data().asDouble();
+            precisionOut = prec.data().asDouble();
+            recallOut = rec.data().asDouble();
+
+            //Finally: 2 things to do
+            //(a) Reverse order: lowest to highest threshold
+            //(b) remove unnecessary/rendundant points (doesn't affect graph or AUPRC)
+
+            ArrayUtils.reverse(thresholdOut);
+            ArrayUtils.reverse(precisionOut);
+            ArrayUtils.reverse(recallOut);
+
+            if(rocRemoveRedundantPts) {
+                double[][] temp = removeRedundant(thresholdOut, precisionOut, recallOut);
+                thresholdOut = temp[0];
+                precisionOut = temp[1];
+                recallOut = temp[2];
             }
-
-            //Threshold of 1.0: all predicted as positive
-            thresholdOut[numPredictions + 1] = 1.0;
-            precisionOut[numPredictions + 1] = countActualPositive / (double) numPredictions;
-            recallOut[numPredictions + 1] = 1.0;
         } else {
             thresholdOut = new double[counts.size()];
             precisionOut = new double[counts.size()];
@@ -435,34 +461,39 @@ public class ROC extends BaseEvaluation<ROC> {
             //Note: we can have multiple FPR for a given TPR, and multiple TPR for a given FPR
             //These can be omitted, without changing the area (as long as we keep the edge points)
             if(rocRemoveRedundantPts) {
-                double[] t_compacted = new double[tOut.length];
-                double[] x_fpr_compacted = new double[x_fpr_out.length];
-                double[] y_tpr_compacted = new double[y_tpr_out.length];
-                int lastOutPos = -1;
-                for (int i = 0; i < tOut.length; i++) {
+//                double[] t_compacted = new double[tOut.length];
+//                double[] x_fpr_compacted = new double[x_fpr_out.length];
+//                double[] y_tpr_compacted = new double[y_tpr_out.length];
+//                int lastOutPos = -1;
+//                for (int i = 0; i < tOut.length; i++) {
+//
+//                    boolean keep;
+//                    if (i == 0 || i == tOut.length - 1) {
+//                        keep = true;
+//                    } else {
+//                        boolean ommitSameTPR = y_tpr_out[i - 1] == y_tpr_out[i] && y_tpr_out[i] == y_tpr_out[i + 1];
+//                        boolean ommitSameFPR = x_fpr_out[i - 1] == x_fpr_out[i] && x_fpr_out[i] == x_fpr_out[i + 1];
+//                        keep = !ommitSameFPR && !ommitSameTPR;
+//                    }
+//
+//                    if (keep) {
+//                        lastOutPos++;
+//                        t_compacted[lastOutPos] = tOut[i];
+//                        y_tpr_compacted[lastOutPos] = y_tpr_out[i];
+//                        x_fpr_compacted[lastOutPos] = x_fpr_out[i];
+//                    }
+//                }
+//
+//                if (lastOutPos < x_fpr_out.length - 1) {
+//                    tOut = Arrays.copyOfRange(t_compacted, 0, lastOutPos + 1);
+//                    x_fpr_out = Arrays.copyOfRange(x_fpr_compacted, 0, lastOutPos + 1);
+//                    y_tpr_out = Arrays.copyOfRange(y_tpr_compacted, 0, lastOutPos + 1);
+//                }
 
-                    boolean keep;
-                    if (i == 0 || i == tOut.length - 1) {
-                        keep = true;
-                    } else {
-                        boolean ommitSameTPR = y_tpr_out[i - 1] == y_tpr_out[i] && y_tpr_out[i] == y_tpr_out[i + 1];
-                        boolean ommitSameFPR = x_fpr_out[i - 1] == x_fpr_out[i] && x_fpr_out[i] == x_fpr_out[i + 1];
-                        keep = !ommitSameFPR && !ommitSameTPR;
-                    }
-
-                    if (keep) {
-                        lastOutPos++;
-                        t_compacted[lastOutPos] = tOut[i];
-                        y_tpr_compacted[lastOutPos] = y_tpr_out[i];
-                        x_fpr_compacted[lastOutPos] = x_fpr_out[i];
-                    }
-                }
-
-                if (lastOutPos < x_fpr_out.length - 1) {
-                    tOut = Arrays.copyOfRange(t_compacted, 0, lastOutPos + 1);
-                    x_fpr_out = Arrays.copyOfRange(x_fpr_compacted, 0, lastOutPos + 1);
-                    y_tpr_out = Arrays.copyOfRange(y_tpr_compacted, 0, lastOutPos + 1);
-                }
+                double[][] temp = removeRedundant(tOut, x_fpr_out, y_tpr_out);
+                tOut = temp[0];
+                x_fpr_out = temp[1];
+                y_tpr_out = temp[2];
             }
 
             return new double[][]{tOut, x_fpr_out, y_tpr_out};
@@ -482,6 +513,39 @@ public class ROC extends BaseEvaluation<ROC> {
             }
             return out;
         }
+    }
+
+    private static double[][] removeRedundant(double[] threshold, double[] x, double[] y){
+        double[] t_compacted = new double[threshold.length];
+        double[] x_compacted = new double[x.length];
+        double[] y_compacted = new double[y.length];
+        int lastOutPos = -1;
+        for (int i = 0; i < threshold.length; i++) {
+
+            boolean keep;
+            if (i == 0 || i == threshold.length - 1) {
+                keep = true;
+            } else {
+                boolean ommitSameY = y[i - 1] == y[i] && y[i] == y[i + 1];
+                boolean ommitSameX = x[i - 1] == x[i] && x[i] == x[i + 1];
+                keep = !ommitSameX && !ommitSameY;
+            }
+
+            if (keep) {
+                lastOutPos++;
+                t_compacted[lastOutPos] = threshold[i];
+                y_compacted[lastOutPos] = y[i];
+                x_compacted[lastOutPos] = x[i];
+            }
+        }
+
+        if (lastOutPos < x.length - 1) {
+            t_compacted = Arrays.copyOfRange(t_compacted, 0, lastOutPos + 1);
+            x_compacted = Arrays.copyOfRange(x_compacted, 0, lastOutPos + 1);
+            y_compacted = Arrays.copyOfRange(y_compacted, 0, lastOutPos + 1);
+        }
+
+        return new double[][]{t_compacted, x_compacted, y_compacted};
     }
 
     /**

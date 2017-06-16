@@ -621,9 +621,18 @@ public class ROCTest {
         np.random.seed(12345)
         prob = np.random.rand(30,1)
         label = np.random.randint(0,2,(30,1))
+        positiveClass = 1;
 
-        fpr, tpr, thr = sklearn.metrics.roc_curve(label, prob)
+        fpr, tpr, thr = sklearn.metrics.roc_curve(label, prob, positiveClass, None, False)
         auc = sklearn.metrics.auc(fpr, tpr)
+
+        #PR curve
+        p, r, t = precision_recall_curve(label, prob, positiveClass)
+
+        #sklearn.metrics.average_precision_score: http://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html
+        # "This score corresponds to the area under the precision-recall curve."
+        auprc = sklearn.metrics.average_precision_score(label, prob)
+        print(auprc)
 
         fpr
         [ 0.          0.15789474  0.15789474  0.31578947  0.31578947  0.52631579
@@ -658,6 +667,9 @@ public class ROCTest {
           0.65356987  0.65641118  0.67687371  0.71745362  0.72368535  0.72968908
           0.74771481  0.74890664  0.79082252  0.80981255  0.87217591  0.92961609
           0.96130674  0.96451452  0.9646476   0.99401459]
+
+        AUPRC
+        0.398963619227
          */
 
         double[] p = new double[]{0.92961609, 0.31637555, 0.18391881, 0.20456028, 0.56772503, 0.5955447, 0.96451452,
@@ -693,31 +705,29 @@ public class ROCTest {
         double aucExpSKL = 0.459330143541;
         assertEquals(aucExpSKL, auc, 1e-6);
 
+        roc = new ROC(0, false);
+        roc.eval(label, prob);
+        assertEquals(aucExpSKL, roc.calculateAUC(), 1e-6);
 
 
-        //Check PR curve
-        double[][] prCurve = roc.getPrecisionRecallCurveAsArray();
 
-        double[] precision_skl = {0.39285714, 0.37037037, 0.38461538, 0.36, 0.33333333, 0.34782609, 0.36363636,
-                0.38095238, 0.35, 0.31578947, 0.27777778, 0.29411765, 0.3125, 0.33333333, 0.28571429, 0.30769231,
-                0.33333333, 0.36363636, 0.4, 0.33333333, 0.25, 0.28571429, 0.33333333, 0.4, 0.25, 0.33333333, 0.5,
-                1.0, 1.0};
-        double[] recall_skl = {1.0, 0.90909091, 0.90909091, 0.81818182, 0.72727273, 0.72727273, 0.72727273,
-                0.72727273, 0.63636364, 0.54545455, 0.45454545, 0.45454545, 0.45454545, 0.45454545, 0.36363636,
-                0.36363636, 0.36363636, 0.36363636, 0.36363636, 0.27272727, 0.18181818, 0.18181818, 0.18181818,
-                0.18181818, 0.09090909, 0.09090909, 0.09090909, 0.09090909, 0.0};
-        double[] threshold_skl = {0.17091426, 0.18391881, 0.20456028, 0.29870371, 0.31637555, 0.32558468, 0.43964461,
-                0.46759901, 0.56772503, 0.5955447, 0.64247533, 0.6531771, 0.65356987, 0.65641118, 0.67687371,
-                0.71745362, 0.72368535, 0.72968908, 0.74771481, 0.74890664, 0.79082252, 0.80981255, 0.87217591,
-                0.92961609, 0.96130674, 0.96451452, 0.9646476, 0.99401459};
+        //Check area under PR curve
+        roc = new ROC(0, true);
+        roc.eval(label, prob);
 
-        System.out.println("Prec: " + Arrays.toString(precision_skl));
-        System.out.println("Rec: " + Arrays.toString(recall_skl));
-        System.out.println("Thr: " + Arrays.toString(threshold_skl));
+        //Unfortunately some of the sklearn points are redundant... and they are missing the edge cases.
+        // so a direct element-by-element comparison is not possible, unlike in the ROC case
 
-        assertArrayEquals(threshold_skl, prCurve[0], 1e-6);
-        assertArrayEquals(precision_skl, prCurve[1], 1e-6);
-        assertArrayEquals(recall_skl, prCurve[2], 1e-6);
+        double auprcExp = 0.398963619227;
+        double auprcAct = roc.calculateAUCPR();
+        assertEquals(auprcExp, auprcAct, 1e-8);
+
+        roc = new ROC(0, false);
+        roc.eval(label, prob);
+        assertEquals(auprcExp, roc.calculateAUCPR(), 1e-8);
+
+
+
 
 
         //Check edge case: perfect classifier
@@ -726,5 +736,7 @@ public class ROCTest {
         roc = new ROC(0);
         roc.eval(label, prob);
         assertEquals(1.0, roc.calculateAUC(), 1e-8);
+
+        assertEquals(1.0, roc.calculateAUCPR(), 1e-8);
     }
 }
