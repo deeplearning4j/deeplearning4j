@@ -175,6 +175,10 @@ public class RoutedTransport extends BaseTransport {
         final AtomicInteger cnt = new AtomicInteger(0);
 
         clients.values().parallelStream().filter(rc -> {
+            // do not send message back to yourself :)
+            if (rc.getLongHash() == this.originatorId)
+                return false;
+
             // we skip exclusions here
             if (exclusions != null && cnt.get() < exclusions.length) {
                 for (Long exclude : exclusions)
@@ -240,6 +244,7 @@ public class RoutedTransport extends BaseTransport {
     protected void sendCoordinationCommand(VoidMessage message) {
 
         //        log.info("Sending [{}] to all Shards...", message.getClass().getSimpleName());
+        message.setOriginatorId(this.originatorId);
 
         // if we're the only shard - we just put message into the queue
         if (nodeRole == NodeRole.SHARD && voidConfiguration.getNumberOfShards() == 1) {
