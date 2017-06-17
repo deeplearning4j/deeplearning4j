@@ -2,14 +2,13 @@ package org.deeplearning4j.eval;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
 import org.deeplearning4j.eval.curves.RocCurve;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.shade.jackson.annotation.JsonIgnore;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * ROC (Receiver Operating Characteristic) for multi-class classifiers, using the specified number of threshold steps.
@@ -78,15 +77,20 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
 
         sb.append(header);
 
-        for (int i = 0; i < underlying.length; i++) {
-            double auc = calculateAUC(i);
+        if(underlying != null) {
+            for (int i = 0; i < underlying.length; i++) {
+                double auc = calculateAUC(i);
 
-            String label = (labels == null ? String.valueOf(i) : labels.get(i));
+                String label = (labels == null ? String.valueOf(i) : labels.get(i));
 
-            sb.append("\n").append(String.format(pattern, label, auc, getCountActualPositive(i), getCountActualNegative(i)));
+                sb.append("\n").append(String.format(pattern, label, auc, getCountActualPositive(i), getCountActualNegative(i)));
+            }
+
+            sb.append("Average AUC: ").append(String.format("%-12."+printPrecision+"f", calculateAverageAUC()));
+        } else {
+            //Empty evaluation
+            sb.append("\n-- No Data --\n");
         }
-
-        sb.append("Average AUC: ").append(String.format("%-12.f"+printPrecision, calculateAverageAUC()));
 
         return sb.toString();
     }
@@ -223,7 +227,6 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
         }
     }
 
-    @JsonIgnore
     public int getNumClasses(){
         if(underlying == null){
             return -1;

@@ -2,13 +2,10 @@ package org.deeplearning4j.eval;
 
 import lombok.*;
 import org.apache.commons.lang3.ArrayUtils;
-import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
 import org.deeplearning4j.eval.curves.RocCurve;
-import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -16,11 +13,12 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.linalg.string.NDArrayStrings;
-import org.nd4j.shade.jackson.annotation.JsonIgnore;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * ROC (Receiver Operating Characteristic) for binary classifiers, using the specified number of threshold steps.
@@ -35,7 +33,7 @@ import java.util.*;
  *
  * @author Alex Black
  */
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude = {"auc", "auprc"})
 @NoArgsConstructor
 @Data
 public class ROC extends BaseEvaluation<ROC> {
@@ -252,49 +250,6 @@ public class ROC extends BaseEvaluation<ROC> {
         auprc = null;
     }
 
-//    /**
-//     * @deprecated Use {@link #getPrecisionRecallCurveAsArray()}
-//     */
-//    @JsonIgnore
-//    @Deprecated
-//    public List<ROCValue> getResults() {
-//        return getRocCurve();
-//    }
-//
-//    /**
-//     * Get the ROC curve, as a set of points
-//     *
-//     * @return ROC curve, as a list of points
-//     * @deprecated Use {@link #getPrecisionRecallCurveAsArray()}
-//     */
-//    @JsonIgnore
-//    @Deprecated
-//    public List<ROCValue> getRocCurve() {
-//        List<ROCValue> out = new ArrayList<>();
-//
-//        double[][] asArray = getRocCurveAsArray();  //Threshold, fpr, tpr
-//        int n = asArray[0].length;
-//        for (int i = 0; i < n; i++) {
-//            out.add(new ROCValue(asArray[0][i], asArray[2][i], asArray[1][i])); //ROCValue: thresh, tpr, fpr
-//        }
-//        return out;
-//    }
-
-//    /**
-//     * @deprecated Use {@link #getPrecisionRecallCurveAsArray()}
-//     */
-//    @JsonIgnore
-//    @Deprecated
-//    public List<PrecisionRecallPoint> getPrecisionRecallCurve() {
-//        double[][] asArr = getPrecisionRecallCurveAsArray();
-//        int length = asArr[0].length;
-//        List<PrecisionRecallPoint> out = new ArrayList<>(length);
-//        for (int i = 0; i < length; i++) {
-//            out.add(new PrecisionRecallPoint(asArr[0][i], asArr[1][i], asArr[2][i]));
-//        }
-//        return out;
-//    }
-
     /**
      * Get the precision recall curve as array.
      * return[0] = threshold array<br>
@@ -303,7 +258,6 @@ public class ROC extends BaseEvaluation<ROC> {
      *
      * @return
      */
-    @JsonIgnore
     public PrecisionRecallCurve getPrecisionRecallCurve() {
 
         double[] thresholdOut;
@@ -411,7 +365,6 @@ public class ROC extends BaseEvaluation<ROC> {
      *
      * @return ROC curve
      */
-    @JsonIgnore
     public RocCurve getRocCurve() {
 
         if (isExact) {

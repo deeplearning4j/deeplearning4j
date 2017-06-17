@@ -1,25 +1,15 @@
 package org.deeplearning4j.eval;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
 import org.deeplearning4j.eval.curves.RocCurve;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.transforms.Not;
-import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.conditions.Condition;
-import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.shade.jackson.annotation.JsonIgnore;
 
-import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * ROC (Receiver Operating Characteristic) for multi-task binary classifiers, using the specified number of threshold steps.
@@ -191,7 +181,7 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
         return underlying[outputNum].getCountActualNegative();
     }
 
-    @JsonIgnore
+
     public RocCurve getRocCurve(int outputNum){
         assertIndex(outputNum);
 
@@ -267,12 +257,17 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
 
         sb.append(header);
 
-        for (int i = 0; i < underlying.length; i++) {
-            double auc = calculateAUC(i);
+        if(underlying != null) {
+            for (int i = 0; i < underlying.length; i++) {
+                double auc = calculateAUC(i);
 
-            String label = (labels == null ? String.valueOf(i) : labels.get(i));
+                String label = (labels == null ? String.valueOf(i) : labels.get(i));
 
-            sb.append("\n").append(String.format(pattern, label, auc, getCountActualPositive(i), getCountActualNegative(i)));
+                sb.append("\n").append(String.format(pattern, label, auc, getCountActualPositive(i), getCountActualNegative(i)));
+            }
+        } else {
+            //Empty evaluation
+            sb.append("\n-- No Data --\n");
         }
 
         return sb.toString();

@@ -19,6 +19,11 @@
 package org.deeplearning4j.berkeley;
 
 
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.Setter;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+
 import java.io.Serializable;
 import java.text.NumberFormat;
 import java.util.*;
@@ -33,6 +38,8 @@ import java.util.Map.Entry;
  * 
  * @author Dan Klein
  */
+@Getter(AccessLevel.PRIVATE) @Setter(AccessLevel.PRIVATE)
+@JsonIgnoreProperties({"mf"})
 public class Counter<E> implements Serializable {
     private static final long serialVersionUID = 1L;
     Map<E, Double> entries;
