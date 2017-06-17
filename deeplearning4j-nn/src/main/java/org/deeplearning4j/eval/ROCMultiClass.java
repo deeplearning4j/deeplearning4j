@@ -5,7 +5,9 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
 import org.deeplearning4j.eval.curves.RocCurve;
+import org.deeplearning4j.eval.serde.ROCArraySerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.util.Arrays;
 import java.util.List;
@@ -27,10 +29,11 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
-    public static final int DEFAULT_PRECISION = 4;
+    public static final int DEFAULT_STATS_PRECISION = 4;
 
     private int thresholdSteps;
     private boolean rocRemoveRedundantPts;
+    @JsonSerialize(using = ROCArraySerializer.class)
     private ROC[] underlying;
     private List<String> labels;
 
@@ -54,7 +57,7 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
 
     @Override
     public String stats() {
-        return stats(DEFAULT_PRECISION);
+        return stats(DEFAULT_STATS_PRECISION);
     }
 
     public String stats(int printPrecision){

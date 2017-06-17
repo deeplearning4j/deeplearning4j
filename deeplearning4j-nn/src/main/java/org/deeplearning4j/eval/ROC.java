@@ -4,6 +4,7 @@ import lombok.*;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
 import org.deeplearning4j.eval.curves.RocCurve;
+import org.deeplearning4j.eval.serde.ROCSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
@@ -14,6 +15,8 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -33,27 +36,29 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-@EqualsAndHashCode(callSuper = true, exclude = {"auc", "auprc"})
+@EqualsAndHashCode(callSuper = true, exclude = {"auc", "auprc", "probAndLabel", "exactAllocBlockSize"})
 @NoArgsConstructor
 @Data
+@ToString(exclude = {"probAndLabel", "exactAllocBlockSize"})
+@JsonIgnoreProperties({"probAndLabel", "exactAllocBlockSize"})
+@JsonSerialize(using = ROCSerializer.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
 public class ROC extends BaseEvaluation<ROC> {
-
-    private static final int EXACT_ALLOC_BLOCK_SIZE = 10000;
+    private static final int DEFAULT_EXACT_ALLOC_BLOCK_SIZE = 2048;
 
     private int thresholdSteps;
     private long countActualPositive;
     private long countActualNegative;
     private final Map<Double, CountsForThreshold> counts = new LinkedHashMap<>();
 
-    @Getter(AccessLevel.PRIVATE)
     private Double auc;
-    @Getter(AccessLevel.PRIVATE)
     private Double auprc;
 
     private boolean isExact;
     private INDArray probAndLabel;
     private int exampleCount = 0;
     private boolean rocRemoveRedundantPts;
+    private int exactAllocBlockSize;
 
     /**
      * @param thresholdSteps Number of threshold steps to use for the ROC calculation. If set to 0: use exact calculation
@@ -64,6 +69,11 @@ public class ROC extends BaseEvaluation<ROC> {
 
 
     public ROC(int thresholdSteps, boolean rocRemoveRedundantPts) {
+        this(thresholdSteps, rocRemoveRedundantPts, DEFAULT_EXACT_ALLOC_BLOCK_SIZE);
+    }
+
+    public ROC(int thresholdSteps, boolean rocRemoveRedundantPts, int exactAllocBlockSize) {
+
 
         if (thresholdSteps > 0) {
             this.thresholdSteps = thresholdSteps;
@@ -81,6 +91,7 @@ public class ROC extends BaseEvaluation<ROC> {
             isExact = true;
         }
         this.rocRemoveRedundantPts = rocRemoveRedundantPts;
+        this.exactAllocBlockSize = exactAllocBlockSize;
     }
 
     protected INDArray getProbAndLabelUsed() {
@@ -88,6 +99,22 @@ public class ROC extends BaseEvaluation<ROC> {
             return null;
         }
         return probAndLabel.get(NDArrayIndex.interval(0, exampleCount), NDArrayIndex.all());
+    }
+
+    private double getAuc(){
+        if(auc != null){
+            return auc;
+        }
+        auc = calculateAUC();
+        return auc;
+    }
+
+    private double getAuprc(){
+        if(auprc != null){
+            return auprc;
+        }
+        auprc = calculateAUCPR();
+        return auprc;
     }
 
     @Override
@@ -143,13 +170,13 @@ public class ROC extends BaseEvaluation<ROC> {
 
             if (probAndLabel == null) {
                 //Do initial allocation
-                int initialSize = Math.max(labels.size(0), EXACT_ALLOC_BLOCK_SIZE);
+                int initialSize = Math.max(labels.size(0), exactAllocBlockSize);
                 probAndLabel = Nd4j.create(new int[]{initialSize, 2}, 'c'); //First col: probability of class 1. Second col: "is class 1"
             }
 
             //Allocate a larger array if necessary
             if (exampleCount + labels.size(0) >= probAndLabel.size(0)) {
-                int newSize = probAndLabel.size(0) + Math.max(EXACT_ALLOC_BLOCK_SIZE, labels.size(0));
+                int newSize = probAndLabel.size(0) + Math.max(exactAllocBlockSize, labels.size(0));
                 INDArray newProbAndLabel = Nd4j.create(new int[]{newSize, 2}, 'c');
                 newProbAndLabel.assign(probAndLabel.get(NDArrayIndex.interval(0, exampleCount), NDArrayIndex.all()));
                 probAndLabel = newProbAndLabel;
@@ -524,7 +551,7 @@ public class ROC extends BaseEvaluation<ROC> {
 
             if (this.exampleCount + other.exampleCount > this.probAndLabel.size(0)) {
                 //Allocate new array
-                int newSize = this.probAndLabel.size(0) + Math.max(other.probAndLabel.size(0), EXACT_ALLOC_BLOCK_SIZE);
+                int newSize = this.probAndLabel.size(0) + Math.max(other.probAndLabel.size(0), exactAllocBlockSize);
                 INDArray newProbAndLabel = Nd4j.create(newSize, 2);
                 newProbAndLabel.assign(probAndLabel.get(NDArrayIndex.interval(0, exampleCount), NDArrayIndex.all()));
                 probAndLabel = newProbAndLabel;

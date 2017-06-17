@@ -2,7 +2,6 @@ package org.deeplearning4j.eval;
 
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
@@ -40,7 +39,6 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
                 .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
                 .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
                 .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
-
         return ret;
     }
 

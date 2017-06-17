@@ -5,8 +5,10 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
 import org.deeplearning4j.eval.curves.RocCurve;
+import org.deeplearning4j.eval.serde.ROCArraySerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,8 +32,9 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 public class ROCBinary extends BaseEvaluation<ROCBinary> {
-    public static final int DEFAULT_PRECISION = 4;
+    public static final int DEFAULT_STATS_PRECISION = 4;
 
+    @JsonSerialize(using = ROCArraySerializer.class)
     private ROC[] underlying;
 
     private int thresholdSteps;
@@ -233,7 +236,7 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
 
     @Override
     public String stats() {
-        return stats(DEFAULT_PRECISION);
+        return stats(DEFAULT_STATS_PRECISION);
     }
 
     public String stats(int printPrecision) {
