@@ -3,6 +3,8 @@ package org.deeplearning4j.eval;
 import lombok.*;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
+import org.deeplearning4j.eval.curves.RocCurve;
 import org.deeplearning4j.util.TimeSeriesUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
@@ -250,48 +252,48 @@ public class ROC extends BaseEvaluation<ROC> {
         auprc = null;
     }
 
-    /**
-     * @deprecated Use {@link #getPrecisionRecallCurveAsArray()}
-     */
-    @JsonIgnore
-    @Deprecated
-    public List<ROCValue> getResults() {
-        return getRocCurve();
-    }
+//    /**
+//     * @deprecated Use {@link #getPrecisionRecallCurveAsArray()}
+//     */
+//    @JsonIgnore
+//    @Deprecated
+//    public List<ROCValue> getResults() {
+//        return getRocCurve();
+//    }
+//
+//    /**
+//     * Get the ROC curve, as a set of points
+//     *
+//     * @return ROC curve, as a list of points
+//     * @deprecated Use {@link #getPrecisionRecallCurveAsArray()}
+//     */
+//    @JsonIgnore
+//    @Deprecated
+//    public List<ROCValue> getRocCurve() {
+//        List<ROCValue> out = new ArrayList<>();
+//
+//        double[][] asArray = getRocCurveAsArray();  //Threshold, fpr, tpr
+//        int n = asArray[0].length;
+//        for (int i = 0; i < n; i++) {
+//            out.add(new ROCValue(asArray[0][i], asArray[2][i], asArray[1][i])); //ROCValue: thresh, tpr, fpr
+//        }
+//        return out;
+//    }
 
-    /**
-     * Get the ROC curve, as a set of points
-     *
-     * @return ROC curve, as a list of points
-     * @deprecated Use {@link #getPrecisionRecallCurveAsArray()}
-     */
-    @JsonIgnore
-    @Deprecated
-    public List<ROCValue> getRocCurve() {
-        List<ROCValue> out = new ArrayList<>();
-
-        double[][] asArray = getRocCurveAsArray();  //Threshold, fpr, tpr
-        int n = asArray[0].length;
-        for (int i = 0; i < n; i++) {
-            out.add(new ROCValue(asArray[0][i], asArray[2][i], asArray[1][i])); //ROCValue: thresh, tpr, fpr
-        }
-        return out;
-    }
-
-    /**
-     * @deprecated Use {@link #getPrecisionRecallCurveAsArray()}
-     */
-    @JsonIgnore
-    @Deprecated
-    public List<PrecisionRecallPoint> getPrecisionRecallCurve() {
-        double[][] asArr = getPrecisionRecallCurveAsArray();
-        int length = asArr[0].length;
-        List<PrecisionRecallPoint> out = new ArrayList<>(length);
-        for (int i = 0; i < length; i++) {
-            out.add(new PrecisionRecallPoint(asArr[0][i], asArr[1][i], asArr[2][i]));
-        }
-        return out;
-    }
+//    /**
+//     * @deprecated Use {@link #getPrecisionRecallCurveAsArray()}
+//     */
+//    @JsonIgnore
+//    @Deprecated
+//    public List<PrecisionRecallPoint> getPrecisionRecallCurve() {
+//        double[][] asArr = getPrecisionRecallCurveAsArray();
+//        int length = asArr[0].length;
+//        List<PrecisionRecallPoint> out = new ArrayList<>(length);
+//        for (int i = 0; i < length; i++) {
+//            out.add(new PrecisionRecallPoint(asArr[0][i], asArr[1][i], asArr[2][i]));
+//        }
+//        return out;
+//    }
 
     /**
      * Get the precision recall curve as array.
@@ -302,7 +304,7 @@ public class ROC extends BaseEvaluation<ROC> {
      * @return
      */
     @JsonIgnore
-    public double[][] getPrecisionRecallCurveAsArray() {
+    public PrecisionRecallCurve getPrecisionRecallCurve() {
 
         double[] thresholdOut;
         double[] precisionOut;
@@ -401,29 +403,16 @@ public class ROC extends BaseEvaluation<ROC> {
             }
 
         }
-        return new double[][]{thresholdOut, precisionOut, recallOut};
-    }
-
-    /**
-     * @deprecated Use {@link #getRocCurveAsArray()}
-     */
-    @JsonIgnore
-    @Deprecated
-    public double[][] getResultsAsArray() {
-        return getRocCurveAsArray();
+        return new PrecisionRecallCurve(thresholdOut, precisionOut, recallOut);
     }
 
     /**
      * Get the ROC curve, as a set of (threshold, falsePositive, truePositive) points
-     * <p>
-     * Returns a 2d array of {threshold, falsePositive, truePositive values}.<br>
-     * Size is [3][thresholdSteps], with out[0][.] being threshold, out[1][.] being false positives,
-     * and out[2][.] being true positives
      *
-     * @return ROC curve as double[][]
+     * @return ROC curve
      */
     @JsonIgnore
-    public double[][] getRocCurveAsArray() {
+    public RocCurve getRocCurve() {
 
         if (isExact) {
             //Sort ascending. As we decrease threshold, more are predicted positive.
@@ -462,42 +451,13 @@ public class ROC extends BaseEvaluation<ROC> {
             //Note: we can have multiple FPR for a given TPR, and multiple TPR for a given FPR
             //These can be omitted, without changing the area (as long as we keep the edge points)
             if(rocRemoveRedundantPts) {
-//                double[] t_compacted = new double[tOut.length];
-//                double[] x_fpr_compacted = new double[x_fpr_out.length];
-//                double[] y_tpr_compacted = new double[y_tpr_out.length];
-//                int lastOutPos = -1;
-//                for (int i = 0; i < tOut.length; i++) {
-//
-//                    boolean keep;
-//                    if (i == 0 || i == tOut.length - 1) {
-//                        keep = true;
-//                    } else {
-//                        boolean ommitSameTPR = y_tpr_out[i - 1] == y_tpr_out[i] && y_tpr_out[i] == y_tpr_out[i + 1];
-//                        boolean ommitSameFPR = x_fpr_out[i - 1] == x_fpr_out[i] && x_fpr_out[i] == x_fpr_out[i + 1];
-//                        keep = !ommitSameFPR && !ommitSameTPR;
-//                    }
-//
-//                    if (keep) {
-//                        lastOutPos++;
-//                        t_compacted[lastOutPos] = tOut[i];
-//                        y_tpr_compacted[lastOutPos] = y_tpr_out[i];
-//                        x_fpr_compacted[lastOutPos] = x_fpr_out[i];
-//                    }
-//                }
-//
-//                if (lastOutPos < x_fpr_out.length - 1) {
-//                    tOut = Arrays.copyOfRange(t_compacted, 0, lastOutPos + 1);
-//                    x_fpr_out = Arrays.copyOfRange(x_fpr_compacted, 0, lastOutPos + 1);
-//                    y_tpr_out = Arrays.copyOfRange(y_tpr_compacted, 0, lastOutPos + 1);
-//                }
-
                 double[][] temp = removeRedundant(tOut, x_fpr_out, y_tpr_out);
                 tOut = temp[0];
                 x_fpr_out = temp[1];
                 y_tpr_out = temp[2];
             }
 
-            return new double[][]{tOut, x_fpr_out, y_tpr_out};
+            return new RocCurve(tOut, x_fpr_out, y_tpr_out);
         } else {
 
             double[][] out = new double[3][thresholdSteps + 1];
@@ -512,7 +472,7 @@ public class ROC extends BaseEvaluation<ROC> {
                 out[2][i] = tpr;
                 i++;
             }
-            return out;
+            return new RocCurve(out[0], out[1], out[2]);
         }
     }
 
@@ -560,27 +520,7 @@ public class ROC extends BaseEvaluation<ROC> {
             return auc;
         }
 
-        //Calculate AUC using trapezoidal rule
-        double[][] rocAsArray = getRocCurveAsArray();
-        int nPoints = rocAsArray[0].length;
-
-        //Given the points
-        double auc = 0.0;
-        for (int i = 0; i < nPoints - 1; i++) {
-            double fprLeft = rocAsArray[1][i];
-            double tprLeft = rocAsArray[2][i];
-            double fprRight = rocAsArray[1][i + 1];
-            double tprRight = rocAsArray[2][i + 1];
-
-            //y axis: TPR
-            //x axis: FPR
-            double deltaX = Math.abs(fprRight - fprLeft); //Iterating in threshold order, so FPR decreases as threshold increases
-            double avg = (tprRight + tprLeft) / 2.0;
-
-            auc += deltaX * avg;
-        }
-
-        this.auc = auc;
+        this.auc = getRocCurve().calculateAUC();
         return auc;
     }
 
@@ -590,31 +530,13 @@ public class ROC extends BaseEvaluation<ROC> {
      * @return
      */
     public double calculateAUCPR() {
-
         if (auprc != null) {
             return auprc;
         }
 
-        double[][] prcurve = getPrecisionRecallCurveAsArray();
-        int n = prcurve[0].length;
 
-        double prArea = 0.0;
-        for (int i = 0; i < n - 1; i++) {
-            double pLeft = prcurve[1][i];
-            double rLeft = prcurve[2][i];
-            double pRight = prcurve[1][i + 1];
-            double rRight = prcurve[2][i + 1];
-
-            double deltaX = Math.abs(rLeft - rRight);  //Going from highest recall (at 0 threshold) to lowest recall (at 1.0 threshold)
-            if (deltaX == 0) {
-                continue;
-            }
-            double avgY = (pLeft + pRight) / 2.0;
-            prArea += deltaX * avgY;
-        }
-
-        auprc = prArea;
-        return prArea;
+        auprc = getPrecisionRecallCurve().calculateAUPRC();
+        return auprc;
     }
 
     /**
@@ -668,25 +590,6 @@ public class ROC extends BaseEvaluation<ROC> {
                 cft.countFalsePositive += otherCft.countFalsePositive;
             }
         }
-    }
-
-
-    @AllArgsConstructor
-    @Data
-    @NoArgsConstructor
-    public static class ROCValue {
-        private double threshold;
-        private double truePositiveRate;
-        private double falsePositiveRate;
-    }
-
-    @AllArgsConstructor
-    @Data
-    @NoArgsConstructor
-    public static class PrecisionRecallPoint {
-        private double classiferThreshold;
-        private double precision;
-        private double recall;
     }
 
     @AllArgsConstructor
