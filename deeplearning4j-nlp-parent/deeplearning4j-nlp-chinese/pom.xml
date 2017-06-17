@@ -69,7 +69,7 @@
             <artifactId>lucene-queryparser</artifactId>
             <version>${lucene.version}</version>
         </dependency>
-        <!-- LUCENE分词器工厂依赖，用于SOLR -->
+        <!-- LUCENE SOLR -->
         <dependency>
             <groupId>org.apache.lucene</groupId>
             <artifactId>lucene-analyzers-common</artifactId>
