@@ -4,6 +4,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
+import org.deeplearning4j.eval.curves.RocCurve;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 
@@ -130,35 +132,14 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
         }
     }
 
-    /**
-     * Get the ROC curve, as a set of points
-     *
-     * @param classIdx Index of the class to get the (one-vs-all) ROC cur
-     *
-     * @return ROC curve, as a list of points
-     */
-    @Deprecated
-    public List<ROC.ROCValue> getResults(int classIdx) {
+    public RocCurve getRocCurve(int classIdx){
         assertIndex(classIdx);
-        return underlying[classIdx].getResults();
+        return underlying[classIdx].getRocCurve();
     }
 
-    /**
-     * Get the ROC curve, as a set of (falsePositive, truePositive) points
-     * <p>
-     * Returns a 2d array of {falsePositive, truePositive values}.<br>
-     * Size is [2][thresholdSteps], with out[0][.] being false positives, and out[1][.] being true positives
-     *
-     * @return ROC curve as double[][]
-     */
-    @Deprecated
-    public double[][] getResultsAsArray(int classIdx) {
-        return getRocCurveAsArray(classIdx);
-    }
-
-    public double[][] getRocCurveAsArray(int classIdx){
+    public PrecisionRecallCurve getPrecisionRecallCurve(int classIdx){
         assertIndex(classIdx);
-        return underlying[classIdx].getRocCurveAsArray();
+        return underlying[classIdx].getPrecisionRecallCurve();
     }
 
     /**
@@ -184,7 +165,7 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
     }
 
     /**
-     * Calculate the average (one-vs-all) AUC for all classes
+     * Calculate the macro-average (one-vs-all) AUC for all classes
      */
     public double calculateAverageAUC() {
         assertIndex(0);
@@ -195,12 +176,6 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
         }
 
         return sum / underlying.length;
-    }
-
-    @Deprecated
-    public List<ROC.PrecisionRecallPoint> getPrecisionRecallCurve(int classIndex) {
-        assertIndex(classIndex);
-        return underlying[classIndex].getPrecisionRecallCurve();
     }
 
     /**

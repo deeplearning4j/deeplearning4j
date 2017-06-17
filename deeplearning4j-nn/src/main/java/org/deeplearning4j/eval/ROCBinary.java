@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.ArrayUtils;
+import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
+import org.deeplearning4j.eval.curves.RocCurve;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
@@ -189,50 +191,16 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
         return underlying[outputNum].getCountActualNegative();
     }
 
-    /**
-     * Get the ROC curve, as a set of points
-     *
-     * @param outputNum Index of the output (0 to {@link #numLabels()}-1)
-     * @return ROC curve, as a list of points
-     */
-    @Deprecated
-    public List<ROC.ROCValue> getResults(int outputNum) {
-        assertIndex(outputNum);
-
-        return underlying[outputNum].getResults();
-    }
-
-    /**
-     * Get the precision/recall curve, for the specified output
-     *
-     * @param outputNum Index of the output (0 to {@link #numLabels()}-1)
-     * @return the precision/recall curve
-     */
-    @Deprecated
-    public List<ROC.PrecisionRecallPoint> getPrecisionRecallCurve(int outputNum) {
-        assertIndex(outputNum);
-        return underlying[outputNum].getPrecisionRecallCurve();
-    }
-
-    /**
-     * Get the ROC curve, as a set of (falsePositive, truePositive) points
-     * <p>
-     * Returns a 2d array of {falsePositive, truePositive values}.<br>
-     * Size is [2][thresholdSteps], with out[0][.] being false positives, and out[1][.] being true positives
-     *
-     * @return ROC curve as double[][]
-     */
     @JsonIgnore
-    @Deprecated
-    public double[][] getResultsAsArray(int outputNum) {
-        return getRocCurveAsArray(outputNum);
-    }
-
-    @JsonIgnore
-    public double[][] getRocCurveAsArray(int outputNum){
+    public RocCurve getRocCurve(int outputNum){
         assertIndex(outputNum);
 
-        return underlying[outputNum].getRocCurveAsArray();
+        return underlying[outputNum].getRocCurve();
+    }
+
+    public PrecisionRecallCurve getPrecisionRecallCurve(int classIdx){
+        assertIndex(classIdx);
+        return underlying[classIdx].getPrecisionRecallCurve();
     }
 
 

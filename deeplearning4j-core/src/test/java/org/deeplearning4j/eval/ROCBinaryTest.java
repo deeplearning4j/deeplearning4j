@@ -1,5 +1,7 @@
 package org.deeplearning4j.eval;
 
+import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
+import org.deeplearning4j.eval.curves.RocCurve;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
@@ -62,25 +64,10 @@ public class ROCBinaryTest {
                     long an = rb.getCountActualNegative(i);
                     assertEquals(anExp, an);
 
-                    List<ROC.PrecisionRecallPoint> pExp = r.getPrecisionRecallCurve();
-                    List<ROC.PrecisionRecallPoint> p = rb.getPrecisionRecallCurve(i);
-                    assertEquals(pExp.size(), p.size());
+                    PrecisionRecallCurve pExp = r.getPrecisionRecallCurve();
+                    PrecisionRecallCurve p = rb.getPrecisionRecallCurve(i);
 
-                    for (int j = 0; j < pExp.size(); j++) {
-                        ROC.PrecisionRecallPoint a = pExp.get(j);
-                        ROC.PrecisionRecallPoint b = p.get(j);
-                        assertEquals(a.getClassiferThreshold(), b.getClassiferThreshold(), eps);
-                        assertEquals(a.getPrecision(), b.getPrecision(), eps);
-                        assertEquals(a.getRecall(), b.getRecall(), eps);
-                    }
-
-                    double[][] d1 = r.getResultsAsArray();
-                    double[][] d2 = rb.getResultsAsArray(i);
-
-                    assertEquals(d1.length, d2.length);
-                    for (int j = 0; j < d1.length; j++) {
-                        assertArrayEquals(d1[j], d2[j], eps);
-                    }
+                    assertEquals(pExp, p);
                 }
 
                 rb.reset();
@@ -146,12 +133,11 @@ public class ROCBinaryTest {
             assertEquals(rb.stats(), rbMasked.stats());
 
             for (int i = 0; i < 3; i++) {
-                List<ROC.PrecisionRecallPoint> pExp = rb.getPrecisionRecallCurve(i);
-                List<ROC.PrecisionRecallPoint> p = rbMasked.getPrecisionRecallCurve(i);
+                PrecisionRecallCurve pExp = rb.getPrecisionRecallCurve(i);
+                PrecisionRecallCurve p = rbMasked.getPrecisionRecallCurve(i);
 
                 assertEquals(pExp, p);
             }
         }
     }
-
 }

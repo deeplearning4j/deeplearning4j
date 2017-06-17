@@ -2,12 +2,14 @@ package org.deeplearning4j.eval.curves;
 
 import com.google.common.base.Preconditions;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * Created by Alex on 17/06/2017.
  */
 @Data
+@EqualsAndHashCode(exclude = {"area"}, callSuper = false)
 public class PrecisionRecallCurve extends BaseCurve {
 
     private double[] threshold;

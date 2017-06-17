@@ -1,6 +1,8 @@
 package org.deeplearning4j.eval;
 
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
+import org.deeplearning4j.eval.curves.RocCurve;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
@@ -79,22 +81,21 @@ public class ROCTest {
         ROC roc = new ROC(10);
         roc.eval(actual, predictions);
 
-        List<ROC.ROCValue> list = roc.getResults();
+        RocCurve rocCurve = roc.getRocCurve();
 
-        assertEquals(11, list.size()); //0 + 10 steps
+        assertEquals(11, rocCurve.getThreshold()); //0 + 10 steps
         for (int i = 0; i < 11; i++) {
-            ROC.ROCValue v = list.get(i);
             double expThreshold = i / 10.0;
-            assertEquals(expThreshold, v.getThreshold(), 1e-5);
+            assertEquals(expThreshold, rocCurve.getThreshold(i), 1e-5);
 
             //            System.out.println("t=" + expThreshold + "\t" + v.getFalsePositiveRate() + "\t" + v.getTruePositiveRate());
 
             double efpr = expFPR.get(expThreshold);
-            double afpr = v.getFalsePositiveRate();
+            double afpr = rocCurve.getFalsePositiveRate(i);
             assertEquals(efpr, afpr, 1e-5);
 
             double etpr = expTPR.get(expThreshold);
-            double atpr = v.getTruePositiveRate();
+            double atpr = rocCurve.getTruePositiveRate(i);
             assertEquals(etpr, atpr, 1e-5);
         }
 
@@ -124,22 +125,21 @@ public class ROCTest {
         ROC roc = new ROC(10);
         roc.eval(actual, predictions);
 
-        List<ROC.ROCValue> list = roc.getResults();
+        RocCurve rocCurve = roc.getRocCurve();
 
-        assertEquals(11, list.size()); //0 + 10 steps
+        assertEquals(11, rocCurve.getThreshold()); //0 + 10 steps
         for (int i = 0; i < 11; i++) {
-            ROC.ROCValue v = list.get(i);
             double expThreshold = i / 10.0;
-            assertEquals(expThreshold, v.getThreshold(), 1e-5);
+            assertEquals(expThreshold, rocCurve.getThreshold(i), 1e-5);
 
             //            System.out.println("t=" + expThreshold + "\t" + v.getFalsePositiveRate() + "\t" + v.getTruePositiveRate());
 
             double efpr = expFPR.get(expThreshold);
-            double afpr = v.getFalsePositiveRate();
+            double afpr = rocCurve.getFalsePositiveRate(i);
             assertEquals(efpr, afpr, 1e-5);
 
             double etpr = expTPR.get(expThreshold);
-            double atpr = v.getTruePositiveRate();
+            double atpr = rocCurve.getTruePositiveRate(i);
             assertEquals(etpr, atpr, 1e-5);
         }
 
@@ -190,33 +190,23 @@ public class ROCTest {
         ROC roc = new ROC(10);
         roc.eval(labels, prediction);
 
-        List<ROC.ROCValue> list = roc.getResults();
-        double[][] asArray = roc.getResultsAsArray();
+        RocCurve rocCurve = roc.getRocCurve();
 
-        assertEquals(3, asArray.length);
-        assertEquals(11, asArray[0].length);
-        assertEquals(11, asArray[1].length);
-        assertEquals(11, asArray[2].length);
+        assertEquals(11, rocCurve.getThreshold().length);
+        assertEquals(11, rocCurve.getFpr().length);
+        assertEquals(11, rocCurve.getTpr().length);
 
-        assertEquals(11, list.size()); //0 + 10 steps
         for (int i = 0; i < 11; i++) {
-            ROC.ROCValue v = list.get(i);
             double expThreshold = i / 10.0;
-            assertEquals(expThreshold, v.getThreshold(), 1e-5);
+            assertEquals(expThreshold, rocCurve.getThreshold(i), 1e-5);
 
             double efpr = expFPR.get(expThreshold);
-            double afpr = v.getFalsePositiveRate();
+            double afpr = rocCurve.getFalsePositiveRate(i);
             assertEquals(efpr, afpr, 1e-5);
 
             double etpr = expTPR.get(expThreshold);
-            double atpr = v.getTruePositiveRate();
+            double atpr = rocCurve.getTruePositiveRate(i);
             assertEquals(etpr, atpr, 1e-5);
-
-            assertEquals(v.getThreshold(), asArray[0][i], 1e-6);
-            assertEquals(v.getFalsePositiveRate(), asArray[1][i], 1e-6);
-            assertEquals(v.getTruePositiveRate(), asArray[2][i], 1e-6);
-
-            //            System.out.println(v.getFalsePositiveRate() + "\t" + v.getTruePositiveRate());
         }
 
         //AUC: expected values are based on plotting the ROC curve and manually calculating the area
@@ -260,12 +250,7 @@ public class ROCTest {
 
             assertEquals(rocExp.calculateAUC(), rocAct.calculateAUC(), 1e-6);
 
-            if(steps > 0) {
-                List<ROC.ROCValue> expValues = rocExp.getResults();
-                List<ROC.ROCValue> actValues = rocAct.getResults();
-
-                assertEquals(expValues, actValues);
-            }
+            assertEquals(rocExp.getRocCurve(), rocAct.getRocCurve());
         }
     }
 
@@ -312,12 +297,8 @@ public class ROCTest {
             rocAct.evalTimeSeries(labels3d, predictions3d, mask);
 
             assertEquals(rocExp.calculateAUC(), rocAct.calculateAUC(), 1e-6);
-            if(steps > 0) {
-                List<ROC.ROCValue> expValues = rocExp.getResults();
-                List<ROC.ROCValue> actValues = rocAct.getResults();
 
-                assertEquals(expValues, actValues);
-            }
+            assertEquals(rocExp.getRocCurve(), rocAct.getRocCurve());
         }
     }
 
@@ -350,15 +331,6 @@ public class ROCTest {
             double auc1 = rocMultiClass.calculateAUC(1);
 
             assertEquals(auc, auc1, 1e-6);
-
-            double[][] rocPoints = roc.getRocCurveAsArray();
-            double[][] rocPoints0 = rocMultiClass.getResultsAsArray(1);
-
-            assertEquals(rocPoints.length, rocPoints0.length);
-            for (int i = 0; i < rocPoints[0].length; i++) {
-                assertEquals(rocPoints[0][i], rocPoints0[0][i], 1e-6);
-                assertEquals(rocPoints[1][i], rocPoints0[1][i], 1e-6);
-            }
         }
     }
 
@@ -402,15 +374,12 @@ public class ROCTest {
 
             assertEquals(auc2, auc3, 1e-6);
 
-            double[][] roc3 = rocMultiClass3.getRocCurveAsArray(2);
-            double[][] roc2 = rocMultiClass2.getRocCurveAsArray(1);
+            RocCurve c3 = rocMultiClass3.getRocCurve(2);
+            RocCurve c2 = rocMultiClass2.getRocCurve(1);
 
-            assertEquals(3, roc3.length);
-            assertEquals(3, roc2.length);
-
-            assertArrayEquals(roc2[0], roc3[0], 1e-6);
-            assertArrayEquals(roc2[1], roc3[1], 1e-6);
-            assertArrayEquals(roc2[2], roc3[2], 1e-6);
+            assertArrayEquals(c2.getThreshold(), c3.getThreshold(), 1e-6);
+            assertArrayEquals(c2.getFpr(), c3.getFpr(), 1e-6);
+            assertArrayEquals(c2.getTpr(), c3.getTpr(), 1e-6);
         }
     }
 
@@ -456,13 +425,7 @@ public class ROCTest {
             assertTrue(singleAUC >= 0.0 && singleAUC <= 1.0);
             assertEquals(singleAUC, first.calculateAUC(), 1e-6);
 
-            if(steps > 0) {
-                double[][] rocSingle = single.getResultsAsArray();
-                double[][] rocMerge = first.getResultsAsArray();
-
-                assertArrayEquals(rocSingle[0], rocMerge[0], 1e-6);
-                assertArrayEquals(rocSingle[1], rocMerge[1], 1e-6);
-            }
+            assertEquals(single.getRocCurve(), first.getRocCurve());
         }
     }
 
@@ -508,14 +471,9 @@ public class ROCTest {
             }
 
             for (int i = 0; i < nClasses; i++) {
-
                 assertEquals(single.calculateAUC(i), first.calculateAUC(i), 1e-6);
 
-                double[][] rocSingle = single.getResultsAsArray(i);
-                double[][] rocMerge = first.getResultsAsArray(i);
-
-                assertArrayEquals(rocSingle[0], rocMerge[0], 1e-6);
-                assertArrayEquals(rocSingle[1], rocMerge[1], 1e-6);
+                assertEquals(single.getRocCurve(i), first.getRocCurve(i));
             }
         }
     }
@@ -564,12 +522,10 @@ public class ROCTest {
                 double rocAct = roc.calculateAUC(i);
                 assertEquals(rocExp, rocAct, 1e-6);
 
-                double[][] rocCurve = roc.getRocCurveAsArray(i);
-                double[][] rocManual = manual.getRocCurveAsArray(i);
+                RocCurve rc = roc.getRocCurve(i);
+                RocCurve rm = manual.getRocCurve(i);
 
-                assertArrayEquals(rocCurve[0], rocManual[0], 1e-6);
-                assertArrayEquals(rocCurve[1], rocManual[1], 1e-6);
-                assertArrayEquals(rocCurve[2], rocManual[2], 1e-6);
+                assertEquals(rc, rm);
             }
         }
     }
@@ -593,7 +549,7 @@ public class ROCTest {
             r.eval(one, Nd4j.create(new double[]{0.33}));
             r.eval(one, Nd4j.create(new double[]{0.66}));
 
-            double[][] prc = r.getPrecisionRecallCurveAsArray();
+            PrecisionRecallCurve prc = r.getPrecisionRecallCurve();
 
             double auprc = r.calculateAUCPR();
             assertEquals(msg, 1.0, auprc, 1e-6);
@@ -698,16 +654,16 @@ public class ROCTest {
         ROC roc = new ROC(0);
         roc.eval(label, prob);
 
-        double[][] rocCurve = roc.getRocCurveAsArray(); //threshold, fpr, tpr
+        RocCurve rocCurve = roc.getRocCurve();
 
 //        System.out.println("Thr: " + Arrays.toString(rocCurve[0]));
 //        System.out.println("FPR: " + Arrays.toString(rocCurve[1]));
 //        System.out.println("TPR: " + Arrays.toString(rocCurve[2]));
 //        System.out.println("AUC: " + roc.calculateAUC());
 
-        assertArrayEquals(thr_skl, rocCurve[0], 1e-6);
-        assertArrayEquals(fpr_skl, rocCurve[1], 1e-6);
-        assertArrayEquals(tpr_skl, rocCurve[2], 1e-6);
+        assertArrayEquals(thr_skl, rocCurve.getThreshold(), 1e-6);
+        assertArrayEquals(fpr_skl, rocCurve.getFpr(), 1e-6);
+        assertArrayEquals(tpr_skl, rocCurve.getTpr(), 1e-6);
 
         double auc = roc.calculateAUC();
         double aucExpSKL = 0.459330143541;

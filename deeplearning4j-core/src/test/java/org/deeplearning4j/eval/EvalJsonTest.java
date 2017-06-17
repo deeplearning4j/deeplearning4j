@@ -9,7 +9,7 @@ import static org.junit.Assert.fail;
 /**
  * Created by agibsonccc on 5/16/17.
  */
-public class EvalTests {
+public class EvalJsonTest {
 
     @Test
     public void testSerde() {
