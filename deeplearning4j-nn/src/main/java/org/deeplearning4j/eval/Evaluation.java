@@ -26,6 +26,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.meta.Prediction;
+import org.deeplearning4j.eval.serde.ConfusionMatrixDeserializer;
+import org.deeplearning4j.eval.serde.ConfusionMatrixSerializer;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -35,6 +37,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.io.Serializable;
 import java.text.DecimalFormat;
@@ -60,6 +64,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     protected Counter<Integer> falsePositives = new Counter<>();
     protected Counter<Integer> trueNegatives = new Counter<>();
     protected Counter<Integer> falseNegatives = new Counter<>();
+    @JsonSerialize(using = ConfusionMatrixSerializer.class)
+    @JsonDeserialize(using = ConfusionMatrixDeserializer.class)
     protected ConfusionMatrix<Integer> confusion;
     protected int numRowCounter = 0;
     @Getter
