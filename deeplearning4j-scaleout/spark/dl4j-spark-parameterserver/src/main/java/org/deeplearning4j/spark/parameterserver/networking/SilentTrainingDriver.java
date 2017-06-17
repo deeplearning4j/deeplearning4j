@@ -78,13 +78,20 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
                 return;
             };
 
-            log.info("Applying message {}/{} at Worker", message.getUpdateId(), updatesCount.incrementAndGet());
+            //log.info("Applying message {}/{} at Worker", message.getUpdateId(), updatesCount.incrementAndGet());
 
             accumulator.receiveUpdate(message.getUpdates());
         } else if (params != null && stepFunction != null) {
 
-            log.info("Applying message {}/{} at Master", message.getUpdateId(), updatesCount.incrementAndGet());
+            //log.info("Applying message {}/{} at Master", message.getUpdateId(), updatesCount.incrementAndGet());
             // master invokes everything
+            /*
+                FIXME: solution to be invented here
+                on one hand this is bottleneck obviously, since we're applying updates in one thread only
+                on other hand, since that's params, and they are probably big enough, - we'll use OpenMP internally
+
+                so actual best approach to be decided here
+             */
             synchronized (this) {
                 // TODO: change this to memset?
                 updates.assign(0.0f);

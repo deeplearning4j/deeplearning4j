@@ -24,6 +24,7 @@ import org.deeplearning4j.parallelism.factory.SymmetricTrainerContext;
 import org.deeplearning4j.parallelism.factory.TrainerContext;
 import org.deeplearning4j.optimize.listeners.SharedGradient;
 import org.deeplearning4j.parallelism.trainer.Trainer;
+import org.jetbrains.annotations.NotNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -34,7 +35,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -87,6 +88,9 @@ public class ParallelWrapper implements AutoCloseable {
     protected Object[] trainerContextArgs;
     protected boolean debug = false;
 
+    protected ThreadPoolExecutor executorService;
+
+    protected final AtomicInteger workerCounter = new AtomicInteger(0);
     @Getter @Setter protected GradientsAccumulator gradientsAccumulator;
 
     private MagicQueue mq;
@@ -109,8 +113,25 @@ public class ParallelWrapper implements AutoCloseable {
         } else if (this.model instanceof ComputationGraph) {
             ((ComputationGraph) this.model).getUpdater();
         }
+    }
 
+    protected void init() {
+        this.executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(workers, new ThreadFactory() {
+            @Override
+            public Thread newThread(@NotNull Runnable r) {
+                Thread t = Executors.defaultThreadFactory().newThread(r);
 
+                int cThread = workerCounter.getAndIncrement();
+
+                t.setName("ParallelWrapper training thread " + cThread);
+                t.setDaemon(true);
+                t.setUncaughtExceptionHandler(handler);
+
+                Nd4j.getAffinityManager().attachThreadToDevice(t, cThread % Nd4j.getAffinityManager().getNumberOfDevices());
+
+                return t;
+            }
+        });
     }
 
     @Override
@@ -122,6 +143,9 @@ public class ParallelWrapper implements AutoCloseable {
             }
             zoo = null;
         }
+
+        if (executorService != null)
+            executorService.shutdown();
     }
 
     /**
@@ -235,11 +259,20 @@ public class ParallelWrapper implements AutoCloseable {
             ((AsyncMultiDataSetIterator) iterator).shutdown();
 
 
-        if (zoo != null) {
-            for (int i = 0; i < zoo.length; i++) {
-                zoo[i].shutdown();
-            }
-            zoo = null;
+        // TODO: get rid of this code, 0 model is not replicated anyway
+        // now we transfer models back from workers
+        List<Model> models = new ArrayList<>();
+        for (int i = 0; i < zoo.length; i++) {
+            models.add(zoo[0].getModel());
+        }
+
+        // actual transfer code depends on trainer
+        trainerContext.finalizeTraining(model, models.toArray(new Model[0]));
+
+        try {
+            close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
         // sanity checks, or the dataset may never average
@@ -524,6 +557,7 @@ public class ParallelWrapper implements AutoCloseable {
         if (prefetchSize > 0 && source.asyncSupported())
             ((AsyncDataSetIterator) iterator).shutdown();
 
+        // TODO: get rid of this code, 0 model is not replicated anyway
         // now we transfer models back from workers
         List<Model> models = new ArrayList<>();
         for (int i = 0; i < zoo.length; i++) {
@@ -534,11 +568,10 @@ public class ParallelWrapper implements AutoCloseable {
         trainerContext.finalizeTraining(model, models.toArray(new Model[0]));
 
 
-        if (zoo != null) {
-            for (int i = 0; i < zoo.length; i++) {
-                zoo[i].shutdown();
-            }
-            zoo = null;
+        try {
+            close();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
         if (debug)
@@ -549,17 +582,23 @@ public class ParallelWrapper implements AutoCloseable {
     private void createZooIfNeccessary(boolean useMDS) {
         if (zoo == null) {
             trainerContext.init(model, trainerContextArgs);
+
             zoo = new Trainer[workers];
             int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
             for (int cnt = 0; cnt < workers; cnt++) {
                 // we pass true here, to tell Trainer to use MultiDataSet queue for training
                 zoo[cnt] = trainerContext.create(cnt, model, Nd4j.getAffinityManager().getDeviceForCurrentThread(),
                                 useMDS, this, workspaceMode, averagingFrequency);
+
+                /*
                 zoo[cnt].setUncaughtExceptionHandler(handler);
+
                 if (zoo[cnt] instanceof Thread) {
                     Nd4j.getAffinityManager().attachThreadToDevice((Thread) zoo[cnt], cnt % numDevices);
                 }
                 zoo[cnt].start();
+                */
+                executorService.execute(zoo[cnt]);
             }
         }
     }
@@ -757,6 +796,8 @@ public class ParallelWrapper implements AutoCloseable {
 
             wrapper.trainerContext = this.trainerContext;
             wrapper.gradientsAccumulator = this.accumulator;
+
+            wrapper.init();
 
             return wrapper;
         }

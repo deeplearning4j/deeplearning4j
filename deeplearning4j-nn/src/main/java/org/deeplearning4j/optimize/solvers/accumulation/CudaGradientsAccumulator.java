@@ -212,15 +212,16 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
      */
     @Override
     public void receiveUpdate(INDArray array) {
-        // we're replicating COMPRESSED MESSAGES, decompress will be thread-local
+        // we're replicating COMPRESSED MESSAGES, decompression will be thread-local
         for (int i = 0; i < parties; i++) {
-
-            //try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-
             // we don't want to have same workspace to be accessible by 2 different threads for now
+            /*
+                FIXME: nested locks here. deadlock is possible.
+             */
             locks.get(i).lock();
 
             try (MemoryWorkspace workspace = workspaces.get(i).notifyScopeEntered()) {
+                // we might just scope out of workspace here, instead of throwing error out
                 if (array.data().length() > (initialMemory / queueSize) / Nd4j.sizeOfDataType(array.data().dataType()))
                     throw new ND4JIllegalStateException("Not enough memory to handle update: ["+ array.data().length() * Nd4j.sizeOfDataType(array.data().dataType())+" bytes required]. Please increase memory amount for GradientsAccumulator");
 
@@ -234,9 +235,6 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
             }
 
             locks.get(i).unlock();
-            //}
-
-            //log.info("Thread: {}; Copy: {}", Thread.currentThread().getId(), Arrays.toString(compressed.data().asInt()));
         }
     }
 
