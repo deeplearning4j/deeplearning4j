@@ -17,6 +17,8 @@ import org.nd4j.parameterserver.distributed.messages.VoidAggregation;
 import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -36,6 +38,12 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
     protected transient Transport transport;
     protected transient AtomicLong updatesCount;
 
+    /*
+        We use this buffer to provide double buffering for incoming messages.
+        So we store incoming messages right here, and apply them as time comes
+     */
+    protected transient BlockingQueue<INDArray> updatesBuffer;
+
     // these 2 are not used here
     protected transient Storage storage;
     protected transient Clipboard clipboard;
@@ -45,6 +53,9 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
         log.info("Creating TrainingDriver for worker...");
         this.accumulator = accumulator;
         this.updatesCount = new AtomicLong(0);
+
+        // TODO: make this configurable
+        this.updatesBuffer = new LinkedBlockingQueue<>(512);
     }
 
     public SilentTrainingDriver(@NonNull INDArray params, @NonNull StepFunction stepFunction) {
@@ -53,7 +64,10 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
         this.stepFunction = stepFunction;
         this.updatesCount = new AtomicLong(0);
 
-        // params are always the same size
+        // TODO: make this configurable
+        this.updatesBuffer = new LinkedBlockingQueue<>(512);
+
+        // updates are always the same size as params
         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             this.updates = Nd4j.create(params.shape(), params.ordering());
         }
@@ -78,27 +92,30 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
                 return;
             };
 
-            //log.info("Applying message {}/{} at Worker", message.getUpdateId(), updatesCount.incrementAndGet());
+            // we can't put more updates here, then (sizeOfQueue - numberOfWorkers)
+            try {
+                updatesBuffer.put(message.getUpdates());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
 
             accumulator.receiveUpdate(message.getUpdates());
         } else if (params != null && stepFunction != null) {
 
-            //log.info("Applying message {}/{} at Master", message.getUpdateId(), updatesCount.incrementAndGet());
-            // master invokes everything
-            /*
-                FIXME: solution to be invented here
-                on one hand this is bottleneck obviously, since we're applying updates in one thread only
-                on other hand, since that's params, and they are probably big enough, - we'll use OpenMP internally
-
-                so actual best approach to be decided here
-             */
+            // master invokes everything, since that's Silent Worker approach: we want master to be always up-to-date
             synchronized (this) {
-                // TODO: change this to memset?
-                updates.assign(0.0f);
-
+                // threshold decoder is inplace & fast
                 Nd4j.getExecutioner().thresholdDecode(message.getUpdates(), updates);
 
-                stepFunction.step(params, updates);
+                // we apply updates every X iterations
+                // TODO: make X configurable :)
+                if (updatesCount.incrementAndGet() % 10 == 0) {
+                    stepFunction.step(params, updates);
+
+                    // once accumulated updates are applied - reset storage, and wait for other messsages
+                    //updates.assign(0.0f);
+                    Nd4j.getMemoryManager().memset(updates);
+                }
             }
 
             // we should echo this message to everyone but this shard, but only if there's > 1 shard/client available

@@ -264,4 +264,14 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
     public void touch() {
         // no-op
     }
+
+    /**
+     *
+     * @param worker
+     * @return
+     */
+    @Override
+    public int getFreeSpace(int worker) {
+        return Integer.MAX_VALUE;
+    }
 }

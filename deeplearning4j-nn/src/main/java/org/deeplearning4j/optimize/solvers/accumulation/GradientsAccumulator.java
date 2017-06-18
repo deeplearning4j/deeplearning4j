@@ -51,4 +51,10 @@ public interface GradientsAccumulator extends Serializable {
      * This method does initialization of given worker wrt Thread-Device Affinity
      */
     void touch();
+
+
+    /**
+     * This method returns number of free slots for updates
+     */
+    int getFreeSpace(int worker);
 }
