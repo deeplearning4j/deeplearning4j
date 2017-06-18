@@ -144,6 +144,16 @@ public interface MemoryManager {
      */
     void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer);
 
+
+    /**
+     * This method fills given INDArray with zeroes.
+     *
+     * PLEASE NOTE: Can't be efficiently used on views, .assign(0.0) will be used instead
+     *
+     * @param array
+     */
+    void memset(INDArray array);
+
     /**
      * This method temporary opens block out of any workspace scope.
      *

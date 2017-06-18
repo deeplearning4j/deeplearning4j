@@ -5,6 +5,7 @@ import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.BasicMemoryManager;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -62,5 +63,15 @@ public class CpuMemoryManager extends BasicMemoryManager {
     @Override
     public boolean isPeriodicGcActive() {
         return false;
+    }
+
+    @Override
+    public void memset(INDArray array) {
+        if (array.isView()) {
+            array.assign(0.0);
+            return;
+        }
+
+        Pointer.memset(array.data().addressPointer(), 0, array.data().length() * Nd4j.sizeOfDataType(array.data().dataType()));
     }
 }
