@@ -35,8 +35,8 @@ public class GsonDeserializationUtils {
      */
     public static INDArray deserializeRawJson(String serializedRawArray) {
 
-        String cleanedRawArray = serializedRawArray.replaceAll("(?<=[\\d])(,)(?=[\\d])", "");
-        // String cleanedRawArray = serializedRawArray;
+        //String cleanedRawArray = serializedRawArray.replaceAll("(?<=[\\d])(,)(?=[\\d])", "");
+         String cleanedRawArray = serializedRawArray;
         JsonArray jsonArray = JSON_PARSER.parse(cleanedRawArray).getAsJsonArray();
 
         List<Integer> dimensions = new ArrayList<>();

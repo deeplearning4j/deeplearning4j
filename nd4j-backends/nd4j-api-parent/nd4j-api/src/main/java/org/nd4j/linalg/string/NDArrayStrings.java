@@ -48,6 +48,10 @@ public class NDArrayStrings {
         this(sep, precision, "#,###,##0",commas);
     }
 
+    public NDArrayStrings(String sep, int precision, String decFormat) {
+        this(sep,precision,decFormat,true);
+    }
+
     public NDArrayStrings(String sep, int precision, String decFormat,boolean commas) {
         this.decFormatNum = decFormat;
         this.sep = sep;
