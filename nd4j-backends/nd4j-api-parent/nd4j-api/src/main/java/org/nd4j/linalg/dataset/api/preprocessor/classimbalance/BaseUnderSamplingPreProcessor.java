@@ -4,7 +4,9 @@ import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
@@ -79,6 +81,7 @@ public abstract class BaseUnderSamplingPreProcessor {
 
         INDArray minoritymajorityRatio = minorityClass.sum(1).div(majorityClass.sum(1));
         INDArray majorityBernoulliP = minoritymajorityRatio.muli(1 - targetMinorityDist).divi(targetMinorityDist);
+        BooleanIndexing.replaceWhere(majorityBernoulliP,1.0, Conditions.greaterThan(1.0)); //if minority ratio is already met round down to 1.0
         return majorityClass.muliColumnVector(majorityBernoulliP).addi(minorityClass);
     }
 
