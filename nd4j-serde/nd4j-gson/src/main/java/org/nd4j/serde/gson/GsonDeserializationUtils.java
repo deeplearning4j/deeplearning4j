@@ -15,8 +15,15 @@ import java.util.List;
 public class GsonDeserializationUtils {
     private static final JsonParser JSON_PARSER = new JsonParser();
 
+    /**
+     * Deserialize an ndarray
+     * form json
+     * @param serializedRawArray
+     * @return
+     */
     public static INDArray deserializeRawJson(String serializedRawArray) {
-        String cleanedRawArray = serializedRawArray.replaceAll("(?<=[\\d])(,)(?=[\\d])", "");
+       // String cleanedRawArray = serializedRawArray.replaceAll("(?<=[\\d])(,)(?=[\\d])", "");
+        String cleanedRawArray = serializedRawArray;
         JsonArray jsonArray = JSON_PARSER.parse(cleanedRawArray).getAsJsonArray();
 
         List<Integer> dimensions = new ArrayList<>();
