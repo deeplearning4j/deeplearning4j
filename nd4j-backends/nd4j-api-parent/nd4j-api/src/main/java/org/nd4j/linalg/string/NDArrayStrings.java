@@ -6,6 +6,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
 
 /**
  * @author Adam Gibson
@@ -20,19 +21,34 @@ public class NDArrayStrings {
     private String decFormatRest = "";
     private DecimalFormat decimalFormat = new DecimalFormat(decFormatNum + decFormatRest);
 
+    public NDArrayStrings() {
+        this(true);
+    }
     public NDArrayStrings(String sep) {
-        this(", ", 2, "#,###,##0");
+        this(sep,true);
+    }
+
+    public NDArrayStrings(String sep,boolean commas) {
+        this(", ", 2, "#,###,##0",commas);
     }
 
     public NDArrayStrings(int precision) {
-        this(", ", precision, "#,###,##0");
+        this(precision,true);
+    }
+
+    public NDArrayStrings(int precision,boolean commas) {
+        this(", ", precision, "#,###,##0",commas);
     }
 
     public NDArrayStrings(String sep, int precision) {
-        this(sep, precision, "#,###,##0");
+        this(sep,precision,true);
     }
 
-    public NDArrayStrings(String sep, int precision, String decFormat) {
+    public NDArrayStrings(String sep, int precision,boolean commas) {
+        this(sep, precision, "#,###,##0",commas);
+    }
+
+    public NDArrayStrings(String sep, int precision, String decFormat,boolean commas) {
         this.decFormatNum = decFormat;
         this.sep = sep;
         if (precision != 0) {
@@ -42,15 +58,21 @@ public class NDArrayStrings {
                 precision--;
             }
         }
+
         this.decimalFormat = new DecimalFormat(decFormatNum + decFormatRest);
         DecimalFormatSymbols sepNgroup = DecimalFormatSymbols.getInstance();
         sepNgroup.setDecimalSeparator('.');
+        if(!commas) {
+            NumberFormat format = NumberFormat.getIntegerInstance();
+            format.setGroupingUsed(false);
+        }
+
         sepNgroup.setGroupingSeparator(',');
         decimalFormat.setDecimalFormatSymbols(sepNgroup);
     }
 
-    public NDArrayStrings() {
-        this(", ", 2, "#,###,##0");
+    public NDArrayStrings(boolean commas) {
+        this(", ", 2, "#,###,##0",commas);
     }
 
 
@@ -85,8 +107,10 @@ public class NDArrayStrings {
                     sb.append(((IComplexNDArray) arr).getComplex(i).toString());
                 else
                     sb.append(String.format("%1$" + padding + "s", decimalFormat.format(arr.getDouble(i))));
-                if (i < arr.length() - 1)
+                if (i < arr.length() - 1) {
                     sb.append(sep);
+                    sb.append(" ");
+                }
             }
             sb.append("]");
             return sb.toString();
@@ -98,7 +122,7 @@ public class NDArrayStrings {
             for (int i = 0; i < arr.slices(); i++) {
                 sb.append(format(arr.slice(i), rank - 1, offset));
                 if (i != arr.slices() - 1) {
-                    sb.append(",\n");
+                    sb.append(sep + " \n");
                     sb.append(StringUtils.repeat("\n", rank - 2));
                     sb.append(StringUtils.repeat(" ", offset));
                 }

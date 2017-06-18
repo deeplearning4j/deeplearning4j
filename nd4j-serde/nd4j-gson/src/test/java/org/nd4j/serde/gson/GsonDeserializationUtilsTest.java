@@ -48,6 +48,16 @@ public class GsonDeserializationUtilsTest {
         assertEquals(expectedArray, array);
     }
 
+
+    @Test
+    public void testSimpleVector() {
+        INDArray arr = Nd4j.linspace(1,4,4);
+        assertEquals(GsonDeserializationUtils.deserializeRawJson(arr.toString()),arr);
+    }
+
+
+
+
     @Test
     public void deserializeRawJson_HaveCommaInsideNumbers_ExpectCorrectDeserialization() {
         String serializedRawArray =
