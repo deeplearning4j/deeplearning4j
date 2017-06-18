@@ -1,11 +1,15 @@
 package org.deeplearning4j.text.tokenization.tokenizer;
 
+import org.ansj.domain.Result;
+import org.ansj.domain.Term;
+import org.ansj.splitWord.analysis.NlpAnalysis;
+import org.ansj.splitWord.analysis.ToAnalysis;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import org.apdplat.word.WordSegmenter;
-import org.apdplat.word.segmentation.Word;
+
 
 /**
  * @date: June 2,2017
@@ -17,12 +21,13 @@ import org.apdplat.word.segmentation.Word;
 public class ChineseTokenizer implements Tokenizer{
 
     private TokenPreProcess tokenPreProcess;
-    private List<Word> tokenList;
-    private Iterator<Word> tokenIter;
+    private List<Term> tokenList;
+    private Iterator<Term> tokenIter;
 
     public ChineseTokenizer() {}
     public ChineseTokenizer(String toTokenize) {
-        this.tokenList = WordSegmenter.seg(toTokenize);;
+        Result result = NlpAnalysis.parse(toTokenize);
+        this.tokenList = result.getTerms();
         this.tokenIter = tokenList.iterator();
     }
 
@@ -41,7 +46,8 @@ public class ChineseTokenizer implements Tokenizer{
         if (!hasMoreTokens()) {
             throw new NoSuchElementException();
         }
-        return this.tokenPreProcess != null ? this.tokenPreProcess.preProcess(tokenIter.next().toString()) : tokenIter.next().toString();
+
+        return this.tokenPreProcess != null ? this.tokenPreProcess.preProcess(tokenIter.next().getName()) : tokenIter.next().getName();
     }
 
     @Override
