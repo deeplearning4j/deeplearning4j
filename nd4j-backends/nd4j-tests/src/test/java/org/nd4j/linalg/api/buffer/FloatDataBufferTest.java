@@ -241,9 +241,12 @@ public class FloatDataBufferTest extends BaseNd4jTest {
 
         DataBuffer buffer = Nd4j.createBuffer(new float[]{1, 2, 3, 4});
         assertTrue(buffer.isAttached());
+        float[] old = buffer.asFloat();
         assertEquals(4, buffer.capacity());
         buffer.reallocate(6);
         assertEquals(6, buffer.capacity());
+        float[] newBuf = buffer.asFloat();
+        assertArrayEquals(old, newBuf, 1e-4F);
         workspace.close();
     }
 

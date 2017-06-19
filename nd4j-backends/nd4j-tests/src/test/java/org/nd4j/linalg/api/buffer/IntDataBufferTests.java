@@ -70,8 +70,10 @@ public class IntDataBufferTests extends BaseNd4jTest {
     public void testReallocation(){
         DataBuffer buffer = Nd4j.createBuffer(new int[]{1, 2, 3, 4});
         assertEquals(4, buffer.capacity());
+        int[] old = buffer.asInt();
         buffer.reallocate(6);
         assertEquals(6, buffer.capacity());
+        assertArrayEquals(old, buffer.asInt());
     }
 
     @Test
@@ -84,11 +86,12 @@ public class IntDataBufferTests extends BaseNd4jTest {
         MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "SOME_ID");
 
         DataBuffer buffer = Nd4j.createBuffer(new int[]{1, 2, 3, 4});
-
+        int[] old = buffer.asInt();
         assertTrue(buffer.isAttached());
         assertEquals(4, buffer.capacity());
         buffer.reallocate(6);
         assertEquals(6, buffer.capacity());
+        assertArrayEquals(old, buffer.asInt());
         workspace.close();
     }
 
