@@ -20,7 +20,6 @@ import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacpp.indexer.*;
-import org.bytedeco.javacv.FrameConverter;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.ImageTransform;
@@ -33,8 +32,6 @@ import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.*;
 import java.nio.ByteOrder;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.bytedeco.javacpp.lept.*;
 import static org.bytedeco.javacpp.opencv_core.*;
@@ -52,7 +49,7 @@ public class NativeImageLoader extends BaseImageLoader {
                     "png", "tif", "tiff", "exr", "webp", "BMP", "GIF", "JPG", "JPEG", "JP2", "PBM", "PGM", "PPM", "PNM",
                     "PNG", "TIF", "TIFF", "EXR", "WEBP"};
 
-    protected Map<Long, FrameConverter<Mat>> safeConverter = new HashMap<>();
+    protected OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
 
     /**
      * Loads images with no scaling or conversion.
@@ -400,8 +397,6 @@ public class NativeImageLoader extends BaseImageLoader {
     }
 
     protected INDArray transformImage(Mat image, INDArray ret) throws IOException {
-        FrameConverter<Mat> converter = getSafeConverter(Thread.currentThread().getId());
-
         if (imageTransform != null && converter != null) {
             ImageWritable writable = new ImageWritable(converter.convert(image));
             writable = imageTransform.transform(writable);
@@ -537,8 +532,6 @@ public class NativeImageLoader extends BaseImageLoader {
                 pixDestroy(pix);
             }
 
-            FrameConverter<Mat> converter = getSafeConverter(Thread.currentThread().getId());
-
             ImageWritable writable = new ImageWritable(converter.convert(image));
             return writable;
         }
@@ -552,26 +545,7 @@ public class NativeImageLoader extends BaseImageLoader {
      * @throws IOException
      */
     public INDArray asMatrix(ImageWritable writable) throws IOException {
-        FrameConverter<Mat> converter = getSafeConverter(Thread.currentThread().getId());
-
         Mat image = converter.convert(writable.getFrame());
         return asMatrix(image);
     }
-
-    /**
-     * Returns thread-safe FrameConverter
-     *
-     * @param threadId
-     * @return
-     */
-    protected FrameConverter<Mat> getSafeConverter(long threadId) {
-        if (safeConverter.containsKey(threadId)) {
-            return safeConverter.get(Thread.currentThread().getId());
-        }else {
-            FrameConverter<Mat> converter = new OpenCVFrameConverter.ToMat();
-            safeConverter.put(threadId, converter);
-            return converter;
-        }
-    }
-
 }

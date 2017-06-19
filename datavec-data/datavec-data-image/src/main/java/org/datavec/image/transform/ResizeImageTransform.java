@@ -16,12 +16,11 @@
 package org.datavec.image.transform;
 
 import org.bytedeco.javacpp.opencv_core;
-import org.bytedeco.javacv.FrameConverter;
+import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.util.HashMap;
 import java.util.Random;
 
 import static org.bytedeco.javacpp.opencv_imgproc.resize;
@@ -64,7 +63,7 @@ public class ResizeImageTransform extends BaseImageTransform<opencv_core.Mat> {
 
         this.newWidth = newWidth;
         this.newHeight = newHeight;
-        this.safeConverter = new HashMap<>();
+        this.converter = new OpenCVFrameConverter.ToMat();
     }
 
     /**
@@ -80,17 +79,11 @@ public class ResizeImageTransform extends BaseImageTransform<opencv_core.Mat> {
         if (image == null) {
             return null;
         }
-
-        FrameConverter<opencv_core.Mat> converter = getSafeConverter(Thread.currentThread().getId());
-
         opencv_core.Mat mat = converter.convert(image.getFrame());
         opencv_core.Mat result = new opencv_core.Mat();
         resize(mat, result, new opencv_core.Size(newWidth, newHeight));
         return new ImageWritable(converter.convert(result));
     }
 
-    protected FrameConverter<opencv_core.Mat> getSafeConverter(long threadId) {
-        return getSafeMatConverter(threadId);
-    }
 
 }

@@ -18,14 +18,12 @@ package org.datavec.image.transform;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.bytedeco.javacpp.opencv_core;
-import org.bytedeco.javacv.FrameConverter;
+import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.util.HashMap;
 import java.util.Random;
 
 import static org.bytedeco.javacpp.opencv_core.*;
@@ -39,7 +37,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  * @author saudet
  */
 @Accessors(fluent = true)
-@JsonIgnoreProperties({"interMode", "borderMode", "borderValue", "safeConverter"})
+@JsonIgnoreProperties({"interMode", "borderMode", "borderValue", "converter"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class WarpImageTransform extends BaseImageTransform<Mat> {
 
@@ -102,7 +100,7 @@ public class WarpImageTransform extends BaseImageTransform<Mat> {
         deltas[5] = dy3;
         deltas[6] = dx4;
         deltas[7] = dy4;
-        this.safeConverter = new HashMap<>();
+        this.converter = new OpenCVFrameConverter.ToMat();
     }
 
     /**
@@ -118,9 +116,6 @@ public class WarpImageTransform extends BaseImageTransform<Mat> {
         if (image == null) {
             return null;
         }
-
-        FrameConverter<Mat> converter = getSafeConverter(Thread.currentThread().getId());
-
         Mat mat = converter.convert(image.getFrame());
         Point2f src = new Point2f(4);
         Point2f dst = new Point2f(4);
@@ -134,10 +129,6 @@ public class WarpImageTransform extends BaseImageTransform<Mat> {
         warpPerspective(mat, result, M, mat.size(), interMode, borderMode, borderValue);
 
         return new ImageWritable(converter.convert(result));
-    }
-
-    protected FrameConverter<opencv_core.Mat> getSafeConverter(long threadId) {
-        return getSafeMatConverter(threadId);
     }
 
 }

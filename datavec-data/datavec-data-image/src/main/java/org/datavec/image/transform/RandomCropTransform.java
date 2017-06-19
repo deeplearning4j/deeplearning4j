@@ -15,14 +15,13 @@
  */
 package org.datavec.image.transform;
 
-import org.bytedeco.javacv.FrameConverter;
+import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.util.HashMap;
 import java.util.Random;
 
 import static org.bytedeco.javacpp.opencv_core.Mat;
@@ -34,7 +33,7 @@ import static org.bytedeco.javacpp.opencv_core.Rect;
  *
  * @author Justin Long (@crockpotveggies)
  */
-@JsonIgnoreProperties({"rng", "safeConverter"})
+@JsonIgnoreProperties({"rng", "converter"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class RandomCropTransform extends BaseImageTransform<Mat> {
 
@@ -56,8 +55,8 @@ public class RandomCropTransform extends BaseImageTransform<Mat> {
         this.outputHeight = height;
         this.outputWidth = width;
         this.rng = Nd4j.getRandom();
-        rng.setSeed(seed);
-        this.safeConverter = new HashMap<>();
+        this.rng.setSeed(seed);
+        this.converter = new OpenCVFrameConverter.ToMat();
     }
 
     /**
@@ -72,9 +71,6 @@ public class RandomCropTransform extends BaseImageTransform<Mat> {
         if (image == null) {
             return null;
         }
-
-        FrameConverter<Mat> converter = getSafeConverter(Thread.currentThread().getId());
-
         // ensure that transform is valid
         if (image.getFrame().imageHeight < outputHeight || image.getFrame().imageWidth < outputWidth)
             throw new UnsupportedOperationException(
@@ -96,10 +92,6 @@ public class RandomCropTransform extends BaseImageTransform<Mat> {
 
 
         return new ImageWritable(converter.convert(result));
-    }
-
-    protected FrameConverter<Mat> getSafeConverter(long threadId) {
-        return getSafeMatConverter(threadId);
     }
 
 }

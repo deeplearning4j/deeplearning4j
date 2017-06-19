@@ -16,7 +16,6 @@
 package org.datavec.image.transform;
 
 import lombok.NonNull;
-import org.bytedeco.javacv.FrameConverter;
 import org.datavec.api.berkeley.Pair;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.linalg.factory.Nd4j;
@@ -109,10 +108,6 @@ public class PipelineImageTransform extends BaseImageTransform<Mat> {
         }
 
         return image;
-    }
-
-    protected FrameConverter<Mat> getSafeConverter(long threadId) {
-        throw new UnsupportedOperationException("Frame converters are used at individual transform levels");
     }
 
     /**

@@ -16,13 +16,10 @@
 package org.datavec.image.transform;
 
 import lombok.NoArgsConstructor;
-import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.FrameConverter;
-import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
-import java.util.Map;
 import java.util.Random;
 
 /**
@@ -33,11 +30,11 @@ import java.util.Random;
  * @author saudet
  */
 @NoArgsConstructor
-@JsonIgnoreProperties({"safeConverter"})
+@JsonIgnoreProperties({"converter"})
 public abstract class BaseImageTransform<F> implements ImageTransform {
 
     protected Random random;
-    protected Map<Long, FrameConverter<F>> safeConverter;
+    protected FrameConverter<F> converter;
 
     protected BaseImageTransform(Random random) {
         this.random = random;
@@ -48,21 +45,4 @@ public abstract class BaseImageTransform<F> implements ImageTransform {
         return transform(image, random);
     }
 
-    abstract FrameConverter<F> getSafeConverter(long threadId);
-
-    /**
-     * Returns thread-safe Mat FrameConverter
-     * the purpose of this method is to reduce code redundancies for image transforms
-     * @param threadId
-     * @return
-     */
-    protected FrameConverter<opencv_core.Mat> getSafeMatConverter(long threadId) {
-        if (safeConverter.containsKey(threadId)) {
-            return (FrameConverter<opencv_core.Mat>) safeConverter.get(Thread.currentThread().getId());
-        }else {
-            FrameConverter<opencv_core.Mat> converter = new OpenCVFrameConverter.ToMat();
-            safeConverter.put(threadId, (FrameConverter<F>) converter);
-            return converter;
-        }
-    }
 }
