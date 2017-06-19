@@ -11,6 +11,7 @@ import org.datavec.spark.transform.model.Base64NDArrayBody;
 import org.datavec.spark.transform.model.BatchRecord;
 import org.datavec.spark.transform.model.CSVRecord;
 import org.datavec.spark.transform.service.DataVecTransformService;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 import play.Mode;
 import play.libs.Json;
 import play.routing.RoutingDsl;
@@ -18,12 +19,9 @@ import play.server.Server;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collections;
 
 import static play.mvc.Controller.request;
-import static play.mvc.Results.badRequest;
-import static play.mvc.Results.internalServerError;
-import static play.mvc.Results.ok;
+import static play.mvc.Results.*;
 
 /**
  * A rest server for using an
@@ -45,6 +43,7 @@ public class CSVSparkTransformServer implements DataVecTransformService {
     private int port = 9000;
     private Server server;
     private CSVSparkTransform transform;
+    private static ObjectMapper objectMapper = new ObjectMapper();
 
     public void runMain(String[] args) throws Exception {
         JCommander jcmdr = new JCommander(this);
@@ -106,7 +105,7 @@ public class CSVSparkTransformServer implements DataVecTransformService {
         //return the host information for a given id
         routingDsl.POST("/transformincremental").routeTo(FunctionUtil.function0((() -> {
             try {
-                CSVRecord record = Json.fromJson(request().body().asJson(), CSVRecord.class);
+                CSVRecord record = objectMapper.readValue(request().body().asText(),CSVRecord.class);
                 if (record == null)
                     return badRequest();
                 return ok(Json.toJson(transformIncremental(record)));
@@ -119,7 +118,7 @@ public class CSVSparkTransformServer implements DataVecTransformService {
         //return the host information for a given id
         routingDsl.POST("/transform").routeTo(FunctionUtil.function0((() -> {
             try {
-                BatchRecord batch = transform(Json.fromJson(request().body().asJson(), BatchRecord.class));
+                BatchRecord batch = transform(objectMapper.readValue(request().body().asText(),BatchRecord.class));
                 if (batch == null)
                     return badRequest();
                 return ok(Json.toJson(batch));
@@ -131,7 +130,7 @@ public class CSVSparkTransformServer implements DataVecTransformService {
 
         routingDsl.POST("/transformincrementalarray").routeTo(FunctionUtil.function0((() -> {
             try {
-                CSVRecord record = Json.fromJson(request().body().asJson(), CSVRecord.class);
+                CSVRecord record =  objectMapper.readValue(request().body().asText(),CSVRecord.class);
                 if (record == null)
                     return badRequest();
                 return ok(Json.toJson(transformArrayIncremental(record)));
@@ -142,7 +141,7 @@ public class CSVSparkTransformServer implements DataVecTransformService {
 
         routingDsl.POST("/transformarray").routeTo(FunctionUtil.function0((() -> {
             try {
-                BatchRecord batchRecord = Json.fromJson(request().body().asJson(), BatchRecord.class);
+                BatchRecord batchRecord =  objectMapper.readValue(request().body().asText(),BatchRecord.class);
                 if (batchRecord == null)
                     return badRequest();
                 return ok(Json.toJson(transformArray(batchRecord)));
