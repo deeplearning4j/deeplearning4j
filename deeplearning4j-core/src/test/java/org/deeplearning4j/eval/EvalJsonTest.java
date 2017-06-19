@@ -9,8 +9,7 @@ import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static junit.framework.TestCase.assertNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 
 public class EvalJsonTest {
@@ -199,4 +198,50 @@ public class EvalJsonTest {
 
 //        System.out.println(json1);
     }
+
+    @Test
+    public void testJsonWithCustomThreshold(){
+
+        //Evaluation - binary threshold
+        Evaluation e = new Evaluation(0.25);
+        String json = e.toJson();
+        String yaml = e.toYaml();
+
+        Evaluation eFromJson = Evaluation.fromJson(json);
+        Evaluation eFromYaml = Evaluation.fromYaml(yaml);
+
+        assertEquals(0.25, eFromJson.getBinaryDecisionThreshold(), 1e-6);
+        assertEquals(0.25, eFromYaml.getBinaryDecisionThreshold(), 1e-6);
+
+
+        //Evaluation: custom cost array
+        INDArray costArray = Nd4j.create(new double[]{1.0, 2.0, 3.0});
+        Evaluation e2 = new Evaluation(costArray);
+
+        json = e2.toJson();
+        yaml = e2.toYaml();
+
+        eFromJson = Evaluation.fromJson(json);
+        eFromYaml = Evaluation.fromYaml(yaml);
+
+        assertEquals(costArray, eFromJson.getCostArray());
+        assertEquals(costArray, eFromYaml.getCostArray());
+
+
+
+        //EvaluationBinary - per-output binary threshold
+        INDArray threshold = Nd4j.create(new double[]{1.0, 0.5, 0.25});
+        EvaluationBinary eb = new EvaluationBinary(threshold);
+
+        json = eb.toJson();
+        yaml = eb.toYaml();
+
+        EvaluationBinary ebFromJson = EvaluationBinary.fromJson(json);
+        EvaluationBinary ebFromYaml = EvaluationBinary.fromYaml(yaml);
+
+        assertEquals(threshold, ebFromJson.getDecisionThreshold());
+        assertEquals(threshold, ebFromYaml.getDecisionThreshold());
+
+    }
+
 }
