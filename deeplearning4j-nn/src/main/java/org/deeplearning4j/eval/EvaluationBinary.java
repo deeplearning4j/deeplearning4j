@@ -6,7 +6,6 @@ import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,7 +37,6 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     private int[] countFalsePositive; //P=1, Act=0
     private int[] countTrueNegative; //P=0, Act=0
     private int[] countFalseNegative; //P=0, Act=1
-    @JsonProperty(value = "rocbinary")
     private ROCBinary rocBinary;
 
     private List<String> labels;
@@ -480,24 +478,30 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
         sb.append(header);
 
-        for (int i = 0; i < countTrueNegative.length; i++) {
-            int totalCount = totalCount(i);
+        if(countTrueNegative != null) {
 
-            double acc = accuracy(i);
-            double f1 = f1(i);
-            double precision = precision(i);
-            double recall = recall(i);
+            for (int i = 0; i < countTrueNegative.length; i++) {
+                int totalCount = totalCount(i);
 
-            String label = (labels == null ? String.valueOf(i) : labels.get(i));
+                double acc = accuracy(i);
+                double f1 = f1(i);
+                double precision = precision(i);
+                double recall = recall(i);
 
-            List<Object> args = Arrays.<Object>asList(label, acc, f1, precision, recall, totalCount, truePositives(i),
-                    trueNegatives(i), falsePositives(i), falseNegatives(i));
-            if (rocBinary != null) {
-                args = new ArrayList<>(args);
-                args.add(rocBinary.calculateAUC(i));
+                String label = (labels == null ? String.valueOf(i) : labels.get(i));
+
+                List<Object> args = Arrays.<Object>asList(label, acc, f1, precision, recall, totalCount, truePositives(i),
+                        trueNegatives(i), falsePositives(i), falseNegatives(i));
+                if (rocBinary != null) {
+                    args = new ArrayList<>(args);
+                    args.add(rocBinary.calculateAUC(i));
+                }
+
+                sb.append("\n").append(String.format(pattern, args.toArray()));
             }
-
-            sb.append("\n").append(String.format(pattern, args.toArray()));
+        } else {
+            //Empty evaluation
+            sb.append("\n-- No Data --\n");
         }
 
         return sb.toString();

@@ -1,9 +1,14 @@
 package org.deeplearning4j.eval;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Abs;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,6 +27,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@Data
 @EqualsAndHashCode(callSuper = true)
 public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
@@ -30,15 +36,23 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     private boolean initialized;
     private List<String> columnNames;
     private int precision;
+    @JsonSerialize(using = RowVectorSerializer.class) @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray exampleCountPerColumn; //Necessary to account for per-output masking
+    @JsonSerialize(using = RowVectorSerializer.class) @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray labelsSumPerColumn; //sum(actual) per column -> used to calculate mean
+    @JsonSerialize(using = RowVectorSerializer.class) @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray sumSquaredErrorsPerColumn; //(predicted - actual)^2
+    @JsonSerialize(using = RowVectorSerializer.class) @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray sumAbsErrorsPerColumn; //abs(predicted-actial)
+    @JsonSerialize(using = RowVectorSerializer.class) @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray currentMean;
+    @JsonSerialize(using = RowVectorSerializer.class) @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray currentPredictionMean;
-
+    @JsonSerialize(using = RowVectorSerializer.class) @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray sumOfProducts;
+    @JsonSerialize(using = RowVectorSerializer.class) @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray sumSquaredLabels;
+    @JsonSerialize(using = RowVectorSerializer.class) @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray sumSquaredPredicted;
 
     public RegressionEvaluation(){
@@ -65,7 +79,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
      * @param columnNames Names of the columns
      */
     public RegressionEvaluation(String... columnNames) {
-        this(columnNames == null ? null : Arrays.asList(columnNames), DEFAULT_PRECISION);
+        this(columnNames == null || columnNames.length == 0 ? null : Arrays.asList(columnNames), DEFAULT_PRECISION);
     }
 
     /** Create a regression evaluation object with default precision for the stats() method
@@ -226,47 +240,56 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     }
 
     public String stats() {
-        if(columnNames == null)
-            columnNames = createDefaultColumnNames(numColumns());
-        int maxLabelLength = 0;
-        for (String s : columnNames)
-            maxLabelLength = Math.max(maxLabelLength, s.length());
+        if(!initialized){
+            return "RegressionEvaluation: No Data";
+        } else {
 
-        int labelWidth = maxLabelLength + 5;
-        int columnWidth = precision + 10;
+            if (columnNames == null)
+                columnNames = createDefaultColumnNames(numColumns());
+            int maxLabelLength = 0;
+            for (String s : columnNames)
+                maxLabelLength = Math.max(maxLabelLength, s.length());
 
-        String format = "%-" + labelWidth + "s" + "%-" + columnWidth + "." + precision + "e" //MSE
-                + "%-" + columnWidth + "." + precision + "e" //MAE
-                + "%-" + columnWidth + "." + precision + "e" //RMSE
-                + "%-" + columnWidth + "." + precision + "e" //RSE
-                + "%-" + columnWidth + "." + precision + "e"; //R2 (correlation coefficient)
+            int labelWidth = maxLabelLength + 5;
+            int columnWidth = precision + 10;
+
+            String format = "%-" + labelWidth + "s" + "%-" + columnWidth + "." + precision + "e" //MSE
+                    + "%-" + columnWidth + "." + precision + "e" //MAE
+                    + "%-" + columnWidth + "." + precision + "e" //RMSE
+                    + "%-" + columnWidth + "." + precision + "e" //RSE
+                    + "%-" + columnWidth + "." + precision + "e"; //R2 (correlation coefficient)
 
 
-
-        //Print header:
-        StringBuilder sb = new StringBuilder();
-        String headerFormat = "%-" + labelWidth + "s" + "%-" + columnWidth + "s" + "%-" + columnWidth + "s" + "%-"
-                + columnWidth + "s" + "%-" + columnWidth + "s" + "%-" + columnWidth + "s";
-        sb.append(String.format(headerFormat, "Column", "MSE", "MAE", "RMSE", "RSE", "R^2"));
-        sb.append("\n");
-
-        //Print results for each column:
-        for (int i = 0; i < columnNames.size(); i++) {
-            double mse = meanSquaredError(i);
-            double mae = meanAbsoluteError(i);
-            double rmse = rootMeanSquaredError(i);
-            double rse = relativeSquaredError(i);
-            double corr = correlationR2(i);
-
-            sb.append(String.format(format, columnNames.get(i), mse, mae, rmse, rse, corr));
+            //Print header:
+            StringBuilder sb = new StringBuilder();
+            String headerFormat = "%-" + labelWidth + "s" + "%-" + columnWidth + "s" + "%-" + columnWidth + "s" + "%-"
+                    + columnWidth + "s" + "%-" + columnWidth + "s" + "%-" + columnWidth + "s";
+            sb.append(String.format(headerFormat, "Column", "MSE", "MAE", "RMSE", "RSE", "R^2"));
             sb.append("\n");
+
+            //Print results for each column:
+            for (int i = 0; i < columnNames.size(); i++) {
+                double mse = meanSquaredError(i);
+                double mae = meanAbsoluteError(i);
+                double rmse = rootMeanSquaredError(i);
+                double rse = relativeSquaredError(i);
+                double corr = correlationR2(i);
+
+                sb.append(String.format(format, columnNames.get(i), mse, mae, rmse, rse, corr));
+                sb.append("\n");
+            }
+
+            return sb.toString();
         }
-
-
-        return sb.toString();
     }
 
     public int numColumns() {
+        if(columnNames == null){
+            if(exampleCountPerColumn == null){
+                return 0;
+            }
+            return exampleCountPerColumn.size(1);
+        }
         return columnNames.size();
     }
 
