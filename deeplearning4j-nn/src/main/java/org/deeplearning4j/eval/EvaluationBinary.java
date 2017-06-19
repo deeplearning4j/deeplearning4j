@@ -564,6 +564,10 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
                 sb.append("\n").append(String.format(pattern, args.toArray()));
             }
+
+            if(decisionThreshold != null){
+                sb.append("\nPer-output decision thresholds: ").append(Arrays.toString(decisionThreshold.dup().data().asFloat()));
+            }
         } else {
             //Empty evaluation
             sb.append("\n-- No Data --\n");

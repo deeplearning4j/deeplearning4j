@@ -163,7 +163,10 @@ public class EvalCustomThreshold {
             assertArrayEquals(eStd.getCountTrueNegative(), eb2.getCountTrueNegative());
             assertArrayEquals(eStd.getCountFalseNegative(), eb2.getCountFalseNegative());
 
-            assertEquals(eStd.stats(), eb2.stats());
+            for( int j=0; j<nOut; j++ ){
+                assertEquals(eStd.accuracy(j), eb2.accuracy(j), 1e-6);
+                assertEquals(eStd.f1(j), eb2.f1(j), 1e-6);
+            }
         }
 
 

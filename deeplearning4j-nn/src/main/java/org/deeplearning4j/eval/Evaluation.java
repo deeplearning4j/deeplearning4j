@@ -48,7 +48,7 @@ import java.util.*;
 
 /**
  * Evaluation metrics:<br>
- * - precision, recall, f1, accuracy<br>
+ * - precision, recall, f1, fBeta, accuracy, Matthews correlation coefficient, gMeasure<br>
  * - Top N accuracy (if using constructor {@link #Evaluation(List, int)})<br>
  * - Custom binary evaluation decision threshold (use constructor {@link #Evaluation(double)} (default if not set is
  *   argmax / 0.5)<br>
@@ -585,6 +585,12 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         }
         if(nClasses > 2){
             builder.append("\nPrecision, recall & F1: macro-averaged (equally weighted avg. of ").append(nClasses).append(" classes)");
+        }
+        if(binaryDecisionThreshold != null){
+            builder.append("\nBinary decision threshold: ").append(binaryDecisionThreshold);
+        }
+        if(costArray != null){
+            builder.append("\nCost array: ").append(Arrays.toString(costArray.dup().data().asFloat()));
         }
         //Note that we could report micro-averaged too - but these are the same as accuracy
         //"Note that for “micro”-averaging in a multiclass setting with all labels included will produce equal precision, recall and F,"
@@ -1594,5 +1600,14 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             out.add(new Prediction(actualClass, predictedClass, meta));
         }
         return out;
+    }
+
+
+    public static Evaluation fromJson(String json){
+        return fromJson(json, Evaluation.class);
+    }
+
+    public static Evaluation fromYaml(String yaml){
+        return fromYaml(yaml, Evaluation.class);
     }
 }

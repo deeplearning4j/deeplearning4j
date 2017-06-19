@@ -202,13 +202,39 @@ public class EvalJsonTest {
     @Test
     public void testJsonWithCustomThreshold(){
 
+        //Evaluation - binary threshold
+        Evaluation e = new Evaluation(0.25);
+        String json = e.toJson();
+        String yaml = e.toYaml();
+
+        Evaluation eFromJson = Evaluation.fromJson(json);
+        Evaluation eFromYaml = Evaluation.fromYaml(yaml);
+
+        assertEquals(0.25, eFromJson.getBinaryDecisionThreshold(), 1e-6);
+        assertEquals(0.25, eFromYaml.getBinaryDecisionThreshold(), 1e-6);
 
 
+        //Evaluation: custom cost array
+        INDArray costArray = Nd4j.create(new double[]{1.0, 2.0, 3.0});
+        Evaluation e2 = new Evaluation(costArray);
+
+        json = e2.toJson();
+        yaml = e2.toYaml();
+
+        eFromJson = Evaluation.fromJson(json);
+        eFromYaml = Evaluation.fromYaml(yaml);
+
+        assertEquals(costArray, eFromJson.getCostArray());
+        assertEquals(costArray, eFromYaml.getCostArray());
+
+
+
+        //EvaluationBinary - per-output binary threshold
         INDArray threshold = Nd4j.create(new double[]{1.0, 0.5, 0.25});
         EvaluationBinary eb = new EvaluationBinary(threshold);
 
-        String json = eb.toJson();
-        String yaml = eb.toYaml();
+        json = eb.toJson();
+        yaml = eb.toYaml();
 
         EvaluationBinary ebFromJson = EvaluationBinary.fromJson(json);
         EvaluationBinary ebFromYaml = EvaluationBinary.fromYaml(yaml);
@@ -216,8 +242,6 @@ public class EvalJsonTest {
         assertEquals(threshold, ebFromJson.getDecisionThreshold());
         assertEquals(threshold, ebFromYaml.getDecisionThreshold());
 
-
     }
-
 
 }
