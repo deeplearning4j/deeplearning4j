@@ -43,6 +43,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
     protected int queueSize = 5;
     protected Double boundary = 1.0;
 
+    protected Queue<INDArray> externalSource;
+
     protected CyclicBarrier barrier;
 
     public CudaGradientsAccumulator(double parties) {
@@ -121,6 +123,14 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
             cnt++;
         }
 
+        if (externalSource != null)
+            while (!externalSource.isEmpty()){
+                INDArray compressed = externalSource.poll();
+
+                INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+                cnt++;
+            }
+
         // TODO: average updates probably?
 
         if (cnt > 0)
@@ -147,10 +157,28 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
             cnt++;
         }
 
+        if (externalSource != null)
+            while (!externalSource.isEmpty()){
+                INDArray compressed = externalSource.poll();
+
+                INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+                cnt++;
+            }
+
         // TODO: average updates? might have sense
 
         if (cnt > 0)
             function.step(params, updates, alpha);
+    }
+
+    /**
+     * This method allows to pass external updates to accumulator, they will be populated across all workers using this GradientsAccumulator instance
+     *
+     * @param source
+     */
+    @Override
+    public void setExternalSource(Queue<INDArray> source) {
+        this.externalSource = source;
     }
 
     /**
@@ -197,7 +225,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
 
         try {
             // FIXME: this thing is needed for last update only
-            barrier.await(100, TimeUnit.MILLISECONDS);
+            barrier.await(10, TimeUnit.SECONDS);
         } catch (Exception e) {
             //
         }

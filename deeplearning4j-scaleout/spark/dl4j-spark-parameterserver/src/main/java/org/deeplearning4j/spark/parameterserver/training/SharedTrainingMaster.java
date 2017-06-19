@@ -86,6 +86,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     protected transient Broadcast<NetBroadcastTuple> broadcastModel;
     protected transient Broadcast<SharedTrainingConfiguration> broadcastConfiguration;
     protected transient Transport transport;
+    protected transient SilentTrainingDriver trainingDriver;
 
     protected SharedTrainingMaster() {
         // just a stub for ser/de
@@ -416,8 +417,10 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         network.getNetwork().init();
 
         // this instance will be SilentWorker - it'll accept and apply messages, but won't contribute to training. And we init it only once
-        if (isFirstRun.compareAndSet(false, true))
-            VoidParameterServer.getInstance().init(voidConfiguration, transport, new SilentTrainingDriver(network.getNetwork().params(), network.getNetwork().getOptimizer().getStepFunction()));
+        if (isFirstRun.compareAndSet(false, true)) {
+            trainingDriver = new SilentTrainingDriver(network.getNetwork().params(), network.getNetwork().getOptimizer().getStepFunction());
+            VoidParameterServer.getInstance().init(voidConfiguration, transport, trainingDriver);
+        }
     }
 
     protected void prepareNetworkAndStuff(SparkDl4jMultiLayer network) {
@@ -448,7 +451,21 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         // this instance will be SilentWorker - it'll accept and apply messages, but won't contribute to training. And we init it only once
         if (isFirstRun.compareAndSet(false, true))
-            VoidParameterServer.getInstance().init(voidConfiguration, transport, new SilentTrainingDriver(network.getNetwork().params(), network.getNetwork().getOptimizer().getStepFunction()));
+            trainingDriver = new SilentTrainingDriver(network.getNetwork().params(), network.getNetwork().getOptimizer().getStepFunction());
+            VoidParameterServer.getInstance().init(voidConfiguration, transport, trainingDriver);
+    }
+
+    protected void finalizeTraining() {
+        /*
+            Here we basically want to do few things:
+            1) update statistics, if any
+            2) finalize updates of silent worker
+            3) pull back gradients, maybe?
+         */
+
+        // applying non-applied updates, if any :)
+        if (trainingDriver != null)
+            trainingDriver.finishTraining(0L, 0L);
     }
 
     @Override

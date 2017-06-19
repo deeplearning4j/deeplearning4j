@@ -19,6 +19,7 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
 
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -37,6 +38,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
     protected transient VoidConfiguration voidConfiguration;
     protected transient Transport transport;
     protected transient AtomicLong updatesCount;
+    protected transient AtomicBoolean hasSomething;
 
     /*
         We use this buffer to provide double buffering for incoming messages.
@@ -66,11 +68,20 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
 
         // TODO: make this configurable
         this.updatesBuffer = new LinkedBlockingQueue<>(512);
+        this.hasSomething = new AtomicBoolean(false);
 
         // updates are always the same size as params
         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             this.updates = Nd4j.create(params.shape(), params.ordering());
         }
+    }
+
+    /**
+     * This method is viable only at Spark Workers, Master node will always have empty buffer here by design
+     * @return
+     */
+    public BlockingQueue<INDArray> getUpdatesBuffer() {
+        return updatesBuffer;
     }
 
     @Override
@@ -99,6 +110,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
                 throw new RuntimeException(e);
             }
 
+
             accumulator.receiveUpdate(message.getUpdates());
         } else if (params != null && stepFunction != null) {
 
@@ -106,15 +118,15 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
             synchronized (this) {
                 // threshold decoder is inplace & fast
                 Nd4j.getExecutioner().thresholdDecode(message.getUpdates(), updates);
+                hasSomething.set(true);
 
-                // we apply updates every X iterations
-                // TODO: make X configurable :)
-                if (updatesCount.incrementAndGet() % 10 == 0) {
+                // we apply updates every X iterations, and we don't really need X to be small here
+                if (updatesCount.incrementAndGet() % Math.max(transport.numberOfKnownClients(), 5) == 0) {
                     stepFunction.step(params, updates);
 
                     // once accumulated updates are applied - reset storage, and wait for other messsages
-                    //updates.assign(0.0f);
                     Nd4j.getMemoryManager().memset(updates);
+                    hasSomething.set(false);
                 }
             }
 
@@ -137,9 +149,21 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
         // no-op
     }
 
+    /**
+     * This method is used on Master only, applies buffered updates to params
+     *
+     * @param originatorId
+     * @param taskId
+     */
     @Override
     public void finishTraining(long originatorId, long taskId) {
-        // no-op
+        // on Master thread we'll be applying final gradients
+        if (params != null && stepFunction != null) {
+            if (hasSomething.get()) {
+                stepFunction.step(params, updates);
+                Nd4j.getMemoryManager().memset(updates);
+            }
+        }
     }
 
     @Override

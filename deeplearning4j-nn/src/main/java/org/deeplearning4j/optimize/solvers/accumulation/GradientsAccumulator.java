@@ -4,11 +4,19 @@ import org.deeplearning4j.optimize.api.StepFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.Serializable;
+import java.util.Queue;
 
 /**
  * @author raver119@gmail.com
  */
 public interface GradientsAccumulator extends Serializable {
+
+    /**
+     * This method allows to pass external updates to accumulator, they will be populated across all workers using this GradientsAccumulator instance
+     *
+     * @param source
+     */
+    void setExternalSource(Queue<INDArray> source);
 
     /**
      * This method applies accumulated updates via given StepFunction
