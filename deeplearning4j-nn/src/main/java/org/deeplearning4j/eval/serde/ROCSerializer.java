@@ -22,7 +22,7 @@ public class ROCSerializer extends JsonSerializer<ROC> {
         if(roc.isExact()){
             //For exact ROC implementation: force AUC and AUPRC calculation, so result can be stored in JSON, such
             //that we have them once deserialized.
-            //Due to potentially huge size, exact doesn't store the original predictions in JSON
+            //Due to potentially huge size, exact mode doesn't store the original predictions in JSON
             roc.calculateAUC();
             roc.calculateAUCPR();
         }
@@ -32,6 +32,11 @@ public class ROCSerializer extends JsonSerializer<ROC> {
         jsonGenerator.writeObjectField("counts", roc.getCounts());
         jsonGenerator.writeNumberField("auc", roc.calculateAUC());
         jsonGenerator.writeNumberField("auprc", roc.calculateAUCPR());
+        if(roc.isExact()){
+            //Store ROC and PR curves only for exact mode... they are redundant + can be calculated again for thresholded mode
+            jsonGenerator.writeObjectField("rocCurve", roc.getRocCurve());
+            jsonGenerator.writeObjectField("prCurve", roc.getPrecisionRecallCurve());
+        }
         jsonGenerator.writeBooleanField("isExact", roc.isExact());
         jsonGenerator.writeNumberField("exampleCount", roc.getExampleCount());
         jsonGenerator.writeBooleanField("rocRemoveRedundantPts", roc.isRocRemoveRedundantPts());

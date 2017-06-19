@@ -36,10 +36,10 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-@EqualsAndHashCode(callSuper = true, exclude = {"auc", "auprc", "probAndLabel", "exactAllocBlockSize"})
+@EqualsAndHashCode(callSuper = true, exclude = {"auc", "auprc", "probAndLabel", "exactAllocBlockSize", "rocCurve", "prCurve"})
 @NoArgsConstructor
 @Data
-@ToString(exclude = {"probAndLabel", "exactAllocBlockSize"})
+@ToString(exclude = {"probAndLabel", "exactAllocBlockSize", "rocCurve", "prCurve"})
 @JsonIgnoreProperties({"probAndLabel", "exactAllocBlockSize"})
 @JsonSerialize(using = ROCSerializer.class)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
@@ -53,6 +53,8 @@ public class ROC extends BaseEvaluation<ROC> {
 
     private Double auc;
     private Double auprc;
+    private RocCurve rocCurve;
+    private PrecisionRecallCurve prCurve;
 
     private boolean isExact;
     private INDArray probAndLabel;
@@ -275,6 +277,8 @@ public class ROC extends BaseEvaluation<ROC> {
 
         auc = null;
         auprc = null;
+        rocCurve = null;
+        prCurve = null;
     }
 
     /**
@@ -286,6 +290,10 @@ public class ROC extends BaseEvaluation<ROC> {
      * @return
      */
     public PrecisionRecallCurve getPrecisionRecallCurve() {
+
+        if(prCurve != null){
+            return prCurve;
+        }
 
         double[] thresholdOut;
         double[] precisionOut;
@@ -384,7 +392,9 @@ public class ROC extends BaseEvaluation<ROC> {
             }
 
         }
-        return new PrecisionRecallCurve(thresholdOut, precisionOut, recallOut);
+
+        prCurve = new PrecisionRecallCurve(thresholdOut, precisionOut, recallOut);
+        return prCurve;
     }
 
     /**
@@ -393,6 +403,9 @@ public class ROC extends BaseEvaluation<ROC> {
      * @return ROC curve
      */
     public RocCurve getRocCurve() {
+        if(rocCurve != null){
+            return rocCurve;
+        }
 
         if (isExact) {
             //Sort ascending. As we decrease threshold, more are predicted positive.
@@ -437,7 +450,9 @@ public class ROC extends BaseEvaluation<ROC> {
                 y_tpr_out = temp[2];
             }
 
-            return new RocCurve(tOut, x_fpr_out, y_tpr_out);
+            this.rocCurve = new RocCurve(tOut, x_fpr_out, y_tpr_out);
+
+            return rocCurve;
         } else {
 
             double[][] out = new double[3][thresholdSteps + 1];
