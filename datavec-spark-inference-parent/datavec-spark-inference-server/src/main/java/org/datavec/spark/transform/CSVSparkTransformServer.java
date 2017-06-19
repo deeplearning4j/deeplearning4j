@@ -3,6 +3,7 @@ package org.datavec.spark.transform;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -92,7 +93,7 @@ public class CSVSparkTransformServer implements DataVecTransformService {
         //return the host information for a given id
         routingDsl.POST("/transformprocess").routeTo(FunctionUtil.function0((() -> {
             try {
-                TransformProcess transformProcess = TransformProcess.fromJson(request().body().asJson().toString());
+                TransformProcess transformProcess = TransformProcess.fromJson(getJsonText());
                 setTransformProcess(transformProcess);
                 log.info("Transform process initialized");
                 return ok(Json.toJson(transformProcess));
@@ -105,7 +106,7 @@ public class CSVSparkTransformServer implements DataVecTransformService {
         //return the host information for a given id
         routingDsl.POST("/transformincremental").routeTo(FunctionUtil.function0((() -> {
             try {
-                CSVRecord record = objectMapper.readValue(request().body().asText(),CSVRecord.class);
+                CSVRecord record = objectMapper.readValue(getJsonText(),CSVRecord.class);
                 if (record == null)
                     return badRequest();
                 return ok(Json.toJson(transformIncremental(record)));
@@ -118,7 +119,7 @@ public class CSVSparkTransformServer implements DataVecTransformService {
         //return the host information for a given id
         routingDsl.POST("/transform").routeTo(FunctionUtil.function0((() -> {
             try {
-                BatchRecord batch = transform(objectMapper.readValue(request().body().asText(),BatchRecord.class));
+                BatchRecord batch = transform(objectMapper.readValue(getJsonText(),BatchRecord.class));
                 if (batch == null)
                     return badRequest();
                 return ok(Json.toJson(batch));
@@ -130,7 +131,7 @@ public class CSVSparkTransformServer implements DataVecTransformService {
 
         routingDsl.POST("/transformincrementalarray").routeTo(FunctionUtil.function0((() -> {
             try {
-                CSVRecord record =  objectMapper.readValue(request().body().asText(),CSVRecord.class);
+                CSVRecord record =  objectMapper.readValue(getJsonText(),CSVRecord.class);
                 if (record == null)
                     return badRequest();
                 return ok(Json.toJson(transformArrayIncremental(record)));
@@ -141,7 +142,7 @@ public class CSVSparkTransformServer implements DataVecTransformService {
 
         routingDsl.POST("/transformarray").routeTo(FunctionUtil.function0((() -> {
             try {
-                BatchRecord batchRecord =  objectMapper.readValue(request().body().asText(),BatchRecord.class);
+                BatchRecord batchRecord =  objectMapper.readValue(getJsonText(),BatchRecord.class);
                 if (batchRecord == null)
                     return badRequest();
                 return ok(Json.toJson(transformArray(batchRecord)));
@@ -222,5 +223,15 @@ public class CSVSparkTransformServer implements DataVecTransformService {
             return this.transform.toArray(csvRecord);
         } catch (IOException e) {
             throw new IllegalStateException("Transform array shouldn't throw exception");
-        }    }
+        }
+    }
+
+
+    private String getJsonText() {
+        JsonNode tryJson = request().body().asJson();
+        if(tryJson != null)
+            return tryJson.toString();
+        else return request().body().asText();
+
+    }
 }

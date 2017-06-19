@@ -1,6 +1,5 @@
 package org.datavec.spark.transform;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.ObjectMapper;
 import com.mashape.unirest.http.Unirest;
@@ -35,8 +34,8 @@ public class CSVSparkTransformServerTest {
         FileUtils.write(fileSave, transformProcess.toJson());
         // Only one time
         Unirest.setObjectMapper(new ObjectMapper() {
-            private com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper =
-                            new com.fasterxml.jackson.databind.ObjectMapper();
+            private org.nd4j.shade.jackson.databind.ObjectMapper jacksonObjectMapper =
+                            new org.nd4j.shade.jackson.databind.ObjectMapper();
 
             public <T> T readValue(String value, Class<T> valueType) {
                 try {
@@ -49,7 +48,7 @@ public class CSVSparkTransformServerTest {
             public String writeValue(Object value) {
                 try {
                     return jacksonObjectMapper.writeValueAsString(value);
-                } catch (JsonProcessingException e) {
+                } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -59,7 +58,7 @@ public class CSVSparkTransformServerTest {
 
     @AfterClass
     public static void after() throws Exception {
-        fileSave.delete();
+        fileSave.deleteOnExit();
         server.stop();
 
     }
