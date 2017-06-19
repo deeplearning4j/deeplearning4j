@@ -24,12 +24,19 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * ROC (Receiver Operating Characteristic) for binary classifiers, using the specified number of threshold steps.
+ * ROC (Receiver Operating Characteristic) for binary classifiers.<br>
+ * ROC has 2 modes of operation:
+ * (a) Thresholded (default, less memory)<br>
+ * (b) Exact (use numSteps == 0. May not scale to very large datasets)
+ *
  * <p>
- * Some ROC implementations will automatically calculate the threshold points based on the data set to give a 'smoother'
- * ROC curve (or optimal cut points for diagnostic purposes). This implementation currently uses fixed steps of size
- * 1.0 / thresholdSteps, as this allows easy implementation for batched and distributed evaluation scenarios (where the
+ * Thresholded Is an approximate method, that (for large datasets) may use significantly less memory than exact..
+ * Whereas exact implementations will automatically calculate the threshold points based on the data set to give a
+ * 'smoother' and more accurate  ROC curve (or optimal cut points for diagnostic purposes), thresholded uses fixed steps
+ * of size 1.0 / thresholdSteps, as this allows easy implementation for batched and distributed evaluation scenarios (where the
  * full data set is not available in memory on any one machine at once).
+ * Note that in some cases (very skewed probability predictions, for example) the threshold approach can be inaccurate,
+ * often underestimating the true area.
  * <p>
  * The data is assumed to be binary classification - nColumns == 1 (single binary output variable) or nColumns == 2
  * (probability distribution over 2 classes, with column 1 being values for 'positive' examples)
@@ -69,11 +76,20 @@ public class ROC extends BaseEvaluation<ROC> {
         this(thresholdSteps, true);
     }
 
-
+    /**
+     * @param thresholdSteps Number of threshold steps to use for the ROC calculation. If set to 0: use exact calculation
+     * @param rocRemoveRedundantPts Usually set to true. If true,  remove any redundant points from ROC and P-R curves
+     */
     public ROC(int thresholdSteps, boolean rocRemoveRedundantPts) {
         this(thresholdSteps, rocRemoveRedundantPts, DEFAULT_EXACT_ALLOC_BLOCK_SIZE);
     }
 
+    /**
+     * @param thresholdSteps Number of threshold steps to use for the ROC calculation. If set to 0: use exact calculation
+     * @param rocRemoveRedundantPts Usually set to true. If true,  remove any redundant points from ROC and P-R curves
+     * @param exactAllocBlockSize if using exact mode, the block size relocation. Users can likely use the default
+     *                            setting in almost all cases
+     */
     public ROC(int thresholdSteps, boolean rocRemoveRedundantPts, int exactAllocBlockSize) {
 
 

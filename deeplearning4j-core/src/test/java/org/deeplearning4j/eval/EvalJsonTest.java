@@ -1,5 +1,8 @@
 package org.deeplearning4j.eval;
 
+import org.deeplearning4j.eval.curves.BaseCurve;
+import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
+import org.deeplearning4j.eval.curves.RocCurve;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
@@ -172,5 +175,28 @@ public class EvalJsonTest {
                 }
             }
         }
+    }
+
+    @Test
+    public void testJsonYamlCurves(){
+        ROC roc =  new ROC(0);
+
+        INDArray evalLabel = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(100,1), 0.5));
+        INDArray evalProb = Nd4j.rand(100, 1);
+        roc.eval(evalLabel, evalProb);
+
+        RocCurve c = roc.getRocCurve();
+        PrecisionRecallCurve prc = roc.getPrecisionRecallCurve();
+
+        String json1 = c.toJson();
+        String json2 = prc.toJson();
+
+        RocCurve c2 = RocCurve.fromJson(json1);
+        PrecisionRecallCurve prc2 = PrecisionRecallCurve.fromJson(json2);
+
+        assertEquals(c, c2);
+        assertEquals(prc, prc2);
+
+//        System.out.println(json1);
     }
 }

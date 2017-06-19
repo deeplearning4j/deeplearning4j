@@ -14,12 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * ROC (Receiver Operating Characteristic) for multi-task binary classifiers, using the specified number of threshold steps.
- * <p>
- * Some ROC implementations will automatically calculate the threshold points based on the data set to give a 'smoother'
- * ROC curve (or optimal cut points for diagnostic purposes). This implementation currently uses fixed steps of size
- * 1.0 / thresholdSteps, as this allows easy implementation for batched and distributed evaluation scenarios (where the
- * full data set is not available in memory on any one machine at once).
+ * ROC (Receiver Operating Characteristic) for multi-task binary classifiers.
+ * As per {@link ROC}, ROCBinary supports both exact (thersholdSteps == 0) and thresholded; see {@link ROC} for details.
  * <p>
  * Unlike {@link ROC} (which supports a single binary label (as a single column probability, or 2 column 'softmax' probability
  * distribution), ROCBinary assumes that all outputs are independent binary variables. This also differs from
@@ -41,10 +37,17 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
     private boolean rocRemoveRedundantPts;
     private List<String> labels;
 
+    /**
+     * @param thresholdSteps Number of threshold steps to use for the ROC calculation. Set to 0 for exact ROC calculation
+     */
     public ROCBinary(int thresholdSteps) {
         this( thresholdSteps, true);
     }
 
+    /**
+     * @param thresholdSteps Number of threshold steps to use for the ROC calculation. If set to 0: use exact calculation
+     * @param rocRemoveRedundantPts Usually set to true. If true,  remove any redundant points from ROC and P-R curves
+     */
     public ROCBinary(int thresholdSteps, boolean rocRemoveRedundantPts) {
         this.thresholdSteps = thresholdSteps;
         this.rocRemoveRedundantPts = rocRemoveRedundantPts;
@@ -184,16 +187,25 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
         return underlying[outputNum].getCountActualNegative();
     }
 
-
+    /**
+     * Get the ROC curve for the specified output
+     * @param outputNum Number of the output to get the ROC curve for
+     * @return ROC curve
+     */
     public RocCurve getRocCurve(int outputNum){
         assertIndex(outputNum);
 
         return underlying[outputNum].getRocCurve();
     }
 
-    public PrecisionRecallCurve getPrecisionRecallCurve(int classIdx){
-        assertIndex(classIdx);
-        return underlying[classIdx].getPrecisionRecallCurve();
+    /**
+     * Get the Precision-Recall curve for the specified output
+     * @param outputNum Number of the output to get the P-R curve for
+     * @return  Precision recall curve
+     */
+    public PrecisionRecallCurve getPrecisionRecallCurve(int outputNum){
+        assertIndex(outputNum);
+        return underlying[outputNum].getPrecisionRecallCurve();
     }
 
 
@@ -211,15 +223,14 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
     }
 
     /**
-     * Calculate the AUC - Area Under Curve<br>
+     * Calculate the AUC - Area Under (ROC) Curve<br>
      * Utilizes trapezoidal integration internally
      *
-     * @param outputNum
+     * @param outputNum Output number to calculate AUC for
      * @return AUC
      */
     public double calculateAUC(int outputNum) {
         assertIndex(outputNum);
-
         return underlying[outputNum].calculateAUC();
     }
 

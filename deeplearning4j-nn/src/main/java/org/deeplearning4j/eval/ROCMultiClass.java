@@ -13,15 +13,11 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * ROC (Receiver Operating Characteristic) for multi-class classifiers, using the specified number of threshold steps.
+ * ROC (Receiver Operating Characteristic) for multi-class classifiers.
+  As per {@link ROC}, ROCBinary supports both exact (thersholdSteps == 0) and thresholded; see {@link ROC} for details.
  * <p>
  * The ROC curves are produced by treating the predictions as a set of one-vs-all classifiers, and then calculating
  * ROC curves for each. In practice, this means for N classes, we get N ROC curves.
- * <p>
- * Some ROC implementations will automatically calculate the threshold points based on the data set to give a 'smoother'
- * ROC curve (or optimal cut points for diagnostic purposes). This implementation currently uses fixed steps of size
- * 1.0 / thresholdSteps, as this allows easy implementation for batched and distributed evaluation scenarios (where the
- * full data set is not available in memory on any one machine at once).
  *
  * @author Alex Black
  */
@@ -38,12 +34,16 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
     private List<String> labels;
 
     /**
-     * @param thresholdSteps Number of threshold steps to use for the ROC calculation
+     * @param thresholdSteps Number of threshold steps to use for the ROC calculation. Set to 0 for exact ROC calculation
      */
     public ROCMultiClass(int thresholdSteps) {
         this(thresholdSteps, true);
     }
 
+    /**
+     * @param thresholdSteps Number of threshold steps to use for the ROC calculation. If set to 0: use exact calculation
+     * @param rocRemoveRedundantPts Usually set to true. If true,  remove any redundant points from ROC and P-R curves
+     */
     public ROCMultiClass(int thresholdSteps, boolean rocRemoveRedundantPts) {
         this.thresholdSteps = thresholdSteps;
         this.rocRemoveRedundantPts = rocRemoveRedundantPts;
@@ -139,11 +139,21 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
         }
     }
 
+    /**
+     * Get the (one vs. all) ROC curve for the specified class
+     * @param classIdx Class index to get the ROC curve for
+     * @return ROC curve for the given class
+     */
     public RocCurve getRocCurve(int classIdx){
         assertIndex(classIdx);
         return underlying[classIdx].getRocCurve();
     }
 
+    /**
+     * Get the (one vs. all) Precision-Recall curve for the specified class
+     * @param classIdx Class to get the P-R curve for
+     * @return  Precision recall curve for the given class
+     */
     public PrecisionRecallCurve getPrecisionRecallCurve(int classIdx){
         assertIndex(classIdx);
         return underlying[classIdx].getPrecisionRecallCurve();

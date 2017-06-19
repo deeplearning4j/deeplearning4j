@@ -1,6 +1,7 @@
 package org.deeplearning4j.eval;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.deeplearning4j.berkeley.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
@@ -24,7 +25,9 @@ import java.util.List;
 @EqualsAndHashCode
 public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvaluation<T> {
 
+    @Getter
     private static ObjectMapper objectMapper = configureMapper(new ObjectMapper());
+    @Getter
     private static ObjectMapper yamlMapper = configureMapper(new ObjectMapper(new YAMLFactory()));
 
     private static ObjectMapper configureMapper(ObjectMapper ret) {
@@ -82,7 +85,7 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
     }
 
     /**
-     * @return
+     * @return JSON representation of the evaluation instance
      */
     @Override
     public String toJson() {
@@ -94,7 +97,7 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
     }
 
     /**
-     * @return
+     * @return YAML  representation of the evaluation instance
      */
     @Override
     public String toYaml() {
@@ -107,24 +110,24 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
 
 
     /**
-     * @param json
-     * @param clazz
-     * @param <T>
-     * @return
+     * @param yaml  YAML representation
+     * @param clazz Class
+     * @param <T>   Type to return
+     * @return Evaluation instance
      */
-    public static <T extends IEvaluation> T fromYaml(String json, Class<T> clazz) {
+    public static <T extends IEvaluation> T fromYaml(String yaml, Class<T> clazz) {
         try {
-            return yamlMapper.readValue(json, clazz);
+            return yamlMapper.readValue(yaml, clazz);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     /**
-     * @param json
-     * @param clazz
-     * @param <T>
-     * @return
+     * @param json  Jason representation of the evaluation instance
+     * @param clazz Class
+     * @param <T>   Type to return
+     * @return Evaluation instance
      */
     public static <T extends IEvaluation> T fromJson(String json, Class<T> clazz) {
         try {
