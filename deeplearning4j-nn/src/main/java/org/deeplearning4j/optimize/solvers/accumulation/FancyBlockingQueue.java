@@ -33,8 +33,6 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
     protected AtomicBoolean isFirst = new AtomicBoolean(false);
     protected AtomicBoolean isDone = new AtomicBoolean(true);
 
-    protected volatile E object;
-
     protected AtomicInteger barrier = new AtomicInteger(0);
     protected AtomicInteger secondary = new AtomicInteger(0);
 

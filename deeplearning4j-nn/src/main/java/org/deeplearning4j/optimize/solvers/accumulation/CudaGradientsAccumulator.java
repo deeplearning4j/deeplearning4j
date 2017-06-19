@@ -19,7 +19,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -28,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class CudaGradientsAccumulator implements GradientsAccumulator{
+public class CudaGradientsAccumulator implements GradientsAccumulator, Registerable{
     protected ThreadLocal<INDArray> accumulator = new ThreadLocal<>();
 
     protected int parties;
@@ -45,7 +47,14 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
 
     protected Queue<INDArray> externalSource;
 
-    protected CyclicBarrier barrier;
+    protected AtomicBoolean isFirst = new AtomicBoolean(false);
+    protected AtomicBoolean isDone = new AtomicBoolean(true);
+
+    protected AtomicInteger barrier = new AtomicInteger(0);
+    protected AtomicInteger secondary = new AtomicInteger(0);
+    protected AtomicBoolean registered = new AtomicBoolean(false);
+    protected final AtomicInteger currentConsumers = new AtomicInteger(0);
+
 
     public CudaGradientsAccumulator(double parties) {
         this(Nd4j.getAffinityManager().getNumberOfDevices(), 1e-3);
@@ -101,7 +110,42 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
         Nd4j.getAffinityManager().unsafeSetDevice(curDev);
 
         handler.initialize(this);
-        barrier = new CyclicBarrier(parties);
+    }
+
+    @Override
+    public void register(int numConsumers) {
+        // we're passing number of consumers for current session to externalSource, if applicable
+        if (externalSource != null && externalSource instanceof Registerable)
+            ((Registerable) externalSource).register(numConsumers);
+
+        currentConsumers.set(numConsumers);
+        registered.set(true);
+    }
+
+    protected void synchronize(int consumers) {
+        // any first thread entering this block - will reset this field to false
+        isDone.compareAndSet(true, false);
+
+        // last thread will set isDone to true
+        if (barrier.incrementAndGet() == currentConsumers.get()) {
+            secondary.set(0);
+            barrier.set(0);
+            isFirst.set(false);
+            isDone.set(true);
+        } else {
+            // just wait, till last thread will set isDone to true
+            while (!isDone.get())
+                LockSupport.parkNanos(1000L);
+        }
+
+        // second lock here needed only to ensure we won't get overrun over isDone flag
+        if (secondary.incrementAndGet() == currentConsumers.get()) {
+            isFirst.set(true);
+        } else {
+            while (!isFirst.get())
+                LockSupport.parkNanos(1000L);
+        }
+
     }
 
     /**
@@ -211,6 +255,9 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
      */
     @Override
     public void storeUpdate(INDArray array) {
+        // block until ParallelWrapper sends us message about number of threads in this cycle
+        while (!registered.get())
+            LockSupport.parkNanos(100L);
 
         if (accumulator.get() == null) {
             // we don't want accumulator to be attached to workspaces
@@ -219,16 +266,14 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
             }
         }
 
+        // accumulate gradients updates in residental array
         accumulator.get().addi(array);
 
+        // propagate changes & modify accumulator
         handler.broadcastUpdates(accumulator.get());
 
-        try {
-            // FIXME: this thing is needed for last update only
-            barrier.await(10, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            //
-        }
+        // we're blocking here, untill all done broadcasting updates
+        synchronize(currentConsumers.get());
     }
 
     /**
@@ -244,7 +289,9 @@ public class CudaGradientsAccumulator implements GradientsAccumulator{
         for (int i = 0; i < parties; i++) {
             // we don't want to have same workspace to be accessible by 2 different threads for now
             /*
-                FIXME: nested locks here. deadlock is possible.
+                With synchronized external data, it's impossible to deadlock here.
+                Each worker is guaranteed to have at least NUM_WORKERS slots in buffer.
+                So we use this lock just to ensure thread-safety of corresponding workspaces
              */
             locks.get(i).lock();
 

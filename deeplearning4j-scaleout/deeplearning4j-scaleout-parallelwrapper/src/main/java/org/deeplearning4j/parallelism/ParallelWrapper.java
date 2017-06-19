@@ -507,6 +507,14 @@ public class ParallelWrapper implements AutoCloseable {
             if (pos + 1 == workers) {
                 iterationsCounter.incrementAndGet();
 
+                /*
+                    if we're using registerable accumulator (i.e. we're on spark or cuda with gradients sharing),
+                    update it & notify about number of threads in this training round then
+                  */
+                if (gradientsAccumulator != null && gradientsAccumulator instanceof Registerable) {
+                    ((Registerable) gradientsAccumulator).register(workers);
+                }
+
                 if (zoo[0].averagingRequired()) {
                     for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
                         try {
@@ -540,6 +548,11 @@ public class ParallelWrapper implements AutoCloseable {
             }
 
             time1 = System.currentTimeMillis();
+        }
+
+        // launch last update
+        if (locker.get() != 0 && gradientsAccumulator != null && gradientsAccumulator instanceof Registerable) {
+            ((Registerable) gradientsAccumulator).register(locker.get());
         }
 
         if (debug)

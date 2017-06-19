@@ -55,6 +55,11 @@ public class FancyBlockingQueueTests {
         assertEquals(f * 4, e.get());
     }
 
+    /**
+     * This test is +- the same as the first one, just adds variable consumption time
+     *
+     * @throws Exception
+     */
     @Test
     public void testFancyQueue2() throws Exception {
         final FancyBlockingQueue<Integer> queue = new FancyBlockingQueue<>(new LinkedBlockingQueue<Integer>(512), 4);
