@@ -40,6 +40,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+
 /**
  * Base class for a data buffer
  * handling basic byte operations
@@ -1490,6 +1491,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                 case INT:
                     pointer = getParentWorkspace().alloc(capacity, Type.INT, false).asIntPointer();
                     indexer = IntIndexer.create((IntPointer) pointer);
+
                     break;
 
             }
@@ -1509,7 +1511,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
                     break;
             }
         }
-        Pointer.memcpy(pointer, oldPointer, oldPointer.capacity());
+        Pointer.memcpy(pointer, oldPointer, this.length() * getElementSize());
         return this;
     }
 
