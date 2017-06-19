@@ -1,22 +1,25 @@
 package org.datavec.spark.transform;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.ObjectMapper;
 import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
 import org.apache.commons.io.FileUtils;
+import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.transform.ImageTransformProcess;
 import org.datavec.spark.transform.model.Base64NDArrayBody;
-import org.datavec.spark.transform.model.CSVRecord;
+import org.datavec.spark.transform.model.BatchImageRecord;
 import org.datavec.spark.transform.model.ImageRecord;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.serde.base64.Nd4jBase64;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created by kepricon on 17. 6. 19.
@@ -39,13 +42,11 @@ public class ImageSparkTransformServerTest {
         FileUtils.write(fileSave, imgTransformProcess.toJson());
 
         Unirest.setObjectMapper(new ObjectMapper() {
-            private com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper =
-                    new com.fasterxml.jackson.databind.ObjectMapper();
+            private org.nd4j.shade.jackson.databind.ObjectMapper jacksonObjectMapper =
+                    new org.nd4j.shade.jackson.databind.ObjectMapper();
 
             public <T> T readValue(String value, Class<T> valueType) {
                 try {
-                    System.out.println("value : " + value);
-                    System.out.println("valueType : " + valueType);
                     return jacksonObjectMapper.readValue(value, valueType);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -55,7 +56,7 @@ public class ImageSparkTransformServerTest {
             public String writeValue(Object value) {
                 try {
                     return jacksonObjectMapper.writeValueAsString(value);
-                } catch (JsonProcessingException e) {
+                } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
             }
@@ -66,20 +67,37 @@ public class ImageSparkTransformServerTest {
 
     @AfterClass
     public static void after() throws Exception {
-        fileSave.delete();
+        fileSave.deleteOnExit();
         server.stop();
 
     }
 
     @Test
     public void testImageServer() throws Exception {
-        ImageRecord record = new ImageRecord(new File("/home/kepricon/git/DataVec/datavec-spark-inference-parent/datavec-spark-inference-model/src/test/resources/testimages/class0/0.jpg").toURI());
+        ImageRecord record = new ImageRecord(new ClassPathResource("testimages/class0/0.jpg").getFile().toURI());
         JsonNode jsonNode = Unirest.post("http://localhost:9060/transformincrementalarray").header("accept", "application/json")
                 .header("Content-Type", "application/json").body(record).asJson().getBody();
         Base64NDArrayBody array = Unirest.post("http://localhost:9060/transformincrementalarray").header("accept", "application/json")
                 .header("Content-Type", "application/json").body(record).asObject(Base64NDArrayBody.class).getBody();
 
-        System.out.println(jsonNode);
-        System.out.println(array);
+        BatchImageRecord batch = new BatchImageRecord();
+        batch.add(new ClassPathResource("testimages/class0/0.jpg").getFile().toURI());
+        batch.add(new ClassPathResource("testimages/class0/1.png").getFile().toURI());
+        batch.add(new ClassPathResource("testimages/class0/2.jpg").getFile().toURI());
+
+        JsonNode jsonNodeBatch = Unirest.post("http://localhost:9060/transformarray").header("accept", "application/json")
+                .header("Content-Type", "application/json").body(batch).asJson().getBody();
+        Base64NDArrayBody batchArray = Unirest.post("http://localhost:9060/transformarray").header("accept", "application/json")
+                .header("Content-Type", "application/json").body(batch).asObject(Base64NDArrayBody.class).getBody();
+
+        INDArray result = getNDArray(jsonNode);
+        assertEquals(1, result.size(0));
+
+        INDArray batchResult = getNDArray(jsonNodeBatch);
+        assertEquals(3, batchResult.size(0));
+    }
+
+    public INDArray getNDArray(JsonNode node) throws IOException {
+        return Nd4jBase64.fromBase64(node.getObject().getString("ndarray"));
     }
 }

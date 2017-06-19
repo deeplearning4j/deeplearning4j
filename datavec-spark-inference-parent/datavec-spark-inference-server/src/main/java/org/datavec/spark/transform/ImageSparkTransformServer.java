@@ -3,6 +3,7 @@ package org.datavec.spark.transform;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -86,7 +87,7 @@ public class ImageSparkTransformServer implements DataVecImageTransformService{
         //return the host information for a given id
         routingDsl.POST("/transformprocess").routeTo(FunctionUtil.function0((() -> {
             try {
-                ImageTransformProcess transformProcess = ImageTransformProcess.fromJson(request().body().asJson().toString());
+                ImageTransformProcess transformProcess = ImageTransformProcess.fromJson(getJsonText());
                 setTransformProcess(transformProcess);
                 log.info("Transform process initialized");
                 return ok(Json.toJson(transformProcess));
@@ -99,12 +100,23 @@ public class ImageSparkTransformServer implements DataVecImageTransformService{
         //return the host information for a given id
         routingDsl.POST("/transformincrementalarray").routeTo(FunctionUtil.function0((() -> {
             try {
-                System.out.println("kepricon" + request().body());
-                ImageRecord record = objectMapper.readValue(request().body().asText(),ImageRecord.class);
-                System.out.println("ke" + record.getUri());
+                ImageRecord record = objectMapper.readValue(getJsonText(),ImageRecord.class);
                 if (record == null)
                     return badRequest();
                 return ok(Json.toJson(transformIncrementalArray(record)));
+            } catch (Exception e) {
+                e.printStackTrace();
+                return internalServerError();
+            }
+        })));
+
+        //return the host information for a given id
+        routingDsl.POST("/transformarray").routeTo(FunctionUtil.function0((() -> {
+            try {
+                BatchImageRecord batch = objectMapper.readValue(getJsonText(),BatchImageRecord.class);
+                if (batch == null)
+                    return badRequest();
+                return ok(Json.toJson(transformArray(batch)));
             } catch (Exception e) {
                 e.printStackTrace();
                 return internalServerError();
@@ -139,11 +151,19 @@ public class ImageSparkTransformServer implements DataVecImageTransformService{
     }
 
     @Override
-    public Base64NDArrayBody transformArray(BatchImageRecord batch) {
-        return null;
+    public Base64NDArrayBody transformArray(BatchImageRecord batch) throws IOException {
+        return transform.toArray(batch);
     }
 
     public static void main(String[] args) throws Exception {
         new ImageSparkTransformServer().runMain(args);
+    }
+
+    private String getJsonText() {
+        JsonNode tryJson = request().body().asJson();
+        if(tryJson != null)
+            return tryJson.toString();
+        else
+            return request().body().asText();
     }
 }

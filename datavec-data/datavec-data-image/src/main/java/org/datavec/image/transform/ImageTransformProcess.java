@@ -321,7 +321,7 @@ public class ImageTransformProcess {
         }
 
         public Builder seed(int seed) {
-            seed = seed;
+            this.seed = seed;
             return this;
         }
 

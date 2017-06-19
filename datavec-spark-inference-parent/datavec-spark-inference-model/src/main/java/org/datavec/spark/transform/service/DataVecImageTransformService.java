@@ -18,5 +18,5 @@ public interface DataVecImageTransformService {
 
     Base64NDArrayBody transformIncrementalArray(ImageRecord record) throws IOException;
 
-    Base64NDArrayBody transformArray(BatchImageRecord batch);
+    Base64NDArrayBody transformArray(BatchImageRecord batch) throws IOException;
 }
