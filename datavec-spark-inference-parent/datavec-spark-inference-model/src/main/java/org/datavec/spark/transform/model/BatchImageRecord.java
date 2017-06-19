@@ -28,6 +28,6 @@ public class BatchImageRecord {
     }
 
     public void add(URI uri) {
-        records.add(new ImageRecord(uri));
+        this.add(new ImageRecord(uri));
     }
 }
