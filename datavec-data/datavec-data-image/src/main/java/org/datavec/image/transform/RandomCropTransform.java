@@ -15,13 +15,17 @@
  */
 package org.datavec.image.transform;
 
-import java.util.Random;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
-import org.datavec.image.transform.BaseImageTransform;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import static org.bytedeco.javacpp.opencv_core.*;
+import java.util.Random;
+
+import static org.bytedeco.javacpp.opencv_core.Mat;
+import static org.bytedeco.javacpp.opencv_core.Rect;
 
 /**
  * Randomly crops an image to a desired output size. Will determine if
@@ -29,12 +33,16 @@ import static org.bytedeco.javacpp.opencv_core.*;
  *
  * @author Justin Long (@crockpotveggies)
  */
+@JsonIgnoreProperties({"rng", "converter"})
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class RandomCropTransform extends BaseImageTransform<Mat> {
 
-    protected int outputHeight, outputWidth;
+    protected int outputHeight;
+    protected int outputWidth;
     protected org.nd4j.linalg.api.rng.Random rng;
 
-    public RandomCropTransform(int height, int width) {
+    public RandomCropTransform(@JsonProperty("outputHeight") int height,
+                               @JsonProperty("outputWidth") int width) {
         this(1234, height, width);
     }
 
@@ -47,9 +55,8 @@ public class RandomCropTransform extends BaseImageTransform<Mat> {
         this.outputHeight = height;
         this.outputWidth = width;
         this.rng = Nd4j.getRandom();
-        rng.setSeed(seed);
-
-        converter = new OpenCVFrameConverter.ToMat();
+        this.rng.setSeed(seed);
+        this.converter = new OpenCVFrameConverter.ToMat();
     }
 
     /**

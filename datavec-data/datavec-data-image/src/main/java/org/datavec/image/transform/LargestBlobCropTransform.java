@@ -72,8 +72,7 @@ public class LargestBlobCropTransform extends BaseImageTransform<Mat> {
         this.lowerThresh = lowerThresh;
         this.upperThresh = upperThresh;
         this.isCanny = isCanny;
-
-        converter = new OpenCVFrameConverter.ToMat();
+        this.converter = new OpenCVFrameConverter.ToMat();
     }
 
     /**

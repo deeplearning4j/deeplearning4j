@@ -16,11 +16,14 @@
 package org.datavec.image.loader;
 
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.Random;
 
 import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.datavec.api.util.ClassPathResource;
+import org.datavec.image.data.ImageWritable;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -106,6 +109,18 @@ public class TestNativeImageLoader {
         assertEquals(3, array4.size(1));
         assertEquals(h2, array4.size(2));
         assertEquals(w2, array4.size(3));
+
+        int w3 = 123, h3 = 77, ch3 = 3;
+        NativeImageLoader loader3 = new NativeImageLoader(h3, w3, ch3);
+        File f3 = new ClassPathResource("/testimages/class0/2.jpg").getFile();
+        ImageWritable iw3 = loader3.asWritable(f3);
+
+        INDArray array5 = loader3.asMatrix(iw3);
+        assertEquals(4, array5.rank());
+        assertEquals(1, array5.size(0));
+        assertEquals(3, array5.size(1));
+        assertEquals(h3, array5.size(2));
+        assertEquals(w3, array5.size(3));
     }
 
     @Test
@@ -190,4 +205,30 @@ public class TestNativeImageLoader {
         }
         return img;
     }
+
+    @Test
+    public void testAsWritable() throws Exception {
+        File f0 = new ClassPathResource("/testimages/class0/0.jpg").getFile();
+
+        NativeImageLoader imageLoader = new NativeImageLoader();
+        ImageWritable img = imageLoader.asWritable(f0);
+
+        assertEquals(32, img.getFrame().imageHeight);
+        assertEquals(32, img.getFrame().imageWidth);
+        assertEquals(3, img.getFrame().imageChannels);
+
+        BufferedImage img1 = makeRandomBufferedImage(0, 0, 3);
+        Mat img2 = makeRandomImage(0, 0, 4);
+
+        int w1 = 33, h1 = 77, ch1 = 1;
+        NativeImageLoader loader1 = new NativeImageLoader(h1, w1, ch1);
+
+        INDArray array1 = loader1.asMatrix(f0);
+        assertEquals(4, array1.rank());
+        assertEquals(1, array1.size(0));
+        assertEquals(1, array1.size(1));
+        assertEquals(h1, array1.size(2));
+        assertEquals(w1, array1.size(3));
+    }
+
 }

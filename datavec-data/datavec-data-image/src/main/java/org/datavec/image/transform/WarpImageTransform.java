@@ -15,12 +15,16 @@
  */
 package org.datavec.image.transform;
 
-import java.util.Random;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
+
+import java.util.Random;
 
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
@@ -33,9 +37,12 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  * @author saudet
  */
 @Accessors(fluent = true)
+@JsonIgnoreProperties({"interMode", "borderMode", "borderValue", "converter"})
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class WarpImageTransform extends BaseImageTransform<Mat> {
 
-    float[] deltas;
+    private float[] deltas;
+
     @Getter
     @Setter
     int interMode = INTER_LINEAR;
@@ -57,7 +64,14 @@ public class WarpImageTransform extends BaseImageTransform<Mat> {
     }
 
     /** Calls {@code this(null, dx1, dy1, dx2, dy2, dx3, dy3, dx4, dy4)}. */
-    public WarpImageTransform(float dx1, float dy1, float dx2, float dy2, float dx3, float dy3, float dx4, float dy4) {
+    public WarpImageTransform(@JsonProperty("deltas[0]") float dx1,
+                              @JsonProperty("deltas[1]") float dy1,
+                              @JsonProperty("deltas[2]") float dx2,
+                              @JsonProperty("deltas[3]") float dy2,
+                              @JsonProperty("deltas[4]") float dx3,
+                              @JsonProperty("deltas[5]") float dy3,
+                              @JsonProperty("deltas[6]") float dx4,
+                              @JsonProperty("deltas[7]") float dy4) {
         this(null, dx1, dy1, dx2, dy2, dx3, dy3, dx4, dy4);
     }
 
@@ -86,8 +100,7 @@ public class WarpImageTransform extends BaseImageTransform<Mat> {
         deltas[5] = dy3;
         deltas[6] = dx4;
         deltas[7] = dy4;
-
-        converter = new OpenCVFrameConverter.ToMat();
+        this.converter = new OpenCVFrameConverter.ToMat();
     }
 
     /**

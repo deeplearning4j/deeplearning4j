@@ -18,19 +18,27 @@ package org.datavec.image.transform;
 import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Random;
 
 import static org.bytedeco.javacpp.opencv_imgproc.resize;
 
 /**
- * Resize image transform is suited to force the same image size for whole pipeline.
+ * ResizeImageTransform is suited to force the <b>same image size</b> for whole pipeline
+ * and it doesn't use any random factor for width and height.
+ *
+ * If you need to use random scales to scale or crop the images,
+ * these links might be helpful {@link ScaleImageTransform} or {@link ScaleImageTransform}
  *
  * @author raver119@gmail.com
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ResizeImageTransform extends BaseImageTransform<opencv_core.Mat> {
 
-    int newHeight, newWidth;
+    private int newHeight;
+    private int newWidth;
 
     /**
      * Returns new ResizeImageTransform object
@@ -38,7 +46,8 @@ public class ResizeImageTransform extends BaseImageTransform<opencv_core.Mat> {
      * @param newWidth new Width for the outcome images
      * @param newHeight new Height for outcome images
      */
-    public ResizeImageTransform(int newWidth, int newHeight) {
+    public ResizeImageTransform(@JsonProperty("newWidth") int newWidth,
+                                @JsonProperty("newHeight") int newHeight) {
         this(null, newWidth, newHeight);
     }
 
@@ -54,8 +63,7 @@ public class ResizeImageTransform extends BaseImageTransform<opencv_core.Mat> {
 
         this.newWidth = newWidth;
         this.newHeight = newHeight;
-
-        converter = new OpenCVFrameConverter.ToMat();
+        this.converter = new OpenCVFrameConverter.ToMat();
     }
 
     /**

@@ -15,22 +15,28 @@
  */
 package org.datavec.image.transform;
 
-import java.util.Random;
-
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import static org.bytedeco.javacpp.opencv_core.*;
-import static org.bytedeco.javacpp.opencv_imgproc.*;
+import java.util.Random;
+
+import static org.bytedeco.javacpp.opencv_core.Mat;
+import static org.bytedeco.javacpp.opencv_core.Size;
+import static org.bytedeco.javacpp.opencv_imgproc.resize;
 
 /**
- * Scales images deterministically or randomly.
+ * ScaleImageTransform is aim to scale by a certain <b>random factor</b>,
+ * <b>not</b> the <b>final size</b> of the image.
  *
  * @author saudet
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ScaleImageTransform extends BaseImageTransform<Mat> {
 
-    float dx, dy;
+    private float dx;
+    private float dy;
 
     /** Calls {@code this(null, delta, delta)}. */
     public ScaleImageTransform(float delta) {
@@ -43,7 +49,8 @@ public class ScaleImageTransform extends BaseImageTransform<Mat> {
     }
 
     /** Calls {@code this(null, dx, dy)}. */
-    public ScaleImageTransform(float dx, float dy) {
+    public ScaleImageTransform(@JsonProperty("dx") float dx,
+                               @JsonProperty("dy") float dy) {
         this(null, dx, dy);
     }
 
@@ -58,8 +65,7 @@ public class ScaleImageTransform extends BaseImageTransform<Mat> {
         super(random);
         this.dx = dx;
         this.dy = dy;
-
-        converter = new OpenCVFrameConverter.ToMat();
+        this.converter = new OpenCVFrameConverter.ToMat();
     }
 
     @Override

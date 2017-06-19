@@ -15,11 +15,14 @@
  */
 package org.datavec.image.transform;
 
-import java.util.Random;
-
 import org.bytedeco.javacv.FFmpegFrameFilter;
 import org.bytedeco.javacv.FrameFilter;
 import org.datavec.image.data.ImageWritable;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
+
+import java.util.Random;
 
 import static org.bytedeco.javacpp.avutil.*;
 
@@ -30,9 +33,16 @@ import static org.bytedeco.javacpp.avutil.*;
  * @author saudet
  * @see FFmpegFrameFilter
  */
+@JsonIgnoreProperties({"filter", "converter"})
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class FilterImageTransform extends BaseImageTransform {
 
-    FFmpegFrameFilter filter;
+    private FFmpegFrameFilter filter;
+
+    private String filters;
+    private int width;
+    private int height;
+    private int channels;
 
     /** Calls {@code this(filters, width, height, 3)}. */
     public FilterImageTransform(String filters, int width, int height) {
@@ -47,8 +57,17 @@ public class FilterImageTransform extends BaseImageTransform {
      * @param height   of the input images
      * @param channels of the input images
      */
-    public FilterImageTransform(String filters, int width, int height, int channels) {
+    public FilterImageTransform(@JsonProperty("filters") String filters,
+                                @JsonProperty("width") int width,
+                                @JsonProperty("height") int height,
+                                @JsonProperty("channels") int channels) {
         super(null);
+
+        this.filters = filters;
+        this.width = width;
+        this.height = height;
+        this.channels = channels;
+
         int pixelFormat = channels == 1 ? AV_PIX_FMT_GRAY8
                         : channels == 3 ? AV_PIX_FMT_BGR24 : channels == 4 ? AV_PIX_FMT_RGBA : AV_PIX_FMT_NONE;
         if (pixelFormat == AV_PIX_FMT_NONE) {

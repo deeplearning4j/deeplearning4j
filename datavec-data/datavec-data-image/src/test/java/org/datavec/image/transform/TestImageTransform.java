@@ -265,11 +265,10 @@ public class TestImageTransform {
      * @throws Exception
      */
     @Test
-    @Ignore // reactivate once https://github.com/deeplearning4j/DataVec/pull/294 is merged
     public void testLargestBlobCropTransform() throws Exception {
         java.io.File f1 = new ClassPathResource("testimages/largestblobtest.jpg").getFile();
         NativeImageLoader loader = new NativeImageLoader();
-        ImageWritable writable = null; // = loader.asWritable(f1);
+        ImageWritable writable = loader.asWritable(f1);
 
         ImageTransform showOrig = new ShowImageTransform("Original Image", 50);
         showOrig.transform(writable);

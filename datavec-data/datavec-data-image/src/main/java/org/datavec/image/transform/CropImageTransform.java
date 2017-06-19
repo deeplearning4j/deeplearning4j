@@ -15,20 +15,28 @@
  */
 package org.datavec.image.transform;
 
-import java.util.Random;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import static org.bytedeco.javacpp.opencv_core.*;
+import java.util.Random;
+
+import static org.bytedeco.javacpp.opencv_core.Mat;
+import static org.bytedeco.javacpp.opencv_core.Rect;
 
 /**
  * Crops images deterministically or randomly.
  *
  * @author saudet
  */
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class CropImageTransform extends BaseImageTransform<Mat> {
 
-    int cropTop, cropLeft, cropBottom, cropRight;
+    private int cropTop;
+    private int cropLeft;
+    private int cropBottom;
+    private int cropRight;
 
     /** Calls {@code this(null, crop, crop, crop, crop)}. */
     public CropImageTransform(int crop) {
@@ -41,7 +49,10 @@ public class CropImageTransform extends BaseImageTransform<Mat> {
     }
 
     /** Calls {@code this(random, cropTop, cropLeft, cropBottom, cropRight)}. */
-    public CropImageTransform(int cropTop, int cropLeft, int cropBottom, int cropRight) {
+    public CropImageTransform(@JsonProperty("cropTop") int cropTop,
+                              @JsonProperty("cropLeft") int cropLeft,
+                              @JsonProperty("cropBottom")int cropBottom,
+                              @JsonProperty("cropRight")int cropRight) {
         this(null, cropTop, cropLeft, cropBottom, cropRight);
     }
 
@@ -60,8 +71,7 @@ public class CropImageTransform extends BaseImageTransform<Mat> {
         this.cropLeft = cropLeft;
         this.cropBottom = cropBottom;
         this.cropRight = cropRight;
-
-        converter = new OpenCVFrameConverter.ToMat();
+        this.converter = new OpenCVFrameConverter.ToMat();
     }
 
     /**
@@ -88,7 +98,6 @@ public class CropImageTransform extends BaseImageTransform<Mat> {
         int h = Math.max(1, mat.rows() - bottom - y);
         int w = Math.max(1, mat.cols() - right - x);
         Mat result = mat.apply(new Rect(x, y, w, h));
-
 
         return new ImageWritable(converter.convert(result));
     }

@@ -15,12 +15,16 @@
  */
 package org.datavec.image.transform;
 
-import java.util.Random;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
+
+import java.util.Random;
 
 import static org.bytedeco.javacpp.opencv_core.*;
 import static org.bytedeco.javacpp.opencv_imgproc.*;
@@ -33,18 +37,24 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  * @author saudet
  */
 @Accessors(fluent = true)
+@JsonIgnoreProperties({"interMode", "borderMode", "borderValue", "converter"})
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class RotateImageTransform extends BaseImageTransform<Mat> {
 
-    float centerx, centery, angle, scale;
+    private float centerx;
+    private float centery;
+    private float angle;
+    private float scale;
+
     @Getter
     @Setter
-    int interMode = INTER_LINEAR;
+    private int interMode = INTER_LINEAR;
     @Getter
     @Setter
-    int borderMode = BORDER_CONSTANT;
+    private int borderMode = BORDER_CONSTANT;
     @Getter
     @Setter
-    Scalar borderValue = Scalar.ZERO;
+    private Scalar borderValue = Scalar.ZERO;
 
     /** Calls {@code this(null, 0, 0, angle, 0)}. */
     public RotateImageTransform(float angle) {
@@ -54,6 +64,21 @@ public class RotateImageTransform extends BaseImageTransform<Mat> {
     /** Calls {@code this(random, 0, 0, angle, 0)}. */
     public RotateImageTransform(Random random, float angle) {
         this(random, 0, 0, angle, 0);
+    }
+
+    /**
+     * Constructs an instance of the ImageTransform.
+     *
+     * @param centerx maximum deviation in x of center of rotation (relative to image center)
+     * @param centery maximum deviation in y of center of rotation (relative to image center)
+     * @param angle   maximum rotation (degrees)
+     * @param scale   maximum scaling (relative to 1)
+     */
+    public RotateImageTransform(@JsonProperty("centerx") float centerx,
+                                @JsonProperty("centery") float centery,
+                                @JsonProperty("angle") float angle,
+                                @JsonProperty("scale") float scale) {
+        this(null, centerx, centery, angle, scale);
     }
 
     /**
@@ -71,8 +96,7 @@ public class RotateImageTransform extends BaseImageTransform<Mat> {
         this.centery = centery;
         this.angle = angle;
         this.scale = scale;
-
-        converter = new OpenCVFrameConverter.ToMat();
+        this.converter = new OpenCVFrameConverter.ToMat();
     }
 
     @Override

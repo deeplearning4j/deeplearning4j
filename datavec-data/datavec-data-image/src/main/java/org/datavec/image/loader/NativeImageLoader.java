@@ -15,18 +15,11 @@
  */
 package org.datavec.image.loader;
 
-import java.io.*;
-import java.nio.ByteOrder;
 import org.apache.commons.io.IOUtils;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.indexer.DoubleIndexer;
-import org.bytedeco.javacpp.indexer.FloatIndexer;
-import org.bytedeco.javacpp.indexer.Indexer;
-import org.bytedeco.javacpp.indexer.IntIndexer;
-import org.bytedeco.javacpp.indexer.UByteIndexer;
-import org.bytedeco.javacpp.indexer.UShortIndexer;
+import org.bytedeco.javacpp.indexer.*;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.ImageTransform;
@@ -36,6 +29,9 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.io.*;
+import java.nio.ByteOrder;
 
 import static org.bytedeco.javacpp.lept.*;
 import static org.bytedeco.javacpp.opencv_core.*;
@@ -53,7 +49,7 @@ public class NativeImageLoader extends BaseImageLoader {
                     "png", "tif", "tiff", "exr", "webp", "BMP", "GIF", "JPG", "JPEG", "JP2", "PBM", "PGM", "PPM", "PNM",
                     "PNG", "TIF", "TIFF", "EXR", "WEBP"};
 
-    OpenCVFrameConverter.ToMat converter = null;
+    protected OpenCVFrameConverter.ToMat converter = new OpenCVFrameConverter.ToMat();
 
     /**
      * Loads images with no scaling or conversion.
@@ -63,7 +59,7 @@ public class NativeImageLoader extends BaseImageLoader {
     /**
      * Instantiate an image with the given
      * height and width
-     * @param height the height to load*
+     * @param height the height to load
      * @param width  the width to load
     
      */
@@ -110,7 +106,6 @@ public class NativeImageLoader extends BaseImageLoader {
     public NativeImageLoader(int height, int width, int channels, ImageTransform imageTransform) {
         this(height, width, channels);
         this.imageTransform = imageTransform;
-        this.converter = new OpenCVFrameConverter.ToMat();
     }
 
     protected NativeImageLoader(NativeImageLoader other) {
@@ -514,5 +509,43 @@ public class NativeImageLoader extends BaseImageLoader {
             resize(image, scaled = new Mat(), new Size(dstWidth, dstHeight));
         }
         return scaled;
+    }
+
+
+    /**
+     * Convert a file to a INDArray
+     *
+     * @param f the image to convert
+     * @return INDArray
+     * @throws IOException
+     */
+    public ImageWritable asWritable(File f) throws IOException {
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(f))) {
+            byte[] bytes = IOUtils.toByteArray(bis);
+            Mat image = imdecode(new Mat(bytes), CV_LOAD_IMAGE_ANYDEPTH | CV_LOAD_IMAGE_ANYCOLOR);
+            if (image == null || image.empty()) {
+                PIX pix = pixReadMem(bytes, bytes.length);
+                if (pix == null) {
+                    throw new IOException("Could not decode image from input stream");
+                }
+                image = convert(pix);
+                pixDestroy(pix);
+            }
+
+            ImageWritable writable = new ImageWritable(converter.convert(image));
+            return writable;
+        }
+    }
+
+    /**
+     * Convert ImageWritable to INDArray
+     *
+     * @param writable ImageWritable to convert
+     * @return INDArray
+     * @throws IOException
+     */
+    public INDArray asMatrix(ImageWritable writable) throws IOException {
+        Mat image = converter.convert(writable.getFrame());
+        return asMatrix(image);
     }
 }

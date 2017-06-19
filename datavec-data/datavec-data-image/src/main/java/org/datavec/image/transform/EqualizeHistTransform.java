@@ -17,31 +17,46 @@ package org.datavec.image.transform;
 
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.data.ImageWritable;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 import java.util.Random;
 
-import static org.bytedeco.javacpp.opencv_core.Mat;
-import static org.bytedeco.javacpp.opencv_core.MatVector;
-import static org.bytedeco.javacpp.opencv_core.split;
-import static org.bytedeco.javacpp.opencv_core.merge;
-import static org.bytedeco.javacpp.opencv_imgproc.*;
+import static org.bytedeco.javacpp.opencv_core.*;
+import static org.bytedeco.javacpp.opencv_imgproc.CV_BGR2GRAY;
+import static org.bytedeco.javacpp.opencv_imgproc.equalizeHist;
 
 /**
  * "<a href="https://opencv-srf.blogspot.com/2013/08/histogram-equalization.html">Histogram Equalization</a> equalizes the intensity distribution of an image or flattens the intensity distribution curve.
  * Used to improve the contrast of an image."
  *
  */
+@JsonIgnoreProperties({"splitChannels", "converter"})
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class EqualizeHistTransform extends BaseImageTransform {
 
-    int conversionCode;
-    MatVector splitChannels = new MatVector();
+    /**
+     * Color Conversion code
+     * {@link org.bytedeco.javacpp.opencv_imgproc}
+     */
+    private int conversionCode;
+
+    private MatVector splitChannels = new MatVector();
 
     /**
      * Default transforms histogram equalization for CV_BGR2GRAY (grayscale)
      */
-
     public EqualizeHistTransform() {
         this(new Random(1234), CV_BGR2GRAY);
+    }
+
+    /**
+     * Return contrast normalized object
+     *
+     * @param conversionCode  to transform,
+     */
+    public EqualizeHistTransform(int conversionCode) {
+        this(null, conversionCode);
     }
 
     /**
@@ -53,7 +68,7 @@ public class EqualizeHistTransform extends BaseImageTransform {
     public EqualizeHistTransform(Random random, int conversionCode) {
         super(random);
         this.conversionCode = conversionCode;
-        converter = new OpenCVFrameConverter.ToMat();
+        this.converter = new OpenCVFrameConverter.ToMat();
     }
 
     /**

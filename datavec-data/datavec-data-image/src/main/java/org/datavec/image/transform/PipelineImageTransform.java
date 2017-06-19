@@ -15,14 +15,14 @@
  */
 package org.datavec.image.transform;
 
-import java.util.*;
-
 import lombok.NonNull;
 import org.datavec.api.berkeley.Pair;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.bytedeco.javacpp.opencv_core.*;
+import java.util.*;
+
+import static org.bytedeco.javacpp.opencv_core.Mat;
 
 /**
  * Allows creation of image transform pipelines, either sequentially or randomly.
