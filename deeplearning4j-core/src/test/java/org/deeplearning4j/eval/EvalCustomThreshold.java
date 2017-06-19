@@ -2,10 +2,13 @@ package org.deeplearning4j.eval;
 
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThan;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
+
+import java.util.Random;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -17,7 +20,75 @@ import static org.junit.Assert.fail;
 public class EvalCustomThreshold {
 
     @Test
-    public void testEvaluationCustomThreshold(){
+    public void testEvaluationCustomBinaryThreshold(){
+        Nd4j.getRandom().setSeed(12345);
+
+        //Sanity checks: 0.5 threshold for 1-output and 2-output binary cases
+        Evaluation e = new Evaluation();
+        Evaluation e05 = new Evaluation(0.5);
+        Evaluation e05v2 = new Evaluation(0.5);
+
+        int nExamples = 20;
+        int nOut = 2;
+        INDArray probs = Nd4j.rand(nExamples, nOut);
+        probs.diviColumnVector(probs.sum(1));
+        INDArray labels = Nd4j.create(nExamples, nOut);
+        Random r = new Random(12345);
+        for( int i=0; i<nExamples; i++ ){
+            labels.putScalar(i, r.nextInt(2), 1.0);
+        }
+
+        e.eval(labels, probs);
+        e05.eval(labels, probs);
+        e05v2.eval(labels.getColumn(1), probs.getColumn(1));    //"single output binary" case
+
+        for(Evaluation e2 : new Evaluation[]{e05, e05v2}){
+            assertEquals(e.accuracy(), e2.accuracy(), 1e-6);
+            assertEquals(e.f1(), e2.f1(), 1e-6);
+            assertEquals(e.precision(), e2.precision(), 1e-6);
+            assertEquals(e.recall(), e2.recall(), 1e-6);
+            assertEquals(e.confusion, e2.confusion);
+        }
+
+        //Check with decision threshold of 0.25
+        //In this test, we'll cheat a bit: multiply class 1 probabilities by 2 (max of 1.0); this should give an
+        // identical result to a threshold of 0.5 vs. no multiplication and threshold of 0.25
+
+        INDArray p2 = probs.dup();
+        INDArray p2c = p2.getColumn(1);
+        p2c.muli(2.0);
+        Nd4j.getExecutioner().exec(new ScalarMin(p2c, null, p2c, p2c.length(), 1.0));
+        p2.getColumn(0).assign(p2.getColumn(1).rsub(1.0));
+
+        Evaluation e025 = new Evaluation(0.25);
+        e025.eval(labels, probs);
+
+        Evaluation ex2 = new Evaluation();
+        ex2.eval(labels, p2);
+
+        assertEquals(ex2.accuracy(), e025.accuracy(), 1e-6);
+        assertEquals(ex2.f1(), e025.f1(), 1e-6);
+        assertEquals(ex2.precision(), e025.precision(), 1e-6);
+        assertEquals(ex2.recall(), e025.recall(), 1e-6);
+        assertEquals(ex2.confusion, e025.confusion);
+
+
+        //Check the same thing, but the single binary output case:
+
+        Evaluation e025v2 = new Evaluation(0.25);
+        e025v2.eval(labels.getColumn(1), probs.getColumn(1));
+
+        assertEquals(ex2.accuracy(), e025v2.accuracy(), 1e-6);
+        assertEquals(ex2.f1(), e025v2.f1(), 1e-6);
+        assertEquals(ex2.precision(), e025v2.precision(), 1e-6);
+        assertEquals(ex2.recall(), e025v2.recall(), 1e-6);
+        assertEquals(ex2.confusion, e025v2.confusion);
+    }
+
+    @Test
+    public void testEvaluationCostArray(){
+
+        //Sanity check: "all equal" cost array
 
         fail();
     }
@@ -25,11 +96,9 @@ public class EvalCustomThreshold {
     @Test
     public void testEvaluationBinaryCustomThreshold(){
 
-        //Sanity check: same results for 0.5 threshold vs.
-
+        //Sanity check: same results for 0.5 threshold vs. default (no threshold)
         int nExamples = 20;
         int nOut = 2;
-
         INDArray probs = Nd4j.rand(nExamples, nOut);
         INDArray labels = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(nExamples,nOut),0.5));
 

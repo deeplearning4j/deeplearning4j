@@ -36,6 +36,8 @@ import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
@@ -45,17 +47,23 @@ import java.text.DecimalFormat;
 import java.util.*;
 
 /**
- * Evaluation metrics:
- * precision, recall, f1
+ * Evaluation metrics:<br>
+ * - precision, recall, f1, accuracy<br>
+ * - Top N accuracy (if using constructor {@link #Evaluation(List, int)})<br>
+ * - Custom binary evaluation decision threshold (use constructor {@link #Evaluation(double)} (default if not set is
+ *   argmax / 0.5)<br>
+ * - Custom
  *
  * @author Adam Gibson
  */
 @Slf4j
 @EqualsAndHashCode(callSuper = true)
-@Getter(AccessLevel.PUBLIC)
-@Setter(AccessLevel.PUBLIC)
+@Getter
+@Setter
 @JsonIgnoreProperties({"confusionMatrixMetaData"})
 public class Evaluation extends BaseEvaluation<Evaluation> {
+    //What to output from the precision/recall function when we encounter an edge case
+    protected static final double DEFAULT_EDGE_VALUE = 0.0;
 
     protected final int topN;
     protected int topNCorrectCount = 0;
@@ -71,8 +79,11 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     @Getter
     @Setter
     protected List<String> labelsList = new ArrayList<>();
-    //What to output from the precision/recall function when we encounter an edge case
-    protected static final double DEFAULT_EDGE_VALUE = 0.0;
+
+    protected Double binaryDecisionThreshold;
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
+    protected INDArray costArray;
 
     protected Map<Pair<Integer, Integer>, List<Object>> confusionMatrixMetaData; //Pair: (Actual,Predicted)
 
@@ -128,6 +139,11 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             createConfusion(labels.size());
         }
         this.topN = topN;
+    }
+
+    public Evaluation(double binaryDecisionThreshold){
+        this.binaryDecisionThreshold = binaryDecisionThreshold;
+        this.topN = 1;
     }
 
     @Override
@@ -264,7 +280,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         final int nRows = realOutcomes.rows();
 
         if (nCols == 1) {
-            INDArray binaryGuesses = guesses.gt(0.5);
+            INDArray binaryGuesses = guesses.gt(binaryDecisionThreshold == null ? 0.5 : binaryDecisionThreshold);
+
             INDArray notLabel = Nd4j.getExecutioner().execAndReturn(new Not(realOutcomes.dup()));
             INDArray notGuess = Nd4j.getExecutioner().execAndReturn(new Not(binaryGuesses.dup()));
             //tp: predicted = 1, actual = 1
@@ -301,8 +318,24 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             }
 
         } else {
-            final INDArray guessIndex = Nd4j.argMax(guesses, 1);
-            final INDArray realOutcomeIndex = Nd4j.argMax(realOutcomes, 1);
+            INDArray guessIndex;
+            if(binaryDecisionThreshold != null) {
+                if( nCols != 2){
+                    throw new IllegalStateException("Binary decision threshold is set, but number of columns for "
+                            + "predictions is " + nCols + ". Binary decision threshold can only be used for binary "
+                            + "prediction cases");
+                }
+
+                INDArray pClass1 = guesses.getColumn(1);
+                guessIndex = pClass1.gt(binaryDecisionThreshold);
+            } else if( costArray != null ){
+                //With a cost array: do argmax(cost * probability) instead of just argmax(probability)
+                guessIndex = Nd4j.argMax(guesses.mulRowVector(costArray), 1);
+            } else {
+                //Standard case: argmax
+                guessIndex = Nd4j.argMax(guesses, 1);
+            }
+            INDArray realOutcomeIndex = Nd4j.argMax(realOutcomes, 1);
             int nExamples = guessIndex.length();
 
             for (int i = 0; i < nExamples; i++) {
