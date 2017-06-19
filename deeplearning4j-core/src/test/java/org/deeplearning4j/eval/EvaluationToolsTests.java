@@ -52,17 +52,19 @@ public class EvaluationToolsTests {
             net.fit(ds);
         }
 
-        ROC roc = new ROC(20);
-        iter.reset();
+        for(int numSteps : new int[]{20, 0}) {
+            ROC roc = new ROC(numSteps);
+            iter.reset();
 
-        INDArray f = ds.getFeatures();
-        INDArray l = ds.getLabels();
-        INDArray out = net.output(f);
-        roc.eval(l, out);
+            INDArray f = ds.getFeatures();
+            INDArray l = ds.getLabels();
+            INDArray out = net.output(f);
+            roc.eval(l, out);
 
 
-        String str = EvaluationTools.rocChartToHtml(roc);
-        //        System.out.println(str);
+            String str = EvaluationTools.rocChartToHtml(roc);
+//            System.out.println(str);
+        }
     }
 
     @Test
@@ -86,17 +88,19 @@ public class EvaluationToolsTests {
             net.fit(ds);
         }
 
-        ROCMultiClass roc = new ROCMultiClass(20);
-        iter.reset();
+        for(int numSteps : new int[]{20, 0}) {
+            ROCMultiClass roc = new ROCMultiClass(numSteps);
+            iter.reset();
 
-        INDArray f = ds.getFeatures();
-        INDArray l = ds.getLabels();
-        INDArray out = net.output(f);
-        roc.eval(l, out);
+            INDArray f = ds.getFeatures();
+            INDArray l = ds.getLabels();
+            INDArray out = net.output(f);
+            roc.eval(l, out);
 
 
-        String str = EvaluationTools.rocChartToHtml(roc, Arrays.asList("setosa", "versicolor", "virginica"));
-        //        System.out.println(str);
+            String str = EvaluationTools.rocChartToHtml(roc, Arrays.asList("setosa", "versicolor", "virginica"));
+            System.out.println(str);
+        }
     }
 
 }

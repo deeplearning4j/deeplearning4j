@@ -20,11 +20,13 @@ package org.deeplearning4j.eval;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
+import lombok.Getter;
 
 import java.io.Serializable;
 import java.util.*;
 
 public class ConfusionMatrix<T extends Comparable<? super T>> implements Serializable {
+    @Getter
     private volatile Map<T, Multiset<T>> matrix;
     private List<T> classes;
 
