@@ -18,7 +18,6 @@
 
 package org.deeplearning4j.eval;
 
-import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
@@ -42,6 +41,7 @@ import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.*;
@@ -52,7 +52,16 @@ import java.util.*;
  * - Top N accuracy (if using constructor {@link #Evaluation(List, int)})<br>
  * - Custom binary evaluation decision threshold (use constructor {@link #Evaluation(double)} (default if not set is
  *   argmax / 0.5)<br>
- * - Custom
+ * - Custom cost array, using {@link #Evaluation(INDArray)} or {@link #Evaluation(List, INDArray)} for multi-class <br>
+ * <br>
+ * Note that setting a custom binary decision threshold is only possible for the binary case (1 or 2 outputs) and cannot
+ * be used if the number of classes exceeds 2. Predictions with probablity > threshold are considered to be class 1,
+ * and are considered class 0 otherwise.<br>
+ * <br>
+ * Cost arrays (a row vector, of size equal to the number of outputs) modify the evaluation process: instead of simply
+ * doing predictedClass = argMax(probabilities), we do predictedClass = argMax(cost * probabilities). Consequently, an
+ * array of all 1s (or, indeed any array of equal values) will result in the same performance as no cost array; non-
+ * equal values will bias the predictions for or against certain classes.
  *
  * @author Adam Gibson
  */
@@ -91,8 +100,6 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     public Evaluation() {
         this.topN = 1;
     }
-
-    // Constructor that takes number of output classes
 
     /**
      * The number of classes to account
@@ -141,8 +148,46 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         this.topN = topN;
     }
 
+    /**
+     * Create an evaluation instance with a custom binary decision threshold. Note that binary decision thresholds can
+     * only be used with binary classifiers.
+     *
+     * @param binaryDecisionThreshold Decision threshold to use for binary predictions
+     */
     public Evaluation(double binaryDecisionThreshold){
         this.binaryDecisionThreshold = binaryDecisionThreshold;
+        this.topN = 1;
+    }
+
+    /**
+     *  Created evaluation instance with the specified cost array. A cost array can be used to bias the multi class
+     *  predictions towards or away from certain classes. The predicted class is determined using argMax(cost * probability)
+     *  instead of argMax(probability) when no cost array is present.
+     *
+     * @param costArray Row vector cost array
+     */
+    public Evaluation(@Nullable INDArray costArray){
+        this(null, costArray);
+    }
+
+    /**
+     *  Created evaluation instance with the specified cost array. A cost array can be used to bias the multi class
+     *  predictions towards or away from certain classes. The predicted class is determined using argMax(cost * probability)
+     *  instead of argMax(probability) when no cost array is present.
+     *
+     * @param labels Labels for the output classes
+     * @param costArray Row vector cost array
+     */
+    public Evaluation(@Nullable List<String> labels, @Nullable INDArray costArray){
+        if(costArray != null && !costArray.isRowVector()){
+            throw new IllegalArgumentException("Invalid cost array: must be a row vector (got shape: "
+                    + Arrays.toString(costArray.shape()) + ")");
+        }
+        if( costArray != null && costArray.minNumber().doubleValue() < 0.0 ){
+            throw new IllegalArgumentException("Invalid cost array: Cost array values must be positive");
+        }
+        this.labelsList = labels;
+        this.costArray = costArray;
         this.topN = 1;
     }
 

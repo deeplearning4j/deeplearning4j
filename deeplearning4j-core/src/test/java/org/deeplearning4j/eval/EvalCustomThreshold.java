@@ -88,9 +88,53 @@ public class EvalCustomThreshold {
     @Test
     public void testEvaluationCostArray(){
 
-        //Sanity check: "all equal" cost array
 
-        fail();
+        int nExamples = 20;
+        int nOut = 3;
+        INDArray probs = Nd4j.rand(nExamples, nOut);
+        probs.diviColumnVector(probs.sum(1));
+        INDArray labels = Nd4j.create(nExamples, nOut);
+        Random r = new Random(12345);
+        for( int j=0; j<nExamples; j++ ){
+            labels.putScalar(j, r.nextInt(2), 1.0);
+        }
+
+
+        Evaluation e = new Evaluation();
+        e.eval(labels, probs);
+
+        //Sanity check: "all equal" cost array - equal to no cost array
+        for( int i=1; i<=3; i++ ){
+            Evaluation e2 = new Evaluation(Nd4j.valueArrayOf(new int[]{1,nOut}, i));
+            e2.eval(labels, probs);
+
+            assertEquals(e.accuracy(), e2.accuracy(), 1e-6);
+            assertEquals(e.f1(), e2.f1(), 1e-6);
+            assertEquals(e.precision(), e2.precision(), 1e-6);
+            assertEquals(e.recall(), e2.recall(), 1e-6);
+            assertEquals(e.confusion, e2.confusion);
+        }
+
+        //Manual checks:
+        INDArray costArray = Nd4j.create(new double[]{5,2,1});
+        labels = Nd4j.create(new double[][]{
+                {1,0,0},
+                {0,1,0},
+                {0,0,1}});
+        probs = Nd4j.create(new double[][]{
+                {0.2,0.3,0.5},      //1.0, 0.6, 0.5
+                {0.1,0.4,0.5},      //0.5, 0.8, 0.5
+                {0.1,0.1,0.8}});    //0.5, 0.2, 0.8
+
+        //With no cost array: only last example is predicted correctly
+        e = new Evaluation();
+        e.eval(labels, probs);
+        assertEquals(1.0/3, e.accuracy(), 1e-6);
+
+        //With cost array: all examples predicted correctly
+        Evaluation e2 = new Evaluation(costArray);
+        e2.eval(labels, probs);
+        assertEquals(1.0, e2.accuracy(), 1e-6);
     }
 
     @Test

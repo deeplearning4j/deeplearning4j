@@ -202,6 +202,8 @@ public class EvalJsonTest {
     @Test
     public void testJsonWithCustomThreshold(){
 
+
+
         INDArray threshold = Nd4j.create(new double[]{1.0, 0.5, 0.25});
         EvaluationBinary eb = new EvaluationBinary(threshold);
 
@@ -214,7 +216,7 @@ public class EvalJsonTest {
         assertEquals(threshold, ebFromJson.getDecisionThreshold());
         assertEquals(threshold, ebFromYaml.getDecisionThreshold());
 
-        fail();
+
     }
 
 
