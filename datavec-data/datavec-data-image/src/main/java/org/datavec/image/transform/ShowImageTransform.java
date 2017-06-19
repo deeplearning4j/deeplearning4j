@@ -15,12 +15,14 @@
  */
 package org.datavec.image.transform;
 
-import java.util.Random;
-import javax.swing.JFrame;
-
+import org.bytedeco.javacpp.opencv_core;
 import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.FrameConverter;
 import org.datavec.image.data.ImageWritable;
+
+import javax.swing.*;
+import java.util.Random;
 
 /**
  * Shows images on the screen, does not actually transform them.
@@ -89,6 +91,10 @@ public class ShowImageTransform extends BaseImageTransform {
             }
         }
         return image;
+    }
+
+    protected FrameConverter<opencv_core.Mat> getSafeConverter(long threadId) {
+        throw new UnsupportedOperationException("Converters are not needed for ShowImageTransform.");
     }
 
 }

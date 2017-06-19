@@ -18,12 +18,14 @@ package org.datavec.image.transform;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.bytedeco.javacpp.opencv_core;
+import org.bytedeco.javacv.FrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+import java.util.HashMap;
 import java.util.Random;
 
 import static org.bytedeco.javacpp.opencv_core.*;
@@ -37,7 +39,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  * @author saudet
  */
 @Accessors(fluent = true)
-@JsonIgnoreProperties({"interMode", "borderMode", "borderValue", "converter"})
+@JsonIgnoreProperties({"interMode", "borderMode", "borderValue", "safeConverter"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class RotateImageTransform extends BaseImageTransform<Mat> {
 
@@ -96,8 +98,7 @@ public class RotateImageTransform extends BaseImageTransform<Mat> {
         this.centery = centery;
         this.angle = angle;
         this.scale = scale;
-
-        converter = new OpenCVFrameConverter.ToMat();
+        this.safeConverter = new HashMap<>();
     }
 
     @Override
@@ -105,6 +106,9 @@ public class RotateImageTransform extends BaseImageTransform<Mat> {
         if (image == null) {
             return null;
         }
+
+        FrameConverter<Mat> converter = getSafeConverter(Thread.currentThread().getId());
+
         Mat mat = converter.convert(image.getFrame());
         float cy = mat.rows() / 2 + centery * (random != null ? 2 * random.nextFloat() - 1 : 1);
         float cx = mat.cols() / 2 + centerx * (random != null ? 2 * random.nextFloat() - 1 : 1);
@@ -115,6 +119,10 @@ public class RotateImageTransform extends BaseImageTransform<Mat> {
         Mat M = getRotationMatrix2D(new Point2f(cx, cy), angle, scale);
         warpAffine(mat, result, M, mat.size(), interMode, borderMode, borderValue);
         return new ImageWritable(converter.convert(result));
+    }
+
+    protected FrameConverter<opencv_core.Mat> getSafeConverter(long threadId) {
+        return getSafeMatConverter(threadId);
     }
 
 }

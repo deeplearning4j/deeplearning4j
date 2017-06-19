@@ -15,11 +15,13 @@
  */
 package org.datavec.image.transform;
 
-import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.bytedeco.javacpp.opencv_core;
+import org.bytedeco.javacv.FrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
+import java.util.HashMap;
 import java.util.Random;
 
 import static org.bytedeco.javacpp.opencv_core.Mat;
@@ -65,8 +67,7 @@ public class ScaleImageTransform extends BaseImageTransform<Mat> {
         super(random);
         this.dx = dx;
         this.dy = dy;
-
-        converter = new OpenCVFrameConverter.ToMat();
+        this.safeConverter = new HashMap<>();
     }
 
     @Override
@@ -74,6 +75,9 @@ public class ScaleImageTransform extends BaseImageTransform<Mat> {
         if (image == null) {
             return null;
         }
+
+        FrameConverter<Mat> converter = getSafeConverter(Thread.currentThread().getId());
+
         Mat mat = converter.convert(image.getFrame());
         int h = Math.round(mat.rows() + dy * (random != null ? 2 * random.nextFloat() - 1 : 1));
         int w = Math.round(mat.cols() + dx * (random != null ? 2 * random.nextFloat() - 1 : 1));
@@ -81,6 +85,10 @@ public class ScaleImageTransform extends BaseImageTransform<Mat> {
         Mat result = new Mat();
         resize(mat, result, new Size(w, h));
         return new ImageWritable(converter.convert(result));
+    }
+
+    protected FrameConverter<opencv_core.Mat> getSafeConverter(long threadId) {
+        return getSafeMatConverter(threadId);
     }
 
 }

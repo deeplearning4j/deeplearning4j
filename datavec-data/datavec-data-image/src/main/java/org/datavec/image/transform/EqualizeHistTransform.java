@@ -15,11 +15,12 @@
  */
 package org.datavec.image.transform;
 
-import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.bytedeco.javacv.FrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 
+import java.util.HashMap;
 import java.util.Random;
 
 import static org.bytedeco.javacpp.opencv_core.*;
@@ -31,7 +32,7 @@ import static org.bytedeco.javacpp.opencv_imgproc.equalizeHist;
  * Used to improve the contrast of an image."
  *
  */
-@JsonIgnoreProperties({"splitChannels", "converter"})
+@JsonIgnoreProperties({"splitChannels", "safeConverter"})
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class EqualizeHistTransform extends BaseImageTransform {
 
@@ -68,7 +69,7 @@ public class EqualizeHistTransform extends BaseImageTransform {
     public EqualizeHistTransform(Random random, int conversionCode) {
         super(random);
         this.conversionCode = conversionCode;
-        converter = new OpenCVFrameConverter.ToMat();
+        this.safeConverter = new HashMap<>();
     }
 
     /**
@@ -85,6 +86,9 @@ public class EqualizeHistTransform extends BaseImageTransform {
         if (image == null) {
             return null;
         }
+
+        FrameConverter<Mat> converter = getSafeConverter(Thread.currentThread().getId());
+
         Mat mat = (Mat) converter.convert(image.getFrame());
         Mat result = new Mat();
         try {
@@ -102,6 +106,7 @@ public class EqualizeHistTransform extends BaseImageTransform {
         return new ImageWritable(converter.convert(result));
     }
 
-
-
+    protected FrameConverter<Mat> getSafeConverter(long threadId) {
+        return getSafeMatConverter(threadId);
+    }
 }

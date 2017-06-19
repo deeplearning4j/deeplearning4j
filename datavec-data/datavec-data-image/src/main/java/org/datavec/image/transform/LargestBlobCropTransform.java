@@ -15,10 +15,11 @@
  */
 package org.datavec.image.transform;
 
-import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.bytedeco.javacv.FrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.HashMap;
 import java.util.Random;
 
 import static org.bytedeco.javacpp.opencv_core.*;
@@ -72,8 +73,7 @@ public class LargestBlobCropTransform extends BaseImageTransform<Mat> {
         this.lowerThresh = lowerThresh;
         this.upperThresh = upperThresh;
         this.isCanny = isCanny;
-
-        converter = new OpenCVFrameConverter.ToMat();
+        this.safeConverter = new HashMap<>();
     }
 
     /**
@@ -88,6 +88,8 @@ public class LargestBlobCropTransform extends BaseImageTransform<Mat> {
         if (image == null) {
             return null;
         }
+
+        FrameConverter<Mat> converter = getSafeConverter(Thread.currentThread().getId());
 
         //Convert image to gray and blur
         Mat original = converter.convert(image.getFrame());
@@ -124,5 +126,9 @@ public class LargestBlobCropTransform extends BaseImageTransform<Mat> {
         Mat result = original.apply(boundingRect);
 
         return new ImageWritable(converter.convert(result));
+    }
+
+    protected FrameConverter<Mat> getSafeConverter(long threadId) {
+        return getSafeMatConverter(threadId);
     }
 }

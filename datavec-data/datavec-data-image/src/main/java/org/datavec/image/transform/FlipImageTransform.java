@@ -15,10 +15,11 @@
  */
 package org.datavec.image.transform;
 
-import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.bytedeco.javacv.FrameConverter;
 import org.datavec.image.data.ImageWritable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 
+import java.util.HashMap;
 import java.util.Random;
 
 import static org.bytedeco.javacpp.opencv_core.Mat;
@@ -58,6 +59,9 @@ public class FlipImageTransform extends BaseImageTransform<Mat> {
     public FlipImageTransform(int flipMode) {
         this(null);
         this.flipMode = flipMode;
+        if (safeConverter == null) {
+            this.safeConverter = new HashMap<>();
+        }
     }
 
     /**
@@ -68,7 +72,9 @@ public class FlipImageTransform extends BaseImageTransform<Mat> {
      */
     public FlipImageTransform(Random random) {
         super(random);
-        converter = new OpenCVFrameConverter.ToMat();
+        if (safeConverter == null) {
+            this.safeConverter = new HashMap<>();
+        }
     }
 
     @Override
@@ -76,6 +82,9 @@ public class FlipImageTransform extends BaseImageTransform<Mat> {
         if (image == null) {
             return null;
         }
+
+        FrameConverter<Mat> converter = getSafeConverter(Thread.currentThread().getId());
+
         Mat mat = converter.convert(image.getFrame());
 
         int mode = random != null ? random.nextInt(4) - 2 : flipMode;
@@ -89,6 +98,10 @@ public class FlipImageTransform extends BaseImageTransform<Mat> {
         }
 
         return new ImageWritable(converter.convert(result));
+    }
+
+    protected FrameConverter<Mat> getSafeConverter(long threadId) {
+        return getSafeMatConverter(threadId);
     }
 }
 
