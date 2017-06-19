@@ -29,7 +29,7 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.InputStreamInputSplit;
 import org.datavec.api.writable.Writable;
-import org.datavec.common.RecordConverter;
+import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.image.loader.BaseImageLoader;
 import org.datavec.image.loader.ImageLoader;
 import org.datavec.image.loader.NativeImageLoader;

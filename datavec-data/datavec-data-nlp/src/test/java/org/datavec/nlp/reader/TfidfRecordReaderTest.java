@@ -22,7 +22,7 @@ import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Writable;
-import org.datavec.common.data.NDArrayWritable;
+import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.nlp.vectorizer.TfidfVectorizer;
 import org.junit.Test;
 

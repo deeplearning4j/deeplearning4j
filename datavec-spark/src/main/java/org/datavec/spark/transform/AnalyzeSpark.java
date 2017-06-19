@@ -27,7 +27,7 @@ import org.datavec.api.transform.analysis.sequence.SequenceLengthAnalysis;
 import org.datavec.api.transform.quality.DataQualityAnalysis;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.spark.transform.analysis.SequenceFlatMapFunction;
-import org.datavec.spark.transform.analysis.columns.CategoricalAnalysisCounter;
+import org.datavec.spark.transform.analysis.columns.*;
 import org.datavec.spark.transform.analysis.histogram.HistogramAddFunction;
 import org.datavec.spark.transform.analysis.histogram.HistogramCounter;
 import org.datavec.spark.transform.analysis.seqlength.IntToDoubleFunction;
@@ -50,10 +50,6 @@ import org.datavec.spark.transform.analysis.SelectColumnFunction;
 import org.datavec.spark.transform.analysis.SequenceLengthFunction;
 import org.datavec.spark.transform.analysis.aggregate.AnalysisAddFunction;
 import org.datavec.spark.transform.analysis.aggregate.AnalysisCombineFunction;
-import org.datavec.spark.transform.analysis.columns.BytesAnalysisCounter;
-import org.datavec.spark.transform.analysis.columns.IntegerAnalysisCounter;
-import org.datavec.spark.transform.analysis.columns.LongAnalysisCounter;
-import org.datavec.spark.transform.analysis.columns.DoubleAnalysisCounter;
 import org.datavec.spark.transform.analysis.histogram.HistogramCombineFunction;
 import org.datavec.spark.transform.analysis.seqlength.SequenceLengthAnalysisCounter;
 import org.datavec.spark.transform.quality.categorical.CategoricalQualityAddFunction;
@@ -235,6 +231,15 @@ public class AnalyzeSpark {
                     BytesAnalysisCounter bac = (BytesAnalysisCounter) counters.get(i);
                     list.add(new BytesAnalysis.Builder().countTotal(bac.getCountTotal()).build());
                     break;
+                case NDArray:
+                    NDArrayAnalysisCounter nac = (NDArrayAnalysisCounter)counters.get(i);
+                    NDArrayAnalysis nda = nac.toAnalysisObject();
+                    list.add(nda);
+
+                    minsMaxes[i][0] = nda.getMinValue();
+                    minsMaxes[i][1] = nda.getMaxValue();
+
+                    break;
                 default:
                     throw new IllegalStateException("Unknown column type: " + ct);
             }
@@ -263,6 +268,9 @@ public class AnalyzeSpark {
             } else if (ca instanceof StringAnalysis) {
                 ((StringAnalysis) ca).setHistogramBuckets(hc.getBins());
                 ((StringAnalysis) ca).setHistogramBucketCounts(hc.getCounts());
+            } else if (ca instanceof NDArrayAnalysis) {
+                ((NDArrayAnalysis) ca).setHistogramBuckets(hc.getBins());
+                ((NDArrayAnalysis) ca).setHistogramBucketCounts(hc.getCounts());
             }
         }
 

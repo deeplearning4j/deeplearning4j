@@ -26,6 +26,11 @@
     <artifactId>datavec-data-image</artifactId>
 
     <dependencies>
+        <dependency>
+            <groupId>org.datavec</groupId>
+            <artifactId>datavec-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -44,11 +49,6 @@
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-buffer</artifactId>
             <version>${nd4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-nd4j-common</artifactId>
-            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.github.jai-imageio</groupId>

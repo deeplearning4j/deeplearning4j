@@ -24,7 +24,7 @@ import org.datavec.api.records.reader.impl.FileRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.vector.Vectorizer;
 import org.datavec.api.writable.Writable;
-import org.datavec.common.data.NDArrayWritable;
+import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.nlp.vectorizer.TfidfVectorizer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 

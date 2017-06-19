@@ -32,7 +32,6 @@
         <module>datavec-data-codec</module>
         <module>datavec-data-image</module>
         <module>datavec-data-nlp</module>
-        <module>datavec-nd4j-common</module>
     </modules>
 
     <properties>

@@ -69,7 +69,7 @@ import java.io.Serializable;
                 @JsonSubTypes.Type(value = IntWritable.class, name = "IntWritable"),
                 @JsonSubTypes.Type(value = LongWritable.class, name = "LongWritable"),
                 @JsonSubTypes.Type(value = NullWritable.class, name = "NullWritable"),
-                @JsonSubTypes.Type(value = Text.class, name = "Text"),})
+                @JsonSubTypes.Type(value = Text.class, name = "Text")})
 public interface Writable extends Serializable {
     /**
      * Serialize the fields of this object to <code>out</code>.

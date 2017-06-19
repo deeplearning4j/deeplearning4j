@@ -16,6 +16,10 @@
 
 package org.datavec.api.transform;
 
+import org.datavec.api.transform.ndarray.NDArrayColumnsMathOpTransform;
+import org.datavec.api.transform.ndarray.NDArrayDistanceTransform;
+import org.datavec.api.transform.ndarray.NDArrayMathFunctionTransform;
+import org.datavec.api.transform.ndarray.NDArrayScalarOpTransform;
 import org.datavec.api.transform.sequence.ReduceSequenceTransform;
 import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
 import org.datavec.api.transform.transform.column.*;
@@ -103,7 +107,11 @@ import java.util.List;
                 @JsonSubTypes.Type(value = SequenceMovingWindowReduceTransform.class, name = "SequenceMovingWindowReduceTransform"),
                 @JsonSubTypes.Type(value = IntegerToOneHotTransform.class, name = "IntegerToOneHotTransform"),
                 @JsonSubTypes.Type(value = SequenceTrimTransform.class, name = "SequenceTrimTransform"),
-                @JsonSubTypes.Type(value = SequenceOffsetTransform.class, name = "SequenceOffsetTransform")
+                @JsonSubTypes.Type(value = SequenceOffsetTransform.class, name = "SequenceOffsetTransform"),
+                @JsonSubTypes.Type(value = NDArrayColumnsMathOpTransform.class, name = "NDArrayColumnsMathOpTransform"),
+                @JsonSubTypes.Type(value = NDArrayDistanceTransform.class, name = "NDArrayDistanceTransform"),
+                @JsonSubTypes.Type(value = NDArrayMathFunctionTransform.class, name = "NDArrayMathFunctionTransform"),
+                @JsonSubTypes.Type(value = NDArrayScalarOpTransform.class, name = "NDArrayScalarOpTransform")
 })
 public interface Transform extends Serializable, ColumnOp {
 

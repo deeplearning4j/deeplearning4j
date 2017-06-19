@@ -16,8 +16,16 @@
 
 package org.datavec.api.transform.serde;
 
+import org.datavec.api.transform.Transform;
+import org.datavec.api.transform.TransformProcess;
+import org.datavec.api.transform.condition.Condition;
+import org.datavec.api.transform.filter.Filter;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
+import org.datavec.api.transform.sequence.SequenceComparator;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
+
+import java.util.Arrays;
 
 /**
  * Serializer used for converting objects (Transforms, Conditions, etc) to YAML format
@@ -34,6 +42,14 @@ public class YamlSerializer extends BaseSerializer {
 
     @Override
     public ObjectMapper getObjectMapper() {
+        return om;
+    }
+
+    @Override
+    protected ObjectMapper reinitializeMapperWithSubtypes() {
+        om = TransformProcess.reinitializeMapperWithSubtypes(
+                om, Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IAssociativeReducer.class,
+                        SequenceComparator.class));
         return om;
     }
 

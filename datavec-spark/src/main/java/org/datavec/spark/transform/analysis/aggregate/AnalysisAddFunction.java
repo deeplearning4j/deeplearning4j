@@ -19,12 +19,8 @@ package org.datavec.spark.transform.analysis.aggregate;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.spark.transform.analysis.AnalysisCounter;
-import org.datavec.spark.transform.analysis.columns.CategoricalAnalysisCounter;
-import org.datavec.spark.transform.analysis.columns.DoubleAnalysisCounter;
-import org.datavec.spark.transform.analysis.columns.IntegerAnalysisCounter;
-import org.datavec.spark.transform.analysis.columns.LongAnalysisCounter;
+import org.datavec.spark.transform.analysis.columns.*;
 import org.datavec.spark.transform.analysis.string.StringAnalysisCounter;
-import org.datavec.spark.transform.analysis.columns.BytesAnalysisCounter;
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.Function2;
 import org.datavec.api.writable.Writable;
@@ -39,7 +35,6 @@ import java.util.List;
  */
 @AllArgsConstructor
 public class AnalysisAddFunction implements Function2<List<AnalysisCounter>, List<Writable>, List<AnalysisCounter>> {
-
     private Schema schema;
 
     @Override
@@ -70,6 +65,9 @@ public class AnalysisAddFunction implements Function2<List<AnalysisCounter>, Lis
                         break;
                     case Bytes:
                         analysisCounters.add(new BytesAnalysisCounter());
+                        break;
+                    case NDArray:
+                        analysisCounters.add(new NDArrayAnalysisCounter());
                         break;
                     default:
                         throw new IllegalArgumentException("Unknown column type: " + ct);

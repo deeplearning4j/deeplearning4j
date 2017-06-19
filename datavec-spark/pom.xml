@@ -87,11 +87,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.datavec</groupId>
-            <artifactId>datavec-nd4j-common</artifactId>
-            <version>${project.parent.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_2.11</artifactId>
             <version>${spark.version}</version>
@@ -130,7 +125,6 @@
 
 
         <!-- Test scope dependencies -->
-
         <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-data-image</artifactId>
