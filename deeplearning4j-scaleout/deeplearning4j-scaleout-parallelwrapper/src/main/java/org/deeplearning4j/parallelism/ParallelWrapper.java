@@ -116,6 +116,7 @@ public class ParallelWrapper implements AutoCloseable {
     }
 
     protected void init() {
+        workerCounter.set(0);
         this.executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(workers, new ThreadFactory() {
             @Override
             public Thread newThread(@NotNull Runnable r) {
@@ -144,8 +145,10 @@ public class ParallelWrapper implements AutoCloseable {
             zoo = null;
         }
 
-        if (executorService != null)
+        if (executorService != null) {
             executorService.shutdown();
+            executorService = null;
+        }
     }
 
     /**
@@ -598,6 +601,10 @@ public class ParallelWrapper implements AutoCloseable {
                 }
                 zoo[cnt].start();
                 */
+
+                if (executorService == null)
+                    init();
+
                 executorService.execute(zoo[cnt]);
             }
         }
