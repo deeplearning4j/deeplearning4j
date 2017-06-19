@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.List;
@@ -100,5 +101,40 @@ public class RandomTests {
         for (int i = 0; i < models.size(); i++) {
             assertEquals(models.get(0).params(), models.get(i).params());
         }
+    }
+
+
+    @Test
+    public void testRngInitMLN(){
+        Nd4j.getRandom().setSeed(12345);
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .activation(Activation.TANH)
+                .weightInit(WeightInit.XAVIER)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX).nIn(10).nOut(10).build())
+                .build();
+
+        String json = conf.toJson();
+
+        MultiLayerNetwork net1 = new MultiLayerNetwork(conf);
+        net1.init();
+
+        MultiLayerNetwork net2 = new MultiLayerNetwork(conf);
+        net2.init();
+
+        assertEquals(net1.params(), net2.params());
+
+        MultiLayerConfiguration fromJson = MultiLayerConfiguration.fromJson(json);
+
+        Nd4j.getRandom().setSeed(987654321);
+        MultiLayerNetwork net3 = new MultiLayerNetwork(fromJson);
+        net3.init();
+
+        assertEquals(net1.params(), net3.params());
     }
 }
