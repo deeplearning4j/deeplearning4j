@@ -24,7 +24,7 @@ import java.util.List;
 public class ShapeOffsetResolution implements Serializable {
 
     private INDArray arr;
-    private int[] offsets, shapes, strides;
+    private int[] offsets, shapes, strides, fixed;
     private long offset = -1;
 
     /**
@@ -304,6 +304,10 @@ public class ShapeOffsetResolution implements Serializable {
      */
     public void exec(INDArrayIndex... indexes) {
         int[] shape = arr.shape();
+
+        if(arr.isSparse()){
+            resolveFixedDimensions(indexes);
+        }
 
         // Check that given point indexes are not out of bounds
         for (int i = 0; i < indexes.length; i++) {
@@ -595,6 +599,18 @@ public class ShapeOffsetResolution implements Serializable {
 
     }
 
+    public void resolveFixedDimensions(INDArrayIndex... indexes){
+        fixed = new int[arr.rank()];
+        for(int i = 0; i < indexes.length; i++){
+            if(indexes[i] instanceof PointIndex){
+                fixed[i] = 1;
+            }
+            if(indexes[i] instanceof IntervalIndex || indexes[i] instanceof NDArrayIndexAll){
+                fixed[i] = 0;
+            }
+            // TODO specified indexes ?!?
+        }
+    }
 
     private boolean anyHaveStrideOne(INDArrayIndex... indexes) {
         for (INDArrayIndex indArrayIndex : indexes)

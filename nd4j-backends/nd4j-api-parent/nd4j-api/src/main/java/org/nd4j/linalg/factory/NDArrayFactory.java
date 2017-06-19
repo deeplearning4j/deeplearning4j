@@ -1848,5 +1848,5 @@ public interface NDArrayFactory {
     INDArray createSparseCOO(double[] values, int[][] indices, int[] shape);
     INDArray createSparseCOO(float[] values, int[][] indices, int[] shape);
     INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] shape);
-    INDArray createSparseCOO(DataBuffer data, DataBuffer indices, int[] stride, int offset, int[] shape, char ordering);
+    INDArray createSparseCOO(DataBuffer data, DataBuffer indices, int[] sparseOffsets, int[] fixed, int[] shape, char ordering);
 }

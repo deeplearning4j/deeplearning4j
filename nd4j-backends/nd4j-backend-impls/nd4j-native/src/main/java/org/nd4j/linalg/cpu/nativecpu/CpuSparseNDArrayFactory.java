@@ -54,8 +54,8 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
-    public INDArray createSparseCOO(DataBuffer data, DataBuffer indices, int[] stride, int offset, int[] shape, char ordering) {
-        return new SparseNDArrayCOO(data, indices, stride, offset, shape, ordering);
+    public INDArray createSparseCOO(DataBuffer data, DataBuffer indices, int[] sparseOffset, int[] fixed, int[] shape, char ordering) {
+        return new SparseNDArrayCOO(data, indices, sparseOffset, fixed, shape, ordering);
     }
 //  TODO ->
 

@@ -20,48 +20,8 @@ import java.util.List;
  */
 @Slf4j
 public abstract class BaseSparseNDArray implements ISparseNDArray {
-    @Override
-    public INDArray amean(int... dimension) {
-        return null;
-    }
-
-    @Override
-    public Number ameanNumber() {
-        return null;
-    }
-
-    @Override
-    public INDArray amax(int... dimension) {
-        return null;
-    }
-
-    @Override
-    public Number amaxNumber() {
-        return null;
-    }
-
-    @Override
-    public INDArray amin(int... dimension) {
-        return null;
-    }
-
-    @Override
-    public Number aminNumber() {
-        return null;
-    }
-
-    @Override
-    public Number scan(Condition condition) {
-        return null;
-    }
-
-    @Override
-    public INDArray unsafeDuplication(boolean blocking) {
-        return null;
-    }
 
     protected static final double THRESHOLD_MEMORY_ALLOCATION = 1.5;
-    protected transient volatile long nnz = -1;
     protected int rows, columns, rank;
     protected Boolean isVector = null;
     protected Boolean isMatrix = null;
@@ -98,20 +58,24 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         }
         return newBuffer;
     }
-    //@Override
+
+    @Override
     public boolean isSparse(){
         return isSparse;
     }
 
-    //@Override
+    @Override
     public int length(){
-        return (int) nnz;
+        return (int) length;
     }
+    @Override
+    public int nnz(){
+        return length();
+    }
+    @Override
     public long lengthLong(){
-        return nnz;
+        return length;
     }
-
-    public abstract SparseFormat getFormat();
 
     protected void init(int[] shape) {
 
@@ -122,7 +86,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
             rows = shape[0];
             columns = shape[1];
         }
-        this.length = ArrayUtil.prodLong(shape);
         rank = shape.length;
     }
 
@@ -1714,6 +1677,46 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public INDArray mean(INDArray result, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray amean(int... dimension) {
+        return null;
+    }
+
+    @Override
+    public Number ameanNumber() {
+        return null;
+    }
+
+    @Override
+    public INDArray amax(int... dimension) {
+        return null;
+    }
+
+    @Override
+    public Number amaxNumber() {
+        return null;
+    }
+
+    @Override
+    public INDArray amin(int... dimension) {
+        return null;
+    }
+
+    @Override
+    public Number aminNumber() {
+        return null;
+    }
+
+    @Override
+    public Number scan(Condition condition) {
+        return null;
+    }
+
+    @Override
+    public INDArray unsafeDuplication(boolean blocking) {
         return null;
     }
 

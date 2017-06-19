@@ -19,8 +19,8 @@ public class SparseNDArrayCOO extends BaseSparseNDArrayCOO {
         super(values, indices, shape);
     }
 
-    public SparseNDArrayCOO(DataBuffer values, DataBuffer indices, int[] stride, int offset, int[] shape, char ordering){
-        super(values, indices, stride, offset, shape, ordering);
+    public SparseNDArrayCOO(DataBuffer values, DataBuffer indices, int[] sparseOffset, int[] fixed, int[] shape, char ordering){
+        super(values, indices, sparseOffset, fixed, shape, ordering);
     }
 
 }

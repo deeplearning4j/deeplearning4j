@@ -5223,13 +5223,16 @@ public class Nd4j {
         return matrix;
     }
     /**
-     * @param data
-     * @param indices
+     * @param values a DataBuffer with the sparse non-null values
+     * @param indices a DataBuffer with the indexes of the values
+     * @param sparseOffsets the sparse
+     * @param fixed
      * @param shape
+     * @return ordering
      * @return a INDArray
      * */
-    public static INDArray createSparseCOO(DataBuffer data, DataBuffer indices, int[] stride, int offset, int[] shape, char ordering) {
-        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, stride, offset, shape, ordering);
+    public static INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] sparseOffsets, int[] fixed, int[] shape, char ordering) {
+        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(values, indices, sparseOffsets, fixed, shape, ordering);
 
         return matrix;
     }

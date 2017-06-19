@@ -23,4 +23,17 @@ public interface ISparseNDArray extends INDArray {
   * Return a dense representation of the sparse ndarray
   * */
  INDArray toDense();
+
+ /**
+  * Return the number of non-null element
+  * @return nnz
+  * */
+ int nnz();
+
+ /**
+  * Return the sparse format (i.e COO, CSR, ...)
+  * @return format
+  * @see SparseFormat
+  * */
+ SparseFormat getFormat();
 }

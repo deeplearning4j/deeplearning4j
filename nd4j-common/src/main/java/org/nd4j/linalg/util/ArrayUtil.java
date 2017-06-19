@@ -1285,6 +1285,15 @@ public class ArrayUtil {
                 ret[count++] = arr[i][j];
         return ret;
     }
+    public static int[] flattenF(int[][] arr) {
+        int[] ret = new int[arr.length * arr[0].length];
+        int count = 0;
+        for (int j = 0; j < arr[0].length; j++)
+            for (int i = 0; i < arr.length; i++)
+                ret[count++] = arr[i][j];
+        return ret;
+    }
+
 
     /**
      * Cast an int array to a double array

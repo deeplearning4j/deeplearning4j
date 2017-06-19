@@ -48,7 +48,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         this.values.setData(data);
         this.columnsPointers = Nd4j.getDataBufferFactory().createInt(valuesSpace);
         this.columnsPointers.setData(columnsPointers);
-        nnz = columnsPointers.length;
+        this.length = columnsPointers.length;
         int pointersSpace = rows;
         this.pointerB = Nd4j.getDataBufferFactory().createInt(pointersSpace);
         this.pointerB.setData(pointerB);
@@ -69,7 +69,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         this.values = data;
         this.columnsPointers = Nd4j.getDataBufferFactory().createInt(data.length());
         this.columnsPointers.setData(columnsPointers);
-        this.nnz = columnsPointers.length;
+        this.length = columnsPointers.length;
         // The size of these pointers are constant
         int pointersSpace = rows;
         this.pointerB = Nd4j.getDataBufferFactory().createInt(pointersSpace);
@@ -94,9 +94,9 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
             values.put(idx, value);
         } else {
             //Add a new entry in both buffers at a given position
-            values = addAtPosition(values, nnz, idx, value);
-            columnsPointers = addAtPosition(columnsPointers, nnz, idx, col);
-            nnz ++;
+            values = addAtPosition(values, length, idx, value);
+            columnsPointers = addAtPosition(columnsPointers, length, idx, col);
+            length ++;
 
             // shift the indices of the next rows
             pointerE.put(row, pointerE.getInt(row) + 1);
@@ -163,11 +163,11 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     }
 
     public double[] getDoubleValues(){
-        return values.getDoublesAt(0, (int) nnz);
+        return values.getDoublesAt(0, (int) length);
     }
 
     public double[] getColumns(){
-        return columnsPointers.getDoublesAt(0, (int) nnz);
+        return columnsPointers.getDoublesAt(0, (int) length);
     }
 
     public int[] getPointerBArray(){

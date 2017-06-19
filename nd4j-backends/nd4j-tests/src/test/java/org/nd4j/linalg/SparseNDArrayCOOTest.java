@@ -18,7 +18,7 @@ import java.sql.DatabaseMetaData;
 import static org.junit.Assert.*;
 
 /**
- * @author
+ * @author Audrey Loeffel
  */
 public class SparseNDArrayCOOTest {
 
