@@ -12,10 +12,12 @@ import java.util.NoSuchElementException;
 
 
 /**
- * @date: June 2,2017
+ * The ansj_seg of the open source segmentation algorithm comes form github,the link: https://github.com/NLPchina/ansj_seg
+ * When the open source code that obeyed the Apache 2.0 license is reused, its latest commit ID is dedc45fdf85dfd2d4c691fb1f147d7cbf9a5d7fb
+ * and  its copyright 2011-2016
+
  * @author: wangfeng
- * @Description:The word of the open source segmentation algorithm is based on dictionaries
- *
+ * @since : June 2,2017
  */
 
 public class ChineseTokenizer implements Tokenizer{
