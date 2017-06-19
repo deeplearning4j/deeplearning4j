@@ -27,6 +27,102 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>nd4j-uberjar</artifactId>
 
+<build>
+    <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-shade-plugin</artifactId>
+              <version>${maven-shade-plugin.version}</version>
+              <configuration>
+                <shadedClassifierName>${shadedClassifier}</shadedClassifierName>
+                <createDependencyReducedPom>true</createDependencyReducedPom>
+                <filters>
+                  <filter>
+                    <artifact>*:*</artifact>
+                    <excludes>
+                      <exclude>org/datanucleus/**</exclude>
+                      <exclude>META-INF/*.SF</exclude>
+                      <exclude>META-INF/*.DSA</exclude>
+                      <exclude>META-INF/*.RSA</exclude>
+                    </excludes>
+                  </filter>
+                </filters>
+                <relocations>
+                  <relocation>
+                    <pattern>void</pattern>
+                    <shadedPattern>void</shadedPattern>
+                  </relocation>
+                </relocations>
+                <transformers>
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                  <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  </transformer>
+                </transformers>
+                <minimizeJar>true</minimizeJar>
+              </configuration>
+              <executions>
+                <execution>
+                  <phase>none</phase>
+                  <goals>
+                    <goal>shade</goal>
+                  </goals>
+                </execution>
+              </executions>
+            </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-enforcer-plugin</artifactId>
+              <version>1.4.1</version>
+              <executions>
+                <execution>
+                  <phase>package</phase>
+                  <id>enforce-choice-of-nd4j-backend</id>
+                  <goals>
+                    <goal>enforce</goal>
+                  </goals>
+                  <configuration>
+                    <skip>${skipBackendChoice}</skip>
+                    <rules>
+                      <requireActiveProfile>
+                        <profiles>native,cuda</profiles>
+                        <all>false</all>
+                      </requireActiveProfile>
+                    </rules>
+                    <fail>true</fail>
+                  </configuration>
+                </execution>
+              </executions>
+            </plugin>
+    </plugins>
+</build>
+
+<profiles>
+  <!-- This controls skipping the backend choice, as we don't generate by
+       default -->
+  <profile>
+    <id>default</id>
+    <activation>
+      <activeByDefault>true</activeByDefault>
+    </activation>
+    <properties>
+      <skipBackendChoice>true</skipBackendChoice>
+    </properties>
+  </profile>
+  <profile>
+    <id>uberjar</id>
+    <build>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <executions>
+            <execution>
+              <phase>package</phase>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
     <dependencies>
       <dependency>
         <groupId>org.nd4j</groupId>
@@ -105,32 +201,7 @@
       </dependency>
       <dependency>
         <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-native</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-native-platform</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-cuda-8.0</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-cuda-8.0-platform</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.nd4j</groupId>
         <artifactId>nd4j-api</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.nd4j</groupId>
-        <artifactId>nd4j-native-api</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -164,49 +235,46 @@
         <version>${project.version}</version>
       </dependency>
     </dependencies>
+    <properties>
+      <skipBackendChoice>false</skipBackendChoice>
+    </properties>
+  </profile>
+  <profile>
+    <id>native</id>
+    <dependencies>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-native</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-native-platform</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-native-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </profile>
+  <profile>
+    <id>cuda</id>
+    <dependencies>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-cuda-8.0</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.nd4j</groupId>
+        <artifactId>nd4j-cuda-8.0-platform</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </profile>
+</profiles>
 
-<build>
-    <plugins>
-            <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-shade-plugin</artifactId>
-              <configuration>
-                <shadedClassifierName>${shadedClassifier}</shadedClassifierName>
-                <createDependencyReducedPom>true</createDependencyReducedPom>
-                <filters>
-                  <filter>
-                    <artifact>*:*</artifact>
-                    <excludes>
-                      <exclude>org/datanucleus/**</exclude>
-                      <exclude>META-INF/*.SF</exclude>
-                      <exclude>META-INF/*.DSA</exclude>
-                      <exclude>META-INF/*.RSA</exclude>
-                    </excludes>
-                  </filter>
-                </filters>
-                <relocations>
-                  <relocation>
-                    <pattern>void</pattern>
-                    <shadedPattern>void</shadedPattern>
-                  </relocation>
-                </relocations>
-                <transformers>
-                  <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                  <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  </transformer>
-                </transformers>
-                <minimizeJar>true</minimizeJar>
-              </configuration>
-              <executions>
-                <execution>
-                  <phase>package</phase>
-                  <goals>
-                    <goal>shade</goal>
-                  </goals>
-                </execution>
-              </executions>
-            </plugin>
-    </plugins>
-</build>
 
 </project>
