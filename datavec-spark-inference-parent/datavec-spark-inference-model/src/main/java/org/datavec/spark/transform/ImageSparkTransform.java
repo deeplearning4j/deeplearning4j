@@ -1,6 +1,7 @@
 package org.datavec.spark.transform;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.datavec.api.writable.Writable;
 import org.datavec.common.RecordConverter;
 import org.datavec.image.data.ImageWritable;
@@ -22,6 +23,7 @@ import java.util.List;
  */
 @AllArgsConstructor
 public class ImageSparkTransform {
+    @Getter
     private ImageTransformProcess imageTransformProcess;
 
     public Base64NDArrayBody toArray(ImageRecord record) throws IOException {
