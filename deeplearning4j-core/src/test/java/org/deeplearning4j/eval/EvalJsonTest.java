@@ -139,25 +139,38 @@ public class EvalJsonTest {
                 assertNull(((ROC) fromJson).getProbAndLabel());
                 assertTrue(((ROC) fromJson).calculateAUC() > 0.0);
                 assertTrue(((ROC) fromJson).calculateAUCPR() > 0.0);
+
+                assertEquals(((ROC)e).getRocCurve(), ((ROC) fromJson).getRocCurve());
+                assertEquals(((ROC)e).getPrecisionRecallCurve(), ((ROC) fromJson).getPrecisionRecallCurve());
             } else if(e instanceof ROCBinary){
                 ROC[] rocs = ((ROCBinary) fromJson).getUnderlying();
-                for(ROC r : rocs ){
-                    //Shouldn't have probAndLabel, but should have stored AUC and AUPRC
+                ROC[] origRocs = ((ROCBinary)e).getUnderlying();
+//                for(ROC r : rocs ){
+                for( int i=0; i<origRocs.length; i++ ){
+                    ROC r = rocs[i];
+                    ROC origR = origRocs[i];
+                    //Shouldn't have probAndLabel, but should have stored AUC and AUPRC, AND stored curves
                     assertNull(r.getProbAndLabel());
-                    assertTrue(r.calculateAUC() > 0.0);
-                    assertTrue(r.calculateAUCPR() > 0.0);
+                    assertEquals(origR.calculateAUC(), origR.calculateAUC(), 1e-6);
+                    assertEquals(origR.calculateAUCPR(), origR.calculateAUCPR(), 1e-6);
+                    assertEquals(origR.getRocCurve(), origR.getRocCurve());
+                    assertEquals(origR.getPrecisionRecallCurve(), origR.getPrecisionRecallCurve());
                 }
 
             } else if(e instanceof ROCMultiClass){
                 ROC[] rocs = ((ROCMultiClass) fromJson).getUnderlying();
-                for(ROC r : rocs ){
-                    //Shouldn't have probAndLabel, but should have stored AUC and AUPRC
+                ROC[] origRocs = ((ROCMultiClass)e).getUnderlying();
+                for( int i=0; i<origRocs.length; i++ ){
+                    ROC r = rocs[i];
+                    ROC origR = origRocs[i];
+                    //Shouldn't have probAndLabel, but should have stored AUC and AUPRC, AND stored curves
                     assertNull(r.getProbAndLabel());
-                    assertTrue(r.calculateAUC() > 0.0);
-                    assertTrue(r.calculateAUCPR() > 0.0);
+                    assertEquals(origR.calculateAUC(), origR.calculateAUC(), 1e-6);
+                    assertEquals(origR.calculateAUCPR(), origR.calculateAUCPR(), 1e-6);
+                    assertEquals(origR.getRocCurve(), origR.getRocCurve());
+                    assertEquals(origR.getPrecisionRecallCurve(), origR.getPrecisionRecallCurve());
                 }
             }
         }
     }
-
 }

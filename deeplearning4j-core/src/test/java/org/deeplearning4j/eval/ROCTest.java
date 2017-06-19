@@ -83,7 +83,7 @@ public class ROCTest {
 
         RocCurve rocCurve = roc.getRocCurve();
 
-        assertEquals(11, rocCurve.getThreshold()); //0 + 10 steps
+        assertEquals(11, rocCurve.getThreshold().length); //0 + 10 steps
         for (int i = 0; i < 11; i++) {
             double expThreshold = i / 10.0;
             assertEquals(expThreshold, rocCurve.getThreshold(i), 1e-5);
@@ -127,7 +127,7 @@ public class ROCTest {
 
         RocCurve rocCurve = roc.getRocCurve();
 
-        assertEquals(11, rocCurve.getThreshold()); //0 + 10 steps
+        assertEquals(11, rocCurve.getThreshold().length); //0 + 10 steps
         for (int i = 0; i < 11; i++) {
             double expThreshold = i / 10.0;
             assertEquals(expThreshold, rocCurve.getThreshold(i), 1e-5);
@@ -230,18 +230,25 @@ public class ROCTest {
                         {0, 1}, {0, 1}});
 
         INDArray predictions3d = Nd4j.create(2, 2, 5);
-        predictions3d.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all())
-                        .assign(predictions2d.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
-        predictions3d.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all())
-                        .assign(predictions2d.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()));
+        INDArray firstTSp = predictions3d.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all()).transpose();
+        assertArrayEquals(new int[]{5, 2}, firstTSp.shape());
+        firstTSp.assign(predictions2d.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
+
+        INDArray secondTSp = predictions3d.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).transpose();
+        assertArrayEquals(new int[]{5, 2}, secondTSp.shape());
+        secondTSp.assign(predictions2d.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()));
 
         INDArray labels3d = Nd4j.create(2, 2, 5);
-        labels3d.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all())
-                        .assign(actual2d.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
-        labels3d.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all())
-                        .assign(actual2d.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()));
+        INDArray firstTS = labels3d.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all()).transpose();
+        assertArrayEquals(new int[]{5, 2}, firstTS.shape());
+        firstTS.assign(actual2d.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
+
+        INDArray secondTS = labels3d.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).transpose();
+        assertArrayEquals(new int[]{5, 2}, secondTS.shape());
+        secondTS.assign(actual2d.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()));
 
         for( int steps : new int[]{10, 0}) {        //0 steps: exact
+//            System.out.println("Steps: " + steps);
             ROC rocExp = new ROC(steps);
             rocExp.eval(actual2d, predictions2d);
 
@@ -249,6 +256,7 @@ public class ROCTest {
             rocAct.evalTimeSeries(labels3d, predictions3d);
 
             assertEquals(rocExp.calculateAUC(), rocAct.calculateAUC(), 1e-6);
+            assertEquals(rocExp.calculateAUCPR(), rocAct.calculateAUCPR(), 1e-6);
 
             assertEquals(rocExp.getRocCurve(), rocAct.getRocCurve());
         }
@@ -483,10 +491,14 @@ public class ROCTest {
 
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER).list()
-                        .layer(0, new DenseLayer.Builder().nIn(4).nOut(4).activation(Activation.TANH).build()).layer(1,
-                                        new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
-                                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+        Nd4j.getRandom().setSeed(12345);
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .weightInit(WeightInit.XAVIER)
+                .seed(12345)
+                .list()
+                        .layer(0, new DenseLayer.Builder().nIn(4).nOut(4).activation(Activation.TANH).build())
+                        .layer(1, new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
+                                  .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -506,18 +518,20 @@ public class ROCTest {
             System.out.println("steps: " + steps);
 
             iter.reset();
-            ROCMultiClass roc = net.evaluateROCMultiClass(iter, steps);
-
-            iter.reset();
             ds = iter.next();
             INDArray f = ds.getFeatures();
             INDArray l = ds.getLabels();
             INDArray out = net.output(f);
+//            System.out.println(f);
+//            System.out.println(out);
             ROCMultiClass manual = new ROCMultiClass(steps);
             manual.eval(l, out);
 
+            iter.reset();
+            ROCMultiClass roc = net.evaluateROCMultiClass(iter, steps);
+
+
             for (int i = 0; i < 3; i++) {
-                System.out.println("i = " + i);
                 double rocExp = manual.calculateAUC(i);
                 double rocAct = roc.calculateAUC(i);
                 assertEquals(rocExp, rocAct, 1e-6);
