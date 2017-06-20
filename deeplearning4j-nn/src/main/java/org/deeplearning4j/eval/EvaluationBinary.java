@@ -3,11 +3,18 @@ package org.deeplearning4j.eval;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThan;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -18,7 +25,9 @@ import java.util.List;
  * Note that {@link ROCBinary} is also used internally to calculate AUC for each output, but only when using an
  * appropriate constructor, {@link #EvaluationBinary(int, Integer)}
  * <p>
- * Note that EvaluationBinary supports both per-example and per-output masking.
+ * Note that EvaluationBinary supports both per-example and per-output masking.<br>
+ * EvaluationBinary by default uses a decision threshold of 0.5, however decision thresholds can be set on a per-output
+ * basis using {@link #EvaluationBinary(INDArray)}.
  * <p>
  * The most common use case: multi-task networks, where each output is a binary value. This differs from {@link Evaluation}
  * in that {@link Evaluation} is for a single class (binary or non-binary) evaluation.
@@ -38,11 +47,37 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     private int[] countFalsePositive; //P=1, Act=0
     private int[] countTrueNegative; //P=0, Act=0
     private int[] countFalseNegative; //P=0, Act=1
-    @JsonProperty(value = "rocbinary")
     private ROCBinary rocBinary;
 
     private List<String> labels;
 
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
+    private INDArray decisionThreshold;
+
+    /**
+     * Create an EvaulationBinary instance with an optional decision threshold array.
+     *
+     * @param decisionThreshold Decision threshold for each output; may be null. Should be a row vector with length
+     *                          equal to the number of outputs, with values in range 0 to 1. An array of 0.5 values is
+     *                          equivalent to the default (no manually specified decision threshold).
+     */
+    public EvaluationBinary(@Nullable INDArray decisionThreshold){
+        if(decisionThreshold != null){
+            if(!decisionThreshold.isRowVector()){
+                throw new IllegalArgumentException("Decision threshold array must be a row vector; got array with shape "
+                        + Arrays.toString(decisionThreshold.shape()));
+            }
+            if(decisionThreshold.minNumber().doubleValue() < 0.0){
+                throw new IllegalArgumentException("Invalid decision threshold array: minimum value is less than 0");
+            }
+            if(decisionThreshold.maxNumber().doubleValue() > 1.0){
+                throw new IllegalArgumentException("invalid decision threshold array: maximum value is greater than 1.0");
+            }
+
+            this.decisionThreshold = decisionThreshold;
+        }
+    }
 
     /**
      * This constructor allows for ROC to be calculated in addition to the standard evaluation metrics, when the
@@ -96,9 +131,37 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
             return;
         }
 
-        //First: binarize the network prediction probabilities, threshold 0.5
+        //First: binarize the network prediction probabilities, threshold 0.5 unless otherwise specified
         //This gives us 3 binary arrays: labels, predictions, masks
-        INDArray classPredictions = networkPredictions.gt(0.5);
+        INDArray classPredictions;
+        if(decisionThreshold != null){
+            //Need to do a broadcast greater-than op...
+            //TODO replace the (rather inelegant) implementation below with proper broadcast comparison ops once implemented
+            // https://github.com/deeplearning4j/nd4j/issues/1884
+
+            classPredictions = Nd4j.createUninitialized(networkPredictions.shape());
+            if(networkPredictions.rows() <= networkPredictions.columns()){
+                //Do fewer ops by looping over rows
+                int nRows = networkPredictions.rows();
+                for( int i=0; i<nRows; i++ ){
+                    INDArray inRow = networkPredictions.getRow(i);
+                    INDArray outRow = classPredictions.getRow(i);
+                    Nd4j.getExecutioner().exec(new GreaterThan(inRow, decisionThreshold, outRow, inRow.length()));
+                }
+            } else {
+                //Do fewer ops by looping over columns
+                int nCol = networkPredictions.size(1);
+                for( int i=0; i<nCol; i++ ){
+                    INDArray inCol = networkPredictions.getColumn(i);
+                    INDArray outCol = classPredictions.getColumn(i);
+                    double currThreshold = decisionThreshold.getDouble(i);
+                    Nd4j.getExecutioner().exec(
+                            new ScalarGreaterThan(inCol, null, outCol, inCol.length(), currThreshold));
+                }
+            }
+        } else {
+            classPredictions = networkPredictions.gt(0.5);
+        }
 
         INDArray notLabels = Nd4j.getExecutioner().execAndReturn(new Not(labels.dup()));
         INDArray notClassPredictions = Nd4j.getExecutioner().execAndReturn(new Not(classPredictions.dup()));
@@ -480,26 +543,46 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
         sb.append(header);
 
-        for (int i = 0; i < countTrueNegative.length; i++) {
-            int totalCount = totalCount(i);
+        if(countTrueNegative != null) {
 
-            double acc = accuracy(i);
-            double f1 = f1(i);
-            double precision = precision(i);
-            double recall = recall(i);
+            for (int i = 0; i < countTrueNegative.length; i++) {
+                int totalCount = totalCount(i);
 
-            String label = (labels == null ? String.valueOf(i) : labels.get(i));
+                double acc = accuracy(i);
+                double f1 = f1(i);
+                double precision = precision(i);
+                double recall = recall(i);
 
-            List<Object> args = Arrays.<Object>asList(label, acc, f1, precision, recall, totalCount, truePositives(i),
-                    trueNegatives(i), falsePositives(i), falseNegatives(i));
-            if (rocBinary != null) {
-                args = new ArrayList<>(args);
-                args.add(rocBinary.calculateAUC(i));
+                String label = (labels == null ? String.valueOf(i) : labels.get(i));
+
+                List<Object> args = Arrays.<Object>asList(label, acc, f1, precision, recall, totalCount, truePositives(i),
+                        trueNegatives(i), falsePositives(i), falseNegatives(i));
+                if (rocBinary != null) {
+                    args = new ArrayList<>(args);
+                    args.add(rocBinary.calculateAUC(i));
+                }
+
+                sb.append("\n").append(String.format(pattern, args.toArray()));
             }
 
-            sb.append("\n").append(String.format(pattern, args.toArray()));
+            if(decisionThreshold != null){
+                sb.append("\nPer-output decision thresholds: ").append(Arrays.toString(decisionThreshold.dup().data().asFloat()));
+            }
+        } else {
+            //Empty evaluation
+            sb.append("\n-- No Data --\n");
         }
 
         return sb.toString();
     }
+
+    public static EvaluationBinary fromJson(String json) {
+        return fromJson(json, EvaluationBinary.class);
+    }
+
+    public static EvaluationBinary fromYaml(String yaml) {
+        return fromYaml(yaml, EvaluationBinary.class);
+    }
+
+
 }

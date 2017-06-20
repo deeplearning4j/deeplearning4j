@@ -13,16 +13,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {
-        @JsonSubTypes.Type(value = Evaluation.class, name = "evaluation"),
-        @JsonSubTypes.Type(value = EvaluationBinary.class, name = "evaluationbinary"),
-        @JsonSubTypes.Type(value = RegressionEvaluation.class, name = "regressionevaluation"),
-        @JsonSubTypes.Type(value = ROC.class, name = "roc"),
-        @JsonSubTypes.Type(value = ROCBinary.class, name = "rocbinary"),
-        @JsonSubTypes.Type(value = ROCMultiClass.class, name = "rocmulti"),
-})
-
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
 public interface IEvaluation<T extends IEvaluation> extends Serializable {
 
 

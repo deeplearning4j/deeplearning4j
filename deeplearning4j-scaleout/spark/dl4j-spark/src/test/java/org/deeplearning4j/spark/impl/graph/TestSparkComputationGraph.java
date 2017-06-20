@@ -8,6 +8,9 @@ import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
+import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.eval.ROC;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -40,6 +43,25 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 public class TestSparkComputationGraph extends BaseSparkTest {
+
+    public static ComputationGraph getBasicNetIris2Class(){
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .weightInit(WeightInit.XAVIER)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("l0", new DenseLayer.Builder().nIn(4).nOut(10).build(), "in")
+                .addLayer("l1", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX)
+                        .nIn(10).nOut(2).build(), "l0")
+                .setOutputs("l1")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        return cg;
+    }
 
     @Test
     public void testBasic() throws Exception {
@@ -234,4 +256,58 @@ public class TestSparkComputationGraph extends BaseSparkTest {
         assertEquals(p1, p2);
         assertNotEquals(p1, p3);
     }
+
+
+    @Test
+    public void testEvaluationAndRoc(){
+        DataSetIterator iter = new IrisDataSetIterator(5,150);
+
+        //Make a 2-class version of iris:
+        List<DataSet> l = new ArrayList<>();
+        iter.reset();
+        while(iter.hasNext()){
+            DataSet ds = iter.next();
+            INDArray newL = Nd4j.create(ds.getLabels().size(0), 2);
+            newL.putColumn(0, ds.getLabels().getColumn(0));
+            newL.putColumn(1, ds.getLabels().getColumn(1));
+            newL.getColumn(1).addi(ds.getLabels().getColumn(2));
+            ds.setLabels(newL);
+            l.add(ds);
+        }
+
+        iter = new ListDataSetIterator<>(l);
+
+        ComputationGraph cg = getBasicNetIris2Class();
+
+        Evaluation e = cg.evaluate(iter);
+        ROC roc = cg.evaluateROC(iter, 32);
+
+
+        SparkComputationGraph scg = new SparkComputationGraph(sc, cg, null);
+
+
+
+        JavaRDD<DataSet> rdd = sc.parallelize(l);
+        rdd = rdd.repartition(20);
+
+        Evaluation e2 = scg.evaluate(rdd);
+        ROC roc2 = scg.evaluateROC(rdd);
+
+
+        assertEquals(e2.accuracy(), e.accuracy(), 1e-3);
+        assertEquals(e2.f1(), e.f1(), 1e-3);
+        assertEquals(e2.getNumRowCounter(), e.getNumRowCounter(), 1e-3);
+        assertEquals(e2.falseNegatives(), e.falseNegatives());
+        assertEquals(e2.falsePositives(), e.falsePositives());
+        assertEquals(e2.trueNegatives(), e.trueNegatives());
+        assertEquals(e2.truePositives(), e.truePositives());
+        assertEquals(e2.precision(), e.precision(), 1e-3);
+        assertEquals(e2.recall(), e.recall(), 1e-3);
+        assertEquals(e2.getConfusionMatrix(), e.getConfusionMatrix());
+
+        assertEquals(roc.calculateAUC(), roc2.calculateAUC(), 1e-5);
+        assertEquals(roc.calculateAUCPR(), roc2.calculateAUCPR(), 1e-5);
+
+    }
+
 }

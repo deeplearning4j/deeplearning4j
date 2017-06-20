@@ -11,6 +11,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * This MessageHandler implementation is suited for debugging mostly, but still can be used in production environment if you really want that.
@@ -25,14 +26,21 @@ import java.util.Arrays;
 public class EncodingHandler implements MessageHandler {
     protected transient GradientsAccumulator accumulator;
     protected double threshold;
+    protected Double boundary = null;
     protected NDArrayCompressor compressor;
+    protected AtomicInteger atomicBoundary = new AtomicInteger(-1);
 
     public EncodingHandler() {
         this(1e-3);
     }
 
     public EncodingHandler(double threshold) {
+        this(threshold, null);
+    }
+
+    public EncodingHandler(double threshold, Double boundary) {
         this.threshold = threshold;
+        this.boundary = boundary;
     }
 
     @Override
@@ -49,8 +57,12 @@ public class EncodingHandler implements MessageHandler {
     public INDArray encodeUpdates(INDArray updates) {
         // special op should be called here for encoding
 
+
+        if (boundary != null && atomicBoundary.get() < 0)
+            atomicBoundary.compareAndSet(-1, (int) (updates.lengthLong() * boundary));
+
         //return compressor.compress(updates);
-        INDArray encoded = Nd4j.getExecutioner().thresholdEncode(updates, threshold);
+        INDArray encoded = Nd4j.getExecutioner().thresholdEncode(updates, threshold, boundary == null ? null : atomicBoundary.get());
 
         //if (encoded != null)
             //log.info("Encoded length: {}, Original/encoded ratio: {}", encoded.data().length(), String.format("%.3f", encoded.data().length() * 100.0 / updates.lengthLong()));

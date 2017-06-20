@@ -4,7 +4,6 @@ import org.ansj.domain.Result;
 import org.ansj.domain.Term;
 import org.ansj.splitWord.analysis.NlpAnalysis;
 import org.ansj.splitWord.analysis.ToAnalysis;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -48,7 +47,6 @@ public class ChineseTokenizer implements Tokenizer{
         if (!hasMoreTokens()) {
             throw new NoSuchElementException();
         }
-
         return this.tokenPreProcess != null ? this.tokenPreProcess.preProcess(tokenIter.next().getName()) : tokenIter.next().getName();
     }
 

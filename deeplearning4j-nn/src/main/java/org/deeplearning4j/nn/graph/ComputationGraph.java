@@ -33,10 +33,7 @@ import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
-import org.deeplearning4j.nn.conf.BackpropType;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.WorkspaceMode;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -352,6 +349,10 @@ public class ComputationGraph implements Serializable, Model {
     public void init(INDArray parameters, boolean cloneParametersArray) {
         if (initCalled)
             return;
+
+        if (configuration.getCacheMode() == CacheMode.HOST) {
+            workspaceConfigurationCache.setPolicyMirroring(MirroringPolicy.HOST_ONLY);
+        }
 
         //First: build topological ordering, based on configuration. Used for forward pass, backprop and order of parameters/gradients
         topologicalOrder = topologicalSortOrder();
@@ -2958,8 +2959,10 @@ public class ComputationGraph implements Serializable, Model {
                 setLayerMaskArrays(featuresMasks, labelMasks);
                 INDArray[] out = silentOutput(false, features);
 
-                for (T evaluation : evaluations)
-                    evaluation.eval(labels, out[0], labelMask);
+                try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                    for (T evaluation : evaluations)
+                        evaluation.eval(labels, out[0], labelMask);
+                }
             }
 
             clearLayerMaskArrays();
