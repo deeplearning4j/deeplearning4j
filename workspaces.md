@@ -2,12 +2,16 @@
 title: Workspaces guide
 layout: default
 ---
+
+# Workspaces Guide
+
 As of 0.9.0 (or 0.8.1-SNAPSHOT), ND4J offers an additional memory management model: workspaces. Basically, it allows you to reuse memory in cyclic workloads, without the JVM Garbage Collector, for off-heap memory tracking. In other words, at the end of the workspace loop, all INDArrays memory content is invalidated.
 
 Here are some [examples](https://github.com/deeplearning4j/dl4j-examples/blob/58cc1b56515458003fdd7b606f6451aee851b8c3/nd4j-examples/src/main/java/org/nd4j/examples/Nd4jEx15_Workspaces.java) on how to use it with ND4J.
 The basic idea is very simple. You can do your stuff within a workspace(s), and if you need to get an INDArray out of it (i.e. to move result out of the workspace), you just call the INDArray.detach() method and you'll get an independent INDArray copy.
 
-## Neural Networks:
+## Neural Networks
+
 For DL4J users, workspaces provide better performance out of box. All you need to do is choose affordable modes for the training & inference of a given model.
 
  `.trainingWorkspaceMode(WorkspaceMode.SEPARATE)` and/or `.inferenceWorkspaceMode(WorkspaceMode.SINGLE)` in your neural network configuration. 
@@ -46,7 +50,8 @@ ParallelWrapper wrapper = new ParallelWrapper.Builder(model)
             .build();
 ```
 
-## Iterators:
+## Iterators
+
 We provide asynchronous prefetch iterators, AsyncDataSetIterator and AsyncMultiDataSetIterator, which are usually used internally. These iterators optionally use a special, cyclic workspace mode for a smaller memory footprint. The size of the workspace, in this case, will be determined by the memory requirements of the first DataSet coming out of the underlying iterator whereas the buffer size is defined by the user. However, the workspace will be adjusted if memory requirements change over time (i.e. if you’re using variable length time series).
 
 ***Caution***: If you’re using a custom iterator or the RecordReader, please make sure you’re not initializing something huge within the first next() call. Do that in your constructor to avoid undesired workspace growth.
@@ -55,7 +60,8 @@ We provide asynchronous prefetch iterators, AsyncDataSetIterator and AsyncMultiD
 
 If, for some reason, you don’t want your iterator to be wrapped into an asynchronous prefetch (i.e. for debugging purposes), there’s special wrappers provided: AsyncShieldDataSetIterator and AsyncShieldMultiDataSetIterator. Basically, those are just thin wrappers that prevent prefetch.
 
-## Evaluation:
+## Evaluation
+
 Usually, evaluation assumes use of the model.output() method which essentially, returns an INDArray detached from the workspace. In the case of regular evaluations during training, it might be better to use the built-in methods for evaluation. I.e.:
 ```
 Evaluation eval = new Evaluation(outputNum);
@@ -65,7 +71,8 @@ model.doEvaluation(iteratorTest, eval, roceval);
 
 This piece of code will run a single cycle over `iteratorTest`, and it will update both (or less/more if required by your needs) IEvaluation implementations without any additional INDArray allocation. 
 
-## Garbage Collector:
+## Garbage Collector
+
 If your training process uses workspaces, it’s recommended to disable (or reduce frequency of) periodic gc calls. That can be done using this:
 
 ```
@@ -78,13 +85,10 @@ Nd4j.getMemoryManager().togglePeriodicGc(false);
 
 You can put that somewhere before your `model.fit(...)` call.
 
-## Workspaces destruction
-There are possible situations, where you're tight in RAM, and might want do release all workspaces created out of your control, i.e. during evaluation, or training.
-That could be done using this: `Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();`
+## Workspace Destruction
 
-Basically this method will destroy all workspaces that were created within calling thread. If you've created workspaces in some external threads on your own - you can use the same method in that thread, after workspaces aren't needed anymore.
+There are possible situations, where you're short on RAM, and might want do release all workspaces created out of your control; e.g. during evaluation or training.
 
+That could be done like so: `Nd4j.getWorkspaceManager().destroyAllWorkspacesForCurrentThread();`
 
-
-
-
+This method will destroy all workspaces that were created within the calling thread. If you've created workspaces in some external threads on your own, you can use the same method in that thread, after workspaces aren't needed any more.
