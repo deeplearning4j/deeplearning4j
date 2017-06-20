@@ -67,6 +67,10 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     @Setter
     protected WorkspaceMode inferenceWorkspaceMode;
 
+    @Getter
+    @Setter
+    protected CacheMode cacheMode;
+
     /**
      * List of inputs to the network, by name
      */
@@ -707,6 +711,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.vertexInputs = this.vertexInputs;
             conf.trainingWorkspaceMode = globalConfiguration.trainingWorkspaceMode;
             conf.inferenceWorkspaceMode = globalConfiguration.inferenceWorkspaceMode;
+            conf.cacheMode = globalConfiguration.cacheMode;
 
             conf.defaultConfiguration = globalConfiguration.build();
             conf.getDefaultConfiguration().setPretrain(pretrain);
