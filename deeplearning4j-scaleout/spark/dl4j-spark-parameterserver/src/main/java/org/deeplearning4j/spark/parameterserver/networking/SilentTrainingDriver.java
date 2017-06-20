@@ -111,6 +111,8 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
                 we're just putting messages here. if thread gets blocked - messages won't be arriving,
                 enforcing periodic messages retransmission from other nodes, so we should be all fine
               */
+            log.info("Storing external message...");
+
             try {
                 updatesBuffer.put(message.getUpdates());
             } catch (Exception e) {
