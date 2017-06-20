@@ -2,10 +2,14 @@ package org.datavec.api.transform.ops;
 
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
+import org.reflections.Reflections;
+import org.reflections.scanners.SubTypesScanner;
+import org.reflections.util.ClasspathHelper;
+import org.reflections.util.ConfigurationBuilder;
+import org.reflections.util.FilterBuilder;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.io.Serializable;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -54,4 +58,60 @@ public class AggregableMultiOpTest {
 
     }
 
+    @Test
+    public void testAllAggregateOpsAreSerializable() throws Exception {
+        List<ClassLoader> classLoadersList = new LinkedList<ClassLoader>();
+        classLoadersList.add(ClasspathHelper.contextClassLoader());
+        classLoadersList.add(ClasspathHelper.staticClassLoader());
+
+        Reflections reflections = new Reflections(new ConfigurationBuilder()
+                .setScanners(new SubTypesScanner(false /* don't exclude Object.class */))
+                .setUrls(ClasspathHelper.forClassLoader(classLoadersList.toArray(new ClassLoader[0])))
+                .filterInputsBy(new FilterBuilder().include(FilterBuilder.prefix("org.datavec.api.transform.ops"))));
+
+        Set<String> allTypes = reflections.getAllTypes();
+        Set<String> ops = new HashSet<>();
+
+        for (String type : allTypes) {
+            if (type.startsWith("org.datavec.api.transform.ops")) {
+                if (type.endsWith("Op")) {
+                    ops.add(type);
+                }
+
+                if (type.contains("Aggregable") && !type.endsWith("Test")) {
+                    ops.add(type);
+                }
+            }
+        }
+
+        for (String op : ops) {
+            Class<?> cls = Class.forName(op);
+            assertTrue(op + " should implement Serializable", implementsSerializable(cls));
+        }
+    }
+
+    private boolean implementsSerializable(Class<?> cls) {
+        if (cls == null) { return false; }
+        if (cls == Serializable.class) { return true; }
+
+        Class<?>[] interfaces = cls.getInterfaces();
+        Set<Class<?>> parents = new HashSet<>();
+        parents.add(cls.getSuperclass());
+
+        for (Class<?> anInterface : interfaces) {
+            Collections.addAll(parents, anInterface.getInterfaces());
+
+            if (anInterface.equals(Serializable.class)) {
+                return true;
+            }
+        }
+
+        for (Class<?> parent : parents) {
+            if (implementsSerializable(parent)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 }
