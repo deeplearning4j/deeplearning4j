@@ -241,6 +241,8 @@ public class RoutedTransport extends BaseTransport {
                 }
             }
         });
+
+        log.info("RESULT: {}", builder.toString());
     }
 
     /**
