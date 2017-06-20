@@ -85,7 +85,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
         //return the host information for a given id
         routingDsl.POST("/transformprocess").routeTo(FunctionUtil.function0((() -> {
             try {
-                TransformProcess transformProcess = TransformProcess.fromJson(request().body().asJson().toString());
+                TransformProcess transformProcess = TransformProcess.fromJson(getJsonText());
                 setCSVTransformProcess(transformProcess);
                 log.info("Transform process initialized");
                 return ok(Json.toJson(transformProcess));
@@ -98,7 +98,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
         //return the host information for a given id
         routingDsl.POST("/transformincremental").routeTo(FunctionUtil.function0((() -> {
             try {
-                SingleCSVRecord record = objectMapper.readValue(request().body().asText(),SingleCSVRecord.class);
+                SingleCSVRecord record = objectMapper.readValue(getJsonText(),SingleCSVRecord.class);
                 if (record == null)
                     return badRequest();
                 return ok(Json.toJson(transformIncremental(record)));
@@ -111,7 +111,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
         //return the host information for a given id
         routingDsl.POST("/transform").routeTo(FunctionUtil.function0((() -> {
             try {
-                BatchCSVRecord batch = transform(objectMapper.readValue(request().body().asText(),BatchCSVRecord.class));
+                BatchCSVRecord batch = transform(objectMapper.readValue(getJsonText(),BatchCSVRecord.class));
                 if (batch == null)
                     return badRequest();
                 return ok(Json.toJson(batch));
@@ -123,7 +123,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
 
         routingDsl.POST("/transformincrementalarray").routeTo(FunctionUtil.function0((() -> {
             try {
-                SingleCSVRecord record =  objectMapper.readValue(request().body().asText(),SingleCSVRecord.class);
+                SingleCSVRecord record =  objectMapper.readValue(getJsonText(),SingleCSVRecord.class);
                 if (record == null)
                     return badRequest();
                 return ok(Json.toJson(transformArrayIncremental(record)));
@@ -134,7 +134,7 @@ public class CSVSparkTransformServer extends SparkTransformServer {
 
         routingDsl.POST("/transformarray").routeTo(FunctionUtil.function0((() -> {
             try {
-                BatchCSVRecord batchCSVRecord =  objectMapper.readValue(request().body().asText(),BatchCSVRecord.class);
+                BatchCSVRecord batchCSVRecord =  objectMapper.readValue(getJsonText(),BatchCSVRecord.class);
                 if (batchCSVRecord == null)
                     return badRequest();
                 return ok(Json.toJson(transformArray(batchCSVRecord)));
