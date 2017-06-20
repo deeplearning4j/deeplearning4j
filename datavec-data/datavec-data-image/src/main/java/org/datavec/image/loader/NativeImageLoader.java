@@ -178,9 +178,9 @@ public class NativeImageLoader extends BaseImageLoader {
         Mat mat = new Mat(height, width, CV_8UC(channels), pix.data(), 4 * pix.wpl());
         Mat mat2 = new Mat(height, width, CV_8UC(channels));
         // swap bytes if needed
-        int[] swap = {0, 3, 1, 2, 2, 1, 3, 0}, copy = {0, 0, 1, 1, 2, 2, 3, 3},
+        int[] swap = {0, channels - 1, 1, channels - 2, 2, channels - 3, 3, channels - 4}, copy = {0, 0, 1, 1, 2, 2, 3, 3},
                         fromTo = channels > 1 && ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN) ? swap : copy;
-        mixChannels(mat, 1, mat2, 1, fromTo, fromTo.length / 2);
+        mixChannels(mat, 1, mat2, 1, fromTo, Math.min(channels, fromTo.length / 2));
         if (tempPix != null) {
             pixDestroy(tempPix);
         }

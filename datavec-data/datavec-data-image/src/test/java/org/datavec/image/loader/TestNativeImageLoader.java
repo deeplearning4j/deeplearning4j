@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import static org.junit.Assert.assertEquals;
+import static org.bytedeco.javacpp.lept.*;
 import static org.bytedeco.javacpp.opencv_core.*;
 
 /**
@@ -38,6 +39,63 @@ import static org.bytedeco.javacpp.opencv_core.*;
 public class TestNativeImageLoader {
     static final long seed = 10;
     static final Random rng = new Random(seed);
+
+    @Test
+    public void testConvertPix() {
+        PIX pix;
+        Mat mat;
+
+        pix = pixCreate(11, 22, 1);
+        mat = NativeImageLoader.convert(pix);
+        assertEquals(11, mat.cols());
+        assertEquals(22, mat.rows());
+        assertEquals(CV_8UC1, mat.type());
+
+        pix = pixCreate(33, 44, 2);
+        mat = NativeImageLoader.convert(pix);
+        assertEquals(33, mat.cols());
+        assertEquals(44, mat.rows());
+        assertEquals(CV_8UC1, mat.type());
+
+        pix = pixCreate(55, 66, 4);
+        mat = NativeImageLoader.convert(pix);
+        assertEquals(55, mat.cols());
+        assertEquals(66, mat.rows());
+        assertEquals(CV_8UC1, mat.type());
+
+        pix = pixCreate(77, 88, 8);
+        mat = NativeImageLoader.convert(pix);
+        assertEquals(77, mat.cols());
+        assertEquals(88, mat.rows());
+        assertEquals(CV_8UC1, mat.type());
+
+        pix = pixCreate(99, 111, 16);
+        mat = NativeImageLoader.convert(pix);
+        assertEquals(99, mat.cols());
+        assertEquals(111, mat.rows());
+        assertEquals(CV_8UC2, mat.type());
+
+        pix = pixCreate(222, 333, 24);
+        mat = NativeImageLoader.convert(pix);
+        assertEquals(222, mat.cols());
+        assertEquals(333, mat.rows());
+        assertEquals(CV_8UC3, mat.type());
+
+        pix = pixCreate(444, 555, 32);
+        mat = NativeImageLoader.convert(pix);
+        assertEquals(444, mat.cols());
+        assertEquals(555, mat.rows());
+        assertEquals(CV_8UC4, mat.type());
+
+        // a GIF file, for example
+        pix = pixCreate(32, 32, 8);
+        PIXCMAP cmap = pixcmapCreateLinear(8, 256);
+        pixSetColormap(pix, cmap);
+        mat = NativeImageLoader.convert(pix);
+        assertEquals(32, mat.cols());
+        assertEquals(32, mat.rows());
+        assertEquals(CV_8UC4, mat.type());
+    }
 
     @Test
     public void testAsRowVector() throws Exception {
