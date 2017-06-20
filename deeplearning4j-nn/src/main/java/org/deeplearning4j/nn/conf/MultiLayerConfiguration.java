@@ -71,6 +71,10 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
     @Setter
     protected WorkspaceMode inferenceWorkspaceMode;
 
+    @Getter
+    @Setter
+    protected CacheMode cacheMode;
+
     //Counter for the number of parameter updates so far
     // This is important for learning rate schedules, for example, and is stored here to ensure it is persisted
     // for Spark and model serialization
@@ -319,7 +323,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected int[] cnnInputSize;
 
         protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
-        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SINGLE;
+        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
+        protected CacheMode cacheMode = CacheMode.NONE;
 
         /**
          * Specify the processors.
@@ -373,6 +378,20 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          */
         public Builder inferenceWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
             this.inferenceWorkspaceMode = workspaceMode;
+            return this;
+        }
+
+        /**
+         * This method defines how/if preOutput cache is handled:
+         * NONE: cache disabled (default value)
+         * HOST: Host memory will be used
+         * DEVICE: GPU memory will be used (on CPU backends effect will be the same as for HOST)
+         *
+         * @param cacheMode
+         * @return
+         */
+        public Builder cacheMode(@NonNull CacheMode cacheMode) {
+            this.cacheMode = cacheMode;
             return this;
         }
 
@@ -539,6 +558,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.tbpttBackLength = tbpttBackLength;
             conf.trainingWorkspaceMode = trainingWorkspaceMode;
             conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
+            conf.cacheMode = cacheMode;
+
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
             return conf;
 
