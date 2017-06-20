@@ -14,8 +14,6 @@ import org.deeplearning4j.text.tokenization.tokenizerFactory.ChineseTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**@author wangfeng
  * @date June 3,2017
@@ -25,8 +23,8 @@ import org.slf4j.LoggerFactory;
 @Slf4j
 public class ChineseTokenizerTest {
 
-    private final String toTokenize = "青山绿水和伟大的科学家让世界更美好";
-    private final String[] expect = {"青山绿水","和","伟大","的","科学家","让","世界","更","美好"};
+    private final String toTokenize = "青山绿水和伟大的科学家让世界更美好和平";
+    private final String[] expect = {"青山绿水", "和", "伟大", "的", "科学家", "让", "世界", "更", "美好", "和平"};
 
     @Test
     public void testChineseTokenizer() {
