@@ -167,7 +167,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             cnt++;
         }
 
-        log.info("Local updates to be applied: {}", cnt);
+        if (cnt > 0)
+            log.info("Local updates to be applied: {}", cnt);
 
         if (externalSource != null) {
             int ent = 0;
@@ -178,7 +179,9 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
                 cnt++;
                 ent++;
             }
-            log.info("External updates to be applied: {}", ent);
+
+            if (ent > 0)
+                log.info("External updates to be applied: {}", ent);
         }
 
         // TODO: average updates probably?
@@ -206,7 +209,9 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
             cnt++;
         }
-        log.info("Local updates to be applied: {}", cnt);
+
+        if (cnt > 0)
+            log.info("Local updates to be applied: {}", cnt);
 
         if (externalSource != null) {
             int ent = 0;
@@ -217,7 +222,9 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
                 cnt++;
                 ent++;
             }
-            log.info("External updates to be applied: {}", ent);
+
+            if (ent > 0)
+                log.info("External updates to be applied: {}", ent);
         }
 
         // TODO: average updates? might have sense
