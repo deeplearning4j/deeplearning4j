@@ -6,8 +6,8 @@ import org.datavec.api.transform.schema.Schema;
 import org.datavec.spark.transform.CSVSparkTransformServer;
 import org.datavec.spark.transform.client.DataVecTransformClient;
 import org.datavec.spark.transform.model.Base64NDArrayBody;
-import org.datavec.spark.transform.model.BatchRecord;
-import org.datavec.spark.transform.model.CSVRecord;
+import org.datavec.spark.transform.model.BatchCSVRecord;
+import org.datavec.spark.transform.model.SingleCSVRecord;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -48,7 +48,7 @@ public class DataVecTransformClientTest {
         });
 
         client = new DataVecTransformClient("http://localhost:" + port);
-        client.setTransformProcess(transformProcess);
+        client.setCSVTransformProcess(transformProcess);
     }
 
     @AfterClass
@@ -58,23 +58,23 @@ public class DataVecTransformClientTest {
 
     @Test
     public void testRecord() throws Exception {
-        CSVRecord csvRecord = new CSVRecord(new String[]{"0","0"});
-        CSVRecord transformed = client.transformIncremental(csvRecord);
-        assertEquals(csvRecord.getValues().length,transformed.getValues().length);
-        Base64NDArrayBody body = client.transformArrayIncremental(csvRecord);
+        SingleCSVRecord singleCsvRecord = new SingleCSVRecord(new String[]{"0","0"});
+        SingleCSVRecord transformed = client.transformIncremental(singleCsvRecord);
+        assertEquals(singleCsvRecord.getValues().length,transformed.getValues().length);
+        Base64NDArrayBody body = client.transformArrayIncremental(singleCsvRecord);
         INDArray arr = Nd4jBase64.fromBase64(body.getNdarray());
         assumeNotNull(arr);
     }
 
     @Test
     public void testBatchRecord() throws Exception {
-        CSVRecord csvRecord = new CSVRecord(new String[]{"0","0"});
+        SingleCSVRecord singleCsvRecord = new SingleCSVRecord(new String[]{"0","0"});
 
-        BatchRecord batchRecord = new BatchRecord(Arrays.asList(csvRecord,csvRecord));
-        BatchRecord batchRecord1 = client.transform(batchRecord);
-        assertEquals(batchRecord.getRecords().size(),batchRecord1.getRecords().size());
+        BatchCSVRecord batchCSVRecord = new BatchCSVRecord(Arrays.asList(singleCsvRecord, singleCsvRecord));
+        BatchCSVRecord batchCSVRecord1 = client.transform(batchCSVRecord);
+        assertEquals(batchCSVRecord.getRecords().size(), batchCSVRecord1.getRecords().size());
 
-        Base64NDArrayBody body = client.transformArray(batchRecord);
+        Base64NDArrayBody body = client.transformArray(batchCSVRecord);
         INDArray arr = Nd4jBase64.fromBase64(body.getNdarray());
         assumeNotNull(arr);
     }

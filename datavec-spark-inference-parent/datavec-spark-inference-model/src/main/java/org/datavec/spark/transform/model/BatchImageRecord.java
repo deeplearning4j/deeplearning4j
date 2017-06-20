@@ -15,19 +15,19 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class BatchImageRecord {
-    private List<ImageRecord> records;
+    private List<SingleImageRecord> records;
 
     /**
      * Add a record
      * @param record
      */
-    public void add(ImageRecord record) {
+    public void add(SingleImageRecord record) {
         if (records == null)
             records = new ArrayList<>();
         records.add(record);
     }
 
     public void add(URI uri) {
-        this.add(new ImageRecord(uri));
+        this.add(new SingleImageRecord(uri));
     }
 }

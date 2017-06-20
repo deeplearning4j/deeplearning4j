@@ -12,6 +12,6 @@ import java.net.URI;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ImageRecord {
+public class SingleImageRecord {
     private URI uri;
 }

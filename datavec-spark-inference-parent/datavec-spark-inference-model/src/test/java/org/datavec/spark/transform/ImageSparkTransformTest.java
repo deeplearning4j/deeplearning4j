@@ -4,7 +4,7 @@ import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.transform.ImageTransformProcess;
 import org.datavec.spark.transform.model.Base64NDArrayBody;
 import org.datavec.spark.transform.model.BatchImageRecord;
-import org.datavec.spark.transform.model.ImageRecord;
+import org.datavec.spark.transform.model.SingleImageRecord;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.serde.base64.Nd4jBase64;
@@ -24,7 +24,7 @@ public class ImageSparkTransformTest {
 
         File f1 = new ClassPathResource("/testimages/class1/A.jpg").getFile();
 
-        ImageRecord imgRecord = new ImageRecord(f1.toURI());
+        SingleImageRecord imgRecord = new SingleImageRecord(f1.toURI());
 
         ImageTransformProcess imgTransformProcess = new ImageTransformProcess.Builder()
                 .seed(seed)

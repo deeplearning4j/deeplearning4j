@@ -13,7 +13,7 @@ import java.io.Serializable;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CSVRecord implements Serializable {
+public class SingleCSVRecord implements Serializable {
     private String[] values;
 
     /**
@@ -25,13 +25,13 @@ public class CSVRecord implements Serializable {
      * @param row the input vectors
      * @return the record from this {@link DataSet}
      */
-    public static CSVRecord fromRow(DataSet row) {
+    public static SingleCSVRecord fromRow(DataSet row) {
         if (!row.getFeatureMatrix().isVector() && !row.getFeatureMatrix().isScalar())
             throw new IllegalArgumentException("Passed in dataset must represent a scalar or vector");
         if (!row.getLabels().isVector() && !row.getLabels().isScalar())
             throw new IllegalArgumentException("Passed in dataset labels must be a scalar or vector");
         //classification
-        CSVRecord record;
+        SingleCSVRecord record;
         int idx = 0;
         if (row.getLabels().sumNumber().doubleValue() == 1.0) {
             String[] values = new String[row.getFeatureMatrix().columns() + 1];
@@ -46,7 +46,7 @@ public class CSVRecord implements Serializable {
             }
 
             values[idx++] = String.valueOf(maxIdx);
-            record = new CSVRecord(values);
+            record = new SingleCSVRecord(values);
         }
         //regression (any number of values)
         else {
@@ -59,7 +59,7 @@ public class CSVRecord implements Serializable {
             }
 
 
-            record = new CSVRecord(values);
+            record = new SingleCSVRecord(values);
 
         }
         return record;

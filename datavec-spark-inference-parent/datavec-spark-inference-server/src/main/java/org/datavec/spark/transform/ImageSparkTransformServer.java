@@ -9,11 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.image.transform.ImageTransformProcess;
-import org.datavec.spark.transform.model.Base64NDArrayBody;
-import org.datavec.spark.transform.model.BatchImageRecord;
-import org.datavec.spark.transform.model.CSVRecord;
-import org.datavec.spark.transform.model.ImageRecord;
-import org.datavec.spark.transform.service.DataVecImageTransformService;
+import org.datavec.spark.transform.model.*;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import play.Mode;
 import play.libs.Json;
@@ -33,14 +29,8 @@ import static play.mvc.Results.ok;
  */
 @Slf4j
 @Data
-public class ImageSparkTransformServer implements DataVecImageTransformService{
-    @Parameter(names = {"-j", "--jsonPath"}, arity = 1)
-    private String jsonPath = null;
-    @Parameter(names = {"-dp", "--dataVecPort"}, arity = 1)
-    private int port = 9000;
-    private Server server;
+public class ImageSparkTransformServer extends SparkTransformServer {
     private ImageSparkTransform transform;
-    private static ObjectMapper objectMapper = new ObjectMapper();
 
     public void runMain(String[] args) throws Exception {
         JCommander jcmdr = new JCommander(this);
@@ -88,7 +78,7 @@ public class ImageSparkTransformServer implements DataVecImageTransformService{
         routingDsl.POST("/transformprocess").routeTo(FunctionUtil.function0((() -> {
             try {
                 ImageTransformProcess transformProcess = ImageTransformProcess.fromJson(getJsonText());
-                setTransformProcess(transformProcess);
+                setImageTransformProcess(transformProcess);
                 log.info("Transform process initialized");
                 return ok(Json.toJson(transformProcess));
             } catch (Exception e) {
@@ -100,7 +90,7 @@ public class ImageSparkTransformServer implements DataVecImageTransformService{
         //return the host information for a given id
         routingDsl.POST("/transformincrementalarray").routeTo(FunctionUtil.function0((() -> {
             try {
-                ImageRecord record = objectMapper.readValue(getJsonText(),ImageRecord.class);
+                SingleImageRecord record = objectMapper.readValue(getJsonText(),SingleImageRecord.class);
                 if (record == null)
                     return badRequest();
                 return ok(Json.toJson(transformIncrementalArray(record)));
@@ -126,27 +116,48 @@ public class ImageSparkTransformServer implements DataVecImageTransformService{
         server = Server.forRouter(routingDsl.build(), Mode.DEV, port);
     }
 
-    /**
-     * Stop the server
-     */
-    public void stop() {
-        if (server != null)
-            server.stop();
-    }
-
-
     @Override
-    public void setTransformProcess(ImageTransformProcess transformProcess) {
-        this.transform = new ImageSparkTransform(transformProcess);
+    public void setCSVTransformProcess(TransformProcess transformProcess) {
+        throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
     }
 
     @Override
-    public ImageTransformProcess transformProcess() {
+    public void setImageTransformProcess(ImageTransformProcess imageTransformProcess) {
+        this.transform = new ImageSparkTransform(imageTransformProcess);
+    }
+
+    @Override
+    public TransformProcess getCSVTransformProcess() {
+        throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
+    }
+
+    @Override
+    public ImageTransformProcess getImageTransformProcess() {
         return transform.getImageTransformProcess();
     }
 
     @Override
-    public Base64NDArrayBody transformIncrementalArray(ImageRecord record) throws IOException {
+    public SingleCSVRecord transformIncremental(SingleCSVRecord singleCsvRecord) {
+        throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
+    }
+
+    @Override
+    public BatchCSVRecord transform(BatchCSVRecord batchCSVRecord) {
+        throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
+    }
+
+    @Override
+    public Base64NDArrayBody transformArray(BatchCSVRecord batchCSVRecord) {
+        throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
+    }
+
+    @Override
+    public Base64NDArrayBody transformArrayIncremental(SingleCSVRecord singleCsvRecord) {
+        throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
+    }
+
+    @Override
+    public Base64NDArrayBody transformIncrementalArray(SingleImageRecord record) throws IOException {
         return transform.toArray(record);
     }
 
@@ -157,13 +168,5 @@ public class ImageSparkTransformServer implements DataVecImageTransformService{
 
     public static void main(String[] args) throws Exception {
         new ImageSparkTransformServer().runMain(args);
-    }
-
-    private String getJsonText() {
-        JsonNode tryJson = request().body().asJson();
-        if(tryJson != null)
-            return tryJson.toString();
-        else
-            return request().body().asText();
     }
 }

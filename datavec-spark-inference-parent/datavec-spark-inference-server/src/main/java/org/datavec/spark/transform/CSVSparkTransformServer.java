@@ -7,9 +7,8 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.transform.TransformProcess;
-import org.datavec.spark.transform.model.Base64NDArrayBody;
-import org.datavec.spark.transform.model.BatchRecord;
-import org.datavec.spark.transform.model.CSVRecord;
+import org.datavec.image.transform.ImageTransformProcess;
+import org.datavec.spark.transform.model.*;
 import org.datavec.spark.transform.service.DataVecTransformService;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import play.Mode;
@@ -28,7 +27,7 @@ import static play.mvc.Results.*;
  * {@link TransformProcess} based on simple
  * csv values and a schema via REST.
  *
- * The input values are an {@link CSVRecord}
+ * The input values are an {@link SingleCSVRecord}
  * which (based on the input schema) will automatically
  * have their values transformed.
  *
@@ -36,14 +35,8 @@ import static play.mvc.Results.*;
  */
 @Slf4j
 @Data
-public class CSVSparkTransformServer implements DataVecTransformService {
-    @Parameter(names = {"-j", "--jsonPath"}, arity = 1)
-    private String jsonPath = null;
-    @Parameter(names = {"-dp", "--dataVecPort"}, arity = 1)
-    private int port = 9000;
-    private Server server;
+public class CSVSparkTransformServer extends SparkTransformServer {
     private CSVSparkTransform transform;
-    private static ObjectMapper objectMapper = new ObjectMapper();
 
     public void runMain(String[] args) throws Exception {
         JCommander jcmdr = new JCommander(this);
@@ -93,7 +86,7 @@ public class CSVSparkTransformServer implements DataVecTransformService {
         routingDsl.POST("/transformprocess").routeTo(FunctionUtil.function0((() -> {
             try {
                 TransformProcess transformProcess = TransformProcess.fromJson(request().body().asJson().toString());
-                setTransformProcess(transformProcess);
+                setCSVTransformProcess(transformProcess);
                 log.info("Transform process initialized");
                 return ok(Json.toJson(transformProcess));
             } catch (Exception e) {
@@ -105,7 +98,7 @@ public class CSVSparkTransformServer implements DataVecTransformService {
         //return the host information for a given id
         routingDsl.POST("/transformincremental").routeTo(FunctionUtil.function0((() -> {
             try {
-                CSVRecord record = objectMapper.readValue(request().body().asText(),CSVRecord.class);
+                SingleCSVRecord record = objectMapper.readValue(request().body().asText(),SingleCSVRecord.class);
                 if (record == null)
                     return badRequest();
                 return ok(Json.toJson(transformIncremental(record)));
@@ -118,7 +111,7 @@ public class CSVSparkTransformServer implements DataVecTransformService {
         //return the host information for a given id
         routingDsl.POST("/transform").routeTo(FunctionUtil.function0((() -> {
             try {
-                BatchRecord batch = transform(objectMapper.readValue(request().body().asText(),BatchRecord.class));
+                BatchCSVRecord batch = transform(objectMapper.readValue(request().body().asText(),BatchCSVRecord.class));
                 if (batch == null)
                     return badRequest();
                 return ok(Json.toJson(batch));
@@ -130,7 +123,7 @@ public class CSVSparkTransformServer implements DataVecTransformService {
 
         routingDsl.POST("/transformincrementalarray").routeTo(FunctionUtil.function0((() -> {
             try {
-                CSVRecord record =  objectMapper.readValue(request().body().asText(),CSVRecord.class);
+                SingleCSVRecord record =  objectMapper.readValue(request().body().asText(),SingleCSVRecord.class);
                 if (record == null)
                     return badRequest();
                 return ok(Json.toJson(transformArrayIncremental(record)));
@@ -141,24 +134,16 @@ public class CSVSparkTransformServer implements DataVecTransformService {
 
         routingDsl.POST("/transformarray").routeTo(FunctionUtil.function0((() -> {
             try {
-                BatchRecord batchRecord =  objectMapper.readValue(request().body().asText(),BatchRecord.class);
-                if (batchRecord == null)
+                BatchCSVRecord batchCSVRecord =  objectMapper.readValue(request().body().asText(),BatchCSVRecord.class);
+                if (batchCSVRecord == null)
                     return badRequest();
-                return ok(Json.toJson(transformArray(batchRecord)));
+                return ok(Json.toJson(transformArray(batchCSVRecord)));
             } catch (Exception e) {
                 return internalServerError();
             }
         })));
 
         server = Server.forRouter(routingDsl.build(), Mode.DEV, port);
-    }
-
-    /**
-     * Stop the server
-     */
-    public void stop() {
-        if (server != null)
-            server.stop();
     }
 
     public static void main(String[] args) throws Exception {
@@ -169,16 +154,26 @@ public class CSVSparkTransformServer implements DataVecTransformService {
      * @param transformProcess
      */
     @Override
-    public void setTransformProcess(TransformProcess transformProcess) {
+    public void setCSVTransformProcess(TransformProcess transformProcess) {
         this.transform = new CSVSparkTransform(transformProcess);
+    }
+
+    @Override
+    public void setImageTransformProcess(ImageTransformProcess imageTransformProcess) {
+        throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
     }
 
     /**
      * @return
      */
     @Override
-    public TransformProcess transformProcess() {
+    public TransformProcess getCSVTransformProcess() {
         return transform.getTransformProcess();
+    }
+
+    @Override
+    public ImageTransformProcess getImageTransformProcess() {
+        throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
     }
 
     /**
@@ -186,41 +181,52 @@ public class CSVSparkTransformServer implements DataVecTransformService {
      * @return
      */
     @Override
-    public CSVRecord transformIncremental(CSVRecord transform) {
+    public SingleCSVRecord transformIncremental(SingleCSVRecord transform) {
         return this.transform.transform(transform);
     }
 
     /**
-     * @param batchRecord
+     * @param batchCSVRecord
      * @return
      */
     @Override
-    public BatchRecord transform(BatchRecord batchRecord) {
-        return transform.transform(batchRecord);
+    public BatchCSVRecord transform(BatchCSVRecord batchCSVRecord) {
+        return transform.transform(batchCSVRecord);
     }
 
     /**
-     * @param batchRecord
+     * @param batchCSVRecord
      * @return
      */
     @Override
-    public Base64NDArrayBody transformArray(BatchRecord batchRecord) {
+    public Base64NDArrayBody transformArray(BatchCSVRecord batchCSVRecord) {
         try {
-            return this.transform.toArray(batchRecord);
+            return this.transform.toArray(batchCSVRecord);
         } catch (IOException e) {
            throw new IllegalStateException("Transform array shouldn't throw exception");
         }
     }
 
     /**
-     * @param csvRecord
+     * @param singleCsvRecord
      * @return
      */
     @Override
-    public Base64NDArrayBody transformArrayIncremental(CSVRecord csvRecord) {
+    public Base64NDArrayBody transformArrayIncremental(SingleCSVRecord singleCsvRecord) {
         try {
-            return this.transform.toArray(csvRecord);
+            return this.transform.toArray(singleCsvRecord);
         } catch (IOException e) {
             throw new IllegalStateException("Transform array shouldn't throw exception");
-        }    }
+        }
+    }
+
+    @Override
+    public Base64NDArrayBody transformIncrementalArray(SingleImageRecord singleImageRecord) throws IOException {
+        throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
+    }
+
+    @Override
+    public Base64NDArrayBody transformArray(BatchImageRecord batchImageRecord) throws IOException {
+        throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
+    }
 }

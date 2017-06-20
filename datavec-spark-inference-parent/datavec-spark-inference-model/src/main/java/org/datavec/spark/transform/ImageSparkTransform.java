@@ -2,14 +2,11 @@ package org.datavec.spark.transform;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.datavec.api.writable.Writable;
-import org.datavec.common.RecordConverter;
 import org.datavec.image.data.ImageWritable;
 import org.datavec.image.transform.ImageTransformProcess;
-import org.datavec.image.transform.ShowImageTransform;
 import org.datavec.spark.transform.model.Base64NDArrayBody;
 import org.datavec.spark.transform.model.BatchImageRecord;
-import org.datavec.spark.transform.model.ImageRecord;
+import org.datavec.spark.transform.model.SingleImageRecord;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.serde.base64.Nd4jBase64;
@@ -26,7 +23,7 @@ public class ImageSparkTransform {
     @Getter
     private ImageTransformProcess imageTransformProcess;
 
-    public Base64NDArrayBody toArray(ImageRecord record) throws IOException {
+    public Base64NDArrayBody toArray(SingleImageRecord record) throws IOException {
         ImageWritable record2 = imageTransformProcess.transformFileUriToInput(record.getUri());
         INDArray finalRecord = imageTransformProcess.executeArray(record2);
 
@@ -36,7 +33,7 @@ public class ImageSparkTransform {
     public Base64NDArrayBody toArray(BatchImageRecord batch) throws IOException {
         List<INDArray> records = new ArrayList<>();
 
-        for (ImageRecord imgRecord : batch.getRecords()) {
+        for (SingleImageRecord imgRecord : batch.getRecords()) {
             ImageWritable record2 = imageTransformProcess.transformFileUriToInput(imgRecord.getUri());
             INDArray finalRecord = imageTransformProcess.executeArray(record2);
             records.add(finalRecord);
