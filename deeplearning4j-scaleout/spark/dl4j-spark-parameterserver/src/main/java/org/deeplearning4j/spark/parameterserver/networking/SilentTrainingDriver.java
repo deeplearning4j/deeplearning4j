@@ -117,8 +117,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
                 throw new RuntimeException(e);
             }
 
-
-            accumulator.receiveUpdate(message.getUpdates());
+            //accumulator.receiveUpdate(message.getUpdates());
         } else if (params != null && stepFunction != null) {
 
             // master invokes everything, since that's Silent Worker approach: we want master to be always up-to-date

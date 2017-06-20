@@ -167,6 +167,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             cnt++;
         }
 
+        log.info("Local updates to be applied: {}", cnt);
+
         if (externalSource != null) {
             int ent = 0;
             while (!externalSource.isEmpty()) {
@@ -204,6 +206,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
             cnt++;
         }
+        log.info("Local updates to be applied: {}", cnt);
 
         if (externalSource != null) {
             int ent = 0;
