@@ -609,6 +609,7 @@ public class RoutedTransport extends BaseTransport {
         RemoteConnection connection = RemoteConnection.builder().ip(ip).port(port)
                         .publication(aeron.addPublication("aeron:udp?endpoint=" + ip + ":" + port,
                                         voidConfiguration.getStreamId()))
+                        .longHash(hash)
                         .locker(new Object()).activated(new AtomicBoolean(false)).build();
 
 
