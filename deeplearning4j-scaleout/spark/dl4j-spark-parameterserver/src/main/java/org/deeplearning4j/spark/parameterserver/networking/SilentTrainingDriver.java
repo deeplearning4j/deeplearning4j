@@ -4,6 +4,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.StepFunction;
+import org.deeplearning4j.optimize.solvers.accumulation.FancyBlockingQueue;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.spark.parameterserver.networking.messages.SilentUpdatesMessage;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -57,7 +58,10 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
         this.updatesCount = new AtomicLong(0);
 
         // TODO: make this configurable
-        this.updatesBuffer = new LinkedBlockingQueue<>(512);
+        this.updatesBuffer = new FancyBlockingQueue<INDArray>(new LinkedBlockingQueue<>(1024));
+
+        // FBQ will guarantee that all workers using given queue will be applying the same updates in the same order
+        this.accumulator.setExternalSource(updatesBuffer);
     }
 
     public SilentTrainingDriver(@NonNull INDArray params, @NonNull StepFunction stepFunction) {
@@ -66,8 +70,6 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
         this.stepFunction = stepFunction;
         this.updatesCount = new AtomicLong(0);
 
-        // TODO: make this configurable
-        this.updatesBuffer = new LinkedBlockingQueue<>(512);
         this.hasSomething = new AtomicBoolean(false);
 
         // updates are always the same size as params
@@ -96,6 +98,8 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
             this method will be invoked on master, and will do 2 things:
             1) silently update params via given StepFunction
             2) propagate this message to everyone
+
+            on workers, it just enqueues updates into the FancyBlockingQueue
          */
         // if accumulator is defined, we're working at Worker level, so it's not our problem what happens inside
         if (accumulator != null) {
@@ -103,7 +107,10 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
                 return;
             };
 
-            // we can't put more updates here, then (sizeOfQueue - numberOfWorkers)
+            /*
+                we're just putting messages here. if thread gets blocked - messages won't be arriving,
+                enforcing periodic messages retransmission from other nodes, so we should be all fine
+              */
             try {
                 updatesBuffer.put(message.getUpdates());
             } catch (Exception e) {
@@ -118,6 +125,8 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
             synchronized (this) {
                 // threshold decoder is inplace & fast
                 Nd4j.getExecutioner().thresholdDecode(message.getUpdates(), updates);
+
+                // this simple flag shows that we have something not applied, will be used at finishTraining() method
                 hasSomething.set(true);
 
                 // we apply updates every X iterations, and we don't really need X to be small here

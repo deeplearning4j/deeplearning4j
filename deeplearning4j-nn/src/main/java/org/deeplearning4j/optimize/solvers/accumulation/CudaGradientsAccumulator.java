@@ -167,13 +167,17 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             cnt++;
         }
 
-        if (externalSource != null)
-            while (!externalSource.isEmpty()){
+        if (externalSource != null) {
+            int ent = 0;
+            while (!externalSource.isEmpty()) {
                 INDArray compressed = externalSource.poll();
 
                 INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
                 cnt++;
+                ent++;
             }
+            log.info("External updates to be applied: {}", ent);
+        }
 
         // TODO: average updates probably?
 
@@ -201,13 +205,17 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             cnt++;
         }
 
-        if (externalSource != null)
-            while (!externalSource.isEmpty()){
+        if (externalSource != null) {
+            int ent = 0;
+            while (!externalSource.isEmpty()) {
                 INDArray compressed = externalSource.poll();
 
                 INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
                 cnt++;
+                ent++;
             }
+            log.info("External updates to be applied: {}", ent);
+        }
 
         // TODO: average updates? might have sense
 
