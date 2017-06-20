@@ -172,12 +172,12 @@ public class RoutedTransport extends BaseTransport {
         // no need to search for matches above number of then exclusions
         final AtomicInteger cnt = new AtomicInteger(0);
 
-        final StringBuilder builder = new StringBuilder("Got message from: [").append(message.getOriginatorId()).append("]; Resend: {");
+        //final StringBuilder builder = new StringBuilder("Got message from: [").append(message.getOriginatorId()).append("]; Resend: {");
 
-        clients.values().stream().filter(rc -> {
+        clients.values().parallelStream().filter(rc -> {
             // do not send message back to yourself :)
             if (rc.getLongHash() == this.originatorId || rc.getLongHash() == 0) {
-                builder.append(", SKIP: ").append(rc.getLongHash());
+//                builder.append(", SKIP: ").append(rc.getLongHash());
                 return false;
             }
 
@@ -186,15 +186,15 @@ public class RoutedTransport extends BaseTransport {
                 for (Long exclude : exclusions)
                     if (exclude.longValue() == rc.getLongHash()) {
                         cnt.incrementAndGet();
-                        builder.append(", SKIP: ").append(rc.getLongHash());
+//                        builder.append(", SKIP: ").append(rc.getLongHash());
                         return false;
                     }
             }
 
-            builder.append(", PASS: ").append(rc.getLongHash());
+     //       builder.append(", PASS: ").append(rc.getLongHash());
             return true;
         }).forEach((rc)->{
-            log.info("Sending message to {}", rc.getLongHash());
+      //      log.info("Sending message to {}", rc.getLongHash());
 
             RetransmissionHandler.TransmissionStatus res;
             long retr = 0;
@@ -242,7 +242,7 @@ public class RoutedTransport extends BaseTransport {
             }
         });
 
-        log.info("RESULT: {}", builder.toString());
+     //s   log.info("RESULT: {}", builder.toString());
     }
 
     /**
