@@ -73,7 +73,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         this.conf = conf;
 
         cacheMode = conf.getCacheMode();
-        System.out.println("Setting CacheMode: " + cacheMode.toString());
     }
 
     public BaseLayer(NeuralNetConfiguration conf, INDArray input) {
