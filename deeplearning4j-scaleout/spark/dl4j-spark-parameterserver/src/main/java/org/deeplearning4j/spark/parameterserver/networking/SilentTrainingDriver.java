@@ -144,7 +144,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
             if (transport.numberOfKnownClients() > 1) {
                 //log.info("Resending message, skipping {}", message.getOriginatorId());
                 transport.sendMessageToAllClients(message, message.getOriginatorId(), transport.getOwnOriginatorId());
-            }
+            } else log.info("No known Clients so far");
         } else
             throw new DL4JInvalidConfigException("Neither GradientsAccumulator or StepFunction is defined!");
     }

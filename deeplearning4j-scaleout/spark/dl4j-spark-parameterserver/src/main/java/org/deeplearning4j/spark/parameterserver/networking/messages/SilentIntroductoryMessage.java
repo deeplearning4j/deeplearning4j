@@ -3,12 +3,13 @@ package org.deeplearning4j.spark.parameterserver.networking.messages;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.parameterserver.distributed.messages.BaseVoidMessage;
+import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
 
 /**
  * @author raver119@gmail.com
  */
 @Slf4j
-public class SilentIntroductoryMessage extends BaseVoidMessage {
+public class SilentIntroductoryMessage extends BaseVoidMessage implements DistributedMessage{
     protected String localIp;
     protected int port;
 
