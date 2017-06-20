@@ -172,19 +172,27 @@ public class RoutedTransport extends BaseTransport {
         // no need to search for matches above number of then exclusions
         final AtomicInteger cnt = new AtomicInteger(0);
 
-        clients.values().parallelStream().filter(rc -> {
+        final StringBuilder builder = new StringBuilder("Got message from: [").append(message.getOriginatorId()).append("]; Resend: {");
+
+        clients.values().stream().filter(rc -> {
             // do not send message back to yourself :)
-            if (rc.getLongHash() == this.originatorId || rc.getLongHash() == 0)
+            if (rc.getLongHash() == this.originatorId || rc.getLongHash() == 0) {
+                builder.append(", SKIP: ").append(rc.getLongHash());
                 return false;
+            }
 
             // we skip exclusions here
             if (exclusions != null && cnt.get() < exclusions.length) {
                 for (Long exclude : exclusions)
                     if (exclude.longValue() == rc.getLongHash()) {
                         cnt.incrementAndGet();
+                        builder.append(", SKIP: ").append(rc.getLongHash());
                         return false;
                     }
-            } return true;
+            }
+
+            builder.append(", PASS: ").append(rc.getLongHash());
+            return true;
         }).forEach((rc)->{
             log.info("Sending message to {}", rc.getLongHash());
 
