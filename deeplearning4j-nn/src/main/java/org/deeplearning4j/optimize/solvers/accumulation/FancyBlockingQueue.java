@@ -11,6 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * This BlockingQueue implementation is suited only for symmetric gradients updates, and should NOT be used anywhere else.
@@ -35,6 +36,10 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
 
     protected AtomicInteger barrier = new AtomicInteger(0);
     protected AtomicInteger secondary = new AtomicInteger(0);
+
+    protected AtomicInteger numElementsReady = new AtomicInteger(0);
+    protected AtomicInteger numElementsDrained = new AtomicInteger(0);
+    protected ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
 
     public FancyBlockingQueue(@NonNull BlockingQueue<E> queue){
@@ -66,8 +71,26 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
 
     @Override
     public void register(int consumers) {
+        lock.readLock().lock();
+
+        this.numElementsReady.set(backingQueue.size());
+        this.numElementsDrained.set(0);
         this.consumers = consumers;
         this.currentConsumers.set(consumers);
+
+        lock.readLock().unlock();
+    }
+
+    @Override
+    public void put(E e) throws InterruptedException {
+        lock.writeLock().lock();
+        backingQueue.put(e);
+        lock.writeLock().unlock();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return numElementsDrained.get() == numElementsReady.get() || backingQueue.isEmpty();
     }
 
     protected void synchronize(int consumers) {
@@ -120,6 +143,8 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
             // we're removing current head of queue
             remove();
 
+            numElementsDrained.incrementAndGet();
+
             // and moving step counter further
             state.set(0);
             step.incrementAndGet();
@@ -150,18 +175,8 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
     }
 
     @Override
-    public boolean isEmpty() {
-        return backingQueue.isEmpty();
-    }
-
-    @Override
     public E peek() {
         return backingQueue.peek();
-    }
-
-    @Override
-    public void put(E e) throws InterruptedException {
-        backingQueue.put(e);
     }
 
     @Override
