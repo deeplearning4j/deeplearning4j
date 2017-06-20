@@ -25,7 +25,7 @@ import java.util.Map;
 @NoArgsConstructor
 @Data
 @Builder
-public class SleepingTrainingListener implements TrainingListener {
+public class SleepyTrainingListener implements TrainingListener {
     @Builder.Default protected long timerEpochEnd = 0L;
     @Builder.Default protected long timerEpochStart = 0L;
     @Builder.Default protected long timerFF = 0L;
