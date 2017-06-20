@@ -102,8 +102,10 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
             on workers, it just enqueues updates into the FancyBlockingQueue
          */
         // if accumulator is defined, we're working at Worker level, so it's not our problem what happens inside
+        log.info("Got external message");
         if (accumulator != null) {
             if (message.getOriginatorId() == transport.getOwnOriginatorId()) {
+                log.info("Skipping since originators match");
                 return;
             };
 
