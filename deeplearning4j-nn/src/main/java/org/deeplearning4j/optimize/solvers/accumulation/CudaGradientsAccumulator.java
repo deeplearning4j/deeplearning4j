@@ -131,7 +131,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
     }
 
     protected void synchronize(int consumers) {
-        if (consumers == 1)
+        if (consumers == 1 || bypassMode.get())
             return;
 
         // any first thread entering this block - will reset this field to false

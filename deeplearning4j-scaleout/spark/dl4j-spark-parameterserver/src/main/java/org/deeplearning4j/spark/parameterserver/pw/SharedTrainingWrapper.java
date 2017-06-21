@@ -231,8 +231,10 @@ public class SharedTrainingWrapper {
 
                     // ok. attaching accumulator to model
                     if (model instanceof ComputationGraph) {
+                        ((ComputationGraph) model).getConfiguration().setTrainingWorkspaceMode(trainingConfiguration.getWorkspaceMode());
                         ((ComputationGraph) model).setGradientsAccumulator(accumulator);
                     } else if (model instanceof MultiLayerNetwork) {
+                        ((MultiLayerNetwork) model).getLayerWiseConfigurations().setTrainingWorkspaceMode(trainingConfiguration.getWorkspaceMode());
                         ((MultiLayerNetwork) model).setGradientsAccumulator(accumulator);
                     }
                 }
