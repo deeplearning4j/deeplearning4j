@@ -17,6 +17,7 @@ import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.impl.TensorGradVariable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -190,7 +191,7 @@ public class TensorGrad {
                 iX.getArrayField().diff(wrt.getArrayField()) :
                 iX.getDifferentialFunction().diff(wrt.getArrayField());
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrField)
                 .varName("grad(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -201,7 +202,7 @@ public class TensorGrad {
 
     public TensorGradVariable neq(TensorGradVariable iX,TensorGradVariable iy) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.neq(iX.getArrayField(),iy.getArrayField()))
                 .varName("neq(" + iX.getVarName() + "," + iy.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -211,7 +212,7 @@ public class TensorGrad {
 
     public TensorGradVariable eq(TensorGradVariable iX,TensorGradVariable iy) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.eq(iX.getArrayField(),iy.getArrayField()))
                 .varName("eq(" + iX.getVarName() + "," + iy.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -221,7 +222,7 @@ public class TensorGrad {
 
     public TensorGradVariable or(TensorGradVariable iX,TensorGradVariable iy) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.or(iX.getArrayField(),iy.getArrayField()))
                 .varName("or(" + iX.getVarName() + "," + iy.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -232,7 +233,7 @@ public class TensorGrad {
 
     public TensorGradVariable cos(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.cos(iX.getArrayField()))
                 .varName("cos(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -242,7 +243,7 @@ public class TensorGrad {
 
     public TensorGradVariable sin(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.sin(iX.getArrayField()))
                 .varName("sin(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -252,7 +253,7 @@ public class TensorGrad {
 
     public TensorGradVariable tan(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.tan(iX.getArrayField()))
                 .varName("tan(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -262,7 +263,7 @@ public class TensorGrad {
 
     public TensorGradVariable acos(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.acos(iX.getArrayField()))
                 .varName("acos(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -272,7 +273,7 @@ public class TensorGrad {
 
     public TensorGradVariable asin(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.asin(iX.getArrayField()))
                 .varName("asin(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -282,7 +283,7 @@ public class TensorGrad {
 
     public TensorGradVariable atan(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.atan(iX.getArrayField()))
                 .varName("atan(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -292,7 +293,7 @@ public class TensorGrad {
 
     public TensorGradVariable cosh(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.cosh(iX.getArrayField()))
                 .varName("cosh(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -302,7 +303,7 @@ public class TensorGrad {
 
     public TensorGradVariable sinh(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.sinh(iX.getArrayField()))
                 .varName("sinh(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -312,7 +313,7 @@ public class TensorGrad {
 
     public TensorGradVariable tanh(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.tanh(iX.getArrayField()))
                 .varName("tanh(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -332,7 +333,7 @@ public class TensorGrad {
 
     public TensorGradVariable asinh(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.asinh(iX.getArrayField()))
                 .varName("asinh(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -352,7 +353,7 @@ public class TensorGrad {
 
     public TensorGradVariable exp(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.exp(iX.getArrayField()))
                 .varName("exp(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -362,7 +363,7 @@ public class TensorGrad {
 
     public TensorGradVariable log(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.log(iX.getArrayField()))
                 .varName("log(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -372,7 +373,7 @@ public class TensorGrad {
 
     public TensorGradVariable pow(TensorGradVariable iX,  TensorGradVariable i_y) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.pow(iX.getArrayField(),null))
                 .varName("pow(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -392,7 +393,7 @@ public class TensorGrad {
 
     public TensorGradVariable square(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.square(iX.getArrayField()))
                 .varName("square(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -402,7 +403,7 @@ public class TensorGrad {
 
     public TensorGradVariable floor(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.floor(iX.getArrayField()))
                 .varName("floor(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -422,7 +423,7 @@ public class TensorGrad {
 
     public TensorGradVariable softmax(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.softmax(iX.getArrayField()))
                 .varName("softmax(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -432,7 +433,7 @@ public class TensorGrad {
 
     public TensorGradVariable hardTanh(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.hardTanh(iX.getArrayField()))
                 .varName("hardTanh(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -442,7 +443,7 @@ public class TensorGrad {
 
     public TensorGradVariable hardTanhDerivative(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.hardTanhDerivative(iX.getArrayField()))
                 .varName("hardTanhDerivative(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -452,7 +453,7 @@ public class TensorGrad {
 
     public TensorGradVariable sigmoid(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.sigmoid(iX.getArrayField()))
                 .varName("sigmoid(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -462,7 +463,7 @@ public class TensorGrad {
 
     public TensorGradVariable sigmoidDerivative(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.sigmoidDerivative(iX.getArrayField()))
                 .varName("sigmoidDerivative(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -472,7 +473,7 @@ public class TensorGrad {
 
     public TensorGradVariable sign(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.sign(iX.getArrayField()))
                 .varName("sign(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -482,7 +483,7 @@ public class TensorGrad {
 
     public TensorGradVariable softsign(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.softsign(iX.getArrayField()))
                 .varName("softsign(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -492,7 +493,7 @@ public class TensorGrad {
 
     public TensorGradVariable softsignDerivative(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.softsignDerivative(iX.getArrayField()))
                 .varName("softsignDerivative(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -502,7 +503,7 @@ public class TensorGrad {
 
     public TensorGradVariable softplus(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.softplus(iX.getArrayField()))
                 .varName("softplus(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -512,7 +513,7 @@ public class TensorGrad {
 
     public TensorGradVariable elu(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.elu(iX.getArrayField()))
                 .varName("elu(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -522,7 +523,7 @@ public class TensorGrad {
 
     public TensorGradVariable eluDerivative(TensorGradVariable iX) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.eluDerivative(iX.getArrayField()))
                 .varName("eluDerivative(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -532,7 +533,7 @@ public class TensorGrad {
 
     public TensorGradVariable leakyRelu(TensorGradVariable iX, double cutoff) {
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.leakyRelu(iX.getArrayField(),cutoff))
                 .varName("leakyRelu(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -553,6 +554,7 @@ public class TensorGrad {
 
 
     public TensorGradVariable mean(TensorGradVariable iX) {
+
         TensorGradVariable ret = TensorGradVariable.builder()
                 .arr(null)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.mean(iX.getArrayField()))
@@ -566,8 +568,10 @@ public class TensorGrad {
     public TensorGradVariable standardDeviation(TensorGradVariable iX,
                                                 boolean biasCorrected,
                                                 int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.std(
                         iX.getArrayField(),
                         biasCorrected ,
@@ -581,8 +585,10 @@ public class TensorGrad {
     public TensorGradVariable variance(TensorGradVariable iX,
                                        boolean biasCorrected,
                                        int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.variance(iX.getArrayField(),
                         biasCorrected ,
                         dimensions))
@@ -594,8 +600,10 @@ public class TensorGrad {
 
     public TensorGradVariable sum(TensorGradVariable iX,
                                   int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.sum(iX.getArrayField(),dimensions))
                 .varName("sum(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -605,8 +613,10 @@ public class TensorGrad {
 
     public TensorGradVariable prod(TensorGradVariable iX,
                                    int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.prod(iX.getArrayField(),dimensions))
                 .varName("prod(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -616,8 +626,10 @@ public class TensorGrad {
 
 
     public TensorGradVariable max(TensorGradVariable iX,int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.max(iX.getArrayField(),dimensions))
                 .varName("max(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -628,8 +640,10 @@ public class TensorGrad {
 
     public TensorGradVariable min(TensorGradVariable iX,
                                   int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.min(iX.getArrayField(),dimensions))
                 .varName("min(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -694,7 +708,7 @@ public class TensorGrad {
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.tensorMmul(x.getArrayField(), y.getArrayField(), dimensions, argNum))
                 .varName("tensorMmul(" + x.getVarName() + "," + y.getVarName() +  ")")
                 .tensorGrad(this)
-                //.shape(shape)
+                .shape(shape)
                 .build();
         addVariable(ret);
         return ret;
@@ -707,19 +721,22 @@ public class TensorGrad {
                 i_y.getArrayField(),
                 dimensions);
 
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
         TensorGradVariable ret = TensorGradVariable.builder()
                 .arr(null)
                 .differentialFunction(cosim)
                 .varName("cosineSimilarity(" + iX.getVarName() + "," + i_y.getVarName() +  ")")
-                .tensorGrad(this)
+                .tensorGrad(this).shape(arrayReduceShape)
                 .build();
         addVariable(ret);
         return ret;
     }
 
     public TensorGradVariable euclideanDistance(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.euclideanDistance(iX.getArrayField(),i_y.getArrayField(),dimensions))
                 .varName("euclideanDistance(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
                 .build();
@@ -728,8 +745,10 @@ public class TensorGrad {
     }
 
     public TensorGradVariable manhattanDistance(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.manhattanDistance(iX.getArrayField(),i_y.getArrayField(),dimensions))
                 .varName("manhattanDistance(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
                 .build();
@@ -738,8 +757,10 @@ public class TensorGrad {
     }
 
     public TensorGradVariable lossBinaryXENT(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossBinaryXENT(iX.getArrayField(),i_y.getArrayField(),dimensions))
                 .varName("lossBinaryXENT(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
                 .build();
@@ -748,8 +769,10 @@ public class TensorGrad {
     }
 
     public TensorGradVariable lossCosineSimilarity(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossCosineSimilarity(iX.getArrayField(),i_y.getArrayField(),dimensions))
                 .varName("lossCosineSimilarity(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
                 .build();
@@ -758,8 +781,10 @@ public class TensorGrad {
     }
 
     public TensorGradVariable lossHinge(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossHinge(iX.getArrayField(),i_y.getArrayField(),dimensions))
                 .varName("lossHinge(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
                 .build();
@@ -768,8 +793,10 @@ public class TensorGrad {
     }
 
     public TensorGradVariable lossKLD(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossKLD(iX.getArrayField(),i_y.getArrayField(),dimensions))
                 .varName("lossKLD(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
                 .build();
@@ -778,8 +805,10 @@ public class TensorGrad {
     }
 
     public TensorGradVariable lossL1(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossL1(iX.getArrayField(),i_y.getArrayField(),dimensions))
                 .varName("lossL1(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
                 .build();
@@ -788,8 +817,10 @@ public class TensorGrad {
     }
 
     public TensorGradVariable lossL2(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossL2(iX.getArrayField(),i_y.getArrayField(),dimensions))
                 .varName("lossL2(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
                 .build();
@@ -798,8 +829,10 @@ public class TensorGrad {
     }
 
     public TensorGradVariable lossMAE(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossMAE(iX.getArrayField(),i_y.getArrayField(),dimensions))
                 .varName("lossMAE(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
                 .build();
@@ -808,8 +841,10 @@ public class TensorGrad {
     }
 
     public TensorGradVariable lossMAPE(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossMAPE(iX.getArrayField(),i_y.getArrayField(),dimensions))
                 .varName("lossMAPE(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
                 .build();
@@ -818,8 +853,10 @@ public class TensorGrad {
     }
 
     public TensorGradVariable lossMSE(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossMSE(iX.getArrayField(),i_y.getArrayField(),dimensions))
                 .varName("lossMSE(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
                 .build();
@@ -828,8 +865,10 @@ public class TensorGrad {
     }
 
     public TensorGradVariable lossMCXENT(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossMCXENT(iX.getArrayField(),i_y.getArrayField(),dimensions))
                 .varName("lossMCXENT(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
                 .build();
@@ -838,8 +877,10 @@ public class TensorGrad {
     }
 
     public TensorGradVariable lossMSLE(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossMSLE(iX.getArrayField(),i_y.getArrayField(),dimensions))
                 .varName("lossMSLE(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
                 .build();
@@ -848,8 +889,10 @@ public class TensorGrad {
     }
 
     public TensorGradVariable lossNegativeLogLikelihood(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.transpose(iX.getArrayField()))
                 .varName("lossNegativeLogLikelihood(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
                 .build();
@@ -858,8 +901,10 @@ public class TensorGrad {
     }
 
     public  TensorGradVariable lossPoisson(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossPoisson(iX.getArrayField(),i_y.getArrayField(),dimensions))
                 .varName("lossPoisson(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
                 .build();
@@ -869,8 +914,10 @@ public class TensorGrad {
 
 
     public TensorGradVariable lossSquaredHinge(TensorGradVariable iX,TensorGradVariable i_y,int...dimensions) {
+        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null)
+                .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossSquaredHinge(iX.getArrayField(),i_y.getArrayField(),dimensions))
                 .varName("lossSquaredHinge(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
                 .build();

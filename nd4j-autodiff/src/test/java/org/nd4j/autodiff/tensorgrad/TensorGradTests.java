@@ -97,7 +97,7 @@ public class TensorGradTests {
 
         assertEquals("cosineSimilarity(x,y)",result.getVarName());
         assertEquals(3,tensorGrad.graph().numVertices());
-        assertEquals(2,tensorGrad.graph().getEdges().size());
+        assertEquals(2,tensorGrad.graph().getEdges().get(0).size());
         assertArrayEquals(new int[]{1,2},result.getShape());
     }
 
