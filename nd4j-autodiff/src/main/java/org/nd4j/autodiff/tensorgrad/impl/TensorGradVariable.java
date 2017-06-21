@@ -2,6 +2,7 @@ package org.nd4j.autodiff.tensorgrad.impl;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.Variable;
@@ -13,6 +14,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -42,6 +44,29 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
         this.tensorGrad = tensorGrad;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+
+        TensorGradVariable that = (TensorGradVariable) o;
+
+        if (arr != null ? !arr.equals(that.arr) : that.arr != null) return false;
+        if (arrayField != null ? !arrayField.equals(that.arrayField) : that.arrayField != null) return false;
+        if (varName != null ? !varName.equals(that.varName) : that.varName != null) return false;
+        return Arrays.equals(shape, that.shape);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (arr != null ? arr.hashCode() : 0);
+        result = 31 * result + (arrayField != null ? arrayField.hashCode() : 0);
+        result = 31 * result + (varName != null ? varName.hashCode() : 0);
+        result = 31 * result + Arrays.hashCode(shape);
+        return result;
+    }
 
     public NDArrayInformation getInfo() {
         return getArrayField().getM_x().getInput();

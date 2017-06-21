@@ -26,7 +26,8 @@ public class One<X extends Field<X>> extends Constant<X> {
         DifferentialFunction<X> dup = i_v.dup();
         if(i_v.getValue() instanceof ArrayField) {
             ArrayField arrayField = (ArrayField) i_v.getValue();
-            addEdges(graph,dup,
+            addEdges(graph,
+                    dup,
                     this,
                     new MulOp().name(),
                     OpState.OpType.TRANSFORM,

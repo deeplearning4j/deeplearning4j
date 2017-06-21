@@ -2,6 +2,7 @@ package org.nd4j.autodiff.opstate;
 
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.nd4j.autodiff.ArrayField;
 
 import java.io.Serializable;
@@ -10,7 +11,8 @@ import java.util.Arrays;
 /**
  * Created by agibsonccc on 4/6/17.
  */
-@Data
+@Data()
+@EqualsAndHashCode(exclude = "owner")
 @Builder
 public class NDArrayInformation implements Serializable {
     private int[] shape;

@@ -5,6 +5,7 @@ import guru.nidi.graphviz.engine.Graphviz;
 import guru.nidi.graphviz.model.Label;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.graph.api.BaseGraph;
 import org.nd4j.autodiff.graph.api.Edge;
@@ -18,6 +19,7 @@ import org.nd4j.autodiff.opstate.OpState;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static guru.nidi.graphviz.model.Factory.graph;
 import static guru.nidi.graphviz.model.Factory.node;
@@ -37,7 +39,7 @@ import static guru.nidi.graphviz.model.Link.to;
  * @author Alex Black
  */
 @Data
-@AllArgsConstructor
+@EqualsAndHashCode(callSuper = false)
 @Slf4j
 public class Graph<V, E> extends BaseGraph<V, E> {
     private boolean allowMultipleEdges = true;
@@ -46,6 +48,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     private boolean frozen = false;
     private Map<Integer,List<Edge<E>>> incomingEdges;
     private Graph<V,E> graphApply;
+    private int nextVertexId;
 
     public Graph() {
         this(true);
@@ -57,9 +60,22 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         vertices = new TreeMap<>();
         edges = new HashMap<>();
         this.incomingEdges = new TreeMap<>();
+        nextVertexId = 0;
     }
 
-
+    public Graph(
+            boolean allowMultipleEdges,
+            Map<Integer, List<Edge<E>>> edges,
+            Map<Integer, Vertex<V>> vertices,
+            boolean frozen,
+            Map<Integer, List<Edge<E>>> incomingEdges) {
+        this.allowMultipleEdges = allowMultipleEdges;
+        this.edges = edges;
+        this.vertices = vertices;
+        this.frozen = frozen;
+        this.incomingEdges = incomingEdges;
+        nextVertexId = vertices.size();
+    }
 
     public void addVertex(Vertex<V> vVertex) {
         if(frozen) {
@@ -89,6 +105,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
         this.allowMultipleEdges = allowMultipleEdges;
         edges = new HashMap<>();
         this.incomingEdges = new TreeMap<>();
+        nextVertexId = this.vertices.size();
     }
 
     public Graph(List<Vertex<V>> vertices) {
@@ -118,7 +135,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
     @Override
     public Vertex<V> getVertex(int idx) {
-        if (idx < 0 || idx >= vertices.size())
+        if (idx < 0)
             throw new IllegalArgumentException("Invalid index: " + idx);
         return vertices.get(idx);
     }
@@ -133,7 +150,7 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
     @Override
     public List<Vertex<V>> getVertices(int from, int to) {
-        if (to < from || from < 0 || to >= vertices.size())
+        if (to < from || from < 0)
             throw new IllegalArgumentException("Invalid range: from=" + from + ", to=" + to);
         List<Vertex<V>> out = new ArrayList<>(to - from + 1);
         for (int i = from; i <= to; i++)
@@ -352,7 +369,9 @@ public class Graph<V, E> extends BaseGraph<V, E> {
 
     }
 
-
+    public int nextVertexId() {
+        return ++nextVertexId; // Make vertexIds start at 1 to uncover array indexing issues.
+    }
 }
 
 

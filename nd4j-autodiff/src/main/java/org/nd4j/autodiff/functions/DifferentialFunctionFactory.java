@@ -16,6 +16,7 @@ import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 import org.nd4j.linalg.api.ops.impl.accum.*;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -1644,31 +1645,39 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
     @Override
     public DifferentialFunction<X> cosineSimilarity(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
-        return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
+        return new AbstractBinaryReduceFunction<X>(mFactory.graph(), iX, i_y, dimensions) {
             @Override
             protected X doGetValue() {
-                return mFactory.cosineSimilarity(iX,i_y,dimensions);
+                return mFactory.cosineSimilarity(iX, i_y, dimensions);
+            }
+
+            private DifferentialFunction<X> formula() {
+                DifferentialFunction<X> numerator = larg().mul(rarg());
+                DifferentialFunction<X> denom = sqrt(larg().pow(2).mul(rarg().pow(2)));
+
+                return numerator.div(denom);
             }
 
             @Override
             public double getReal() {
-                return 0;
+                return formula().getReal();
             }
 
             @Override
             public String doGetFormula(List<Variable<X>> variables) {
-                return null;
+                return larg().doGetFormula(variables) + " * " + rarg().doGetFormula(variables) + "/" +
+                        "sqrt(pow(" + larg().doGetFormula(variables) + ", 2) * pow(" + rarg().doGetFormula(variables) + ", 2))";
             }
 
             @Override
             public String functionName() {
-                return "cosineSimilarity";
+                return new CosineSimilarity().name();
             }
 
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v1) {
-                return null;
+                return formula().diff(i_v1);
             }
         };
     }

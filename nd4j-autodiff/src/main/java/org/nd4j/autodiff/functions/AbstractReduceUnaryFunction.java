@@ -63,7 +63,7 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
             NDArrayInformation information =  NDArrayInformation.builder()
                     .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
                     .shape(v1.getInput().getShape()).build();
-            NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size(),information);
+            NDArrayVertex newVertex = new NDArrayVertex(graph.nextVertexId(), information);
             this.vertexId = newVertex.vertexID();
             graph.addVertex(newVertex);
             OpState opState =   OpState.builder()

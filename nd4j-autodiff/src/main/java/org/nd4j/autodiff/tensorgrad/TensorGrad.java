@@ -9,6 +9,7 @@ import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
 import org.nd4j.autodiff.graph.Graph;
+import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpExecAction;
@@ -48,8 +49,29 @@ public class TensorGrad {
         return graph;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
 
-    public static TensorGrad create(TensorGrad originalTensorGrad,TensorGradGraph graph) {
+        TensorGrad that = (TensorGrad) o;
+
+        if (graph != null ? !graph.equals(that.graph) : that.graph != null) return false;
+        if (tensorGradVariables != null ? !tensorGradVariables.equals(that.tensorGradVariables) : that.tensorGradVariables != null)
+            return false;
+        return variableMap != null ? variableMap.equals(that.variableMap) : that.variableMap == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 31 * result + (graph != null ? graph.hashCode() : 0);
+        result = 31 * result + (tensorGradVariables != null ? tensorGradVariables.hashCode() : 0);
+        result = 31 * result + (variableMap != null ? variableMap.hashCode() : 0);
+        return result;
+    }
+
+    public static TensorGrad create(TensorGrad originalTensorGrad, TensorGradGraph graph) {
         ArrayFactory arrayFactory = new ArrayFactory(graph);
         TensorGradGraph clone = new TensorGradGraph(graph);
         TensorGrad ret = TensorGrad.builder()
@@ -123,7 +145,7 @@ public class TensorGrad {
     }
 
     public void allocate() {
-        for(int i = 0; i < graph().numVertices(); i++) {
+        for (Integer i : graph().getVertices().keySet()) {
             NDArrayInformation info = graph.getInformationFor(i);
             if(!variableMap.containsKey(info.getId())) {
                 TensorGradVariable variable = TensorGradVariable.builder()
@@ -150,7 +172,7 @@ public class TensorGrad {
     public  TensorGradVariable var(String name, INDArray arr) {
         NDArrayInformation ndArrayInformation = NDArrayInformation.builder()
                 .shape(arr.shape()).id(name).build();
-        NDArrayVertex ndArrayVertex = new NDArrayVertex(graph.numVertices(),ndArrayInformation);
+        NDArrayVertex ndArrayVertex = new NDArrayVertex(graph.nextVertexId(), ndArrayInformation);
         ArrayField arrayField = new ArrayField(ndArrayVertex,graph);
         TensorGradVariable ret = TensorGradVariable.builder()
                 .tensorGrad(this).
@@ -622,6 +644,7 @@ public class TensorGrad {
                 .arr(null)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.reshape(iX.getArrayField(),shape))
                 .varName("reshape(" + iX.getVarName() + ")").tensorGrad(this)
+                .shape(shape)
                 .build();
         addVariable(ret);
         return ret;
@@ -661,12 +684,17 @@ public class TensorGrad {
 
     public TensorGradVariable tensorMmul(TensorGradVariable x,
                                          TensorGradVariable y,
-                                         int[][]dimensions,
+                                         int[][] dimensions,
                                          int argNum) {
+
+        int[] shape = ArrayUtil.getTensorMmulShape(x.getShape(), y.getShape(), dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
                 .arr(null)
-                .differentialFunction(arrayFieldDifferentialFunctionFactory.tensorMmul(x.getArrayField(),y.getArrayField(),dimensions,argNum))
-                .varName("tensorMmul(" + x.getVarName() + "," + y.getVarName() +  ")").tensorGrad(this)
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.tensorMmul(x.getArrayField(), y.getArrayField(), dimensions, argNum))
+                .varName("tensorMmul(" + x.getVarName() + "," + y.getVarName() +  ")")
+                .tensorGrad(this)
+                //.shape(shape)
                 .build();
         addVariable(ret);
         return ret;
@@ -674,10 +702,16 @@ public class TensorGrad {
 
 
     public TensorGradVariable cosineSimilarity(TensorGradVariable iX,TensorGradVariable i_y, int...dimensions) {
+        DifferentialFunction<ArrayField> cosim = arrayFieldDifferentialFunctionFactory.cosineSimilarity(
+                iX.getArrayField(),
+                i_y.getArrayField(),
+                dimensions);
+
         TensorGradVariable ret = TensorGradVariable.builder()
                 .arr(null)
-                .differentialFunction(arrayFieldDifferentialFunctionFactory.cosineSimilarity(iX.getArrayField(),i_y.getArrayField(),dimensions))
-                .varName("cosineSimilarity(" + iX.getVarName() + "," + i_y.getVarName() +  ")").tensorGrad(this)
+                .differentialFunction(cosim)
+                .varName("cosineSimilarity(" + iX.getVarName() + "," + i_y.getVarName() +  ")")
+                .tensorGrad(this)
                 .build();
         addVariable(ret);
         return ret;

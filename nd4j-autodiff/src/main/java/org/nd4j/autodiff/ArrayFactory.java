@@ -200,14 +200,14 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     public ArrayField zero() {
         NDArrayInformation information = NDArrayInformation.builder()
                 .id("zero").owner(null).shape(new int[]{1,2}).build();
-        return new ArrayField(new NDArrayVertex(graph.numVertices(),information),graph);
+        return new ArrayField(new NDArrayVertex(graph.nextVertexId(), information), graph);
     }
 
     @Override
     public ArrayField one() {
         NDArrayInformation information = NDArrayInformation.builder()
                 .id("one").owner(null).shape(new int[]{1,1}).build();
-        return new ArrayField(new NDArrayVertex(graph.numVertices(),information),graph);
+        return new ArrayField(new NDArrayVertex(graph.nextVertexId(), information), graph);
     }
 
     @Override

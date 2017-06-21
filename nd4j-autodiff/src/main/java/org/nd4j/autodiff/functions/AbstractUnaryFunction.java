@@ -75,7 +75,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
                     .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
                     .shape(shape).build();
             //result
-            NDArrayVertex newVertex = new NDArrayVertex(graph.getVertices().size(),information);
+            NDArrayVertex newVertex = new NDArrayVertex(graph.nextVertexId(), information);
             this.vertexId = newVertex.vertexID();
 
             graph.addVertex(newVertex);

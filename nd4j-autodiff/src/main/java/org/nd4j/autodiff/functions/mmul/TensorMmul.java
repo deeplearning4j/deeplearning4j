@@ -11,8 +11,10 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -39,8 +41,17 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
         this.axes = dimensions;
         this.argNum = argNum;
         this.differentialFunctionFactory = differentialFunctionFactory;
-        if(!addedEdges)
-            addEdges(graph,i_v1,i_v2,functionName());
+        if(!addedEdges) {
+            ArrayField a = (ArrayField) i_v1.getValue();
+            ArrayField b = (ArrayField) i_v2.getValue();
+
+            addEdges(graph,
+                    i_v1,
+                    i_v2,
+                    functionName(),
+                    OpState.OpType.ACCUMULATION,
+                    ArrayUtil.getTensorMmulShape(a.getInput().getShape(), b.getInput().getShape(), dimensions));
+        }
     }
 
 

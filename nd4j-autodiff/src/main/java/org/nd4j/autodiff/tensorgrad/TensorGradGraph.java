@@ -13,6 +13,7 @@ import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.impl.TensorGradVariable;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by agibsonccc on 4/11/17.
@@ -38,14 +39,29 @@ public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
                             boolean frozen,
                             Map<Integer, List<Edge<OpState>>> incomingEdges,
                             TensorGrad tensorGrad) {
-        super(allowMultipleEdges, edges, vertices, frozen, incomingEdges,null);
+        super(allowMultipleEdges, edges, vertices, frozen, incomingEdges);
         this.tensorGrad = tensorGrad;
+    }
+
+    @Override
+    public String toString() {
+        return super.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return super.equals(o);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
     }
 
     public List<NDArrayInformation> getOutputs() {
         List<NDArrayInformation> ret = new ArrayList<>();
-        for(int i = 0; i < numVertices(); i++) {
-            if(getEdgesOut(i).size() < 1)
+        for (int i : getVertices().keySet()) {
+            if (getEdgesOut(i).size() < 1)
                 ret.add(getVertex(i).getValue());
         }
 
@@ -54,8 +70,8 @@ public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
 
     public List<NDArrayInformation> getInputs() {
         List<NDArrayInformation> ret = new ArrayList<>();
-        for(int i = 0; i < numVertices(); i++) {
-            if(getVertexInDegree(i) < 1)
+        for (int i : getVertices().keySet()) {
+            if (getVertexInDegree(i) < 1)
                 ret.add(getVertex(i).getValue());
         }
 
@@ -63,17 +79,14 @@ public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
     }
 
 
-
     public TensorGradGraph optimize() {
         OpExecOrder opOrder = getOpOrder();
 
-        for(OpExecAction opExecAction : opOrder.getActions()) {
+        for (OpExecAction opExecAction : opOrder.getActions()) {
 
         }
         return this;
     }
-
-
 
 
     public OpExecOrder getOpOrder() {
@@ -82,20 +95,20 @@ public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
         //iterate over op execution order skipping
         // nodes that are only inputs
         //the goal is to get all of the needed op executions
-        for(int i = 0; i < order.length; i++) {
+        for (int i = 0; i < order.length; i++) {
             //skip vertices that are only inputs
-            if(getVertexInDegree(i) < 1) {
+            if (getVertexInDegree(order[i]) < 1) {
                 continue;
             }
 
-            int numInputs = Math.max(1,getVertexInDegree(i));
+            int numInputs = Math.max(1, getVertexInDegree(order[i]));
             int inputsCount = 0;
             NDArrayInformation[] inputs = new NDArrayInformation[numInputs];
             int[] inputIds = new int[numInputs];
-            List<Edge<OpState>> inputOpStates = getIncomingEdges().get(i);
+            List<Edge<OpState>> inputOpStates = getIncomingEdges().get(order[i]);
             //get the inputs for this this output array
-            for(Edge<OpState> edge : inputOpStates) {
-                if(edge.getTo() == i) {
+            for (Edge<OpState> edge : inputOpStates) {
+                if (edge.getTo() == order[i]) {
                     inputs[inputsCount] = getInformationFor(edge.getFrom());
                     inputIds[inputsCount] = edge.getFrom();
                     inputsCount++;
@@ -103,17 +116,15 @@ public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
             }
 
             //add edges
-            for(Edge<OpState> opStateEdge : inputOpStates) {
+            for (Edge<OpState> opStateEdge : inputOpStates) {
                 ret.add(OpExecAction.builder()
                         .output(opStateEdge.getValue().getResult())
                         .opState(opStateEdge.getValue())
                         .inputs(inputs)
                         .inputsIds(inputIds)
-                        .outputId(i)
+                        .outputId(order[i])
                         .build());
             }
-
-
         }
 
         return OpExecOrder.builder().actions(ret).build();
@@ -129,16 +140,15 @@ public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
         Map<Integer, Set<Integer>> inputEdges = new HashMap<>(); //key: vertex. Values: vertices that the key vertex receives input from
         Map<Integer, Set<Integer>> outputEdges = new HashMap<>(); //key: vertex. Values: vertices that the key vertex outputs to
         int[] ret = new int[numVertices()];
-        for(int i = 0; i < numVertices(); i++) {
-            if(getVertexInDegree(i) < 1) {
+        for (int i : getVertices().keySet()) {
+            if (getVertexInDegree(i) < 1) {
                 noIncoming.add(i);
-            }
-            else
+            } else
                 continue;
 
             List<Edge<OpState>> edges = getEdgesOut(i);
             Set<Integer> outVertices = new HashSet<>();
-            for(Edge<OpState> edge : edges) {
+            for (Edge<OpState> edge : edges) {
                 outVertices.add(edge.getTo());
                 Set<Integer> outputSetForInputIdx = outputEdges.get(i);
                 if (outputSetForInputIdx == null) {
@@ -149,13 +159,11 @@ public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
                 outputSetForInputIdx.add(edge.getTo()); //input vertex outputs to the current vertex
             }
 
-            inputEdges.put(i,outVertices);
+            inputEdges.put(i, outVertices);
         }
 
-
-
         int outCounter = 0;
-        while(!noIncoming.isEmpty() && outCounter < ret.length) {
+        while (!noIncoming.isEmpty() && outCounter < ret.length) {
             int next = noIncoming.removeFirst();
             ret[outCounter++] = next;
             Set<Integer> vertexOutputsTo = outputEdges.get(next);
@@ -163,7 +171,7 @@ public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
             if (vertexOutputsTo != null) {
                 for (Integer v : vertexOutputsTo) {
                     Set<Integer> set = inputEdges.get(v);
-                    if(set != null)
+                    if (set != null)
                         set.remove(next);
                     if (set == null || set.isEmpty()) {
                         noIncoming.add(v); //No remaining edges for vertex i -> add to list for processing
@@ -172,9 +180,6 @@ public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
             }
         }
 
-
         return ret;
     }
-
-
 }
