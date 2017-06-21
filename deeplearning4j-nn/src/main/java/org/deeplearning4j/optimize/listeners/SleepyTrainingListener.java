@@ -1,6 +1,7 @@
 package org.deeplearning4j.optimize.listeners;
 
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -23,6 +24,7 @@ import java.util.concurrent.locks.LockSupport;
 @NoArgsConstructor
 @Data
 @Builder
+@Slf4j
 public class SleepyTrainingListener implements TrainingListener {
     public enum SleepMode {
         /**
@@ -43,23 +45,23 @@ public class SleepyTrainingListener implements TrainingListener {
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    @Builder.Default protected transient ThreadLocal<AtomicLong> lastEE = new ThreadLocal<>();
+    protected final transient ThreadLocal<AtomicLong> lastEE = new ThreadLocal<>();
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    @Builder.Default protected transient ThreadLocal<AtomicLong> lastES = new ThreadLocal<>();
+    protected final transient ThreadLocal<AtomicLong> lastES = new ThreadLocal<>();
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    @Builder.Default protected transient ThreadLocal<AtomicLong> lastFF = new ThreadLocal<>();
+    protected final transient ThreadLocal<AtomicLong> lastFF = new ThreadLocal<>();
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    @Builder.Default protected transient ThreadLocal<AtomicLong> lastBP = new ThreadLocal<>();
+    protected final transient ThreadLocal<AtomicLong> lastBP = new ThreadLocal<>();
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    @Builder.Default protected transient ThreadLocal<AtomicLong> lastIteration = new ThreadLocal<>();
+    protected final transient ThreadLocal<AtomicLong> lastIteration = new ThreadLocal<>();
 
     @Builder.Default protected long timerEE = 0L;
     @Builder.Default protected long timerES = 0L;
@@ -67,7 +69,7 @@ public class SleepyTrainingListener implements TrainingListener {
     @Builder.Default protected long timerBP = 0L;
     @Builder.Default protected long timerIteration = 0L;
 
-    @Builder.Default @NonNull protected SleepMode sleepMode = SleepMode.PARK;
+    @Builder.Default protected SleepMode sleepMode = SleepMode.PARK;
 
     protected void sleep(long sleepTimeMs) {
         if (sleepTimeMs < 1)
@@ -109,6 +111,7 @@ public class SleepyTrainingListener implements TrainingListener {
         // getting delta between real cycle time and desired one.
         long currentTime = System.currentTimeMillis();
         long delta = sleepTime - (currentTime - lastTime.get());
+
         sleep(delta);
     }
 
@@ -118,6 +121,8 @@ public class SleepyTrainingListener implements TrainingListener {
 
         if (lastES.get() == null)
             lastES.set(new AtomicLong(System.currentTimeMillis()));
+        else
+            lastES.get().set(System.currentTimeMillis());
     }
 
     @Override
@@ -126,6 +131,8 @@ public class SleepyTrainingListener implements TrainingListener {
 
         if (lastEE.get() == null)
             lastEE.set(new AtomicLong(System.currentTimeMillis()));
+        else
+            lastEE.get().set(System.currentTimeMillis());
     }
 
     @Override
@@ -134,6 +141,8 @@ public class SleepyTrainingListener implements TrainingListener {
 
         if (lastFF.get() == null)
             lastFF.set(new AtomicLong(System.currentTimeMillis()));
+        else
+            lastFF.get().set(System.currentTimeMillis());
     }
 
     @Override
@@ -142,6 +151,8 @@ public class SleepyTrainingListener implements TrainingListener {
 
         if (lastFF.get() == null)
             lastFF.set(new AtomicLong(System.currentTimeMillis()));
+        else
+            lastFF.get().set(System.currentTimeMillis());
     }
 
     @Override
@@ -150,11 +161,18 @@ public class SleepyTrainingListener implements TrainingListener {
 
         if (lastIteration.get() == null)
             lastIteration.set(new AtomicLong(System.currentTimeMillis()));
+        else
+            lastIteration.get().set(System.currentTimeMillis());
     }
 
     @Override
     public void onBackwardPass(Model model) {
-        sleep(lastFF.get(), timerBP);
+        sleep(lastBP.get(), timerBP);
+
+        if (lastBP.get() == null)
+            lastBP.set(new AtomicLong(System.currentTimeMillis()));
+        else
+            lastBP.get().set(System.currentTimeMillis());
     }
 
     @Override
@@ -164,11 +182,11 @@ public class SleepyTrainingListener implements TrainingListener {
 
     @Override
     public void invoke() {
-
+        //
     }
 
     @Override
     public void onGradientCalculation(Model model) {
-
+        //
     }
 }
