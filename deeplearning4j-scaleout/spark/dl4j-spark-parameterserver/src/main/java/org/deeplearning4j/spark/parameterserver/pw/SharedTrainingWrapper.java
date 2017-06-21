@@ -151,15 +151,35 @@ public class SharedTrainingWrapper {
                 if (model == null)
                     throw new DL4JInvalidConfigException("No model was defined for training");
 
+                /*
+                    Plan is simple here: if there's defined field in SharedTrainingConfiguration - use that.
+                    If no - try to guess something
+                 */
+                int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+
+                int numCores = Loader.totalCores();
+
+                /**
+                 * Logic here is simple:
+                 * 1) If user had specified number of workers per node - use that value
+                 * 2) If not, and there's > 1 devices in system (as in Multi-GPU system) - use numberOfDevices as number of workers
+                 * 3) otherwise, let's assume that's regular multi-core node, so we'll use 1..6 workers, depending on number of cores/4
+                 */
+                int numWorkers = trainingConfiguration.getNumberOfWorkersPerNode() > 0 ? trainingConfiguration.getNumberOfWorkersPerNode() : numDevices > 1 ? numDevices : Math.min(6, Math.max(1, numCores / 4));
+
+                if (numDevices > 1 && numWorkers > numDevices)
+                    log.warn("WARNING! Using more workers then number of available computational devices!");
+
+
                 MessageHandler handler = new WiredEncodingHandler(trainingConfiguration.getThreshold());
 
                 // this accumulator will provide sharing gradients over network, via WiredEncodedHandler. But we create it only once
                 if (accumulator == null) {
-                    accumulator = new CudaGradientsAccumulator.Builder(2)
+                    accumulator = new CudaGradientsAccumulator.Builder(numWorkers)
                             .messageHandler(handler)
                             .encodingThreshold(trainingConfiguration.getThreshold())
                             // TODO: make this configurable
-                            .memoryParameters(200 * 1024 * 1024L, 10)
+                            .memoryParameters(200 * 1024 * 1024L, numWorkers * 2)
                             .build();
 
                     // FIXME: implement support for Custom transport implementation
@@ -191,25 +211,6 @@ public class SharedTrainingWrapper {
                     // after initialization finished, we're ok to actually start training
                 }
 
-                /*
-                    Plan is simple here: if there's defined field in SharedTrainingConfiguration - use that.
-                    If no - try to guess something
-                 */
-                int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
-
-                int numCores = Loader.totalCores();
-
-                /**
-                 * Logic here is simple:
-                 * 1) If user had specified number of workers per node - use that value
-                 * 2) If not, and there's > 1 devices in system (as in Multi-GPU system) - use numberOfDevices as number of workers
-                 * 3) otherwise, let's assume that's regular multi-core node, so we'll use 1..6 workers, depending on number of cores/4
-                 */
-                int numWorkers = trainingConfiguration.getNumberOfWorkersPerNode() > 0 ? trainingConfiguration.getNumberOfWorkersPerNode() : numDevices > 1 ? numDevices : Math.min(6, Math.max(1, numCores / 4));
-
-                if (numDevices > 1 && numWorkers > numDevices)
-                    log.warn("WARNING! Using more workers then number of available computational devices!");
-
                 // if we're going to extend iteratation for debugging purposes - let's do that here
                 if (trainingConfiguration.getDebugLongerIterations() > 0)
                     model.addListener(SleepyTrainingListener.builder().timerIteration(trainingConfiguration.getDebugLongerIterations()).build());
@@ -228,6 +229,7 @@ public class SharedTrainingWrapper {
 
                     // since there'll be only one consumer, we don't need complex sync logic anymore
                     accumulator.fallbackToSingleConsumerMode(true);
+                    accumulator.touch();
 
                     // ok. attaching accumulator to model
                     if (model instanceof ComputationGraph) {
