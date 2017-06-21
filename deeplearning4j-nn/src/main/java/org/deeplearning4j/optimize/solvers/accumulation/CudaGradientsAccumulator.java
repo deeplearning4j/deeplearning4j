@@ -195,6 +195,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
                 cnt++;
                 ent++;
             }
+            log.info("thread {} finished at Externals", Thread.currentThread().getId());
 
             if (ent > 0)
                 log.info("External updates to be applied: {}", ent);
