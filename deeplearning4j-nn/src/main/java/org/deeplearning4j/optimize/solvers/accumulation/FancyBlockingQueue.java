@@ -99,12 +99,17 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
         if (bypassMode.get())
             return backingQueue.isEmpty();
 
+        log.info("thread {} queries isEmpty", Thread.currentThread().getId());
+
+
         return numElementsDrained.get() == numElementsReady.get() || backingQueue.isEmpty();
     }
 
     protected void synchronize(int consumers) {
         if (consumers == 1 || bypassMode.get())
             return;
+
+        log.info("thread {} locking at FBQ", Thread.currentThread().getId());
 
         // any first thread entering this block - will reset this field to false
         isDone.compareAndSet(true, false);
@@ -128,6 +133,8 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
             while (!isFirst.get())
                 LockSupport.parkNanos(1000L);
         }
+
+        log.info("thread {} unlocking at FBQ", Thread.currentThread().getId());
 
     }
 

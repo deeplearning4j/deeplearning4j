@@ -134,6 +134,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
         if (consumers == 1 || bypassMode.get())
             return;
 
+        log.info("thread {} locking at CGA", Thread.currentThread().getId());
+
         // any first thread entering this block - will reset this field to false
         isDone.compareAndSet(true, false);
 
@@ -157,6 +159,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             while (!isFirst.get())
                 LockSupport.parkNanos(1000L);
         }
+
+        log.info("thread {} unlocking at CGA", Thread.currentThread().getId());
 
     }
 
