@@ -4,6 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.optimize.listeners.SleepyTrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.CudaGradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.MessageHandler;
 import org.deeplearning4j.parallelism.ParallelWrapper;
@@ -133,11 +136,13 @@ public class SharedTrainingWrapper {
             SharedTrainingConfiguration trainingConfiguration = worker.getBroadcastConfiguration().getValue();
             VoidConfiguration voidConfiguration = worker.getBroadcastConfiguration().getValue().getVoidConfiguration();
 
+            Model model = null;
+
             // now we're attaching VoidParameterServer to GradientsAccumulator, but doing that only once
             if (wrapper == null) {
                 log.info("Starting ParallelWrapper at thread {}", Thread.currentThread().getId());
 
-                Model model = worker.getInitialModel();
+                model = worker.getInitialModel();
                 if (model == null)
                     model = worker.getInitialModelGraph();
 
@@ -195,24 +200,52 @@ public class SharedTrainingWrapper {
                 if (numDevices > 1 && numWorkers > numDevices)
                     log.warn("WARNING! Using more workers then number of available computational devices!");
 
-                wrapper = new ParallelWrapper.Builder<>(model)
-                        .workers(numWorkers)
-                        .workspaceMode(trainingConfiguration.getWorkspaceMode())
-                        .trainingMode(ParallelWrapper.TrainingMode.CUSTOM)
-                        .gradientsAccumulator(accumulator)
-                        .prefetchBuffer(trainingConfiguration.getPrefetchSize())
-                        .build();
+                // if we're going to extend iteratation for debugging purposes - let's do that here
+                if (trainingConfiguration.getDebugLongerIterations() > 0)
+                    model.addListener(SleepyTrainingListener.builder().timerIteration(trainingConfiguration.getDebugLongerIterations()).build());
+
+                // we're launching PW only if number of workers is more then 1
+                if (trainingConfiguration.getNumberOfWorkersPerNode() > 1) {
+                    wrapper = new ParallelWrapper.Builder<>(model)
+                            .workers(numWorkers)
+                            .workspaceMode(trainingConfiguration.getWorkspaceMode())
+                            .trainingMode(ParallelWrapper.TrainingMode.CUSTOM)
+                            .gradientsAccumulator(accumulator)
+                            .prefetchBuffer(trainingConfiguration.getPrefetchSize())
+                            .build();
+                } else {
+                    // ok. attaching accumulator to
+                    if (model instanceof ComputationGraph) {
+                        ((ComputationGraph) model).setGradientsAccumulator(accumulator);
+                    } else if (model instanceof MultiLayerNetwork) {
+                        ((MultiLayerNetwork) model).setGradientsAccumulator(accumulator);
+                    }
+                }
             }
 
             // TODO: optionally we might be waiting until we have >1 splits delivered
 
             // now we're just calling for fit
-            if (iteratorDS != null)
-                wrapper.fit(iteratorDS);
-            else if (iteratorMDS != null)
-                wrapper.fit(iteratorMDS);
-            else
-                throw new DL4JInvalidConfigException("No iterators were defined for training");
+            if (wrapper != null) {
+                if (iteratorDS != null)
+                    wrapper.fit(iteratorDS);
+                else if (iteratorMDS != null)
+                    wrapper.fit(iteratorMDS);
+                else
+                    throw new DL4JInvalidConfigException("No iterators were defined for training");
+            } else {
+                // if wrapper is null, we're fitting standalone model then
+                if (iteratorDS != null) {
+                    if (model instanceof ComputationGraph) {
+                        ((ComputationGraph) model).fit(iteratorDS);
+                    } else if (model instanceof MultiLayerNetwork) {
+                        ((MultiLayerNetwork) model).fit(iteratorDS);
+                    }
+                } else if (iteratorMDS != null) {
+                    ((ComputationGraph) model).fit(iteratorMDS);
+                } else
+                    throw new DL4JInvalidConfigException("No iterators were defined for training");
+            }
 
 
             // conditionally shutdown & reset ParallelWrapper
