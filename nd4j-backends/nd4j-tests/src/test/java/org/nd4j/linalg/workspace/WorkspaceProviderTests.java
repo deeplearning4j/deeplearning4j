@@ -2,6 +2,7 @@ package org.nd4j.linalg.workspace;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -941,6 +942,33 @@ public class WorkspaceProviderTests extends BaseNd4jTest {
         MemoryWorkspace workspace2 = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread();
 
         assertEquals(workspace1, workspace2);
+    }
+
+    @Ignore
+    @Test
+    public void testMemcpy1() {
+        INDArray warmUp = Nd4j.create(100000);
+        for (int x = 0; x < 5000; x++) {
+            warmUp.addi(0.1);
+        }
+
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .policyMirroring(MirroringPolicy.HOST_ONLY)
+                .initialSize(1024L * 1024L * 1024L)
+                .policyLearning(LearningPolicy.NONE)
+                .build();
+
+        INDArray array = Nd4j.createUninitialized(150000000);
+
+        MemoryWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(configuration, "HOST");
+        workspace.notifyScopeEntered();
+
+
+        INDArray memcpy = array.unsafeDuplication(false);
+
+
+        workspace.notifyScopeLeft();
+
     }
 
     @Override

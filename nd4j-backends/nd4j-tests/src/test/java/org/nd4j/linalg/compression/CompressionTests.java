@@ -1,15 +1,23 @@
 package org.nd4j.linalg.compression;
 
+import lombok.extern.slf4j.Slf4j;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
+import org.nd4j.linalg.api.memory.enums.LearningPolicy;
+import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.*;
@@ -17,6 +25,7 @@ import static org.junit.Assert.*;
 /**
  * @author raver119@gmail.com
  */
+@Slf4j
 @RunWith(Parameterized.class)
 public class CompressionTests extends BaseNd4jTest {
 
@@ -285,6 +294,184 @@ public class CompressionTests extends BaseNd4jTest {
         INDArray decomp = BasicNDArrayCompressor.getInstance().decompress(compressed);
 
         assertEquals(exp, decomp);
+    }
+
+
+    @Test
+    public void testThresholdCompressionZ() throws Exception {
+        INDArray initial = Nd4j.create(1, 16384);
+        for (int i = 0; i < 96; i++)
+            initial.putScalar(i * 20, 1.0f);
+
+
+        INDArray exp = Nd4j.create(1, 16384);
+        for (int i = 0; i < 96; i++)
+            exp.putScalar(i * 20, 0.1f);
+
+        INDArray exp_d = Nd4j.create(1, 16384);
+        for (int i = 0; i < 96; i++)
+            exp_d.putScalar(i * 20, 0.9f);
+
+        NDArrayCompressor compressor = Nd4j.getCompressor().getCompressor("THRESHOLD");
+        compressor.configure(0.9);
+
+        INDArray compressed = Nd4j.getExecutioner().thresholdEncode(initial, 0.9);
+
+        assertEquals(exp, initial);
+
+        log.info("Compressed length: {}", compressed.data().length());
+//        log.info("Compressed: {}", Arrays.toString(compressed.data().asInt()));
+
+        INDArray decompressed = Nd4j.create(initial.length());
+        Nd4j.getExecutioner().thresholdDecode(compressed, decompressed);
+
+        log.info("Decompressed length: {}", decompressed.lengthLong());
+
+        assertEquals(exp_d, decompressed);
+    }
+
+
+    @Ignore
+    @Test
+    public void testThresholdCompression0() throws Exception {
+        INDArray initial = Nd4j.rand(new int[]{1, 150000000}, 119L);
+
+        log.info("DTYPE: {}", Nd4j.dataType());
+
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
+                .initialSize(2 * 1024L * 1024L * 1024L)
+                .overallocationLimit(0)
+                .policyAllocation(AllocationPolicy.STRICT)
+                .policyLearning(LearningPolicy.NONE)
+                .policyReset(ResetPolicy.BLOCK_LEFT)
+                .build();
+
+
+        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "IIIA")) {
+            INDArray compressed = Nd4j.getExecutioner().thresholdEncode(initial.dup(), 0.999);
+        }
+
+        long timeS = 0;
+        for (int i = 0; i < 100; i++) {
+            try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "IIIA")) {
+                INDArray d = initial.dup();
+                long time1 = System.nanoTime();
+                INDArray compressed = Nd4j.getExecutioner().thresholdEncode(d,  0.999);
+                long time2 = System.nanoTime();
+                timeS += (time2 - time1) / 1000;
+            }
+        }
+
+
+        log.info("Elapsed time: {} us", (timeS) / 100);
+    }
+
+    @Test
+    public void testThresholdCompression1() throws Exception {
+        INDArray initial = Nd4j.create(new double[]{0.0, 0.0, 1e-3, -1e-3, 0.0, 0.0});
+        INDArray exp_0 = Nd4j.create(6);
+        INDArray exp_1 = initial.dup();
+
+        NDArrayCompressor compressor = Nd4j.getCompressor().getCompressor("THRESHOLD");
+        compressor.configure(1e-3);
+
+        INDArray compressed = compressor.compress(initial);
+
+
+        log.info("Initial array: {}", Arrays.toString(initial.data().asFloat()));
+
+        assertEquals(exp_0, initial);
+
+        INDArray decompressed = compressor.decompress(compressed);
+
+        assertEquals(exp_1, decompressed);
+    }
+
+    @Test
+    public void testThresholdCompression2() throws Exception {
+        INDArray initial = Nd4j.create(new double[]{1.0, 2.0, 0.0, 0.0, -1.0, -1.0});
+        INDArray exp_0 = Nd4j.create(new double[]{1.0 - 1e-3, 2.0 - 1e-3, 0.0, 0.0, -1.0 + 1e-3, -1.0 + 1e-3});
+        INDArray exp_1 = Nd4j.create(new double[]{1e-3, 1e-3, 0.0, 0.0, -1e-3, -1e-3});
+
+        //Nd4j.getCompressor().getCompressor("THRESHOLD").configure(1e-3);
+        //NDArray compressed = Nd4j.getCompressor().compress(initial, "THRESHOLD");
+        INDArray compressed = Nd4j.getExecutioner().thresholdEncode(initial, 1e-3f);
+
+        log.info("Initial array: {}", Arrays.toString(initial.data().asFloat()));
+
+        assertEquals(exp_0, initial);
+
+        INDArray decompressed = Nd4j.create(initial.length());
+        Nd4j.getExecutioner().thresholdDecode(compressed, decompressed);
+
+        log.info("Decompressed array: {}", Arrays.toString(decompressed.data().asFloat()));
+
+        assertEquals(exp_1, decompressed);
+    }
+
+    @Test
+    public void testThresholdCompression3() throws Exception {
+        INDArray initial = Nd4j.create(new double[]{-1.0, -2.0, 0.0, 0.0, 1.0, 1.0});
+        INDArray exp_0 = Nd4j.create(new double[]{-1.0 + 1e-3, -2.0 + 1e-3, 0.0, 0.0, 1.0 - 1e-3, 1.0 - 1e-3});
+        INDArray exp_1 = Nd4j.create(new double[]{-1e-3, -1e-3, 0.0, 0.0, 1e-3, 1e-3});
+
+        //Nd4j.getCompressor().getCompressor("THRESHOLD").configure(1e-3);
+        INDArray compressed = Nd4j.getExecutioner().thresholdEncode(initial, 1e-3f);
+
+        INDArray copy = compressed.unsafeDuplication();
+
+        log.info("Initial array: {}", Arrays.toString(initial.data().asFloat()));
+
+        assertEquals(exp_0, initial);
+
+        INDArray decompressed = Nd4j.create(initial.length());
+        Nd4j.getExecutioner().thresholdDecode(compressed, decompressed);
+
+        log.info("Decompressed array: {}", Arrays.toString(decompressed.data().asFloat()));
+
+        assertEquals(exp_1, decompressed);
+
+        INDArray decompressed_copy = Nd4j.create(initial.length());
+        Nd4j.getExecutioner().thresholdDecode(copy, decompressed_copy);
+
+        assertFalse(decompressed == decompressed_copy);
+        assertEquals(decompressed, decompressed_copy);
+    }
+
+    @Test
+    public void testThresholdCompression4() throws Exception {
+        INDArray initial = Nd4j.create(new double[]{1e-4, -1e-4, 0.0, 0.0, 1e-4, -1e-4});
+        INDArray exp_0 = initial.dup();
+
+
+        //Nd4j.getCompressor().getCompressor("THRESHOLD").configure(1e-3);
+        INDArray compressed = Nd4j.getExecutioner().thresholdEncode(initial, 1e-3f);
+
+
+        log.info("Initial array: {}", Arrays.toString(initial.data().asFloat()));
+
+        assertEquals(exp_0, initial);
+
+        assertNull(compressed);
+    }
+
+
+    @Test
+    public void testThresholdCompression5() throws Exception {
+        INDArray initial = Nd4j.ones(1000);
+        INDArray exp_0 = initial.dup();
+
+        Nd4j.getExecutioner().commit();
+
+        //Nd4j.getCompressor().getCompressor("THRESHOLD").configure(1e-3);
+        INDArray compressed = Nd4j.getExecutioner().thresholdEncode(initial, 1.0f, 100);
+
+        assertEquals(103, compressed.data().length());
+
+        assertNotEquals(exp_0, initial);
+
+        assertEquals(900, initial.sumNumber().doubleValue(), 0.01);
+
     }
 
     @Override

@@ -56,18 +56,25 @@ public class ProtectedCudaShapeInfoProvider extends BaseShapeInfoProvider {
         ShapeDescriptor descriptor = new ShapeDescriptor(shape, stride, offset, elementWiseStride, order);
 
         if (!protector.containsDataBuffer(deviceId, descriptor)) {
-            //log.info("Cache miss: {}", descriptor);
-            DataBuffer buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
-            buffer.setConstant(true);
+            DataBuffer buffer = null;
+            synchronized (this) {
+                if (!protector.containsDataBuffer(deviceId, descriptor)) {
+                    //log.info("Cache miss: {}", descriptor);
+                    buffer = super.createShapeInformation(shape, stride, offset, elementWiseStride, order);
+                    buffer.setConstant(true);
 
-            if (CudaEnvironment.getInstance().getConfiguration().getMemoryModel() == Configuration.MemoryModel.IMMEDIATE) {
-                Nd4j.getConstantHandler().moveToConstantSpace(buffer);
+                    if (CudaEnvironment.getInstance().getConfiguration().getMemoryModel() == Configuration.MemoryModel.IMMEDIATE) {
+                        Nd4j.getConstantHandler().moveToConstantSpace(buffer);
+                    }
+
+                    //deviceCache.get(deviceId).put(descriptor, buffer);
+                    protector.persistDataBuffer(deviceId, descriptor, buffer);
+
+                    cacheMiss.incrementAndGet();
+                } else {
+                    buffer = protector.getDataBuffer(deviceId, descriptor);
+                }
             }
-
-            //deviceCache.get(deviceId).put(descriptor, buffer);
-            protector.persistDataBuffer(deviceId, descriptor, buffer);
-
-            cacheMiss.incrementAndGet();
             return buffer;
         } else {
             //       log.info("Cache hit: {}", descriptor);

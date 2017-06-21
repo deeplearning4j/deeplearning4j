@@ -497,7 +497,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             retShape = new int[] {1, 1};
         }
 
-        if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
+        if (op.x().isVector() && op.x().lengthLong() == ArrayUtil.prodLong(retShape) && ArrayUtil.prodLong(retShape) > 1)
             return op.noOp();
 
         INDArray ret = null;
@@ -1469,37 +1469,46 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             Pointer y = allocator.getPointer(op.y(), context);
             Pointer yShapeInfo = allocator.getPointer(op.y().shapeInfoDataBuffer(), context);
 
+            int xEWS = op.x().elementWiseStride();
+            int yEWS = op.y().elementWiseStride();
+            int zEWS = op.z().elementWiseStride();
+
+            boolean xRow = op.x().isRowVector();
+            boolean yRow = op.y().isRowVector();
+            boolean zRow = op.z().isRowVector();
+
+
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                if (op.x().elementWiseStride() >= 1 && op.y().elementWiseStride() >= 1 && !op.isExecSpecial()
-                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+                if ((xEWS >= 1 && yEWS >= 1 && zEWS >= 1 && !op.isExecSpecial()
+                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
 
                     nativeOps.execPairwiseTransformDouble(xShapeInfoHostPointer, op.opNum(), (DoublePointer) x,
-                                    op.x().elementWiseStride(), (DoublePointer) y, op.y().elementWiseStride(),
-                                    (DoublePointer) z, op.z().elementWiseStride(), (DoublePointer) extraArgs, op.n());
+                                    xEWS, (DoublePointer) y, yEWS,
+                                    (DoublePointer) z, zEWS, (DoublePointer) extraArgs, op.n());
                 } else {
                     nativeOps.execPairwiseTransformDouble(xShapeInfoHostPointer, op.opNum(), (DoublePointer) x,
                                     (IntPointer) xShapeInfo, (DoublePointer) y, (IntPointer) yShapeInfo,
                                     (DoublePointer) z, (IntPointer) zShapeInfo, (DoublePointer) extraArgs);
                 }
             } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
-                if (op.x().elementWiseStride() >= 1 && op.y().elementWiseStride() >= 1
-                                && op.x().elementWiseStride() == op.y().elementWiseStride() && !op.isExecSpecial()
-                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+                if ((xEWS >= 1 && yEWS >= 1
+                                && xEWS == yEWS && !op.isExecSpecial()
+                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
                     nativeOps.execPairwiseTransformFloat(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x,
-                                    op.x().elementWiseStride(), (FloatPointer) y, op.y().elementWiseStride(),
-                                    (FloatPointer) z, op.z().elementWiseStride(), (FloatPointer) extraArgs, op.n());
+                                    xEWS, (FloatPointer) y, yEWS,
+                                    (FloatPointer) z, zEWS, (FloatPointer) extraArgs, op.n());
                 } else {
                     nativeOps.execPairwiseTransformFloat(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x,
                                     (IntPointer) xShapeInfo, (FloatPointer) y, (IntPointer) yShapeInfo,
                                     (FloatPointer) z, (IntPointer) zShapeInfo, (FloatPointer) extraArgs);
                 }
             } else {
-                if (op.x().elementWiseStride() >= 1 && op.y().elementWiseStride() >= 1
-                                && op.x().elementWiseStride() == op.y().elementWiseStride() && !op.isExecSpecial()
-                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+                if ((xEWS >= 1 && yEWS >= 1
+                                && xEWS == op.y().elementWiseStride() && !op.isExecSpecial()
+                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
                     nativeOps.execPairwiseTransformHalf(xShapeInfoHostPointer, op.opNum(), (ShortPointer) x,
-                                    op.x().elementWiseStride(), (ShortPointer) y, op.y().elementWiseStride(),
-                                    (ShortPointer) z, op.z().elementWiseStride(), (ShortPointer) extraArgs, op.n());
+                                    xEWS, (ShortPointer) y, yEWS,
+                                    (ShortPointer) z, zEWS, (ShortPointer) extraArgs, op.n());
                 } else {
                     nativeOps.execPairwiseTransformHalf(xShapeInfoHostPointer, op.opNum(), (ShortPointer) x,
                                     (IntPointer) xShapeInfo, (ShortPointer) y, (IntPointer) yShapeInfo,
@@ -2027,6 +2036,177 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public void commit() {
         ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncOldStream();
+    }
+
+    @Override
+    public INDArray thresholdEncode(INDArray input, double threshold, Integer boundary) {
+        DataBuffer buffer = input.data();
+
+        int numThreads = 1024;
+        int numBlocks = (int) (buffer.length() / numThreads + (buffer.length() % numThreads == 0 ? 0 : 1));
+
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+
+        DataBuffer blocksBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(numBlocks+1, true) : Nd4j.getDataBufferFactory().createInt(numBlocks+1, true, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
+        PointerPointer extras = extraz.get().put(1, context.getOldStream());
+
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP1Float(extras, (FloatPointer) AtomicAllocator.getInstance().getPointer(buffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer), (float) threshold);
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP1Double(extras, (DoublePointer) AtomicAllocator.getInstance().getPointer(buffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer), (float) threshold);
+        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP1Half(extras, (ShortPointer) AtomicAllocator.getInstance().getPointer(buffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer), (float) threshold);
+        }
+
+
+        AtomicAllocator.getInstance().getAllocationPoint(blocksBuffer).tickDeviceWrite();
+
+
+        int numMatches = blocksBuffer.getInt(0);
+
+        // special case here, nothing to update
+        if (numMatches == 0)
+            return null;
+
+        if (boundary != null && numMatches > boundary)  {
+            numMatches = boundary;
+            blocksBuffer.put(0, numMatches);
+        }
+
+/*
+        log.info("Totals: {}", numMatches);
+
+
+        log.info("Number of blocks for compression: {}", numBlocks);
+        log.info("BlocksCounts: {}", Arrays.toString(blocksBuffer.asInt()));
+*/
+        DataBuffer encodedBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(3+numMatches, false) : Nd4j.getDataBufferFactory().createInt(3+numMatches, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+        AtomicAllocator.getInstance().getAllocationPoint(encodedBuffer).tickHostWrite();
+        encodedBuffer.put(0, numMatches);
+        encodedBuffer.put(1, (int) buffer.length());
+        encodedBuffer.put(2, Float.floatToIntBits((float) threshold));
+        AtomicAllocator.getInstance().getAllocationPoint(encodedBuffer).tickHostWrite();
+
+
+        int prefixThreads = 512;
+        int numElts = numBlocks;
+        int level = 0;
+        List<DataBuffer> buffers = new ArrayList<>();
+
+        // here we just calculate number of sumBlock arrays
+        do {
+            int numPrefixBlocks = Math.max(1, (int)Math.ceil((float)numElts / (2.0f * prefixThreads)));
+            if (numBlocks > 1) {
+                level++;
+            }
+            numElts = numPrefixBlocks;
+        } while (numElts > 1);
+
+        long[] pointers = new long[level];
+
+        level = 0;
+        numElts = numBlocks;
+
+        //  allocating temp buffers for prefux sum
+        DataBuffer tempX = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createDouble(pointers.length, false) : Nd4j.getDataBufferFactory().createDouble(pointers.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        do {
+            int numPrefixBlocks = Math.max(1, (int)Math.ceil((float)numElts / (2.0f * prefixThreads)));
+            if (numPrefixBlocks > 1) {
+                DataBuffer bf = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(numPrefixBlocks, false) : Nd4j.getDataBufferFactory().createInt(numPrefixBlocks, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+                buffers.add(bf);
+
+                pointers[level++] = AtomicAllocator.getInstance().getPointer(bf).address();
+            }
+            numElts = numPrefixBlocks;
+        } while (numElts > 1);
+
+
+        AtomicAllocator.getInstance().memcpyBlocking(tempX, new LongPointer(pointers), pointers.length * 8, 0);
+
+        extras.put(2, AtomicAllocator.getInstance().getPointer(tempX));
+
+        DataBuffer offsetsBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(numBlocks, true) : Nd4j.getDataBufferFactory().createInt(numBlocks, true, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP2Int(extras, (IntPointer) AtomicAllocator.getInstance().getPointer(blocksBuffer), numBlocks, (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer) );
+        AtomicAllocator.getInstance().getAllocationPoint(offsetsBuffer).tickDeviceWrite();
+
+        //log.info("Offsets: {}", Arrays.toString(offsetsBuffer.asInt()));
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP3Float(extras, (FloatPointer) AtomicAllocator.getInstance().getPointer(buffer), (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(encodedBuffer));
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP3Double(extras, (DoublePointer) AtomicAllocator.getInstance().getPointer(buffer), (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(encodedBuffer));
+        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().encodeThresholdP3Half(extras, (ShortPointer) AtomicAllocator.getInstance().getPointer(buffer), (IntPointer) AtomicAllocator.getInstance().getPointer(offsetsBuffer), buffer.length(), (IntPointer) AtomicAllocator.getInstance().getPointer(encodedBuffer));
+        }
+
+        AtomicAllocator.getInstance().getAllocationPoint(encodedBuffer).tickDeviceWrite();
+        AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
+
+
+        // just to ensure it's not purged
+        extras.address();
+        tempX.address();
+        buffers.getClass();
+
+
+        return Nd4j.createArrayFromShapeBuffer(encodedBuffer, input.shapeInfoDataBuffer());
+    }
+
+
+    @Override
+    public INDArray thresholdEncode(INDArray input, double threshold) {
+        return thresholdEncode(input, threshold, null);
+    }
+
+    @Override
+    public INDArray thresholdDecode(INDArray encoded, INDArray target) {
+        DataBuffer buffer = encoded.data();
+
+        if (buffer.dataType() != DataBuffer.Type.INT)
+            throw new UnsupportedOperationException();
+
+        long compressedLength = buffer.getInt(0);
+        long originalLength = buffer.getInt(1);
+
+        if (target.lengthLong() != originalLength)
+            throw new ND4JIllegalStateException("originalLength ["+ originalLength+"] stored in encoded array doesn't match target length ["+ target.lengthLong()+"]");
+
+        DataBuffer result = target.data();
+
+
+
+        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        nativeOps.memsetAsync(AtomicAllocator.getInstance().getPointer(result), 0,result.length(), 0, context.getOldStream());
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
+        PointerPointer extras = extraz.get().put(1, context.getOldStream());
+
+        //log.info("DEC Source length: {}", buffer.length());
+        //log.info("DEC Source: {}", Arrays.toString(buffer.asInt()));
+
+        if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().decodeThresholdFloat(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (FloatPointer) AtomicAllocator.getInstance().getPointer(result));
+        } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().decodeThresholdDouble(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (DoublePointer) AtomicAllocator.getInstance().getPointer(result));
+        } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().decodeThresholdHalf(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (ShortPointer) AtomicAllocator.getInstance().getPointer(result));
+        }
+
+        AtomicAllocator.getInstance().getAllocationPoint(result).tickDeviceWrite();
+
+        //DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(DataBuffer.TypeEx.THRESHOLD, buffer, getGlobalTypeEx());
+
+        return target;
     }
 }
 

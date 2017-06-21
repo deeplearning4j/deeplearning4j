@@ -54,57 +54,57 @@ public class Sinh extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 12;
+        return 63;
     }
 
     @Override
     public String name() {
-        return "sin";
+        return "sinh";
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-        return ComplexUtil.sin(origin);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-        return ComplexUtil.sin(origin);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        return ComplexUtil.sin(origin);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public float op(float origin, float other) {
-        return (float) FastMath.sin(origin);
+        return (float) FastMath.sinh(origin);
     }
 
     @Override
     public double op(double origin, double other) {
-        return FastMath.sin(origin);
+        return FastMath.sinh(origin);
     }
 
     @Override
     public double op(double origin) {
-        return FastMath.sin(origin);
+        return FastMath.sinh(origin);
     }
 
     @Override
     public float op(float origin) {
-        return (float) FastMath.sin(origin);
+        return (float) FastMath.sinh(origin);
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-        return ComplexUtil.sin(origin);
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public TransformOp derivative() {
-        return new Cos(x, y, z, n);
+        return new Cosh(x, y, z, n);
     }
 
     @Override

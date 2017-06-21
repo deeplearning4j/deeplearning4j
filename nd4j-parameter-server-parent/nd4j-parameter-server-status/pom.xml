@@ -17,10 +17,6 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
         <!-- MapDB - Used for StatsListener storage -->
         <dependency>
             <groupId>org.mapdb</groupId>
@@ -37,6 +33,12 @@
             <groupId>com.typesafe.play</groupId>
             <artifactId>play-java_2.11</artifactId>
             <version>${playframework.version}</version>
+            <exclusions>
+              <exclusion>
+                <groupId>com.google.code.findbugs</groupId>
+                <artifactId>jsr305</artifactId>
+              </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

@@ -1884,7 +1884,7 @@ public class Shape {
         shapeBuffer[count++] = elementWiseStride;
         shapeBuffer[count] = (int) order;
 
-        DataBuffer ret = Nd4j.createBuffer(shapeBuffer);
+        DataBuffer ret = Nd4j.createBufferDetached(shapeBuffer);
         ret.setConstant(true);
         /*
         DataBuffer ret = Nd4j.createBuffer(new int[shapeInfoLength(shape.length)]);

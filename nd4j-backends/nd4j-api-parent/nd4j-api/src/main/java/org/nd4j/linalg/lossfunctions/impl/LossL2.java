@@ -52,6 +52,12 @@ public class LossL2 implements ILossFunction {
     }
 
     protected INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        if (labels.size(1) != preOutput.size(1)) {
+            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
+                            + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
+                            + ") ");
+            
+        }
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
         INDArray scoreArr = output.rsubi(labels);
         scoreArr = scoreArr.muli(scoreArr);
@@ -93,6 +99,12 @@ public class LossL2 implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        if (labels.size(1) != preOutput.size(1)) {
+            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
+                            + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
+                            + ") ");
+            
+        }
         //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 

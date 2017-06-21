@@ -23,6 +23,14 @@ public interface NDArrayCompressor {
     String getDescriptor();
 
     /**
+     * This method allows to pass compressor-dependent configuration options to this compressor
+     *
+     * PLEASE NOTE: Each compressor has own options, please check corresponding implementations javadoc
+     * @param vars
+     */
+    void configure(Object... vars);
+
+    /**
      * This method returns compression type provided
      * by specific NDArrayCompressor implementation
      * @return

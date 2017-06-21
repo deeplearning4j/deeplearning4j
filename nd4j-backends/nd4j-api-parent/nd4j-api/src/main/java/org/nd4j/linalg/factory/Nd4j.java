@@ -1262,6 +1262,17 @@ public class Nd4j {
         return type == DataBuffer.Type.DOUBLE ? createBuffer(new double[length]) : createBuffer(new float[length]);
     }
 
+
+    public static DataBuffer createBufferDetached(int[] shape, DataBuffer.Type type) {
+        int length = ArrayUtil.prod(shape);
+        if (type == DataBuffer.Type.INT)
+            return createBufferDetached(new int[length]);
+        else if (type == DataBuffer.Type.HALF)
+            return createBufferDetached(new float[length]);
+
+        return type == DataBuffer.Type.DOUBLE ? createBufferDetached(new double[length]) : createBufferDetached(new float[length]);
+    }
+
     /**
      * Creates a buffer of the specified type
      * and length with the given byte buffer.
@@ -1314,6 +1325,19 @@ public class Nd4j {
      * @return the created buffer
      */
     public static DataBuffer createBuffer(int[] data) {
+        DataBuffer ret;
+        ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createInt(data) : DATA_BUFFER_FACTORY_INSTANCE.createInt(data, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create a buffer equal of length prod(shape). This method is NOT affected by workspaces
+     *
+     * @param data
+     * @return
+     */
+    public static DataBuffer createBufferDetached(int[] data) {
         DataBuffer ret;
         ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(data);
         logCreationIfNecessary(ret);
@@ -1416,9 +1440,9 @@ public class Nd4j {
     public static DataBuffer createBuffer(double[] data) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.DOUBLE)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(data);
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(data) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(data, Nd4j.getMemoryManager().getCurrentWorkspace());
         else if (dataType() == DataBuffer.Type.HALF)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data));
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(data) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
         else
             ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data)) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
@@ -2171,7 +2195,8 @@ public class Nd4j {
             INDArray row = write.getRow(i);
             for (int j = 0; j < row.columns(); j++) {
                 sb.append(row.getDouble(j));
-                sb.append(split);
+                if (j < row.columns() - 1) // not the last element
+                    sb.append(split);
             }
             sb.append("\n");
             writer.write(sb.toString());
@@ -2244,12 +2269,12 @@ public class Nd4j {
     public static INDArray readTxtString(InputStream ndarray, String sep) {
         /*
          We could dump an ndarray to a file with the tostring (since that is valid json) and use put/get to parse it as json
-        
+
          But here we leverage our information of the tostring method to be more efficient
          With our current toString format we use tads along dimension (rank-1,rank-2) to write to the array in two dimensional chunks at a time.
          This is more efficient than setting each value at a time with putScalar.
          This also means we can read the file one line at a time instead of loading the whole thing into memory
-        
+
          Future work involves enhancing the write json method to provide more features to make the load more efficient
         */
         int lineNum = 0;
@@ -2409,7 +2434,7 @@ public class Nd4j {
      * @throws IOException
      */
     public static INDArray read(DataInputStream dis) throws IOException {
-        DataBuffer shapeInformation = Nd4j.createBuffer(new int[1], DataBuffer.Type.INT);
+        DataBuffer shapeInformation = Nd4j.createBufferDetached(new int[1], DataBuffer.Type.INT);
         shapeInformation.read(dis);
         int length = Shape.length(shapeInformation);
         DataBuffer data = CompressedDataBuffer.readUnknown(dis, length);
@@ -5464,6 +5489,58 @@ public class Nd4j {
     }
 
     /**
+     * This method sums given arrays and stores them to a new target array
+     *
+     * @param arrays
+     * @return
+     */
+    public static INDArray accumulate(Collection<INDArray> arrays) {
+        if (arrays == null|| arrays.size() == 0)
+            throw new ND4JIllegalStateException("Input for accumulation is null or empty");
+
+        return accumulate(arrays.toArray(new INDArray[0]));
+    }
+
+    /**
+     * This method sums given arrays and stores them to a new array
+     *
+     * @param arrays
+     * @return
+     */
+    public static INDArray accumulate(INDArray... arrays) {
+        if (arrays == null|| arrays.length == 0)
+            throw new ND4JIllegalStateException("Input for accumulation is null or empty");
+
+        return accumulate(Nd4j.create(arrays[0].shape(), arrays[0].ordering()), arrays);
+    }
+
+    /**
+     * This method sums given arrays and stores them to a given target array
+     *
+     * @param target
+     * @param arrays
+     * @return
+     */
+    public static INDArray accumulate(INDArray target, Collection<INDArray> arrays) {
+
+        return accumulate(target, arrays.toArray(new INDArray[0]));
+    }
+
+    /**
+     * This method sums given arrays and stores them to a given target array
+     *
+     * @param target
+     * @param arrays
+     * @return
+     */
+    public static INDArray accumulate(INDArray target, INDArray[] arrays) {
+        if (arrays == null|| arrays.length == 0)
+            return target;
+
+        return factory().accumulate(target, arrays);
+    }
+
+    /**
      * This method produces concatenated array, that consist from tensors, fetched from source array, against some dimension and specified indexes
      *
      * @param source source tensor
@@ -6146,6 +6223,8 @@ public class Nd4j {
                 return 4;
             case HALF:
                 return 2;
+            case INT:
+                return 4;
             default:
             case DOUBLE:
                 return 8;

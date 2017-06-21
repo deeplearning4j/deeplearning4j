@@ -37,7 +37,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
     @Getter protected int deviceId;
     @Getter protected Long threadId;
 
-    protected static final long SAFETY_OFFSET = 1024;
+    protected static final long SAFETY_OFFSET = 1024L;
 
     @Getter protected String id;
 
@@ -495,7 +495,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         // if during this cycle we've used more memory then before - increase max count. we'll use it in future for optional reallocation
         if (cycleAllocations.get() > maxCycle.get()) {
             if (isDebug.get())
-                log.info("Workspace [{}], current cycle: {}; max cycle: {}", id, cycleAllocations.get(), maxCycle.get());
+                log.info("Workspace [{}] device_{}, current cycle: {}; max cycle: {}", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), cycleAllocations.get(), maxCycle.get());
 
             maxCycle.set(cycleAllocations.get());
         }
@@ -555,7 +555,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             if (diff > 0 && !trimmedMode.get() && deviceOffset.get() > 0) {
 
                 if (isDebug.get())
-                    log.info("Align to [{}]; diff: [{}]; block size: [{}]; currentOffset: [{}]; workspaceSize: [{}]; trimmedMode: {}", initialBlockSize.get(), diff, cycleAllocations.get(), deviceOffset.get(), currentSize.get(), trimmedMode.get());
+                    log.info("Worskpace [{}]: Align to [{}]; diff: [{}]; block size: [{}]; currentOffset: [{}]; workspaceSize: [{}]; trimmedMode: {}", id, initialBlockSize.get(), diff, cycleAllocations.get(), deviceOffset.get(), currentSize.get(), trimmedMode.get());
 
                 deviceOffset.getAndAdd(diff);
                 hostOffset.getAndAdd(diff);
@@ -696,6 +696,7 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
         private Long threadId;
         private Queue<PointersPair> pinnedPointers;
         private List<PointersPair> externalPointers;
+        private String key;
 
         public GarbageWorkspaceReference(MemoryWorkspace referent, ReferenceQueue<? super MemoryWorkspace> queue) {
             super(referent, queue);
@@ -705,6 +706,8 @@ public abstract class Nd4jWorkspace implements MemoryWorkspace {
             this.threadId = referent.getThreadId();
             this.pinnedPointers = ((Nd4jWorkspace) referent).pinnedAllocations;
             this.externalPointers = ((Nd4jWorkspace) referent).externalAllocations;
+
+            this.key = id + "_" + threadId;
         }
     }
 }

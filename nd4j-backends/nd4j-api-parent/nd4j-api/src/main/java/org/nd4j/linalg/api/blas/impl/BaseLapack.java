@@ -10,6 +10,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * Base lapack define float and double versions.
  *
  * @author Adam Gibson
+ * @author rcorbish
  */
 @Slf4j
 public abstract class BaseLapack implements Lapack {
@@ -147,6 +148,46 @@ public abstract class BaseLapack implements Lapack {
     public abstract void dgeqrf(int M, int N, INDArray A, INDArray R, INDArray INFO);
 
 
+
+    @Override
+    public int syev( char jobz, char uplo, INDArray A, INDArray V ) {
+
+        if( A.rows() != A.columns() ) {
+            throw new Error( "syev: A must be square.") ;
+        }
+        if( A.rows() != V.length() ) {
+            throw new Error( "syev: V must be the length of the matrix dimension.") ;
+        }
+
+	int status = -1 ;
+        if (A.data().dataType() == DataBuffer.Type.DOUBLE) {
+            status = dsyev( jobz, uplo, A.rows(), A, V ) ;
+        } else if (A.data().dataType() == DataBuffer.Type.FLOAT) {
+            status = ssyev( jobz, uplo, A.rows(), A, V ) ;
+        } else {
+            throw new UnsupportedOperationException();
+        }
+
+	return status ;
+    }
+
+
+    /**
+    * Float/Double versions of eigen value/vector calc.
+    *
+    * @param jobz 'N' - no eigen vectors, 'V' - return eigenvectors
+    * @param uplo upper or lower part of symmetric matrix to use
+    * @param N  the number of rows & cols in the matrix A
+    * @param A  the matrix to calculate eigenvectors
+    * @param R  an output array for eigenvalues ( may be null )
+    * @param INFO error details 1 int array, a positive number (i) implies row i cannot be factored, a negative value implies paramtere i is invalid
+    */
+    public abstract int ssyev( char jobz, char uplo, int N, INDArray A, INDArray R ) ;
+    public abstract int dsyev( char jobz, char uplo, int N, INDArray A, INDArray R ) ;
+
+
+
+
     @Override
     public void gesvd(INDArray A, INDArray S, INDArray U, INDArray VT) {
         int m = A.rows();
@@ -177,6 +218,11 @@ public abstract class BaseLapack implements Lapack {
 
     public abstract void dgesvd(byte jobu, byte jobvt, int M, int N, INDArray A, INDArray S, INDArray U, INDArray VT,
                     INDArray INFO);
+
+
+
+	
+
 
     @Override
     public INDArray getPFactor(int M, INDArray ipiv) {

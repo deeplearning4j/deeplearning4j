@@ -1,5 +1,9 @@
 package org.nd4j.linalg.factory;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -103,5 +107,16 @@ public class Nd4jTest extends BaseNd4jTest {
         INDArray arr = Nd4j.linspace(1, 6, 6).reshape(2, 3);
         INDArray var = arr.var(false, 0);
         assertEquals(Nd4j.create(new double[] {2.25, 2.25, 2.25}), var);
+    }
+
+    @Test
+    public void testWriteNumpy() throws IOException {
+        INDArray arr = Nd4j.create(new double[] {1., 1., 1., 1., 4., 4., 4., 4.}, new int[] {2, 4});
+        String path1 = "src/test/resources/writeNumpy.csv";
+        String path2 = "src/test/resources/writeNumpyExpected.csv";
+        Nd4j.writeNumpy(arr, path1, ",");
+        assertEquals("The files differ!",
+                     FileUtils.readFileToString(new File(path1), "utf-8"),
+                     FileUtils.readFileToString(new File(path2), "utf-8"));
     }
 }

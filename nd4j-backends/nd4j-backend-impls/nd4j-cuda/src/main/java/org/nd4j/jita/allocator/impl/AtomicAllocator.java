@@ -364,6 +364,25 @@ public class AtomicAllocator implements Allocator {
 
 
     /**
+     * This method releases memory allocated for this allocation point
+     * @param point
+     */
+    public void freeMemory(AllocationPoint point) {
+        if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
+            this.getMemoryHandler().getMemoryProvider().free(point);
+            point.setAllocationStatus(AllocationStatus.HOST);
+            this.getMemoryHandler().getMemoryProvider().free(point);
+            this.getMemoryHandler().forget(point, AllocationStatus.DEVICE);
+        } else {
+            // call it only once
+            this.getMemoryHandler().getMemoryProvider().free(point);
+            this.getMemoryHandler().forget(point, AllocationStatus.HOST);
+        }
+
+        allocationsMap.remove(point.getObjectId());
+    }
+
+    /**
      * This method allocates required chunk of memory
      *
      * @param requiredMemory
@@ -432,10 +451,14 @@ public class AtomicAllocator implements Allocator {
             PagedPointer ptrDev = workspace.alloc(reqMem, MemoryKind.DEVICE, requiredMemory.getDataType(), initialize);
             PagedPointer ptrHost = workspace.alloc(reqMem, MemoryKind.HOST, requiredMemory.getDataType(), initialize);
 
-            pair.setDevicePointer(ptrDev);
             pair.setHostPointer(ptrHost);
-
-            point.setAllocationStatus(AllocationStatus.DEVICE);
+            if (ptrDev != null) {
+                pair.setDevicePointer(ptrDev);
+                point.setAllocationStatus(AllocationStatus.DEVICE);
+            } else {
+                pair.setDevicePointer(ptrHost);
+                point.setAllocationStatus(AllocationStatus.HOST);
+            }
 
 
             //if (!ptrDev.isLeaked())

@@ -28,7 +28,6 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
     protected WorkspaceConfiguration defaultConfiguration;
     protected ThreadLocal<Map<String, MemoryWorkspace>> backingMap = new ThreadLocal<>();
-    private DummyWorkspace dummyWorkspace = new DummyWorkspace();
     private ReferenceQueue<MemoryWorkspace> queue;
     private WorkspaceDeallocatorThread thread;
     private Map<String, Nd4jWorkspace.GarbageWorkspaceReference> referenceMap = new ConcurrentHashMap<>();
@@ -85,7 +84,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
     protected void pickReference(MemoryWorkspace workspace) {
         Nd4jWorkspace.GarbageWorkspaceReference reference = new Nd4jWorkspace.GarbageWorkspaceReference(workspace, queue);
-        referenceMap.put(reference.getId()+ "_" + reference.getThreadId(), reference);
+        referenceMap.put(reference.getKey(), reference);
     }
 
     @Override
@@ -207,7 +206,7 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
     public MemoryWorkspace scopeOutOfWorkspaces() {
         MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         if (workspace == null)
-            return dummyWorkspace;
+            return new DummyWorkspace();
         else {
             Nd4j.getMemoryManager().setCurrentWorkspace(null);
             return workspace.tagOutOfScopeUse();
@@ -242,7 +241,6 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
 
                             if (pair.getHostPointer() != null) {
 //                                log.info("Deallocating host...");
-                                referenceMap.remove(reference.getId() + "_" + reference.getThreadId());
                                 Nd4j.getMemoryManager().release(pair.getHostPointer(), MemoryKind.HOST);
                             }
                         }
@@ -266,6 +264,8 @@ public abstract class BasicWorkspaceManager implements MemoryWorkspaceManager {
                             if (pair.getDevicePointer() != null)
                                 Nd4j.getMemoryManager().release(pair.getDevicePointer(), MemoryKind.DEVICE);
                         }
+
+                        referenceMap.remove(reference.getKey());
                     }
                 } catch (Exception e) {
                     //

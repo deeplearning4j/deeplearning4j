@@ -7,22 +7,29 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.*;
+import org.nd4j.compression.impl.AbstractCompressor;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.environment.Nd4jEnvironment;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.aggregates.Aggregate;
 import org.nd4j.linalg.api.ops.aggregates.Batch;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
+import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.accum.Variance;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cache.ConstantHandler;
 import org.nd4j.linalg.cache.TADManager;
+import org.nd4j.linalg.compression.CompressedDataBuffer;
+import org.nd4j.linalg.compression.CompressionDescriptor;
+import org.nd4j.linalg.compression.CompressionType;
 import org.nd4j.linalg.cpu.nativecpu.CpuTADManager;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
@@ -256,7 +263,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             retShape = new int[] {1, 1};
         }
 
-        if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape))
+        if (op.x().isVector() && op.x().length() == ArrayUtil.prod(retShape) && ArrayUtil.prodLong(retShape) > 1)
             return op.noOp();
 
         /**
@@ -594,13 +601,22 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if (op.y() != null) {
-                if (op.x().elementWiseStride() >= 1 && op.y().elementWiseStride() >= 1
-                                && op.x().elementWiseStride() == op.y().elementWiseStride() && !op.isExecSpecial()
-                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) {
+
+                int xEWS = op.x().elementWiseStride();
+                int yEWS = op.y().elementWiseStride();
+                int zEWS = op.z().elementWiseStride();
+
+                boolean xRow = op.x().isRowVector();
+                boolean yRow = op.y().isRowVector();
+                boolean zRow = op.z().isRowVector();
+
+                if ((xEWS >= 1 && yEWS >= 1
+                                && xEWS == yEWS && !op.isExecSpecial()
+                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
                     loop.execPairwiseTransformDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
-                                    op.x().elementWiseStride(), (DoublePointer) op.y().data().addressPointer(),
-                                    op.y().elementWiseStride(), (DoublePointer) op.z().data().addressPointer(),
-                                    op.z().elementWiseStride(), (DoublePointer) getPointerForExtraArgs(op), op.n());
+                                    xEWS, (DoublePointer) op.y().data().addressPointer(),
+                                    yEWS, (DoublePointer) op.z().data().addressPointer(),
+                                    zEWS, (DoublePointer) getPointerForExtraArgs(op), op.n());
 
                 } else {
                     loop.execPairwiseTransformDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
@@ -629,13 +645,21 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
         } else {
             if (op.y() != null) {
-                if (op.x().elementWiseStride() >= 1 && op.y().elementWiseStride() >= 1
-                                && op.x().elementWiseStride() == op.y().elementWiseStride() && !op.isExecSpecial()
-                                && op.x().ordering() == op.y().ordering()) {
+                int xEWS = op.x().elementWiseStride();
+                int yEWS = op.y().elementWiseStride();
+                int zEWS = op.z().elementWiseStride();
+
+                boolean xRow = op.x().isRowVector();
+                boolean yRow = op.y().isRowVector();
+                boolean zRow = op.z().isRowVector();
+
+                if ((xEWS >= 1 && yEWS >= 1
+                                && xEWS == yEWS && !op.isExecSpecial()
+                                && op.x().ordering() == op.y().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
                     loop.execPairwiseTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
-                                    op.x().elementWiseStride(), (FloatPointer) op.y().data().addressPointer(),
-                                    op.y().elementWiseStride(), (FloatPointer) op.z().data().addressPointer(),
-                                    op.z().elementWiseStride(), (FloatPointer) getPointerForExtraArgs(op), op.n());
+                                    xEWS, (FloatPointer) op.y().data().addressPointer(),
+                                    yEWS, (FloatPointer) op.z().data().addressPointer(),
+                                    zEWS, (FloatPointer) getPointerForExtraArgs(op), op.n());
 
                 } else {
                     loop.execPairwiseTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
@@ -1210,5 +1234,73 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         public int hashCode() {
             return opNum;
         }
+    }
+
+    @Override
+    public INDArray thresholdEncode(INDArray input, double threshold) {
+        return thresholdEncode(input, threshold, null);
+    }
+
+    @Override
+    public INDArray thresholdEncode(INDArray input, double threshold, Integer boundary) {
+
+        MatchCondition condition = new MatchCondition(input, Conditions.absGreaterThanOrEqual(threshold));
+        int cntAbs = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
+
+        if (cntAbs == 0)
+            return null;
+
+        if (boundary != null)
+            cntAbs = Math.min(cntAbs, boundary);
+
+        DataBuffer buffer = input.data();
+
+        long originalLength = buffer.length() * Nd4j.sizeOfDataType(buffer.dataType());
+        int compressedLength = cntAbs + 3;
+        // first 3 elements contain header
+
+        DataBuffer encodedBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(3+cntAbs, false) : Nd4j.getDataBufferFactory().createInt(3+cntAbs, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+
+        encodedBuffer.put(0, cntAbs);
+        encodedBuffer.put(1, (int) buffer.length());
+        encodedBuffer.put(2, Float.floatToIntBits((float) threshold));
+
+        CompressionDescriptor descriptor = new CompressionDescriptor();
+        descriptor.setCompressedLength(compressedLength * 4); // sizeOf(INT)
+        descriptor.setOriginalLength(originalLength);
+        descriptor.setOriginalElementSize(Nd4j.sizeOfDataType(buffer.dataType()));
+        descriptor.setNumberOfElements(buffer.length());
+
+        descriptor.setCompressionAlgorithm("THRESHOLD");
+        descriptor.setCompressionType(CompressionType.LOSSLESS);
+
+        //CompressedDataBuffer cbuff = new CompressedDataBuffer(pointer, descriptor);
+
+        Nd4j.getNDArrayFactory().convertDataEx(AbstractCompressor.getBufferTypeEx(buffer), buffer.addressPointer(), DataBuffer.TypeEx.THRESHOLD, encodedBuffer.addressPointer(), buffer.length());
+
+        Nd4j.getAffinityManager().tagLocation(buffer, AffinityManager.Location.HOST);
+
+        return Nd4j.createArrayFromShapeBuffer(encodedBuffer, input.shapeInfoDataBuffer());
+    }
+
+    @Override
+    public INDArray thresholdDecode(INDArray encoded, INDArray target) {
+        DataBuffer buffer = encoded.data();
+
+        if (buffer.dataType() != DataBuffer.Type.INT)
+            throw new ND4JIllegalStateException("thresholdEncoded array should have dataType of INT");
+
+        long compressedLength = buffer.getInt(0);
+        long originalLength = buffer.getInt(1);
+        float threshold = buffer.getInt(2);
+
+        if (target.lengthLong() != originalLength)
+            throw new ND4JIllegalStateException("originalLength stored in encoded array doesn't match target length");
+
+        DataBuffer.TypeEx typeDst = AbstractCompressor.getBufferTypeEx(target.data());
+
+        loop.convertTypes(null, DataBuffer.TypeEx.THRESHOLD.ordinal(), buffer.addressPointer(), target.length(), typeDst.ordinal(), target.data().addressPointer());
+
+        return target;
     }
 }

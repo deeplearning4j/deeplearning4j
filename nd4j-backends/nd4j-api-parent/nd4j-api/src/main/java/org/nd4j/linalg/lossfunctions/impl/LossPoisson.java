@@ -15,6 +15,12 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 public class LossPoisson implements ILossFunction {
 
     public INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        if (labels.size(1) != preOutput.size(1)) {
+            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
+                            + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
+                            + ") ");
+            
+        }
         /*
          mean of (yhat - y * log(yhat))
          */
@@ -52,6 +58,12 @@ public class LossPoisson implements ILossFunction {
 
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
+        if (labels.size(1) != preOutput.size(1)) {
+            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
+                            + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
+                            + ") ");
+            
+        }
         INDArray yHat = activationFn.getActivation(preOutput.dup(), true);
         INDArray yDivyhat = labels.div(yHat);
         INDArray dLda = yDivyhat.rsubi(1);

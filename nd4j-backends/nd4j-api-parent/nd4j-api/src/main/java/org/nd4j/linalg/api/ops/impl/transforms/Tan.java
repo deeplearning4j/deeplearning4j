@@ -28,9 +28,9 @@ import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
- * tan elementwise function
+ * Tanh elementwise function
  *
- * @author Adam Gibson
+ * @author raver119@gmail.com
  */
 public class Tan extends BaseTransformOp {
 
@@ -58,7 +58,7 @@ public class Tan extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 15;
+        return 65;
     }
 
     @Override
@@ -68,17 +68,17 @@ public class Tan extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, double other) {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, float other) {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-       throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -103,12 +103,12 @@ public class Tan extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin) {
-      throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public TransformOp derivative() {
-        throw new UnsupportedOperationException();
+        return new TanDerivative(x, y, z, n);
     }
 
     @Override

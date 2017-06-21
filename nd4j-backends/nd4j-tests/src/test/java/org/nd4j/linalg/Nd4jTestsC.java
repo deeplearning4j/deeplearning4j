@@ -41,6 +41,9 @@ import org.nd4j.linalg.api.ops.BroadcastOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
+import org.nd4j.linalg.api.ops.impl.accum.Norm1;
+import org.nd4j.linalg.api.ops.impl.accum.Norm2;
+import org.nd4j.linalg.api.ops.impl.accum.Sum;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
@@ -59,6 +62,8 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Condition;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -4159,6 +4164,71 @@ public class Nd4jTestsC extends BaseNd4jTest {
         for (int i = 0; i < out.size(); i++) {
             assertEquals(out.get(i), comp.get(i));
         }
+    }
+
+    @Test
+    public void testScalarReduction1() {
+        Accumulation op = new Norm2(Nd4j.create(1).assign(1.0));
+        double norm2 = Nd4j.getExecutioner().execAndReturn(op).getFinalResult().doubleValue();
+        double norm1 = Nd4j.getExecutioner().execAndReturn(new Norm1(Nd4j.create(1).assign(1.0))).getFinalResult().doubleValue();
+        double sum = Nd4j.getExecutioner().execAndReturn(new Sum(Nd4j.create(1).assign(1.0))).getFinalResult().doubleValue();
+
+        assertEquals(1.0, norm2, 0.001);
+        assertEquals(1.0, norm1, 0.001);
+        assertEquals(1.0, sum, 0.001);
+    }
+
+    @Test
+    public void sumResultArrayEdgeCase(){
+        INDArray delta = Nd4j.create(1,3);
+        delta.assign(Nd4j.rand(delta.shape()));
+
+        INDArray out = delta.sum(0);
+
+        INDArray out2 = Nd4j.zeros(new int[]{1,3}, 'c');
+        INDArray res = delta.sum(out2, 0);
+
+        assertEquals(out, out2);
+        assertTrue(res == out2);
+    }
+
+
+    @Test
+    public void tesAbsReductions1() throws Exception {
+        INDArray array = Nd4j.create(new double[]{-1, -2, -3, -4});
+
+        assertEquals(4, array.amaxNumber().intValue());
+    }
+
+
+    @Test
+    public void tesAbsReductions2() throws Exception {
+        INDArray array = Nd4j.create(new double[]{-1, -2, -3, -4});
+
+        assertEquals(1, array.aminNumber().intValue());
+    }
+
+
+    @Test
+    public void tesAbsReductions3() throws Exception {
+        INDArray array = Nd4j.create(new double[]{-2, -2, 2, 2});
+
+        assertEquals(2, array.ameanNumber().intValue());
+    }
+
+
+    @Test
+    public void tesAbsReductions4() throws Exception {
+        INDArray array = Nd4j.create(new double[]{-2, -2, 2, 2});
+
+        assertEquals(4, array.scan(Conditions.absGreaterThanOrEqual(0.0)).intValue());
+    }
+
+    @Test
+    public void tesAbsReductions5() throws Exception {
+        INDArray array = Nd4j.create(new double[]{-2, 0.0, 2, 2});
+
+        assertEquals(3, array.scan(Conditions.absGreaterThan(0.0)).intValue());
     }
 
     @Override

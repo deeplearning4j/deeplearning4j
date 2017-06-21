@@ -43,7 +43,7 @@ public interface DataBuffer extends Serializable {
     }
 
     enum TypeEx {
-        FLOAT8, INT8, UINT8, FLOAT16, INT16, UINT16, FLOAT, DOUBLE
+        FLOAT8, INT8, UINT8, FLOAT16, INT16, UINT16, FLOAT, DOUBLE, THRESHOLD, FTHRESHOLD
     }
 
 
@@ -631,4 +631,16 @@ public interface DataBuffer extends Serializable {
      * @return
      */
     MemoryWorkspace getParentWorkspace();
+
+    /**
+     * Reallocate the native memory of the buffer
+     * @param length the new length of the buffer
+     * @return this databuffer
+     * */
+    DataBuffer reallocate(long length);
+
+    /**
+     * @return the capacity of the databuffer
+     * */
+    long capacity();
 }

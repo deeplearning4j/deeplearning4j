@@ -258,8 +258,38 @@ public interface OpExecutioner {
     void printEnvironmentInformation();
 
     /**
+     * This method ensures all operations that supposed to be executed at this moment, are executed.
+     */
+    void push();
+
+    /**
      * This method ensures all operations that supposed to be executed at this moment, are executed and finished.
      */
     void commit();
 
+    /**
+     * This method encodes array as thresholds, updating input array at the same time
+     *
+     * @param input
+     * @return encoded array is returned
+     */
+    INDArray thresholdEncode(INDArray input, double threshold);
+
+
+    /**
+     * This method encodes array as thresholds, updating input array at the same time
+     *
+     * @param input
+     * @return encoded array is returned
+     */
+    INDArray thresholdEncode(INDArray input, double threshold, Integer boundary);
+
+    /**
+     * This method decodes thresholds array, and puts it into target array
+     *
+     * @param encoded
+     * @param target
+     * @return target is returned
+     */
+    INDArray thresholdDecode(INDArray encoded, INDArray target);
 }

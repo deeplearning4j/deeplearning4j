@@ -24,12 +24,13 @@ import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.util.ComplexUtil;
 
 /**
- * Cosine elementwise function
+ * Cosine Hyperbolic elementwise function
  *
- * @author Adam Gibson
+ * @author raver119@gmail.com
  */
 public class Cosh extends BaseTransformOp {
     public Cosh() {}
@@ -52,7 +53,7 @@ public class Cosh extends BaseTransformOp {
 
     @Override
     public int opNum() {
-        return 2;
+        return 64;
     }
 
     @Override
@@ -72,7 +73,7 @@ public class Cosh extends BaseTransformOp {
 
     @Override
     public IComplexNumber op(IComplexNumber origin, IComplexNumber other) {
-        throw new UnsupportedOperationException();
+        return ComplexUtil.cos(origin);
     }
 
     @Override
@@ -101,12 +102,17 @@ public class Cosh extends BaseTransformOp {
     }
 
     @Override
+    public TransformOp derivative() {
+        return new Sinh(x, y, z, n);
+    }
+
+    @Override
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
         if (y() != null)
             return new Cosh(xAlongDimension, y.vectorAlongDimension(index, dimension),
-                    z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+                            z.vectorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Cosh(xAlongDimension, z.vectorAlongDimension(index, dimension), xAlongDimension.length());
 
@@ -118,7 +124,7 @@ public class Cosh extends BaseTransformOp {
 
         if (y() != null)
             return new Cosh(xAlongDimension, y.tensorAlongDimension(index, dimension),
-                    z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+                            z.tensorAlongDimension(index, dimension), xAlongDimension.length());
         else
             return new Cosh(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
 
