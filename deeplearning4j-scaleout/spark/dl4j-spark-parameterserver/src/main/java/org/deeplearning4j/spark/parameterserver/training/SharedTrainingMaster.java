@@ -69,6 +69,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     protected boolean collectTrainingStats;
     protected int rddDataSetNumExamples;
+    protected long debugLongerIterations = 0L;
 
     // TODO: this option should be abstracted, if we decide to generalize this trainingmaster
     protected double threshold;
@@ -92,7 +93,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         // just a stub for ser/de
     }
 
-    public SharedTrainingMaster(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers, RDDTrainingApproach rddTrainingApproach, StorageLevel storageLevel, boolean collectTrainingStats, RepartitionStrategy repartitionStrategy, Repartition repartition, double threshold, int batchSizePerWorker) {
+    public SharedTrainingMaster(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers, RDDTrainingApproach rddTrainingApproach, StorageLevel storageLevel, boolean collectTrainingStats, RepartitionStrategy repartitionStrategy, Repartition repartition, double threshold, int batchSizePerWorker, long debugLongerIterations) {
         this.voidConfiguration = voidConfiguration;
         this.numWorkers = numWorkers;
         this.rddTrainingApproach = rddTrainingApproach;
@@ -104,6 +105,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         this.isFirstRun = new AtomicBoolean(false);
         this.batchSizePerWorker = batchSizePerWorker;
         this.rddDataSetNumExamples = batchSizePerWorker;
+        this.debugLongerIterations = debugLongerIterations;
 
         if (collectTrainingStats)
             stats = new ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper();
@@ -186,6 +188,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         SharedTrainingConfiguration configuration = SharedTrainingConfiguration.builder()
                 .threshold(threshold)
                 .voidConfiguration(voidConfiguration)
+                .debugLongerIterations(debugLongerIterations)
                 .build();
 
         if (collectTrainingStats)
@@ -213,7 +216,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         SharedTrainingConfiguration configuration = SharedTrainingConfiguration.builder()
                 .threshold(threshold)
                 .voidConfiguration(voidConfiguration)
-
+                .debugLongerIterations(debugLongerIterations)
                 .build();
 
         if (collectTrainingStats)
@@ -837,6 +840,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         protected boolean collectTrainingStats;
         protected Transport transport;
         protected int batchSize;
+        protected long debugLongerIterations = 0L;
 
         public Builder(int rddDataSetNumExamples) {
             this(1e-3, rddDataSetNumExamples);
@@ -984,6 +988,21 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         /**
+         * This method allows you to artificially extend iteration time using Thread.sleep() for a given time.
+         *
+         * PLEASE NOTE: Never use that option in production environment. It's suited for debugging purposes.
+         *
+         * @param timeMs
+         * @return
+         */
+        public Builder debugLongerIterations(long timeMs) {
+            if (timeMs < 0)
+                timeMs = 0L;
+            this.debugLongerIterations = timeMs;
+            return this;
+        }
+
+        /**
          * Optional method: Transport implementation to be used as TransportType.CUSTOM for VoidParameterAveraging method
          *
          * @param transport
@@ -995,7 +1014,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         public SharedTrainingMaster build() {
-            SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach, storageLevel, true, repartitionStrategy, repartition, threshold, batchSize);
+            SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach, storageLevel, true, repartitionStrategy, repartition, threshold, batchSize, debugLongerIterations);
             if (transport != null)
                 master.transport = this.transport;
 
