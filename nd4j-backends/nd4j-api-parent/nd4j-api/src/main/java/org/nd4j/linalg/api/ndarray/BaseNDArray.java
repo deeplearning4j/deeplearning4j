@@ -2007,7 +2007,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     /**
      * Mainly here for people coming from numpy.
      * This is equivalent to a call to permute
-     * 
+     *
      * @param dimension the dimension to swap
      * @param with      the one to swap it with
      * @return the swapped axes view
@@ -5206,5 +5206,29 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
         return copy;
+    }
+
+    /*
+    * ------- Sparse methods -------
+    */
+
+    @Override
+    public DataBuffer getVectorCoordinates() {
+        throw new UnsupportedOperationException("Not a sparse ndarray");
+    }
+
+    @Override
+    public INDArray toDense() {
+        return this;
+    }
+
+    @Override
+    public int nnz() {
+        throw new UnsupportedOperationException("Not a sparse ndarray");
+    }
+
+    @Override
+    public SparseFormat getFormat() {
+        return SparseFormat.NONE;
     }
 }

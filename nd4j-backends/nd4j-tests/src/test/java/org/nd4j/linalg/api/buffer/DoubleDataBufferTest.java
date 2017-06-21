@@ -179,7 +179,6 @@ public class DoubleDataBufferTest extends BaseNd4jTest {
 
     }
 
-
     @Test
     public void testGetOffsetRange() throws Exception {
         DataBuffer buffer = Nd4j.linspace(1, 5, 5).data();

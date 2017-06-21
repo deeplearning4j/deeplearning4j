@@ -609,6 +609,7 @@ public class ShapeOffsetResolution implements Serializable {
                 fixed[i] = 0;
             }
             // TODO specified indexes ?!?
+            // NewAxis
         }
     }
 

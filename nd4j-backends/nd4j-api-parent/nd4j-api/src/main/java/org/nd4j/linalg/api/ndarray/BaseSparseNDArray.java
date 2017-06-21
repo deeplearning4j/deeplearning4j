@@ -87,6 +87,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
             columns = shape[1];
         }
         rank = shape.length;
+
     }
 
     // Override methods from INDArray

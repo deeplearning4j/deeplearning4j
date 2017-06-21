@@ -5231,8 +5231,8 @@ public class Nd4j {
      * @return ordering
      * @return a INDArray
      * */
-    public static INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] sparseOffsets, int[] fixed, int[] shape, char ordering) {
-        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(values, indices, sparseOffsets, fixed, shape, ordering);
+    public static INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] sparseOffsets, int[] fixed, int[] shape, int[] underlyingShape, char ordering) {
+        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(values, indices, sparseOffsets, fixed, shape, underlyingShape, ordering);
 
         return matrix;
     }
