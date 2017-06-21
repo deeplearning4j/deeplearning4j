@@ -1,6 +1,5 @@
 package org.deeplearning4j.earlystopping.scorecalc;
 
-import org.deeplearning4j.earlystopping.scorecalc.ScoreCalculator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -31,7 +30,6 @@ public class DataSetF1Calculator implements ScoreCalculator<MultiLayerNetwork> {
 
 		return evaluation.f1() * -1;
 	}
-
 
 	@Override
 	public String toString() {
