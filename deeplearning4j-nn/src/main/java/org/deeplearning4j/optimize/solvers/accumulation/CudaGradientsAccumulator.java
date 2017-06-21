@@ -297,10 +297,16 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             }
         }
 
+
+        log.info("thread {} locking at Register", Thread.currentThread().getId());
+
         // block until ParallelWrapper sends us message about number of threads in this cycle
         if (!bypassMode.get())
             while (!registered.get())
                 LockSupport.parkNanos(100L);
+
+
+        log.info("thread {} unlocking at Register", Thread.currentThread().getId());
 
         // accumulate gradients updates in residental array
         accumulator.get().addi(array);
