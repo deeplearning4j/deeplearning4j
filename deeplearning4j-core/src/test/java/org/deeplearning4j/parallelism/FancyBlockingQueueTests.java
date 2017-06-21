@@ -30,6 +30,7 @@ public class FancyBlockingQueueTests {
 
         final AtomicLong e = new AtomicLong(0);
 
+        queue.registerConsumers(4);
         Thread[] threads = new Thread[4];
         for (int x = 0; x < 4; x++) {
             final int t = x;
@@ -73,6 +74,7 @@ public class FancyBlockingQueueTests {
 
 
         final AtomicLong e = new AtomicLong(0);
+        queue.registerConsumers(4);
 
         Thread[] threads = new Thread[4];
         for (int x = 0; x < 4; x++) {
@@ -102,5 +104,92 @@ public class FancyBlockingQueueTests {
         }
 
         assertEquals(f * 4, e.get());
+    }
+
+
+    /**
+     * This test checks for compatibility with single producer - single consumer model
+     * @throws Exception
+     */
+    @Test
+    public void testFancyQueue3() throws Exception {
+        final FancyBlockingQueue<Integer> queue = new FancyBlockingQueue<>(new LinkedBlockingQueue<Integer>(512), 4);
+        long f = 0;
+        for(int x = 0; x < 512; x++) {
+            queue.add(x);
+            f += x;
+        }
+
+        assertEquals(512, queue.size());
+
+
+        final AtomicLong e = new AtomicLong(0);
+        queue.registerConsumers(1);
+        Thread[] threads = new Thread[1];
+        for (int x = 0; x < 1; x++) {
+            final int t = x;
+            threads[x] = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while (!queue.isEmpty()) {
+                        Integer i = queue.poll();
+                        //log.info("i: {}", i);
+                        e.addAndGet(i);
+                    }
+                }
+            });
+
+            threads[x].start();
+        }
+
+
+        for (int x = 0; x < 1; x++) {
+            threads[x].join();
+        }
+
+        assertEquals(f, e.get());
+    }
+
+    /**
+     * This test checks for compatibility with single producer - single consumer model
+     * @throws Exception
+     */
+    @Test
+    public void testFancyQueue4() throws Exception {
+        final FancyBlockingQueue<Integer> queue = new FancyBlockingQueue<>(new LinkedBlockingQueue<Integer>(512), 4);
+        long f = 0;
+        for(int x = 0; x < 512; x++) {
+            queue.add(x);
+            f += x;
+        }
+
+        assertEquals(512, queue.size());
+
+
+        final AtomicLong e = new AtomicLong(0);
+        queue.fallbackToSingleConsumerMode(true);
+        Thread[] threads = new Thread[1];
+        for (int x = 0; x < 1; x++) {
+            final int t = x;
+            threads[x] = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while (!queue.isEmpty()) {
+                        Integer i = queue.poll();
+                        //log.info("i: {}", i);
+                        e.addAndGet(i);
+                    }
+                }
+            });
+
+            threads[x].start();
+        }
+
+
+        for (int x = 0; x < 1; x++) {
+            threads[x].join();
+        }
+
+        assertEquals(f, e.get());
     }
 }

@@ -1,6 +1,8 @@
 package org.deeplearning4j.spark.parameterserver.pw;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacpp.Loader;
+import org.bytedeco.javacpp.Pointer;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
@@ -195,7 +197,15 @@ public class SharedTrainingWrapper {
                  */
                 int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
 
-                int numWorkers = trainingConfiguration.getNumberOfWorkersPerNode() > 0 ? trainingConfiguration.getNumberOfWorkersPerNode() : numDevices > 1 ? numDevices : 2;
+                int numCores = Loader.totalCores();
+
+                /**
+                 * Logic here is simple:
+                 * 1) If user had specified number of workers per node - use that value
+                 * 2) If not, and there's > 1 devices in system (as in Multi-GPU system) - use numberOfDevices as number of workers
+                 * 3) otherwise, let's assume that's regular multi-core node, so we'll use 1..6 workers, depending on number of cores/4
+                 */
+                int numWorkers = trainingConfiguration.getNumberOfWorkersPerNode() > 0 ? trainingConfiguration.getNumberOfWorkersPerNode() : numDevices > 1 ? numDevices : Math.min(6, Math.max(1, numCores / 4));
 
                 if (numDevices > 1 && numWorkers > numDevices)
                     log.warn("WARNING! Using more workers then number of available computational devices!");
@@ -215,7 +225,11 @@ public class SharedTrainingWrapper {
                             .build();
                 } else {
                     log.info("Using standalone model instead...");
-                    // ok. attaching accumulator to
+
+                    // since there'll be only one consumer, we don't need complex sync logic anymore
+                    accumulator.fallbackToSingleConsumerMode(true);
+
+                    // ok. attaching accumulator to model
                     if (model instanceof ComputationGraph) {
                         ((ComputationGraph) model).setGradientsAccumulator(accumulator);
                     } else if (model instanceof MultiLayerNetwork) {

@@ -39,6 +39,7 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
 
     protected AtomicInteger numElementsReady = new AtomicInteger(0);
     protected AtomicInteger numElementsDrained = new AtomicInteger(0);
+    protected AtomicBoolean bypassMode = new AtomicBoolean(false);
     protected ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
 
@@ -70,7 +71,12 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
     }
 
     @Override
-    public void register(int consumers) {
+    public void fallbackToSingleConsumerMode(boolean reallyFallback) {
+        bypassMode.set(reallyFallback);
+    }
+
+    @Override
+    public void registerConsumers(int consumers) {
         lock.readLock().lock();
 
         this.numElementsReady.set(backingQueue.size());
@@ -90,10 +96,16 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
 
     @Override
     public boolean isEmpty() {
+        if (bypassMode.get())
+            return backingQueue.isEmpty();
+
         return numElementsDrained.get() == numElementsReady.get() || backingQueue.isEmpty();
     }
 
     protected void synchronize(int consumers) {
+        if (consumers == 1 || bypassMode.get())
+            return;
+
         // any first thread entering this block - will reset this field to false
         isDone.compareAndSet(true, false);
 
@@ -121,6 +133,9 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
 
     @Override
     public E poll() {
+        if (bypassMode.get())
+            return backingQueue.poll();
+
         // if that's first step, set local step counter to -1
         if (currentStep.get() == null)
             currentStep.set(new AtomicLong(-1));

@@ -15,7 +15,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.*;
@@ -53,6 +52,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
     protected AtomicInteger barrier = new AtomicInteger(0);
     protected AtomicInteger secondary = new AtomicInteger(0);
     protected AtomicBoolean registered = new AtomicBoolean(false);
+    protected AtomicBoolean bypassMode = new AtomicBoolean(false);
     protected final AtomicInteger currentConsumers = new AtomicInteger(0);
 
 
@@ -113,16 +113,27 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
     }
 
     @Override
-    public void register(int numConsumers) {
+    public void fallbackToSingleConsumerMode(boolean reallyFallback) {
+        if (externalSource != null && externalSource instanceof Registerable)
+            ((Registerable) externalSource).fallbackToSingleConsumerMode(reallyFallback);
+
+        bypassMode.set(reallyFallback);
+    }
+
+    @Override
+    public void registerConsumers(int numConsumers) {
         // we're passing number of consumers for current session to externalSource, if applicable
         if (externalSource != null && externalSource instanceof Registerable)
-            ((Registerable) externalSource).register(numConsumers);
+            ((Registerable) externalSource).registerConsumers(numConsumers);
 
         currentConsumers.set(numConsumers);
         registered.set(true);
     }
 
     protected void synchronize(int consumers) {
+        if (consumers == 1)
+            return;
+
         // any first thread entering this block - will reset this field to false
         isDone.compareAndSet(true, false);
 
@@ -132,6 +143,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             barrier.set(0);
             isFirst.set(false);
             isDone.set(true);
+            registered.set(false);
         } else {
             // just wait, till last thread will set isDone to true
             while (!isDone.get())
@@ -273,16 +285,17 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
      */
     @Override
     public void storeUpdate(INDArray array) {
-        // block until ParallelWrapper sends us message about number of threads in this cycle
-        while (!registered.get())
-            LockSupport.parkNanos(100L);
-
         if (accumulator.get() == null) {
             // we don't want accumulator to be attached to workspaces
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 accumulator.set(Nd4j.create(array.shape(), array.ordering()));
             }
         }
+
+        // block until ParallelWrapper sends us message about number of threads in this cycle
+        if (!bypassMode.get())
+            while (!registered.get())
+                LockSupport.parkNanos(100L);
 
         // accumulate gradients updates in residental array
         accumulator.get().addi(array);

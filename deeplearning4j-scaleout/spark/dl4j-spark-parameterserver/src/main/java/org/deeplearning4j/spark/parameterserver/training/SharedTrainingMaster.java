@@ -64,6 +64,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     protected VoidConfiguration voidConfiguration;
 
     protected Integer numWorkers;
+    protected Integer numWorkersPerNode;
     protected RDDTrainingApproach rddTrainingApproach;
     protected StorageLevel storageLevel;
 
@@ -93,7 +94,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         // just a stub for ser/de
     }
 
-    public SharedTrainingMaster(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers, RDDTrainingApproach rddTrainingApproach, StorageLevel storageLevel, boolean collectTrainingStats, RepartitionStrategy repartitionStrategy, Repartition repartition, double threshold, int batchSizePerWorker, long debugLongerIterations) {
+    public SharedTrainingMaster(@NonNull VoidConfiguration voidConfiguration, Integer numWorkers, RDDTrainingApproach rddTrainingApproach, StorageLevel storageLevel, boolean collectTrainingStats, RepartitionStrategy repartitionStrategy, Repartition repartition, double threshold, int batchSizePerWorker, long debugLongerIterations, int numWorkersPerNode) {
         this.voidConfiguration = voidConfiguration;
         this.numWorkers = numWorkers;
         this.rddTrainingApproach = rddTrainingApproach;
@@ -106,6 +107,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         this.batchSizePerWorker = batchSizePerWorker;
         this.rddDataSetNumExamples = batchSizePerWorker;
         this.debugLongerIterations = debugLongerIterations;
+        this.numWorkersPerNode = numWorkersPerNode;
 
         if (collectTrainingStats)
             stats = new ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper();
@@ -189,6 +191,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                 .threshold(threshold)
                 .voidConfiguration(voidConfiguration)
                 .debugLongerIterations(debugLongerIterations)
+                .numberOfWorkersPerNode(numWorkersPerNode)
                 .build();
 
         if (collectTrainingStats)
@@ -217,6 +220,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                 .threshold(threshold)
                 .voidConfiguration(voidConfiguration)
                 .debugLongerIterations(debugLongerIterations)
+                .numberOfWorkersPerNode(numWorkersPerNode)
                 .build();
 
         if (collectTrainingStats)
@@ -595,8 +599,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
     }
 
     protected void doIteration(SparkDl4jMultiLayer network, JavaRDD<DataSet> split, int splitNum, int numSplits) {
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
-                splitNum, numSplits, batchSizePerWorker, 0, numWorkers);
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, updatesThreshold={}, Configured for {} workers",
+                splitNum, numSplits, batchSizePerWorker, threshold, numWorkers);
 
         if (collectTrainingStats)
             stats.logMapPartitionsStart();
@@ -615,14 +619,10 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         FlatMapFunction<Iterator<DataSet>, SharedTrainingResult> function = new SharedFlatMapDataSet<>(getWorkerInstance(network));
 
-        log.info("Number of datasets: {}", splitData.count());
-
         JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
 
         // meh, just to invoke previous function
         long cnt = result.count();
-
-        log.info("Results count: {}", cnt);
 
         // TODO: implement something here
 //        processResults(network, null, result, splitNum, numSplits);
@@ -843,6 +843,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         protected Transport transport;
         protected int batchSize;
         protected long debugLongerIterations = 0L;
+        protected int numWorkersPerNode = -1;
 
         public Builder(int rddDataSetNumExamples) {
             this(1e-3, rddDataSetNumExamples);
@@ -889,7 +890,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         /**
-         *
+         * This parameter defines when repartition is applied (if applied)
          * @param repartition
          * @return
          */
@@ -979,13 +980,30 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         /**
-         * Batch size
+         * Batch size value,  used for repartition purposes
          *
          * @param batchSize
          * @return
          */
         public Builder batchSizePerWorker(int batchSize) {
             this.batchSize = batchSize;
+            return this;
+        }
+
+        /**
+         * This method allows to configure number of trainer threads per cluster node.
+         *
+         *
+         * Default value: -1, which defines automated number of workers selection, based on hardware present in system
+         *
+         * @param numWorkers
+         * @return
+         */
+        public Builder workersPerNode(int numWorkers) {
+            if (numWorkers < 1)
+                numWorkers = -1;
+
+            this.numWorkersPerNode = numWorkers;
             return this;
         }
 
@@ -1016,7 +1034,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         public SharedTrainingMaster build() {
-            SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach, storageLevel, true, repartitionStrategy, repartition, threshold, batchSize, debugLongerIterations);
+            SharedTrainingMaster master = new SharedTrainingMaster(voidConfiguration, numWorkers, rddTrainingApproach, storageLevel, true, repartitionStrategy, repartition, threshold, batchSize, debugLongerIterations, numWorkersPerNode);
             if (transport != null)
                 master.transport = this.transport;
 

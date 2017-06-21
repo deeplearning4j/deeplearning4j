@@ -218,7 +218,7 @@ public class ParallelWrapper implements AutoCloseable {
                     update it & notify about number of threads in this training round then
                   */
                 if (gradientsAccumulator != null && gradientsAccumulator instanceof Registerable) {
-                    ((Registerable) gradientsAccumulator).register(workers);
+                    ((Registerable) gradientsAccumulator).registerConsumers(workers);
                 }
 
                 if (zoo[0].averagingRequired()) {
@@ -252,7 +252,7 @@ public class ParallelWrapper implements AutoCloseable {
 
         // launch last update
         if (locker.get() != 0 && gradientsAccumulator != null && gradientsAccumulator instanceof Registerable) {
-            ((Registerable) gradientsAccumulator).register(locker.get());
+            ((Registerable) gradientsAccumulator).registerConsumers(locker.get());
         }
 
 
@@ -525,7 +525,7 @@ public class ParallelWrapper implements AutoCloseable {
                     update it & notify about number of threads in this training round then
                   */
                 if (gradientsAccumulator != null && gradientsAccumulator instanceof Registerable) {
-                    ((Registerable) gradientsAccumulator).register(workers);
+                    ((Registerable) gradientsAccumulator).registerConsumers(workers);
                 }
 
                 if (zoo[0].averagingRequired()) {
@@ -565,7 +565,7 @@ public class ParallelWrapper implements AutoCloseable {
 
         // launch last update
         if (locker.get() != 0 && gradientsAccumulator != null && gradientsAccumulator instanceof Registerable) {
-            ((Registerable) gradientsAccumulator).register(locker.get());
+            ((Registerable) gradientsAccumulator).registerConsumers(locker.get());
         }
 
         if (debug)

@@ -5,5 +5,16 @@ package org.deeplearning4j.optimize.solvers.accumulation;
  */
 public interface Registerable {
 
-    void register(int numConsumers);
+    /**
+     * This method notifies producer about number of consumers for the current consumption cycle
+     * @param numConsumers
+     */
+    void registerConsumers(int numConsumers);
+
+    /**
+     * This method enables/disables bypass mode
+     *
+     * @param reallyFallback
+     */
+    void fallbackToSingleConsumerMode(boolean reallyFallback);
 }
