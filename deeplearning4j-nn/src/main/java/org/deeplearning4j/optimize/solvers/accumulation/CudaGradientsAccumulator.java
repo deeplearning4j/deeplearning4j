@@ -122,6 +122,11 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
 
     @Override
     public void registerConsumers(int numConsumers) {
+        // we don't want double spending here
+        if (registered.get())
+            while (registered.get())
+                LockSupport.parkNanos(100L);
+
         // we're passing number of consumers for current session to externalSource, if applicable
         if (externalSource != null && externalSource instanceof Registerable)
             ((Registerable) externalSource).registerConsumers(numConsumers);
@@ -205,6 +210,10 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
 
         if (cnt > 0)
             function.step(params, updates);
+
+
+        // we're blocking here, untill all done broadcasting updates
+        synchronize(currentConsumers.get());
     }
 
     /**
@@ -248,6 +257,9 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
 
         if (cnt > 0)
             function.step(params, updates, alpha);
+
+        // we're blocking here, untill all done broadcasting updates
+        synchronize(currentConsumers.get());
     }
 
     /**
@@ -313,9 +325,6 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
 
         // propagate changes & modify accumulator
         handler.broadcastUpdates(accumulator.get());
-
-        // we're blocking here, untill all done broadcasting updates
-        synchronize(currentConsumers.get());
     }
 
     /**
