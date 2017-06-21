@@ -191,7 +191,7 @@ public class SparseNDArrayCOOTest {
         BaseSparseNDArrayCOO view = (BaseSparseNDArrayCOO) baseView.get(NDArrayIndex.all(), NDArrayIndex.point(2));
         assertEquals(2, view.nnz());
         assertArrayEquals(new int[]{3, 1}, view.shape());
-        assertArrayEquals(new int[]{0, 0, 0, 1}, view.getIndices().asInt());
+        assertArrayEquals(new int[]{0, 0, 1, 0}, view.getIndices().asInt());
         assertArrayEquals(new double[]{5, 7}, view.getValues().asDouble(), 1e-1);
     }
 

@@ -36,7 +36,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     protected transient volatile DataBuffer fixed;
     protected transient volatile DataBuffer  sparseOffsets;
     protected transient volatile boolean isSorted = false;
-    protected DataBuffer underlyingShape;
 
     public BaseSparseNDArrayCOO(double[] values, int[][] indices, int[] shape){
 
@@ -58,9 +57,9 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         this.indices = Nd4j.createBuffer(ArrayUtil.flatten(indices));
         this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape);
         init(shape);
-        this.underlyingShape = Nd4j.createBuffer(shape());
         this.fixed = Nd4j.createBuffer(new int[rank()]);
         this.sparseOffsets = Nd4j.createBuffer(new int[rank()]);
+        this.length = values.length;
     }
 
     public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, int[] shape){
@@ -70,7 +69,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         this.indices = indices;
         this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape);
         init(shape);
-        this.underlyingShape = Nd4j.createBuffer(shape());
         this.length = values.length();
         this.fixed = Nd4j.createBuffer(new int[rank()]);
         this.sparseOffsets = Nd4j.createBuffer(new int[rank()]);
@@ -83,19 +81,17 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         this.indices = Nd4j.createBuffer(ArrayUtil.flatten(indices));
         this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape);
         init(shape);
-        this.underlyingShape = Nd4j.createBuffer(shape());
         this.length = values.length;
         this.fixed = Nd4j.createBuffer(new int[rank()]);
         this.sparseOffsets = Nd4j.createBuffer(new int[rank()]);
     }
 
-    public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, int[] sparseOffsets, int[] fixed, int[] shape, int[] underlyingShape, char ordering){
+    public BaseSparseNDArrayCOO(DataBuffer values, DataBuffer indices, int[] sparseOffsets, int[] fixed, int[] shape, char ordering){
 
         this.values = Nd4j.createBuffer(values, 0, values.length());
         this.indices = indices;
         this.sparseOffsets = Nd4j.createBuffer(sparseOffsets);
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, ordering));
-        this.underlyingShape = Nd4j.createBuffer(underlyingShape);
         init(shape);
         setFixed(fixed);
         this.length = countNNZ();
@@ -463,9 +459,15 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                 }
             }
             if(isIn){
+                int notFixedDim = 0;
                 for(int dim = 0; dim < idx.length; dim++){
                     if(fixed.getInt(dim) == 0) {
-                        ind.add(idx[dim] - sparseOffsets.getInt(dim));
+                        if(shape()[notFixedDim] == 1){
+                            ind.add(0);
+                            notFixedDim++;
+                        } else {
+                            ind.add(idx[dim] - sparseOffsets.getInt(dim));
+                        }
                     }
                 }
             }
@@ -574,9 +576,11 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         int[] shape = resolution.getShapes();
         int[] stride = resolution.getStrides();
         int[] fixed = resolution.getFixed();
+        fixed = updateFixed(fixed, shape);
         int offset = (int) (offset() + resolution.getOffset());
         int newRank = shape.length;
-        int[] offs = createSparseOffsets(offset, sparseOffsets.asInt());
+        int[] offs = createSparseOffsets(offset);
+
 
 
         if (offset() + resolution.getOffset() >= Integer.MAX_VALUE)
@@ -604,7 +608,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * @param offset the offset of the view
      * @return an int array containing the sparse offsets
      * */
-    private int[] createSparseOffsets(int offset, int[] toremove){
+    private int[] createSparseOffsets(int offset){
 
         // resolve the offsets in the view dimension
         int underlyingRank = (int) sparseOffsets.length();
@@ -612,13 +616,13 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         List<Integer> shapeList = Ints.asList(shape());
         int penultimate = rank() -1;
         for(int i = 0; i < penultimate; i++){
-            int prod = ArrayUtil.prod(shapeList.subList(i, penultimate));
+            int prod = ArrayUtil.prod(shapeList.subList(i+1, rank()));
             newOffsets[i] = offset / prod;
             offset = offset - newOffsets[i] * prod;
         }
-        newOffsets[rank()-1] =  offset % underlyingShape.getInt(rank()-1);
+        newOffsets[rank()-1] =  offset % shape()[rank()-1];
 
-        // Merge the offsets with the original offset
+        // Merge the offsets with the original sparseOffsets
         int[] finalOffsets = new int[underlyingRank];
         int dimNotFixed = 0;
         for(int dim = 0; dim < underlyingRank; dim++){
@@ -630,13 +634,51 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
             }
         }
 
-
         return finalOffsets;
     }
 
+    /**
+    * Adjust the fixed array according on the current context:
+    * - In case of a vector or a scalar, we need to keep fixed to 0
+    * - There must always be at least 2 non-fixed dimensions
+    * - We must keep the fixed dimensions of the original array
+    *
+    * @param viewFixed the Fixed array calculate within the view
+    * @param newShape the shape of the view
+    * */
+    private int[] updateFixed(int[] viewFixed, int[] newShape){
+        // Check if fixed is well-formed
+        int count = 0;
+        for(int i = 0; i< viewFixed.length; i++){
+            if(viewFixed[i] == 0){
+                count++;
+            }
+        }
+
+        for(int dim = 0; dim < viewFixed.length; dim++){
+            if(viewFixed[dim] == 1) {
+                if(newShape[dim] == 1 && count <2){
+                    viewFixed[dim] = 0;
+                }
+
+            }
+        }
+        // Take the original Fixed into account
+        int[] extendedFixed = new int[underlyingRank()];
+        int notFixedDim = 0;
+        for(int dim = 0; dim < underlyingRank(); dim++){
+            if(fixed.getInt(dim) == 0){
+                extendedFixed[dim] = viewFixed[notFixedDim];
+                notFixedDim++;
+            } else {
+                extendedFixed[dim] = 1;
+            }
+        }
+        return extendedFixed;
+    }
 
     private INDArray create(DataBuffer values, DataBuffer indices, int[] newShape, int[] sparseOffsets, int[] fixed, char newOrder) {
-        return Nd4j.createSparseCOO(values, indices, sparseOffsets, fixed, newShape, shape(), newOrder);
+        return Nd4j.createSparseCOO(values, indices, sparseOffsets, fixed, newShape, newOrder);
     }
 
     @Override
@@ -662,7 +704,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     public void setFixed(int[] arr){
-        if(isScalar() || isRowVector() || isColumnVector()){
+        if(!isView() && (isScalar() || isRowVector() || isColumnVector())){
             this.fixed = Nd4j.createBuffer(new int[]{0,0});
         } else {
             this.fixed = Nd4j.createBuffer(arr);
@@ -676,7 +718,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
 
     public int underlyingRank(){
-        return (int) underlyingShape.length();
+        return (int) sparseOffsets.length();
     }
 
 
