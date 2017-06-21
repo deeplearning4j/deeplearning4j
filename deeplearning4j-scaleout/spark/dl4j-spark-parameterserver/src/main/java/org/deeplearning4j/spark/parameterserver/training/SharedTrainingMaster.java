@@ -615,6 +615,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         FlatMapFunction<Iterator<DataSet>, SharedTrainingResult> function = new SharedFlatMapDataSet<>(getWorkerInstance(network));
 
+        log.info("Number of datasets: {}", splitData.count());
+
         JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
 
         // meh, just to invoke previous function
