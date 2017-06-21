@@ -565,6 +565,7 @@ public class ParallelWrapper implements AutoCloseable {
 
         // launch last update
         if (locker.get() != 0 && gradientsAccumulator != null && gradientsAccumulator instanceof Registerable) {
+            log.info("Finalizing process: {}", locker.get());
             ((Registerable) gradientsAccumulator).registerConsumers(locker.get());
         }
 
