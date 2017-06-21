@@ -214,7 +214,7 @@ public class SharedTrainingWrapper {
                 // if we're going to extend iteratation for debugging purposes - let's do that here
                 if (trainingConfiguration.getDebugLongerIterations() > 0) {
                     log.warn("Adding SleepyListener: {} ms", trainingConfiguration.getDebugLongerIterations());
-                    model.addListener(SleepyTrainingListener.builder().timerIteration(trainingConfiguration.getDebugLongerIterations()).build());
+                    model.setListeners(SleepyTrainingListener.builder().timerIteration(trainingConfiguration.getDebugLongerIterations()).build());
                 }
 
                 // we're launching PW only if number of workers is more then 1
