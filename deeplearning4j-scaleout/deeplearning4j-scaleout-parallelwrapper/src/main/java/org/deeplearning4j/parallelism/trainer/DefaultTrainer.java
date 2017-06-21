@@ -165,6 +165,8 @@ public class DefaultTrainer extends Thread implements Trainer {
             shouldUpdate = new AtomicBoolean(false);
         if (isStopped == null)
             isStopped = new AtomicBoolean(false);
+        if (lastEtlTime == null)
+            lastEtlTime = new AtomicLong(0);
     }
 
     @Override
@@ -189,6 +191,9 @@ public class DefaultTrainer extends Thread implements Trainer {
     protected void fit(DataSet dataSet) {
         try {
             if (replicatedModel instanceof MultiLayerNetwork) {
+                if (lastEtlTime == null)
+                    lastEtlTime = new AtomicLong(0);
+
                 ((MultiLayerNetwork) replicatedModel).setLastEtlTime(lastEtlTime.get());
                 ((MultiLayerNetwork) replicatedModel).fit(dataSet);
             } else if (replicatedModel instanceof ComputationGraph) {
