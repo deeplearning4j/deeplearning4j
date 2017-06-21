@@ -43,23 +43,23 @@ public class SleepyTrainingListener implements TrainingListener {
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    protected transient ThreadLocal<AtomicLong> lastEE = new ThreadLocal<>();
+    @Builder.Default protected transient ThreadLocal<AtomicLong> lastEE = new ThreadLocal<>();
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    protected transient ThreadLocal<AtomicLong> lastES = new ThreadLocal<>();
+    @Builder.Default protected transient ThreadLocal<AtomicLong> lastES = new ThreadLocal<>();
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    protected transient ThreadLocal<AtomicLong> lastFF = new ThreadLocal<>();
+    @Builder.Default protected transient ThreadLocal<AtomicLong> lastFF = new ThreadLocal<>();
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    protected transient ThreadLocal<AtomicLong> lastBP = new ThreadLocal<>();
+    @Builder.Default protected transient ThreadLocal<AtomicLong> lastBP = new ThreadLocal<>();
 
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
-    protected transient ThreadLocal<AtomicLong> lastIteration = new ThreadLocal<>();
+    @Builder.Default protected transient ThreadLocal<AtomicLong> lastIteration = new ThreadLocal<>();
 
     @Builder.Default protected long timerEE = 0L;
     @Builder.Default protected long timerES = 0L;
