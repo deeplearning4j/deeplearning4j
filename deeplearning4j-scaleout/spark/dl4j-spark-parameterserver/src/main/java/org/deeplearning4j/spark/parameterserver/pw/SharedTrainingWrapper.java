@@ -142,6 +142,27 @@ public class SharedTrainingWrapper {
 
             Model model = null;
 
+            /*
+                    Plan is simple here: if there's defined field in SharedTrainingConfiguration - use that.
+                    If no - try to guess something
+                 */
+            int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+
+            int numCores = Loader.totalCores();
+
+            /**
+             * Logic here is simple:
+             * 1) If user had specified number of workers per node - use that value
+             * 2) If not, and there's > 1 devices in system (as in Multi-GPU system) - use numberOfDevices as number of workers
+             * 3) otherwise, let's assume that's regular multi-core node, so we'll use 1..6 workers, depending on number of cores/4
+             */
+            int numWorkers = trainingConfiguration.getNumberOfWorkersPerNode() > 0 ? trainingConfiguration.getNumberOfWorkersPerNode() : numDevices > 1 ? numDevices : Math.min(6, Math.max(1, numCores / 4));
+
+            if (numDevices > 1 && numWorkers > numDevices)
+                log.warn("WARNING! Using more workers then number of available computational devices!");
+
+
+
             // now we're attaching VoidParameterServer to GradientsAccumulator, but doing that only once
             if (wrapper == null) {
                 log.info("Starting ParallelWrapper at thread {}", Thread.currentThread().getId());
@@ -152,26 +173,6 @@ public class SharedTrainingWrapper {
 
                 if (model == null)
                     throw new DL4JInvalidConfigException("No model was defined for training");
-
-                /*
-                    Plan is simple here: if there's defined field in SharedTrainingConfiguration - use that.
-                    If no - try to guess something
-                 */
-                int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
-
-                int numCores = Loader.totalCores();
-
-                /**
-                 * Logic here is simple:
-                 * 1) If user had specified number of workers per node - use that value
-                 * 2) If not, and there's > 1 devices in system (as in Multi-GPU system) - use numberOfDevices as number of workers
-                 * 3) otherwise, let's assume that's regular multi-core node, so we'll use 1..6 workers, depending on number of cores/4
-                 */
-                int numWorkers = trainingConfiguration.getNumberOfWorkersPerNode() > 0 ? trainingConfiguration.getNumberOfWorkersPerNode() : numDevices > 1 ? numDevices : Math.min(6, Math.max(1, numCores / 4));
-
-                if (numDevices > 1 && numWorkers > numDevices)
-                    log.warn("WARNING! Using more workers then number of available computational devices!");
-
 
                 MessageHandler handler = new WiredEncodingHandler(trainingConfiguration.getThreshold());
 
@@ -248,6 +249,11 @@ public class SharedTrainingWrapper {
             }
 
             // TODO: optionally we might be waiting until we have >1 splits delivered
+
+
+            if (numWorkers > 1) {
+                accumulator.registerConsumers(numWorkers);
+            }
 
             driver.bypassMode(false);
 
