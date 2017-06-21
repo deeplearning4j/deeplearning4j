@@ -150,7 +150,6 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             barrier.set(0);
             isFirst.set(false);
             isDone.set(true);
-            registered.set(false);
         } else {
             // just wait, till last thread will set isDone to true
             while (!isDone.get())
@@ -160,6 +159,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
         // second lock here needed only to ensure we won't get overrun over isDone flag
         if (secondary.incrementAndGet() == currentConsumers.get()) {
             isFirst.set(true);
+            registered.set(false);
         } else {
             while (!isFirst.get())
                 LockSupport.parkNanos(1000L);
