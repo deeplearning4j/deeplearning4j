@@ -77,21 +77,21 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
 
     @Override
     public void registerConsumers(int consumers) {
-        lock.readLock().lock();
+        lock.writeLock().lock();
 
         this.numElementsReady.set(backingQueue.size());
         this.numElementsDrained.set(0);
         this.consumers = consumers;
         this.currentConsumers.set(consumers);
 
-        lock.readLock().unlock();
+        lock.writeLock().unlock();
     }
 
     @Override
     public void put(E e) throws InterruptedException {
-        lock.writeLock().lock();
+        lock.readLock().lock();
         backingQueue.put(e);
-        lock.writeLock().unlock();
+        lock.readLock().unlock();
     }
 
     @Override

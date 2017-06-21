@@ -140,6 +140,10 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
     }
 
     protected void synchronize(int consumers) {
+        synchronize(consumers, false);
+    }
+
+    protected void synchronize(int consumers, boolean finalLock) {
         if (consumers == 1 || bypassMode.get())
             return;
 
@@ -163,7 +167,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
         // second lock here needed only to ensure we won't get overrun over isDone flag
         if (secondary.incrementAndGet() == currentConsumers.get()) {
             isFirst.set(true);
-            registered.set(false);
+            if (finalLock)
+                registered.set(false);
         } else {
             while (!isFirst.get())
                 LockSupport.parkNanos(1000L);
@@ -209,6 +214,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             if (ent > 0)
                 log.info("External updates to be applied: {}", ent);
         }
+
+        synchronize(currentConsumers.get(), true);
 
         // TODO: average updates probably?
 
