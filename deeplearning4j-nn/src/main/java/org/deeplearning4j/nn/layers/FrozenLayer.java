@@ -179,8 +179,8 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
      * @param listener
      */
     @Override
-    public void addListener(IterationListener listener) {
-        insideLayer.addListener(listener);
+    public void addListeners(IterationListener... listener) {
+        insideLayer.addListeners(listener);
     }
 
     @Override

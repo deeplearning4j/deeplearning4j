@@ -272,7 +272,7 @@ public class BarnesHutTsne implements Model {
     }
 
     @Override
-    public void addListener(IterationListener listener) {
+    public void addListeners(IterationListener... listener) {
         // no-op
     }
 
