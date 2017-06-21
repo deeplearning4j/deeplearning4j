@@ -99,10 +99,12 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
         if (bypassMode.get())
             return backingQueue.isEmpty();
 
-        log.info("thread {} queries isEmpty", Thread.currentThread().getId());
+
+        boolean res = numElementsDrained.get() >= numElementsReady.get();
+        log.info("thread {} queries isEmpty: {}", Thread.currentThread().getId(), res);
 
 
-        return numElementsDrained.get() == numElementsReady.get();
+        return res;
     }
 
     protected void synchronize(int consumers) {
