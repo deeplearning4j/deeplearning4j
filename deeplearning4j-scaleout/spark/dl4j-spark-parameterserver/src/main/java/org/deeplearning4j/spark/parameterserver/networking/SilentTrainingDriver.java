@@ -41,6 +41,8 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
     protected transient AtomicLong updatesCount;
     protected transient AtomicBoolean hasSomething;
 
+    protected transient AtomicBoolean bypassMode = new AtomicBoolean(false);
+
     /*
         We use this buffer to provide double buffering for incoming messages.
         So we store incoming messages right here, and apply them as time comes
@@ -92,6 +94,10 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
         this.transport = transport;
     }
 
+    public void bypassMode(boolean reallyBypass) {
+        bypassMode.set(reallyBypass);
+    }
+
     @Override
     public void startTraining(SilentUpdatesMessage message) {
         /*
@@ -112,10 +118,15 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
                 we're just putting messages here. if thread gets blocked - messages won't be arriving,
                 enforcing periodic messages retransmission from other nodes, so we should be all fine
               */
-            log.info("Storing external message...");
+
 
             try {
-                updatesBuffer.put(message.getUpdates());
+                if (!bypassMode.get()) {
+                    log.info("Storing external message...");
+                    updatesBuffer.put(message.getUpdates());
+                } else {
+                    log.info("Skipping external message");
+                }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

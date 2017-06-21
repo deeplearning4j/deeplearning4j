@@ -62,6 +62,8 @@ public class SharedTrainingWrapper {
     protected ThreadLocal<BlockingObserver> observer = new ThreadLocal<>();
     protected CudaGradientsAccumulator accumulator;
 
+    protected SilentTrainingDriver driver;
+
     protected SharedTrainingWrapper() {
         init();
     }
@@ -196,7 +198,8 @@ public class SharedTrainingWrapper {
                         // TODO: tbd: let's allow one of executor nodes to be silent worker maybe? or this going to be too expensive?
                     }
 
-                    VoidParameterServer.getInstance().init(voidConfiguration, transport, new SilentTrainingDriver(accumulator));
+                    driver = new SilentTrainingDriver(accumulator);
+                    VoidParameterServer.getInstance().init(voidConfiguration, transport, driver);
 
                     // we should introduce ourselves to controller
                     // FIXME: if localIP is null - use original ip discovery available in VoidParameterServer
@@ -246,6 +249,8 @@ public class SharedTrainingWrapper {
 
             // TODO: optionally we might be waiting until we have >1 splits delivered
 
+            driver.bypassMode(false);
+
             // now we're just calling for fit
             if (wrapper != null) {
                 if (iteratorDS != null)
@@ -280,6 +285,8 @@ public class SharedTrainingWrapper {
 
             // and accumulator, to reset its states
             accumulator.reset();
+
+            driver.bypassMode(true);
 
 
             isFirst.set(false);
