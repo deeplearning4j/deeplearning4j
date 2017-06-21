@@ -102,7 +102,7 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
         log.info("thread {} queries isEmpty", Thread.currentThread().getId());
 
 
-        return numElementsDrained.get() == numElementsReady.get() || backingQueue.isEmpty();
+        return numElementsDrained.get() == numElementsReady.get();
     }
 
     protected void synchronize(int consumers) {
@@ -160,7 +160,7 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
 
 
         // last consumer shifts queue on step further
-        if (state.incrementAndGet() == consumers) {
+        if (state.incrementAndGet() == currentConsumers.get()) {
 
             // we're removing current head of queue
             remove();

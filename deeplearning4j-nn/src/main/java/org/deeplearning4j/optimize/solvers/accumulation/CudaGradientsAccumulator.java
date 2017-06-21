@@ -306,6 +306,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             }
         }
 
+        // accumulate gradients updates in residental array
+        accumulator.get().addi(array);
 
         log.info("thread {} locking at Register", Thread.currentThread().getId());
 
@@ -314,11 +316,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             while (!registered.get())
                 LockSupport.parkNanos(100L);
 
-
         log.info("thread {} unlocking at Register", Thread.currentThread().getId());
-
-        // accumulate gradients updates in residental array
-        accumulator.get().addi(array);
 
         // propagate changes & modify accumulator
         handler.broadcastUpdates(accumulator.get());
