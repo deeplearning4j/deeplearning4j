@@ -205,7 +205,7 @@ public class SharedTrainingWrapper {
                     model.addListener(SleepyTrainingListener.builder().timerIteration(trainingConfiguration.getDebugLongerIterations()).build());
 
                 // we're launching PW only if number of workers is more then 1
-                if (trainingConfiguration.getNumberOfWorkersPerNode() > 1) {
+                if (numWorkers > 1) {
                     wrapper = new ParallelWrapper.Builder<>(model)
                             .workers(numWorkers)
                             .workspaceMode(trainingConfiguration.getWorkspaceMode())
@@ -214,6 +214,7 @@ public class SharedTrainingWrapper {
                             .prefetchBuffer(trainingConfiguration.getPrefetchSize())
                             .build();
                 } else {
+                    log.info("Using standalone model instead...");
                     // ok. attaching accumulator to
                     if (model instanceof ComputationGraph) {
                         ((ComputationGraph) model).setGradientsAccumulator(accumulator);
