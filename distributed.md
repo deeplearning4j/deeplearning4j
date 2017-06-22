@@ -5,12 +5,12 @@ layout: default
 
 # Distributed training: gradients sharing
 
-As of release 0.9.0 (or the 0.8.1-SNAPSHOT), DeepLearning4j also support distributed training in Apache Spark environment, using Aeron for messages.
+As of release 0.9.0 (or the 0.8.1-SNAPSHOT), DeepLearning4j also supports distributed training in Apache Spark environment, using Aeron for messages.
 
-Idea is simple: individual workers are processing DataSets, and before gradients 
+Idea is relatively simple: individual workers are processing DataSets, and before gradients are applied to weights, they are accumulated in the intermediate storage, and only values above some threshold are propagated as weights updates across the network.
  
 ![Two phases in cluster](./img/distributed.png)
-
+Link to paper: http://nikkostrom.com/publications/interspeech2015/strom_interspeech2015.pdf
 
 
 # Effective scalability
@@ -58,3 +58,6 @@ Rule of thumb is simple here: faster your network is - better performance you'll
 ### UDP Unicast vs UDP Broadcast
 One might thought that UDP Broadcast transfers should be faster, but for training performance it matters only for small workloads, and here's why. 
 By design each worker sends 1 updates message per iteration, and this fact won't change. Since messages retransmission in UDP Unicast transport is handled by Master node, which isn't really that busy anyway.
+
+### Multi-GPU environments
+Best results are to be expected on boxes with PCIe P2P connectivity between devices.
