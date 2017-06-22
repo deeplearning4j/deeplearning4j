@@ -295,6 +295,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
             clone.inferenceWorkspaceMode = this.inferenceWorkspaceMode;
             clone.trainingWorkspaceMode = this.trainingWorkspaceMode;
+            clone.cacheMode = this.cacheMode;
 
             return clone;
 
@@ -322,7 +323,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         @Deprecated
         protected int[] cnnInputSize;
 
-        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.SEPARATE;
+        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
         protected CacheMode cacheMode = CacheMode.NONE;
 
@@ -378,6 +379,20 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
          */
         public Builder inferenceWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
             this.inferenceWorkspaceMode = workspaceMode;
+            return this;
+        }
+
+        /**
+         * This method defines how/if preOutput cache is handled:
+         * NONE: cache disabled (default value)
+         * HOST: Host memory will be used
+         * DEVICE: GPU memory will be used (on CPU backends effect will be the same as for HOST)
+         *
+         * @param cacheMode
+         * @return
+         */
+        public Builder cacheMode(@NonNull CacheMode cacheMode) {
+            this.cacheMode = cacheMode;
             return this;
         }
 
@@ -469,16 +484,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        /**
-         * This method does configuration of Cache Mode for preOutput()
-         * @param cacheMode
-         * @return
-         */
-        public Builder cacheMode(@NonNull CacheMode cacheMode) {
-            this.cacheMode = cacheMode;
-            return this;
-        }
-
         public MultiLayerConfiguration build() {
             if (cnnInputSize != null) {
                 new ConvolutionLayerSetup(this, cnnInputSize[0], cnnInputSize[1], cnnInputSize[2]);
@@ -554,7 +559,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.tbpttBackLength = tbpttBackLength;
             conf.trainingWorkspaceMode = trainingWorkspaceMode;
             conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
-            conf.cacheMode = this.cacheMode;
+            conf.cacheMode = cacheMode;
+
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
             return conf;
 

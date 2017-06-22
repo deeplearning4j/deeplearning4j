@@ -33,6 +33,7 @@ import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -65,19 +66,18 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     protected INDArray maskArray;
     protected MaskState maskState;
     protected Solver solver;
-    protected CacheMode cacheMode;
+
+    protected CacheMode cacheMode = CacheMode.NONE;
 
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
 
-        this.cacheMode = conf.getCacheMode();
-        if (cacheMode == null)
-            this.cacheMode = CacheMode.NONE;
+        cacheMode = conf.getCacheMode();
     }
 
     public BaseLayer(NeuralNetConfiguration conf, INDArray input) {
-        this(conf);
         this.input = input;
+        this.conf = conf;
     }
 
     protected LayerConfT layerConf() {

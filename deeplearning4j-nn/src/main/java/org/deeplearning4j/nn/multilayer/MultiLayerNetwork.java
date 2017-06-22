@@ -48,10 +48,7 @@ import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
-import org.nd4j.linalg.api.memory.enums.LearningPolicy;
-import org.nd4j.linalg.api.memory.enums.ResetPolicy;
-import org.nd4j.linalg.api.memory.enums.SpillPolicy;
+import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -462,6 +459,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
             return;
 
         log.info("Starting MultiLayerNetwork with WorkspaceModes set to [training: {}; inference: {}]", layerWiseConfigurations.getTrainingWorkspaceMode(), layerWiseConfigurations.getInferenceWorkspaceMode());
+
+        if (layerWiseConfigurations.getCacheMode() == CacheMode.HOST) {
+            workspaceConfigurationCache.setPolicyMirroring(MirroringPolicy.HOST_ONLY);
+        }
 
         int nLayers = getnLayers();
 
@@ -2733,8 +2734,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
                     out = this.silentOutput(features, false);
                 }
 
-                for(T evaluation: evaluations)
-                evaluation.eval(labels, out, lMask);
+                try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                    for (T evaluation : evaluations)
+                        evaluation.eval(labels, out, lMask);
+                }
             }
 
             clearLayerMaskArrays();

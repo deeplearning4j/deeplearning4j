@@ -25,6 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.meta.Prediction;
+import org.deeplearning4j.eval.serde.ConfusionMatrixDeserializer;
+import org.deeplearning4j.eval.serde.ConfusionMatrixSerializer;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -33,21 +35,44 @@ import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.shade.jackson.annotation.JsonIgnore;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.*;
 
 /**
- * Evaluation metrics:
- * precision, recall, f1
+ * Evaluation metrics:<br>
+ * - precision, recall, f1, fBeta, accuracy, Matthews correlation coefficient, gMeasure<br>
+ * - Top N accuracy (if using constructor {@link #Evaluation(List, int)})<br>
+ * - Custom binary evaluation decision threshold (use constructor {@link #Evaluation(double)} (default if not set is
+ *   argmax / 0.5)<br>
+ * - Custom cost array, using {@link #Evaluation(INDArray)} or {@link #Evaluation(List, INDArray)} for multi-class <br>
+ * <br>
+ * Note that setting a custom binary decision threshold is only possible for the binary case (1 or 2 outputs) and cannot
+ * be used if the number of classes exceeds 2. Predictions with probablity > threshold are considered to be class 1,
+ * and are considered class 0 otherwise.<br>
+ * <br>
+ * Cost arrays (a row vector, of size equal to the number of outputs) modify the evaluation process: instead of simply
+ * doing predictedClass = argMax(probabilities), we do predictedClass = argMax(cost * probabilities). Consequently, an
+ * array of all 1s (or, indeed any array of equal values) will result in the same performance as no cost array; non-
+ * equal values will bias the predictions for or against certain classes.
  *
  * @author Adam Gibson
  */
 @Slf4j
 @EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@JsonIgnoreProperties({"confusionMatrixMetaData"})
 public class Evaluation extends BaseEvaluation<Evaluation> {
+    //What to output from the precision/recall function when we encounter an edge case
+    protected static final double DEFAULT_EDGE_VALUE = 0.0;
 
     protected final int topN;
     protected int topNCorrectCount = 0;
@@ -56,13 +81,18 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     protected Counter<Integer> falsePositives = new Counter<>();
     protected Counter<Integer> trueNegatives = new Counter<>();
     protected Counter<Integer> falseNegatives = new Counter<>();
+    @JsonSerialize(using = ConfusionMatrixSerializer.class)
+    @JsonDeserialize(using = ConfusionMatrixDeserializer.class)
     protected ConfusionMatrix<Integer> confusion;
     protected int numRowCounter = 0;
     @Getter
     @Setter
     protected List<String> labelsList = new ArrayList<>();
-    //What to output from the precision/recall function when we encounter an edge case
-    protected static final double DEFAULT_EDGE_VALUE = 0.0;
+
+    protected Double binaryDecisionThreshold;
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
+    protected INDArray costArray;
 
     protected Map<Pair<Integer, Integer>, List<Object>> confusionMatrixMetaData; //Pair: (Actual,Predicted)
 
@@ -70,8 +100,6 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     public Evaluation() {
         this.topN = 1;
     }
-
-    // Constructor that takes number of output classes
 
     /**
      * The number of classes to account
@@ -118,6 +146,49 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             createConfusion(labels.size());
         }
         this.topN = topN;
+    }
+
+    /**
+     * Create an evaluation instance with a custom binary decision threshold. Note that binary decision thresholds can
+     * only be used with binary classifiers.
+     *
+     * @param binaryDecisionThreshold Decision threshold to use for binary predictions
+     */
+    public Evaluation(double binaryDecisionThreshold){
+        this.binaryDecisionThreshold = binaryDecisionThreshold;
+        this.topN = 1;
+    }
+
+    /**
+     *  Created evaluation instance with the specified cost array. A cost array can be used to bias the multi class
+     *  predictions towards or away from certain classes. The predicted class is determined using argMax(cost * probability)
+     *  instead of argMax(probability) when no cost array is present.
+     *
+     * @param costArray Row vector cost array
+     */
+    public Evaluation(@Nullable INDArray costArray){
+        this(null, costArray);
+    }
+
+    /**
+     *  Created evaluation instance with the specified cost array. A cost array can be used to bias the multi class
+     *  predictions towards or away from certain classes. The predicted class is determined using argMax(cost * probability)
+     *  instead of argMax(probability) when no cost array is present.
+     *
+     * @param labels Labels for the output classes
+     * @param costArray Row vector cost array
+     */
+    public Evaluation(@Nullable List<String> labels, @Nullable INDArray costArray){
+        if(costArray != null && !costArray.isRowVector()){
+            throw new IllegalArgumentException("Invalid cost array: must be a row vector (got shape: "
+                    + Arrays.toString(costArray.shape()) + ")");
+        }
+        if( costArray != null && costArray.minNumber().doubleValue() < 0.0 ){
+            throw new IllegalArgumentException("Invalid cost array: Cost array values must be positive");
+        }
+        this.labelsList = labels;
+        this.costArray = costArray;
+        this.topN = 1;
     }
 
     @Override
@@ -254,7 +325,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         final int nRows = realOutcomes.rows();
 
         if (nCols == 1) {
-            INDArray binaryGuesses = guesses.gt(0.5);
+            INDArray binaryGuesses = guesses.gt(binaryDecisionThreshold == null ? 0.5 : binaryDecisionThreshold);
+
             INDArray notLabel = Nd4j.getExecutioner().execAndReturn(new Not(realOutcomes.dup()));
             INDArray notGuess = Nd4j.getExecutioner().execAndReturn(new Not(binaryGuesses.dup()));
             //tp: predicted = 1, actual = 1
@@ -291,8 +363,24 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             }
 
         } else {
-            final INDArray guessIndex = Nd4j.argMax(guesses, 1);
-            final INDArray realOutcomeIndex = Nd4j.argMax(realOutcomes, 1);
+            INDArray guessIndex;
+            if(binaryDecisionThreshold != null) {
+                if( nCols != 2){
+                    throw new IllegalStateException("Binary decision threshold is set, but number of columns for "
+                            + "predictions is " + nCols + ". Binary decision threshold can only be used for binary "
+                            + "prediction cases");
+                }
+
+                INDArray pClass1 = guesses.getColumn(1);
+                guessIndex = pClass1.gt(binaryDecisionThreshold);
+            } else if( costArray != null ){
+                //With a cost array: do argmax(cost * probability) instead of just argmax(probability)
+                guessIndex = Nd4j.argMax(guesses.mulRowVector(costArray), 1);
+            } else {
+                //Standard case: argmax
+                guessIndex = Nd4j.argMax(guesses, 1);
+            }
+            INDArray realOutcomeIndex = Nd4j.argMax(realOutcomes, 1);
             int nExamples = guessIndex.length();
 
             for (int i = 0; i < nExamples; i++) {
@@ -436,8 +524,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 int count = confusion().getCount(clazz, clazz2);
                 if (count != 0) {
                     expected = resolveLabelForClass(clazz2);
-                    builder.append(String.format("Examples labeled as %s classified by model as %s: %d times%n", actual,
-                                    expected, count));
+                    builder.append(String.format("Examples labeled as %s classified by model as %s: %d times%n",
+                            expected, actual, count));
                 }
             }
 
@@ -497,6 +585,12 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         }
         if(nClasses > 2){
             builder.append("\nPrecision, recall & F1: macro-averaged (equally weighted avg. of ").append(nClasses).append(" classes)");
+        }
+        if(binaryDecisionThreshold != null){
+            builder.append("\nBinary decision threshold: ").append(binaryDecisionThreshold);
+        }
+        if(costArray != null){
+            builder.append("\nCost array: ").append(Arrays.toString(costArray.dup().data().asFloat()));
         }
         //Note that we could report micro-averaged too - but these are the same as accuracy
         //"Note that for “micro”-averaging in a multiclass setting with all labels included will produce equal precision, recall and F,"
@@ -1234,7 +1328,6 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * the number of correct predictions
      * @return Number of correct top N predictions
      */
-    @JsonIgnore
     public int getTopNCorrectCount() {
         if(confusion == null)
             confusion = new ConfusionMatrix<>();
@@ -1255,7 +1348,6 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * (i.e., requires the full probability distribution, not just predicted/actual indices)
      * @return Total number of top N predictions
      */
-    @JsonIgnore
     public int getTopNTotalCount() {
         if (topN <= 1) {
             return getNumRowCounter();
@@ -1272,7 +1364,6 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *
      * @return confusion matrix variable for this evaluation
      */
-    @JsonIgnore
     public ConfusionMatrix<Integer> getConfusionMatrix() {
         return confusion;
     }
@@ -1395,7 +1486,6 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *
      * @return A list of prediction errors, or null if no metadata has been recorded
      */
-    @JsonIgnore
     public List<Prediction> getPredictionErrors() {
         if (this.confusionMatrixMetaData == null)
             return null;
@@ -1510,5 +1600,14 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             out.add(new Prediction(actualClass, predictedClass, meta));
         }
         return out;
+    }
+
+
+    public static Evaluation fromJson(String json){
+        return fromJson(json, Evaluation.class);
+    }
+
+    public static Evaluation fromYaml(String yaml){
+        return fromYaml(yaml, Evaluation.class);
     }
 }

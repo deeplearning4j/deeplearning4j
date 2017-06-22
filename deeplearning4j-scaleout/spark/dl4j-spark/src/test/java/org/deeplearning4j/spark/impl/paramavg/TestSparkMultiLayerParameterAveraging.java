@@ -916,11 +916,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
         assertEquals(sparkROC.calculateAUC(), sparkROC.calculateAUC(), 1e-6);
 
-        double[][] arrLocal = local.getResultsAsArray();
-        double[][] arrSpark = sparkROC.getResultsAsArray();
-
-        assertArrayEquals(arrLocal[0], arrSpark[0], 1e-6);
-        assertArrayEquals(arrLocal[1], arrSpark[1], 1e-6);
+        assertEquals(local.getRocCurve(), sparkROC.getRocCurve());
     }
 
 
@@ -976,11 +972,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         for (int i = 0; i < nOut; i++) {
             assertEquals(sparkROC.calculateAUC(i), sparkROC.calculateAUC(i), 1e-6);
 
-            double[][] arrLocal = local.getResultsAsArray(i);
-            double[][] arrSpark = sparkROC.getResultsAsArray(i);
-
-            assertArrayEquals(arrLocal[0], arrSpark[0], 1e-6);
-            assertArrayEquals(arrLocal[1], arrSpark[1], 1e-6);
+            assertEquals(local.getRocCurve(i), sparkROC.getRocCurve(i));
         }
     }
 }

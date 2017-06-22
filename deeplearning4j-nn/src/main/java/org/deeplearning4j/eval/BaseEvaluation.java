@@ -1,10 +1,15 @@
 package org.deeplearning4j.eval;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.deeplearning4j.berkeley.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
+import org.nd4j.shade.jackson.databind.DeserializationFeature;
+import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
 import java.io.IOException;
@@ -20,8 +25,25 @@ import java.util.List;
 @EqualsAndHashCode
 public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvaluation<T> {
 
-    private static ObjectMapper objectMapper = new ObjectMapper();
-    private static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
+    @Getter
+    private static ObjectMapper objectMapper = configureMapper(new ObjectMapper());
+    @Getter
+    private static ObjectMapper yamlMapper = configureMapper(new ObjectMapper(new YAMLFactory()));
+
+    private static ObjectMapper configureMapper(ObjectMapper ret) {
+        ret.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ret.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        ret.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, false);
+        ret.enable(SerializationFeature.INDENT_OUTPUT);
+
+        //Serialize fields only, not using getters
+        ret.setVisibilityChecker(ret.getSerializationConfig().getDefaultVisibilityChecker()
+                .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+                .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+        return ret;
+    }
 
     @Override
     public void evalTimeSeries(INDArray labels, INDArray predicted) {
@@ -63,7 +85,7 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
     }
 
     /**
-     * @return
+     * @return JSON representation of the evaluation instance
      */
     @Override
     public String toJson() {
@@ -75,7 +97,7 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
     }
 
     /**
-     * @return
+     * @return YAML  representation of the evaluation instance
      */
     @Override
     public String toYaml() {
@@ -88,26 +110,26 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
 
 
     /**
-     * @param json
-     * @param clazz
-     * @param <T>
-     * @return
+     * @param yaml  YAML representation
+     * @param clazz Class
+     * @param <T>   Type to return
+     * @return Evaluation instance
      */
-    public static <T extends BaseEvaluation> T fromYaml(String json, Class<T> clazz) {
+    public static <T extends IEvaluation> T fromYaml(String yaml, Class<T> clazz) {
         try {
-            return yamlMapper.readValue(json, clazz);
+            return yamlMapper.readValue(yaml, clazz);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     /**
-     * @param json
-     * @param clazz
-     * @param <T>
-     * @return
+     * @param json  Jason representation of the evaluation instance
+     * @param clazz Class
+     * @param <T>   Type to return
+     * @return Evaluation instance
      */
-    public static <T extends BaseEvaluation> T fromJson(String json, Class<T> clazz) {
+    public static <T extends IEvaluation> T fromJson(String json, Class<T> clazz) {
         try {
             return objectMapper.readValue(json, clazz);
         } catch (IOException e) {

@@ -278,7 +278,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                             .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                             .tBPTTBackwardLength(tbpttBackLength).cnnInputSize(this.cnnInputSize)
                             .setInputType(this.inputType).trainingWorkspaceMode(globalConfig.trainingWorkspaceMode)
-                            .inferenceWorkspaceMode(globalConfig.inferenceWorkspaceMode).cacheMode(cacheMode).confs(list).build();
+                            .cacheMode(globalConfig.cacheMode).inferenceWorkspaceMode(globalConfig.inferenceWorkspaceMode).confs(list).build();
         }
 
     }
@@ -566,7 +566,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected double lrPolicyPower = Double.NaN;
         protected boolean pretrain = false;
 
-        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.SEPARATE;
+        protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
         protected CacheMode cacheMode = CacheMode.NONE;
 
@@ -628,6 +628,20 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          */
         public Builder inferenceWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
             this.inferenceWorkspaceMode = workspaceMode;
+            return this;
+        }
+
+        /**
+         * This method defines how/if preOutput cache is handled:
+         * NONE: cache disabled (default value)
+         * HOST: Host memory will be used
+         * DEVICE: GPU memory will be used (on CPU backends effect will be the same as for HOST)
+         *
+         * @param cacheMode
+         * @return
+         */
+        public Builder cacheMode(@NonNull CacheMode cacheMode) {
+            this.cacheMode = cacheMode;
             return this;
         }
 
@@ -832,16 +846,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          */
         public Builder dist(Distribution dist) {
             this.dist = dist;
-            return this;
-        }
-
-        /**
-         * This method allows to configure preOutput cache configuration
-         * @param cacheMode
-         * @return
-         */
-        public Builder cacheMode(@NonNull CacheMode cacheMode) {
-            this.cacheMode = cacheMode;
             return this;
         }
 

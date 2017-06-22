@@ -3,6 +3,8 @@ package org.deeplearning4j.evaluation;
 import org.apache.commons.io.FileUtils;
 import org.deeplearning4j.eval.ROC;
 import org.deeplearning4j.eval.ROCMultiClass;
+import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
+import org.deeplearning4j.eval.curves.RocCurve;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.LengthUnit;
 import org.deeplearning4j.ui.components.chart.ChartLine;
@@ -110,9 +112,9 @@ public class EvaluationTools {
      * @param roc  ROC to render
      */
     public static String rocChartToHtml(ROC roc) {
-        double[][] points = roc.getResultsAsArray();
+        RocCurve rocCurve = roc.getRocCurve();
 
-        Component c = getRocFromPoints(ROC_TITLE, points, roc.getCountActualPositive(), roc.getCountActualNegative(),
+        Component c = getRocFromPoints(ROC_TITLE, rocCurve, roc.getCountActualPositive(), roc.getCountActualNegative(),
                         roc.calculateAUC(), roc.calculateAUCPR());
         Component c2 = getPRCharts(PR_TITLE, PR_THRESHOLD_TITLE, roc.getPrecisionRecallCurve());
 
@@ -134,12 +136,12 @@ public class EvaluationTools {
      * @param classNames     Names of the classes. May be null
      */
     public static String rocChartToHtml(ROCMultiClass rocMultiClass, List<String> classNames) {
-        long[] actualCountPositive = rocMultiClass.getCountActualPositive();
-        long[] actualCountNegative = rocMultiClass.getCountActualNegative();
 
-        List<Component> components = new ArrayList<>(actualCountPositive.length);
-        for (int i = 0; i < actualCountPositive.length; i++) {
-            double[][] points = rocMultiClass.getResultsAsArray(i);
+        int n = rocMultiClass.getNumClasses();
+
+        List<Component> components = new ArrayList<>(n);
+        for (int i = 0; i < n; i++) {
+            RocCurve roc = rocMultiClass.getRocCurve(i);
             String headerText = "Class " + i;
             if (classNames != null && classNames.size() > i) {
                 headerText += " (" + classNames.get(i) + ")";
@@ -151,7 +153,7 @@ public class EvaluationTools {
 
             Component headerDivLeft = new ComponentDiv(HEADER_DIV_TEXT_PAD_STYLE);
             Component headerDiv = new ComponentDiv(HEADER_DIV_STYLE, new ComponentText(headerText, HEADER_TEXT_STYLE));
-            Component c = getRocFromPoints(ROC_TITLE, points, actualCountPositive[i], actualCountNegative[i],
+            Component c = getRocFromPoints(ROC_TITLE, roc, rocMultiClass.getCountActualPositive(i), rocMultiClass.getCountActualNegative(i),
                             rocMultiClass.calculateAUC(i), rocMultiClass.calculateAUCPR(i));
             Component c2 = getPRCharts(PR_TITLE, PR_THRESHOLD_TITLE, rocMultiClass.getPrecisionRecallCurve(i));
             components.add(headerDivLeft);
@@ -163,12 +165,12 @@ public class EvaluationTools {
         return StaticPageUtil.renderHTML(components);
     }
 
-    private static Component getRocFromPoints(String title, double[][] points, long positiveCount, long negativeCount,
+    private static Component getRocFromPoints(String title, RocCurve roc, long positiveCount, long negativeCount,
                     double auc, double aucpr) {
         double[] zeroOne = new double[] {0.0, 1.0};
 
         ChartLine chartLine = new ChartLine.Builder(title, CHART_STYLE).setXMin(0.0).setXMax(1.0).setYMin(0.0)
-                        .setYMax(1.0).addSeries("ROC", points[0], points[1]) //points[0] is false positives -> usually plotted on x axis
+                        .setYMax(1.0).addSeries("ROC", roc.getX(), roc.getY())
                         .addSeries("", zeroOne, zeroOne).build();
 
         ComponentTable ct = new ComponentTable.Builder(TABLE_STYLE).header("Field", "Value")
@@ -185,45 +187,29 @@ public class EvaluationTools {
     }
 
     private static Component getPRCharts(String precisionRecallTitle, String prThresholdTitle,
-                    List<ROC.PrecisionRecallPoint> prPoints) {
+                                         PrecisionRecallCurve prCurve) {
 
         ComponentDiv divLeft =
-                        new ComponentDiv(INNER_DIV_STYLE, getPrecisionRecallCurve(precisionRecallTitle, prPoints));
+                        new ComponentDiv(INNER_DIV_STYLE, getPrecisionRecallCurve(precisionRecallTitle, prCurve));
         ComponentDiv divRight =
-                        new ComponentDiv(INNER_DIV_STYLE, getPrecisionRecallVsThreshold(prThresholdTitle, prPoints));
+                        new ComponentDiv(INNER_DIV_STYLE, getPrecisionRecallVsThreshold(prThresholdTitle, prCurve));
 
         return new ComponentDiv(OUTER_DIV_STYLE, divLeft, divRight);
     }
 
-    private static Component getPrecisionRecallCurve(String title,
-                    List<ROC.PrecisionRecallPoint> precisionRecallPoints) {
-
-        double[] recallX = new double[precisionRecallPoints.size()];
-        double[] precisionY = new double[recallX.length];
-
-        for (int i = 0; i < recallX.length; i++) {
-            ROC.PrecisionRecallPoint p = precisionRecallPoints.get(i);
-            recallX[i] = p.getRecall();
-            precisionY[i] = p.getPrecision();
-        }
+    private static Component getPrecisionRecallCurve(String title, PrecisionRecallCurve prCurve) {
+        double[] recallX = prCurve.getRecall();
+        double[] precisionY = prCurve.getPrecision();
 
         return new ChartLine.Builder(title, CHART_STYLE).setXMin(0.0).setXMax(1.0).setYMin(0.0).setYMax(1.0)
                         .addSeries("P vs R", recallX, precisionY).build();
     }
 
-    private static Component getPrecisionRecallVsThreshold(String title,
-                    List<ROC.PrecisionRecallPoint> precisionRecallPoints) {
+    private static Component getPrecisionRecallVsThreshold(String title, PrecisionRecallCurve prCurve) {
 
-        double[] recallY = new double[precisionRecallPoints.size()];
-        double[] precisionY = new double[recallY.length];
-        double[] thresholdX = new double[recallY.length];
-
-        for (int i = 0; i < recallY.length; i++) {
-            ROC.PrecisionRecallPoint p = precisionRecallPoints.get(i);
-            thresholdX[i] = p.getClassiferThreshold();
-            recallY[i] = p.getRecall();
-            precisionY[i] = p.getPrecision();
-        }
+        double[] recallY = prCurve.getRecall();
+        double[] precisionY = prCurve.getPrecision();
+        double[] thresholdX = prCurve.getThreshold();
 
         return new ChartLine.Builder(title, CHART_STYLE_PRECISION_RECALL).setXMin(0.0).setXMax(1.0).setYMin(0.0)
                         .setYMax(1.0).addSeries("Precision", thresholdX, precisionY)

@@ -363,27 +363,13 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         z = Shape.newShapeNoCopy(z, new int[] {outW, outH, miniBatch, outDepth}, true);
         z = z.permute(2, 3, 1, 0);
 
-        // preOutput() cache handling
-        if (cacheMode == CacheMode.NONE) {
-            // just do nothing
-        } else if (cacheMode == CacheMode.HOST) {
-            // we push this thing to CACHE workspace, which will be HOST on both cpu & cuda backend
-            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceCache)) {
+        if (cacheMode != CacheMode.NONE && Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceCache)) {
 
-                try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
-                    i2d = im2col2d.unsafeDuplication();
-                }
-            }
-        } else if (cacheMode == CacheMode.DEVICE) {
-            // just put to external workspace
-            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
-
-                try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
-                     i2d = im2col2d.unsafeDuplication();
-                }
+            try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
+                    .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
+                 i2d = im2col2d.unsafeDuplication();
             }
         }
-
 
         return new Pair<>(z, forBackprop ? im2col2d : null);
     }
@@ -397,26 +383,11 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         INDArray z = preOutput(training);
 
-        // preOutput() cache handling
-        if (training) {
-            if (cacheMode == CacheMode.NONE) {
-                // just do nothing
-            } else if (cacheMode == CacheMode.HOST) {
-                // we push this thing to CACHE workspace, which will be HOST on both cpu & cuda backend
-                if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceCache)) {
-
-                    try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
-                        preOutput = z.unsafeDuplication();
-                    }
-                }
-            } else if (cacheMode == CacheMode.DEVICE) {
-                // just put to external workspace
-                if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
-
-                    try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
-                        preOutput = z.unsafeDuplication();
-                    }
-                }
+        // we do cache only if cache workspace exists. Skip otherwise
+        if (training && cacheMode != CacheMode.NONE && Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceCache)) {
+            try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
+                    .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
+                preOutput = z.unsafeDuplication();
             }
         }
 

@@ -1,0 +1,8 @@
+ansj_seg
+Copyright 2011-2016 ansj_seg
+
+the deeplearning4j-nlp-chinese
+Copyright 2017-2022 the deeplearning4j-nlp-chinese
+
+This product includes software developed by The Apache Software
+Foundation (http://www.apache.org/).
