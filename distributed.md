@@ -11,7 +11,7 @@ Idea is relatively simple: individual workers are processing DataSets, and befor
  
 ![Two phases in cluster](./img/distributed.png)
 
-Link to paper: http://nikkostrom.com/publications/interspeech2015/strom_interspeech2015.pdf
+Link to paper: [http://nikkostrom.com/publications/interspeech2015/strom_interspeech2015.pdf](http://nikkostrom.com/publications/interspeech2015/strom_interspeech2015.pdf)
 
 
 # Setting up your cluster
