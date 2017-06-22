@@ -43,6 +43,21 @@ public class SleepyTrainingListener implements TrainingListener {
         BUSY,
     }
 
+
+    public enum TimeMode {
+        /**
+         * In this mode, listener will be trying to match specified time for a given invocation method.
+         * I.e. if iteration sleep is set to 500, and real iteration was 35 ms, thread will be sleeping for 465ms, to match target time of 500ms
+         *
+         */
+        ADDITIVE,
+
+        /**
+         * In this mode, listener will just call
+         */
+        SIMPLE
+    }
+
     @Getter(AccessLevel.NONE)
     @Setter(AccessLevel.NONE)
     protected final transient ThreadLocal<AtomicLong> lastEE = new ThreadLocal<>();
@@ -70,6 +85,8 @@ public class SleepyTrainingListener implements TrainingListener {
     @Builder.Default protected long timerIteration = 0L;
 
     @Builder.Default protected SleepMode sleepMode = SleepMode.PARK;
+
+    @Builder.Default protected TimeMode timeMode = TimeMode.SIMPLE;
 
     protected void sleep(long sleepTimeMs) {
         if (sleepTimeMs < 1)
@@ -100,6 +117,12 @@ public class SleepyTrainingListener implements TrainingListener {
     protected void sleep(AtomicLong lastTime, long sleepTime) {
         if (sleepTime == 0)
             return;
+
+        // if that's SIMPLE mode - just sleep specific time, and go
+        if (timeMode == TimeMode.SIMPLE) {
+            sleep(sleepTime);
+            return;
+        }
 
         // we're skipping first iteration here, just sleeping fixed amount of time
         if (lastTime == null) {
