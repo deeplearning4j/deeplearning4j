@@ -199,7 +199,19 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testBroadcastingGenerated() {
+        int[][] broadcastShape = NDArrayCreationUtil.getRandomBroadCastShape(7, 6, 10);
+        List<List<Pair<INDArray, String>>> broadCastList = new ArrayList<>(broadcastShape.length);
+        for (int[] shape : broadcastShape) {
+            List<Pair<INDArray, String>> arrShape = NDArrayCreationUtil.get6dPermutedWithShape(7,shape);
+             broadCastList.add(arrShape);
+        }
 
+
+        
+
+    }
     @Test
     public void testBroadCasting() {
         INDArray first = Nd4j.arange(0, 3).reshape(3, 1);
@@ -211,6 +223,13 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray testR2 = Nd4j.create(new double[][] {{0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}});
         assertEquals(testR2, r2);
 
+    }
+
+    @Test
+    public void testOneTensor() {
+        INDArray arr = Nd4j.ones(1,1,1,1,1,1,1);
+        INDArray matrixToBroadcast = Nd4j.ones(1,1);
+        assertEquals(matrixToBroadcast.broadcast(arr.shape()),arr);
     }
 
     @Test
