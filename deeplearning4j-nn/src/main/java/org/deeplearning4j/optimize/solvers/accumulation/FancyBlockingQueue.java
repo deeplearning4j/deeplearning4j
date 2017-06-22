@@ -41,7 +41,7 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
     protected AtomicInteger numElementsDrained = new AtomicInteger(0);
     protected AtomicBoolean bypassMode = new AtomicBoolean(false);
 
-    protected boolean isDebug = false;
+    protected boolean isDebug = true;
     protected ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
 

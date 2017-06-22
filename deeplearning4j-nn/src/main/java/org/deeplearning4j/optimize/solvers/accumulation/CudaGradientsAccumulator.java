@@ -55,7 +55,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
     protected AtomicBoolean bypassMode = new AtomicBoolean(false);
     protected final AtomicInteger currentConsumers = new AtomicInteger(0);
 
-    protected boolean isDebug = false;
+    protected boolean isDebug = true;
 
 
     public CudaGradientsAccumulator(double parties) {
