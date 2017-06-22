@@ -206,6 +206,8 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         for (int[] shape : broadcastShape) {
             List<Pair<INDArray, String>> arrShape = NDArrayCreationUtil.get6dPermutedWithShape(7,shape);
             broadCastList.add(arrShape);
+            broadCastList.add(NDArrayCreationUtil.get6dReshapedWithShape(7,shape));
+            broadCastList.add(NDArrayCreationUtil.getAll6dTestArraysWithShape(7,shape));
         }
 
         for(List<Pair<INDArray, String>> b : broadCastList) {
