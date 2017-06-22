@@ -68,6 +68,11 @@ public class ComputationGraphUpdater extends BaseMultiLayerUpdater<ComputationGr
     }
 
     @Override
+    protected INDArray getParams() {
+        return network.params();
+    }
+
+    @Override
     protected boolean isMiniBatch() {
         return network.conf().isMiniBatch();
     }
