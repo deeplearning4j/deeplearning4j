@@ -205,11 +205,19 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         List<List<Pair<INDArray, String>>> broadCastList = new ArrayList<>(broadcastShape.length);
         for (int[] shape : broadcastShape) {
             List<Pair<INDArray, String>> arrShape = NDArrayCreationUtil.get6dPermutedWithShape(7,shape);
-             broadCastList.add(arrShape);
+            broadCastList.add(arrShape);
+        }
+
+        for(List<Pair<INDArray, String>> b : broadCastList) {
+            for(Pair<INDArray,String> val : b) {
+                INDArray inputArrBroadcast = val.getFirst();
+                int[] destShape = NDArrayCreationUtil.broadcastToShape(inputArrBroadcast.shape(),7);
+                INDArray output = inputArrBroadcast.broadcast(NDArrayCreationUtil.broadcastToShape(inputArrBroadcast.shape(),7));
+                assertArrayEquals(destShape,output.shape());
+            }
         }
 
 
-        
 
     }
     @Test
@@ -699,7 +707,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray linspace = Nd4j.linspace(1, 6, 6);
         INDArray log = Transforms.log(linspace);
         INDArray assertion = Nd4j.create(new double[] {0, 0.6931471805599453, 1.0986122886681098, 1.3862943611198906,
-                        1.6094379124341005, 1.791759469228055});
+                1.6094379124341005, 1.791759469228055});
         assertEquals(assertion, log);
     }
 
@@ -1028,7 +1036,7 @@ public class NDArrayTestsFortran extends BaseNd4jTest {
         INDArray result = Nd4j.tensorMmul(oneThroughSixty, oneThroughTwentyFour, new int[][] {{1, 0}, {0, 1}});
         assertArrayEquals(new int[] {5, 2}, result.shape());
         INDArray assertion = Nd4j.create(new double[][] {{440., 1232.}, {1232., 3752.}, {2024., 6272.}, {2816., 8792.},
-                        {3608., 11312.}});
+                {3608., 11312.}});
         assertEquals(assertion, result);
 
     }

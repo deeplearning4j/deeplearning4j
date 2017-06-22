@@ -6,10 +6,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  *
@@ -746,10 +743,36 @@ public class NDArrayCreationUtil {
                     ret[i][j] = set;
                 else {
                     //anything from 0 to 9
-                    ret[i][j] = Nd4j.getRandom().nextInt(9);
+                    ret[i][j] = Nd4j.getRandom().nextInt(9) + 1;
                 }
             }
         }
+
         return ret;
     }
+
+
+    /**
+     * Generate a random shape to
+     * broadcast to
+     * given a randomly generated
+     * shape with 1s in it as inputs
+     * @param inputShapeWithOnes
+     * @param seed
+     * @return
+     */
+    public static int[] broadcastToShape(int[] inputShapeWithOnes,long seed) {
+        Nd4j.getRandom().setSeed(seed);
+        int[] shape = new int[inputShapeWithOnes.length];
+        for(int i = 0; i < shape.length; i++) {
+            if(inputShapeWithOnes[i] == 1) {
+                shape[i] = Nd4j.getRandom().nextInt(9) + 1;
+            }
+            else
+                shape[i] = inputShapeWithOnes[i];
+        }
+
+        return shape;
+    }
+
 }
