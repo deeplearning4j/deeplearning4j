@@ -119,7 +119,6 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
                 enforcing periodic messages retransmission from other nodes, so we should be all fine
               */
 
-
             try {
                 if (!bypassMode.get()) {
                     //log.info("Storing external message...");
@@ -133,6 +132,14 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
 
             //accumulator.receiveUpdate(message.getUpdates());
         } else if (params != null && stepFunction != null) {
+
+            /*
+                this condition is only possible in spark local mode.
+                and it means that updates were already applied as local updates
+             */
+            if (transport.numberOfKnownClients() == 1) {
+                return;
+            }
 
             // master invokes everything, since that's Silent Worker approach: we want master to be always up-to-date
             synchronized (this) {
