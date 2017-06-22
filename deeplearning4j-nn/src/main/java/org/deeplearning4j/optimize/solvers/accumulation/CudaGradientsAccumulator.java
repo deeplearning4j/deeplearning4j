@@ -150,8 +150,12 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
     }
 
     protected void synchronize(int consumers, boolean finalLock) {
-        if (consumers == 1 || bypassMode.get())
+        if (consumers == 1 || bypassMode.get()) {
+            if (finalLock)
+                registered.set(false);
+
             return;
+        }
 
         if (isDebug)
             log.info("thread {} locking at CGA: {}", Thread.currentThread().getId(), currentConsumers.get());
@@ -160,7 +164,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
         isDone.compareAndSet(true, false);
 
         // last thread will set isDone to true
-        if (barrier.incrementAndGet() == currentConsumers.get()) {
+        if (barrier.incrementAndGet() == consumers) {
             secondary.set(0);
             barrier.set(0);
             isFirst.set(false);
@@ -172,7 +176,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
         }
 
         // second lock here needed only to ensure we won't get overrun over isDone flag
-        if (secondary.incrementAndGet() == currentConsumers.get()) {
+        if (secondary.incrementAndGet() == consumers) {
             if (finalLock)
                 registered.set(false);
 

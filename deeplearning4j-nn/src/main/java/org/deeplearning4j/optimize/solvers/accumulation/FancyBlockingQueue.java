@@ -122,7 +122,7 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
         isDone.compareAndSet(true, false);
 
         // last thread will set isDone to true
-        if (barrier.incrementAndGet() == currentConsumers.get()) {
+        if (barrier.incrementAndGet() == consumers) {
             secondary.set(0);
             barrier.set(0);
             isFirst.set(false);
@@ -134,7 +134,7 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
         }
 
         // second lock here needed only to ensure we won't get overrun over isDone flag
-        if (secondary.incrementAndGet() == currentConsumers.get()) {
+        if (secondary.incrementAndGet() == consumers) {
             isFirst.set(true);
         } else {
             while (!isFirst.get())
@@ -162,7 +162,7 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
         E object = peek();
 
         // we wait until all consumers peek() this object from queue
-        synchronize(consumers);
+        synchronize(currentConsumers.get());
 
         currentStep.get().incrementAndGet();
 
@@ -181,7 +181,7 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
         }
 
         // we wait until all consumers know that queue is updated (for isEmpty())
-        synchronize(consumers);
+        synchronize(currentConsumers.get());
         //log.info("Second lock passed");
 
         // now, every consumer in separate threads will get it's own copy of CURRENT head of the queue
