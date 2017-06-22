@@ -40,6 +40,8 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
     protected AtomicInteger numElementsReady = new AtomicInteger(0);
     protected AtomicInteger numElementsDrained = new AtomicInteger(0);
     protected AtomicBoolean bypassMode = new AtomicBoolean(false);
+
+    protected boolean isDebug = false;
     protected ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
 
@@ -101,7 +103,9 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
 
 
         boolean res = numElementsDrained.get() >= numElementsReady.get();
-        log.info("thread {} queries isEmpty: {}", Thread.currentThread().getId(), res);
+
+        if (isDebug)
+            log.info("thread {} queries isEmpty: {}", Thread.currentThread().getId(), res);
 
 
         return res;
@@ -111,7 +115,8 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
         if (consumers == 1 || bypassMode.get())
             return;
 
-        log.info("thread {} locking at FBQ", Thread.currentThread().getId());
+        if (isDebug)
+            log.info("thread {} locking at FBQ", Thread.currentThread().getId());
 
         // any first thread entering this block - will reset this field to false
         isDone.compareAndSet(true, false);
@@ -136,7 +141,8 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
                 LockSupport.parkNanos(1000L);
         }
 
-        log.info("thread {} unlocking at FBQ", Thread.currentThread().getId());
+        if (isDebug)
+            log.info("thread {} unlocking at FBQ", Thread.currentThread().getId());
 
     }
 

@@ -110,7 +110,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
         // if accumulator is defined, we're working at Worker level, so it's not our problem what happens inside
         if (accumulator != null) {
             if (message.getOriginatorId() == transport.getOwnOriginatorId()) {
-                log.info("Skipping since originators match");
+                //log.info("Skipping since originators match");
                 return;
             };
 
@@ -122,10 +122,10 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
 
             try {
                 if (!bypassMode.get()) {
-                    log.info("Storing external message...");
+                    //log.info("Storing external message...");
                     updatesBuffer.put(message.getUpdates());
                 } else {
-                    log.info("Skipping external message");
+                    //log.info("Skipping external message");
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -156,7 +156,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
             if (transport.numberOfKnownClients() > 1) {
                 //log.info("Resending message, skipping {}", message.getOriginatorId());
                 transport.sendMessageToAllClients(message, message.getOriginatorId(), transport.getOwnOriginatorId());
-            } else log.info("No known Clients so far");
+            } // else log.info("No known Clients so far");
         } else
             throw new DL4JInvalidConfigException("Neither GradientsAccumulator or StepFunction is defined!");
     }

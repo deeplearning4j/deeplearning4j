@@ -55,6 +55,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
     protected AtomicBoolean bypassMode = new AtomicBoolean(false);
     protected final AtomicInteger currentConsumers = new AtomicInteger(0);
 
+    protected boolean isDebug = false;
+
 
     public CudaGradientsAccumulator(double parties) {
         this(Nd4j.getAffinityManager().getNumberOfDevices(), 1e-3);
@@ -124,11 +126,15 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
     public void registerConsumers(int numConsumers) {
         // we don't want double spending here
         if (registered.get()) {
-            log.info("Master thread locks at RC");
+            if (isDebug)
+                log.info("Master thread locks at RC");
+
             while (registered.get()) {
                 LockSupport.parkNanos(100L);
             }
-            log.info("Master thread unlocks at RC");
+
+            if (isDebug)
+                log.info("Master thread unlocks at RC");
         }
 
         // we're passing number of consumers for current session to externalSource, if applicable
@@ -147,7 +153,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
         if (consumers == 1 || bypassMode.get())
             return;
 
-        log.info("thread {} locking at CGA", Thread.currentThread().getId());
+        if (isDebug)
+            log.info("thread {} locking at CGA: {}", Thread.currentThread().getId(), currentConsumers.get());
 
         // any first thread entering this block - will reset this field to false
         isDone.compareAndSet(true, false);
@@ -166,15 +173,17 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
 
         // second lock here needed only to ensure we won't get overrun over isDone flag
         if (secondary.incrementAndGet() == currentConsumers.get()) {
-            isFirst.set(true);
             if (finalLock)
                 registered.set(false);
+
+            isFirst.set(true);
         } else {
             while (!isFirst.get())
                 LockSupport.parkNanos(1000L);
         }
 
-        log.info("thread {} unlocking at CGA", Thread.currentThread().getId());
+        if (isDebug)
+            log.info("thread {} unlocking at CGA: {}", Thread.currentThread().getId(), currentConsumers.get());
 
     }
 
@@ -197,7 +206,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             cnt++;
         }
 
-        if (cnt > 0)
+        if (cnt > 0 && isDebug)
             log.info("Local updates to be applied: {}", cnt);
 
         if (externalSource != null) {
@@ -209,9 +218,11 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
                 cnt++;
                 ent++;
             }
-            log.info("thread {} finished at Externals", Thread.currentThread().getId());
 
-            if (ent > 0)
+            if (isDebug)
+                log.info("thread {} finished at Externals", Thread.currentThread().getId());
+
+            if (ent > 0 && isDebug)
                 log.info("External updates to be applied: {}", ent);
         }
 
@@ -243,7 +254,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             cnt++;
         }
 
-        if (cnt > 0)
+        if (cnt > 0 && isDebug)
             log.info("Local updates to be applied: {}", cnt);
 
         if (externalSource != null) {
@@ -256,7 +267,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
                 ent++;
             }
 
-            if (ent > 0)
+            if (ent > 0 && isDebug)
                 log.info("External updates to be applied: {}", ent);
         }
 
@@ -316,14 +327,16 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
         // accumulate gradients updates in residental array
         accumulator.get().addi(array);
 
-        log.info("thread {} locking at Register", Thread.currentThread().getId());
+        if (isDebug)
+            log.info("thread {} locking at Register", Thread.currentThread().getId());
 
         // block until ParallelWrapper sends us message about number of threads in this cycle
         if (!bypassMode.get())
             while (!registered.get())
                 LockSupport.parkNanos(100L);
 
-        log.info("thread {} unlocking at Register", Thread.currentThread().getId());
+        if (isDebug)
+            log.info("thread {} unlocking at Register", Thread.currentThread().getId());
 
         // propagate changes & modify accumulator
         handler.broadcastUpdates(accumulator.get());

@@ -206,6 +206,10 @@ public class SharedTrainingWrapper {
                     // FIXME: if localIP is null - use original ip discovery available in VoidParameterServer
                     String localIP = System.getenv("SPARK_PUBLIC_DNS");
 
+                    // or just set to null?
+                    if (localIP == null)
+                        localIP = "127.0.0.1";
+
                     // FIXME: do we need port here, in case of Multicast/Broadcast Transport?
                     SilentIntroductoryMessage sim = new SilentIntroductoryMessage(localIP, voidConfiguration.getUnicastPort());
 
@@ -252,7 +256,7 @@ public class SharedTrainingWrapper {
 
 
             if (numWorkers > 1) {
-                accumulator.registerConsumers(numWorkers);
+            //    accumulator.registerConsumers(numWorkers);
             }
 
             driver.bypassMode(false);
