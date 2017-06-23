@@ -26,6 +26,7 @@ import org.datavec.api.io.converters.SelfWritableConverter;
 import org.datavec.api.io.converters.WritableConverterException;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.metadata.RecordMetaDataComposableMap;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.writable.Writable;
@@ -40,6 +41,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -53,6 +55,8 @@ import java.util.List;
  */
 @Slf4j
 public class RecordReaderDataSetIterator implements DataSetIterator {
+    private static final String READER_KEY = "reader";
+
     protected RecordReader recordReader;
     protected WritableConverter converter;
     protected int batchSize = 10;
@@ -158,6 +162,74 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         this.regression = regression;
     }
 
+    private void initializeUnderlying(Record next){
+        int totalSize = next.getRecord().size();
+
+        //allow people to specify label index as -1 and infer the last possible label
+        if (numPossibleLabels >= 1 && labelIndex < 0) {
+            labelIndex = next.getRecord().size() - 1;
+        }
+
+        recordReader.reset();
+
+        RecordReaderMultiDataSetIterator.Builder builder = new RecordReaderMultiDataSetIterator.Builder(batchSize)
+                .addReader(READER_KEY, recordReader);
+
+        if(regression){
+            builder.addOutput(READER_KEY, labelIndex, labelIndexTo);
+        } else if(numPossibleLabels >= 1){
+            builder.addOutputOneHot(READER_KEY, labelIndex, numPossibleLabels);
+        }
+
+        //Inputs: assume to be all of the other writables
+        //Furthermore: assume label indices are all at the start or end
+        int inputFrom;
+        int inputTo;
+        if(labelIndex < 0){
+            //No label
+            inputFrom = 0;
+            inputTo = totalSize-1;
+        } else if(labelIndex == 0){
+            inputFrom = labelIndexTo + 1;
+            inputTo = totalSize-1;
+        } else {
+            inputFrom = 0;
+            inputTo = labelIndexTo - 1;
+        }
+
+        builder.addInput(READER_KEY, inputFrom, inputTo);
+        underlying = builder.build();
+
+        if(collectMetaData){
+            underlying.setCollectMetaData(collectMetaData);
+        }
+    }
+
+    private DataSet mdsToDataSet(MultiDataSet mds){
+        INDArray f = getOrNull(mds.getFeatures(), 0);
+        INDArray l = getOrNull(mds.getLabels(), 0);
+        INDArray fm = getOrNull(mds.getFeaturesMaskArrays(), 0);
+        INDArray lm = getOrNull(mds.getLabelsMaskArrays(), 0);
+
+        DataSet ds = new DataSet(f, l, fm, lm);
+
+        if(collectMetaData){
+            List<Serializable> temp = mds.getExampleMetaData();
+            List<Serializable> temp2 = new ArrayList<>(temp.size());
+            for(Serializable s : temp){
+                RecordMetaDataComposableMap m = (RecordMetaDataComposableMap)s;
+                temp2.add(m.getMeta().get(READER_KEY));
+            }
+            ds.setExampleMetaData(temp2);
+        }
+
+        if(preProcessor != null){
+            preProcessor.preProcess(ds);
+        }
+
+        return ds;
+    }
+
 
     @Override
     public DataSet next(int num) {
@@ -170,71 +242,15 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
         if(underlying == null){
             Record next = recordReader.nextRecord();
-            int totalSize = next.getRecord().size();
-
-            //allow people to specify label index as -1 and infer the last possible label
-            if (numPossibleLabels >= 1 && labelIndex < 0) {
-                labelIndex = next.getRecord().size() - 1;
-            }
-
-            recordReader.reset();
-
-            RecordReaderMultiDataSetIterator.Builder builder = new RecordReaderMultiDataSetIterator.Builder(batchSize)
-                    .addReader("reader", recordReader);
-
-            if(regression){
-                builder.addOutput("reader", labelIndex, labelIndexTo);
-            } else if(numPossibleLabels >= 1){
-                builder.addOutputOneHot("reader", labelIndex, numPossibleLabels);
-            }
-
-            //Inputs: assume to be all of the other writables
-            //Furthermore: assume label indices are all at the start or end
-            int inputFrom;
-            int inputTo;
-            if(labelIndex < 0){
-                //No label
-                inputFrom = 0;
-                inputTo = totalSize-1;
-            } else if(labelIndex == 0){
-                inputFrom = labelIndexTo + 1;
-                inputTo = totalSize-1;
-            } else {
-                inputFrom = 0;
-                inputTo = labelIndexTo - 1;
-            }
-
-            builder.addInput("reader", inputFrom, inputTo);
-            underlying = builder.build();
-
-            if(collectMetaData){
-                underlying.setCollectMetaData(collectMetaData);
-            }
+            initializeUnderlying(next);
         }
 
-
-        MultiDataSet mds = underlying.next();
-
-        INDArray f = getOrNull(mds.getFeatures(), 0);
-        INDArray l = getOrNull(mds.getLabels(), 0);
-        INDArray fm = getOrNull(mds.getFeaturesMaskArrays(), 0);
-        INDArray lm = getOrNull(mds.getLabelsMaskArrays(), 0);
-
-        DataSet ds = new DataSet(f, l, fm, lm);
-
-        if(collectMetaData){
-            ds.setExampleMetaData(mds.getExampleMetaData());
-        }
-
-        if(preProcessor != null){
-            preProcessor.preProcess(ds);
-        }
 
         batchNum++;
-        return ds;
+        return mdsToDataSet(underlying.next());
     }
 
-    private INDArray getOrNull(INDArray[] arr, int idx){
+    private static INDArray getOrNull(INDArray[] arr, int idx){
         if(arr == null || arr.length == 0){
             return null;
         }
@@ -255,7 +271,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             return next.numInputs();
         } else
             return last.numInputs();
-
     }
 
     @Override
@@ -267,8 +282,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             return next.numOutcomes();
         } else
             return last.numOutcomes();
-
-
     }
 
     @Override
@@ -349,27 +362,18 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
      * @throws IOException If an error occurs during loading of the data
      */
     public DataSet loadFromMetaData(List<RecordMetaData> list) throws IOException {
-//        List<Record> records = recordReader.loadFromMetaData(list);
-//        List<DataSet> dataSets = new ArrayList<>();
-//        List<RecordMetaData> meta = new ArrayList<>();
-//        for (Record r : records) {
-//            dataSets.add(getDataSet(r.getRecord()));
-//            meta.add(r.getMetaData());
-//        }
-//
-//        if (dataSets.isEmpty()) {
-//            return null;
-//        }
-//
-//        DataSet ret = DataSet.merge(dataSets);
-//        ret.setExampleMetaData(meta);
-//        last = ret;
-//        if (preProcessor != null)
-//            preProcessor.preProcess(ret);
-//        if (recordReader.getLabels() != null)
-//            ret.setLabelNames(recordReader.getLabels());
-//        return ret;
+        if(underlying == null){
+            Record r = recordReader.loadFromMetaData(list.get(0));
+            initializeUnderlying(r);
+        }
 
-        throw new UnsupportedOperationException();
+        //Convert back to composable:
+        List<RecordMetaData> l = new ArrayList<>(list.size());
+        for(RecordMetaData m : list){
+            l.add(new RecordMetaDataComposableMap(Collections.singletonMap(READER_KEY, m)));
+        }
+        MultiDataSet m = underlying.loadFromMetaData(l);
+
+        return mdsToDataSet(m);
     }
 }
