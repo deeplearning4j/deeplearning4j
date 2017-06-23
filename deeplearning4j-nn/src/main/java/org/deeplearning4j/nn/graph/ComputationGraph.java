@@ -31,6 +31,7 @@ import org.deeplearning4j.eval.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
@@ -80,7 +81,7 @@ import java.util.*;
  *
  * @author Alex Black
  */
-public class ComputationGraph implements Serializable, Model {
+public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     private static final Logger log = LoggerFactory.getLogger(ComputationGraph.class);
 
@@ -2027,6 +2028,11 @@ public class ComputationGraph implements Serializable, Model {
     @Override
     public INDArray params() {
         return params(true);
+    }
+
+    @Override
+    public INDArray updaterState() {
+        return getUpdater() != null ? getUpdater().getUpdaterStateViewArray() : null;
     }
 
     @Override

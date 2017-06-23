@@ -27,6 +27,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.eval.*;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
@@ -51,7 +52,9 @@ import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.nd4j.linalg.heartbeat.reports.Environment;
@@ -79,7 +82,7 @@ import static org.deeplearning4j.nn.graph.ComputationGraph.workspaceConfiguratio
  *
  * @author Adam Gibson
  */
-public class MultiLayerNetwork implements Serializable, Classifier, Layer {
+public class MultiLayerNetwork implements Serializable, Classifier, Layer, NeuralNetwork {
     private static final Logger log = LoggerFactory.getLogger(MultiLayerNetwork.class);
 
     //the hidden neural network layers (including output layer)
@@ -2757,6 +2760,26 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer {
      */
     public Evaluation evaluate(DataSetIterator iterator, List<String> labelsList) {
         return evaluate(iterator, labelsList, 1);
+    }
+
+    @Override
+    public INDArray updaterState() {
+        return getUpdater() != null ? getUpdater().getStateViewArray() : null;
+    }
+
+    @Override
+    public void fit(MultiDataSet dataSet) {
+        throw new DL4JInvalidInputException("MultiLayerNetwork can't handle MultiDataSet. Please consider use of ComputationGraph");
+    }
+
+    @Override
+    public void fit(MultiDataSetIterator iterator) {
+        throw new DL4JInvalidInputException("MultiLayerNetwork can't handle MultiDataSet. Please consider use of ComputationGraph");
+    }
+
+    @Override
+    public <T extends IEvaluation> T[] doEvaluation(MultiDataSetIterator iterator, T[] evaluations) {
+        throw new DL4JInvalidInputException("MultiLayerNetwork can't handle MultiDataSet. Please consider use of ComputationGraph");
     }
 
     /**
