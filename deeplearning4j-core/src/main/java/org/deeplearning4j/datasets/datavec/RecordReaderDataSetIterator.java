@@ -185,16 +185,16 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         //Furthermore: assume label indices are all at the start or end
         int inputFrom;
         int inputTo;
-        if(labelIndex < 0){
+        if (labelIndex < 0) {
             //No label
             inputFrom = 0;
-            inputTo = totalSize-1;
-        } else if(labelIndex == 0){
+            inputTo = totalSize - 1;
+        } else if (labelIndex == 0) {
             inputFrom = labelIndexTo + 1;
-            inputTo = totalSize-1;
+            inputTo = totalSize - 1;
         } else {
             inputFrom = 0;
-            inputTo = labelIndexTo - 1;
+            inputTo = labelIndex - 1;
         }
 
         builder.addInput(READER_KEY, inputFrom, inputTo);

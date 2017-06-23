@@ -278,7 +278,26 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                 shape[0] = minValues;
                 arr = Nd4j.create(shape);
             } else {
-                arr = Nd4j.create(minValues, details.subsetEndInclusive - details.subsetStart + 1);
+                //Need to check for multiple NDArrayWritables, or mixed NDArrayWritable + DoubleWritable etc
+
+                int length = 0;
+                for( int i=details.subsetStart; i<=details.subsetEndInclusive; i++ ){
+                    Writable w = list.get(0).get(i);
+                    if(w instanceof NDArrayWritable){
+                        INDArray a = ((NDArrayWritable) w).get();
+                        if(!a.isRowVector()){
+                            throw new UnsupportedOperationException("Multiple writables present but NDArrayWritable is "
+                                    + "not a row vector. Can only concat row vectors with other writables. Shape: "
+                                    + Arrays.toString(a.shape()));
+                        }
+                        length += a.length();
+                    } else {
+                        //Assume all others are single value
+                        length++;
+                    }
+                }
+
+                arr = Nd4j.create(minValues, length);
             }
         }
 
@@ -320,17 +339,16 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                     int k = 0;
                     for (int j = details.subsetStart; j <= details.subsetEndInclusive; j++) {
                         Writable w = iter.next();
-                        try {
+
+                        if(w instanceof NDArrayWritable){
+                            INDArray toPut = ((NDArrayWritable) w).get();
+                            arr.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.interval(k, k+toPut.length())},
+                                    toPut);
+                            k += toPut.length();
+                        } else {
                             arr.putScalar(i, k, w.toDouble());
-                        } catch (UnsupportedOperationException e) {
-                            // This isn't a scalar, so check if we got an array already
-                            if (w instanceof NDArrayWritable) {
-                                putExample(arr, ((NDArrayWritable) w).get(), i);
-                            } else {
-                                throw e;
-                            }
+                            k++;
                         }
-                        k++;
                     }
                 }
             }

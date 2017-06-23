@@ -991,13 +991,15 @@ public class RecordReaderDataSetiteratorTest {
                         new NDArrayWritable(Nd4j.create(new double[] {4.1, 5.1, 6.1}))));
         data.add(Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[] {4, 5})),
                         new NDArrayWritable(Nd4j.create(new double[] {7.1, 8.1, 9.1}))));
+        labelIndexFrom = 1;
+        labelIndexTo = 1;
 
         rr = new CollectionRecordReader(data);
         rrdsi = new RecordReaderDataSetIterator(rr, batchSize, labelIndexFrom, labelIndexTo, regression);
 
-        ds = rrdsi.next();
-        assertEquals(expFeatures, ds.getFeatures());
-        assertEquals(expLabels, ds.getLabels());
+        DataSet ds2 = rrdsi.next();
+        assertEquals(expFeatures, ds2.getFeatures());
+        assertEquals(expLabels, ds2.getLabels());
     }
 
 
