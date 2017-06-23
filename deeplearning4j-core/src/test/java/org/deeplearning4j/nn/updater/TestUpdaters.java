@@ -40,7 +40,7 @@ public class TestUpdaters {
     protected INDArray gradients;
     protected INDArray weightGradient;
     protected INDArray biasGradient;
-    protected Gradient gradient = new DefaultGradient();
+    protected DefaultGradient gradient = new DefaultGradient();
     protected INDArray val, gradExpected;
     protected String key;
 
@@ -52,6 +52,7 @@ public class TestUpdaters {
         biasGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
         gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
         gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+        gradient.setFlattenedGradient(gradients);
     }
 
     @Test
@@ -675,6 +676,7 @@ public class TestUpdaters {
         biasGradient = gradients.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
         INDArray vbiasGradient = gradients.get(NDArrayIndex.point(0),
                         NDArrayIndex.interval(nIn * nOut + nOut, nIn * nOut + nOut + nIn));
+        gradient.setFlattenedGradient(gradients);
 
 
         //Test with pretrain = true
@@ -697,7 +699,7 @@ public class TestUpdaters {
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
-        Gradient gradientCopyPreUpdate = new DefaultGradient();
+        DefaultGradient gradientCopyPreUpdate = new DefaultGradient();
         INDArray g = gradients.dup();
         INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
         INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
@@ -725,6 +727,7 @@ public class TestUpdaters {
         gradient.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
         gradient.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
         gradient.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbiasGradient);
+        gradient.setFlattenedGradient(gradients);
 
         gradientCopyPreUpdate = new DefaultGradient();
         g = gradients.dup();
@@ -734,6 +737,7 @@ public class TestUpdaters {
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
         gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
         gradientCopyPreUpdate.setGradientFor(PretrainParamInitializer.VISIBLE_BIAS_KEY, vbg);
+        gradientCopyPreUpdate.setFlattenedGradient(g);
 
         conf.setPretrain(false);
         params = Nd4j.create(1, numParams);
