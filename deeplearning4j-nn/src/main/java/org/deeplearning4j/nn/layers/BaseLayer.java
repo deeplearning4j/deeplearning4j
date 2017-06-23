@@ -71,13 +71,12 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
-
         cacheMode = conf.getCacheMode();
     }
 
     public BaseLayer(NeuralNetConfiguration conf, INDArray input) {
+        this(conf);
         this.input = input;
-        this.conf = conf;
     }
 
     protected LayerConfT layerConf() {

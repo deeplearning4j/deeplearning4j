@@ -8,6 +8,8 @@ import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.storage.StorageLevel;
+import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.spark.api.*;
 import org.deeplearning4j.spark.data.BatchAndExportDataSetsFunction;
 import org.deeplearning4j.spark.data.BatchAndExportMultiDataSetsFunction;
@@ -31,6 +33,7 @@ import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collection;
 import java.util.Random;
 
 /**
@@ -52,6 +55,11 @@ public abstract class BaseTrainingMaster<R extends TrainingResult, W extends Tra
     protected Random rng;
 
     protected String trainingMasterUID;
+
+    protected StatsStorageRouter statsStorage;
+
+    //Listeners etc
+    protected Collection<IterationListener> listeners;
 
 
     protected Repartition repartition;

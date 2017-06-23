@@ -91,14 +91,7 @@ public class ParameterAveragingTrainingMaster extends BaseTrainingMaster<Paramet
     protected int prefetchNumBatches;
     protected int iterationCount = 0;
 
-
-
     protected Collection<TrainingHook> trainingHookList;
-
-
-    //Listeners etc
-    protected Collection<IterationListener> listeners;
-    protected StatsStorageRouter statsStorage;
 
     protected ParameterAveragingTrainingMaster() {
         // no-arg constructor for Jackson

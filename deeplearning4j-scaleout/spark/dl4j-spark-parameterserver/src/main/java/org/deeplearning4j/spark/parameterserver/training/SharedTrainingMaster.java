@@ -11,7 +11,9 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.apache.spark.input.PortableDataStream;
 import org.apache.spark.storage.StorageLevel;
+import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
+import org.deeplearning4j.api.storage.StorageMetaData;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -26,13 +28,21 @@ import org.deeplearning4j.spark.impl.multilayer.SparkDl4jMultiLayer;
 import org.deeplearning4j.spark.impl.paramavg.BaseTrainingMaster;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingMaster;
 import org.deeplearning4j.spark.impl.paramavg.ParameterAveragingTrainingResult;
+import org.deeplearning4j.spark.impl.paramavg.aggregator.ParameterAveragingAggregationTuple;
+import org.deeplearning4j.spark.impl.paramavg.aggregator.ParameterAveragingElementAddFunction;
+import org.deeplearning4j.spark.impl.paramavg.aggregator.ParameterAveragingElementCombineFunction;
 import org.deeplearning4j.spark.impl.paramavg.stats.ParameterAveragingTrainingMasterStats;
+import org.deeplearning4j.spark.parameterserver.accumulation.SharedTrainingAccumulationFunction;
+import org.deeplearning4j.spark.parameterserver.accumulation.SharedTrainingAccumulationTuple;
+import org.deeplearning4j.spark.parameterserver.accumulation.SharedTrainingAggregateFunction;
 import org.deeplearning4j.spark.parameterserver.conf.SharedTrainingConfiguration;
 import org.deeplearning4j.spark.parameterserver.functions.*;
 import org.deeplearning4j.spark.parameterserver.networking.SilentTrainingDriver;
 import org.deeplearning4j.spark.util.SparkUtils;
+import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.VoidParameterServer;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.ExecutionMode;
@@ -111,6 +121,11 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         if (collectTrainingStats)
             stats = new ParameterAveragingTrainingMasterStats.ParameterAveragingTrainingMasterStatsHelper();
+
+
+        String jvmuid = UIDProvider.getJVMUID();
+        this.trainingMasterUID =
+                System.currentTimeMillis() + "_" + (jvmuid.length() <= 8 ? jvmuid : jvmuid.substring(0, 8));
     }
 
     @Override
@@ -598,6 +613,74 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         // optional stuff actually
     }
 
+
+    protected void processResults(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<SharedTrainingResult> results) {
+        if (network == null && graph == null)
+            throw new IllegalStateException("Both MLN & CG are null");
+
+        if (collectTrainingStats)
+            stats.logAggregateStartTime();
+
+        SharedTrainingAccumulationTuple finalResult = results.treeAggregate(null, new SharedTrainingAggregateFunction(), new SharedTrainingAccumulationFunction(), 4);
+        SparkTrainingStats aggregatedStats = finalResult.getSparkTrainingStats();
+        if (collectTrainingStats)
+            stats.logAggregationEndTime();
+
+
+        if (collectTrainingStats)
+            stats.logProcessParamsUpdaterStart();
+
+        if (finalResult.getUpdaterStateArray() != null) {
+
+            if (finalResult.getAggregationsCount() > 1) {
+                finalResult.getUpdaterStateArray().divi(finalResult.getAggregationsCount());
+            }
+
+            if (network != null) {
+                network.getNetwork().params().assign(finalResult.getUpdaterStateArray());
+            } else {
+                graph.getNetwork().params().assign(finalResult.getUpdaterStateArray());
+            }
+        }
+
+
+        double score = finalResult.getScoreSum() / Math.max(1, finalResult.getAggregationsCount());
+
+        if (network != null) {
+            network.getNetwork().setScore(score);
+        } else {
+            graph.getNetwork().setScore(score);
+        }
+
+        if (collectTrainingStats)
+            stats.logProcessParamsUpdaterEnd();
+
+
+        if (collectTrainingStats) {
+            stats.logProcessParamsUpdaterEnd();
+            stats.addWorkerStats(aggregatedStats);
+        }
+
+        if (statsStorage != null) {
+            Collection<StorageMetaData> meta = finalResult.getListenerMetaData();
+            if (meta != null && meta.size() > 0) {
+                statsStorage.putStorageMetaData(meta);
+            }
+
+            Collection<Persistable> staticInfo = finalResult.getListenerStaticInfo();
+            if (staticInfo != null && staticInfo.size() > 0) {
+                statsStorage.putStaticInfo(staticInfo);
+            }
+
+            Collection<Persistable> updates = finalResult.getListenerUpdates();
+            if (updates != null && updates.size() > 0) {
+                statsStorage.putUpdate(updates);
+            }
+        }
+
+        Nd4j.getExecutioner().commit();
+    }
+
     protected void doIteration(SparkDl4jMultiLayer network, JavaRDD<DataSet> split, int splitNum, int numSplits) {
         log.info("Starting training of split {} of {}. workerMiniBatchSize={}, updatesThreshold={}, Configured for {} workers",
                 splitNum, numSplits, batchSizePerWorker, threshold, numWorkers);
@@ -621,19 +704,15 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
 
-        // meh, just to invoke previous function
-        long cnt = result.count();
-
-        // TODO: implement something here
-//        processResults(network, null, result, splitNum, numSplits);
+        processResults(network, null, result);
 
         if (collectTrainingStats)
             stats.logMapPartitionsEnd(nPartitions);
     }
 
     protected void doIterationMDS(SparkComputationGraph network, JavaRDD<MultiDataSet> split, int splitNum, int numSplits) {
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
-                splitNum, numSplits, batchSizePerWorker, 0, numWorkers);
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, updatesThreshold={}, Configured for {} workers",
+                splitNum, numSplits, batchSizePerWorker, threshold, numWorkers);
 
         if (collectTrainingStats)
             stats.logMapPartitionsStart();
@@ -654,21 +733,15 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
 
-        // meh, just to invoke previous function
-        long cnt = result.count();
-
-        log.info("Results count: {}", cnt);
-
-        // TODO: implement something here
-//        processResults(network, null, result, splitNum, numSplits);
+        processResults(null, network, result);
 
         if (collectTrainingStats)
             stats.logMapPartitionsEnd(nPartitions);
     }
 
     protected void doIteration(SparkComputationGraph network, JavaRDD<DataSet> split, int splitNum, int numSplits) {
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
-                splitNum, numSplits, batchSizePerWorker, 0, numWorkers);
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, updatesThreshold={}, Configured for {} workers",
+                splitNum, numSplits, batchSizePerWorker, threshold, numWorkers);
 
         if (collectTrainingStats)
             stats.logMapPartitionsStart();
@@ -689,13 +762,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
 
-        // meh, just to invoke previous function
-        long cnt = result.count();
-
-        log.info("Results count: {}", cnt);
-
-        // TODO: implement something here
-//        processResults(network, null, result, splitNum, numSplits);
+        processResults(null, network, result);
 
         if (collectTrainingStats)
             stats.logMapPartitionsEnd(nPartitions);
@@ -703,7 +770,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     protected void doIterationPathsMDS(SparkComputationGraph graph, JavaRDD<String> split, int splitNum, int numSplits, int dataSetObjectNumExamples) {
 
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers", splitNum, numSplits, batchSizePerWorker, 0, numWorkers);
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, updatesThreshold={}, Configured for {} workers",
+                splitNum, numSplits, batchSizePerWorker, threshold, numWorkers);
+
         if (collectTrainingStats)
             stats.logMapPartitionsStart();
 
@@ -724,11 +793,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
 
-        long cnt = result.count();
-
-        log.info("Results count: {}", cnt);
-
-//        processResults(network, graph, result, splitNum, numSplits);
+        processResults(null, graph, result);
 
         if (collectTrainingStats)
             stats.logMapPartitionsEnd(nPartitions);
@@ -739,7 +804,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (network == null && graph == null)
             throw new DL4JInvalidConfigException("Both MLN & CompGraph are NULL");
 
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers", splitNum, numSplits, batchSizePerWorker, 0, numWorkers);
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, updatesThreshold={}, Configured for {} workers",
+                splitNum, numSplits, batchSizePerWorker, threshold, numWorkers);
+
         if (collectTrainingStats)
             stats.logMapPartitionsStart();
 
@@ -760,19 +827,16 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
 
-        long cnt = result.count();
-
-        log.info("Results count: {}", cnt);
-
-//        processResults(network, graph, result, splitNum, numSplits);
+        processResults(network, graph, result);
 
         if (collectTrainingStats)
             stats.logMapPartitionsEnd(nPartitions);
     }
 
     protected void doIterationPDS(SparkDl4jMultiLayer network, SparkComputationGraph graph, JavaRDD<PortableDataStream> split, int splitNum, int numSplits) {
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
-                splitNum, numSplits, batchSizePerWorker, 0, numWorkers);
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, updatesThreshold={}, Configured for {} workers",
+                splitNum, numSplits, batchSizePerWorker, threshold, numWorkers);
+
         if (collectTrainingStats)
             stats.logMapPartitionsStart();
 
@@ -792,7 +856,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
 
-//        processResults(network, graph, result, splitNum, numSplits);
+        processResults(network, graph, result);
 
         if (collectTrainingStats)
             stats.logMapPartitionsEnd(nPartitions);
@@ -800,8 +864,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
 
     protected void doIterationMultiPDS(SparkComputationGraph graph, JavaRDD<PortableDataStream> split, int splitNum, int numSplits) {
-        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, averagingFreq={}, Configured for {} workers",
-                splitNum, numSplits, batchSizePerWorker, 0, numWorkers);
+        log.info("Starting training of split {} of {}. workerMiniBatchSize={}, updatesThreshold={}, Configured for {} workers",
+                splitNum, numSplits, batchSizePerWorker, threshold, numWorkers);
+
         if (collectTrainingStats)
             stats.logMapPartitionsStart();
 
@@ -821,7 +886,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         JavaRDD<SharedTrainingResult> result = splitData.mapPartitions(function);
 
-//        processResults(network, graph, result, splitNum, numSplits);
+        processResults(null, graph, result);
 
         if (collectTrainingStats)
             stats.logMapPartitionsEnd(nPartitions);
