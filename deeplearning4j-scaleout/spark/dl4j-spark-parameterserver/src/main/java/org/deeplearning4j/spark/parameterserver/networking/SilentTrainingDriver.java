@@ -172,7 +172,6 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
 
     @Override
     public void pickTraining(SilentUpdatesMessage message) {
-        // this message won't be ever called
         throw new UnsupportedOperationException();
     }
 

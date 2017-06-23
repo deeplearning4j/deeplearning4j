@@ -22,6 +22,7 @@ import org.deeplearning4j.spark.parameterserver.networking.messages.SilentIntrod
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingResult;
 import org.deeplearning4j.spark.parameterserver.training.SharedTrainingWorker;
 import org.deeplearning4j.spark.parameterserver.util.BlockingObserver;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -33,6 +34,7 @@ import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Observer;
@@ -293,8 +295,22 @@ public class SharedTrainingWrapper {
 
             log.info("Master thread done...");
 
-            // TODO: we want to give back updaters here
-            return new SharedTrainingResult();
+            INDArray updaterState = null;
+            if (model instanceof ComputationGraph) {
+                updaterState = ((ComputationGraph) model).getUpdater().getUpdaterStateViewArray();
+            } else if (model instanceof MultiLayerNetwork) {
+                updaterState = ((MultiLayerNetwork) model).getUpdater().getStateViewArray();
+            }
+
+            // FIXME: fill stats here
+            return SharedTrainingResult.builder()
+                    .aggregationsCount(1)
+                    .scoreSum(model.score())
+                    .updaterStateArray(updaterState)
+                    .listenerMetaData(new ArrayList<>())
+                    .listenerStaticInfo(new ArrayList<>())
+                    .listenerUpdates(new ArrayList<>())
+                    .build();
         } else {
             // blocking call right here, all non-master threads will be blocked here
             try {

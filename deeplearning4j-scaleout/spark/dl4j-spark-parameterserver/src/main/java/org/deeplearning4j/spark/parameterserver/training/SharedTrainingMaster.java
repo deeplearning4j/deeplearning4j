@@ -418,37 +418,13 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             stats.logFitEnd((int) totalDataSetObjectCount);
     }
 
-    protected void prepareNetworkAndStuff(SparkComputationGraph network) {
-        if (numWorkers == null)
-            numWorkers = network.getSparkContext().defaultParallelism();
+    protected void prepareNetworkAndStuff(SparkDl4jMultiLayer network, SparkComputationGraph graph) {
+        if (network == null && graph == null)
+            throw new IllegalStateException("Both MLN & CG are undefined");
 
-        // set current box as controller, if field is unset
-        if (voidConfiguration.getControllerAddress() == null)
-            voidConfiguration.setControllerAddress(System.getenv("SPARK_PUBLIC_DNS"));
-
-        if (voidConfiguration.getControllerAddress() == null)
-            throw new DL4JInvalidConfigException("Can't get Spark Master local address. Please specify it manually using VoidConfiguration.setControllerAddress(String) method");
-
-        // first of all, we're instantiating ParameterServer shard here
-        Transport transport = voidConfiguration.getTransportType() == TransportType.ROUTED ? new RoutedTransport() : voidConfiguration.getTransportType() == TransportType.BROADCAST ? new MulticastTransport() : this.transport;
-
-        if (transport == null)
-            throw new DL4JInvalidConfigException("No Transport implementation was defined for this training session!");
-
-        // it's safe to call init on CompGraph, it has isInit check within
-        network.getNetwork().init();
-
-        // this instance will be SilentWorker - it'll accept and apply messages, but won't contribute to training. And we init it only once
-        if (isFirstRun.compareAndSet(false, true)) {
-            trainingDriver = new SilentTrainingDriver(network.getNetwork().params(), network.getNetwork().getOptimizer().getStepFunction());
-            VoidParameterServer.getInstance().init(voidConfiguration, transport, trainingDriver);
-        }
-    }
-
-    protected void prepareNetworkAndStuff(SparkDl4jMultiLayer network) {
         // first of all, we're instantiating ParameterServer shard here\
         if (numWorkers == null)
-            numWorkers = network.getSparkContext().defaultParallelism();
+            numWorkers = network != null ? network.getSparkContext().defaultParallelism() : graph.getSparkContext().defaultParallelism();
 
         // set current box as controller, if field is unset
         if (voidConfiguration.getControllerAddress() == null)
@@ -467,14 +443,16 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (transport == null)
             throw new DL4JInvalidConfigException("No Transport implementation was defined for this training session!");
 
-        // TODO: Alex, any better ideas here? Plus, if we're not on SGD updater, we might want to eventually dump updater to Master?
-        if (!network.getNetwork().isInitCalled())
+        if (network != null)
             network.getNetwork().init();
+        else
+            graph.getNetwork().init();
 
         // this instance will be SilentWorker - it'll accept and apply messages, but won't contribute to training. And we init it only once
-        if (isFirstRun.compareAndSet(false, true))
-            trainingDriver = new SilentTrainingDriver(network.getNetwork().params(), network.getNetwork().getOptimizer().getStepFunction());
+        if (isFirstRun.compareAndSet(false, true)) {
+            trainingDriver = new SilentTrainingDriver(network != null ? network.getNetwork().params() : graph.getNetwork().params(), network != null ? network.getNetwork().getOptimizer().getStepFunction() : graph.getNetwork().getOptimizer().getStepFunction());
             VoidParameterServer.getInstance().init(voidConfiguration, transport, trainingDriver);
+        }
     }
 
     protected void finalizeTraining() {
@@ -503,7 +481,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             7) do something with final model, i.e. export it somewhere :)
          */
 
-        prepareNetworkAndStuff(network);
+        prepareNetworkAndStuff(network, null);
 
         // at this moment we have coordinator server up (master works as coordinator)
         if (rddTrainingApproach == RDDTrainingApproach.Direct) {
@@ -518,21 +496,21 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     @Override
     public void executeTraining(SparkDl4jMultiLayer network, JavaPairRDD<String, PortableDataStream> trainingData) {
-        prepareNetworkAndStuff(network);
+        prepareNetworkAndStuff(network, null);
 
         doIterationPDS(network, null, trainingData.values(), 1, 1);
     }
 
     @Override
     public void executeTrainingPaths(SparkDl4jMultiLayer network, JavaRDD<String> trainingDataPaths) {
-        prepareNetworkAndStuff(network);
+        prepareNetworkAndStuff(network, null);
 
         executeTrainingPathsHelper(network, trainingDataPaths, batchSizePerWorker);
     }
 
     @Override
     public void executeTraining(SparkComputationGraph graph, JavaRDD<DataSet> trainingData) {
-        prepareNetworkAndStuff(graph);
+        prepareNetworkAndStuff(null, graph);
 
         // at this moment we have coordinator server up (master works as coordinator)
         if (rddTrainingApproach == RDDTrainingApproach.Direct) {
@@ -547,28 +525,28 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     @Override
     public void executeTraining(SparkComputationGraph network, JavaPairRDD<String, PortableDataStream> trainingData) {
-        prepareNetworkAndStuff(network);
+        prepareNetworkAndStuff(null, network);
 
         doIterationPDS(null, network, trainingData.values(), 1, 1);
     }
 
     @Override
     public void executeTrainingPaths(SparkComputationGraph network, JavaRDD<String> trainingDataPaths) {
-        prepareNetworkAndStuff(network);
+        prepareNetworkAndStuff(null, network);
 
         executeTrainingPathsHelper(network, trainingDataPaths, batchSizePerWorker);
     }
 
     @Override
     public void executeTrainingPathsMDS(SparkComputationGraph network, JavaRDD<String> trainingMultiDataSetPaths) {
-        prepareNetworkAndStuff(network);
+        prepareNetworkAndStuff(null, network);
 
         executeTrainingPathsMDSHelper(network, trainingMultiDataSetPaths, batchSizePerWorker);
     }
 
     @Override
     public void executeTrainingMDS(SparkComputationGraph graph, JavaRDD<MultiDataSet> trainingData) {
-        prepareNetworkAndStuff(graph);
+        prepareNetworkAndStuff(null, graph);
 
         // at this moment we have coordinator server up (master works as coordinator)
         if (rddTrainingApproach == RDDTrainingApproach.Direct) {
@@ -583,7 +561,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
     @Override
     public void executeTrainingMDS(SparkComputationGraph network, JavaPairRDD<String, PortableDataStream> trainingData) {
-        prepareNetworkAndStuff(network);
+        prepareNetworkAndStuff(null, network);
 
         doIterationMultiPDS(network, trainingData.values(), 1, 1);
     }
