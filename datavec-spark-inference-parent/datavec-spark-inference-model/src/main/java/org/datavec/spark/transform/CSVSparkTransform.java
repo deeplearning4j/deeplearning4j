@@ -6,8 +6,8 @@ import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.spark.transform.model.Base64NDArrayBody;
-import org.datavec.spark.transform.model.BatchRecord;
-import org.datavec.spark.transform.model.CSVRecord;
+import org.datavec.spark.transform.model.BatchCSVRecord;
+import org.datavec.spark.transform.model.SingleCSVRecord;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.serde.base64.Nd4jBase64;
 
@@ -35,10 +35,10 @@ public class CSVSparkTransform {
      * @return teh base 64ed ndarray
      * @throws IOException
      */
-    public Base64NDArrayBody toArray(BatchRecord batch) throws IOException {
+    public Base64NDArrayBody toArray(BatchCSVRecord batch) throws IOException {
         List<List<Writable>> records = new ArrayList<>();
-        for (CSVRecord csvRecord : batch.getRecords()) {
-            List<Writable> record2 = transformProcess.transformRawStringsToInput(csvRecord.getValues());
+        for (SingleCSVRecord singleCsvRecord : batch.getRecords()) {
+            List<Writable> record2 = transformProcess.transformRawStringsToInput(singleCsvRecord.getValues());
             List<Writable> finalRecord = transformProcess.execute(record2);
             records.add(finalRecord);
         }
@@ -55,7 +55,7 @@ public class CSVSparkTransform {
      * @return teh base 64ed ndarray
      * @throws IOException
      */
-    public Base64NDArrayBody toArray(CSVRecord record) throws IOException {
+    public Base64NDArrayBody toArray(SingleCSVRecord record) throws IOException {
         List<Writable> record2 = transformProcess.transformRawStringsToInput(record.getValues());
         List<Writable> finalRecord = transformProcess.execute(record2);
         INDArray convert = RecordConverter.toArray(finalRecord);
@@ -67,18 +67,18 @@ public class CSVSparkTransform {
      * @param batch the record to transform
      * @return the transformed record
      */
-    public BatchRecord transform(BatchRecord batch) {
-        BatchRecord batchRecord = new BatchRecord();
-        for (CSVRecord record : batch.getRecords()) {
+    public BatchCSVRecord transform(BatchCSVRecord batch) {
+        BatchCSVRecord batchCSVRecord = new BatchCSVRecord();
+        for (SingleCSVRecord record : batch.getRecords()) {
             List<Writable> record2 = transformProcess.transformRawStringsToInput(record.getValues());
             List<Writable> finalRecord = transformProcess.execute(record2);
             String[] values = new String[finalRecord.size()];
             for (int i = 0; i < values.length; i++)
                 values[i] = finalRecord.get(i).toString();
-            batchRecord.add(new CSVRecord(values));
+            batchCSVRecord.add(new SingleCSVRecord(values));
         }
 
-        return batchRecord;
+        return batchCSVRecord;
 
     }
 
@@ -87,13 +87,13 @@ public class CSVSparkTransform {
      * @param record the record to transform
      * @return the transformed record
      */
-    public CSVRecord transform(CSVRecord record) {
+    public SingleCSVRecord transform(SingleCSVRecord record) {
         List<Writable> record2 = transformProcess.transformRawStringsToInput(record.getValues());
         List<Writable> finalRecord = transformProcess.execute(record2);
         String[] values = new String[finalRecord.size()];
         for (int i = 0; i < values.length; i++)
             values[i] = finalRecord.get(i).toString();
-        return new CSVRecord(values);
+        return new SingleCSVRecord(values);
 
     }
 

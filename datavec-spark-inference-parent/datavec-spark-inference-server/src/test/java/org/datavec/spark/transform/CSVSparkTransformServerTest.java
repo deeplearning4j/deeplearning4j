@@ -7,8 +7,8 @@ import org.apache.commons.io.FileUtils;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.spark.transform.model.Base64NDArrayBody;
-import org.datavec.spark.transform.model.BatchRecord;
-import org.datavec.spark.transform.model.CSVRecord;
+import org.datavec.spark.transform.model.BatchCSVRecord;
+import org.datavec.spark.transform.model.SingleCSVRecord;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -69,18 +69,18 @@ public class CSVSparkTransformServerTest {
     @Test
     public void testServer() throws Exception {
         String[] values = new String[] {"1.0", "2.0"};
-        CSVRecord record = new CSVRecord(values);
+        SingleCSVRecord record = new SingleCSVRecord(values);
         JsonNode jsonNode = Unirest.post("http://localhost:9050/transformincremental").header("accept", "application/json")
                         .header("Content-Type", "application/json").body(record).asJson().getBody();
-        CSVRecord csvRecord = Unirest.post("http://localhost:9050/transformincremental").header("accept", "application/json")
-                        .header("Content-Type", "application/json").body(record).asObject(CSVRecord.class).getBody();
+        SingleCSVRecord singleCsvRecord = Unirest.post("http://localhost:9050/transformincremental").header("accept", "application/json")
+                        .header("Content-Type", "application/json").body(record).asObject(SingleCSVRecord.class).getBody();
 
-        BatchRecord batchRecord = new BatchRecord();
+        BatchCSVRecord batchCSVRecord = new BatchCSVRecord();
         for (int i = 0; i < 3; i++)
-            batchRecord.add(csvRecord);
-        BatchRecord batchRecord1 = Unirest.post("http://localhost:9050/transform")
+            batchCSVRecord.add(singleCsvRecord);
+        BatchCSVRecord batchCSVRecord1 = Unirest.post("http://localhost:9050/transform")
                         .header("accept", "application/json").header("Content-Type", "application/json")
-                        .body(batchRecord).asObject(BatchRecord.class).getBody();
+                        .body(batchCSVRecord).asObject(BatchCSVRecord.class).getBody();
 
         Base64NDArrayBody array = Unirest.post("http://localhost:9050/transformincrementalarray")
                         .header("accept", "application/json").header("Content-Type", "application/json").body(record)
@@ -88,7 +88,7 @@ public class CSVSparkTransformServerTest {
 
         Base64NDArrayBody batchArray1 = Unirest.post("http://localhost:9050/transformarray")
                         .header("accept", "application/json").header("Content-Type", "application/json")
-                        .body(batchRecord).asObject(Base64NDArrayBody.class).getBody();
+                        .body(batchCSVRecord).asObject(Base64NDArrayBody.class).getBody();
 
 
 

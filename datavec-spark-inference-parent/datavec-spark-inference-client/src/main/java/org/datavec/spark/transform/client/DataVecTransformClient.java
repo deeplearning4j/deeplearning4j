@@ -5,9 +5,8 @@ import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;
 import lombok.AllArgsConstructor;
 import org.datavec.api.transform.TransformProcess;
-import org.datavec.spark.transform.model.Base64NDArrayBody;
-import org.datavec.spark.transform.model.BatchRecord;
-import org.datavec.spark.transform.model.CSVRecord;
+import org.datavec.image.transform.ImageTransformProcess;
+import org.datavec.spark.transform.model.*;
 import org.datavec.spark.transform.service.DataVecTransformService;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 
@@ -48,7 +47,7 @@ public class DataVecTransformClient implements DataVecTransformService {
      * @param transformProcess
      */
     @Override
-    public void setTransformProcess(TransformProcess transformProcess) {
+    public void setCSVTransformProcess(TransformProcess transformProcess) {
         try {Unirest.post(url + "/transformprocess")
                     .header("accept", "application/json")
                     .header("Content-Type", "application/json")
@@ -59,11 +58,16 @@ public class DataVecTransformClient implements DataVecTransformService {
         }
     }
 
+    @Override
+    public void setImageTransformProcess(ImageTransformProcess imageTransformProcess) {
+        throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
+    }
+
     /**
      * @return
      */
     @Override
-    public TransformProcess transformProcess() {
+    public TransformProcess getCSVTransformProcess() {
         try {
             return  Unirest.get(url + "/transform")
                     .header("accept", "application/json")
@@ -76,18 +80,23 @@ public class DataVecTransformClient implements DataVecTransformService {
         return null;
     }
 
+    @Override
+    public ImageTransformProcess getImageTransformProcess() {
+        throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
+    }
+
     /**
      * @param transform
      * @return
      */
     @Override
-    public CSVRecord transformIncremental(CSVRecord transform) {
+    public SingleCSVRecord transformIncremental(SingleCSVRecord transform) {
         try {
-            CSVRecord csvRecord = Unirest.post(url + "/transformincremental")
+            SingleCSVRecord singleCsvRecord = Unirest.post(url + "/transformincremental")
                     .header("accept", "application/json")
                     .header("Content-Type", "application/json")
-                    .body(transform).asObject(CSVRecord.class).getBody();
-            return csvRecord;
+                    .body(transform).asObject(SingleCSVRecord.class).getBody();
+            return singleCsvRecord;
         } catch (UnirestException e) {
             e.printStackTrace();
         }
@@ -95,17 +104,17 @@ public class DataVecTransformClient implements DataVecTransformService {
     }
 
     /**
-     * @param batchRecord
+     * @param batchCSVRecord
      * @return
      */
     @Override
-    public BatchRecord transform(BatchRecord batchRecord) {
+    public BatchCSVRecord transform(BatchCSVRecord batchCSVRecord) {
         try {
-            BatchRecord batchRecord1 = Unirest.post(url + "/transform")
+            BatchCSVRecord batchCSVRecord1 = Unirest.post(url + "/transform")
                     .header("accept", "application/json")
                     .header("Content-Type", "application/json")
-                    .body(batchRecord).asObject(BatchRecord.class).getBody();
-            return batchRecord1;
+                    .body(batchCSVRecord).asObject(BatchCSVRecord.class).getBody();
+            return batchCSVRecord1;
         } catch (UnirestException e) {
             e.printStackTrace();
         }
@@ -114,16 +123,16 @@ public class DataVecTransformClient implements DataVecTransformService {
     }
 
     /**
-     * @param batchRecord
+     * @param batchCSVRecord
      * @return
      */
     @Override
-    public Base64NDArrayBody transformArray(BatchRecord batchRecord) {
+    public Base64NDArrayBody transformArray(BatchCSVRecord batchCSVRecord) {
         try {
             Base64NDArrayBody batchArray1 = Unirest.post(url + "/transformarray")
                     .header("accept", "application/json")
                     .header("Content-Type", "application/json")
-                    .body(batchRecord).asObject(Base64NDArrayBody.class)
+                    .body(batchCSVRecord).asObject(Base64NDArrayBody.class)
                     .getBody();
             return batchArray1;
         } catch (UnirestException e) {
@@ -135,16 +144,16 @@ public class DataVecTransformClient implements DataVecTransformService {
     }
 
     /**
-     * @param csvRecord
+     * @param singleCsvRecord
      * @return
      */
     @Override
-    public Base64NDArrayBody transformArrayIncremental(CSVRecord csvRecord) {
+    public Base64NDArrayBody transformArrayIncremental(SingleCSVRecord singleCsvRecord) {
         try {
             Base64NDArrayBody array = Unirest.post(url + "/transformincrementalarray")
                     .header("accept", "application/json")
                     .header("Content-Type", "application/json")
-                    .body(csvRecord)
+                    .body(singleCsvRecord)
                     .asObject(Base64NDArrayBody.class).getBody();
             return array;
         } catch (UnirestException e) {
@@ -152,5 +161,15 @@ public class DataVecTransformClient implements DataVecTransformService {
         }
 
         return null;
+    }
+
+    @Override
+    public Base64NDArrayBody transformIncrementalArray(SingleImageRecord singleImageRecord) throws IOException {
+        throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
+    }
+
+    @Override
+    public Base64NDArrayBody transformArray(BatchImageRecord batchImageRecord) throws IOException {
+        throw new UnsupportedOperationException("Invalid operation for " + this.getClass());
     }
 }

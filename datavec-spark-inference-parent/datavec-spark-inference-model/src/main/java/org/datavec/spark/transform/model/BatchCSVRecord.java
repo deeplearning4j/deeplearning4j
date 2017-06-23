@@ -17,14 +17,14 @@ import java.util.List;
 @AllArgsConstructor
 @Builder
 @NoArgsConstructor
-public class BatchRecord implements Serializable {
-    private List<CSVRecord> records;
+public class BatchCSVRecord implements Serializable {
+    private List<SingleCSVRecord> records;
 
     /**
      * Add a record
      * @param record
      */
-    public void add(CSVRecord record) {
+    public void add(SingleCSVRecord record) {
         if (records == null)
             records = new ArrayList<>();
         records.add(record);
@@ -36,13 +36,13 @@ public class BatchRecord implements Serializable {
      * @param dataSet the dataset to get the batch record for
      * @return the batch record
      */
-    public static BatchRecord fromDataSet(DataSet dataSet) {
-        BatchRecord batchRecord = new BatchRecord();
+    public static BatchCSVRecord fromDataSet(DataSet dataSet) {
+        BatchCSVRecord batchCSVRecord = new BatchCSVRecord();
         for (int i = 0; i < dataSet.numExamples(); i++) {
-            batchRecord.add(CSVRecord.fromRow(dataSet.get(i)));
+            batchCSVRecord.add(SingleCSVRecord.fromRow(dataSet.get(i)));
         }
 
-        return batchRecord;
+        return batchCSVRecord;
     }
 
 }

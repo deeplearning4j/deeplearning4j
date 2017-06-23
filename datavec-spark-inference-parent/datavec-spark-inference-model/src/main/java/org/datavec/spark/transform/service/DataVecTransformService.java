@@ -1,9 +1,10 @@
 package org.datavec.spark.transform.service;
 
 import org.datavec.api.transform.TransformProcess;
-import org.datavec.spark.transform.model.Base64NDArrayBody;
-import org.datavec.spark.transform.model.BatchRecord;
-import org.datavec.spark.transform.model.CSVRecord;
+import org.datavec.image.transform.ImageTransformProcess;
+import org.datavec.spark.transform.model.*;
+
+import java.io.IOException;
 
 /**
  * Created by agibsonccc on 6/12/17.
@@ -14,41 +15,67 @@ public interface DataVecTransformService {
      *
      * @param transformProcess
      */
-    void setTransformProcess(TransformProcess transformProcess);
+    void setCSVTransformProcess(TransformProcess transformProcess);
+
+    /**
+     *
+     * @param imageTransformProcess
+     */
+    void setImageTransformProcess(ImageTransformProcess imageTransformProcess);
 
     /**
      *
      * @return
      */
-    TransformProcess transformProcess();
+    TransformProcess getCSVTransformProcess();
 
     /**
      *
-     * @param transform
      * @return
      */
-    CSVRecord transformIncremental(CSVRecord transform);
+    ImageTransformProcess getImageTransformProcess();
 
     /**
      *
-     * @param batchRecord
+     * @param singleCsvRecord
      * @return
      */
-    BatchRecord transform(BatchRecord batchRecord);
+    SingleCSVRecord transformIncremental(SingleCSVRecord singleCsvRecord);
 
     /**
      *
-     * @param batchRecord
+     * @param batchCSVRecord
      * @return
      */
-    Base64NDArrayBody transformArray(BatchRecord batchRecord);
+    BatchCSVRecord transform(BatchCSVRecord batchCSVRecord);
 
     /**
      *
-     * @param csvRecord
+     * @param batchCSVRecord
      * @return
      */
-    Base64NDArrayBody transformArrayIncremental(CSVRecord csvRecord);
+    Base64NDArrayBody transformArray(BatchCSVRecord batchCSVRecord);
 
+    /**
+     *
+     * @param singleCsvRecord
+     * @return
+     */
+    Base64NDArrayBody transformArrayIncremental(SingleCSVRecord singleCsvRecord);
 
+    /**
+     *
+     * @param singleImageRecord
+     * @return
+     * @throws IOException
+     */
+    Base64NDArrayBody transformIncrementalArray(SingleImageRecord singleImageRecord) throws IOException;
+
+    /**
+     *
+     * @param batchImageRecord
+     * @return
+     * @throws IOException
+     */
+    Base64NDArrayBody transformArray(BatchImageRecord batchImageRecord) throws IOException;
 }
