@@ -41,7 +41,6 @@ import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
-import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.*;
@@ -164,9 +163,9 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *  predictions towards or away from certain classes. The predicted class is determined using argMax(cost * probability)
      *  instead of argMax(probability) when no cost array is present.
      *
-     * @param costArray Row vector cost array
+     * @param costArray Row vector cost array. May be null
      */
-    public Evaluation(@Nullable INDArray costArray){
+    public Evaluation(INDArray costArray){
         this(null, costArray);
     }
 
@@ -175,10 +174,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *  predictions towards or away from certain classes. The predicted class is determined using argMax(cost * probability)
      *  instead of argMax(probability) when no cost array is present.
      *
-     * @param labels Labels for the output classes
-     * @param costArray Row vector cost array
+     * @param labels Labels for the output classes. May be null
+     * @param costArray Row vector cost array. May be null
      */
-    public Evaluation(@Nullable List<String> labels, @Nullable INDArray costArray){
+    public Evaluation(List<String> labels, INDArray costArray){
         if(costArray != null && !costArray.isRowVector()){
             throw new IllegalArgumentException("Invalid cost array: must be a row vector (got shape: "
                     + Arrays.toString(costArray.shape()) + ")");
