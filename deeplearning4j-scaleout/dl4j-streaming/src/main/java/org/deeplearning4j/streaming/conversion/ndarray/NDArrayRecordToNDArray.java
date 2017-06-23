@@ -1,7 +1,7 @@
 package org.deeplearning4j.streaming.conversion.ndarray;
 
+import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
-import org.datavec.common.data.NDArrayWritable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 

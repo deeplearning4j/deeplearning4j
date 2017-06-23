@@ -18,8 +18,8 @@ package org.deeplearning4j.spark.datavec;
 
 import org.apache.spark.api.java.function.Function;
 import org.datavec.api.io.WritableConverter;
+import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
-import org.datavec.common.data.NDArrayWritable;
 import org.deeplearning4j.datasets.datavec.SequenceRecordReaderDataSetIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
