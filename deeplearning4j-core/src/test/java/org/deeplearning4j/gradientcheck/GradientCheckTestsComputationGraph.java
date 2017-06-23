@@ -149,7 +149,7 @@ public class GradientCheckTestsComputationGraph {
     public void testBasicIrisWithElementWiseNode() {
 
         ElementWiseVertex.Op[] ops =
-                        new ElementWiseVertex.Op[] {ElementWiseVertex.Op.Add, ElementWiseVertex.Op.Subtract};
+                        new ElementWiseVertex.Op[] {ElementWiseVertex.Op.Add, ElementWiseVertex.Op.Subtract, ElementWiseVertex.Op.Product};
 
         for (ElementWiseVertex.Op op : ops) {
 
@@ -173,6 +173,65 @@ public class GradientCheckTestsComputationGraph {
             graph.init();
 
             int numParams = (4 * 5 + 5) + (4 * 5 + 5) + (5 * 3 + 3);
+            assertEquals(numParams, graph.numParams());
+
+            Nd4j.getRandom().setSeed(12345);
+            int nParams = graph.numParams();
+            INDArray newParams = Nd4j.rand(1, nParams);
+            graph.setParams(newParams);
+
+            DataSet ds = new IrisDataSetIterator(150, 150).next();
+            INDArray min = ds.getFeatureMatrix().min(0);
+            INDArray max = ds.getFeatureMatrix().max(0);
+            ds.getFeatureMatrix().subiRowVector(min).diviRowVector(max.sub(min));
+            INDArray input = ds.getFeatureMatrix();
+            INDArray labels = ds.getLabels();
+
+            if (PRINT_RESULTS) {
+                System.out.println("testBasicIrisWithElementWiseVertex(op=" + op + ")");
+                for (int j = 0; j < graph.getNumLayers(); j++)
+                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+            }
+
+            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input},
+                            new INDArray[] {labels});
+
+            String msg = "testBasicIrisWithElementWiseVertex(op=" + op + ")";
+            assertTrue(msg, gradOK);
+        }
+    }
+
+    @Test
+    public void testBasicIrisWithElementWiseNodeInputSizeGreaterThanTwo() {
+
+        ElementWiseVertex.Op[] ops =
+                        new ElementWiseVertex.Op[] {ElementWiseVertex.Op.Add, ElementWiseVertex.Op.Product};
+
+        for (ElementWiseVertex.Op op : ops) {
+
+            Nd4j.getRandom().setSeed(12345);
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                            .updater(Updater.NONE).learningRate(1.0).graphBuilder().addInputs("input")
+                            .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(),
+                                            "input")
+                            .addLayer("l2", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.SIGMOID)
+                                            .build(), "input")
+                            .addLayer("l3", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.RELU)
+                                            .build(), "input")
+                            .addVertex("elementwise", new ElementWiseVertex(op), "l1", "l2", "l3")
+                            .addLayer("outputLayer",
+                                            new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
+                                                            .activation(Activation.SOFTMAX).nIn(5).nOut(3).build(),
+                                            "elementwise")
+                            .setOutputs("outputLayer").pretrain(false).backprop(true).build();
+
+            ComputationGraph graph = new ComputationGraph(conf);
+            graph.init();
+
+            int numParams = (4 * 5 + 5) + (4 * 5 + 5) + (4 * 5 + 5) + (5 * 3 + 3);
             assertEquals(numParams, graph.numParams());
 
             Nd4j.getRandom().setSeed(12345);

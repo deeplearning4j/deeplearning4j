@@ -45,8 +45,9 @@ public class VPTree {
     private CounterMap<DataPoint, DataPoint> distances;
     private String similarityFunction;
     private boolean invert = true;
-
-
+    private double distancesArr[];
+    private double sortedDistances[];
+    private  List<DataPoint> leftPoints,rightPoints;
     public VPTree(INDArray points,boolean invert) {
         this(points,"euclidean",invert);
     }
@@ -75,6 +76,7 @@ public class VPTree {
 
 
         root = buildFromPoints(0, this.items.size());
+        clearPointsData();
     }
 
     /**
@@ -84,18 +86,23 @@ public class VPTree {
      * @param similarityFunction the similarity function to use
      * @param invert whether to invert the metric (different optimization objective)
      */
-    public VPTree(List<DataPoint> items, CounterMap<DataPoint, DataPoint> distances, String similarityFunction,
+    public VPTree(List<DataPoint> items,
+                  CounterMap<DataPoint, DataPoint> distances,
+                  String similarityFunction,
                   boolean invert) {
-        this.items = items;
+        this.items = new ArrayList<>(2 * items.size());
+        this.items.addAll(items);
         this.distances = distances;
         this.invert = invert;
         this.similarityFunction = similarityFunction;
         root = buildFromPoints(0, items.size());
+        clearPointsData();
 
     }
 
     public VPTree(List<DataPoint> items, String similarityFunction, boolean invert) {
-        this.items = items;
+        this.items = new ArrayList<>(2 * items.size());
+        this.items.addAll(items);
         this.invert = invert;
         this.similarityFunction = similarityFunction;
         distances = CounterMap.runPairWise(items, new CounterMap.CountFunction<DataPoint>() {
@@ -105,6 +112,7 @@ public class VPTree {
             }
         });
         root = buildFromPoints(0, items.size());
+        clearPointsData();
     }
 
 
@@ -162,30 +170,47 @@ public class VPTree {
         return count;
     }
 
+    //clears out points metadata after points are built
+    private void clearPointsData() {
+        distancesArr = null;
+        sortedDistances = null;
+        leftPoints = null;
+        rightPoints = null;
+    }
+
     private Node buildFromPoints(int lower, int upper) {
         if (upper == lower)
             return null;
         Node ret = new Node(lower, 0);
-        if (upper - lower > 1) {
+       if (upper - lower > 1) {
             int randomPoint = MathUtils.randomNumberBetween(lower, upper - 1);
 
             // Partition around the median distance
             int median = (upper + lower) / 2;
-            double distances[] = new double[items.size()];
-            double sortedDistances[] = new double[items.size()];
+            if(distancesArr == null)
+                distancesArr = new double[items.size()];
+            if(sortedDistances == null)
+                sortedDistances = new double[items.size()];
             DataPoint basePoint = items.get(randomPoint);
+
             for (int i = 0; i < items.size(); ++i) {
-                distances[i] = getDistance(basePoint, items.get(i));
-                sortedDistances[i] = distances[i];
+                distancesArr[i] = getDistance(basePoint, items.get(i));
+                sortedDistances[i] = distancesArr[i];
             }
 
             Arrays.sort(sortedDistances);
             final double medianDistance = sortedDistances[sortedDistances.length / 2];
-            List<DataPoint> leftPoints = new ArrayList<>(sortedDistances.length);
-            List<DataPoint> rightPoints = new ArrayList<>(sortedDistances.length);
-
-            for (int i = 0; i < distances.length; i++) {
-                if (distances[i] < medianDistance) {
+            //only allocate left/right poitns once
+            if(leftPoints == null)
+                leftPoints = new ArrayList<>(sortedDistances.length);
+            if(rightPoints == null)
+                rightPoints = new ArrayList<>(sortedDistances.length);
+            if(leftPoints != null)
+                leftPoints.clear();
+            if(rightPoints != null)
+                rightPoints.clear();
+            for (int i = 0; i < distancesArr.length; i++) {
+                if (distancesArr[i] < medianDistance) {
                     leftPoints.add(items.get(i));
                 } else {
                     rightPoints.add(items.get(i));

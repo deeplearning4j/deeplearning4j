@@ -14,7 +14,6 @@ import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -62,7 +61,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
      *                          equal to the number of outputs, with values in range 0 to 1. An array of 0.5 values is
      *                          equivalent to the default (no manually specified decision threshold).
      */
-    public EvaluationBinary(@Nullable INDArray decisionThreshold){
+    public EvaluationBinary(INDArray decisionThreshold){
         if(decisionThreshold != null){
             if(!decisionThreshold.isRowVector()){
                 throw new IllegalArgumentException("Decision threshold array must be a row vector; got array with shape "

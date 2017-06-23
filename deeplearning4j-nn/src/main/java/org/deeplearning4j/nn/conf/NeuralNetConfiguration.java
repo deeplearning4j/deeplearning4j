@@ -123,6 +123,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     // for Spark and model serialization
     protected int iterationCount = 0;
 
+    protected CacheMode cacheMode;
+
     private static ObjectMapper mapper = initMapper();
     private static final ObjectMapper mapperYaml = initMapperYaml();
     private static Set<Class<?>> subtypesClassCache = null;
@@ -275,7 +277,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                             .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                             .tBPTTBackwardLength(tbpttBackLength).cnnInputSize(this.cnnInputSize)
                             .setInputType(this.inputType).trainingWorkspaceMode(globalConfig.trainingWorkspaceMode)
-                            .inferenceWorkspaceMode(globalConfig.inferenceWorkspaceMode).confs(list).build();
+                            .cacheMode(globalConfig.cacheMode).inferenceWorkspaceMode(globalConfig.inferenceWorkspaceMode).confs(list).build();
         }
 
     }
@@ -564,7 +566,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected boolean pretrain = false;
 
         protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
-        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SINGLE;
+        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
+        protected CacheMode cacheMode = CacheMode.NONE;
 
         protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;
 
@@ -624,6 +627,20 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          */
         public Builder inferenceWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
             this.inferenceWorkspaceMode = workspaceMode;
+            return this;
+        }
+
+        /**
+         * This method defines how/if preOutput cache is handled:
+         * NONE: cache disabled (default value)
+         * HOST: Host memory will be used
+         * DEVICE: GPU memory will be used (on CPU backends effect will be the same as for HOST)
+         *
+         * @param cacheMode
+         * @return
+         */
+        public Builder cacheMode(@NonNull CacheMode cacheMode) {
+            this.cacheMode = cacheMode;
             return this;
         }
 
@@ -1121,6 +1138,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             conf.lrPolicySteps = lrPolicySteps;
             conf.lrPolicyPower = lrPolicyPower;
             conf.pretrain = pretrain;
+            conf.cacheMode = this.cacheMode;
             String layerName;
             if (layer == null || layer.getLayerName() == null)
                 layerName = "Layer not named";

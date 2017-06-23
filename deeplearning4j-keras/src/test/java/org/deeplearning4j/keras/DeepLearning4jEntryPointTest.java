@@ -1,7 +1,5 @@
 package org.deeplearning4j.keras;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
@@ -9,14 +7,12 @@ import org.junit.rules.ExpectedException;
 import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import static org.deeplearning4j.keras.StringsEndsWithPredicate.endsWith;
 
