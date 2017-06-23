@@ -23,22 +23,17 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.io.WritableConverter;
 import org.datavec.api.io.converters.SelfWritableConverter;
-import org.datavec.api.io.converters.WritableConverterException;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataComposableMap;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.writable.Writable;
-import org.datavec.api.writable.NDArrayWritable;
-import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.FeatureUtil;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -167,13 +162,17 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
         //allow people to specify label index as -1 and infer the last possible label
         if (numPossibleLabels >= 1 && labelIndex < 0) {
-            labelIndex = next.getRecord().size() - 1;
+            labelIndex = totalSize - 1;
         }
 
         recordReader.reset();
 
-        RecordReaderMultiDataSetIterator.Builder builder = new RecordReaderMultiDataSetIterator.Builder(batchSize)
-                .addReader(READER_KEY, recordReader);
+        RecordReaderMultiDataSetIterator.Builder builder = new RecordReaderMultiDataSetIterator.Builder(batchSize);
+        if(recordReader instanceof SequenceRecordReader){
+            builder.addSequenceReader(READER_KEY, (SequenceRecordReader) recordReader);
+        } else {
+            builder.addReader(READER_KEY, recordReader);
+        }
 
         if(regression){
             builder.addOutput(READER_KEY, labelIndex, labelIndexTo);

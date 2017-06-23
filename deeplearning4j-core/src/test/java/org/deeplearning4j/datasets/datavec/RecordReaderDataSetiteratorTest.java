@@ -44,7 +44,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.*;
 import java.util.*;
@@ -65,16 +64,6 @@ public class RecordReaderDataSetiteratorTest {
         DataSetIterator iter = new RecordReaderDataSetIterator(recordReader, 34);
         DataSet next = iter.next();
         assertEquals(34, next.numExamples());
-
-        recordReader = new CSVSequenceRecordReader();
-        recordReader.initialize(csv);
-        iter = new RecordReaderDataSetIterator(recordReader, 1);
-        int count = 0;
-        while (iter.hasNext() && count < 34) {
-            iter.next();
-            count++;
-        }
-        assertEquals(34, count);
     }
 
 
