@@ -130,13 +130,6 @@ public class SharedTrainingWrapper {
             first call instantiates pw, messenger etc, and gets in charge here.
          */
         if (isFirst.compareAndSet(false, true)) {
-            // getting model from worker, and instantiating PW
-            try {
-                Thread.sleep(5000);
-            } catch (Exception e) {
-                //
-            }
-
             SharedTrainingConfiguration trainingConfiguration = worker.getBroadcastConfiguration().getValue();
             VoidConfiguration voidConfiguration = worker.getBroadcastConfiguration().getValue().getVoidConfiguration();
 
@@ -255,10 +248,6 @@ public class SharedTrainingWrapper {
             // TODO: optionally we might be waiting until we have >1 splits delivered
 
 
-            if (numWorkers > 1) {
-            //    accumulator.registerConsumers(numWorkers);
-            }
-
             driver.bypassMode(false);
 
             // now we're just calling for fit
@@ -296,6 +285,7 @@ public class SharedTrainingWrapper {
             // and accumulator, to reset its states
             accumulator.reset();
 
+            // current TrainingDriver won't be receiving any updates beyond this point
             driver.bypassMode(true);
 
 

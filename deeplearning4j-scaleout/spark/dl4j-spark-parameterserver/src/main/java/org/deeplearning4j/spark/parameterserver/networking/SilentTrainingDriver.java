@@ -96,6 +96,11 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
 
     public void bypassMode(boolean reallyBypass) {
         bypassMode.set(reallyBypass);
+
+        // if TrainingDriver is temporary disabled - remove existing messages from queue
+        if (reallyBypass) {
+            updatesBuffer.clear();
+        }
     }
 
     @Override
@@ -121,10 +126,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
 
             try {
                 if (!bypassMode.get()) {
-                    //log.info("Storing external message...");
                     updatesBuffer.put(message.getUpdates());
-                } else {
-                    //log.info("Skipping external message");
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -171,11 +173,12 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
     @Override
     public void pickTraining(SilentUpdatesMessage message) {
         // this message won't be ever called
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void aggregationFinished(VoidAggregation aggregation) {
-        // no-op
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -198,6 +201,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
     @Override
     public void addCompletionHook(long originatorId, long frameId, long messageId) {
         // no-op
+        throw new UnsupportedOperationException();
     }
 
     @Override

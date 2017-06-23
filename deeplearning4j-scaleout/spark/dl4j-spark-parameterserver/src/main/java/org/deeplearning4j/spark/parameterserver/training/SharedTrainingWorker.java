@@ -35,12 +35,12 @@ public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResul
 
     @Override
     public void removeHook(TrainingHook trainingHook) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void addHook(TrainingHook trainingHook) {
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -104,51 +104,51 @@ public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResul
 
     @Override
     public Pair<SharedTrainingResult, SparkTrainingStats> processMinibatchWithStats(DataSet dataSet, MultiLayerNetwork network, boolean isLast) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Pair<SharedTrainingResult, SparkTrainingStats> processMinibatchWithStats(DataSet dataSet, ComputationGraph graph, boolean isLast) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Pair<SharedTrainingResult, SparkTrainingStats> processMinibatchWithStats(MultiDataSet dataSet, ComputationGraph graph, boolean isLast) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public SharedTrainingResult getFinalResult(MultiLayerNetwork network) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public SharedTrainingResult getFinalResult(ComputationGraph network) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public SharedTrainingResult getFinalResultNoData() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Pair<SharedTrainingResult, SparkTrainingStats> getFinalResultNoDataWithStats() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Pair<SharedTrainingResult, SparkTrainingStats> getFinalResultWithStats(MultiLayerNetwork network) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Pair<SharedTrainingResult, SparkTrainingStats> getFinalResultWithStats(ComputationGraph graph) {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public WorkerConfiguration getDataConfiguration() {
-        return null;
+        throw new UnsupportedOperationException();
     }
 }
