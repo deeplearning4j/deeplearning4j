@@ -149,7 +149,7 @@ public class UpdaterBlock {
                 paramView = p.getParamView();
                 gradView = p.getGradView();
             }
-            postApply(p.getLayer(), p.getParamName(), paramView, gradView);
+            postApply(p.getLayer(), p.getParamName(), gradView, paramView);
         }
     }
 
