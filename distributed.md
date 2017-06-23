@@ -83,7 +83,8 @@ Here's simple form, that'll help you with scalability expectations:
 
 ### Executors, cores, parallelism
 By design, Spark allows you to configure number of executors and cores per executor for your task. Imagine you have cluster of 18 nodes, 32 cores each node.
-In this case your `--num-executors` value will be 18, and recommended `--executor-cores` value will be somewhere between 2 and 32. But you can also manually set specific number of DL4j workers that'll be used on each node, this can be done via `SharedTrainingMaster.Builder().workersPerNode(int)` method. 
+In this case your `--num-executors` value will be 18, and recommended `--executor-cores` value will be somewhere between 2 and 32. This option will basically define how many partitions your RDD will be split into.
+Plus, you can also manually set specific number of DL4j workers that'll be used on each node, this can be done via `SharedTrainingMaster.Builder().workersPerNode(int)` method. 
   
 And if your nodes are GPU-powered, it's usually very good idea to set `workersPerNode(int)` to number of GPUs per box, or keep its default value for auto-tuning.
 
