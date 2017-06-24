@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.util.AtomicThrowable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,6 +55,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
     protected AtomicBoolean registered = new AtomicBoolean(false);
     protected AtomicBoolean bypassMode = new AtomicBoolean(false);
     protected final AtomicInteger currentConsumers = new AtomicInteger(0);
+
+    protected final AtomicThrowable throwable = new AtomicThrowable();
 
     protected boolean isDebug = false;
 
@@ -131,6 +134,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
 
             while (registered.get()) {
                 LockSupport.parkNanos(100L);
+                if (throwable.isTriggered())
+                    throw new RuntimeException(throwable.get());
             }
 
             if (isDebug)
@@ -171,8 +176,12 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             isDone.set(true);
         } else {
             // just wait, till last thread will set isDone to true
-            while (!isDone.get())
+            while (!isDone.get()) {
                 LockSupport.parkNanos(1000L);
+                if (throwable.isTriggered())
+                    throw new RuntimeException(throwable.get());
+            }
+
         }
 
         // second lock here needed only to ensure we won't get overrun over isDone flag
@@ -182,8 +191,11 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
 
             isFirst.set(true);
         } else {
-            while (!isFirst.get())
+            while (!isFirst.get()) {
                 LockSupport.parkNanos(1000L);
+                if (throwable.isTriggered())
+                    throw new RuntimeException(throwable.get());
+            }
         }
 
         if (isDebug)
@@ -199,43 +211,48 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
      */
     @Override
     public void applyUpdate(StepFunction function, INDArray params, INDArray updates) {
-        // nullify given updates first
-        updates.assign(0.0f);
+        try {
+            // nullify given updates first
+            updates.assign(0.0f);
 
-        int cnt = 0;
-        while (!messages.get(index.get()).isEmpty()) {
-            INDArray compressed = messages.get(index.get()).poll();
-
-            INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
-            cnt++;
-        }
-
-        if (cnt > 0 && isDebug)
-            log.info("Local updates to be applied: {}", cnt);
-
-        if (externalSource != null) {
-            int ent = 0;
-            while (!externalSource.isEmpty()) {
-                INDArray compressed = externalSource.poll();
+            int cnt = 0;
+            while (!messages.get(index.get()).isEmpty()) {
+                INDArray compressed = messages.get(index.get()).poll();
 
                 INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
                 cnt++;
-                ent++;
             }
 
-            if (isDebug)
-                log.info("thread {} finished at Externals", Thread.currentThread().getId());
+            if (cnt > 0 && isDebug)
+                log.info("Local updates to be applied: {}", cnt);
 
-            if (ent > 0 && isDebug)
-                log.info("External updates to be applied: {}", ent);
+            if (externalSource != null) {
+                int ent = 0;
+                while (!externalSource.isEmpty()) {
+                    INDArray compressed = externalSource.poll();
+
+                    INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+                    cnt++;
+                    ent++;
+                }
+
+                if (isDebug)
+                    log.info("thread {} finished at Externals", Thread.currentThread().getId());
+
+                if (ent > 0 && isDebug)
+                    log.info("External updates to be applied: {}", ent);
+            }
+
+            synchronize(currentConsumers.get(), true);
+
+            // TODO: average updates probably?
+
+            if (cnt > 0)
+                function.step(params, updates);
+        } catch (Exception e) {
+            throwable.setIfFirst(e);
+            throw new RuntimeException(e);
         }
-
-        synchronize(currentConsumers.get(), true);
-
-        // TODO: average updates probably?
-
-        if (cnt > 0)
-            function.step(params, updates);
     }
 
     /**
@@ -247,38 +264,45 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
      */
     @Override
     public void applyUpdate(StepFunction function, INDArray params, INDArray updates, double alpha) {
-        // nullify given updates first
-        updates.assign(0.0f);
+        try {
+            // nullify given updates first
+            updates.assign(0.0f);
 
-        int cnt = 0;
-        while (!messages.get(index.get()).isEmpty()) {
-            INDArray compressed = messages.get(index.get()).poll();
-
-            INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
-            cnt++;
-        }
-
-        if (cnt > 0 && isDebug)
-            log.info("Local updates to be applied: {}", cnt);
-
-        if (externalSource != null) {
-            int ent = 0;
-            while (!externalSource.isEmpty()) {
-                INDArray compressed = externalSource.poll();
+            int cnt = 0;
+            while (!messages.get(index.get()).isEmpty()) {
+                INDArray compressed = messages.get(index.get()).poll();
 
                 INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
                 cnt++;
-                ent++;
             }
 
-            if (ent > 0 && isDebug)
-                log.info("External updates to be applied: {}", ent);
+            if (cnt > 0 && isDebug)
+                log.info("Local updates to be applied: {}", cnt);
+
+            if (externalSource != null) {
+                int ent = 0;
+                while (!externalSource.isEmpty()) {
+                    INDArray compressed = externalSource.poll();
+
+                    INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+                    cnt++;
+                    ent++;
+                }
+
+                if (ent > 0 && isDebug)
+                    log.info("External updates to be applied: {}", ent);
+            }
+
+            synchronize(currentConsumers.get(), true);
+
+            // TODO: average updates? might have sense
+
+            if (cnt > 0)
+                function.step(params, updates, alpha);
+        } catch (Exception e) {
+            throwable.setIfFirst(e);
+            throw new RuntimeException(e);
         }
-
-        // TODO: average updates? might have sense
-
-        if (cnt > 0)
-            function.step(params, updates, alpha);
     }
 
     /**
@@ -321,32 +345,40 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
      */
     @Override
     public void storeUpdate(INDArray array) {
-        if (accumulator.get() == null) {
-            // we don't want accumulator to be attached to workspaces
-            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                accumulator.set(Nd4j.create(array.shape(), array.ordering()));
+        try {
+            if (accumulator.get() == null) {
+                // we don't want accumulator to be attached to workspaces
+                try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    accumulator.set(Nd4j.create(array.shape(), array.ordering()));
+                }
             }
+
+            // accumulate gradients updates in residental array
+            accumulator.get().addi(array);
+
+            if (isDebug)
+                log.info("thread {} locking at Register", Thread.currentThread().getId());
+
+            // block until ParallelWrapper sends us message about number of threads in this cycle
+            if (!bypassMode.get())
+                while (!registered.get()) {
+                    LockSupport.parkNanos(100L);
+                    if (throwable.isTriggered())
+                        throw new RuntimeException(throwable.get());
+                }
+
+            if (isDebug)
+                log.info("thread {} unlocking at Register", Thread.currentThread().getId());
+
+            // propagate changes & modify accumulator
+            handler.broadcastUpdates(accumulator.get());
+
+            // we're blocking here, untill all done broadcasting updates
+            synchronize(currentConsumers.get());
+        } catch (Exception e) {
+            throwable.setIfFirst(e);
+            throw new RuntimeException(e);
         }
-
-        // accumulate gradients updates in residental array
-        accumulator.get().addi(array);
-
-        if (isDebug)
-            log.info("thread {} locking at Register", Thread.currentThread().getId());
-
-        // block until ParallelWrapper sends us message about number of threads in this cycle
-        if (!bypassMode.get())
-            while (!registered.get())
-                LockSupport.parkNanos(100L);
-
-        if (isDebug)
-            log.info("thread {} unlocking at Register", Thread.currentThread().getId());
-
-        // propagate changes & modify accumulator
-        handler.broadcastUpdates(accumulator.get());
-
-        // we're blocking here, untill all done broadcasting updates
-        synchronize(currentConsumers.get());
     }
 
     /**
@@ -358,31 +390,36 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
      */
     @Override
     public void receiveUpdate(INDArray array) {
-        // we're replicating COMPRESSED MESSAGES, decompression will be thread-local
-        for (int i = 0; i < parties; i++) {
-            // we don't want to have same workspace to be accessible by 2 different threads for now
-            /*
-                With synchronized external data, it's impossible to deadlock here.
-                Each worker is guaranteed to have at least NUM_WORKERS slots in buffer.
-                So we use this lock just to ensure thread-safety of corresponding workspaces
-             */
-            locks.get(i).lock();
+        try {
+            // we're replicating COMPRESSED MESSAGES, decompression will be thread-local
+            for (int i = 0; i < parties; i++) {
+                // we don't want to have same workspace to be accessible by 2 different threads for now
+                /*
+                    With synchronized external data, it's impossible to deadlock here.
+                    Each worker is guaranteed to have at least NUM_WORKERS slots in buffer.
+                    So we use this lock just to ensure thread-safety of corresponding workspaces
+                */
+                locks.get(i).lock();
 
-            try (MemoryWorkspace workspace = workspaces.get(i).notifyScopeEntered()) {
-                // we might just scope out of workspace here, instead of throwing error out
-                if (array.data().length() > (initialMemory / queueSize) / Nd4j.sizeOfDataType(array.data().dataType()))
-                    throw new ND4JIllegalStateException("Not enough memory to handle update: ["+ array.data().length() * Nd4j.sizeOfDataType(array.data().dataType())+" bytes required]. Please increase memory amount for GradientsAccumulator");
+                try (MemoryWorkspace workspace = workspaces.get(i).notifyScopeEntered()) {
+                    // we might just scope out of workspace here, instead of throwing error out
+                    if (array.data().length() > (initialMemory / queueSize) / Nd4j.sizeOfDataType(array.data().dataType()))
+                        throw new ND4JIllegalStateException("Not enough memory to handle update: [" + array.data().length() * Nd4j.sizeOfDataType(array.data().dataType()) + " bytes required]. Please increase memory amount for GradientsAccumulator");
 
-                INDArray compressed = array.unsafeDuplication();
-                try {
-                    messages.get(i).put(compressed);
-                } catch (InterruptedException e) {
-                    log.info("Something bad at index_{}", i);
-                    throw new RuntimeException(e);
+                    INDArray compressed = array.unsafeDuplication();
+                    try {
+                        messages.get(i).put(compressed);
+                    } catch (InterruptedException e) {
+                        log.info("Something bad at index_{}", i);
+                        throw new RuntimeException(e);
+                    }
                 }
-            }
 
-            locks.get(i).unlock();
+                locks.get(i).unlock();
+            }
+        } catch (Exception e) {
+            throwable.setIfFirst(e);
+            throw new RuntimeException(e);
         }
     }
 
