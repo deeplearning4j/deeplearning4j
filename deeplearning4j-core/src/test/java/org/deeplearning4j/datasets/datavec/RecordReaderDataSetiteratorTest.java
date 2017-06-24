@@ -497,7 +497,7 @@ public class RecordReaderDataSetiteratorTest {
         assertEquals(expF2, dsListAlignEnd.get(2).getFeatureMatrix());
 
         //Check features mask array:
-        INDArray featuresMaskExpected = Nd4j.ones(1, 4); //1 example, 4 values: same for both start/end align here
+        INDArray featuresMaskExpected = null;   //null: equivalent to all 1s (i.e., present for all time steps)
         for (int i = 0; i < 3; i++) {
             INDArray featuresMaskStart = dsListAlignStart.get(i).getFeaturesMaskArray();
             INDArray featuresMaskEnd = dsListAlignEnd.get(i).getFeaturesMaskArray();
@@ -569,6 +569,8 @@ public class RecordReaderDataSetiteratorTest {
         reader.initialize(new NumberedFileInputSplit(path, 0, 2));
         SequenceRecordReaderDataSetIterator iteratorClassification =
                         new SequenceRecordReaderDataSetIterator(reader, 1, 3, 0, false);
+
+        assertTrue(iteratorClassification.hasNext());
 
         SequenceRecordReader reader2 = new CSVSequenceRecordReader(1, ",");
         reader2.initialize(new NumberedFileInputSplit(path, 0, 2));

@@ -219,13 +219,14 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         } else {
             //No labels - only features
             builder.addInput(READER_KEY);
+            underlyingIsDisjoint = false;
         }
 
 
         underlying = builder.build();
 
         if(collectMetaData){
-            underlying.setCollectMetaData(collectMetaData);
+            underlying.setCollectMetaData(true);
         }
     }
 
@@ -288,7 +289,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         return mdsToDataSet(underlying.next());
     }
 
-    private static INDArray getOrNull(INDArray[] arr, int idx){
+    //Package private
+    static INDArray getOrNull(INDArray[] arr, int idx){
         if(arr == null || arr.length == 0){
             return null;
         }
@@ -335,7 +337,9 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     @Override
     public void reset() {
         batchNum = 0;
-        recordReader.reset();
+        if(underlying != null){
+            underlying.reset();
+        }
     }
 
     @Override

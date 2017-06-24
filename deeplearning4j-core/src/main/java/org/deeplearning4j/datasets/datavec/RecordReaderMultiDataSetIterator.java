@@ -31,6 +31,7 @@ import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
@@ -382,14 +383,34 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         if (maxTSLength == -1)
             maxTSLength = list.get(0).size();
         INDArray arr;
+
+
+        List<Writable> firstStep = list.get(0).get(0);
+
+        int size = 0;
         if (details.entireReader) {
-            int size = list.get(0).iterator().next().size();
-            arr = Nd4j.create(new int[] {minValues, size, maxTSLength}, 'f');
-        } else if (details.oneHot)
-            arr = Nd4j.create(new int[] {minValues, details.oneHotNumClasses, maxTSLength}, 'f');
-        else
-            arr = Nd4j.create(new int[] {minValues, details.subsetEndInclusive - details.subsetStart + 1, maxTSLength},
-                            'f');
+            //Need to account for NDArrayWritables etc in list:
+            for(Writable w : firstStep){
+                if(w instanceof NDArrayWritable){
+                    size += ((NDArrayWritable) w).get().size(1);
+                } else {
+                    size++;
+                }
+            }
+        } else if (details.oneHot) {
+            size = details.oneHotNumClasses;
+        } else {
+            //Need to account for NDArrayWritables etc in list:
+            for( int i=details.subsetStart; i<=details.subsetEndInclusive; i++ ){
+                Writable w = firstStep.get(i);
+                if(w instanceof NDArrayWritable){
+                    size += ((NDArrayWritable) w).get().size(1);
+                } else {
+                    size++;
+                }
+            }
+        }
+        arr = Nd4j.create(new int[]{minValues, size, maxTSLength},'f');
 
         boolean needMaskArray = false;
         for (List<List<Writable>> c : list) {
@@ -403,10 +424,11 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         }
 
         INDArray maskArray;
-        if (needMaskArray)
+        if (needMaskArray) {
             maskArray = Nd4j.ones(minValues, maxTSLength);
-        else
+        } else {
             maskArray = null;
+        }
 
         for (int i = 0; i < minValues; i++) {
             List<List<Writable>> sequence = list.get(i);
@@ -432,24 +454,23 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                     int j = 0;
                     while (iter.hasNext()) {
                         Writable w = iter.next();
-                        try {
+
+                        if(w instanceof NDArrayWritable){
+                            INDArray row = ((NDArrayWritable) w).get();
+
+                            arr.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.interval(j, j+row.length())
+                                    , NDArrayIndex.point(k)}, row);
+                            j += row.length();
+                        } else {
                             arr.putScalar(i, j, k, w.toDouble());
-                        } catch (UnsupportedOperationException e) {
-                            // This isn't a scalar, so check if we got an array already
-                            if (w instanceof NDArrayWritable) {
-                                arr.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.point(k)).putRow(0,
-                                                ((NDArrayWritable) w).get());
-                            } else {
-                                throw e;
-                            }
+                            j++;
                         }
-                        j++;
                     }
                 } else if (details.oneHot) {
                     //Convert a single column to a one-hot representation
                     Writable w = null;
                     if (timeStep instanceof List)
-                        w = ((List<Writable>) timeStep).get(details.subsetStart);
+                        w = timeStep.get(details.subsetStart);
                     else {
                         Iterator<Writable> iter = timeStep.iterator();
                         for (int x = 0; x <= details.subsetStart; x++)
@@ -459,25 +480,18 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                     arr.putScalar(i, classIdx, k, 1.0);
                 } else {
                     //Convert a subset of the columns...
-                    Iterator<Writable> iter = timeStep.iterator();
-                    for (int j = 0; j < details.subsetStart; j++)
-                        iter.next();
                     int l = 0;
                     for (int j = details.subsetStart; j <= details.subsetEndInclusive; j++) {
-                        Writable w = iter.next();
-                        try {
+                        Writable w = timeStep.get(j);
+
+                        if(w instanceof NDArrayWritable){
+                            INDArray row = ((NDArrayWritable) w).get();
+                            arr.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.interval(l, l+row.length()), NDArrayIndex.point(k)},
+                                    row);
+
+                            l += row.length();
+                        } else {
                             arr.putScalar(i, l++, k, w.toDouble());
-                        } catch (UnsupportedOperationException e) {
-                            // This isn't a scalar, so check if we got an array already
-                            if (w instanceof NDArrayWritable) {
-                                arr.get(NDArrayIndex.point(i), NDArrayIndex.all(), NDArrayIndex.point(k)).putRow(0,
-                                                ((NDArrayWritable) w).get()
-                                                                .get(NDArrayIndex.all(), NDArrayIndex.interval(
-                                                                                details.subsetStart, details.subsetEndInclusive
-                                                                                                + 1)));
-                            } else {
-                                throw e;
-                            }
                         }
                     }
                 }
