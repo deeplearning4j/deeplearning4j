@@ -3,6 +3,7 @@ package org.deeplearning4j.spark.parameterserver.iterators;
 import lombok.NonNull;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.ParallelDataSetIterator;
 
 import java.util.Iterator;
@@ -15,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author raver119@gmail.com
  */
-public class VirtualDataSetIterator implements ParallelDataSetIterator {
+public class VirtualDataSetIterator implements DataSetIterator {
 
     /**
      * Basic idea here is simple: this DataSetIterator will take in multiple lazy Iterator<DataSet>,
@@ -30,9 +31,12 @@ public class VirtualDataSetIterator implements ParallelDataSetIterator {
         this.position = new AtomicInteger(0);
     }
 
+    /*
+
+    // TODO: to be implemented
+
     @Override
     public void attachThread(int producer) {
-        // TODO: to be implemented
         throw new UnsupportedOperationException();
     }
 
@@ -56,6 +60,7 @@ public class VirtualDataSetIterator implements ParallelDataSetIterator {
         return null;
     }
 
+    */
     @Override
     public boolean resetSupported() {
         // we're NOT supporting reset() here
@@ -64,7 +69,6 @@ public class VirtualDataSetIterator implements ParallelDataSetIterator {
 
     @Override
     public boolean asyncSupported() {
-        // FIXME: for now we're not supporting ADSI/AMDSI here, but that should change later
         return true;
     }
 
@@ -106,32 +110,32 @@ public class VirtualDataSetIterator implements ParallelDataSetIterator {
 
     @Override
     public int batch() {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int cursor() {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int numExamples() {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int totalExamples() {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int inputColumns() {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public int totalOutcomes() {
-        return 0;
+        throw new UnsupportedOperationException();
     }
 
     @Override
