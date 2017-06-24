@@ -34,6 +34,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -72,6 +73,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     private boolean collectMetaData = false;
 
     private RecordReaderMultiDataSetIterator underlying;
+    private boolean underlyingIsDisjoint;
 
     public RecordReaderDataSetIterator(RecordReader recordReader, WritableConverter converter, int batchSize) {
         this(recordReader, converter, batchSize, -1,
@@ -181,22 +183,45 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         }
 
         //Inputs: assume to be all of the other writables
-        //Furthermore: assume label indices are all at the start or end
-        int inputFrom;
-        int inputTo;
-        if (labelIndex < 0) {
-            //No label
-            inputFrom = 0;
-            inputTo = totalSize - 1;
-        } else if (labelIndex == 0) {
-            inputFrom = labelIndexTo + 1;
-            inputTo = totalSize - 1;
+        //In general: can't assume label indices are all at the start or end (event though 99% of the time they are)
+        //If they are: easy. If not: use 2 inputs in the underlying as a workaround, and concat them
+
+        if(labelIndex >= 0 && (labelIndex == 0 || labelIndexTo == totalSize - 1)){
+            //Labels are first or last -> one input in underlying
+            int inputFrom;
+            int inputTo;
+            if (labelIndex < 0) {
+                //No label
+                inputFrom = 0;
+                inputTo = totalSize - 1;
+            } else if (labelIndex == 0) {
+                inputFrom = labelIndexTo + 1;
+                inputTo = totalSize - 1;
+            } else {
+                inputFrom = 0;
+                inputTo = labelIndex - 1;
+            }
+
+            builder.addInput(READER_KEY, inputFrom, inputTo);
+
+            underlyingIsDisjoint = false;
+        } else if(labelIndex >= 0){
+            //Multiple inputs
+            int firstFrom = 0;
+            int firstTo = labelIndex - 1;
+            int secondFrom = labelIndexTo + 1;
+            int secondTo = totalSize - 1;
+
+            builder.addInput(READER_KEY, firstFrom, firstTo);
+            builder.addInput(READER_KEY, secondFrom, secondTo);
+
+            underlyingIsDisjoint = true;
         } else {
-            inputFrom = 0;
-            inputTo = labelIndex - 1;
+            //No labels - only features
+            builder.addInput(READER_KEY);
         }
 
-        builder.addInput(READER_KEY, inputFrom, inputTo);
+
         underlying = builder.build();
 
         if(collectMetaData){
@@ -205,9 +230,23 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     }
 
     private DataSet mdsToDataSet(MultiDataSet mds){
-        INDArray f = getOrNull(mds.getFeatures(), 0);
+        INDArray f;
+        INDArray fm;
+        if(underlyingIsDisjoint){
+            //Rare case: 2 input arrays -> concat
+            INDArray f1 = getOrNull(mds.getFeatures(), 0);
+            INDArray f2 = getOrNull(mds.getFeatures(), 1);
+            fm = getOrNull(mds.getFeaturesMaskArrays(), 0);     //Per-example masking only on the input -> same for both
+
+            //Can assume 2d features here
+            f = Nd4j.hstack(f1, f2);
+        } else {
+            //Standard case
+            f = getOrNull(mds.getFeatures(), 0);
+            fm = getOrNull(mds.getFeaturesMaskArrays(), 0);
+        }
+
         INDArray l = getOrNull(mds.getLabels(), 0);
-        INDArray fm = getOrNull(mds.getFeaturesMaskArrays(), 0);
         INDArray lm = getOrNull(mds.getLabelsMaskArrays(), 0);
 
         DataSet ds = new DataSet(f, l, fm, lm);
