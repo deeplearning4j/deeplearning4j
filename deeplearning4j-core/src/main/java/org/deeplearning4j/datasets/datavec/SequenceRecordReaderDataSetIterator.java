@@ -231,6 +231,20 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             }
         }
 
+        if(alignmentMode != null){
+            switch (alignmentMode){
+                case EQUAL_LENGTH:
+                    builder.sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.EQUAL_LENGTH);
+                    break;
+                case ALIGN_START:
+                    builder.sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_START);
+                    break;
+                case ALIGN_END:
+                    builder.sequenceAlignmentMode(RecordReaderMultiDataSetIterator.AlignmentMode.ALIGN_END);
+                    break;
+            }
+        }
+
         underlying = builder.build();
 
         if(collectMetaData){

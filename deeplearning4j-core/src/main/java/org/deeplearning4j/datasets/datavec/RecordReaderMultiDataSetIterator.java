@@ -384,6 +384,9 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
             maxTSLength = list.get(0).size();
         INDArray arr;
 
+        if(list.get(0).size() == 0){
+            throw new ZeroLengthSequenceException("Zero length sequence encountered");
+        }
 
         List<Writable> firstStep = list.get(0).get(0);
 
