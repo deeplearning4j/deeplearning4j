@@ -8,7 +8,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * @author raver119@gmail.com
  */
 public class AtomicThrowable {
-    protected volatile Throwable t;
+    protected volatile Throwable t = null;
     protected ReentrantReadWriteLock lock;
 
     /**
@@ -65,7 +65,7 @@ public class AtomicThrowable {
         try {
             lock.writeLock().lock();
 
-            if (this.t != null)
+            if (this.t == null)
                 this.t = t;
         } finally {
             lock.writeLock().unlock();
@@ -81,7 +81,7 @@ public class AtomicThrowable {
         try {
             lock.readLock().lock();
 
-            return t == null;
+            return t != null;
         } finally {
             lock.readLock().unlock();
         }
