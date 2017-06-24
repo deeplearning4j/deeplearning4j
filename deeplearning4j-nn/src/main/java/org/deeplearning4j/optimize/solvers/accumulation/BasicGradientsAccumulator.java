@@ -265,16 +265,6 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
         // no-op
     }
 
-    /**
-     *
-     * @param worker
-     * @return
-     */
-    @Override
-    public int getFreeSpace(int worker) {
-        return Integer.MAX_VALUE;
-    }
-
     @Override
     public void setExternalSource(Queue<INDArray> source) {
         // TODO: to be implemented

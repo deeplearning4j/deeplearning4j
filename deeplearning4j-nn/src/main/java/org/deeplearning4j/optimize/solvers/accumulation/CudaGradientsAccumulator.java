@@ -440,18 +440,6 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
         }
     }
 
-    /**
-     * This method returns number of free slots for updates
-     *
-     * @param worker
-     * @return
-     */
-    @Override
-    public int getFreeSpace(int worker) {
-        int currSize = messages.get(worker).size();
-        return queueSize - currSize - workersCounter.get();
-    }
-
     public static class Builder {
         protected int parties;
         protected double threshold = 1e-3;
