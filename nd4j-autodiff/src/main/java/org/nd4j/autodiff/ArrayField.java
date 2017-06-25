@@ -9,7 +9,6 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
@@ -61,20 +60,30 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
-    public ArrayField plus(ArrayField i_v) {
+    public ArrayField add(ArrayField i_v) {
         return addPairTransformOp(new AddOp().name(),i_v);
     }
 
 
 
     @Override
-    public ArrayField minus(ArrayField i_v) {
+    public ArrayField sub(ArrayField i_v) {
         return addPairTransformOp(new SubOp().name(),i_v);
+    }
+
+    @Override
+    public ArrayField rsub(ArrayField i_v) {
+       return addPairTransformOp("rsub",i_v);
     }
 
     @Override
     public ArrayField mul(double i_n) {
         return addScalarTransformOp(new ScalarMultiplication().name(),i_n);
+    }
+
+    @Override
+    public ArrayField sub(double i_v) {
+      return addScalarTransformOp("sub",i_v);
     }
 
     @Override
@@ -94,6 +103,11 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     @Override
+    public ArrayField rdiv(ArrayField i_v) {
+        return null;
+    }
+
+    @Override
     public ArrayField div(ArrayField i_v) {
         return addPairTransformOp(new DivOp().name(),i_v);
     }
@@ -106,6 +120,16 @@ public class ArrayField implements Field<ArrayField> {
     @Override
     public ArrayField[] args() {
         return new ArrayField[0];
+    }
+
+    @Override
+    public ArrayField rsub(double v) {
+        return addScalarTransformOp("rsub",v);
+    }
+
+    @Override
+    public ArrayField rdiv(double v) {
+        return addScalarTransformOp("rdiv",v);
     }
 
     public ArrayField pow(ArrayField a) {
@@ -133,7 +157,7 @@ public class ArrayField implements Field<ArrayField> {
     }
     // Operators for double
 
-    public ArrayField plus(double v) {
+    public ArrayField add(double v) {
         return addScalarTransformOp(new ScalarAdd().name(),v);
     }
 

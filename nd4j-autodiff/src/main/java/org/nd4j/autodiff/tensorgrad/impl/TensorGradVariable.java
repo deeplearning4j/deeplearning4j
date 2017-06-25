@@ -2,7 +2,6 @@ package org.nd4j.autodiff.tensorgrad.impl;
 
 import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.Variable;
@@ -18,7 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Created by agibsonccc on 4/9/17.
+ *
  */
 @Data
 public class TensorGradVariable extends TensorGradFunction implements Serializable {
@@ -116,12 +115,27 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
                 .build();
     }
 
+    public TensorGradVariable rsub(TensorGradVariable tensorGradVariable) {
+        return TensorGradVariable.builder()
+                .varName(varName + " + " + tensorGradVariable.getVarName())
+                .arr(null)
+                .differentialFunction(getFunction(tensorGradVariable).rsub(getFunction(this)))
+                .build();
+    }
+
+    public TensorGradVariable rdiv(TensorGradVariable tensorGradVariable) {
+        return TensorGradVariable.builder()
+                .varName(varName + " + " + tensorGradVariable.getVarName())
+                .arr(null)
+                .differentialFunction(getFunction(tensorGradVariable).rdiv(getFunction(this)))
+                .build();
+    }
 
     public TensorGradVariable add(TensorGradVariable tensorGradVariable) {
         return TensorGradVariable.builder()
                 .varName(varName + " + " + tensorGradVariable.getVarName())
                 .arr(null)
-                .differentialFunction(getFunction(tensorGradVariable).plus(getFunction(this)))
+                .differentialFunction(getFunction(tensorGradVariable).add(getFunction(this)))
                 .build();
     }
 
@@ -129,7 +143,7 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
         return TensorGradVariable.builder()
                 .varName(varName + " - " + tensorGradVariable.getVarName())
                 .arr(null)
-                .differentialFunction(getFunction(tensorGradVariable).minus(getFunction(this)))
+                .differentialFunction(getFunction(tensorGradVariable).sub(getFunction(this)))
                 .build();
     }
 
@@ -159,6 +173,7 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
                 "varName='" + varName + '\'' +
                 '}';
     }
+
 
     //lombok for inheritance purposes, do not remove
     @SuppressWarnings("unused")

@@ -11,9 +11,6 @@ import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.functions.mmul.Mmul;
 import org.nd4j.autodiff.functions.mmul.TensorMmul;
-import org.nd4j.autodiff.graph.Graph;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
-import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
@@ -229,7 +226,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             public DifferentialFunction<X> diff(Variable<X> i_v1) {
                 int inputs = getInputLength(i_v1);
                 DifferentialFunction<X> g =  doRepeat(this,i_v1,dimensions);
-                return g.mul(arg().minus(mean(arg(),dimensions))).div(one().mul(inputs));
+                return g.mul(arg().sub(mean(arg(),dimensions))).div(one().mul(inputs));
             }
         };
     }
@@ -256,7 +253,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             public DifferentialFunction<X> diff(Variable<X> i_v1) {
                 int inputs = getInputLength(i_v1);
                 DifferentialFunction<X> g =  doRepeat(this,i_v1,dimensions);
-                return one().mul(2).mul(g).mul(arg().minus(mean(arg(),dimensions))).div(one().mul(inputs));
+                return one().mul(2).mul(g).mul(arg().sub(mean(arg(),dimensions))).div(one().mul(inputs));
             }
         };
     }
@@ -623,7 +620,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return one().div(sqrt(one().minus(arg().pow(2)))).negate();
+                return one().div(sqrt(one().sub(arg().pow(2)))).negate();
             }
 
 
@@ -650,7 +647,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return one().div(sqrt(one().minus(arg().pow(2))));
+                return one().div(sqrt(one().sub(arg().pow(2))));
             }
 
 
@@ -678,7 +675,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return one().div(one().plus(arg().pow(2)));
+                return one().div(one().add(arg().pow(2)));
             }
 
             @Override
@@ -783,7 +780,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return one().div(sqrt(arg().minus(one())).mul(sqrt(arg().plus(one()))));
+                return one().div(sqrt(arg().sub(one())).mul(sqrt(arg().add(one()))));
             }
 
             @Override
@@ -809,7 +806,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return one().div(sqrt(arg().pow(2).plus(one())));
+                return one().div(sqrt(arg().pow(2).add(one())));
             }
 
 
@@ -836,7 +833,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return one().div(one().minus(arg().pow(2)));
+                return one().div(one().sub(arg().pow(2)));
             }
 
 
@@ -919,7 +916,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
                 Constant<X> ym1 = DifferentialFunctionFactory.this
-                        .val(rarg().getValue().minus(mFactory.one()));
+                        .val(rarg().getValue().sub(mFactory.one()));
                 return rarg().mul(DifferentialFunctionFactory.this.pow(larg(), ym1))
                         .mul(larg().diff(i_v));
             }
@@ -960,7 +957,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
                 Constant<X> ym1 = DifferentialFunctionFactory.this
-                        .val(rarg().getValue().minus(mFactory.one()));
+                        .val(rarg().getValue().sub(mFactory.one()));
                 return rarg().mul(DifferentialFunctionFactory.this.pow(larg(), ym1))
                         .mul(larg().diff(i_v));
             }
@@ -1000,7 +997,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
                 Constant<X> ym1 = DifferentialFunctionFactory.this
-                        .val(rarg().getValue().minus(mFactory.one()));
+                        .val(rarg().getValue().sub(mFactory.one()));
                 return rarg().mul(DifferentialFunctionFactory.this.pow(larg(), ym1))
                         .mul(larg().diff(i_v));
             }
@@ -1040,7 +1037,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
                 Constant<X> ym1 = DifferentialFunctionFactory.this
-                        .val(rarg().getValue().minus(mFactory.one()));
+                        .val(rarg().getValue().sub(mFactory.one()));
                 return rarg().mul(DifferentialFunctionFactory.this.pow(larg(), ym1))
                         .mul(larg().diff(i_v));
             }
@@ -1191,7 +1188,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
                 DifferentialFunction<X> val = val(getValue());
-                return val.mul(one().minus(val)).mul(arg().diff(i_v));
+                return val.mul(one().sub(val)).mul(arg().diff(i_v));
             }
 
             @Override
@@ -1592,7 +1589,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
     }
 
     @Override
-    public DifferentialFunction<X> reshape(Variable<X> iX, int[] shape) {
+    public DifferentialFunction<X> reshape(DifferentialFunction<X> iX, int[] shape) {
         return new AbstractUnaryFunction<X>(mFactory.graph(),iX,shape,null) {
 
             @Override
@@ -1738,7 +1735,9 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
     }
 
     @Override
-    public DifferentialFunction<X> lossBinaryXENT(DifferentialFunction<X> iX, DifferentialFunction<X> i_y, int... dimensions) {
+    public DifferentialFunction<X> lossBinaryXENT(DifferentialFunction<X> iX,
+                                                  DifferentialFunction<X> i_y,
+                                                  int... dimensions) {
         return new AbstractBinaryReduceFunction<X>(mFactory.graph(),iX,i_y,dimensions) {
             @Override
             protected X doGetValue() {
@@ -1759,6 +1758,43 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v1) {
+                DifferentialFunction<X> numerator = i_y.sub(iX);
+                DifferentialFunction<X> denominator = i_y.mul(i_y.rsub(1.0));
+                DifferentialFunction<X> dLda = denominator.div(denominator);
+
+                /**
+                 *   INDArray output = activationFn.getActivation(preOutput.dup(), true);
+
+                 INDArray numerator = output.sub(labels);
+                 INDArray denominator = output.mul(output.rsubi(1)); // output * (1-output)
+                 INDArray dLda = numerator.divi(denominator);
+
+                 if(mask != null && LossUtil.isPerOutputMasking(dLda, mask)) {
+                 //For *most* activation functions: we don't actually need to mask dL/da in addition to masking dL/dz later
+                 //but: some, like softmax, require both (due to dL/dz_i being a function of dL/da_j, for i != j)
+                 //We could add a special case for softmax (activationFn instanceof ActivationSoftmax) but that would be
+                 // error prone - but buy us a tiny bit of performance
+                 LossUtil.applyMask(dLda, mask);
+                 }
+
+                 INDArray grad = activationFn.backprop(preOutput, dLda).getFirst(); //TODO activation functions with weights
+
+                 //Weighted loss function
+                 if (weights != null) {
+                 if (weights.length() != output.size(1)) {
+                 throw new IllegalStateException("Weights vector (length " + weights.length()
+                 + ") does not match output.size(1)=" + output.size(1));
+                 }
+
+                 grad.muliRowVector(weights);
+                 }
+
+                 if (mask != null) {
+                 LossUtil.applyMask(grad, mask);
+                 }
+
+
+                 */
                 return null;
             }
         };

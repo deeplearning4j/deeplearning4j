@@ -13,6 +13,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.SigmoidDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.FeatureUtil;
 
 import java.util.*;
 
@@ -241,4 +242,37 @@ public class TensorGradTests {
         assertTrue(op2 instanceof SigmoidDerivative);
         Nd4j.getExecutioner().exec(op2);
     }
+
+
+    @Test
+    public void testLogisticRegression() {
+        TensorGrad tensorGrad = TensorGrad.create();
+        INDArray inputs = Nd4j.create(new double[][]{
+                {0.52, 1.12,  0.77},
+                {0.88, -1.08, 0.15},
+                {0.52, 0.06, -1.30},
+                {0.74, -2.49, 1.39}
+        });
+
+        INDArray labels = FeatureUtil.toOutcomeMatrix(new int[]{1,1,0,0},2);
+
+        INDArray weights = Nd4j.zeros(3).transpose();
+
+        TensorGradVariable x = tensorGrad.var("x",inputs);
+        TensorGradVariable y = tensorGrad.var("y",labels);
+        TensorGradVariable w = tensorGrad.var("w",weights);
+
+        TensorGradVariable learningRate = tensorGrad.scalar("lr",0.01);
+
+        TensorGradVariable preOutput = tensorGrad.mmul(0,x,w);
+
+        TensorGradVariable outputs = tensorGrad.sigmoid(preOutput);
+        //    label_probabilities = preds * targets + (1 - preds) * (1 - targets)
+        TensorGradVariable probs = outputs.mul(y).add(outputs.rsub(tensorGrad.scalar("one",1.0)).mul(y.rsub(tensorGrad.scalar("onetwo",1.0))));
+        TensorGradVariable outputGrad = tensorGrad.grad(probs,x);
+        for(int i = 0; i < 5; i++) {
+            w.sub(w.mul(outputGrad).mul(learningRate));
+        }
+    }
+
 }

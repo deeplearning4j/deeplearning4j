@@ -132,7 +132,7 @@ public interface FunctionFactory<X extends Field<X>> {
 
     DifferentialFunction<X> leakyReluDerivative(DifferentialFunction<X> iX, double cutoff);
 
-    DifferentialFunction<X> reshape(Variable<X> arrayField, int[] shape);
+    DifferentialFunction<X> reshape(DifferentialFunction<X> arrayField, int[] shape);
 
 
     DifferentialFunction<X> rollAxis(Variable<X> iX, int axis);

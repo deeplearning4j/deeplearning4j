@@ -107,7 +107,19 @@ public abstract class DifferentialFunction<X extends Field<X>>
     public abstract DifferentialFunction<X> diff(Variable<X> i_v1);
 
     @Override
-    public DifferentialFunction<X> plus(DifferentialFunction<X> i_v) {
+    public DifferentialFunction<X> rdiv(DifferentialFunction<X> i_v) {
+        DifferentialFunction<X> ret = this.div(i_v);
+        return ret;
+    }
+
+    @Override
+    public DifferentialFunction<X> rsub(DifferentialFunction<X> i_v) {
+        DifferentialFunction<X> ret = this.sub(i_v);
+        return ret;
+    }
+
+    @Override
+    public DifferentialFunction<X> add(DifferentialFunction<X> i_v) {
         DifferentialFunction<X> ret = i_v.plused(this);
         return ret;
     }
@@ -118,8 +130,8 @@ public abstract class DifferentialFunction<X extends Field<X>>
     }
 
     @Override
-    public DifferentialFunction<X> minus(DifferentialFunction<X> i_v) {
-        DifferentialFunction<X> ret = plus(i_v.negate());
+    public DifferentialFunction<X> sub(DifferentialFunction<X> i_v) {
+        DifferentialFunction<X> ret = add(i_v.negate());
         return ret;
     }
 
@@ -164,6 +176,29 @@ public abstract class DifferentialFunction<X extends Field<X>>
         return ret;
     }
 
+    @Override
+    public DifferentialFunction<X> add(double i_v) {
+        Scalar<X> constant = new Scalar<>(graph, i_v, null);
+        return constant.add(this);
+    }
+
+    @Override
+    public DifferentialFunction<X> sub(double i_v) {
+        Scalar<X> constant = new Scalar<>(graph, i_v, null);
+        return constant.sub(this);
+    }
+
+    @Override
+    public DifferentialFunction<X> rsub(double v) {
+        Scalar<X> constant = new Scalar<>(graph, v, null);
+        return this.rsub(constant);
+    }
+
+    @Override
+    public DifferentialFunction<X> rdiv(double v) {
+        Scalar<X> constant = new Scalar<>(graph, v, null);
+        return this.rdiv(constant);
+    }
 
     protected void addEdges(Graph<NDArrayInformation,OpState> graph,
                             DifferentialFunction<X> i_v1,
@@ -171,7 +206,13 @@ public abstract class DifferentialFunction<X extends Field<X>>
                             String opName,
                             OpState.OpType opType,
                             int[] shape) {
-        addEdges(graph, i_v1, i_v2, opName, opType, shape,null);
+        addEdges(graph,
+                i_v1,
+                i_v2,
+                opName,
+                opType,
+                shape,
+                null);
 
     }
 

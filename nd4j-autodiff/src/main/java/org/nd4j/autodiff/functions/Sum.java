@@ -3,9 +3,6 @@ package org.nd4j.autodiff.functions;
 import java.util.List;
 
 import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.graph.Graph;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
-import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 
@@ -18,7 +15,7 @@ public class Sum<X extends Field<X>> extends AbstractBinaryFunction<X> {
 
     @Override
     public X doGetValue() {
-        return larg().getValue().plus(rarg().getValue());
+        return larg().getValue().add(rarg().getValue());
     }
 
     @Override
@@ -32,7 +29,7 @@ public class Sum<X extends Field<X>> extends AbstractBinaryFunction<X> {
                                                               // commutative
                                                               // with respect to
                                                               // addition.
-                : larg().diff(i_v1).plus(rarg().diff(i_v1));
+                : larg().diff(i_v1).add(rarg().diff(i_v1));
     }
 
     @Override

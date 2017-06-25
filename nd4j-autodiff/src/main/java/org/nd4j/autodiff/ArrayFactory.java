@@ -3,10 +3,8 @@ package org.nd4j.autodiff;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
-import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 
 import java.lang.reflect.Method;
@@ -71,7 +69,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
 
     @Override
     public ArrayField add(ArrayField i_x, Number value) {
-        return i_x.plus(value.doubleValue());
+        return i_x.add(value.doubleValue());
     }
 
     @Override
@@ -207,6 +205,19 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     public ArrayField one() {
         NDArrayInformation information = NDArrayInformation.builder()
                 .id("one").owner(null).shape(new int[]{1,1}).build();
+        return new ArrayField(new NDArrayVertex(graph.nextVertexId(), information), graph);
+    }
+
+    /**
+     * Scalar value
+     *
+     * @param value
+     * @return
+     */
+    @Override
+    public ArrayField scalar(double value) {
+        NDArrayInformation information = NDArrayInformation.builder()
+                .id(String.valueOf(value)).owner(null).shape(new int[]{1,1}).build();
         return new ArrayField(new NDArrayVertex(graph.nextVertexId(), information), graph);
     }
 
@@ -388,7 +399,7 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
 
     @Override
     public ArrayField hypot(ArrayField x, ArrayField y) {
-        return x.pow(2).plus(y.pow(2)).sqrt();
+        return x.pow(2).add(y.pow(2)).sqrt();
     }
 
     @Override

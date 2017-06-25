@@ -2833,6 +2833,19 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray fourD = Nd4j.create(1, 2, 1, 1);
         INDArray broadCasted3 = fourD.broadcast(1, 1, 36, 36);
         assertTrue(Arrays.equals(new int[] {1, 2, 36, 36}, broadCasted3.shape()));
+
+
+
+        INDArray ones = Nd4j.ones(1,1,1).broadcast(2,1,1);
+        assertArrayEquals(new int[]{2,1,1},ones.shape());
+    }
+
+    @Test
+    public void testScalarBroadcast() {
+        INDArray fiveThree = Nd4j.ones(5,3);
+        INDArray fiveThreeTest = Nd4j.scalar(1.0).broadcast(5,3);
+        assertEquals(fiveThree,fiveThreeTest);
+
     }
 
 

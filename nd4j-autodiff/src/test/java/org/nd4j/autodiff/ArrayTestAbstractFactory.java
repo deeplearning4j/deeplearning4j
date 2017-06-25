@@ -15,8 +15,6 @@ import org.nd4j.autodiff.tensorgrad.TensorGrad;
 import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 import org.nd4j.autodiff.tensorgrad.impl.TensorGradVariable;
 import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.cpu.nativecpu.NDArray;
-import org.nd4j.linalg.dataset.ExistingMiniBatchDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
@@ -60,7 +58,7 @@ public class ArrayTestAbstractFactory
 
         Variable<ArrayField> x = arrayFieldDifferentialFunctionFactory.var("x", new ArrayField(xVertex, graph));
         Variable<ArrayField> y = arrayFieldDifferentialFunctionFactory.var("y", new ArrayField(arrayVertex, graph));
-        DifferentialFunction<ArrayField> h = x.mul(x).mul(arrayFieldDifferentialFunctionFactory.cos(x.mul(y)).plus(y));
+        DifferentialFunction<ArrayField> h = x.mul(x).mul(arrayFieldDifferentialFunctionFactory.cos(x.mul(y)).add(y));
 
         DifferentialFunction<ArrayField> diff = h.diff(x);
         ArrayField value = diff.getValue();

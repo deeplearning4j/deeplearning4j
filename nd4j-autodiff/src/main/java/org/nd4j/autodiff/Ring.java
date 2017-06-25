@@ -6,6 +6,7 @@ public interface Ring<X> extends CommutativeGroup<X> {
 
     X mul(X i_v);
 
+    X mul(double v);
 
     X pow(int i_n);
 

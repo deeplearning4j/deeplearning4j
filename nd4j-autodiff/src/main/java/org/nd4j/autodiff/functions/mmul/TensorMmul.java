@@ -11,17 +11,10 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
-
-import static org.nd4j.linalg.util.ArrayUtil.convertNegativeIndices;
-import static org.nd4j.linalg.util.ArrayUtil.copyOfRangeFrom;
 
 /**
  * Created by agibsonccc on 4/14/17.
@@ -96,91 +89,90 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
 
     @Override
     public DifferentialFunction<X> diff(Variable<X> i_v1) {
-        return doTensorMmul(argNum,larg(),rarg(),dimensions);
+        return doTensorMmul(argNum,larg(),rarg());
     }
+
 
 
 
     private DifferentialFunction<X> doTensorMmul(int argNum,
                                                  DifferentialFunction<X> a,
-                                                 DifferentialFunction<X> b,
-                                                 int...dimensions) {
+                                                 DifferentialFunction<X> b) {
         if (a.getValue() instanceof ArrayField) {
             ArrayField xField = (ArrayField) a.getValue();
             ArrayField yField = (ArrayField) b.getValue();
-            int[] aDimensions;
-            int[] bDimensions;
-            if (dimensions.length == 1) {
-                aDimensions = copyOfRangeFrom(
-                        xField.getInput().getShape().length,
-                        xField.getInput().getShape().length - dimensions[0],
-                        xField.getInput().getShape().length);
-                bDimensions = copyOfRangeFrom(yField.getInput().getShape().length,
-                        0,
-                        yField.getInput().getShape().length);
+            int validationLength = Math.min(axes[0].length, axes[1].length);
+            for (int i = 0; i < validationLength; i++) {
+                if (xField.getInput().getShape()[axes[0][i]] != yField.getInput().getShape()[axes[1][i]])
+                    throw new IllegalArgumentException("Size of the given axes at each dimension must be the same size.");
+                if (axes[0][i] < 0)
+                    axes[0][i] += xField.getInput().getShape().length;
+                if (axes[1][i] < 0)
+                    axes[1][i] += yField.getInput().getShape().length;
+
+            }
+
+            List<Integer> listA = new ArrayList<>();
+            for (int i = 0; i < xField.getInput().getShape().length; i++) {
+                if (!Ints.contains(axes[0], i))
+                    listA.add(i);
+            }
+
+            int[] newAxesA = Ints.concat(Ints.toArray(listA), axes[0]);
+
+
+            List<Integer> listB = new ArrayList<>();
+            for (int i = 0; i < yField.getInput().getShape().length; i++) {
+                if (!Ints.contains(axes[1], i))
+                    listB.add(i);
+            }
+
+            int[] newAxesB = Ints.concat(axes[1], Ints.toArray(listB));
+
+            int n2 = 1;
+            int aLength = Math.min(xField.getInput().getShape().length, axes[0].length);
+            for (int i = 0; i < aLength; i++) {
+                n2 *= xField.getInput().getShape()[axes[0][i]];
+            }
+
+            //if listA and listB are empty these do not initialize.
+            //so initializing with {1} which will then get overridden if not empty
+            int[] newShapeA = {-1, n2};
+            int[] oldShapeA;
+            if (listA.size() == 0) {
+                oldShapeA = new int[] {1};
             } else {
-                aDimensions = new int[0];
-                bDimensions = new int[0];
+                oldShapeA = Ints.toArray(listA);
+                for (int i = 0; i < oldShapeA.length; i++)
+                    oldShapeA[i] = xField.getInput().getShape()[oldShapeA[i]];
             }
 
-            if (aDimensions.length != bDimensions.length)
-                throw new IllegalStateException("A and b must be the same rank");
-
-            int[] outputShape = ArrayUtil.getTensorMmulShape(xField.getInput().getShape(),yField.getInput().getShape(),axes);
-            int axesSummed = aDimensions.length;
-            DifferentialFunction<X> x, y;
-            int xRank, yRank;
-            int[] xAxesSummed, yAxesSummed;
-            int[] g_axes_from_Y;
-            int gRank = 0;
-            if (argNum == 0) {
-                x = a;
-                y = b;
-                xRank = aDimensions.length;
-                yRank = bDimensions.length;
-                xAxesSummed = aDimensions;
-                yAxesSummed = bDimensions;
-                g_axes_from_Y = copyOfRangeFrom(gRank, xRank - axesSummed, gRank);
-
-            } else if (argNum == 1) {
-                x = b;
-                y = a;
-                xRank = bDimensions.length;
-                yRank = aDimensions.length;
-                xAxesSummed = bDimensions;
-                yAxesSummed = aDimensions;
-                g_axes_from_Y = copyOfRangeFrom(gRank, 0, yRank - axesSummed);
-
-            } else
-                throw new IllegalArgumentException("Arg num must be 0 or 1");
-
-            xAxesSummed = convertNegativeIndices(xRank, xAxesSummed);
-            yAxesSummed = convertNegativeIndices(yRank, yAxesSummed);
-
-            int[] yAxesIgnored = ArrayUtil.removeIndex(ArrayUtil.range(0, yRank), yAxesSummed);
-          //  DifferentialFunction<X> tensorDot = tensorMmul(x, new int[][]{g_axes_from_Y, yAxesIgnored});
-            int[][] sortedAxesPairs = ArrayUtil.zip(xAxesSummed, yAxesSummed);
-            Arrays.sort(sortedAxesPairs, new Comparator<int[]>() {
-                @Override
-                public int compare(int[] o1, int[] o2) {
-                    return Ints.compare(o1[1], o2[1]);
-                }
-            });
-
-            List<Integer> forwardPermFirst = new ArrayList<>();
-            for (int i = 0; i < xRank; i++) {
-                if (!Ints.contains(xAxesSummed, i))
-                    forwardPermFirst.add(i);
+            int n3 = 1;
+            int bNax = Math.min(yField.getInput().getShape().length, axes[1].length);
+            for (int i = 0; i < bNax; i++) {
+                n3 *= yField.getInput().getShape()[axes[1][i]];
             }
 
-            for (int[] arr : sortedAxesPairs) {
-                forwardPermFirst.add(arr[0]);
+
+            int[] newShapeB = {n3, -1};
+            int[] oldShapeB;
+            if (listB.size() == 0) {
+                oldShapeB = new int[] {1};
+            } else {
+                oldShapeB = Ints.toArray(listB);
+                for (int i = 0; i < oldShapeB.length; i++)
+                    oldShapeB[i] = yField.getInput().getShape()[oldShapeB[i]];
             }
 
-            int[] forwardPerm = Ints.toArray(forwardPermFirst);
-            Arrays.sort(forwardPerm);
-            int[] reversePermutation = ArrayUtil.argsort(forwardPerm);
-            return differentialFunctionFactory.permute(this,reversePermutation);
+
+            DifferentialFunction<X> at = differentialFunctionFactory.reshape(differentialFunctionFactory.permute
+                    (a,newAxesA),newShapeA);
+            DifferentialFunction<X> bt = differentialFunctionFactory.reshape(differentialFunctionFactory
+                    .permute(b,newAxesB),newShapeB);
+
+            DifferentialFunction<X> ret =differentialFunctionFactory.mmul(argNum,at,bt);
+            int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);
+            return differentialFunctionFactory.reshape(ret,aPlusB);
 
         }
 

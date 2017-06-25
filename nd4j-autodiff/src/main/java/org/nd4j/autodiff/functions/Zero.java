@@ -17,7 +17,7 @@ public class Zero<X extends Field<X>> extends Constant<X> {
     }
 
     @Override
-    public DifferentialFunction<X> plus(DifferentialFunction<X> i_v) {
+    public DifferentialFunction<X> add(DifferentialFunction<X> i_v) {
        addEdge(new AddOp().name(),i_v);
         return i_v;
     }

@@ -12,7 +12,7 @@ import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
 
     protected X m_x;
-    private AbstractIdentityFactory<X> m_factory;
+    protected AbstractIdentityFactory<X> m_factory;
 
     protected Constant(TensorGradGraph graph,
                        X i_v,
@@ -75,7 +75,7 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
 
     @Override
     protected DifferentialFunction<X> plused(DifferentialFunction<X> i_v) {
-        return i_v.isConstant() ? new Constant<>(graph, i_v.getValue(false).plus(this.m_x), m_factory)
+        return i_v.isConstant() ? new Constant<>(graph, i_v.getValue(false).add(this.m_x), m_factory)
                 : super.plused(i_v);
     }
 

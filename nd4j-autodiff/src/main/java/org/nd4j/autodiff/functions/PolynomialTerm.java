@@ -5,6 +5,10 @@ import java.util.List;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 
+/**
+ *
+ * @param <X>
+ */
 public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X> {
 
     protected double m_scale;
