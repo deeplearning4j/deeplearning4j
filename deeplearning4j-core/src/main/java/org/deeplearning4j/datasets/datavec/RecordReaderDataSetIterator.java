@@ -69,7 +69,6 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     protected DataSetPreProcessor preProcessor;
 
     @Getter
-    @Setter
     private boolean collectMetaData = false;
 
     private RecordReaderMultiDataSetIterator underlying;
@@ -157,6 +156,19 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         this.labelIndexTo = labelIndexTo;
         this.numPossibleLabels = numPossibleLabels;
         this.regression = regression;
+    }
+
+    /**
+     * When set to true: metadata for  the current examples will be present in the returned DataSet.
+     * Disabled by default.
+     *
+     * @param collectMetaData Whether to collect metadata or  not
+     */
+    public void setCollectMetaData(boolean collectMetaData){
+        if(underlying != null){
+            underlying.setCollectMetaData(collectMetaData);
+        }
+        this.collectMetaData = collectMetaData;
     }
 
     private void initializeUnderlying(Record next){
@@ -286,7 +298,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
 
         batchNum++;
-        return mdsToDataSet(underlying.next());
+        return mdsToDataSet(underlying.next(num));
     }
 
     //Package private

@@ -58,14 +58,20 @@ public class MultipleEpochsIteratorTest {
         rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
         DataSetIterator iter = new RecordReaderDataSetIterator(rr, 150);
         DataSet ds = iter.next(50);
+
+        assertEquals(50, ds.getFeatures().size(0));
+
         MultipleEpochsIterator multiIter = new MultipleEpochsIterator(epochs, ds);
 
         assertTrue(multiIter.hasNext());
+        int count = 0;
         while (multiIter.hasNext()) {
             DataSet path = multiIter.next();
-            assertEquals(path.numExamples(), 50, 0.0);
-            assertFalse(path == null);
+            assertNotNull(path);
+            assertEquals(50, path.numExamples(), 0);
+            count++;
         }
+        assertEquals(epochs, count);
         assertEquals(epochs, multiIter.epochs);
     }
 
@@ -75,14 +81,15 @@ public class MultipleEpochsIteratorTest {
 
         RecordReader rr = new CSVRecordReader();
         rr.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile()));
-        DataSetIterator iter = new RecordReaderDataSetIterator(rr, 150);
+        DataSetIterator iter = new RecordReaderDataSetIterator(rr, 150, 4, 3);
         DataSet ds = iter.next(20);
+        assertEquals(20, ds.getFeatures().size(0));
         MultipleEpochsIterator multiIter = new MultipleEpochsIterator(epochs, ds);
 
         while (multiIter.hasNext()) {
             DataSet path = multiIter.next(10);
+            assertNotNull(path);
             assertEquals(path.numExamples(), 10, 0.0);
-            assertFalse(path == null);
         }
 
         assertEquals(epochs, multiIter.epochs);

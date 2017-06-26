@@ -32,6 +32,7 @@ import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException;
+import org.deeplearning4j.exception.DL4JException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
@@ -387,6 +388,11 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                 //Convert a single column to a one-hot representation
                 Writable w = c.get(details.subsetStart);
                 //Index of class
+                int classIdx = w.toInt();
+                if(classIdx >= details.oneHotNumClasses){
+                    throw new DL4JException("Cannot convert sequence writables to one-hot: class index " +
+                            classIdx + " >= numClass (" + details.oneHotNumClasses + ")");
+                }
                 arr.putScalar(i, w.toInt(), 1.0);
             } else {
                 //Convert a subset of the columns
@@ -544,6 +550,10 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                             w = iter.next();
                     }
                     int classIdx = w.toInt();
+                    if(classIdx >= details.oneHotNumClasses){
+                        throw new DL4JException("Cannot convert sequence writables to one-hot: class index " +
+                                classIdx + " >= numClass (" + details.oneHotNumClasses + ")");
+                    }
                     arr.putScalar(i, classIdx, k, 1.0);
                 } else {
                     //Convert a subset of the columns...
