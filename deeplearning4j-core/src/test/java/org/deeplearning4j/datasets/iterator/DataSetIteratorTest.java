@@ -133,7 +133,7 @@ public class DataSetIteratorTest {
                         .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
                                         .stride(1, 1).build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                        .nOut(4).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
+                                        .nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
                                         .build())
                         .setInputType(InputType.convolutionalFlat(numRows, numColumns, numChannels)).backprop(true)
                         .pretrain(false);
