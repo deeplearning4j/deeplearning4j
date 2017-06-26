@@ -66,11 +66,11 @@ public class VoidConfiguration implements Serializable {
         this.shardAddresses = addresses;
     }
 
-    public void setShardAddresses(String... Ips) {
+    public void setShardAddresses(String... ips) {
         if (shardAddresses == null)
             shardAddresses = new ArrayList<>();
 
-        for (String ip : Ips) {
+        for (String ip : ips) {
             if (ip != null)
                 shardAddresses.add(ip);
         }
@@ -80,11 +80,11 @@ public class VoidConfiguration implements Serializable {
         this.backupAddresses = addresses;
     }
 
-    public void setBackupAddresses(String... Ips) {
+    public void setBackupAddresses(String... ips) {
         if (backupAddresses == null)
             backupAddresses = new ArrayList<>();
 
-        for (String ip : Ips) {
+        for (String ip : ips) {
             if (ip != null)
                 backupAddresses.add(ip);
         }

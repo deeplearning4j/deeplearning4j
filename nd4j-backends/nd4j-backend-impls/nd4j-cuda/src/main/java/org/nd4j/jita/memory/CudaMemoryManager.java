@@ -208,8 +208,14 @@ public class CudaMemoryManager extends BasicMemoryManager {
     public void memset(INDArray array) {
         if (array.isView()) {
             array.assign(0.0);
+
+            // we don't want any mGRID activations here
+            Nd4j.getExecutioner().commit();
             return;
         }
+
+        // we want to be sure we have no trails left in mGRID
+        Nd4j.getExecutioner().push();
 
         AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(array);
 
@@ -221,6 +227,8 @@ public class CudaMemoryManager extends BasicMemoryManager {
             context.getOldStream().synchronize();
             point.tickDeviceWrite();
         } else if (point.getAllocationStatus() == AllocationStatus.HOST) {
+            Nd4j.getExecutioner().commit();
+
             // just casual memset
             Pointer.memset(AtomicAllocator.getInstance().getHostPointer(array), 0, array.data().length() * Nd4j.sizeOfDataType(array.data().dataType()));
             point.tickHostWrite();
