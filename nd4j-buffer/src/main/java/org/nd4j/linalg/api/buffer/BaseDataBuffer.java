@@ -1007,6 +1007,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else {
             ((FloatIndexer) indexer).put(offset() + i, element);
         }
+        if(i >= length){
+            length++;
+        }
     }
 
     @Override
@@ -1020,7 +1023,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else {
             ((FloatIndexer) indexer).put(offset() + i, (float) element);
         }
-
+        if(i >= length){
+            length++;
+        }
         dirty.set(true);
     }
 
@@ -1033,7 +1038,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
         } else {
             ((FloatIndexer) indexer).put(offset() + i, element);
         }
-
+        if(i >= length){
+            length++;
+        }
         dirty.set(true);
     }
 
@@ -1512,6 +1519,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
             }
         }
         Pointer.memcpy(pointer, oldPointer, this.length() * getElementSize());
+        this.underlyingLength = length;
         return this;
     }
 

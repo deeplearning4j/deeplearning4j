@@ -8,6 +8,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndexAll;
+import org.nd4j.linalg.indexing.SpecifiedIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import javax.sound.midi.Soundbank;
@@ -193,7 +194,41 @@ public class SparseNDArrayCOOTest {
         assertArrayEquals(new int[]{3, 1}, view.shape());
         assertArrayEquals(new int[]{0, 0, 1, 0}, view.getIndices().asInt());
         assertArrayEquals(new double[]{5, 7}, view.getValues().asDouble(), 1e-1);
+        assertTrue(view.isColumnVector());
     }
+
+    @Test
+    public void shouldGetWithSpecifiedIndexes(){
+        int[] shape = new int[]{4, 2, 3};
+        double[] values = new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9};
+        int[][] indices  = new int[][]{{0, 0, 2}, {0, 1, 1}, {1,0, 0}, {1, 0, 1}, {1, 1, 2},
+                {2, 0, 1}, {2, 1, 2}, {3, 0, 1}, {3, 1, 0}};
+        INDArray array = Nd4j.createSparseCOO(values, indices, shape);
+        BaseSparseNDArrayCOO newArray = (BaseSparseNDArrayCOO) array.get(
+                new SpecifiedIndex(new int[]{0, 3}),
+                NDArrayIndex.all(),
+                NDArrayIndex.all());
+        assertEquals(4, newArray.nnz());
+        assertArrayEquals(new double[]{1, 2, 8, 9}, newArray.getValues().asDouble(), 1e-1);
+        assertArrayEquals(new int[]{0, 0, 2, 0, 1, 1, 1, 0, 1, 1, 1, 0}, newArray.getIndices().asInt());
+    }
+
+    @Test
+    public void shouldGetWithSpecifiedIndexes2(){
+        int[] shape = new int[]{4, 2, 3};
+        double[] values = new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9};
+        int[][] indices  = new int[][]{{0, 0, 2}, {0, 1, 1}, {1,0, 0}, {1, 0, 1}, {1, 1, 2},
+                {2, 0, 1}, {2, 1, 2}, {3, 0, 2}, {3, 1, 0}};
+        INDArray array = Nd4j.createSparseCOO(values, indices, shape);
+        BaseSparseNDArrayCOO newArray = (BaseSparseNDArrayCOO) array.get(
+                NDArrayIndex.interval(1, 3),
+                new SpecifiedIndex(new int[]{0}),
+                new SpecifiedIndex(new int[]{0, 2}));
+        assertEquals(2, newArray.nnz());
+        assertArrayEquals(new double[]{3, 8}, newArray.getValues().asDouble(), 1e-1);
+        assertArrayEquals(new int[]{0, 0, 0, 2, 0, 1}, newArray.getIndices().asInt());
+    }
+
 
     /*
     @Test
@@ -209,4 +244,24 @@ public class SparseNDArrayCOOTest {
         System.out.println(vv.shape()[0] + " "+ vv.shape()[1]);
     }
     */
+
+    @Test
+    public void specifiedIndexWithDenseArray(){
+        INDArray arr = Nd4j.rand(new int[]{4, 2, 3});
+        System.out.println(arr.toString());
+        INDArray v = arr.get(
+                NDArrayIndex.interval(1, 3),
+                new SpecifiedIndex(new int[]{0}),
+                new SpecifiedIndex(new int[]{0, 2}));
+
+        System.out.println("v ");
+        System.out.println(v.toString());
+
+
+
+
+
+    }
+
+
 }

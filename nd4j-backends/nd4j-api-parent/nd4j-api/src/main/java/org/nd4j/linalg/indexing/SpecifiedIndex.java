@@ -6,6 +6,7 @@ import net.ericaro.neoitertools.Generator;
 import net.ericaro.neoitertools.Itertools;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -54,6 +55,12 @@ public class SpecifiedIndex implements INDArrayIndex {
     @Override
     public int next() {
         return indexes[counter++];
+    }
+    /**
+     * Return the next index with its position in the indexes array
+     * */
+    public int[] nextSparse() {
+        return new int[]{indexes[counter], counter++};
     }
 
     @Override
@@ -105,6 +112,19 @@ public class SpecifiedIndex implements INDArrayIndex {
         return gen;
     }
 
+    /**
+     * Iterate over a cross product of the
+     * coordinates
+     * @param indexes the coordinates to iterate over.
+     *                Each element of the array should be of type {@link SpecifiedIndex}
+     *                otherwise it will end up throwing an exception
+     * @return the generator for iterating over all the combinations of the specified indexes.
+     */
+    public static Generator<List<List<Integer>>> iterateOverSparse(INDArrayIndex... indexes) {
+        Generator<List<List<Integer>>> gen = Itertools.product(new SparseSpecifiedIndexesGenerator(indexes));
+        return gen;
+    }
+
 
     /**
      * A generator for {@link SpecifiedIndex} for
@@ -136,6 +156,35 @@ public class SpecifiedIndex implements INDArrayIndex {
         }
     }
 
+    /**
+     * A generator for {@link SpecifiedIndex} for
+     * {@link Itertools#product(Generator)}
+     *    to iterate
+     over an array given a set of  iterators
+     */
+    public static class SparseSpecifiedIndexesGenerator implements Generator<Generator<List<Integer>>> {
+        private int index = 0;
+        private INDArrayIndex[] indexes;
+
+        /**
+         * The indexes to generate from
+         * @param indexes the indexes to generate from
+         */
+        public SparseSpecifiedIndexesGenerator(INDArrayIndex[] indexes) {
+            this.indexes = indexes;
+        }
+
+        @Override
+        public Generator<List<Integer>> next() throws NoSuchElementException {
+            if (index >= indexes.length) {
+                throw new NoSuchElementException("Done");
+            }
+
+            SpecifiedIndex specifiedIndex = (SpecifiedIndex) indexes[index++];
+            Generator<List<Integer>> ret = specifiedIndex.sparseGenerator();
+            return ret;
+        }
+    }
 
 
     public class SingleGenerator implements Generator<List<Integer>> {
@@ -151,9 +200,25 @@ public class SpecifiedIndex implements INDArrayIndex {
             return Ints.asList(SpecifiedIndex.this.next());
         }
     }
+    public class SparseSingleGenerator implements Generator<List<Integer>> {
+        /**
+         * @return the next item in the sequence.
+         * @throws NoSuchElementException when sequence is exhausted.
+         */
+        @Override
+        public List<Integer> next() throws NoSuchElementException {
+            if (!SpecifiedIndex.this.hasNext())
+                throw new NoSuchElementException();
+            int[] pair = SpecifiedIndex.this.nextSparse();
+            return Arrays.asList(pair[0], pair[1]);
+        }
+    }
 
     public Generator<List<Integer>> generator() {
         return new SingleGenerator();
+    }
+    public Generator<List<Integer>> sparseGenerator() {
+        return new SparseSingleGenerator();
     }
 
 }

@@ -21,7 +21,7 @@ import java.util.List;
 @Slf4j
 public abstract class BaseSparseNDArray implements ISparseNDArray {
 
-    protected static final double THRESHOLD_MEMORY_ALLOCATION = 1.5;
+    protected static final double THRESHOLD_MEMORY_ALLOCATION = 2;
     protected int rows, columns, rank;
     protected Boolean isVector = null;
     protected Boolean isMatrix = null;
