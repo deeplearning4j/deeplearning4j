@@ -139,7 +139,16 @@ public class LossFMeasure implements ILossFunction {
 
         double secondTerm = numerator / (denominator * denominator);
 
-        INDArray dLdOut = labels.mul(1+beta*beta).divi(denominator).subi(secondTerm);
+        INDArray dLdOut;
+        if(labels.size(1) == 1){
+            //Single binary output case
+            dLdOut = labels.mul(1+beta*beta).divi(denominator).subi(secondTerm);
+        } else {
+            //Softmax case: the getColumn(1) here is to account for the fact that we're using prob(class1)
+            // only in the score function; column(1) is equivalent to output for the single output case
+            dLdOut = Nd4j.create(labels.shape());
+            dLdOut.getColumn(1).assign(labels.getColumn(1).mul(1+beta*beta).divi(denominator).subi(secondTerm));
+        }
 
         INDArray dLdPreOut = activationFn.backprop(preOutput, dLdOut).getFirst();
 
