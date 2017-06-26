@@ -1,5 +1,7 @@
 package org.nd4j.linalg.lossfunctions.impl;
 
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,6 +31,8 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  *
  * @author Alex Black
  */
+@Getter
+@EqualsAndHashCode
 public class LossFMeasure implements ILossFunction {
 
     public static final double DEFAULT_BETA = 1.0;
@@ -41,7 +45,7 @@ public class LossFMeasure implements ILossFunction {
 
     public LossFMeasure( @JsonProperty("beta") double beta){
         if(beta <= 0){
-            throw new UnsupportedOperationException("Invalid value: beta must be >= 0. Got: " + beta);
+            throw new UnsupportedOperationException("Invalid value: beta must be > 0. Got: " + beta);
         }
         this.beta = beta;
     }
