@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
 import static java.lang.System.setProperty;
 
@@ -216,9 +217,10 @@ public class RoutedTransport extends BaseTransport {
                                         "Can't connect to Shard: [" + rc.getPublication().channel() + "]");
 
                             try {
-                                Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                                //Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                                LockSupport.parkNanos(voidConfiguration.getRetransmitTimeout() * 1000000);
                             } catch (Exception e) {
-                                // no-op
+                                throw new RuntimeException(e);
                             }
                         } else {
                             throw new ND4JIllegalStateException("Shards reassignment is to be implemented yet");
@@ -228,9 +230,10 @@ public class RoutedTransport extends BaseTransport {
                     case ADMIN_ACTION:
                     case BACKPRESSURE: {
                         try {
-                            Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                            //Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                            LockSupport.parkNanos(voidConfiguration.getRetransmitTimeout() * 1000000);
                         } catch (Exception e) {
-                            // no-op
+                            throw new RuntimeException(e);
                         }
                     }
                     break;

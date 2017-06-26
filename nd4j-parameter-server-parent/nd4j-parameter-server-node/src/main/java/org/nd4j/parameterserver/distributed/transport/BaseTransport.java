@@ -14,6 +14,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingIdleStrategy;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
@@ -351,6 +352,7 @@ public abstract class BaseTransport implements Transport {
                     });
 
                     if (threadB != null) {
+                        Nd4j.getAffinityManager().attachThreadToDevice(threadB, Nd4j.getAffinityManager().getDeviceForCurrentThread());
                         threadB.setDaemon(true);
                         threadB.setName("VoidParamServer subscription threadB [" + nodeRole + "]");
                         threadB.start();
@@ -365,6 +367,7 @@ public abstract class BaseTransport implements Transport {
                 }
 
                 // all roles have threadA anyway
+                Nd4j.getAffinityManager().attachThreadToDevice(threadA, Nd4j.getAffinityManager().getDeviceForCurrentThread());
                 threadA.setDaemon(true);
                 threadA.setName("VoidParamServer subscription threadA [" + nodeRole + "]");
                 threadA.start();

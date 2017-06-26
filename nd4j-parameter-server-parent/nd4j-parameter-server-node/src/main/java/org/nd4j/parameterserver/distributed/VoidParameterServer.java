@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.ExecutionMode;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
@@ -275,19 +276,17 @@ public class VoidParameterServer {
 
                         //executor.submit(processingRunnables[x);
 
-
-
+                        // TODO: maybe find the way to guarantee affinity in some other way, to make different devices usable as well?
+                        Nd4j.getAffinityManager().attachThreadToDevice(processingThreads[x], Nd4j.getAffinityManager().getDeviceForCurrentThread());
                         processingThreads[x].setDaemon(true);
                         processingThreads[x].setName("VoidParameterServer messages handling thread");
                         processingThreads[x].start();
                     }
                 }
 
-                // TODO: uncomment this line on later stages
-                //if (!(NodeRole.SHARD == nodeRole && voidConfiguration.getShardAddresses().size() == 1)) {
+
                 log.info("Launching transport...");
                 transport.launch(Transport.ThreadingModel.DEDICATED_THREADS);
-                //}
                 trainer.init(this.voidConfiguration, this.transport, storage, clipboard);
 
                 initFinished.set(true);
@@ -454,7 +453,7 @@ public class VoidParameterServer {
         //transport.sendMessage(message);
     }
 
-    public synchronized void execDistributedImmediately(@NonNull TrainingMessage message) {
+    public void execDistributedImmediately(@NonNull TrainingMessage message) {
         transport.sendMessageToAllShards(message);
     }
 
