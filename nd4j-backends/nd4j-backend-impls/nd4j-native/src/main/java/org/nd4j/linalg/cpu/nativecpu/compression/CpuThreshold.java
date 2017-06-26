@@ -98,7 +98,7 @@ public class CpuThreshold extends AbstractCompressor {
 
         //log.info("density ratio: {}", String.format("%.2f", cntAbs * 100.0f / buffer.length()));
 
-        if (cntAbs == 0)
+        if (cntAbs < 2)
             return null;
 
         long originalLength = buffer.length() * Nd4j.sizeOfDataType(buffer.dataType());

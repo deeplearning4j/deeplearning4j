@@ -2070,7 +2070,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         int numMatches = blocksBuffer.getInt(0);
 
         // special case here, nothing to update
-        if (numMatches < 10)
+        if (numMatches < 2)
             return null;
 
         if (boundary != null && numMatches > boundary)  {
@@ -2184,7 +2184,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
-        nativeOps.memsetAsync(AtomicAllocator.getInstance().getPointer(result), 0,result.length(), 0, context.getOldStream());
+        //nativeOps.memsetAsync(AtomicAllocator.getInstance().getPointer(result), 0,result.length(), 0, context.getOldStream());
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
