@@ -16,9 +16,9 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * This implementation supports 2 types of operation:<br>
  * - Binary: single output/label (Typically sigmoid activation function)<br>
  * - Binary: 2-output/label (softmax activation function + 1-hot labels)<br>
- * Note that the beta value can be configured
+ * Note that the beta value can be configured via the constructor.
  * <br>
- * The following situations are not currently supported, may be added in the future:
+ * The following situations are NOT currently supported, may be added in the future:
  * - Multi-label (multiple independent binary outputs)<br>
  * - Multiclass (via micro or macro averaging)<br>
  *
@@ -31,35 +31,18 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  */
 public class LossFMeasure implements ILossFunction {
 
-    /**
-     * Multiple modes are supported in this implementation of the F-Measure loss function.<br>
-     * - BINARY: single output (sigmoid style) OR 2 outputs (softmax style)<br>
-     * - BINARY_MULTILABEL: Multiple independent binary classes<br>
-     */
-    public enum OutputType {BINARY, BINARY_MULTILABEL};
-
     public static final double DEFAULT_BETA = 1.0;
 
-    private final OutputType outputType;
     private final double beta;
 
     public LossFMeasure() {
         this(DEFAULT_BETA);
     }
 
-    public LossFMeasure(double beta){
-        this(OutputType.BINARY, beta);
-    }
-
-    public LossFMeasure(OutputType outputType){
-        this(outputType, DEFAULT_BETA);
-    }
-
-    public LossFMeasure(@JsonProperty("outputType") OutputType outputType, @JsonProperty("beta") double beta){
+    public LossFMeasure( @JsonProperty("beta") double beta){
         if(beta <= 0){
             throw new UnsupportedOperationException("Invalid value: beta must be >= 0. Got: " + beta);
         }
-        this.outputType = outputType;
         this.beta = beta;
     }
 
@@ -82,10 +65,8 @@ public class LossFMeasure implements ILossFunction {
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         int n = labels.size(1);
-        if(outputType == OutputType.BINARY && n != 1 && n != 2){
+        if(n != 1 && n != 2){
             throw new UnsupportedOperationException("For binary classification: expect output size of 1 or 2. Got: " + n);
-        } else if(outputType == OutputType.BINARY_MULTILABEL){
-            throw new UnsupportedOperationException("binary multi-label not yet supported");
         }
 
         //First: determine positives and negatives
@@ -169,6 +150,6 @@ public class LossFMeasure implements ILossFunction {
 
     @Override
     public String toString(){
-        return "LossFMeasure(outputType=" + outputType + ")";
+        return "LossFMeasure(beta=" + beta + ")";
     }
 }
