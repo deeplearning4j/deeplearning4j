@@ -17,6 +17,7 @@
 package org.datavec.api.transform.sequence.expansion;
 
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.Setter;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
@@ -36,8 +37,12 @@ public abstract class BaseSequenceExpansionTransform implements Transform {
     @Setter @Getter
     protected Schema inputSchema;
 
-    protected BaseSequenceExpansionTransform(List<String> requiredColumns, List<String> expandedColumnNames){
-
+    protected BaseSequenceExpansionTransform(@NonNull List<String> requiredColumns, @NonNull List<String> expandedColumnNames){
+        if(requiredColumns.size() == 0){
+            throw new IllegalArgumentException("No columns have values to be expanded. Must have requiredColumns.size() > 0");
+        }
+        this.requiredColumns = requiredColumns;
+        this.expandedColumnNames = expandedColumnNames;
     }
 
     protected abstract List<ColumnMetaData> expandedColumnMetaDatas(List<ColumnMetaData> origColumnMeta, List<String> expandedColumnNames);
