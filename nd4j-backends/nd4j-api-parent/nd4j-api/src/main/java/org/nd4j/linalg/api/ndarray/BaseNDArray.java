@@ -4684,7 +4684,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isRowVector() {
-        return rank == 2 && rows == 1 && !isScalar();
+        return rank == 2 && rows == 1;
     }
 
     /**
@@ -4692,7 +4692,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isColumnVector() {
-        return rank == 2 && columns == 1 && !isScalar();
+        return rank == 2 && columns == 1;
     }
 
     /**
