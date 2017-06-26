@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.optimize.listeners.PerformanceListener;
 import org.deeplearning4j.optimize.listeners.SleepyTrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.CudaGradientsAccumulator;
 import org.deeplearning4j.optimize.solvers.accumulation.MessageHandler;
@@ -63,6 +64,7 @@ public class SharedTrainingWrapper {
 
     protected ThreadLocal<BlockingObserver> observer = new ThreadLocal<>();
     protected CudaGradientsAccumulator accumulator;
+    protected Model originalModel;
 
     protected SilentTrainingDriver driver;
 
@@ -197,6 +199,9 @@ public class SharedTrainingWrapper {
                     driver = new SilentTrainingDriver(accumulator);
                     VoidParameterServer.getInstance().init(voidConfiguration, transport, driver);
 
+                    // we're saving reference to original model
+                    originalModel = model;
+
                     // we should introduce ourselves to controller
                     // FIXME: if localIP is null - use original ip discovery available in VoidParameterServer
                     String localIP = System.getenv("SPARK_PUBLIC_DNS");
@@ -222,7 +227,9 @@ public class SharedTrainingWrapper {
 
                 // we're launching PW only if number of workers is more then 1
                 if (numWorkers > 1) {
-                    wrapper = new ParallelWrapper.Builder<>(model)
+                    log.info("Params at PW: {}", originalModel.params().meanNumber().doubleValue());
+
+                    wrapper = new ParallelWrapper.Builder<>(originalModel)
                             .workers(numWorkers)
                             .workspaceMode(trainingConfiguration.getWorkspaceMode())
                             .trainingMode(ParallelWrapper.TrainingMode.CUSTOM)
@@ -238,11 +245,11 @@ public class SharedTrainingWrapper {
 
                     // ok. attaching accumulator to model
                     if (model instanceof ComputationGraph) {
-                        ((ComputationGraph) model).getConfiguration().setTrainingWorkspaceMode(trainingConfiguration.getWorkspaceMode());
-                        ((ComputationGraph) model).setGradientsAccumulator(accumulator);
+                        ((ComputationGraph) originalModel).getConfiguration().setTrainingWorkspaceMode(trainingConfiguration.getWorkspaceMode());
+                        ((ComputationGraph) originalModel).setGradientsAccumulator(accumulator);
                     } else if (model instanceof MultiLayerNetwork) {
-                        ((MultiLayerNetwork) model).getLayerWiseConfigurations().setTrainingWorkspaceMode(trainingConfiguration.getWorkspaceMode());
-                        ((MultiLayerNetwork) model).setGradientsAccumulator(accumulator);
+                        ((MultiLayerNetwork) originalModel).getLayerWiseConfigurations().setTrainingWorkspaceMode(trainingConfiguration.getWorkspaceMode());
+                        ((MultiLayerNetwork) originalModel).setGradientsAccumulator(accumulator);
                     }
                 }
             }
@@ -264,12 +271,12 @@ public class SharedTrainingWrapper {
                 // if wrapper is null, we're fitting standalone model then
                 if (iteratorDS != null) {
                     if (model instanceof ComputationGraph) {
-                        ((ComputationGraph) model).fit(iteratorDS);
+                        ((ComputationGraph) originalModel).fit(iteratorDS);
                     } else if (model instanceof MultiLayerNetwork) {
-                        ((MultiLayerNetwork) model).fit(iteratorDS);
+                        ((MultiLayerNetwork) originalModel).fit(iteratorDS);
                     }
                 } else if (iteratorMDS != null) {
-                    ((ComputationGraph) model).fit(iteratorMDS);
+                    ((ComputationGraph) originalModel).fit(iteratorMDS);
                 } else
                     throw new DL4JInvalidConfigException("No iterators were defined for training");
             }
@@ -297,15 +304,15 @@ public class SharedTrainingWrapper {
 
             INDArray updaterState = null;
             if (model instanceof ComputationGraph) {
-                updaterState = ((ComputationGraph) model).getUpdater().getUpdaterStateViewArray();
+                updaterState = ((ComputationGraph) originalModel).getUpdater().getUpdaterStateViewArray();
             } else if (model instanceof MultiLayerNetwork) {
-                updaterState = ((MultiLayerNetwork) model).getUpdater().getStateViewArray();
+                updaterState = ((MultiLayerNetwork) originalModel).getUpdater().getStateViewArray();
             }
 
             // FIXME: fill stats here
             return SharedTrainingResult.builder()
                     .aggregationsCount(1)
-                    .scoreSum(model.score())
+                    .scoreSum(originalModel.score())
                     .updaterStateArray(updaterState)
                     .listenerMetaData(new ArrayList<>())
                     .listenerStaticInfo(new ArrayList<>())

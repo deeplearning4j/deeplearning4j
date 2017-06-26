@@ -308,6 +308,8 @@ public class DefaultTrainer extends Thread implements Trainer {
             // classes that extend DefaultTrainer might hook something there
             postInit();
 
+            log.info("Replicated params BEFORE: {}", replicatedModel.params().meanNumber().doubleValue());
+
             if (!useMDS) {
                 while (!shouldStop.get()) {
                     DataSet dataSet = null;
@@ -347,6 +349,8 @@ public class DefaultTrainer extends Thread implements Trainer {
                         running.decrementAndGet();
                     }
                 }
+
+                log.info("Replicated params: {}", replicatedModel.params().meanNumber().doubleValue());
             } else {
                 // loop for MultiDataSet
                 while (!shouldStop.get()) {

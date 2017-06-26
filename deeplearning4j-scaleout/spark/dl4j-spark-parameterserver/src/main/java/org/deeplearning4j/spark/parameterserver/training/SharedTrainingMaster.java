@@ -596,6 +596,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         if (network == null && graph == null)
             throw new IllegalStateException("Both MLN & CG are null");
 
+
+        finalizeTraining();
+
         if (collectTrainingStats)
             stats.logAggregateStartTime();
 

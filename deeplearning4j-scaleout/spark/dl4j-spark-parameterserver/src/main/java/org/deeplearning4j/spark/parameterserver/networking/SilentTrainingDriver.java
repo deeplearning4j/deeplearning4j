@@ -68,6 +68,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
 
     public SilentTrainingDriver(@NonNull INDArray params, @NonNull StepFunction stepFunction) {
         log.info("Creating TrainingDriver for master...");
+        log.info("Params at Master BEFORE: {}", params.meanNumber().doubleValue());
         this.params = params;
         this.stepFunction = stepFunction;
         this.updatesCount = new AtomicLong(0);
@@ -134,17 +135,9 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
 
             //accumulator.receiveUpdate(message.getUpdates());
         } else if (params != null && stepFunction != null) {
-
-            /*
-                this condition is only possible in spark local mode.
-                and it means that updates were already applied as local updates
-             */
-            if (transport.numberOfKnownClients() == 1) {
-                return;
-            }
-
             // master invokes everything, since that's Silent Worker approach: we want master to be always up-to-date
             synchronized (this) {
+                //log.info("Applying message: [{}, {}, {}, {}]", message.getUpdates().data().getInt(0), message.getUpdates().data().getInt(1), message.getUpdates().data().getInt(2), message.getUpdates().data().getInt(3));
                 // threshold decoder is inplace & fast
                 Nd4j.getExecutioner().thresholdDecode(message.getUpdates(), updates);
 
@@ -156,7 +149,8 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
                     stepFunction.step(params, updates);
 
                     // once accumulated updates are applied - reset storage, and wait for other messsages
-                    Nd4j.getMemoryManager().memset(updates);
+                    //Nd4j.getMemoryManager().memset(updates);
+                    updates.assign(0.0);
                     hasSomething.set(false);
                 }
             }
@@ -189,12 +183,15 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
     @Override
     public void finishTraining(long originatorId, long taskId) {
         // on Master thread we'll be applying final gradients
+
         if (params != null && stepFunction != null) {
             if (hasSomething.get()) {
                 stepFunction.step(params, updates);
-                Nd4j.getMemoryManager().memset(updates);
+                //Nd4j.getMemoryManager().memset(updates);
+                updates.assign(0.0);
             }
         }
+
     }
 
     @Override

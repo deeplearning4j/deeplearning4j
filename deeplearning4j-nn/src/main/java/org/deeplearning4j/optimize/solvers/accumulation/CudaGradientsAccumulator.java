@@ -6,10 +6,7 @@ import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.optimize.api.StepFunction;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
-import org.nd4j.linalg.api.memory.enums.LearningPolicy;
-import org.nd4j.linalg.api.memory.enums.ResetPolicy;
-import org.nd4j.linalg.api.memory.enums.SpillPolicy;
+import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -59,7 +56,16 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
     protected final AtomicThrowable throwable = new AtomicThrowable();
 
     protected boolean isDebug = false;
+    protected final boolean relocatable;
 
+    protected WorkspaceConfiguration appliedConfiguration = WorkspaceConfiguration.builder()
+            .minSize(5 * 1024 * 1024L)
+            .overallocationLimit(0.3)
+            .policyMirroring(MirroringPolicy.FULL)
+            .policySpill(SpillPolicy.REALLOCATE)
+            .policyLearning(LearningPolicy.FIRST_LOOP)
+            .policyReset(ResetPolicy.BLOCK_LEFT)
+            .build();
 
     public CudaGradientsAccumulator(double parties) {
         this(Nd4j.getAffinityManager().getNumberOfDevices(), 1e-3);
@@ -89,6 +95,10 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
                 .policySpill(SpillPolicy.FAIL)
                 .policyLearning(LearningPolicy.NONE)
                 .build();
+
+
+        // we want to know, if we'll have to relocate data if accessed from different threads/devices
+        relocatable = Nd4j.getAffinityManager().getNumberOfDevices() > 1 && !Nd4j.getAffinityManager().isCrossDeviceAccessSupported();
 
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
 
@@ -213,7 +223,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
     public void applyUpdate(StepFunction function, INDArray params, INDArray updates) {
         try {
             // nullify given updates first
-            updates.assign(0.0f);
+            //Nd4j.getMemoryManager().memset(updates);
+            updates.assign(0.0);
 
             int cnt = 0;
             while (!messages.get(index.get()).isEmpty()) {
@@ -231,7 +242,15 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
                 while (!externalSource.isEmpty()) {
                     INDArray compressed = externalSource.poll();
 
-                    INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+                    // if we have multiple devices without p2p support - just duplicate messages right from host side
+                    if (relocatable) {
+                        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(appliedConfiguration, "CGA_APPLY")) {
+                            INDArray compressed_copy = compressed.unsafeDuplication(true);
+                            INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed_copy, updates);
+                        }
+                    } else {
+                        INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+                    }
                     cnt++;
                     ent++;
                 }
@@ -266,7 +285,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
     public void applyUpdate(StepFunction function, INDArray params, INDArray updates, double alpha) {
         try {
             // nullify given updates first
-            updates.assign(0.0f);
+            //Nd4j.getMemoryManager().memset(updates);
+            updates.assign(0.0);
 
             int cnt = 0;
             while (!messages.get(index.get()).isEmpty()) {
@@ -284,7 +304,16 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
                 while (!externalSource.isEmpty()) {
                     INDArray compressed = externalSource.poll();
 
-                    INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+
+                    // if we have multiple devices without p2p support - just duplicate messages right from host side
+                    if (relocatable) {
+                        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(appliedConfiguration, "CGA_APPLY")) {
+                            INDArray compressed_copy = compressed.unsafeDuplication(true);
+                            INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed_copy, updates);
+                        }
+                    } else {
+                        INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+                    }
                     cnt++;
                     ent++;
                 }

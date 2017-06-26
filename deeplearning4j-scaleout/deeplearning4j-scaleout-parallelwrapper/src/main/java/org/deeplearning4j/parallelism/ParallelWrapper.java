@@ -274,7 +274,7 @@ public class ParallelWrapper implements AutoCloseable {
         if (prefetchSize > 0 && source.asyncSupported())
             ((AsyncMultiDataSetIterator) iterator).shutdown();
 
-
+/*
         // TODO: get rid of this code, 0 model is not replicated anyway
         // now we transfer models back from workers
         List<Model> models = new ArrayList<>();
@@ -284,7 +284,7 @@ public class ParallelWrapper implements AutoCloseable {
 
         // actual transfer code depends on trainer
         trainerContext.finalizeTraining(model, models.toArray(new Model[0]));
-
+*/
         try {
             close();
         } catch (Exception e) {
@@ -589,6 +589,7 @@ public class ParallelWrapper implements AutoCloseable {
 
         // TODO: get rid of this code, 0 model is not replicated anyway
         // now we transfer models back from workers
+        /*
         List<Model> models = new ArrayList<>();
         for (int i = 0; i < zoo.length; i++) {
             models.add(zoo[0].getModel());
@@ -596,7 +597,7 @@ public class ParallelWrapper implements AutoCloseable {
 
         // actual transfer code depends on trainer
         trainerContext.finalizeTraining(model, models.toArray(new Model[0]));
-
+        */
 
         try {
             close();

@@ -47,7 +47,17 @@ public class WiredEncodingHandler extends EncodingHandler {
         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()){
             long updateId = updatesCounter.getAndIncrement();
             //log.info("Sending message {} to Shard", updateId);
-            VoidParameterServer.getInstance().execDistributedImmediately(new SilentUpdatesMessage(message.unsafeDuplication(), updateId));
+            INDArray nM = message.unsafeDuplication();
+            VoidParameterServer.getInstance().execDistributedImmediately(new SilentUpdatesMessage(nM, updateId));
+
+
+            //log.info("Sending message: [{}, {}, {}, {}]", nM.data().getInt(0), nM.data().getInt(1), nM.data().getInt(2), nM.data().getInt(3));
+
+            try {
+            //    Thread.sleep(200);
+            } catch (Exception e) {
+                //
+            }
         }
 
 
