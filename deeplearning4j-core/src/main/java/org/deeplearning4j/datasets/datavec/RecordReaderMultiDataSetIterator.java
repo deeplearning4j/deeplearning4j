@@ -306,8 +306,17 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
             throw new UnsupportedOperationException("Unknown operation for batch reader");
         }
 
-        if(!details.oneHot){
+        if(!details.oneHot || arr.size(1) == details.oneHotNumClasses ){
+            //Not one-hot: no conversion required
+            //Also, ImageRecordReader already does the one-hot conversion internally
             return arr;
+        }
+
+        //Do one-hot conversion
+        if(arr.size(1) != 1 ){
+            throw new UnsupportedOperationException("Cannot do conversion to one hot using batched reader: " +
+                    details.oneHotNumClasses + " output classes, but array.size(1) is " + arr.size(1) +
+                    " (must be equal to 1 or numClasses = " + details.oneHotNumClasses + ")");
         }
 
         int n = arr.size(0);
