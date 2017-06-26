@@ -45,9 +45,10 @@ public class VPTree {
     private CounterMap<DataPoint, DataPoint> distances;
     private String similarityFunction;
     private boolean invert = true;
-    private double distancesArr[];
-    private double sortedDistances[];
+    private float distancesArr[];
+    private float sortedDistances[];
     private  List<DataPoint> leftPoints,rightPoints;
+    
     public VPTree(INDArray points,boolean invert) {
         this(points,"euclidean",invert);
     }
@@ -188,13 +189,13 @@ public class VPTree {
             // Partition around the median distance
             int median = (upper + lower) / 2;
             if(distancesArr == null)
-                distancesArr = new double[items.size()];
+                distancesArr = new float[items.size()];
             if(sortedDistances == null)
-                sortedDistances = new double[items.size()];
+                sortedDistances = new float[items.size()];
             DataPoint basePoint = items.get(randomPoint);
 
             for (int i = 0; i < items.size(); ++i) {
-                distancesArr[i] = getDistance(basePoint, items.get(i));
+                distancesArr[i] = (float) getDistance(basePoint, items.get(i));
                 sortedDistances[i] = distancesArr[i];
             }
 
