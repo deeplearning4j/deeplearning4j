@@ -105,6 +105,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
 
         //First: load the next values from the RR / SeqRRs
         Map<String, List<List<Writable>>> nextRRVals = new HashMap<>();
+        Map<String, List<Writable>> nextRRValsBatched = null;
         Map<String, List<List<List<Writable>>>> nextSeqRRVals = new HashMap<>();
         List<RecordMetaDataComposableMap> nextMetas =
                         (collectMetaData ? new ArrayList<RecordMetaDataComposableMap>() : null);
@@ -112,24 +113,34 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
 
         for (Map.Entry<String, RecordReader> entry : recordReaders.entrySet()) {
             RecordReader rr = entry.getValue();
-            List<List<Writable>> writables = new ArrayList<>(num);
-            for (int i = 0; i < num && rr.hasNext(); i++) {
-                List<Writable> record;
-                if (collectMetaData) {
-                    Record r = rr.nextRecord();
-                    record = r.getRecord();
-                    if (nextMetas.size() <= i) {
-                        nextMetas.add(new RecordMetaDataComposableMap(new HashMap<String, RecordMetaData>()));
-                    }
-                    RecordMetaDataComposableMap map = nextMetas.get(i);
-                    map.getMeta().put(entry.getKey(), r.getMetaData());
-                } else {
-                    record = rr.next();
+            if(!collectMetaData && rr.batchesSupported()){
+                //Batch case, for efficiency: ImageRecordReader etc
+                List<Writable> batch = rr.next(num);
+                if (nextRRValsBatched == null) {
+                    nextRRValsBatched = new HashMap<>();
                 }
-                writables.add(record);
-            }
+                nextRRValsBatched.put(entry.getKey(), batch);
+            } else {
+                //Standard case
+                List<List<Writable>> writables = new ArrayList<>(num);
+                for (int i = 0; i < num && rr.hasNext(); i++) {
+                    List<Writable> record;
+                    if (collectMetaData) {
+                        Record r = rr.nextRecord();
+                        record = r.getRecord();
+                        if (nextMetas.size() <= i) {
+                            nextMetas.add(new RecordMetaDataComposableMap(new HashMap<String, RecordMetaData>()));
+                        }
+                        RecordMetaDataComposableMap map = nextMetas.get(i);
+                        map.getMeta().put(entry.getKey(), r.getMetaData());
+                    } else {
+                        record = rr.next();
+                    }
+                    writables.add(record);
+                }
 
-            nextRRVals.put(entry.getKey(), writables);
+                nextRRVals.put(entry.getKey(), writables);
+            }
         }
 
         for (Map.Entry<String, SequenceRecordReader> entry : sequenceRecordReaders.entrySet()) {
@@ -154,15 +165,29 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
             nextSeqRRVals.put(entry.getKey(), writables);
         }
 
-        return nextMultiDataSet(nextRRVals, nextSeqRRVals, nextMetas);
+        return nextMultiDataSet(nextRRVals, nextRRValsBatched, nextSeqRRVals, nextMetas);
     }
 
     private MultiDataSet nextMultiDataSet(Map<String, List<List<Writable>>> nextRRVals,
+                    Map<String, List<Writable>> nextRRValsBatched,
                     Map<String, List<List<List<Writable>>>> nextSeqRRVals,
                     List<RecordMetaDataComposableMap> nextMetas) {
         int minExamples = Integer.MAX_VALUE;
         for (List<List<Writable>> exampleData : nextRRVals.values()) {
             minExamples = Math.min(minExamples, exampleData.size());
+        }
+        if(nextRRValsBatched != null){
+            for(List<Writable> exampleData : nextRRValsBatched.values()){
+                //Assume all NDArrayWritables here
+                for(Writable w : exampleData){
+                    if(!(w instanceof NDArrayWritable)){
+                        throw new UnsupportedOperationException("Batch-supporting RecordReader should only return " +
+                                "NDArrayWritables; got " + w.getClass());
+                    }
+                    int n = ((NDArrayWritable)w).get().size(0);
+                    minExamples = Math.min(minExamples, n);
+                }
+            }
         }
         for (List<List<List<Writable>>> exampleData : nextSeqRRVals.values()) {
             minExamples = Math.min(minExamples, exampleData.size());
@@ -185,7 +210,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
             }
         }
 
-        //Second: create the input arrays
+        //Second: create the input/feature arrays
         //To do this, we need to know longest time series length, so we can do padding
         int longestTS = -1;
         if (alignmentMode != AlignmentMode.EQUAL_LENGTH) {
@@ -196,63 +221,102 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                 }
             }
         }
-
-        INDArray[] inputArrs = new INDArray[inputs.size()];
-        INDArray[] inputArrMasks = new INDArray[inputs.size()];
-        boolean inputMasks = false;
-        int i = 0;
-        for (SubsetDetails d : inputs) {
-            if (nextRRVals.containsKey(d.readerName)) {
-                //Standard reader
-                List<List<Writable>> list = nextRRVals.get(d.readerName);
-                inputArrs[i] = convertWritables(list, minExamples, d);
-            } else {
-                //Sequence reader
-                List<List<List<Writable>>> list = nextSeqRRVals.get(d.readerName);
-                Pair<INDArray, INDArray> p = convertWritablesSequence(list, minExamples, longestTS, d, longestSequence);
-                inputArrs[i] = p.getFirst();
-                inputArrMasks[i] = p.getSecond();
-                if (inputArrMasks[i] != null)
-                    inputMasks = true;
-            }
-            i++;
-        }
-        if (!inputMasks)
-            inputArrMasks = null;
+        Pair<INDArray[], INDArray[]> features = convertFeaturesOrLabels(new INDArray[inputs.size()],
+                new INDArray[inputs.size()],
+                inputs,
+                minExamples,
+                nextRRVals,
+                nextRRValsBatched,
+                nextSeqRRVals,
+                longestTS,
+                longestSequence);
 
 
-        //Third: create the outputs
-        INDArray[] outputArrs = new INDArray[outputs.size()];
-        INDArray[] outputArrMasks = new INDArray[outputs.size()];
-        boolean outputMasks = false;
-        i = 0;
-        for (SubsetDetails d : outputs) {
-            if (nextRRVals.containsKey(d.readerName)) {
-                //Standard reader
-                List<List<Writable>> list = nextRRVals.get(d.readerName);
-                outputArrs[i] = convertWritables(list, minExamples, d);
-            } else {
-                //Sequence reader
-                List<List<List<Writable>>> list = nextSeqRRVals.get(d.readerName);
-                Pair<INDArray, INDArray> p = convertWritablesSequence(list, minExamples, longestTS, d, longestSequence);
-                outputArrs[i] = p.getFirst();
-                outputArrMasks[i] = p.getSecond();
-                if (outputArrMasks[i] != null)
-                    outputMasks = true;
-            }
-            i++;
-        }
-        if (!outputMasks)
-            outputArrMasks = null;
+        //Third: create the outputs/labels
+        Pair<INDArray[], INDArray[]> labels = convertFeaturesOrLabels(new INDArray[outputs.size()],
+                new INDArray[outputs.size()],
+                outputs,
+                minExamples,
+                nextRRVals,
+                nextRRValsBatched,
+                nextSeqRRVals,
+                longestTS,
+                longestSequence);
 
-        MultiDataSet mds =
-                        new org.nd4j.linalg.dataset.MultiDataSet(inputArrs, outputArrs, inputArrMasks, outputArrMasks);
+
+        MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(features.getFirst(), labels.getFirst(),
+                                features.getSecond(), labels.getSecond());
         if (collectMetaData) {
             mds.setExampleMetaData(nextMetas);
         }
         if (preProcessor != null)
             preProcessor.preProcess(mds);
         return mds;
+    }
+
+    private Pair<INDArray[], INDArray[]> convertFeaturesOrLabels(INDArray[] featuresOrLabels,
+                                                                 INDArray[] masks,
+                                                                 List<SubsetDetails> subsetDetails,
+                                                                 int minExamples,
+                                                                 Map<String,List<List<Writable>>> nextRRVals,
+                                                                 Map<String, List<Writable>> nextRRValsBatched,
+                                                                 Map<String, List<List<List<Writable>>>> nextSeqRRVals,
+                                                                 int longestTS,
+                                                                 int[] longestSequence){
+        boolean hasMasks = false;
+        int i = 0;
+        for (SubsetDetails d : subsetDetails) {
+            if(nextRRValsBatched != null && nextRRValsBatched.containsKey(d.readerName)){
+                //Standard reader, but batch ops
+                featuresOrLabels[i] = convertWritablesBatched(nextRRValsBatched.get(d.readerName), d);
+            } else if (nextRRVals.containsKey(d.readerName)) {
+                //Standard reader
+                List<List<Writable>> list = nextRRVals.get(d.readerName);
+                featuresOrLabels[i] = convertWritables(list, minExamples, d);
+            } else {
+                //Sequence reader
+                List<List<List<Writable>>> list = nextSeqRRVals.get(d.readerName);
+                Pair<INDArray, INDArray> p = convertWritablesSequence(list, minExamples, longestTS, d, longestSequence);
+                featuresOrLabels[i] = p.getFirst();
+                masks[i] = p.getSecond();
+                if (masks[i] != null)
+                    hasMasks = true;
+            }
+            i++;
+        }
+
+        return new Pair<>(featuresOrLabels, hasMasks ? masks : null);
+    }
+
+
+    private INDArray convertWritablesBatched(List<Writable> list, SubsetDetails details){
+        INDArray arr;
+        if(details.entireReader){
+            //Expect to have a SINGLE INDArray here
+            if(list.size() > 1){
+                throw new UnsupportedOperationException("Cannot use batched operations on entire reader with multiple "
+                        + "writables");
+            }
+            arr = ((NDArrayWritable)list.get(0)).get();
+        } else if(details.subsetStart == details.subsetEndInclusive || details.oneHot){
+            arr = ((NDArrayWritable)list.get(details.subsetStart)).get();
+        } else {
+            //Should never happen
+            throw new UnsupportedOperationException("Unknown operation for batch reader");
+        }
+
+        if(!details.oneHot){
+            return arr;
+        }
+
+        int n = arr.size(0);
+        INDArray out = Nd4j.create(n, details.oneHotNumClasses);
+        for( int i=0; i<n; i++ ){
+            int v = arr.getInt(i,0);
+            out.putScalar(i, v, 1.0);
+        }
+
+        return out;
     }
 
     private INDArray convertWritables(List<List<Writable>> list, int minValues, SubsetDetails details) {
@@ -777,7 +841,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
             nextSeqRRVals.put(entry.getKey(), writables);
         }
 
-        return nextMultiDataSet(nextRRVals, nextSeqRRVals, nextMetas);
+        return nextMultiDataSet(nextRRVals, null, nextSeqRRVals, nextMetas);
 
     }
 
