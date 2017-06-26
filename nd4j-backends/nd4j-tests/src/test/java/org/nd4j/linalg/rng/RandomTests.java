@@ -522,6 +522,58 @@ public class RandomTests extends BaseNd4jTest {
         assertNotEquals(z1Dup, z1);
 
         assertEquals(z1, z2);
+
+
+    }
+
+
+    @Test
+    public void testBernoulliDistribution2() throws Exception {
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+
+        INDArray z1 = Nd4j.zeros(20);
+        INDArray z2 = Nd4j.zeros(20);
+        INDArray z1Dup = Nd4j.zeros(20);
+        INDArray exp = Nd4j.create(new double[]{1.00, 0.00, 1.00, 0.00, 1.00, 1.00, 0.00, 1.00, 1.00, 0.00, 0.00, 0.00, 1.00, 1.00, 1.00, 0.00, 0.00, 0.00, 0.00, 0.00});
+
+        BernoulliDistribution op1 = new BernoulliDistribution(z1, 0.50);
+        BernoulliDistribution op2 = new BernoulliDistribution(z2, 0.50);
+
+        Nd4j.getExecutioner().exec(op1, random1);
+        Nd4j.getExecutioner().exec(op2, random2);
+
+        assertNotEquals(z1Dup, z1);
+
+        assertEquals(z1, z2);
+
+        assertEquals(exp, z1);
+    }
+
+
+    @Test
+    public void testBernoulliDistribution3() throws Exception {
+        Random random1 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+        Random random2 = Nd4j.getRandomFactory().getNewRandomInstance(119);
+
+        INDArray prob = Nd4j.create(new double[]{1.0, 0.1, 0.2, 0.5, 1.0, 1.0, 0.3, 0.7, 0.34, 0.119});
+
+        INDArray z1 = Nd4j.zeros(10);
+        INDArray z2 = Nd4j.zeros(10);
+        INDArray z1Dup = Nd4j.zeros(10);
+        INDArray exp = Nd4j.create(new double[]{1.00, 0.00, 1.00, 0.00, 1.00, 1.00, 0.00, 1.00, 1.00, 0.00});
+
+        BernoulliDistribution op1 = new BernoulliDistribution(z1, prob);
+        BernoulliDistribution op2 = new BernoulliDistribution(z2, prob);
+
+        Nd4j.getExecutioner().exec(op1, random1);
+        Nd4j.getExecutioner().exec(op2, random2);
+
+        assertNotEquals(z1Dup, z1);
+
+        assertEquals(z1, z2);
+
+        assertEquals(exp, z1);
     }
 
 
@@ -547,7 +599,6 @@ public class RandomTests extends BaseNd4jTest {
         BooleanIndexing.and(z1, Conditions.lessThanOrEqual(5.0));
         BooleanIndexing.and(z1, Conditions.greaterThanOrEqual(0.0));
     }
-
 
     @Test
     public void testBinomialDistribution2() throws Exception {
