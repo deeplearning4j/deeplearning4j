@@ -618,9 +618,11 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             }
 
             if (network != null) {
-                network.getNetwork().params().assign(finalResult.getUpdaterStateArray());
+                if (network.getNetwork().getUpdater() != null && network.getNetwork().getUpdater().getStateViewArray() != null)
+                    network.getNetwork().getUpdater().getStateViewArray().assign(finalResult.getUpdaterStateArray());
             } else {
-                graph.getNetwork().params().assign(finalResult.getUpdaterStateArray());
+                if (graph.getNetwork().getUpdater() != null && graph.getNetwork().getUpdater().getStateViewArray() != null)
+                    graph.getNetwork().getUpdater().getStateViewArray().assign(finalResult.getUpdaterStateArray());
             }
         }
 

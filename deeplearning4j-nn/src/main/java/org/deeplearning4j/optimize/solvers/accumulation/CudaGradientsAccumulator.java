@@ -223,8 +223,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
     public void applyUpdate(StepFunction function, INDArray params, INDArray updates) {
         try {
             // nullify given updates first
-            //Nd4j.getMemoryManager().memset(updates);
-            updates.assign(0.0);
+            Nd4j.getMemoryManager().memset(updates);
+            //updates.assign(0.0);
 
             int cnt = 0;
             while (!messages.get(index.get()).isEmpty()) {
@@ -285,8 +285,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
     public void applyUpdate(StepFunction function, INDArray params, INDArray updates, double alpha) {
         try {
             // nullify given updates first
-            //Nd4j.getMemoryManager().memset(updates);
-            updates.assign(0.0);
+            Nd4j.getMemoryManager().memset(updates);
+            //updates.assign(0.0);
 
             int cnt = 0;
             while (!messages.get(index.get()).isEmpty()) {

@@ -137,7 +137,6 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
         } else if (params != null && stepFunction != null) {
             // master invokes everything, since that's Silent Worker approach: we want master to be always up-to-date
             synchronized (this) {
-                //log.info("Applying message: [{}, {}, {}, {}]", message.getUpdates().data().getInt(0), message.getUpdates().data().getInt(1), message.getUpdates().data().getInt(2), message.getUpdates().data().getInt(3));
                 // threshold decoder is inplace & fast
                 Nd4j.getExecutioner().thresholdDecode(message.getUpdates(), updates);
 
@@ -149,8 +148,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
                     stepFunction.step(params, updates);
 
                     // once accumulated updates are applied - reset storage, and wait for other messsages
-                    //Nd4j.getMemoryManager().memset(updates);
-                    updates.assign(0.0);
+                    Nd4j.getMemoryManager().memset(updates);
                     hasSomething.set(false);
                 }
             }
