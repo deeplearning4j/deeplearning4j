@@ -116,14 +116,15 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     protected double lrPolicyPower;
     protected boolean pretrain;
 
+    // this field defines preOutput cache
+    protected CacheMode cacheMode;
+
     //Counter for the number of parameter updates so far for this layer.
     //Note that this is only used for pretrain layers (RBM, VAE) - MultiLayerConfiguration and ComputationGraphConfiguration
     //contain counters for standard backprop training.
     // This is important for learning rate schedules, for example, and is stored here to ensure it is persisted
     // for Spark and model serialization
     protected int iterationCount = 0;
-
-    protected CacheMode cacheMode;
 
     private static ObjectMapper mapper = initMapper();
     private static final ObjectMapper mapperYaml = initMapperYaml();

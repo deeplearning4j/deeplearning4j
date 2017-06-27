@@ -58,7 +58,7 @@ public interface Model {
      *
      * @param listener
      */
-    void addListener(IterationListener listener);
+    void addListeners(IterationListener... listener);
 
 
     /**

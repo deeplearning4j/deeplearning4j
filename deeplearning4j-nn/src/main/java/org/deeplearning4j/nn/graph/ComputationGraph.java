@@ -31,6 +31,7 @@ import org.deeplearning4j.eval.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
@@ -80,7 +81,7 @@ import java.util.*;
  *
  * @author Alex Black
  */
-public class ComputationGraph implements Serializable, Model {
+public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     private static final Logger log = LoggerFactory.getLogger(ComputationGraph.class);
 
@@ -349,6 +350,8 @@ public class ComputationGraph implements Serializable, Model {
     public void init(INDArray parameters, boolean cloneParametersArray) {
         if (initCalled)
             return;
+
+        log.info("Starting ComputationGraph with WorkspaceModes set to [training: {}; inference: {}]", configuration.getTrainingWorkspaceMode(), configuration.getInferenceWorkspaceMode());
 
         if (configuration.getCacheMode() == CacheMode.HOST) {
             workspaceConfigurationCache.setPolicyMirroring(MirroringPolicy.HOST_ONLY);
@@ -1726,15 +1729,21 @@ public class ComputationGraph implements Serializable, Model {
      * @param listener
      */
     @Override
-    public void addListener(IterationListener listener) {
+    public void addListeners(IterationListener... listeners) {
         if (this.listeners == null) {
-            setListeners(listener);
+            setListeners(listeners);
             return;
         }
 
-        listeners.add(listener);
-        if (listener instanceof TrainingListener) {
-            this.trainingListeners.add((TrainingListener) listener);
+        for(IterationListener listener: listeners) {
+            this.listeners.add(listener);
+            if (listener instanceof TrainingListener) {
+                this.trainingListeners.add((TrainingListener) listener);
+            }
+        }
+
+        if (solver != null) {
+            solver.setListeners(this.listeners);
         }
     }
 
@@ -2019,6 +2028,11 @@ public class ComputationGraph implements Serializable, Model {
     @Override
     public INDArray params() {
         return params(true);
+    }
+
+    @Override
+    public INDArray updaterState() {
+        return getUpdater() != null ? getUpdater().getUpdaterStateViewArray() : null;
     }
 
     @Override

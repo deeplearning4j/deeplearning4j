@@ -772,7 +772,7 @@ public class TestOptimizers {
         }
 
         @Override
-        public void addListener(IterationListener listener) {
+        public void addListeners(IterationListener... listener) {
             // no-op
         }
 

@@ -851,16 +851,17 @@ public class VariationalAutoencoder implements Layer {
     /**
      * This method ADDS additional IterationListener to existing listeners
      *
-     * @param listener
+     * @param listeners
      */
     @Override
-    public void addListener(IterationListener listener) {
+    public void addListeners(IterationListener... listeners) {
         if (this.iterationListeners == null) {
-            setListeners(listener);
+            setListeners(listeners);
             return;
         }
 
-        iterationListeners.add(listener);
+        for (IterationListener listener: listeners)
+            iterationListeners.add(listener);
     }
 
     @Override

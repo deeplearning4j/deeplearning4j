@@ -59,6 +59,12 @@ public interface ConvexOptimizer extends Serializable {
     void setGradientsAccumulator(GradientsAccumulator accumulator);
 
     /**
+     * This method returns StepFunction defined within this Optimizer instance
+     * @return
+     */
+    StepFunction getStepFunction();
+
+    /**
      * This method returns GradientsAccumulator instance used in this optimizer.
      *
      * This method can return null.
