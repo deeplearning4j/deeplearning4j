@@ -1,7 +1,5 @@
 package org.deeplearning4j.spark.parameterserver.iterators;
 
-import javafx.beans.InvalidationListener;
-import javafx.beans.Observable;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
