@@ -136,6 +136,25 @@ public class UpdaterTest extends BaseNd4jTest {
     }
 
     @Test
+    public void testNadam() {
+        int rows = 10;
+        int cols = 2;
+
+        NadamUpdater grad = new NadamUpdater(new Nadam());
+        grad.setStateViewArray(Nd4j.zeros(1, 2 * rows * cols), new int[] {rows, cols}, 'c', true);
+        INDArray W = Nd4j.zeros(rows, cols);
+        Distribution dist = Nd4j.getDistributions().createNormal(1e-3, 1e-3);
+        for (int i = 0; i < W.rows(); i++)
+            W.putRow(i, Nd4j.create(dist.sample(W.columns())));
+
+        for (int i = 0; i < 5; i++) {
+//            String learningRates = String.valueOf("\nAdamUpdater\n " + grad.applyUpdater(W, i)).replaceAll(";", "\n");
+//            System.out.println(learningRates);
+            W.addi(Nd4j.randn(rows, cols));
+        }
+    }
+
+    @Test
     public void testAdaMax() {
         int rows = 10;
         int cols = 2;
