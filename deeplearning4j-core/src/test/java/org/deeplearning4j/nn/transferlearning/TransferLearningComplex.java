@@ -194,7 +194,7 @@ public class TransferLearningComplex {
                         .addLayer("outRight",
                                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(4).nOut(2).build(),
                                         "mergeRight")
-                        .setOutputs("outRight").setOutputs("outCentre").build();
+                        .setOutputs("outCentre", "outRight").build();
         ComputationGraph modelToTune = new ComputationGraph(conf);
         modelToTune.init();
         modelToTune.getVertex("denseCentre0").setLayerAsFrozen();
@@ -257,7 +257,7 @@ public class TransferLearningComplex {
                                                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(2)
                                                                         .nOut(3).build(),
                                                         "denseCentre0")
-                                        .setOutputs("outCentre").build();
+                                        .setOutputs("outRight", "outCentre").build();
 
         assertEquals(2, modelNow.getNumOutputArrays());
         MultiDataSet rand = new MultiDataSet(new INDArray[] {Nd4j.rand(2, 2), Nd4j.rand(2, 2)},

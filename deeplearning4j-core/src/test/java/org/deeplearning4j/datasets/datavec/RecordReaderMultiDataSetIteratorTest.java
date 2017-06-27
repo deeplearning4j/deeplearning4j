@@ -21,6 +21,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.io.ClassPathResource;
 
@@ -593,6 +594,14 @@ public class RecordReaderMultiDataSetIteratorTest {
         assertEquals(d1.getFeatureMatrix(), mds.getFeatures(0));
         assertEquals(d2.getFeatureMatrix(), mds.getFeatures(1));
         assertEquals(d1.getLabels(), mds.getLabels(0));
+
+        //Check label assignment:
+        INDArray expLabels = Nd4j.create(new double[][]{
+                {1, 0},
+                {0, 1}});
+
+        assertEquals(expLabels, d1.getLabels());
+        assertEquals(expLabels, d2.getLabels());
     }
 
 
