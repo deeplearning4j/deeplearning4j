@@ -928,6 +928,8 @@ public class TensorGrad {
      */
     public TensorGradVariable reshape(TensorGradVariable iX,
                                       int...shape) {
+        shape = Shape.resolveNegativeShapeIfNeccessary(shape);
+
         TensorGradVariable ret = TensorGradVariable.builder()
                 .arr(null)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory

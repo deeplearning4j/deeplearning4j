@@ -271,8 +271,10 @@ public class TensorGradTests {
         TensorGradVariable probs = outputs.mul(y).add(outputs.rsub(tensorGrad.scalar("one",1.0)).mul(y.rsub(tensorGrad.scalar("onetwo",1.0))));
         TensorGradVariable outputGrad = tensorGrad.grad(probs,x);
         for(int i = 0; i < 5; i++) {
-            w.sub(w.mul(outputGrad).mul(learningRate));
+            w = w.sub(w.mul(outputGrad).mul(learningRate));
         }
+
+        tensorGrad.exec();
     }
 
 }

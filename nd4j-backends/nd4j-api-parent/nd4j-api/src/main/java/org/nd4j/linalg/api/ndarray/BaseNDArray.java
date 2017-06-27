@@ -3615,34 +3615,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray reshape(char order, int... newShape) {
-        int numberNegativesOnes = 0;
-        int[] shape = ArrayUtil.copy(newShape);
-        for (int i = 0; i < shape.length; i++) {
-            if (shape[i] < 0) {
-                if (numberNegativesOnes >= 1)
-                    throw new IllegalArgumentException("Only one dimension can be negative ones");
-
-                numberNegativesOnes++;
-
-                int shapeLength = 1;
-                for (int j = 0; j < shape.length; j++)
-                    if (shape[j] >= 1)
-                        shapeLength *= shape[j];
-                int realShape = Math.abs(length() / shapeLength);
-                int[] thisNewShape = new int[shape.length];
-                for (int j = 0; j < shape.length; j++) {
-                    if (i != j) {
-                        thisNewShape[j] = shape[j];
-                    } else
-                        thisNewShape[j] = realShape;
-                }
-
-                shape = thisNewShape;
-                break;
-
-            }
-
-        }
+        int[] shape = Shape.resolveNegativeShapeIfNeccessary(newShape);
 
 
         INDArray reshapeAttempt = Shape.newShapeNoCopy(this, shape, order == 'f');

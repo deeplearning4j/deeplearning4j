@@ -43,34 +43,19 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
         this.tensorGrad = tensorGrad;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
 
-        TensorGradVariable that = (TensorGradVariable) o;
-
-        if (arr != null ? !arr.equals(that.arr) : that.arr != null) return false;
-        if (arrayField != null ? !arrayField.equals(that.arrayField) : that.arrayField != null) return false;
-        if (varName != null ? !varName.equals(that.varName) : that.varName != null) return false;
-        return Arrays.equals(shape, that.shape);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (arr != null ? arr.hashCode() : 0);
-        result = 31 * result + (arrayField != null ? arrayField.hashCode() : 0);
-        result = 31 * result + (varName != null ? varName.hashCode() : 0);
-        result = 31 * result + Arrays.hashCode(shape);
-        return result;
-    }
-
+    /**
+     *
+     * @return
+     */
     public NDArrayInformation getInfo() {
         return getArrayField().getM_x().getInput();
     }
 
+    /**
+     *
+     * @return
+     */
     public String getFormula() {
         List<Variable<ArrayField>> ret = new ArrayList<>();
         if(arrayField != null)
@@ -80,6 +65,10 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
         }
     }
 
+    /**
+     *
+     * @return
+     */
     public int[] getShape() {
         if(shape != null)
             return shape;
@@ -95,16 +84,27 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
     }
 
 
+    /**
+     *
+     * @return
+     */
     public boolean isAllocated() {
         return arr != null;
     }
 
+    /**
+     *
+     */
     public void allocate() {
         if(arr == null)
             arr = Nd4j.createUninitialized(getShape());
     }
 
 
+    /**
+     *
+     * @return
+     */
     public TensorGradVariable dup() {
         return TensorGradVariable.builder()
                 .differentialFunction(differentialFunction)
@@ -167,6 +167,7 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
     private DifferentialFunction<ArrayField> getFunction(TensorGradVariable variable) {
         return variable.getArrayField() == null ? variable.getDifferentialFunction() : variable.getArrayField();
     }
+
     @Override
     public String toString() {
         return "TensorGradVariable{" +
