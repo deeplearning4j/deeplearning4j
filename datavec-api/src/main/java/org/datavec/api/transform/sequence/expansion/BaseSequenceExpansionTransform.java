@@ -16,18 +16,25 @@
 
 package org.datavec.api.transform.sequence.expansion;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.sequence.nlp.TextToIntegerSequenceTransform;
 import org.datavec.api.writable.Writable;
 
 import java.util.*;
 
 /**
- * Created by Alex on 26/06/2017.
+ * A base class for sequence expansion operations.
+ * The idea: for one or more columns, expand the values to multiple sequence steps; for all other columns, just
+ * duplicate the step values when expanding.
+ * See {@link TextToIntegerSequenceTransform} for an example of this.
+ *
+ * @author Alex Black
  */
 public abstract class BaseSequenceExpansionTransform implements Transform {
 
@@ -37,6 +44,10 @@ public abstract class BaseSequenceExpansionTransform implements Transform {
     @Setter @Getter
     protected Schema inputSchema;
 
+    /**
+     * @param requiredColumns      Input columns, to be expanded
+     * @param expandedColumnNames  Names of the columns after expansion
+     */
     protected BaseSequenceExpansionTransform(@NonNull List<String> requiredColumns, @NonNull List<String> expandedColumnNames){
         if(requiredColumns.size() == 0){
             throw new IllegalArgumentException("No columns have values to be expanded. Must have requiredColumns.size() > 0");
@@ -52,7 +63,7 @@ public abstract class BaseSequenceExpansionTransform implements Transform {
 
     @Override
     public Schema transform(Schema inputSchema) {
-        //Same schema *except* for the exanded columns
+        //Same schema *except* for the expanded columns
 
         List<ColumnMetaData> meta = new ArrayList<>(inputSchema.numColumns());
 

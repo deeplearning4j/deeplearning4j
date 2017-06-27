@@ -17,7 +17,9 @@
 package org.datavec.api.transform.nlp;
 
 /**
- * Created by Alex on 26/06/2017.
+ * Vocabulary: a set of words. For word -> index and containsWord(String) operations.
+ *
+ * @author Alex Black
  */
 public interface Vocabulary {
 

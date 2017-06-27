@@ -27,10 +27,13 @@ import org.datavec.api.transform.condition.column.NullWritableColumnCondition;
 import org.datavec.api.transform.condition.sequence.SequenceLengthCondition;
 import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.filter.FilterInvalidValues;
+import org.datavec.api.transform.nlp.impl.DefaultVocabProvider;
+import org.datavec.api.transform.nlp.impl.DefaultVocabulary;
 import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.sequence.comparator.NumericalColumnComparator;
 import org.datavec.api.transform.sequence.comparator.StringComparator;
+import org.datavec.api.transform.sequence.nlp.TextToIntegerSequenceTransform;
 import org.datavec.api.transform.sequence.split.SequenceSplitTimeSeparation;
 import org.datavec.api.transform.sequence.window.OverlappingTimeWindowFunction;
 import org.datavec.api.transform.transform.integer.ReplaceEmptyIntegerWithValueTransform;
@@ -42,6 +45,7 @@ import org.datavec.api.transform.transform.string.StringListToCategoricalSetTran
 import org.datavec.api.transform.transform.time.DeriveColumnsFromTimeTransform;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.comparator.LongWritableComparator;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
@@ -142,6 +146,9 @@ public class TestJsonYaml {
                                         .filter(new SequenceLengthCondition(ConditionOp.LessThan, 1))
                                         .addConstantColumn("testColSeq", ColumnType.Integer, new DoubleWritable(0))
                                         .offsetSequence(Collections.singletonList("testColSeq"), 1, SequenceOffsetTransform.OperationType.InPlace)
+                                        .addConstantColumn("someTextCol", ColumnType.String, new Text("some values"))
+                                        .transform(new TextToIntegerSequenceTransform("someTextCol", "newNameForCol",
+                                                new DefaultVocabProvider(new DefaultVocabulary(Arrays.asList("my","vocab","here")))))
                                         .build();
 
         String asJson = tp.toJson();

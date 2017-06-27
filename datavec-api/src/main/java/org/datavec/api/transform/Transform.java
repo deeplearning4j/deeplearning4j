@@ -21,13 +21,29 @@ import org.datavec.api.transform.ndarray.NDArrayDistanceTransform;
 import org.datavec.api.transform.ndarray.NDArrayMathFunctionTransform;
 import org.datavec.api.transform.ndarray.NDArrayScalarOpTransform;
 import org.datavec.api.transform.sequence.ReduceSequenceTransform;
+import org.datavec.api.transform.sequence.nlp.TextToIntegerSequenceTransform;
 import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
+<<<<<<< HEAD
 import org.datavec.api.transform.sequence.window.ReduceSequenceByWindowTransform;
 import org.datavec.api.transform.transform.categorical.CategoricalToIntegerTransform;
 import org.datavec.api.transform.transform.categorical.CategoricalToOneHotTransform;
 import org.datavec.api.transform.transform.categorical.IntegerToCategoricalTransform;
 import org.datavec.api.transform.transform.categorical.StringToCategoricalTransform;
 import org.datavec.api.transform.transform.column.*;
+=======
+import org.datavec.api.transform.transform.categorical.*;
+import org.datavec.api.transform.transform.column.*;
+import org.datavec.api.transform.transform.integer.*;
+import org.datavec.api.transform.transform.parse.ParseDoubleTransform;
+import org.datavec.api.transform.transform.sequence.SequenceDifferenceTransform;
+import org.datavec.api.transform.transform.sequence.SequenceMovingWindowReduceTransform;
+import org.datavec.api.transform.transform.sequence.SequenceOffsetTransform;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.sequence.window.ReduceSequenceByWindowTransform;
+>>>>>>> JSON, javadoc, equals fixes; rename new transform; extra test
 import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
 import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
 import org.datavec.api.transform.transform.doubletransform.*;
@@ -115,6 +131,8 @@ import java.util.List;
                 @JsonSubTypes.Type(value = ConcatenateStringColumns.class, name = "ConcatenateStringColumns"),
                 @JsonSubTypes.Type(value = StringListToCountsNDArrayTransform.class, name = "StringListToCountsNDArrayTransform"),
                 @JsonSubTypes.Type(value = StringListToIndicesNDArrayTransform.class, name = "StringListToIndicesNDArrayTransform"),
+                @JsonSubTypes.Type(value = PivotTransform.class, name = "PivotTransform"),
+                @JsonSubTypes.Type(value = TextToIntegerSequenceTransform.class, name = "TextToIntegerSequenceTransform")
 })
 public interface Transform extends Serializable, ColumnOp {
 

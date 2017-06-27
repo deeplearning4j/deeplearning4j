@@ -16,9 +16,14 @@
 
 package org.datavec.api.transform.nlp;
 
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+
 /**
- * Created by Alex on 26/06/2017.
+ * Generates a tokenizer for a given string
+ * @author Adam Gibson
+ *
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
 public interface TokenizerFactory {
 
     Tokenizer create(String toTokenize);

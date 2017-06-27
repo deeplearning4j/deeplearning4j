@@ -16,9 +16,14 @@
 
 package org.datavec.api.transform.nlp;
 
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+
 /**
- * Created by Alex on 26/06/2017.
+ * VocabProvider: simple interface to allow abstractions of storage for vocabulary
+ *
+ * @author Alex Black
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
 public interface VocabProvider {
 
     Vocabulary getVocab();

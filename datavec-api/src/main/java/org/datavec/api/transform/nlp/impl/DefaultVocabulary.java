@@ -16,6 +16,7 @@
 
 package org.datavec.api.transform.nlp.impl;
 
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.nlp.Vocabulary;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -28,12 +29,12 @@ import java.util.Map;
 /**
  * Created by Alex on 26/06/2017.
  */
-@JsonIgnoreProperties({""})
+@JsonIgnoreProperties({"map"})
+@EqualsAndHashCode(exclude = {"map"})
 public class DefaultVocabulary implements Vocabulary {
 
     private List<String> vocabulary;
     private Map<String,Integer> map;
-
 
     public DefaultVocabulary(@JsonProperty("vocabulary") List<String> vocabulary){
         this.vocabulary = vocabulary;
@@ -77,5 +78,10 @@ public class DefaultVocabulary implements Vocabulary {
     @Override
     public int size() {
         return vocabulary.size();
+    }
+
+    @Override
+    public String toString(){
+        return "DefaultVocabulary(size=" + vocabulary.size() + ")";
     }
 }

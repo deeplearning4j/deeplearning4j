@@ -16,16 +16,18 @@
 
 package org.datavec.api.transform.nlp.impl;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.datavec.api.transform.nlp.VocabProvider;
-import org.datavec.api.transform.nlp.Vocabulary;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * Created by Alex on 26/06/2017.
  */
-@AllArgsConstructor
 @Data
 public class DefaultVocabProvider implements VocabProvider {
     private DefaultVocabulary vocab;
+
+    public DefaultVocabProvider(@JsonProperty("vocab") DefaultVocabulary vocab) {
+        this.vocab = vocab;
+    }
 }

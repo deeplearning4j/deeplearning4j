@@ -16,17 +16,22 @@
 
 package org.datavec.api.transform.nlp.impl;
 
-import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.datavec.api.transform.nlp.Tokenizer;
 import org.datavec.api.transform.nlp.TokenizerFactory;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * Created by Alex on 26/06/2017.
  */
-@AllArgsConstructor
+@Data
 public class DefaultTokenizerFactory implements TokenizerFactory {
 
     private boolean lowerCase;
+
+    public DefaultTokenizerFactory(@JsonProperty("lowerCase") boolean lowerCase) {
+        this.lowerCase = lowerCase;
+    }
 
     @Override
     public Tokenizer create(String toTokenize) {

@@ -19,7 +19,11 @@ package org.datavec.api.transform.nlp;
 import java.util.List;
 
 /**
- * Created by Alex on 26/06/2017.
+ * A representation of a tokenizer.
+ * Different applications may require
+ * different kind of tokenization (say rules based vs more formal NLP approaches)
+ * @author Adam Gibson
+ *
  */
 public interface Tokenizer {
 

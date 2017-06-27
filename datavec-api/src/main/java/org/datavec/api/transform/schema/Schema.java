@@ -172,6 +172,19 @@ public class Schema implements Serializable {
     }
 
     /**
+     * Returns the {@link ColumnType}
+     * for the column at the specified index
+     * @param columnName the index of the column to get the type for
+     * @return the type of the column to at the specified inde
+     */
+    public ColumnType getType(String columnName) {
+        if (!hasColumn(columnName)) {
+            throw new IllegalArgumentException("Column \"" + columnName + "\" does not exist in schema");
+        }
+        return getMetaData(columnName).getColumnType();
+    }
+
+    /**
      * Returns the {@link ColumnMetaData}
      * at the specified column index
      * @param column the index
