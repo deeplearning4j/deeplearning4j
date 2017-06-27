@@ -862,4 +862,25 @@ public class EvalTest {
             e.eval(actual, predicted);
         }
     }
+
+
+    @Test
+    public void testConfusionMatrixStats(){
+
+        Evaluation e = new Evaluation();
+
+        INDArray c0 = Nd4j.create(new double[]{1,0,0});
+        INDArray c1 = Nd4j.create(new double[]{0,1,0});
+        INDArray c2 = Nd4j.create(new double[]{0,0,1});
+
+        apply(e, 3, c2, c0);    //Predicted class 2 when actually class 0, 3 times
+        apply(e, 2, c0, c1);    //Predicted class 0 when actually class 1, 2 times
+
+        String s1 = "Examples labeled as 0 classified by model as 2: 3 times";
+        String s2 = "Examples labeled as 1 classified by model as 0: 2 times";
+
+        String stats = e.stats();
+        assertTrue(stats, stats.contains(s1));
+        assertTrue(stats, stats.contains(s2));
+    }
 }

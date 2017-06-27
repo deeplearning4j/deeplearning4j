@@ -509,7 +509,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return A (multi-line) String with accuracy, precision, recall, f1 score etc
      */
     public String stats(boolean suppressWarnings) {
-        String actual, expected;
+        String actual, predicted;
         StringBuilder builder = new StringBuilder().append("\n");
         StringBuilder warnings = new StringBuilder();
         List<Integer> classes = confusion().getClasses();
@@ -522,9 +522,9 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             for (Integer clazz2 : classes) {
                 int count = confusion().getCount(clazz, clazz2);
                 if (count != 0) {
-                    expected = resolveLabelForClass(clazz2);
+                    predicted = resolveLabelForClass(clazz2);
                     builder.append(String.format("Examples labeled as %s classified by model as %s: %d times%n",
-                            expected, actual, count));
+                            actual, predicted, count));
                 }
             }
 
