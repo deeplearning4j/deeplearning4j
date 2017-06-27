@@ -50,7 +50,7 @@ public abstract class BasicMemoryManager implements MemoryManager {
      */
     @Override
     public Pointer allocate(long bytes, MemoryKind kind, boolean initialize) {
-        return null;
+        throw new UnsupportedOperationException("This method isn't available for this backend");
     }
 
     /**

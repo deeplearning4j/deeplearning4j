@@ -11,6 +11,7 @@ import org.nd4j.parameterserver.distributed.messages.VoidMessage;
  *
  * @author raver119@gmail.com
  */
+@Deprecated
 public class LocalTransport implements Transport {
     /**
      * This method does initialization of Transport instance
@@ -33,6 +34,16 @@ public class LocalTransport implements Transport {
     @Override
     public void sendMessage(VoidMessage message) {
 
+    }
+
+    @Override
+    public int numberOfKnownClients() {
+        return 0;
+    }
+
+    @Override
+    public int numberOfKnownShards() {
+        return 0;
     }
 
     /**
@@ -137,6 +148,21 @@ public class LocalTransport implements Transport {
 
     @Override
     public int getPort() {
+        return 0;
+    }
+
+    @Override
+    public void addShard(String ip, int port) {
+        // no-op
+    }
+
+    @Override
+    public void sendMessageToAllClients(VoidMessage message, Long... exclusions) {
+        // no-op
+    }
+
+    @Override
+    public long getOwnOriginatorId() {
         return 0;
     }
 }

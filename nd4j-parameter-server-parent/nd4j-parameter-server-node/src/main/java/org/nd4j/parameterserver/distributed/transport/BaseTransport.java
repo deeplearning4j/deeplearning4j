@@ -14,6 +14,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingIdleStrategy;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.parameterserver.distributed.conf.VoidConfiguration;
 import org.nd4j.parameterserver.distributed.enums.NodeRole;
 import org.nd4j.parameterserver.distributed.logic.completion.Clipboard;
@@ -75,11 +76,18 @@ public abstract class BaseTransport implements Transport {
 
     protected ThreadingModel threadingModel = ThreadingModel.DEDICATED_THREADS;
 
+    protected long originatorId;
+
     // TODO: make this auto-configurable
     @Getter
     protected short targetIndex = 0;
     @Getter
     protected short shardIndex = 0;
+
+    @Override
+    public long getOwnOriginatorId() {
+        return originatorId;
+    }
 
     @Override
     public MeaningfulMessage sendMessageAndGetResponse(@NonNull VoidMessage message) {
@@ -262,10 +270,10 @@ public abstract class BaseTransport implements Transport {
      */
     @Override
     public void sendMessageToAllShards(VoidMessage message) {
-        if (nodeRole != NodeRole.SHARD)
-            throw new RuntimeException("This method shouldn't be called only from Shard context");
+//        if (nodeRole != NodeRole.SHARD)
+//            throw new RuntimeException("This method shouldn't be called only from Shard context");
 
-        //        log.info("Sending message to All shards");
+        //log.info("Sending message to All shards");
 
         message.setTargetId((short) -1);
         //publicationForShards.offer(message.asUnsafeBuffer());
@@ -344,6 +352,7 @@ public abstract class BaseTransport implements Transport {
                     });
 
                     if (threadB != null) {
+                        Nd4j.getAffinityManager().attachThreadToDevice(threadB, Nd4j.getAffinityManager().getDeviceForCurrentThread());
                         threadB.setDaemon(true);
                         threadB.setName("VoidParamServer subscription threadB [" + nodeRole + "]");
                         threadB.start();
@@ -358,6 +367,7 @@ public abstract class BaseTransport implements Transport {
                 }
 
                 // all roles have threadA anyway
+                Nd4j.getAffinityManager().attachThreadToDevice(threadA, Nd4j.getAffinityManager().getDeviceForCurrentThread());
                 threadA.setDaemon(true);
                 threadA.setName("VoidParamServer subscription threadA [" + nodeRole + "]");
                 threadA.start();
@@ -544,5 +554,25 @@ public abstract class BaseTransport implements Transport {
     @Override
     public int getPort() {
         return port;
+    }
+
+    @Override
+    public int numberOfKnownClients() {
+        return 0;
+    }
+
+    @Override
+    public int numberOfKnownShards() {
+        return 0;
+    }
+
+    @Override
+    public void addShard(String ip, int port) {
+        // no-op
+    }
+
+    @Override
+    public void sendMessageToAllClients(VoidMessage message, Long... exclusions) {
+        // no-op
     }
 }
