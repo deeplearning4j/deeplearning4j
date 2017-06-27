@@ -561,7 +561,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
             conf.cacheMode = cacheMode;
 
-            log.info("Setting seed: {}", conf.getConf(0).getSeed());
             Nd4j.getRandom().setSeed(conf.getConf(0).getSeed());
             return conf;
 

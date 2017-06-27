@@ -2769,6 +2769,24 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     @Override
     public void fit(MultiDataSet dataSet) {
+        if (dataSet.getFeatures().length == 1 && dataSet.getLabels().length == 1) {
+            INDArray features = null;
+            INDArray labels = null;
+            INDArray fMask = null;
+            INDArray lMask = null;
+
+            if (dataSet.getFeaturesMaskArrays() != null)
+                fMask = dataSet.getFeaturesMaskArrays()[0];
+
+            if (dataSet.getFeaturesMaskArrays() != null)
+                lMask = dataSet.getLabelsMaskArrays()[0];
+
+            features = dataSet.getFeatures()[0];
+            labels = dataSet.getLabels()[0];
+
+            DataSet ds = new DataSet(features, labels, fMask, lMask);
+            fit(ds);
+        }
         throw new DL4JInvalidInputException("MultiLayerNetwork can't handle MultiDataSet. Please consider use of ComputationGraph");
     }
 

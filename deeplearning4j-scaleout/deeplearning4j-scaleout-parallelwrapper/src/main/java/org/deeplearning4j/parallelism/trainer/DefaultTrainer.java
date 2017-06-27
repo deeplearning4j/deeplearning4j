@@ -189,23 +189,25 @@ public class DefaultTrainer extends Thread implements Trainer {
     }
 
     protected void fit(DataSet dataSet) {
-        try {
-            if (replicatedModel instanceof MultiLayerNetwork) {
-                if (lastEtlTime == null)
-                    lastEtlTime = new AtomicLong(0);
+        if (replicatedModel instanceof MultiLayerNetwork) {
+            if (lastEtlTime == null)
+                lastEtlTime = new AtomicLong(0);
 
-                ((MultiLayerNetwork) replicatedModel).setLastEtlTime(lastEtlTime.get());
-                ((MultiLayerNetwork) replicatedModel).fit(dataSet);
-            } else if (replicatedModel instanceof ComputationGraph) {
-                ((ComputationGraph) replicatedModel).setLastEtlTime(lastEtlTime.get());
-                ((ComputationGraph) replicatedModel).fit(dataSet);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+            ((MultiLayerNetwork) replicatedModel).setLastEtlTime(lastEtlTime.get());
+            ((MultiLayerNetwork) replicatedModel).fit(dataSet);
+        } else if (replicatedModel instanceof ComputationGraph) {
+            if (lastEtlTime == null)
+                lastEtlTime = new AtomicLong(0);
+
+            ((ComputationGraph) replicatedModel).setLastEtlTime(lastEtlTime.get());
+            ((ComputationGraph) replicatedModel).fit(dataSet);
         }
     }
 
     protected void fit(MultiDataSet dataSet) {
+        if (lastEtlTime == null)
+            lastEtlTime = new AtomicLong(0);
+
         ((ComputationGraph) replicatedModel).setLastEtlTime(lastEtlTime.get());
         ((ComputationGraph) replicatedModel).fit(dataSet);
     }
@@ -308,8 +310,6 @@ public class DefaultTrainer extends Thread implements Trainer {
             // classes that extend DefaultTrainer might hook something there
             postInit();
 
-            log.info("Replicated params BEFORE: {}", replicatedModel.params().meanNumber().doubleValue());
-
             if (!useMDS) {
                 while (!shouldStop.get()) {
                     DataSet dataSet = null;
@@ -349,8 +349,6 @@ public class DefaultTrainer extends Thread implements Trainer {
                         running.decrementAndGet();
                     }
                 }
-
-                log.info("Replicated params: {}", replicatedModel.params().meanNumber().doubleValue());
             } else {
                 // loop for MultiDataSet
                 while (!shouldStop.get()) {
