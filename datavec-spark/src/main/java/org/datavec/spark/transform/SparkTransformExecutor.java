@@ -220,16 +220,23 @@ public class SparkTransformExecutor {
                 //Convert to a sequence...
                 final ConvertToSequence cts = d.getConvertToSequence();
 
-                //First: convert to PairRDD
-                Schema schema = cts.getInputSchema();
-                int[] colIdxs = schema.getIndexOfColumns(cts.getKeyColumns());
-                JavaPairRDD<List<Writable>, List<Writable>> withKey =
-                                currentWritables.mapToPair(new SparkMapToPairByMultipleColumnsFunction(colIdxs));
-                JavaPairRDD<List<Writable>, Iterable<List<Writable>>> grouped = withKey.groupByKey();
+                if(cts.isSingleStepSequencesMode()){
+                    //Edge case: create a sequence from each example, by treating each value as a sequence of length 1
+                    currentSequence = currentWritables.map(new ConvertToSequenceLengthOne());
+                    currentWritables = null;
+                } else {
+                    //Standard case: join by key
+                    //First: convert to PairRDD
+                    Schema schema = cts.getInputSchema();
+                    int[] colIdxs = schema.getIndexOfColumns(cts.getKeyColumns());
+                    JavaPairRDD<List<Writable>, List<Writable>> withKey =
+                            currentWritables.mapToPair(new SparkMapToPairByMultipleColumnsFunction(colIdxs));
+                    JavaPairRDD<List<Writable>, Iterable<List<Writable>>> grouped = withKey.groupByKey();
 
-                //Now: convert to a sequence...
-                currentSequence = grouped.mapValues(new SparkGroupToSequenceFunction(cts.getComparator())).values();
-                currentWritables = null;
+                    //Now: convert to a sequence...
+                    currentSequence = grouped.mapValues(new SparkGroupToSequenceFunction(cts.getComparator())).values();
+                    currentWritables = null;
+                }
             } else if (d.getConvertFromSequence() != null) {
                 //Convert from sequence...
 

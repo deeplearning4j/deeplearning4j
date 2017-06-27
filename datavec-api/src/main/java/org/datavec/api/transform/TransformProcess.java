@@ -968,6 +968,17 @@ public class TransformProcess implements Serializable {
         }
 
         /**
+         * Convert a set of independent records/examples into a sequence; each example is simply treated as a sequence
+         * of length 1, without any join/group operations. Note that more commonly, joining/grouping is required;
+         * use {@link #convertToSequence(List, SequenceComparator)} for this functionality
+         *
+         */
+        public Builder convertToSequence() {
+            actionList.add(new DataAction(new ConvertToSequence(true, null, null)));
+            return this;
+        }
+
+        /**
          * Convert a set of independent records/examples into a sequence, where each sequence is grouped according to
          * one or more key values (i.e., the values in one or more columns)
          * Within each sequence, values are ordered using the provided {@link SequenceComparator}

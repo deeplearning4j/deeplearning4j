@@ -28,9 +28,11 @@ import org.datavec.spark.transform.SparkTransformExecutor;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by Alex on 19/05/2017.
@@ -82,4 +84,33 @@ public class TestConvertToSequence extends BaseSparkTest {
         assertEquals(expSeq1, seq1);
     }
 
+    @Test
+    public void testConvertToSequenceLength1(){
+
+        Schema s = new Schema.Builder()
+                .addColumnsString("string")
+                .addColumnLong("long")
+                .build();
+
+        List<List<Writable>> allExamples = Arrays.asList(
+                Arrays.<Writable>asList(new Text("a"), new LongWritable(0)),
+                Arrays.<Writable>asList(new Text("b"), new LongWritable(1)),
+                Arrays.<Writable>asList(new Text("c"), new LongWritable(2)));
+
+        TransformProcess tp = new TransformProcess.Builder(s)
+                .convertToSequence()
+                .build();
+
+        JavaRDD<List<Writable>> rdd = sc.parallelize(allExamples);
+
+        JavaRDD<List<List<Writable>>> out = SparkTransformExecutor.executeToSequence(rdd, tp);
+
+        List<List<List<Writable>>> out2 = out.collect();
+
+        assertEquals(3, out2.size());
+
+        for( int i=0; i<3; i++ ){
+            assertTrue(out2.contains(Collections.singletonList(allExamples.get(i))));
+        }
+    }
 }

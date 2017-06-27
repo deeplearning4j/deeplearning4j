@@ -37,6 +37,7 @@ import java.util.Collection;
 @JsonIgnoreProperties({"inputSchema"})
 public class ConvertToSequence {
 
+    private boolean singleStepSequencesMode;
     private final String[] keyColumns;
     private final SequenceComparator comparator; //For sorting values within collected (unsorted) sequence
     private Schema inputSchema;
@@ -47,7 +48,7 @@ public class ConvertToSequence {
      * @param comparator The comparator to use when deciding the order of each possible time step in the sequence
      */
     public ConvertToSequence(String keyColumn, SequenceComparator comparator){
-        this(new String[]{keyColumn}, comparator);
+        this(false, new String[]{keyColumn}, comparator);
     }
 
     /**
@@ -57,7 +58,7 @@ public class ConvertToSequence {
      * @param comparator The comparator to use when deciding the order of each possible time step in the sequence
      */
     public ConvertToSequence(Collection<String> keyColumns, SequenceComparator comparator) {
-        this(keyColumns.toArray(new String[keyColumns.size()]), comparator);
+        this(false, keyColumns.toArray(new String[keyColumns.size()]), comparator);
     }
 
     /**
@@ -66,8 +67,10 @@ public class ConvertToSequence {
      *                   examples belong to what sequence
      * @param comparator The comparator to use when deciding the order of each possible time step in the sequence
      */
-    public ConvertToSequence(@JsonProperty("keyColumn") String[] keyColumns,
-                    @JsonProperty("comparator") SequenceComparator comparator) {
+    public ConvertToSequence(@JsonProperty("singleStepSequencesMode") boolean singleStepSequencesMode,
+                             @JsonProperty("keyColumn") String[] keyColumns,
+                             @JsonProperty("comparator") SequenceComparator comparator) {
+        this.singleStepSequencesMode = singleStepSequencesMode;
         this.keyColumns = keyColumns;
         this.comparator = comparator;
     }
@@ -78,12 +81,16 @@ public class ConvertToSequence {
 
     public void setInputSchema(Schema schema) {
         this.inputSchema = schema;
-        comparator.setSchema(transform(schema));
+        if(!singleStepSequencesMode){
+            comparator.setSchema(transform(schema));
+        }
     }
 
     @Override
     public String toString() {
-        if(keyColumns.length == 1){
+        if(singleStepSequencesMode) {
+            return "ConvertToSequence()";
+        } else if(keyColumns.length == 1){
             return "ConvertToSequence(keyColumn=\"" + keyColumns[0] + "\",comparator=" + comparator + ")";
         } else {
             return "ConvertToSequence(keyColumns=\"" + Arrays.toString(keyColumns) + "\",comparator=" + comparator + ")";
