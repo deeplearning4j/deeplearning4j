@@ -673,6 +673,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * @param outputNames The names of the output layers. This also defines their order.
          */
         public GraphBuilder setOutputs(String... outputNames) {
+            networkOutputs.clear();
             Collections.addAll(networkOutputs, outputNames);
             return this;
         }

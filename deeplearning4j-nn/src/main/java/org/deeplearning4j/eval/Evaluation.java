@@ -482,7 +482,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             //(For a particular label)
             for (Integer clazz : confusion().getClasses()) {
                 if (clazz != predictedIdx)
-                    trueNegatives.incrementCount(clazz, 1.0);
+                    trueNegatives.incrementCount(clazz, 1.0f);
             }
         } else {
             // Otherwise the real label is predicted as negative (False Negative)
@@ -492,7 +492,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             // Otherwise true negatives
             for (Integer clazz : confusion().getClasses()) {
                 if (clazz != predictedIdx && clazz != actualIdx)
-                    trueNegatives.incrementCount(clazz, 1.0);
+                    trueNegatives.incrementCount(clazz, 1.0f);
 
             }
         }
@@ -509,7 +509,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return A (multi-line) String with accuracy, precision, recall, f1 score etc
      */
     public String stats(boolean suppressWarnings) {
-        String actual, expected;
+        String actual, predicted;
         StringBuilder builder = new StringBuilder().append("\n");
         StringBuilder warnings = new StringBuilder();
         List<Integer> classes = confusion().getClasses();
@@ -522,9 +522,9 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             for (Integer clazz2 : classes) {
                 int count = confusion().getCount(clazz, clazz2);
                 if (count != 0) {
-                    expected = resolveLabelForClass(clazz2);
+                    predicted = resolveLabelForClass(clazz2);
                     builder.append(String.format("Examples labeled as %s classified by model as %s: %d times%n",
-                            expected, actual, count));
+                            actual, predicted, count));
                 }
             }
 
@@ -1278,19 +1278,19 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     // Incrementing counters
     public void incrementTruePositives(Integer classLabel) {
-        truePositives.incrementCount(classLabel, 1.0);
+        truePositives.incrementCount(classLabel, 1.0f);
     }
 
     public void incrementTrueNegatives(Integer classLabel) {
-        trueNegatives.incrementCount(classLabel, 1.0);
+        trueNegatives.incrementCount(classLabel, 1.0f);
     }
 
     public void incrementFalseNegatives(Integer classLabel) {
-        falseNegatives.incrementCount(classLabel, 1.0);
+        falseNegatives.incrementCount(classLabel, 1.0f);
     }
 
     public void incrementFalsePositives(Integer classLabel) {
-        falsePositives.incrementCount(classLabel, 1.0);
+        falsePositives.incrementCount(classLabel, 1.0f);
     }
 
 

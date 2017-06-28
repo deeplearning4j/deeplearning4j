@@ -48,7 +48,7 @@ public class VPTree {
     private float distancesArr[];
     private float sortedDistances[];
     private  List<DataPoint> leftPoints,rightPoints;
-    
+
     public VPTree(INDArray points,boolean invert) {
         this(points,"euclidean",invert);
     }
@@ -56,7 +56,7 @@ public class VPTree {
     /**
      *
      * @param items the items to use
-     * @param similarityFunction the similiarity function to use
+     * @param similarityFunction the similarity function to use
      * @param invert whether to invert the distance (similarity functions have different min/max objectives)
      */
     public VPTree(INDArray items, String similarityFunction, boolean invert) {
@@ -69,7 +69,7 @@ public class VPTree {
         final int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         distances = CounterMap.runPairWise(thisItems, new CounterMap.CountFunction<DataPoint>() {
             @Override
-            public double count(DataPoint v1, DataPoint v2) {
+            public Float count(DataPoint v1, DataPoint v2) {
                 Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), deviceId);
                 return v1.distance(v2);
             }
@@ -108,7 +108,7 @@ public class VPTree {
         this.similarityFunction = similarityFunction;
         distances = CounterMap.runPairWise(items, new CounterMap.CountFunction<DataPoint>() {
             @Override
-            public double count(DataPoint v1, DataPoint v2) {
+            public Float count(DataPoint v1, DataPoint v2) {
                 return v1.distance(v2);
             }
         });
@@ -160,14 +160,15 @@ public class VPTree {
         this.items = items;
     }
 
-    private double getDistance(DataPoint d1, DataPoint d2) {
-        double count = distances.getCount(d1, d2);
+    private float getDistance(DataPoint d1, DataPoint d2) {
+        float count = (float) distances.getCount(d1, d2);
         if (count == 0) {
-            double realDistance = d1.distance(d2);
+            float realDistance = (float) d1.distance(d2);
             distances.setCount(d1, d2, realDistance);
             distances.setCount(d2, d1, realDistance);
-            return realDistance;
+            return   realDistance;
         }
+
         return count;
     }
 
@@ -323,10 +324,10 @@ public class VPTree {
 
     public static class Node {
         private int index;
-        private double threshold;
+        private float threshold;
         private Node left, right;
 
-        public Node(int index, double threshold) {
+        public Node(int index, float threshold) {
             this.index = index;
             this.threshold = threshold;
         }
@@ -370,11 +371,11 @@ public class VPTree {
             this.index = index;
         }
 
-        public double getThreshold() {
+        public float getThreshold() {
             return threshold;
         }
 
-        public void setThreshold(double threshold) {
+        public void setThreshold(float threshold) {
             this.threshold = threshold;
         }
 
