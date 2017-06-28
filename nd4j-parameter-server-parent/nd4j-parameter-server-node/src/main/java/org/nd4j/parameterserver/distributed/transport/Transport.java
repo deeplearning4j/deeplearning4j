@@ -31,6 +31,9 @@ public interface Transport {
 
     void addClient(String ip, int port);
 
+
+    void addShard(String ip, int port);
+
     /**
      * This method does initialization of Transport instance
      *
@@ -61,6 +64,12 @@ public interface Transport {
      * @param message
      */
     void sendMessageToAllShards(VoidMessage message);
+
+    /**
+     *
+     * @param message
+     */
+    void sendMessageToAllClients(VoidMessage message, Long... exclusions);
 
     /**
      * This method accepts message from network
@@ -103,4 +112,22 @@ public interface Transport {
      * This method stops transport system.
      */
     void shutdown();
+
+    /**
+     * This method returns number of known Clients
+     * @return
+     */
+    int numberOfKnownClients();
+
+    /**
+     * This method returns number of known Shards
+     * @return
+     */
+    int numberOfKnownShards();
+
+    /**
+     * This method returns ID of this Transport instance
+     * @return
+     */
+    long getOwnOriginatorId();
 }

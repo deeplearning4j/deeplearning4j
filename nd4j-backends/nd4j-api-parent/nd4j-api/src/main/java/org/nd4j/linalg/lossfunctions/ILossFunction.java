@@ -27,7 +27,8 @@ import java.io.Serializable;
                 @JsonSubTypes.Type(value = LossMSLE.class, name = "MSLE"),
                 @JsonSubTypes.Type(value = LossNegativeLogLikelihood.class, name = "NegativeLogLikelihood"),
                 @JsonSubTypes.Type(value = LossPoisson.class, name = "Poisson"),
-                @JsonSubTypes.Type(value = LossSquaredHinge.class, name = "SquaredHinge")})
+                @JsonSubTypes.Type(value = LossSquaredHinge.class, name = "SquaredHinge"),
+                @JsonSubTypes.Type(value = LossFMeasure.class, name = "FMeasure")})
 public interface ILossFunction extends Serializable {
 
     /**

@@ -1247,7 +1247,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         MatchCondition condition = new MatchCondition(input, Conditions.absGreaterThanOrEqual(threshold));
         int cntAbs = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
 
-        if (cntAbs == 0)
+        if (cntAbs < 2)
             return null;
 
         if (boundary != null)
@@ -1295,7 +1295,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         float threshold = buffer.getInt(2);
 
         if (target.lengthLong() != originalLength)
-            throw new ND4JIllegalStateException("originalLength stored in encoded array doesn't match target length");
+            throw new ND4JIllegalStateException("originalLength ["+ originalLength+"] stored in encoded array doesn't match target length ["+ target.lengthLong()+"]");
 
         DataBuffer.TypeEx typeDst = AbstractCompressor.getBufferTypeEx(target.data());
 

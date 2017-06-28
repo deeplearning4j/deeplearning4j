@@ -2027,7 +2027,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             We don't really use Shape offset value anywhere
             And it's possible to be not a view, and have non-empty originalBuffer
          */
-        return Shape.offset(shapeInformation) > 0 || length() < data().length() || data().originalDataBuffer() != null;
+        // length/data.length can be different in case of Threshold conversion
+        return Shape.offset(shapeInformation) > 0 || (length() < data().length() && data.dataType() != DataBuffer.Type.INT) || data().originalDataBuffer() != null;
     }
 
     @Override
@@ -4657,7 +4658,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isRowVector() {
-        return rank == 2 && rows == 1 && !isScalar();
+        return rank == 2 && rows == 1;
     }
 
     /**
@@ -4665,7 +4666,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public boolean isColumnVector() {
-        return rank == 2 && columns == 1 && !isScalar();
+        return rank == 2 && columns == 1;
     }
 
     /**
