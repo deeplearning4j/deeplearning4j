@@ -505,6 +505,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 initializeParams = true;
             }
 
+            //Set RNG seed, for repeatability between initializations when set
+            if(initializeParams) {
+                Nd4j.getRandom().setSeed(getDefaultConfiguration().getSeed());
+            }
+
             // construct multi-layer
             int paramCountSoFar = 0;
             for (int i = 0; i < nLayers; i++) {
