@@ -33,7 +33,8 @@ public class OpState implements Serializable {
         TRANSFORM,
         BROADCAST,
         INDEX_ACCUMULATION,
-        AGGREGATE
+        AGGREGATE,
+        SHAPE
     }
 
 

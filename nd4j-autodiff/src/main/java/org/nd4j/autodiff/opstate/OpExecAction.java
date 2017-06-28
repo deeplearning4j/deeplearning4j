@@ -6,7 +6,9 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * Created by agibsonccc on 4/16/17.
+ * An action in the graph
+ *
+ * @author Adam Gibson
  */
 @Data
 @Builder

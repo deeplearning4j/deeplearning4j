@@ -53,9 +53,6 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     public BaseAccumulation(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
         init();
-        if (y != null)
-            LinAlgExceptions.assertSameLength(x, y);
-        //LinAlgExceptions.assertSameLength(x, z);
 
     }
 

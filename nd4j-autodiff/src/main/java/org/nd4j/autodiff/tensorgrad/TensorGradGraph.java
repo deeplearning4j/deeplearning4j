@@ -89,6 +89,10 @@ public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
     }
 
 
+    /**
+     *
+     * @return
+     */
     public OpExecOrder getOpOrder() {
         int[] order = topologicalSort();
         List<OpExecAction> ret = new ArrayList<>();

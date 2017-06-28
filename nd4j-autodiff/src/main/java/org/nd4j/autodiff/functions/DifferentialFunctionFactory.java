@@ -11,6 +11,7 @@ import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.functions.mmul.Mmul;
 import org.nd4j.autodiff.functions.mmul.TensorMmul;
+import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
@@ -540,6 +541,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             return new AbstractUnaryFunction<X>(mFactory.graph(),
                     iX,
                     ArrayUtil.reverseCopy(arrayField.getInput().getShape()),
+                    OpState.OpType.SHAPE,
                     null) {
 
                 @Override
@@ -561,7 +563,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
                 @Override
                 public String functionName() {
-                    return "transpose";
+                    return "permute";
                 }
             };
         }
@@ -575,7 +577,8 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
         if(iX.getValue() instanceof ArrayField) {
             ArrayField arrayField = (ArrayField) iX.getValue();
             return new AbstractUnaryFunction<X>(mFactory.graph(),
-                    iX,ArrayUtil.reverseCopy(arrayField.getInput().getShape()),null) {
+                    iX,ArrayUtil.reverseCopy(arrayField.getInput().getShape()),
+                    OpState.OpType.SHAPE,null) {
 
                 @Override
                 public X doGetValue() {
@@ -1591,7 +1594,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
     @Override
     public DifferentialFunction<X> reshape(DifferentialFunction<X> iX, int[] shape) {
         shape = Shape.resolveNegativeShapeIfNeccessary(shape);
-        return new AbstractUnaryFunction<X>(mFactory.graph(),iX,shape,null) {
+        return new AbstractUnaryFunction<X>(mFactory.graph(),iX,shape, OpState.OpType.SHAPE,null) {
 
             @Override
             public X doGetValue() {
@@ -1617,7 +1620,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
     @Override
     public DifferentialFunction<X> rollAxis(Variable<X> iX, int axis) {
-        return new AbstractUnaryFunction<X>(mFactory.graph(),iX,null) {
+        return new AbstractUnaryFunction<X>(mFactory.graph(),iX,null, OpState.OpType.SHAPE,null) {
 
             @Override
             public X doGetValue() {

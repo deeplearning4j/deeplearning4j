@@ -342,7 +342,7 @@ public class ArrayField implements Field<ArrayField> {
                 null,
                 ArrayUtil.reverseCopy(input.getShape()),
                 null,
-                OpState.OpType.TRANSFORM);
+                OpState.OpType.SHAPE);
     }
 
     public ArrayField permute(int[] dimensions) {
@@ -351,7 +351,7 @@ public class ArrayField implements Field<ArrayField> {
                 null,
                 ArrayUtil.permute(input.getShape(),dimensions),
                 null,
-                OpState.OpType.TRANSFORM);
+                OpState.OpType.SHAPE);
 
     }
 
@@ -361,7 +361,7 @@ public class ArrayField implements Field<ArrayField> {
                 new int[]{dim},
                 ArrayUtil.reverseCopy(input.getShape()),
                 null,
-                OpState.OpType.TRANSFORM);
+                OpState.OpType.SHAPE);
     }
 
     public ArrayField sum(int[] dimensions) {

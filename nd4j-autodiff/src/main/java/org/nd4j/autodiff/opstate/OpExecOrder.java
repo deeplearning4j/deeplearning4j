@@ -15,8 +15,10 @@ public class OpExecOrder {
     private List<OpExecAction> actions;
 
 
-
-
+    /**
+     *
+     * @return
+     */
     public List<OpState> opStates() {
         List<OpState> ret = new ArrayList<>(actions.size());
         for(OpExecAction opExecAction : actions) {

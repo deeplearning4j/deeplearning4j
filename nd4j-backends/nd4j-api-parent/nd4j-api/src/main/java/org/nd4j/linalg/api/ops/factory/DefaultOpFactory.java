@@ -31,6 +31,9 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.*;
+import org.nd4j.linalg.api.ops.impl.shape.Permute;
+import org.nd4j.linalg.api.ops.impl.shape.Reshape;
+import org.nd4j.linalg.api.ops.impl.shape.Transpose;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -80,6 +83,27 @@ public class DefaultOpFactory implements OpFactory {
         }
     }
 
+    /**
+     *
+     * @param name
+     * @param x
+     * @param z
+     * @return
+     */
+    @Override
+    public Op createShape(String name, INDArray x, INDArray z) {
+        switch(name) {
+            case "transpose":
+                return new Transpose(x,z);
+            case "reshape":
+                return new Reshape(x,z);
+            case "permute":
+                return new Permute(x,z);
+        }
+
+        throw new IllegalArgumentException("Illegal name for create shape op" + name);
+    }
+
     @Override
     public LossFunction createLossFunction(String name, INDArray x, INDArray y) {
         Class<? extends Op> clazz = opClazzes.get(name);
@@ -106,7 +130,11 @@ public class DefaultOpFactory implements OpFactory {
 
 
     @Override
-    public Accumulation createAccum(String name, INDArray x, INDArray y, INDArray z, Object[] extraArgs) {
+    public Accumulation createAccum(String name,
+                                    INDArray x,
+                                    INDArray y,
+                                    INDArray z,
+                                    Object[] extraArgs) {
         Accumulation ret = null;
         switch (name) {
             case "sum":
@@ -143,8 +171,18 @@ public class DefaultOpFactory implements OpFactory {
             case "manhattan":
                 ret = new ManhattanDistance(x, y, x.length());
                 break;
+            case "mmul":
+                ret = new Mmul(x, y, x.length());
+                break;
+            case "tensormmul":
+                ret = new TensorMmul(x, y, x.length());
+                break;
+
 
         }
+
+        if(ret == null)
+            throw new IllegalArgumentException("Illegal operation name " + name);
 
         ret.setExtraArgs(extraArgs);
         return ret;

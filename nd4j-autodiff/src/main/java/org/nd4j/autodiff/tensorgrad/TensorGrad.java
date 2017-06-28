@@ -8,8 +8,6 @@ import org.nd4j.autodiff.ArrayFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
-import org.nd4j.autodiff.graph.Graph;
-import org.nd4j.autodiff.graph.api.Vertex;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpExecAction;
@@ -1371,6 +1369,12 @@ public class TensorGrad {
     public Op createOp(OpState.OpType opType,OpExecAction opExecAction) {
         OpState opState = opExecAction.getOpState();
         switch (opType) {
+            case SHAPE:
+                return Nd4j.getOpFactory().createShape(
+                        opState.getOpName(),
+                        getX(opExecAction),
+                        getZ(opExecAction)
+                );
             case SCALAR_TRANSFORM:
                 return Nd4j.getOpFactory().createScalarTransform(
                         opState.getOpName(),
@@ -1387,7 +1391,8 @@ public class TensorGrad {
                         getZ(opExecAction),
                         opState.getExtraArgs());
             case TRANSFORM:
-                return Nd4j.getOpFactory().createTransform(opState.getOpName(),
+                return Nd4j.getOpFactory().createTransform(
+                        opState.getOpName(),
                         getX(opExecAction),
                         getY(opExecAction),
                         getZ(opExecAction),
@@ -1410,7 +1415,7 @@ public class TensorGrad {
             case AGGREGATE: break;
         }
 
-        throw new IllegalStateException("");
+        throw new IllegalStateException("Illegal type specified " + opType);
     }
 
 
@@ -1434,7 +1439,8 @@ public class TensorGrad {
             throw new ND4JIllegalStateException("Unable to run exec pipeline. No vertices in graph");
 
         for(OpExecAction opExecAction : graph().getOpOrder().getActions()) {
-            Op op = createOp(opExecAction.getOpState().getOpType(),
+            Op op = createOp(
+                    opExecAction.getOpState().getOpType(),
                     opExecAction);
             Nd4j.getExecutioner().exec(op);
             ops.add(op);

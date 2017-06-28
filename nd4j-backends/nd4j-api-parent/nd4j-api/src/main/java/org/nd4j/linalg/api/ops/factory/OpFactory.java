@@ -30,6 +30,16 @@ import org.nd4j.linalg.api.ops.*;
 public interface OpFactory {
 
     /**
+     *
+     *
+     * @param name
+     * @param x
+     * @param z
+     * @return
+     */
+    Op createShape(String name, INDArray x, INDArray z);
+
+    /**
      * Create a loss function with the given inputs and outputs
      * @param name the name of the function
      * @param x the input

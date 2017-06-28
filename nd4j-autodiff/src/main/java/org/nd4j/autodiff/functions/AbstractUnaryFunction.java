@@ -21,18 +21,29 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
 
     protected DifferentialFunction<X> m_x;
     protected int[] shape;
+    protected OpState.OpType opType;
 
     public AbstractUnaryFunction(TensorGradGraph graph,
                                  DifferentialFunction<X> i_v,
                                  int[] shape,
+                                 OpState.OpType opType,
                                  Object[] extraArgs) {
         super(graph,extraArgs);
+        this.opType = opType;
+
         if (i_v != null) {
             m_x = i_v;
             addEdges(graph,m_x,functionName(),shape);
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
+    }
+
+    public AbstractUnaryFunction(TensorGradGraph graph,
+                                 DifferentialFunction<X> i_v,
+                                 int[] shape,
+                                 Object[] extraArgs) {
+        this(graph,i_v,shape, OpState.OpType.TRANSFORM,extraArgs);
     }
 
 
@@ -80,7 +91,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
 
             graph.addVertex(newVertex);
             OpState owner =  OpState.builder()
-                    .opType(OpState.OpType.TRANSFORM)
+                    .opType(opType)
                     .opName(opName).extraArgs(extraArgs)
                     .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
                     .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
