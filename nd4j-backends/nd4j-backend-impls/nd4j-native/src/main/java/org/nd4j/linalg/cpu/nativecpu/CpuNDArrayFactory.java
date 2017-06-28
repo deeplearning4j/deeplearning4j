@@ -1129,7 +1129,7 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
             CompressionDescriptor descriptor = compressed.getCompressionDescriptor();
 
             // decompression mode
-            buffer = Nd4j.createBuffer(descriptor.getNumberOfElements(), false);
+            buffer = Nd4j.createBuffer(descriptor.getNumberOfElements(), true);
         }
 
         convertDataEx(typeSrc, source, typeDst, buffer);

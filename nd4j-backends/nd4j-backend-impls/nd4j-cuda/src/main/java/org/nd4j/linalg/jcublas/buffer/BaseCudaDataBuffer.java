@@ -151,8 +151,21 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         this(data, copy, 0);
     }
 
+    public BaseCudaDataBuffer(int[] data, boolean copy, MemoryWorkspace workspace) {
+        this(data, copy, 0, workspace);
+    }
+
     public BaseCudaDataBuffer(int[] data, boolean copy, long offset) {
         this(data.length, 4, false);
+        this.offset = offset;
+        this.originalOffset = offset;
+        this.length = data.length - offset;
+        this.underlyingLength = data.length;
+        set(data, this.length, offset, offset);
+    }
+
+    public BaseCudaDataBuffer(int[] data, boolean copy, long offset, MemoryWorkspace workspace) {
+        this(data.length, 4, false, workspace);
         this.offset = offset;
         this.originalOffset = offset;
         this.length = data.length - offset;
@@ -1012,6 +1025,50 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         return super.getInt(ix);
     }
 
+    @Override
+    public DataBuffer reallocate(long length) {
+
+        // we want to be sure this array isn't used anywhere RIGHT AT THIS MOMENT
+        Nd4j.getExecutioner().commit();
+
+            AllocationPoint old = allocationPoint;
+            allocationPoint = AtomicAllocator.getInstance().allocateMemory(this, new AllocationShape(length, elementSize, dataType()), false);
+
+            trackingPoint = allocationPoint.getObjectId();
+
+            switch(dataType()){
+                case DOUBLE:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asDoublePointer();
+                    indexer = DoubleIndexer.create((DoublePointer) pointer);
+                    break;
+                case FLOAT:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asFloatPointer();
+                    indexer = FloatIndexer.create((FloatPointer) pointer);
+                    break;
+                case HALF:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asShortPointer();
+                    indexer = ShortIndexer.create((ShortPointer) pointer);
+                    break;
+                case INT:
+                    this.pointer = new CudaPointer(allocationPoint.getPointers().getHostPointer(), length, 0).asIntPointer();
+                    indexer = IntIndexer.create((IntPointer) pointer);
+                    break;
+                default:
+                    throw new UnsupportedOperationException();
+            }
+            allocator.memcpyAsync(this, old.getPointers().getHostPointer(), length * elementSize, 0);
+            // we're keeping pointer reference for JVM
+            pointer.address();
+
+
+        if(isAttached()){
+            // do nothing here, that's workspaces
+        } else{
+            AtomicAllocator.getInstance().freeMemory(old);
+        }
+
+        return this;
+    }
 
     /*
     protected short fromFloat( float fval ) {

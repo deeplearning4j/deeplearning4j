@@ -60,7 +60,7 @@ public class DistributedInitializationMessage extends BaseVoidMessage implements
             if (voidConfiguration.getExecutionMode() == ExecutionMode.AVERAGING) {
                 // each shard has full own copy
                 columnsPerShard = vectorLength;
-            } else if (voidConfiguration.getExecutionMode() == ExecutionMode.DISTRIBUTED) {
+            } else if (voidConfiguration.getExecutionMode() == ExecutionMode.SHARDED) {
                 // each shard will have only part of the data
                 if (voidConfiguration.getNumberOfShards() - 1 == shardIndex) {
                     int modulo = vectorLength % voidConfiguration.getNumberOfShards();

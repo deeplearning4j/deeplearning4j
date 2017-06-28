@@ -43,6 +43,14 @@ public interface MemoryHandler {
 
     CudaContext getCudaContext();
 
+
+    /**
+     * This method removes AllocationPoint from corresponding device/host trackers
+     * @param point
+     * @param location
+     */
+    void forget(AllocationPoint point, AllocationStatus location);
+
     /**
      * This method causes memory synchronization on host side.
      *  Viable only for Device-dependant MemoryHandlers

@@ -17,10 +17,6 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
         <!-- MapDB - Used for StatsListener storage -->
         <dependency>
             <groupId>org.mapdb</groupId>

@@ -8,15 +8,35 @@ import org.apache.commons.lang3.StringUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * Gson  serialization
+ *
+ * @author Alex Black
+ * @author Adam Gibson
+ */
 public class GsonDeserializationUtils {
     private static final JsonParser JSON_PARSER = new JsonParser();
 
+    static {
+        NumberFormat format = NumberFormat.getIntegerInstance();
+        format.setGroupingUsed(false);
+    }
+
+    /**
+     * Deserialize an ndarray
+     * form json
+     * @param serializedRawArray
+     * @return
+     */
     public static INDArray deserializeRawJson(String serializedRawArray) {
-        String cleanedRawArray = serializedRawArray.replaceAll("(?<=[\\d])(,)(?=[\\d])", "");
+
+        //String cleanedRawArray = serializedRawArray.replaceAll("(?<=[\\d])(,)(?=[\\d])", "");
+         String cleanedRawArray = serializedRawArray;
         JsonArray jsonArray = JSON_PARSER.parse(cleanedRawArray).getAsJsonArray();
 
         List<Integer> dimensions = new ArrayList<>();

@@ -26,6 +26,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.LockSupport;
 
 import static java.lang.System.setProperty;
 
@@ -42,8 +44,6 @@ public class RoutedTransport extends BaseTransport {
     @Getter
     @Setter
     protected ClientRouter router;
-
-    protected long originatorId;
 
     public RoutedTransport() {
         //
@@ -160,9 +160,92 @@ public class RoutedTransport extends BaseTransport {
 
         router.init(voidConfiguration, this);
         this.originatorId = HashUtil.getLongHash(this.getIp() + ":" + this.getPort());
+    }
 
 
+    @Override
+    public void sendMessageToAllClients(VoidMessage message, Long... exclusions) {
+        if (nodeRole != NodeRole.SHARD)
+            throw new ND4JIllegalStateException("Only SHARD allowed to send messages to all Clients");
 
+        final DirectBuffer buffer = message.asUnsafeBuffer();
+
+        // no need to search for matches above number of then exclusions
+        final AtomicInteger cnt = new AtomicInteger(0);
+
+        //final StringBuilder builder = new StringBuilder("Got message from: [").append(message.getOriginatorId()).append("]; Resend: {");
+
+        clients.values().parallelStream().filter(rc -> {
+            // do not send message back to yourself :)
+            if (rc.getLongHash() == this.originatorId || rc.getLongHash() == 0) {
+//                builder.append(", SKIP: ").append(rc.getLongHash());
+                return false;
+            }
+
+            // we skip exclusions here
+            if (exclusions != null && cnt.get() < exclusions.length) {
+                for (Long exclude : exclusions)
+                    if (exclude.longValue() == rc.getLongHash()) {
+                        cnt.incrementAndGet();
+//                        builder.append(", SKIP: ").append(rc.getLongHash());
+                        return false;
+                    }
+            }
+
+     //       builder.append(", PASS: ").append(rc.getLongHash());
+            return true;
+        }).forEach((rc)->{
+      //      log.info("Sending message to {}", rc.getLongHash());
+
+            RetransmissionHandler.TransmissionStatus res;
+            long retr = 0;
+            boolean delivered = false;
+
+            while (!delivered) {
+                // still stupid. maybe use real reentrant lock here?
+                synchronized (rc.locker) {
+                    res = RetransmissionHandler.getTransmissionStatus(rc.getPublication().offer(buffer));
+                }
+
+                switch (res) {
+                    case NOT_CONNECTED: {
+                        if (!rc.getActivated().get()) {
+                            retr++;
+
+                            if (retr > 20)
+                                throw new ND4JIllegalStateException(
+                                        "Can't connect to Shard: [" + rc.getPublication().channel() + "]");
+
+                            try {
+                                //Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                                LockSupport.parkNanos(voidConfiguration.getRetransmitTimeout() * 1000000);
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        } else {
+                            throw new ND4JIllegalStateException("Shards reassignment is to be implemented yet");
+                        }
+                    }
+                    break;
+                    case ADMIN_ACTION:
+                    case BACKPRESSURE: {
+                        try {
+                            //Thread.sleep(voidConfiguration.getRetransmitTimeout());
+                            LockSupport.parkNanos(voidConfiguration.getRetransmitTimeout() * 1000000);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    break;
+                    case MESSAGE_SENT:
+                        delivered = true;
+                        rc.getActivated().set(true);
+                        break;
+                }
+            }
+        });
+
+     //s   log.info("RESULT: {}", builder.toString());
     }
 
     /**
@@ -174,6 +257,7 @@ public class RoutedTransport extends BaseTransport {
     protected void sendCoordinationCommand(VoidMessage message) {
 
         //        log.info("Sending [{}] to all Shards...", message.getClass().getSimpleName());
+        message.setOriginatorId(this.originatorId);
 
         // if we're the only shard - we just put message into the queue
         if (nodeRole == NodeRole.SHARD && voidConfiguration.getNumberOfShards() == 1) {
@@ -241,6 +325,9 @@ public class RoutedTransport extends BaseTransport {
                         rc.getActivated().set(true);
                         break;
                 }
+
+                if (!delivered)
+                    log.info("Attempting to resend message");
             }
         });
     }
@@ -308,6 +395,16 @@ public class RoutedTransport extends BaseTransport {
     }
 
     @Override
+    public int numberOfKnownClients() {
+        return clients.size();
+    }
+
+    @Override
+    public int numberOfKnownShards() {
+        return shards.size();
+    }
+
+    @Override
     protected void shutdownSilent() {
         // closing shards
         shards.forEach((rc) -> {
@@ -354,6 +451,8 @@ public class RoutedTransport extends BaseTransport {
             }
             return;
         }
+
+        //log.info("sI_{} {}: message class: {}", shardIndex, nodeRole, message.getClass().getSimpleName());
 
         RetransmissionHandler.TransmissionStatus result;
 
@@ -489,6 +588,21 @@ public class RoutedTransport extends BaseTransport {
         //        }
     }
 
+
+    @Override
+    public synchronized void addShard(String ip, int port) {
+        Long hash = HashUtil.getLongHash(ip + ":" + port);
+
+        RemoteConnection connection = RemoteConnection.builder().ip(ip).port(port)
+                .publication(aeron.addPublication("aeron:udp?endpoint=" + ip + ":" + port,
+                        voidConfiguration.getStreamId()))
+                .longHash(hash)
+                .locker(new Object()).activated(new AtomicBoolean(false)).build();
+
+        log.info("sI_{} {}: Adding SHARD: [{}] to {}:{}", shardIndex, nodeRole, hash, ip, port);
+        shards.add(connection);
+    }
+
     @Override
     public synchronized void addClient(String ip, int port) {
         Long hash = HashUtil.getLongHash(ip + ":" + port);
@@ -498,6 +612,7 @@ public class RoutedTransport extends BaseTransport {
         RemoteConnection connection = RemoteConnection.builder().ip(ip).port(port)
                         .publication(aeron.addPublication("aeron:udp?endpoint=" + ip + ":" + port,
                                         voidConfiguration.getStreamId()))
+                        .longHash(hash)
                         .locker(new Object()).activated(new AtomicBoolean(false)).build();
 
 
@@ -515,6 +630,7 @@ public class RoutedTransport extends BaseTransport {
         private Publication publication;
         private Object locker;
         private AtomicBoolean activated;
+        protected long longHash;
 
 
 

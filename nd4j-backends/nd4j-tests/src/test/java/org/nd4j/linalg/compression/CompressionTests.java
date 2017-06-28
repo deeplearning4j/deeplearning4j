@@ -16,6 +16,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -50,7 +52,7 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     public void testGzipInPlaceCompression() {
-        INDArray array = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
+        INDArray array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
         Nd4j.getCompressor().setDefaultCompression("GZIP");
         Nd4j.getCompressor().compressi(array);
         assertTrue(array.isCompressed());
@@ -60,7 +62,7 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     public void testFP16Compression1() {
-        INDArray array = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
+        INDArray array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
 
         BasicNDArrayCompressor.getInstance().setDefaultCompression("INT8");
 
@@ -81,8 +83,8 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     public void testFP16Compression2() {
-        DataBuffer buffer = Nd4j.createBuffer(new float[] {1f, 2f, 3f, 4f, 5f});
-        DataBuffer exp = Nd4j.createBuffer(new float[] {1f, 2f, 3f, 4f, 5f});
+        DataBuffer buffer = Nd4j.createBuffer(new float[]{1f, 2f, 3f, 4f, 5f});
+        DataBuffer exp = Nd4j.createBuffer(new float[]{1f, 2f, 3f, 4f, 5f});
 
         BasicNDArrayCompressor.getInstance().setDefaultCompression("FLOAT16");
 
@@ -101,8 +103,8 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     public void testFP16Compression3() {
-        INDArray buffer = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
-        INDArray exp = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
+        INDArray buffer = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+        INDArray exp = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
 
         BasicNDArrayCompressor.getInstance().setDefaultCompression("FLOAT16");
 
@@ -124,8 +126,8 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     public void testUint8Compression1() {
-        DataBuffer buffer = Nd4j.createBuffer(new float[] {1f, 2f, 3f, 4f, 5f});
-        DataBuffer exp = Nd4j.createBuffer(new float[] {1f, 2f, 3f, 4f, 5f});
+        DataBuffer buffer = Nd4j.createBuffer(new float[]{1f, 2f, 3f, 4f, 5f});
+        DataBuffer exp = Nd4j.createBuffer(new float[]{1f, 2f, 3f, 4f, 5f});
 
         BasicNDArrayCompressor.getInstance().setDefaultCompression("UINT8");
 
@@ -144,8 +146,8 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     public void testUint8Compression2() {
-        DataBuffer buffer = Nd4j.createBuffer(new float[] {1f, 2f, 3f, 4f, 1005f});
-        DataBuffer exp = Nd4j.createBuffer(new float[] {1f, 2f, 3f, 4f, 1005f});
+        DataBuffer buffer = Nd4j.createBuffer(new float[]{1f, 2f, 3f, 4f, 1005f});
+        DataBuffer exp = Nd4j.createBuffer(new float[]{1f, 2f, 3f, 4f, 1005f});
 
         BasicNDArrayCompressor.getInstance().setDefaultCompression("UINT8");
 
@@ -164,7 +166,7 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     public void testInt8Compression1() {
-        DataBuffer buffer = Nd4j.createBuffer(new float[] {1f, 2f, 3f, 4f, 1005f, -3.7f});
+        DataBuffer buffer = Nd4j.createBuffer(new float[]{1f, 2f, 3f, 4f, 1005f, -3.7f});
 
         BasicNDArrayCompressor.getInstance().setDefaultCompression("INT8");
 
@@ -228,7 +230,7 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     public void testFP8Compression1() {
-        INDArray array = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
+        INDArray array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
 
         BasicNDArrayCompressor.getInstance().setDefaultCompression("FLOAT8");
 
@@ -250,11 +252,11 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     public void testJVMCompression1() throws Exception {
-        INDArray exp = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
+        INDArray exp = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
 
         BasicNDArrayCompressor.getInstance().setDefaultCompression("FLOAT16");
 
-        INDArray compressed = BasicNDArrayCompressor.getInstance().compress(new float[] {1f, 2f, 3f, 4f, 5f});
+        INDArray compressed = BasicNDArrayCompressor.getInstance().compress(new float[]{1f, 2f, 3f, 4f, 5f});
         assertNotEquals(null, compressed.data());
         assertNotEquals(null, compressed.shapeInfoDataBuffer());
         assertTrue(compressed.isCompressed());
@@ -266,11 +268,11 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     public void testJVMCompression2() throws Exception {
-        INDArray exp = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
+        INDArray exp = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
 
         BasicNDArrayCompressor.getInstance().setDefaultCompression("INT8");
 
-        INDArray compressed = BasicNDArrayCompressor.getInstance().compress(new float[] {1f, 2f, 3f, 4f, 5f});
+        INDArray compressed = BasicNDArrayCompressor.getInstance().compress(new float[]{1f, 2f, 3f, 4f, 5f});
         assertNotEquals(null, compressed.data());
         assertNotEquals(null, compressed.shapeInfoDataBuffer());
         assertTrue(compressed.isCompressed());
@@ -282,11 +284,11 @@ public class CompressionTests extends BaseNd4jTest {
 
     @Test
     public void testJVMCompression3() throws Exception {
-        INDArray exp = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
+        INDArray exp = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
 
         BasicNDArrayCompressor.getInstance().setDefaultCompression("NOOP");
 
-        INDArray compressed = BasicNDArrayCompressor.getInstance().compress(new float[] {1f, 2f, 3f, 4f, 5f});
+        INDArray compressed = BasicNDArrayCompressor.getInstance().compress(new float[]{1f, 2f, 3f, 4f, 5f});
         assertNotEquals(null, compressed.data());
         assertNotEquals(null, compressed.shapeInfoDataBuffer());
         assertTrue(compressed.isCompressed());
@@ -347,16 +349,16 @@ public class CompressionTests extends BaseNd4jTest {
                 .build();
 
 
-        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "IIIA")) {
+        try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "IIIA")) {
             INDArray compressed = Nd4j.getExecutioner().thresholdEncode(initial.dup(), 0.999);
         }
 
         long timeS = 0;
         for (int i = 0; i < 100; i++) {
-            try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "IIIA")) {
+            try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getAndActivateWorkspace(configuration, "IIIA")) {
                 INDArray d = initial.dup();
                 long time1 = System.nanoTime();
-                INDArray compressed = Nd4j.getExecutioner().thresholdEncode(d,  0.999);
+                INDArray compressed = Nd4j.getExecutioner().thresholdEncode(d, 0.999);
                 long time2 = System.nanoTime();
                 timeS += (time2 - time1) / 1000;
             }
@@ -471,7 +473,57 @@ public class CompressionTests extends BaseNd4jTest {
         assertNotEquals(exp_0, initial);
 
         assertEquals(900, initial.sumNumber().doubleValue(), 0.01);
+    }
 
+    @Test
+    public void testThresholdCompression6() throws Exception {
+        INDArray initial = Nd4j.create(new double[]{1.0, 2.0, 0.0, 0.0, -1.0, -1.0});
+        INDArray exp_0 = Nd4j.create(new double[]{1.0 - 1e-3, 2.0 - 1e-3, 0.0, 0.0, -1.0 + 1e-3, -1.0 + 1e-3});
+        INDArray exp_1 = Nd4j.create(new double[]{1e-3, 1e-3, 0.0, 0.0, -1e-3, -1e-3});
+        INDArray exp_2 = Nd4j.create(new double[]{2e-3, 2e-3, 0.0, 0.0, -2e-3, -2e-3});
+
+        //Nd4j.getCompressor().getCompressor("THRESHOLD").configure(1e-3);
+        //NDArray compressed = Nd4j.getCompressor().compress(initial, "THRESHOLD");
+        INDArray compressed = Nd4j.getExecutioner().thresholdEncode(initial, 1e-3f);
+
+        log.info("Initial array: {}", Arrays.toString(initial.data().asFloat()));
+
+        assertEquals(exp_0, initial);
+
+        INDArray decompressed = Nd4j.create(initial.length());
+        Nd4j.getExecutioner().thresholdDecode(compressed, decompressed);
+
+        log.info("Decompressed array: {}", Arrays.toString(decompressed.data().asFloat()));
+
+        assertEquals(exp_1, decompressed);
+
+        Nd4j.getExecutioner().thresholdDecode(compressed, decompressed);
+
+        assertEquals(exp_2, decompressed);
+    }
+
+
+
+    @Test
+    public void testThresholdSerialization1() throws Exception {
+        INDArray initial = Nd4j.create(new double[]{-1.0, -2.0, 0.0, 0.0, 1.0, 1.0});
+        INDArray exp_0 = Nd4j.create(new double[]{-1.0 + 1e-3, -2.0 + 1e-3, 0.0, 0.0, 1.0 - 1e-3, 1.0 - 1e-3});
+        INDArray exp_1 = Nd4j.create(new double[]{-1e-3, -1e-3, 0.0, 0.0, 1e-3, 1e-3});
+
+        //Nd4j.getCompressor().getCompressor("THRESHOLD").configure(1e-3);
+        INDArray compressed = Nd4j.getExecutioner().thresholdEncode(initial, 1e-3f);
+
+        assertEquals(exp_0, initial);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Nd4j.write(baos, compressed);
+
+        INDArray serialized = Nd4j.read(new ByteArrayInputStream(baos.toByteArray()));
+
+        INDArray decompressed_copy = Nd4j.create(initial.length());
+        Nd4j.getExecutioner().thresholdDecode(serialized, decompressed_copy);
+
+        assertEquals(exp_1, decompressed_copy);
     }
 
     @Override

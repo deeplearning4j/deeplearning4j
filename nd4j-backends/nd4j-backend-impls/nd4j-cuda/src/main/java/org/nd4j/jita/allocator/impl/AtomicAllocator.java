@@ -364,6 +364,25 @@ public class AtomicAllocator implements Allocator {
 
 
     /**
+     * This method releases memory allocated for this allocation point
+     * @param point
+     */
+    public void freeMemory(AllocationPoint point) {
+        if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
+            this.getMemoryHandler().getMemoryProvider().free(point);
+            point.setAllocationStatus(AllocationStatus.HOST);
+            this.getMemoryHandler().getMemoryProvider().free(point);
+            this.getMemoryHandler().forget(point, AllocationStatus.DEVICE);
+        } else {
+            // call it only once
+            this.getMemoryHandler().getMemoryProvider().free(point);
+            this.getMemoryHandler().forget(point, AllocationStatus.HOST);
+        }
+
+        allocationsMap.remove(point.getObjectId());
+    }
+
+    /**
      * This method allocates required chunk of memory
      *
      * @param requiredMemory

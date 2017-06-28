@@ -104,7 +104,7 @@ public class DistributedSgDotMessage extends BaseVoidMessage implements Distribu
             dot.setTargetId((short) -1);
             dot.setOriginatorId(getOriginatorId());
             transport.putMessage(dot);
-        } else if (voidConfiguration.getExecutionMode() == ExecutionMode.DISTRIBUTED) {
+        } else if (voidConfiguration.getExecutionMode() == ExecutionMode.SHARDED) {
             // send this message to everyone
             DotAggregation dot = new DotAggregation(taskId, (short) voidConfiguration.getNumberOfShards(), shardIndex,
                             result);

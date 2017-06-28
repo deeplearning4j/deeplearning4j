@@ -15,9 +15,7 @@ import org.nd4j.parameterserver.distributed.messages.complete.FrameCompleteMessa
 import org.nd4j.parameterserver.distributed.messages.intercom.DistributedCbowDotMessage;
 import org.nd4j.parameterserver.distributed.messages.requests.CbowRequestMessage;
 import org.nd4j.parameterserver.distributed.training.BaseTrainer;
-import org.nd4j.parameterserver.distributed.training.TrainingDriver;
 import org.nd4j.parameterserver.distributed.training.chains.CbowChain;
-import org.nd4j.parameterserver.distributed.training.chains.SkipGramChain;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -75,7 +73,7 @@ public class CbowTrainer extends BaseTrainer<CbowRequestMessage> {
 
         if (voidConfiguration.getExecutionMode() == ExecutionMode.AVERAGING) {
             transport.putMessage(dcdm);
-        } else if (voidConfiguration.getExecutionMode() == ExecutionMode.DISTRIBUTED) {
+        } else if (voidConfiguration.getExecutionMode() == ExecutionMode.SHARDED) {
             transport.sendMessage(dcdm);
         }
     }

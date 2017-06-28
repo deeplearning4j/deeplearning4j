@@ -1255,6 +1255,17 @@ public class Nd4j {
         return type == DataBuffer.Type.DOUBLE ? createBuffer(new double[length]) : createBuffer(new float[length]);
     }
 
+
+    public static DataBuffer createBufferDetached(int[] shape, DataBuffer.Type type) {
+        int length = ArrayUtil.prod(shape);
+        if (type == DataBuffer.Type.INT)
+            return createBufferDetached(new int[length]);
+        else if (type == DataBuffer.Type.HALF)
+            return createBufferDetached(new float[length]);
+
+        return type == DataBuffer.Type.DOUBLE ? createBufferDetached(new double[length]) : createBufferDetached(new float[length]);
+    }
+
     /**
      * Creates a buffer of the specified type
      * and length with the given byte buffer.
@@ -1307,6 +1318,19 @@ public class Nd4j {
      * @return the created buffer
      */
     public static DataBuffer createBuffer(int[] data) {
+        DataBuffer ret;
+        ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createInt(data) : DATA_BUFFER_FACTORY_INSTANCE.createInt(data, Nd4j.getMemoryManager().getCurrentWorkspace());
+        logCreationIfNecessary(ret);
+        return ret;
+    }
+
+    /**
+     * Create a buffer equal of length prod(shape). This method is NOT affected by workspaces
+     *
+     * @param data
+     * @return
+     */
+    public static DataBuffer createBufferDetached(int[] data) {
         DataBuffer ret;
         ret = DATA_BUFFER_FACTORY_INSTANCE.createInt(data);
         logCreationIfNecessary(ret);
@@ -1409,9 +1433,9 @@ public class Nd4j {
     public static DataBuffer createBuffer(double[] data) {
         DataBuffer ret;
         if (dataType() == DataBuffer.Type.DOUBLE)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createDouble(data);
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(data) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(data, Nd4j.getMemoryManager().getCurrentWorkspace());
         else if (dataType() == DataBuffer.Type.HALF)
-            ret = DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data));
+            ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createHalf(data) : DATA_BUFFER_FACTORY_INSTANCE.createHalf(ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
         else
             ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data)) : DATA_BUFFER_FACTORY_INSTANCE.createFloat(ArrayUtil.toFloats(data), Nd4j.getMemoryManager().getCurrentWorkspace());
         logCreationIfNecessary(ret);
@@ -2403,7 +2427,7 @@ public class Nd4j {
      * @throws IOException
      */
     public static INDArray read(DataInputStream dis) throws IOException {
-        DataBuffer shapeInformation = Nd4j.createBuffer(new int[1], DataBuffer.Type.INT);
+        DataBuffer shapeInformation = Nd4j.createBufferDetached(new int[1], DataBuffer.Type.INT);
         shapeInformation.read(dis);
         int length = Shape.length(shapeInformation);
         DataBuffer data = CompressedDataBuffer.readUnknown(dis, length);
@@ -6187,6 +6211,8 @@ public class Nd4j {
                 return 4;
             case HALF:
                 return 2;
+            case INT:
+                return 4;
             default:
             case DOUBLE:
                 return 8;
