@@ -274,6 +274,12 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             ds.setExampleMetaData(temp2);
         }
 
+        //Edge case, for backward compatibility:
+        //If labelIdx == -1 && numPossibleLabels == -1 -> no labels -> set labels array to features array
+        if(labelIndex == -1 && numPossibleLabels == -1 && ds.getLabels() == null){
+            ds.setLabels(ds.getFeatures());
+        }
+
         if(preProcessor != null){
             preProcessor.preProcess(ds);
         }
