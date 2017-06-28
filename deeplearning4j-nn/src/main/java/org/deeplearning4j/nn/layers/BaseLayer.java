@@ -71,7 +71,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
-
         cacheMode = conf.getCacheMode();
     }
 
@@ -131,16 +130,17 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     /**
      * This method ADDS additional IterationListener to existing listeners
      *
-     * @param listener
+     * @param listeners
      */
     @Override
-    public void addListener(IterationListener listener) {
+    public void addListeners(IterationListener... listeners) {
         if (this.iterationListeners == null) {
-            setListeners(listener);
+            setListeners(listeners);
             return;
         }
 
-        iterationListeners.add(listener);
+        for (IterationListener listener: listeners)
+            iterationListeners.add(listener);
     }
 
     @Override
