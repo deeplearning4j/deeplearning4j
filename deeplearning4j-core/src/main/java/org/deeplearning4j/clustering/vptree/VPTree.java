@@ -69,7 +69,7 @@ public class VPTree {
         final int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         distances = CounterMap.runPairWise(thisItems, new CounterMap.CountFunction<DataPoint>() {
             @Override
-            public double count(DataPoint v1, DataPoint v2) {
+            public Float count(DataPoint v1, DataPoint v2) {
                 Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), deviceId);
                 return v1.distance(v2);
             }
@@ -108,7 +108,7 @@ public class VPTree {
         this.similarityFunction = similarityFunction;
         distances = CounterMap.runPairWise(items, new CounterMap.CountFunction<DataPoint>() {
             @Override
-            public double count(DataPoint v1, DataPoint v2) {
+            public Float count(DataPoint v1, DataPoint v2) {
                 return v1.distance(v2);
             }
         });

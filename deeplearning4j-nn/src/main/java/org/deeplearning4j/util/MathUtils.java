@@ -210,10 +210,10 @@ public class MathUtils {
         Counter<String> counter2 = new Counter<>();
 
         for (int i = 0; i < strings[0].length(); i++)
-            counter.incrementCount(String.valueOf(strings[0].charAt(i)), 1.0);
+            counter.incrementCount(String.valueOf(strings[0].charAt(i)), 1.0f);
 
         for (int i = 0; i < strings[1].length(); i++)
-            counter2.incrementCount(String.valueOf(strings[1].charAt(i)), 1.0);
+            counter2.incrementCount(String.valueOf(strings[1].charAt(i)), 1.0f);
         Set<String> v1 = counter.keySet();
         Set<String> v2 = counter2.keySet();
 

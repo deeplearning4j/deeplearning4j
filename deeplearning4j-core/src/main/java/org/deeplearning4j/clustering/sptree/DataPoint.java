@@ -66,28 +66,28 @@ public class DataPoint implements Serializable {
      * @param point the distance from this point to the given point
      * @return the distance between the two points
      */
-    public double distance(DataPoint point) {
+    public float distance(DataPoint point) {
         switch (functionName) {
             case "euclidean":
-                double ret = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this.point, point.point))
-                                .getFinalResult().doubleValue();
+                float ret = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this.point, point.point))
+                                .getFinalResult().floatValue();
                 return invert ? -ret : ret;
 
             case "cosinesimilarity":
-                double ret2 = Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(this.point, point.point))
-                                .getFinalResult().doubleValue();
+                float ret2 = Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(this.point, point.point))
+                                .getFinalResult().floatValue();
                 return invert ? -ret2 : ret2;
 
             case "manhattan":
-                double ret3 = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(this.point, point.point))
-                                .getFinalResult().doubleValue();
+                float ret3 = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(this.point, point.point))
+                                .getFinalResult().floatValue();
                 return invert ? -ret3 : ret3;
             case "dot":
-                double dotRet = Nd4j.getBlasWrapper().dot(this.point, point.point);
+                float dotRet = (float) Nd4j.getBlasWrapper().dot(this.point, point.point);
                 return invert ? -dotRet : dotRet;
             default:
-                double ret4 = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this.point, point.point))
-                                .getFinalResult().doubleValue();
+                float ret4 = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this.point, point.point))
+                                .getFinalResult().floatValue();
                 return invert ? -ret4 : ret4;
 
         }

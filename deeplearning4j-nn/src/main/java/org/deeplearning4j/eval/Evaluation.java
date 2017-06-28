@@ -482,7 +482,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             //(For a particular label)
             for (Integer clazz : confusion().getClasses()) {
                 if (clazz != predictedIdx)
-                    trueNegatives.incrementCount(clazz, 1.0);
+                    trueNegatives.incrementCount(clazz, 1.0f);
             }
         } else {
             // Otherwise the real label is predicted as negative (False Negative)
@@ -492,7 +492,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             // Otherwise true negatives
             for (Integer clazz : confusion().getClasses()) {
                 if (clazz != predictedIdx && clazz != actualIdx)
-                    trueNegatives.incrementCount(clazz, 1.0);
+                    trueNegatives.incrementCount(clazz, 1.0f);
 
             }
         }
@@ -1278,19 +1278,19 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     // Incrementing counters
     public void incrementTruePositives(Integer classLabel) {
-        truePositives.incrementCount(classLabel, 1.0);
+        truePositives.incrementCount(classLabel, 1.0f);
     }
 
     public void incrementTrueNegatives(Integer classLabel) {
-        trueNegatives.incrementCount(classLabel, 1.0);
+        trueNegatives.incrementCount(classLabel, 1.0f);
     }
 
     public void incrementFalseNegatives(Integer classLabel) {
-        falseNegatives.incrementCount(classLabel, 1.0);
+        falseNegatives.incrementCount(classLabel, 1.0f);
     }
 
     public void incrementFalsePositives(Integer classLabel) {
-        falsePositives.incrementCount(classLabel, 1.0);
+        falsePositives.incrementCount(classLabel, 1.0f);
     }
 
 
