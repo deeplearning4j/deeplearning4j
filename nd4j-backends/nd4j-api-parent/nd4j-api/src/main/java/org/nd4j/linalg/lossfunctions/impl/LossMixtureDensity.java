@@ -197,6 +197,7 @@ public class LossMixtureDensity implements ILossFunction {
         if (mask != null) {
             LossUtil.applyMask(scoreArr, mask);
         }
+        
         return scoreArr;
     }
 
