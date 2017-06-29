@@ -30,7 +30,6 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.*;
 
-import static org.deeplearning4j.nn.conf.Updater.NADAM;
 import static org.junit.Assert.*;
 
 public class TestUpdaters {
