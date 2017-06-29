@@ -4,6 +4,7 @@ package org.deeplearning4j.rl4j.mdp.vizdoom;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.space.ArrayObservationSpace;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
@@ -11,8 +12,6 @@ import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.space.ObservationSpace;
 import org.deeplearning4j.rl4j.mdp.MDP;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import oshi.SystemInfo;
 import oshi.hardware.GlobalMemory;
 import oshi.util.FormatUtil;
@@ -40,13 +39,13 @@ import java.util.List;
  *
  *
  */
+@Slf4j
 abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, DiscreteSpace> {
 
 
     final public static String DOOM_ROOT = "vizdoom";
 
     protected DoomGame game;
-    final protected Logger log = LoggerFactory.getLogger("Vizdoom");
     final protected GlobalMemory memory = new SystemInfo().getHardware().getMemory();
     final protected List<int[]> actions;
     final protected DiscreteSpace discreteSpace;

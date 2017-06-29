@@ -3,6 +3,7 @@ package org.deeplearning4j.rl4j.learning.async;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.learning.HistoryProcessor;
@@ -27,10 +28,11 @@ import org.slf4j.LoggerFactory;
  * sub epoch
  *
  */
+@Slf4j
 public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
                 extends Thread implements StepCountable {
 
-    final protected Logger log;
+    private int threadNumber;
     @Getter
     private int stepCounter = 0;
     @Getter
@@ -39,9 +41,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
     private IHistoryProcessor historyProcessor;
 
     public AsyncThread(AsyncGlobal<NN> asyncGlobal, int threadNumber) {
-
-        log = LoggerFactory.getLogger("ThreadNum-" + threadNumber);
-
+        this.threadNumber = threadNumber;
     }
 
     public void setHistoryProcessor(IHistoryProcessor.Configuration conf) {
@@ -53,7 +53,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
 
         try {
-            log.info("Started!");
+            log.info("ThreadNum-" + threadNumber + " Started!");
             Learning.InitMdp<O> initMdp = Learning.initMdp(getMdp(), historyProcessor);
             O obs = initMdp.getLastObs();
             double rewards = initMdp.getReward();
@@ -68,9 +68,10 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
                 double score = subEpochReturn.getScore();
                 if (getMdp().isDone()) {
 
-                    if (getThreadNumber() == 1)
-                        getDataManager().appendStat(
-                                        new AsyncStatEntry(getStepCounter(), epochCounter, rewards, length, score));
+                    DataManager.StatEntry statEntry = new AsyncStatEntry(getStepCounter(), epochCounter, rewards, length, score);
+                    log.info("ThreadNum-" + threadNumber + " Epoch: " + getEpochCounter());
+                    getDataManager().appendStat(statEntry);
+                    log.info("ThreadNum-" + threadNumber + " reward:" + statEntry.getReward());
 
                     initMdp = Learning.initMdp(getMdp(), historyProcessor);
                     obs = initMdp.getLastObs();
@@ -80,7 +81,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
                 }
             }
         } catch (Exception e) {
-            log.error("Thread crashed");
+            log.error("Thread crashed: " + e.getCause());
             getAsyncGlobal().setRunning(false);
             e.printStackTrace();
         }

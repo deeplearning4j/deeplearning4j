@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.learning.async;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.learning.Learning;
@@ -14,6 +15,7 @@ import org.deeplearning4j.rl4j.network.NeuralNet;
  * -periodically evaluate the model of the global thread for monitoring purposes
  *
  */
+@Slf4j
 public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
                 extends Learning<O, A, AS, NN> {
 
@@ -41,7 +43,7 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
         for (int i = 0; i < getConfiguration().getNumThread(); i++) {
             newThread(i).start();
         }
-        getLogger().info("Threads launched.");
+        log.info("Threads launched.");
     }
 
     @Override
@@ -51,7 +53,7 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
 
     public void train() {
 
-        getLogger().info("A3CDiscrete training starting.");
+        log.info("AsyncLearning training starting.");
         launchThreads();
 
         //this is simply for stat purposes

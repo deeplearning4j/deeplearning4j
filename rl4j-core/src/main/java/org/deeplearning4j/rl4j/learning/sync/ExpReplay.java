@@ -1,8 +1,7 @@
 package org.deeplearning4j.rl4j.learning.sync;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -14,10 +13,9 @@ import java.util.*;
  * The memory is optimised by using array of INDArray in the transitions
  * such that two same INDArrays are not allocated twice
  */
+@Slf4j
 public class ExpReplay<A> implements IExpReplay<A> {
 
-
-    final private Logger log = LoggerFactory.getLogger("Exp Replay");
     final private int batchSize;
 
     //Implementing this as a circular buffer queue

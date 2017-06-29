@@ -3,6 +3,7 @@ package org.deeplearning4j.rl4j.learning;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -12,8 +13,6 @@ import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.util.DataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Random;
 
@@ -26,12 +25,9 @@ import java.util.Random;
  * Big majority of training method should inherit this
  *
  */
+@Slf4j
 public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
                 implements ILearning<O, A, AS>, NeuralNetFetchable<NN> {
-
-
-    @Getter
-    final private Logger logger;
     @Getter
     final private Random random;
 
@@ -44,10 +40,7 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
     private IHistoryProcessor historyProcessor = null;
 
     public Learning(LConfiguration conf) {
-
         random = new Random(conf.getSeed());
-        logger = LoggerFactory.getLogger(this.getClass());
-
     }
 
     public static Integer getMaxAction(INDArray vector) {

@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.learning.sync;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.learning.Learning;
@@ -15,6 +16,7 @@ import org.deeplearning4j.rl4j.util.DataManager;
  * are not asynchronous.
  *
  */
+@Slf4j
 public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
                 extends Learning<O, A, AS, NN> {
 
@@ -26,14 +28,14 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
 
     public void train() {
 
-        getLogger().info("training starting.");
+        log.info("training starting.");
 
         getDataManager().writeInfo(this);
 
 
         while (getStepCounter() < getConfiguration().getMaxStep()) {
 
-            getLogger().info("Epoch: " + getEpochCounter());
+            log.info("Epoch: " + getEpochCounter());
 
             preEpoch();
             DataManager.StatEntry statEntry = trainEpoch();
@@ -47,7 +49,7 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
             }
 
             getDataManager().appendStat(statEntry);
-            getLogger().info("reward:" + statEntry.getReward());
+            log.info("reward:" + statEntry.getReward());
             getDataManager().writeInfo(this);
 
         }

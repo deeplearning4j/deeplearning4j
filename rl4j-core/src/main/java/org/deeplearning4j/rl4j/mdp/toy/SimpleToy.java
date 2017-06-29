@@ -2,6 +2,7 @@ package org.deeplearning4j.rl4j.mdp.toy;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.space.ArrayObservationSpace;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
@@ -12,8 +13,6 @@ import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.json.JSONObject;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 /**
@@ -22,10 +21,9 @@ import org.slf4j.LoggerFactory;
  * A toy MDP where reward are given in every case.
  * Useful to debug
  */
+@Slf4j
 public class SimpleToy implements MDP<SimpleToyState, Integer, DiscreteSpace> {
 
-
-    private Logger log = LoggerFactory.getLogger("SimpleToy");
     final private int maxStep;
     //TODO 10 steps toy (always +1 reward2 actions), toylong (1000 steps), toyhard (7 actions, +1 only if actiion = (step/100+step)%7, and toyStoch (like last but reward has 0.10 odd to be somewhere else).
     @Getter

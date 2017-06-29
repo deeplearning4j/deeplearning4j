@@ -1,13 +1,12 @@
 package org.deeplearning4j.rl4j.learning;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.bytedeco.javacv.*;
 import org.datavec.image.loader.NativeImageLoader;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.BasicNDArrayCompressor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
@@ -20,9 +19,9 @@ import static org.bytedeco.javacpp.opencv_imgproc.*;
  *
  * An IHistoryProcessor implementation using JavaCV
  */
+@Slf4j
 public class HistoryProcessor implements IHistoryProcessor {
 
-    final private Logger log = LoggerFactory.getLogger("HistoryProcessor");
     @Getter
     final private Configuration conf;
     final private OpenCVFrameConverter openCVFrameConverter = new OpenCVFrameConverter.ToMat();

@@ -2,11 +2,10 @@ package org.deeplearning4j.rl4j.learning.async;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.network.NeuralNet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,9 +35,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  *
  */
+@Slf4j
 public class AsyncGlobal<NN extends NeuralNet> extends Thread {
 
-    final private Logger log = LoggerFactory.getLogger("Global");
     final private NN current;
     final private ConcurrentLinkedQueue<Pair<Gradient[], Integer>> queue;
     final private AsyncConfiguration a3cc;

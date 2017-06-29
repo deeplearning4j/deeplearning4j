@@ -1,6 +1,7 @@
 package org.deeplearning4j.rl4j.learning.sync.qlearning;
 
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -23,6 +24,7 @@ import java.util.List;
  * Mother class for QLearning in the Discrete domain and
  * hopefully one day for the  Continuous domain.
  */
+@Slf4j
 public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A>>
                 extends SyncLearning<O, A, AS, IDQN> {
 
@@ -53,7 +55,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     }
 
     protected void updateTargetNetwork() {
-        getLogger().info("Update target network");
+        log.info("Update target network");
         setTargetDQN(getCurrentDQN().clone());
     }
 

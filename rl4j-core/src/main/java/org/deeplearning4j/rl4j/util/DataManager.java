@@ -3,16 +3,16 @@ package org.deeplearning4j.rl4j.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.rl4j.learning.ILearning;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.dqn.DQN;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.util.ModelSerializer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.nio.file.*;
@@ -27,10 +27,9 @@ import java.util.zip.ZipOutputStream;
  * It creates the directory rl4j-data if it does not exist,
  * the folder for every training and handle every path and model savings
  */
+@Slf4j
 public class DataManager {
 
-
-    final private Logger log = LoggerFactory.getLogger("DataManager");
     final private String home = System.getProperty("user.home");
     final private ObjectMapper mapper = new ObjectMapper();
     private String dataRoot = home + "/" + Constants.DATA_DIR;
@@ -115,7 +114,7 @@ public class DataManager {
     }
 
     public static <C> Pair<IDQN, C> load(File file, Class<C> cClass) {
-        LoggerFactory.getLogger("Serializer").info("Deserializing: " + file.getName());
+        log.info("Deserializing: " + file.getName());
 
         C conf = null;
         IDQN dqn = null;
@@ -298,6 +297,7 @@ public class DataManager {
 
     @AllArgsConstructor
     @Value
+    @Builder
     public static class Info {
         String trainingName;
         String mdpName;
