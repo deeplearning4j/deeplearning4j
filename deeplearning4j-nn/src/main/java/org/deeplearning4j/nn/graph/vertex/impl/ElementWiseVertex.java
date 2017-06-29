@@ -90,7 +90,11 @@ public class ElementWiseVertex extends BaseGraphVertex {
                     throw new IllegalArgumentException("ElementWise subtraction only supports 2 inputs");
                 return inputs[0].sub(inputs[1]);
             case Product:
-                throw new UnsupportedOperationException("ElementWise product: Not yet implemented");
+                INDArray product = inputs[0].dup();
+                for (int i = 1; i < inputs.length; i++) {
+                    product.muli(inputs[i]);
+                }
+                return product;
             default:
                 throw new UnsupportedOperationException("Unknown op: " + op);
         }
@@ -117,7 +121,14 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 out2[1] = epsilon.neg();
                 return new Pair<>(null, out2);
             case Product:
-                throw new UnsupportedOperationException("ElementWise product: Not yet implemented");
+                INDArray[] out_product = new INDArray[nInForwardPass];
+                for (int i = 0; i < nInForwardPass; i++) {
+                    out_product[i] = epsilon.dup();
+                    for (int j = 0; j < nInForwardPass; ++j) {
+                        if (i != j) out_product[i].muli(inputs[j]);
+                    }
+                }
+                return new Pair<>(null, out_product);
             default:
                 throw new UnsupportedOperationException("Unknown op: " + op);
         }

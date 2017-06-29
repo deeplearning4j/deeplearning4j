@@ -40,7 +40,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class ParameterAveragingTrainingWorker implements TrainingWorker<ParameterAveragingTrainingResult> {
+public class ParameterAveragingTrainingWorker extends BaseTrainingWorker<ParameterAveragingTrainingResult>  {
 
     private final Broadcast<NetBroadcastTuple> broadcast;
     private final boolean saveUpdater;

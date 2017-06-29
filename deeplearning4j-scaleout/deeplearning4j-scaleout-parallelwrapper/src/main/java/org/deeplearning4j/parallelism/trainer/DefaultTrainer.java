@@ -56,7 +56,7 @@ public class DefaultTrainer extends Thread implements Trainer {
     @Builder.Default protected volatile boolean useMDS = false;
     protected final String uuid = UUID.randomUUID().toString();
     @Builder.Default protected boolean onRootModel = false;
-    @Builder.Default protected AtomicLong lastEtlTime = new AtomicLong(0);
+    @Builder.Default protected volatile AtomicLong lastEtlTime = new AtomicLong(0);
 
     @Builder.Default protected AtomicBoolean nullMode = new AtomicBoolean(false);
     protected DataSet nullDataSet;
@@ -165,6 +165,8 @@ public class DefaultTrainer extends Thread implements Trainer {
             shouldUpdate = new AtomicBoolean(false);
         if (isStopped == null)
             isStopped = new AtomicBoolean(false);
+        if (lastEtlTime == null)
+            lastEtlTime = new AtomicLong(0);
     }
 
     @Override
@@ -188,15 +190,24 @@ public class DefaultTrainer extends Thread implements Trainer {
 
     protected void fit(DataSet dataSet) {
         if (replicatedModel instanceof MultiLayerNetwork) {
+            if (lastEtlTime == null)
+                lastEtlTime = new AtomicLong(0);
+
             ((MultiLayerNetwork) replicatedModel).setLastEtlTime(lastEtlTime.get());
             ((MultiLayerNetwork) replicatedModel).fit(dataSet);
         } else if (replicatedModel instanceof ComputationGraph) {
+            if (lastEtlTime == null)
+                lastEtlTime = new AtomicLong(0);
+
             ((ComputationGraph) replicatedModel).setLastEtlTime(lastEtlTime.get());
             ((ComputationGraph) replicatedModel).fit(dataSet);
         }
     }
 
     protected void fit(MultiDataSet dataSet) {
+        if (lastEtlTime == null)
+            lastEtlTime = new AtomicLong(0);
+
         ((ComputationGraph) replicatedModel).setLastEtlTime(lastEtlTime.get());
         ((ComputationGraph) replicatedModel).fit(dataSet);
     }
@@ -228,6 +239,11 @@ public class DefaultTrainer extends Thread implements Trainer {
     public void run() {
         setupIfNeccessary();
         AtomicInteger iterationsCounter = new AtomicInteger(0);
+
+        // FIXME: make this thing CUDA-compatible, and avoid RC at originalModel relocation
+        if (threadId == 0)
+            onRootModel = true;
+
         try {
             // we create fresh network, with the same configuration, as initially created by user
             // however, we don't need clone or anything here
@@ -253,6 +269,12 @@ public class DefaultTrainer extends Thread implements Trainer {
 
                         Nd4j.getExecutioner().commit();
                     }
+                } else {
+                    this.replicatedModel = originalModel;
+                    if (!((MultiLayerNetwork) replicatedModel).isInitCalled())
+                        this.replicatedModel.init();
+
+                    ((MultiLayerNetwork) replicatedModel).getLayerWiseConfigurations().setTrainingWorkspaceMode(workspaceMode);
                 }
             } else if (originalModel instanceof ComputationGraph) {
                 if (!onRootModel) {
@@ -275,8 +297,15 @@ public class DefaultTrainer extends Thread implements Trainer {
 
                         Nd4j.getExecutioner().commit();
                     }
+                } else {
+                    this.replicatedModel = originalModel;
+                    this.replicatedModel.init();
+                    ((ComputationGraph) replicatedModel).getConfiguration().setTrainingWorkspaceMode(workspaceMode);
                 }
             }
+
+            if (replicatedModel == null)
+                log.error("replicatedModel is NULL at worker_{}", threadId);
 
             // classes that extend DefaultTrainer might hook something there
             postInit();

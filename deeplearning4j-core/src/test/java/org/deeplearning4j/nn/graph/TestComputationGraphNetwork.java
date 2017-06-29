@@ -940,4 +940,21 @@ public class TestComputationGraphNetwork {
         assertFalse(layersOnly.containsKey("merge"));
         assertTrue(alsoVertices.containsKey("merge"));
     }
+
+
+    @Test
+    public void testSetOutputsMultipleCalls(){
+
+        //Users generally shouldn't do this, but multiple setOutputs calls should *replace* not *add* outputs
+
+        ComputationGraphConfiguration c = new NeuralNetConfiguration.Builder().graphBuilder()
+                .addInputs("in")
+                .addLayer("out", new OutputLayer.Builder().nIn(10).nOut(5).build(), "in")
+                .setOutputs("out")
+                .setOutputs("out")
+                .build();
+
+        List<String> l = c.getNetworkOutputs();
+        assertEquals(1, l.size());
+    }
 }

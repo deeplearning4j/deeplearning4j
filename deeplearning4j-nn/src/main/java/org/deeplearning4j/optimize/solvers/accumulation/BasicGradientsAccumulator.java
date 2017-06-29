@@ -264,4 +264,10 @@ public class BasicGradientsAccumulator implements GradientsAccumulator {
     public void touch() {
         // no-op
     }
+
+    @Override
+    public void setExternalSource(Queue<INDArray> source) {
+        // TODO: to be implemented
+        throw new UnsupportedOperationException();
+    }
 }

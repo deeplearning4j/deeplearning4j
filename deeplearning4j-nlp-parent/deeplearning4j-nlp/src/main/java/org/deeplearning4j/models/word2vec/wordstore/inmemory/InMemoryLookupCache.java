@@ -240,7 +240,7 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>, Serializable 
         if (!tokens.containsKey(word)) {
             VocabWord token = new VocabWord(1.0, word);
             tokens.put(word, token);
-            wordFrequencies.incrementCount(word, 1.0);
+            wordFrequencies.incrementCount(word, (float) 1.0);
         }
 
         /*
@@ -357,11 +357,11 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>, Serializable 
     public void importVocabulary(VocabCache<VocabWord> vocabCache) {
         for (VocabWord word : vocabCache.vocabWords()) {
             if (vocabs.containsKey(word.getLabel())) {
-                wordFrequencies.incrementCount(word.getLabel(), word.getElementFrequency());
+                wordFrequencies.incrementCount(word.getLabel(), (float) word.getElementFrequency());
             } else {
                 tokens.put(word.getLabel(), word);
                 vocabs.put(word.getLabel(), word);
-                wordFrequencies.incrementCount(word.getLabel(), word.getElementFrequency());
+                wordFrequencies.incrementCount(word.getLabel(),(float)  word.getElementFrequency());
             }
             totalWordOccurrences.addAndGet((long) word.getElementFrequency());
         }

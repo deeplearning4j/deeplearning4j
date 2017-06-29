@@ -45,7 +45,9 @@ public class VPTree {
     private CounterMap<DataPoint, DataPoint> distances;
     private String similarityFunction;
     private boolean invert = true;
-
+    private float distancesArr[];
+    private float sortedDistances[];
+    private  List<DataPoint> leftPoints,rightPoints;
 
     public VPTree(INDArray points,boolean invert) {
         this(points,"euclidean",invert);
@@ -54,7 +56,7 @@ public class VPTree {
     /**
      *
      * @param items the items to use
-     * @param similarityFunction the similiarity function to use
+     * @param similarityFunction the similarity function to use
      * @param invert whether to invert the distance (similarity functions have different min/max objectives)
      */
     public VPTree(INDArray items, String similarityFunction, boolean invert) {
@@ -64,17 +66,20 @@ public class VPTree {
         for (int i = 0; i < items.slices(); i++)
             thisItems.add(new DataPoint(i, items.slice(i), this.similarityFunction, invert));
         this.items = thisItems;
+        distances = new CounterMap<>();
+
         final int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-        distances = CounterMap.runPairWise(thisItems, new CounterMap.CountFunction<DataPoint>() {
+ /*       distances = CounterMap.runPairWise(thisItems, new CounterMap.CountFunction<DataPoint>() {
             @Override
-            public double count(DataPoint v1, DataPoint v2) {
+            public Float count(DataPoint v1, DataPoint v2) {
                 Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), deviceId);
                 return v1.distance(v2);
             }
         });
-
+*/
 
         root = buildFromPoints(0, this.items.size());
+        clearPointsData();
     }
 
     /**
@@ -84,27 +89,34 @@ public class VPTree {
      * @param similarityFunction the similarity function to use
      * @param invert whether to invert the metric (different optimization objective)
      */
-    public VPTree(List<DataPoint> items, CounterMap<DataPoint, DataPoint> distances, String similarityFunction,
+    public VPTree(List<DataPoint> items,
+                  CounterMap<DataPoint, DataPoint> distances,
+                  String similarityFunction,
                   boolean invert) {
-        this.items = items;
+        this.items = new ArrayList<>(2 * items.size());
+        this.items.addAll(items);
         this.distances = distances;
         this.invert = invert;
         this.similarityFunction = similarityFunction;
         root = buildFromPoints(0, items.size());
+        clearPointsData();
 
     }
 
     public VPTree(List<DataPoint> items, String similarityFunction, boolean invert) {
-        this.items = items;
+        this.items = new ArrayList<>(2 * items.size());
+        this.items.addAll(items);
         this.invert = invert;
         this.similarityFunction = similarityFunction;
-        distances = CounterMap.runPairWise(items, new CounterMap.CountFunction<DataPoint>() {
+        distances = new CounterMap<>();
+        /*distances = CounterMap.runPairWise(items, new CounterMap.CountFunction<DataPoint>() {
             @Override
-            public double count(DataPoint v1, DataPoint v2) {
+            public Float count(DataPoint v1, DataPoint v2) {
                 return v1.distance(v2);
             }
-        });
+        });*/
         root = buildFromPoints(0, items.size());
+        clearPointsData();
     }
 
 
@@ -151,15 +163,16 @@ public class VPTree {
         this.items = items;
     }
 
-    private double getDistance(DataPoint d1, DataPoint d2) {
-        double count = distances.getCount(d1, d2);
-        if (count == 0) {
-            double realDistance = d1.distance(d2);
-            distances.setCount(d1, d2, realDistance);
-            distances.setCount(d2, d1, realDistance);
-            return realDistance;
-        }
-        return count;
+    private float getDistance(DataPoint d1, DataPoint d2) {
+        return  d1.distance(d2);
+    }
+
+    //clears out points metadata after points are built
+    private void clearPointsData() {
+        distancesArr = null;
+        sortedDistances = null;
+        leftPoints = null;
+        rightPoints = null;
     }
 
     private Node buildFromPoints(int lower, int upper) {
@@ -171,21 +184,30 @@ public class VPTree {
 
             // Partition around the median distance
             int median = (upper + lower) / 2;
-            double distances[] = new double[items.size()];
-            double sortedDistances[] = new double[items.size()];
+            if(distancesArr == null)
+                distancesArr = new float[items.size()];
+            if(sortedDistances == null)
+                sortedDistances = new float[items.size()];
             DataPoint basePoint = items.get(randomPoint);
+
             for (int i = 0; i < items.size(); ++i) {
-                distances[i] = getDistance(basePoint, items.get(i));
-                sortedDistances[i] = distances[i];
+                distancesArr[i] = (float) getDistance(basePoint, items.get(i));
+                sortedDistances[i] = distancesArr[i];
             }
 
             Arrays.sort(sortedDistances);
             final double medianDistance = sortedDistances[sortedDistances.length / 2];
-            List<DataPoint> leftPoints = new ArrayList<>(sortedDistances.length);
-            List<DataPoint> rightPoints = new ArrayList<>(sortedDistances.length);
-
-            for (int i = 0; i < distances.length; i++) {
-                if (distances[i] < medianDistance) {
+            //only allocate left/right poitns once
+            if(leftPoints == null)
+                leftPoints = new ArrayList<>(sortedDistances.length);
+            if(rightPoints == null)
+                rightPoints = new ArrayList<>(sortedDistances.length);
+            if(leftPoints != null)
+                leftPoints.clear();
+            if(rightPoints != null)
+                rightPoints.clear();
+            for (int i = 0; i < distancesArr.length; i++) {
+                if (distancesArr[i] < medianDistance) {
                     leftPoints.add(items.get(i));
                 } else {
                     rightPoints.add(items.get(i));
@@ -297,10 +319,10 @@ public class VPTree {
 
     public static class Node {
         private int index;
-        private double threshold;
+        private float threshold;
         private Node left, right;
 
-        public Node(int index, double threshold) {
+        public Node(int index, float threshold) {
             this.index = index;
             this.threshold = threshold;
         }
@@ -344,11 +366,11 @@ public class VPTree {
             this.index = index;
         }
 
-        public double getThreshold() {
+        public float getThreshold() {
             return threshold;
         }
 
-        public void setThreshold(double threshold) {
+        public void setThreshold(float threshold) {
             this.threshold = threshold;
         }
 
