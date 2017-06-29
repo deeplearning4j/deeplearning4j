@@ -957,4 +957,22 @@ public class TestComputationGraphNetwork {
         List<String> l = c.getNetworkOutputs();
         assertEquals(1, l.size());
     }
+
+    @Test
+    public void testDropoutValidation(){
+        //At one point: this threw an exception due to incorrect validation
+        for(boolean dropConnect : new boolean[]{false, true}) {
+            new NeuralNetConfiguration.Builder()
+                    .regularization(true).useDropConnect(dropConnect)
+                    .dropOut(0.5)
+                    .graphBuilder()
+                    .setInputTypes(InputType.feedForward(1))
+                    .addInputs("input1")
+                    .addLayer("output", new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                            .nIn(1).nOut(1).activation(Activation.SIGMOID).build(), "input1")
+                    .setOutputs("output")
+                    .pretrain(false).backprop(true).backpropType(BackpropType.Standard)
+                    .build();
+        }
+    }
 }
