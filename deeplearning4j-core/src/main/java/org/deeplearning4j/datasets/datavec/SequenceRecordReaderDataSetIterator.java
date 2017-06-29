@@ -332,7 +332,7 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
             initializeUnderlyingFromReader();
         }
 
-        MultiDataSet mds = underlying.next();
+        MultiDataSet mds = underlying.next(num);
         DataSet ds = mdsToDataSet(mds);
 
         if(preProcessor != null){
