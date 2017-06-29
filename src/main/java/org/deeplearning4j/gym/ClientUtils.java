@@ -50,9 +50,9 @@ public class ClientUtils {
     static public void unirestCrash(UnirestException e) {
         //if couldn't parse json
         if (e.getCause().getCause().getCause() instanceof JSONException)
-            throw new RuntimeException("Couldn't parse json reply.");
+            throw new RuntimeException("Couldn't parse json reply.", e);
         else
-            throw new RuntimeException("Connection error");
+            throw new RuntimeException("Connection error", e);
     }
 
 

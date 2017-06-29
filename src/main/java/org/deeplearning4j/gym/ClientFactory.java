@@ -28,7 +28,7 @@ public class ClientFactory {
         try {
             instanceId = reply.getString("instance_id");
         } catch (JSONException e) {
-            throw new RuntimeException("Environment id not found");
+            throw new RuntimeException("Environment id not found", e);
         }
 
         GymObservationSpace<O> observationSpace = fetchObservationSpace(url, instanceId);

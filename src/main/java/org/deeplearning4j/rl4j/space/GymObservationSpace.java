@@ -59,7 +59,7 @@ public class GymObservationSpace<O> implements ObservationSpace<O> {
                 JSONArray arr = o.getJSONArray(key);
                 return (O) new Box(arr);
             default:
-                throw new RuntimeException("Invalid environment name");
+                throw new RuntimeException("Invalid environment name: " + name);
         }
     }
 

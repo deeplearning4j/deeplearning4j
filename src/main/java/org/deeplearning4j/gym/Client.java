@@ -3,13 +3,12 @@ package org.deeplearning4j.gym;
 
 import com.mashape.unirest.http.JsonNode;
 import lombok.Value;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.rl4j.space.GymObservationSpace;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.json.JSONObject;
 
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/6/16.
@@ -22,6 +21,7 @@ import java.util.logging.Logger;
  * @param <AS> Action Space type
  * @see <a href="https://github.com/openai/gym-http-api#api-specification">https://github.com/openai/gym-http-api#api-specification</a>
  */
+@Slf4j
 @Value
 public class Client<O, A, AS extends ActionSpace<A>> {
 
@@ -167,8 +167,7 @@ public class Client<O, A, AS extends ActionSpace<A>> {
         try {
             ClientUtils.post(url + V1_ROOT + UPLOAD, json);
         } catch (RuntimeException e) {
-            Logger logger = Logger.getLogger("Client Upload");
-            logger.log(Level.SEVERE, "Impossible to upload: Wrong API key?");
+            log.error("Impossible to upload: Wrong API key?");
         }
     }
 
