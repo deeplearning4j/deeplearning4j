@@ -89,7 +89,7 @@ public class NadamUpdater implements GradientUpdater<Nadam> {
 
         double beta1t = FastMath.pow(beta1, iteration + 1);
 
-        INDArray biasCorrectedEstimateOfMomentum = m.muli(beta1).divi(1.0 - beta1t);
+        INDArray biasCorrectedEstimateOfMomentum = m.mul(beta1).divi(1.0 - beta1t);
         INDArray secondTerm = oneMinusBeta1Grad.divi(1 - beta1t);
 
         INDArray alphat =  biasCorrectedEstimateOfMomentum.add(secondTerm).muli(learningRate);
