@@ -470,6 +470,7 @@ template<typename OpType>
                          shape::order(resultShapeBuffer) == shape::order(xShapeBuffer) && xElementWiseStride >= 1 &&
                          yElementWiseStride >= 1 &&
                          resultElementWiseStride >= 1 && xElementWiseStride == yElementWiseStride) {
+
                     exec<OpType>(dx,
                          xElementWiseStride,
                          y,
@@ -530,7 +531,7 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                                                     &resultLocal,
                                                     resultStridesIter) >= 0) {
                         ND4J_RAW_ITER_START(dim, rankLocal, coord, shapeIter); {
-                                /* Process the innermost dimension */
+                                // Process the innermost dimension
                                 T *xIter = dxLocal;
                                 T *yIter = yLocal;
                                 T *resultIter = resultLocal;
@@ -550,13 +551,11 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                     else {
                         printf("Unable to prepare array\n");
                     }
-}
+                    }
 
                 }
 
                 else {
-
-
                     Nd4jIndex len = shape::length(xShapeBuffer);
                     int xRank = shape::rank(xShapeBuffer);
                     int yRank = shape::rank(yShapeBuffer);
@@ -569,17 +568,18 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                     int *yStride = shape::stride(yShapeBuffer);
 
                     int *resultShape = shape::shapeOf(resultShapeBuffer);
+                    int *resultStride = shape::stride(resultShapeBuffer);
 
                     int elementsPerThread = n / ELEMENT_THRESHOLD;
                     int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                     num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
-                    if(dx == result) {
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
-                        for (Nd4jIndex i = 0; i < len; i++) {
-                            int xCoord[MAX_RANK];
-                            int yCoord[MAX_RANK];
+                    int xCoord[MAX_RANK];
+                    int yCoord[MAX_RANK];
 
+                    if(dx == result) {
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared) private(xCoord, yCoord)
+                        for (Nd4jIndex i = 0; i < len; i++) {
                             shape::ind2subC(xRank,xShape, i, xCoord);
                             shape::ind2subC(yRank,yShape, i, yCoord);
 
@@ -590,19 +590,17 @@ for (Nd4jIndex i = 0; i < xShape[0]; i++) {
                         }
                     }
                     else {
-#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared)
-                        for (Nd4jIndex i = 0; i < len; i++) {
-                            int xCoord[MAX_RANK];
-                            int yCoord[MAX_RANK];
-                            int resultCoord[MAX_RANK];
+                        int resultCoord[MAX_RANK];
 
+#pragma omp parallel for schedule(guided) num_threads(num_threads) if (num_threads > 1) proc_bind(AFFINITY) default(shared) private(xCoord, yCoord, resultCoord)
+                        for (Nd4jIndex i = 0; i < len; i++) {
                             shape::ind2subC(xRank,xShape, i, xCoord);
                             shape::ind2subC(yRank,yShape, i, yCoord);
                             shape::ind2subC(resultRank,resultShape, i, resultCoord);
 
                             Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
                             Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
-                            Nd4jIndex resultOffset = shape::getOffset(0, resultShape, resultShape, resultCoord, resultRank);
+                            Nd4jIndex resultOffset = shape::getOffset(0, resultShape, resultStride, resultCoord, resultRank);
                             result[resultOffset] = OpType::op(dx[xOffset], y[yOffset], extraParams);
 
                         }
