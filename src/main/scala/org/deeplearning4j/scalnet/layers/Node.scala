@@ -18,16 +18,27 @@
 
 package org.deeplearning4j.scalnet.layers
 
+import org.slf4j.{Logger, LoggerFactory}
+
+
 /**
   * Trait for node in DL4J neural networks and computational graphs.
-  * Nodes are assumed to have inputs and ouputs with "shapes."
+  * Nodes are assumed to have inputs and outputs with "shapes."
   *
   * @author David Kale
   */
 trait Node {
-  val name: String = null
-  var inputShape: List[Int] = List.empty[Int]
-  protected var _outputShape: List[Int] = List.empty[Int]
 
-  def outputShape: List[Int] = _outputShape
+  def name: String
+
+  def inputShape: List[Int]
+
+  def outputShape: List[Int]
+
+  def reshapeInput(nIn: List[Int]): Node = this
+
+  def descibe(): String = "in=" + inputShape + " out=" + outputShape
+
 }
+
+
