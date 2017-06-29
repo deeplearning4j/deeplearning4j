@@ -4325,6 +4325,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (Shape.shapeEquals(shape, shape()))
             return this;
 
+        // if we're on scalar, we can just create new array
+        if (this.isScalar())
+            return Nd4j.createUninitialized(shape).assign(this.getDouble(0));
+
+
         boolean compatible = true;
         int count = shape.length - 1;
         int thisCount = Shape.rank(shapeInformation) - 1;
