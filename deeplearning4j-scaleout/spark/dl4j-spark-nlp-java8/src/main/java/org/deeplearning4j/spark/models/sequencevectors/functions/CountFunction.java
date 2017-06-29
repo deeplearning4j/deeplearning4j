@@ -67,14 +67,14 @@ public class CountFunction<T extends SequenceElement> implements Function<Sequen
                 continue;
 
             // FIXME: hashcode is bad idea here. we need Long id
-            localCounter.incrementCount(element.getStorageId(), 1.0);
+            localCounter.incrementCount(element.getStorageId(), 1.0f);
             seqLen++;
         }
 
         // FIXME: we're missing label information here due to shallow vocab mechanics
         if (sequence.getSequenceLabels() != null)
             for (T label : sequence.getSequenceLabels()) {
-                localCounter.incrementCount(label.getStorageId(), 1.0);
+                localCounter.incrementCount(label.getStorageId(), 1.0f);
             }
 
         accumulator.add(localCounter);

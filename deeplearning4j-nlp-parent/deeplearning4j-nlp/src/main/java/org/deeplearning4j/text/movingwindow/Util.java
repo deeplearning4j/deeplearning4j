@@ -59,12 +59,12 @@ public class Util {
      * @return
      */
     public static <K> Counter<K> parallelCounter() {
-        MapFactory<K, Double> factory = new MapFactory<K, Double>() {
+        MapFactory<K, Float> factory = new MapFactory<K, Float>() {
 
             private static final long serialVersionUID = 5447027920163740307L;
 
             @Override
-            public Map<K, Double> buildMap() {
+            public Map<K, Float> buildMap() {
                 return new java.util.concurrent.ConcurrentHashMap<>();
             }
 
