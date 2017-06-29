@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.network.ac;
 
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.util.ModelSerializer;
@@ -44,8 +45,10 @@ public class ActorCriticCompGraph implements IActorCritic {
 
 
     public void applyGradient(Gradient[] gradient, int batchSize) {
-        cg.getUpdater().update(gradient[0], 1, batchSize);
+        ComputationGraphConfiguration cgConf = cg.getConfiguration();
+        cg.getUpdater().update(gradient[0], cgConf.getIterationCount(), batchSize);
         cg.params().subi(gradient[0].gradient());
+        cgConf.setIterationCount(cgConf.getIterationCount() + 1);
     }
 
     public double getLatestScore() {

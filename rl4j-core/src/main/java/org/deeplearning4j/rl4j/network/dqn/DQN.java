@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.network.dqn;
 
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
@@ -64,8 +65,10 @@ public class DQN implements IDQN {
     }
 
     public void applyGradient(Gradient[] gradient, int batchSize) {
-        mln.getUpdater().update(mln, gradient[0], 1, batchSize);
+        MultiLayerConfiguration mlnConf = mln.getLayerWiseConfigurations();
+        mln.getUpdater().update(mln, gradient[0], mlnConf.getIterationCount(), batchSize);
         mln.params().subi(gradient[0].gradient());
+        mlnConf.setIterationCount(mlnConf.getIterationCount() + 1);
     }
 
     public double getLatestScore() {
