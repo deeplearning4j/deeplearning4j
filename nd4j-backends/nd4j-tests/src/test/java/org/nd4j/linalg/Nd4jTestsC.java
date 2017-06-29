@@ -3303,7 +3303,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         Nd4j.getExecutioner().commit();
 
-
         Nd4j.getExecutioner().exec(new Set(arr3f, arr, arr3c, arr3c.length()));
 
         INDArray exp = Nd4j.linspace(1, length, length).reshape('c', shape3);
