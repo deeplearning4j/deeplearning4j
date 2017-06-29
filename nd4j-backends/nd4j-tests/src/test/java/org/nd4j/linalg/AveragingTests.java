@@ -29,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class AveragingTests extends BaseNd4jTest {
     private final int THREADS = 16;
-    private final int LENGTH = 5120000 * 4;
+    private final int LENGTH = 51200 * 4;
 
     DataBuffer.Type initialType;
 
