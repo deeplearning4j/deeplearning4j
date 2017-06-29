@@ -31,12 +31,15 @@ abstract class Convolution(
     protected val kernelSize: List[Int],
     protected val stride: List[Int],
     protected val padding: List[Int],
-    nChannels: Int = 0,
-    protected val nFilter: Int = 0)
-  extends Node {
-  inputShape = List(nChannels)
-  if (kernelSize.length != stride.length || kernelSize.length != padding.length)
+    protected val nChannels: Int = 0,
+    protected val nIn: Option[List[Int]] = None,
+    protected val nFilter: Int = 0) extends Node {
+
+  override def inputShape: List[Int] = if (nIn.isDefined) nIn.get else List(nChannels)
+
+  if (kernelSize.length != stride.length || kernelSize.length != padding.length) {
     throw new IllegalArgumentException("Kernel, stride, and padding must all have same shape.")
+  }
 
   override def outputShape: List[Int] = {
     val nOutChannels: Int = if (nFilter > 0) nFilter else if (inputShape.nonEmpty) inputShape.last else 0
