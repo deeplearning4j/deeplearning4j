@@ -17,6 +17,7 @@ import java.util.List;
  */
 public class MultiDataSetWrapperIterator implements DataSetIterator {
     protected MultiDataSetIterator iterator;
+    protected DataSetPreProcessor preProcessor;
 
     public MultiDataSetWrapperIterator(MultiDataSetIterator iterator) {
         this.iterator = iterator;
@@ -74,12 +75,12 @@ public class MultiDataSetWrapperIterator implements DataSetIterator {
 
     @Override
     public void setPreProcessor(DataSetPreProcessor preProcessor) {
-        throw new UnsupportedOperationException();
+        this.preProcessor = preProcessor;
     }
 
     @Override
     public DataSetPreProcessor getPreProcessor() {
-        throw new UnsupportedOperationException();
+        return preProcessor;
     }
 
     @Override
@@ -103,7 +104,12 @@ public class MultiDataSetWrapperIterator implements DataSetIterator {
         INDArray fMask = mds.getFeaturesMaskArrays() != null ? mds.getFeaturesMaskArrays()[0] : null;
         INDArray lMask = mds.getLabelsMaskArrays() != null ? mds.getLabelsMaskArrays()[0] : null;
 
-        return new DataSet(features, labels, fMask, lMask);
+        DataSet ds =new DataSet(features, labels, fMask, lMask);
+
+        if (preProcessor != null)
+            preProcessor.preProcess(ds);
+
+        return ds;
     }
 
     @Override
