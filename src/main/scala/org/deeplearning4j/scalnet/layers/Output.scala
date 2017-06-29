@@ -25,15 +25,4 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
   *
   * @author David Kale
   */
-trait Output {
-  protected var _isOutput: Boolean = false
-  protected var _lossFunction: LossFunction = _
-
-  def isOutput: Boolean = _isOutput
-  def lossFunction: LossFunction = _lossFunction
-
-  def makeOutput(lossFunction: LossFunction): Unit = {
-    _isOutput = true
-    _lossFunction = lossFunction
-  }
-}
+case class Output(isOutput: Boolean, lossFunction: LossFunction)
