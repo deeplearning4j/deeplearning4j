@@ -214,8 +214,14 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
             Pair<String, String> p = sentenceProvider.nextSentence();
             List<String> tokens = tokenizeSentence(p.getFirst());
 
-            maxLength = Math.max(maxLength, tokens.size());
-            tokenizedSentences.add(new Pair<>(tokens, p.getSecond()));
+            if(tokens.size() > 0) {
+                //Handle edge case: no tokens from sentence
+                maxLength = Math.max(maxLength, tokens.size());
+                tokenizedSentences.add(new Pair<>(tokens, p.getSecond()));
+            } else {
+                //Skip the current iterator
+                i--;
+            }
         }
 
         if (maxSentenceLength > 0 && maxLength > maxSentenceLength) {
