@@ -18,13 +18,15 @@
 
 package org.deeplearning4j.scalnet.models
 
+import org.deeplearning4j.nn.conf.{NeuralNetConfiguration, Updater}
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
-import org.deeplearning4j.scalnet.optimizers.Optimizer
+import org.deeplearning4j.scalnet.layers.{Node, OutputLayer}
+import org.deeplearning4j.scalnet.optimizers.{Optimizer, SGD}
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
-
 
 /**
   * Abstract base class for neural net architectures.
@@ -32,39 +34,78 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
   * @author David Kale
   */
 abstract class Model {
+
+  protected var layers: List[Node] = List()
+  protected var model: MultiLayerNetwork = _
+
+  protected val defaultEpochs = 10
+  protected val defaultOptimizer = SGD(lr = 0.01)
+
+  def getLayers: List[Node] = layers
+
+  def buildModelConfig(optimizer: Optimizer, seed: Long): NeuralNetConfiguration.Builder = {
+    var builder: NeuralNetConfiguration.Builder = new NeuralNetConfiguration.Builder()
+    if (seed != 0) {
+      builder = builder.seed(seed)
+    }
+    optimizer match {
+      case o: SGD =>
+        builder = builder.optimizationAlgo(o.optimizationAlgorithm)
+          .learningRate(o.lr)
+        if (o.nesterov) {
+          builder = builder.updater(Updater.NESTEROVS).momentum(o.momentum)
+        }
+      case _ =>
+        builder = builder.optimizationAlgo(optimizer.optimizationAlgorithm)
+          .learningRate(optimizer.asInstanceOf[SGD].lr)
+    }
+    builder
+  }
+
+  def buildOutput(lossFunction: LossFunction): Unit = {
+    if (!layers.last.isInstanceOf[OutputLayer]) {
+      throw new IllegalArgumentException("Last layer must have Output trait")
+    } else if (!layers.last.asInstanceOf[OutputLayer].output.isOutput) {
+      val last: OutputLayer = layers.last.asInstanceOf[OutputLayer].toOutputLayer(lossFunction)
+      layers = layers.updated(layers.length - 1, last)
+    }
+  }
+
   /**
-   * Compile neural net architecture. Call immediately
-   * before training.
-   *
-   * @param lossFunction  loss function to use
-   * @param optimizer     optimization algorithm to use
-   */
+    * Compile neural net architecture. Call immediately
+    * before training.
+    *
+    * @param lossFunction loss function to use
+    * @param optimizer    optimization algorithm to use
+    */
   def compile(lossFunction: LossFunction, optimizer: Optimizer): Unit
 
   /**
     * Fit neural net to data.
     *
-    * @param iter         iterator over data set
-    * @param nbEpoch      number of epochs to train
-    * @param listeners    callbacks for monitoring training
+    * @param iter      iterator over data set
+    * @param nbEpoch   number of epochs to train
+    * @param listeners callbacks for monitoring training
     */
-  def fit(iter: DataSetIterator, nbEpoch: Int = 10, listeners: List[IterationListener]): Unit
+  def fit(iter: DataSetIterator, nbEpoch: Int = defaultEpochs, listeners: List[IterationListener]): Unit
 
   /**
     * Use neural net to make prediction on input x
     *
-    * @param x    input represented as INDArray
+    * @param x input represented as INDArray
     */
   def predict(x: INDArray): INDArray
 
   /**
     * Use neural net to make prediction on input x.
     *
-    * @param x    input represented as DataSet
+    * @param x input represented as DataSet
     */
   def predict(x: DataSet): INDArray = predict(x.getFeatureMatrix)
 
   def toString: String
+
   def toJson: String
+
   def toYaml: String
 }
