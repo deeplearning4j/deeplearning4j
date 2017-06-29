@@ -34,38 +34,13 @@ public class SymmetricTrainer extends DefaultTrainer implements CommunicativeTra
     // FIXME: delete this method, it's not needed anymore
     @Deprecated
     public void enqueueGradient(SharedGradient gradient) {
-        //log.info("Gradient attached: {}", gradient.getGradient().isAttached());
-        //extractor.enqueueGradient(gradient);
+        //
     }
 
 
     @Override
     public boolean averagingRequired() {
         return false;
-    }
-
-    // FIXME: delete this method, it's not needed anymore
-    @Override
-    protected void fit(DataSet dataSet) {
-        super.fit(dataSet);
-
-        // gradients should be extracted here
-        // and broadcasted to all trainers
-/*
-        while (!extractor.getOwnGradients().isEmpty()) {
-            // TODO: ensure gradients array is detached!!!
-
-            parallelWrapper.broadcastGradients(extractor.getOwnGradients().poll());
-        }
-        */
-    }
-
-    // FIXME: delete this method, it's not needed anymore
-    @Override
-    protected void fit(MultiDataSet dataSet) {
-        super.fit(dataSet);
-
-        // gradients should be extracted here
     }
 
     @Override

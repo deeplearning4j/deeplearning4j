@@ -68,19 +68,20 @@ public class CoOccurrenceCalculator implements Function<Pair<List<String>, Atomi
                     continue;
                 if (wordIdx < otherWord) {
                     coOCurreneCounts.incrementCount(sentence.get(i), sentence.get(j),
-                                    1.0 / (j - i + Nd4j.EPS_THRESHOLD));
+                            (float) (1.0 / (j - i + Nd4j.EPS_THRESHOLD)));
                     if (symmetric)
                         coOCurreneCounts.incrementCount(sentence.get(j), sentence.get(i),
-                                        1.0 / (j - i + Nd4j.EPS_THRESHOLD));
+                                (float) (1.0 / (j - i + Nd4j.EPS_THRESHOLD)));
 
 
 
                 } else {
+                    float coCount = (float) (1.0 / (j - i + Nd4j.EPS_THRESHOLD));
                     coOCurreneCounts.incrementCount(sentence.get(j), sentence.get(i),
-                                    1.0 / (j - i + Nd4j.EPS_THRESHOLD));
+                            (float) coCount);
                     if (symmetric)
                         coOCurreneCounts.incrementCount(sentence.get(i), sentence.get(j),
-                                        1.0 / (j - i + Nd4j.EPS_THRESHOLD));
+                                (float) (1.0 / (j - i + Nd4j.EPS_THRESHOLD)));
 
 
                 }

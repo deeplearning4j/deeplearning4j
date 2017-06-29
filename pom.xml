@@ -192,6 +192,7 @@
                             <skipStagingRepositoryClose>true</skipStagingRepositoryClose>
                         </configuration>
                     </plugin>
+
                 </plugins>
             </build>
         </profile>
@@ -658,6 +659,27 @@
               </configuration>
             </plugin>
 
+            <plugin>
+              <groupId>pl.project13.maven</groupId>
+              <artifactId>git-commit-id-plugin</artifactId>
+              <version>2.2.2</version>
+              <executions>
+                <execution>
+                  <goals>
+                    <goal>revision</goal>
+                  </goals>
+                  <phase>package</phase>
+                </execution>
+              </executions>
+              <configuration>
+                <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+                <gitDescribe>
+                  <skip>true</skip>
+                </gitDescribe>
+              </configuration>
+            </plugin>
+
         </plugins>
 
         <pluginManagement>
@@ -740,7 +762,30 @@
                         <target>1.7</target>
                     </configuration>
                 </plugin>
-            </plugins>
+
+            <plugin>
+              <groupId>org.eclipse.m2e</groupId>
+              <artifactId>lifecycle-mapping</artifactId>
+              <version>1.0.0</version>
+              <configuration>
+                <lifecycleMappingMetadata>
+                  <pluginExecutions>
+                    <pluginExecution>
+                      <pluginExecutionFilter>
+                        <groupId>com.lewisd</groupId>
+                        <artifactId>lint-maven-plugin</artifactId>
+                        <versionRange>[0.0.11,)</versionRange>
+                      </pluginExecutionFilter>
+                      <action>
+                        <ignore/>
+                      </action>
+                    </pluginExecution>
+                  </pluginExecutions>
+                </lifecycleMappingMetadata>
+              </configuration>
+            </plugin>
+
+          </plugins>
 
         </pluginManagement>
     </build>

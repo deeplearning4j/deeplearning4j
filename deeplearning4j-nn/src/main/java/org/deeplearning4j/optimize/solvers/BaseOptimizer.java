@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.optimize.solvers;
 
+import lombok.Getter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Layer;
@@ -55,7 +56,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     protected NeuralNetConfiguration conf;
     protected static final Logger log = LoggerFactory.getLogger(BaseOptimizer.class);
-    protected StepFunction stepFunction;
+    @Getter protected StepFunction stepFunction;
     protected Collection<IterationListener> iterationListeners = new ArrayList<>();
     protected Collection<TerminationCondition> terminationConditions = new ArrayList<>();
     protected Model model;
