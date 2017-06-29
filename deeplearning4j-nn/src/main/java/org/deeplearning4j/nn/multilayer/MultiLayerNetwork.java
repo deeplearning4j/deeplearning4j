@@ -26,6 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
+import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.eval.*;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.*;
@@ -2792,7 +2793,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     @Override
     public void fit(MultiDataSetIterator iterator) {
-        throw new DL4JInvalidInputException("MultiLayerNetwork can't handle MultiDataSet. Please consider use of ComputationGraph");
+        fit(new MultiDataSetWrapperIterator(iterator));
     }
 
     @Override
