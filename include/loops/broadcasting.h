@@ -31,7 +31,13 @@
        (3, simdOps::Divide), \
        (4, simdOps::ReverseDivide), \
        (5, simdOps::ReverseSubtract), \
-       (6, simdOps::Copy)
+       (6, simdOps::Copy) ,\
+       (7, simdOps::EqualTo) ,\
+       (8, simdOps::GreaterThan) ,\
+       (9, simdOps::GreaterThanOrEqual) ,\
+       (10, simdOps::LessThan) ,\
+       (11, simdOps::LessThanOrEqual) ,\
+       (12, simdOps::NotEqualTo)
 
 
 namespace functions {

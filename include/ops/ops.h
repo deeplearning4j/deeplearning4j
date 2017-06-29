@@ -414,6 +414,10 @@ namespace simdOps {
 	template<typename T>
 	class EqualTo {
 	public:
+		op_def static T op(T d1, T d2) {
+			return d1 == d2;
+		}
+
 		op_def static T op(T d1, T d2, T *params) {
 			return d1 == d2;
 		}
@@ -428,6 +432,10 @@ namespace simdOps {
 	template<typename T>
 	class NotEqualTo {
 	public:
+		op_def static T op(T d1, T d2) {
+			return d1 != d2;
+		}
+
 		op_def static T op(T d1, T d2, T *params) {
 			return d1 != d2;
 		}
@@ -442,6 +450,10 @@ namespace simdOps {
 	template<typename T>
 	class GreaterThanOrEqual {
 	public:
+		op_def static T op(T d1, T d2) {
+			return d1 >= d2;
+		}
+
 		op_def static T op(T d1, T d2, T *params) {
 			return d1 >= d2;
 		}
@@ -456,6 +468,10 @@ namespace simdOps {
 	template<typename T>
 	class GreaterThan {
 	public:
+		op_def static T op(T d1, T d2) {
+			return d1 > d2;
+		}
+
 		op_def static T op(T d1, T d2, T *params) {
 			return d1 > d2;
 		}
@@ -471,6 +487,10 @@ namespace simdOps {
 	template<typename T>
 	class LessThan {
 	public:
+		op_def static T op(T d1, T d2) {
+			return d1 < d2;
+		}
+
 		op_def static T op(T d1, T d2, T *params) {
 			return d1 < d2;
 		}
@@ -485,6 +505,10 @@ namespace simdOps {
 	template<typename T>
 	class LessThanOrEqual {
 	public:
+		op_def static T op(T d1, T d2) {
+			return d1 <= d2;
+		}
+
 		op_def static T op(T d1, T d2, T *params) {
 			return d1 <= d2;
 		}
