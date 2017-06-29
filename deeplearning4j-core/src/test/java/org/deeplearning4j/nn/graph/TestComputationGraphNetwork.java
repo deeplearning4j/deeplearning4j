@@ -975,4 +975,31 @@ public class TestComputationGraphNetwork {
                     .build();
         }
     }
+
+    @Test
+    public void testNoParamLayersL1L2(){
+
+        //Don't care about this being valid
+        ComputationGraphConfiguration c = new NeuralNetConfiguration.Builder()
+                .regularization(true).l1(0.5).l2(0.6)
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("sub1", new SubsamplingLayer.Builder(2,2).build(), "in")
+                .addLayer("sub2", new Subsampling1DLayer.Builder(2).build(), "sub1")
+                .addLayer("act", new ActivationLayer.Builder().activation(Activation.TANH).build(), "sub2")
+                .addLayer("pad", new ZeroPaddingLayer.Builder(2,3).build(), "act")
+                .addLayer("lrn", new LocalResponseNormalization.Builder().build(), "pad")
+                .addLayer("pool", new GlobalPoolingLayer.Builder(PoolingType.AVG).build(), "act")
+                .addLayer("drop", new DropoutLayer.Builder(0.5).build(), "pool")
+                .addLayer("dense", new DenseLayer.Builder().nIn(1).nOut(1).build(), "drop")
+                .addLayer("loss", new LossLayer.Builder(LossFunctions.LossFunction.MCXENT).build(), "dense")
+                .setOutputs("loss")
+                .build();
+
+        ComputationGraph g = new ComputationGraph(c);
+        g.init();
+
+        g.calcL2();
+        g.calcL1();
+    }
 }
