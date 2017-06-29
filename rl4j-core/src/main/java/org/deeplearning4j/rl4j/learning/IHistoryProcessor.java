@@ -1,6 +1,7 @@
 package org.deeplearning4j.rl4j.learning;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Value;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -29,6 +30,7 @@ public interface IHistoryProcessor {
 
 
     @AllArgsConstructor
+    @Builder
     @Value
     public static class Configuration {
         int historyLength;

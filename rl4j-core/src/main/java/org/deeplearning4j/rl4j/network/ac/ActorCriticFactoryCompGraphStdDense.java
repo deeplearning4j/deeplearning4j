@@ -1,5 +1,7 @@
 package org.deeplearning4j.rl4j.network.ac;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Value;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
@@ -12,6 +14,8 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.rl4j.util.Constants;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
@@ -32,7 +36,9 @@ public class ActorCriticFactoryCompGraphStdDense implements ActorCriticFactoryCo
                                         .learningRate(conf.getLearningRate())
                                         //.updater(Updater.NESTEROVS).momentum(0.9)
                                         //.updater(Updater.RMSPROP).rmsDecay(conf.getRmsDecay())
-                                        .updater(Updater.ADAM).weightInit(WeightInit.XAVIER).regularization(true)
+                                        .updater(conf.getUpdater() != null ? conf.getUpdater() : new Adam())
+                                        .weightInit(WeightInit.XAVIER)
+                                        .regularization(conf.getL2() > 0)
                                         .l2(conf.getL2()).graphBuilder()
                                         .setInputTypes(InputType.feedForward(numInputs[0])).addInputs("input")
                                         .addLayer("0", new DenseLayer.Builder().nIn(numInputs[0])
@@ -64,6 +70,8 @@ public class ActorCriticFactoryCompGraphStdDense implements ActorCriticFactoryCo
         return new ActorCriticCompGraph(model);
     }
 
+    @AllArgsConstructor
+    @Builder
     @Value
     public static class Configuration {
 
@@ -71,6 +79,7 @@ public class ActorCriticFactoryCompGraphStdDense implements ActorCriticFactoryCo
         int numHiddenNodes;
         double learningRate;
         double l2;
+        IUpdater updater;
 
     }
 

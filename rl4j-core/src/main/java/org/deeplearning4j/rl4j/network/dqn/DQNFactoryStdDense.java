@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.network.dqn;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -12,6 +13,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.rl4j.util.Constants;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
@@ -32,11 +35,11 @@ public class DQNFactoryStdDense implements DQNFactory {
                         .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .learningRate(conf.getLearningRate())
                         //.updater(Updater.NESTEROVS).momentum(0.9)
-                        .updater(Updater.ADAM)
                         //.updater(Updater.RMSPROP).rho(conf.getRmsDecay())//.rmsDecay(conf.getRmsDecay())
+                        .updater(conf.getUpdater() != null ? conf.getUpdater() : new Adam())
                         .weightInit(WeightInit.XAVIER)
-                        //.regularization(true)
-                        //.l2(conf.getL2())
+                        .regularization(conf.getL2() > 0)
+                        .l2(conf.getL2())
                         .list().layer(0, new DenseLayer.Builder().nIn(numInputs[0]).nOut(conf.getNumHiddenNodes())
                                         .activation("relu").build());
 
@@ -57,6 +60,7 @@ public class DQNFactoryStdDense implements DQNFactory {
         return new DQN(model);
     }
 
+    @AllArgsConstructor
     @Value
     @Builder
     public static class Configuration {
@@ -65,6 +69,7 @@ public class DQNFactoryStdDense implements DQNFactory {
         int numHiddenNodes;
         double learningRate;
         double l2;
+        IUpdater updater;
 
     }
 

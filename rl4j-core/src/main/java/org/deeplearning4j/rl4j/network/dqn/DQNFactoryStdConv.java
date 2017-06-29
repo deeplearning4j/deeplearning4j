@@ -1,5 +1,7 @@
 package org.deeplearning4j.rl4j.network.dqn;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Value;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -13,6 +15,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.rl4j.util.Constants;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 /**
@@ -33,9 +37,11 @@ public class DQNFactoryStdConv implements DQNFactory {
         NeuralNetConfiguration.ListBuilder confB = new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED)
                         .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                         .learningRate(conf.getLearningRate())
+                        .regularization(conf.getL2() > 0)
+                        .l2(conf.getL2())
                         //.updater(Updater.NESTEROVS).momentum(0.9)
-                        .updater(Updater.ADAM)
                         //.updater(Updater.RMSPROP).rmsDecay(conf.getRmsDecay())
+                        .updater(conf.getUpdater() != null ? conf.getUpdater() : new Adam())
                         .weightInit(WeightInit.XAVIER).regularization(true).l2(conf.getL2()).list()
                         .layer(0, new ConvolutionLayer.Builder(8, 8).nIn(shapeInputs[0]).nOut(16).stride(4, 4)
                                         .activation("relu").build());
@@ -59,11 +65,14 @@ public class DQNFactoryStdConv implements DQNFactory {
     }
 
 
+    @AllArgsConstructor
+    @Builder
     @Value
     public static class Configuration {
 
         double learningRate;
         double l2;
+        IUpdater updater;
     }
 
 }
