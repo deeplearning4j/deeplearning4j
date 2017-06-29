@@ -123,7 +123,7 @@ public class TextPipeline {
         return (tokenCount < numWords) ? configuration.getUNK() : stringToken;
     }
 
-    private void addTokenToVocabCache(String stringToken, Double tokenCount) {
+    private void addTokenToVocabCache(String stringToken, Float tokenCount) {
         // Making string token into actual token if not already an actual token (vocabWord)
         VocabWord actualToken;
         if (vocabCache.hasToken(stringToken)) {
@@ -152,9 +152,9 @@ public class TextPipeline {
                             "IllegalStateException: wordFreqCounter has nothing. Check accumulator updating");
         }
 
-        for (Entry<String, Double> entry : wordFreq.entrySet()) {
+        for (Entry<String, Float> entry : wordFreq.entrySet()) {
             String stringToken = entry.getKey();
-            Double tokenCount = entry.getValue();
+            Float tokenCount = entry.getValue();
 
             // Turn words below min count to UNK
             stringToken = filterMinWord(stringToken, tokenCount);

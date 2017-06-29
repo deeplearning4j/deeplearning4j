@@ -66,15 +66,17 @@ public class VPTree {
         for (int i = 0; i < items.slices(); i++)
             thisItems.add(new DataPoint(i, items.slice(i), this.similarityFunction, invert));
         this.items = thisItems;
+        distances = new CounterMap<>();
+
         final int deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-        distances = CounterMap.runPairWise(thisItems, new CounterMap.CountFunction<DataPoint>() {
+ /*       distances = CounterMap.runPairWise(thisItems, new CounterMap.CountFunction<DataPoint>() {
             @Override
             public Float count(DataPoint v1, DataPoint v2) {
                 Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), deviceId);
                 return v1.distance(v2);
             }
         });
-
+*/
 
         root = buildFromPoints(0, this.items.size());
         clearPointsData();
@@ -106,12 +108,13 @@ public class VPTree {
         this.items.addAll(items);
         this.invert = invert;
         this.similarityFunction = similarityFunction;
-        distances = CounterMap.runPairWise(items, new CounterMap.CountFunction<DataPoint>() {
+        distances = new CounterMap<>();
+        /*distances = CounterMap.runPairWise(items, new CounterMap.CountFunction<DataPoint>() {
             @Override
             public Float count(DataPoint v1, DataPoint v2) {
                 return v1.distance(v2);
             }
-        });
+        });*/
         root = buildFromPoints(0, items.size());
         clearPointsData();
     }
@@ -184,7 +187,7 @@ public class VPTree {
         if (upper == lower)
             return null;
         Node ret = new Node(lower, 0);
-       if (upper - lower > 1) {
+        if (upper - lower > 1) {
             int randomPoint = MathUtils.randomNumberBetween(lower, upper - 1);
 
             // Partition around the median distance

@@ -90,7 +90,7 @@ public class Glove implements Serializable {
     }
 
 
-    private Pair<INDArray, Double> update(AdaGrad weightAdaGrad, AdaGrad biasAdaGrad, INDArray syn0, INDArray bias,
+    private Pair<INDArray, Float> update(AdaGrad weightAdaGrad, AdaGrad biasAdaGrad, INDArray syn0, INDArray bias,
                     VocabWord w1, INDArray wordVector, INDArray contextVector, double gradient) {
         //gradient for word vectors
         INDArray grad1 = contextVector.mul(gradient);
@@ -101,7 +101,7 @@ public class Glove implements Serializable {
         double biasGradient = biasAdaGrad.getGradient(gradient, w1.getIndex(), bias.shape());
         double update2 = w1Bias - biasGradient;
         bias.putScalar(w1.getIndex(), bias.getDouble(w1.getIndex()) - update2);
-        return new Pair<>(update, update2);
+        return new Pair<>(update, (float) update2);
     }
 
     /**
@@ -168,12 +168,12 @@ public class Glove implements Serializable {
                         .map(new CoOccurrenceCalculator(symmetric, vocabCacheBroadcast, windowSize))
                         .fold(new CounterMap<String, String>(), new CoOccurrenceCounts());
         Iterator<Pair<String, String>> pair2 = coOccurrenceCounts.getPairIterator();
-        List<Triple<String, String, Double>> counts = new ArrayList<>();
+        List<Triple<String, String, Float>> counts = new ArrayList<>();
 
         while (pair2.hasNext()) {
             Pair<String, String> next = pair2.next();
             if (coOccurrenceCounts.getCount(next.getFirst(), next.getSecond()) > gloveWeightLookupTable.getMaxCount()) {
-                coOccurrenceCounts.setCount(next.getFirst(), next.getSecond(), gloveWeightLookupTable.getMaxCount());
+                coOccurrenceCounts.setCount(next.getFirst(), next.getSecond(), (float) gloveWeightLookupTable.getMaxCount());
             }
             counts.add(new Triple<>(next.getFirst(), next.getSecond(),
                             coOccurrenceCounts.getCount(next.getFirst(), next.getSecond())));
@@ -182,23 +182,23 @@ public class Glove implements Serializable {
 
         log.info("Calculated co occurrences");
 
-        JavaRDD<Triple<String, String, Double>> parallel = sc.parallelize(counts);
-        JavaPairRDD<String, Tuple2<String, Double>> pairs = parallel
-                        .mapToPair(new PairFunction<Triple<String, String, Double>, String, Tuple2<String, Double>>() {
+        JavaRDD<Triple<String, String, Float>> parallel = sc.parallelize(counts);
+        JavaPairRDD<String, Tuple2<String, Float>> pairs = parallel
+                        .mapToPair(new PairFunction<Triple<String, String, Float>, String, Tuple2<String, Float>>() {
                             @Override
-                            public Tuple2<String, Tuple2<String, Double>> call(
-                                            Triple<String, String, Double> stringStringDoubleTriple) throws Exception {
+                            public Tuple2<String, Tuple2<String, Float>> call(
+                                            Triple<String, String, Float> stringStringDoubleTriple) throws Exception {
                                 return new Tuple2<>(stringStringDoubleTriple.getFirst(),
                                                 new Tuple2<>(stringStringDoubleTriple.getSecond(),
                                                                 stringStringDoubleTriple.getThird()));
                             }
                         });
 
-        JavaPairRDD<VocabWord, Tuple2<VocabWord, Double>> pairsVocab = pairs.mapToPair(
-                        new PairFunction<Tuple2<String, Tuple2<String, Double>>, VocabWord, Tuple2<VocabWord, Double>>() {
+        JavaPairRDD<VocabWord, Tuple2<VocabWord, Float>> pairsVocab = pairs.mapToPair(
+                        new PairFunction<Tuple2<String, Tuple2<String, Float>>, VocabWord, Tuple2<VocabWord, Float>>() {
                             @Override
-                            public Tuple2<VocabWord, Tuple2<VocabWord, Double>> call(
-                                            Tuple2<String, Tuple2<String, Double>> stringTuple2Tuple2)
+                            public Tuple2<VocabWord, Tuple2<VocabWord, Float>> call(
+                                            Tuple2<String, Tuple2<String, Float>> stringTuple2Tuple2)
                                             throws Exception {
                                 VocabWord w1 = vocabCacheBroadcast.getValue().wordFor(stringTuple2Tuple2._1());
                                 VocabWord w2 = vocabCacheBroadcast.getValue().wordFor(stringTuple2Tuple2._2()._1());
@@ -209,10 +209,10 @@ public class Glove implements Serializable {
 
         for (int i = 0; i < iterations; i++) {
             JavaRDD<GloveChange> change =
-                            pairsVocab.map(new Function<Tuple2<VocabWord, Tuple2<VocabWord, Double>>, GloveChange>() {
+                            pairsVocab.map(new Function<Tuple2<VocabWord, Tuple2<VocabWord, Float>>, GloveChange>() {
                                 @Override
                                 public GloveChange call(
-                                                Tuple2<VocabWord, Tuple2<VocabWord, Double>> vocabWordTuple2Tuple2)
+                                                Tuple2<VocabWord, Tuple2<VocabWord, Float>> vocabWordTuple2Tuple2)
                                                 throws Exception {
                                     VocabWord w1 = vocabWordTuple2Tuple2._1();
                                     VocabWord w2 = vocabWordTuple2Tuple2._2()._1();
@@ -234,11 +234,11 @@ public class Glove implements Serializable {
                                     //amount of change
                                     double gradient = fDiff;
 
-                                    Pair<INDArray, Double> w1Update = update(gloveWeightLookupTable.getWeightAdaGrad(),
+                                    Pair<INDArray, Float> w1Update = update(gloveWeightLookupTable.getWeightAdaGrad(),
                                                     gloveWeightLookupTable.getBiasAdaGrad(),
                                                     gloveWeightLookupTable.getSyn0(), gloveWeightLookupTable.getBias(),
                                                     w1, w1Vector, w2Vector, gradient);
-                                    Pair<INDArray, Double> w2Update = update(gloveWeightLookupTable.getWeightAdaGrad(),
+                                    Pair<INDArray, Float> w2Update = update(gloveWeightLookupTable.getWeightAdaGrad(),
                                                     gloveWeightLookupTable.getBiasAdaGrad(),
                                                     gloveWeightLookupTable.getSyn0(), gloveWeightLookupTable.getBias(),
                                                     w2, w2Vector, w1Vector, gradient);
