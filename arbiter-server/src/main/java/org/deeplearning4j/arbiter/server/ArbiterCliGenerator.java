@@ -22,7 +22,6 @@ import org.deeplearning4j.arbiter.saver.local.graph.LocalComputationGraphSaver;
 import org.deeplearning4j.arbiter.saver.local.multilayer.LocalMultiLayerNetworkSaver;
 import org.deeplearning4j.arbiter.scoring.RegressionValue;
 import org.deeplearning4j.arbiter.scoring.ScoreFunctions;
-import org.deeplearning4j.arbiter.server.cli.NeuralNetTypeValidator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;

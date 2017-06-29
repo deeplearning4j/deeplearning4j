@@ -20,13 +20,14 @@ package org.deeplearning4j.arbiter.multilayernetwork;
 import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.MultiLayerSpace;
 import org.deeplearning4j.arbiter.layers.*;
+import org.deeplearning4j.arbiter.optimize.api.Candidate;
+import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorProvider;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultSaver;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
-import org.deeplearning4j.arbiter.optimize.api.termination.MaxTimeCondition;
 import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
 import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
@@ -39,9 +40,8 @@ import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.saver.local.multilayer.LocalMultiLayerNetworkSaver;
 import org.deeplearning4j.arbiter.scoring.multilayer.TestSetAccuracyScoreFunction;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
-import org.deeplearning4j.arbiter.util.CollectionUtils;
+import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -68,11 +68,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class TestMultiLayerSpace {
 
@@ -156,7 +153,7 @@ public class TestMultiLayerSpace {
         assertEquals(4,nParams);
 
         //Assign numbers to each leaf ParameterSpace object (normally done by candidate generator - manual here for testing)
-        List<ParameterSpace> noDuplicatesList = CollectionUtils.getUnique(mls.collectLeaves());
+        List<ParameterSpace> noDuplicatesList = LeafUtils.getUniqueObjects(mls.collectLeaves());
 
         //Second: assign each a number
         int c=0;
@@ -280,7 +277,7 @@ public class TestMultiLayerSpace {
         int numParams = mls.numParameters();
 
         //Assign numbers to each leaf ParameterSpace object (normally done by candidate generator - manual here for testing)
-        List<ParameterSpace> noDuplicatesList = CollectionUtils.getUnique(mls.collectLeaves());
+        List<ParameterSpace> noDuplicatesList = LeafUtils.getUniqueObjects(mls.collectLeaves());
 
         //Second: assign each a number
         int c=0;
@@ -418,4 +415,21 @@ public class TestMultiLayerSpace {
         assertEquals(maxCandidates, runner.getResults().size());
     }
 
+
+    @Test
+    public void testSameRanges(){
+
+        ParameterSpace<Double> l1Hyperparam = new ContinuousParameterSpace(0.001, 0.1);
+        ParameterSpace<Double> l2Hyperparam = new ContinuousParameterSpace(0.001, 0.1);
+
+        MultiLayerSpace hyperparameterSpace = new MultiLayerSpace.Builder()
+                .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10).build())
+                .l1(l1Hyperparam)
+                .l2(l2Hyperparam)
+                .build();
+
+        CandidateGenerator c = new RandomSearchGenerator<>(hyperparameterSpace,null);
+
+        Candidate candidate = c.getCandidate();
+    }
 }

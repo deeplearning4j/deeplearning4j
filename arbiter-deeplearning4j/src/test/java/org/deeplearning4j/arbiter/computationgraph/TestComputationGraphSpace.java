@@ -23,7 +23,7 @@ import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
-import org.deeplearning4j.arbiter.util.CollectionUtils;
+import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
@@ -94,7 +94,7 @@ public class TestComputationGraphSpace {
         assertEquals(3,nParams);
 
         //Assign numbers to each leaf ParameterSpace object (normally done by candidate generator)
-        List<ParameterSpace> noDuplicatesList = CollectionUtils.getUnique(mls.collectLeaves());
+        List<ParameterSpace> noDuplicatesList = LeafUtils.getUniqueObjects(mls.collectLeaves());
 
         //Second: assign each a number
         int c=0;

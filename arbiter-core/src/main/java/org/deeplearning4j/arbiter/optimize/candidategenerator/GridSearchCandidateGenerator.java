@@ -22,7 +22,7 @@ import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
-import org.deeplearning4j.arbiter.util.CollectionUtils;
+import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -89,7 +89,7 @@ public class GridSearchCandidateGenerator<T> extends BaseCandidateGenerator<T> {
     protected void initialize() {
         super.initialize();
 
-        List<ParameterSpace> leaves = CollectionUtils.getUnique(parameterSpace.collectLeaves());
+        List<ParameterSpace> leaves = LeafUtils.getUniqueObjects(parameterSpace.collectLeaves());
         int nParams = leaves.size();
 
         //Work out for each parameter: is it continuous or discrete?

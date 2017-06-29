@@ -21,9 +21,10 @@ import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
-import org.deeplearning4j.arbiter.util.CollectionUtils;
+import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
-import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -76,7 +77,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         this.inputTypes = builder.inputTypes;
 
         //Determine total number of parameters:
-        List<ParameterSpace> list = CollectionUtils.getUnique(collectLeaves());
+        List<ParameterSpace> list = LeafUtils.getUniqueObjects(collectLeaves());
         for (ParameterSpace ps : list) numParameters += ps.numParameters();
     }
 

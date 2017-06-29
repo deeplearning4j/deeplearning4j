@@ -18,10 +18,7 @@
 package org.deeplearning4j.arbiter.optimize.api.score;
 
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
-import org.deeplearning4j.arbiter.optimize.candidategenerator.GridSearchCandidateGenerator;
-import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
