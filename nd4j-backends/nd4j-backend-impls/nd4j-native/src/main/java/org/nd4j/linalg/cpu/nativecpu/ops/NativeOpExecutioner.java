@@ -655,7 +655,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 if ((xEWS >= 1 && yEWS >= 1
                                 && xEWS == yEWS && !op.isExecSpecial()
-                                && op.x().ordering() == op.y().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
+                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
                     loop.execPairwiseTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
                                     xEWS, (FloatPointer) op.y().data().addressPointer(),
                                     yEWS, (FloatPointer) op.z().data().addressPointer(),
