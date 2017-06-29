@@ -164,15 +164,7 @@ public class VPTree {
     }
 
     private float getDistance(DataPoint d1, DataPoint d2) {
-        float count = (float) distances.getCount(d1, d2);
-        if (count == 0) {
-            float realDistance = (float) d1.distance(d2);
-            distances.setCount(d1, d2, realDistance);
-            distances.setCount(d2, d1, realDistance);
-            return   realDistance;
-        }
-
-        return count;
+        return  d1.distance(d2);
     }
 
     //clears out points metadata after points are built
