@@ -44,10 +44,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.accum.Norm1;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.api.ops.impl.accum.Sum;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
@@ -4215,6 +4212,75 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray array = Nd4j.create(new double[]{-2, 0.0, 2, 2});
 
         assertEquals(3, array.scan(Conditions.absGreaterThan(0.0)).intValue());
+    }
+
+    @Test
+    public void testNewBroadcastComparison1() throws Exception {
+        INDArray initial = Nd4j.create(3, 5);
+        INDArray mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
+        INDArray exp = Nd4j.create(new double[] {1, 1, 1, 0, 0});
+
+        for (int i = 0; i < initial.columns(); i++) {
+            initial.getColumn(i).assign(i);
+        }
+
+        Nd4j.getExecutioner().commit();
+
+
+        Nd4j.getExecutioner().exec(new BroadcastLessThan(initial, mask, initial, 1 ));
+
+
+
+        for (int i = 0; i < initial.rows(); i++) {
+            assertEquals(exp, initial.getRow(i));
+        }
+    }
+
+
+
+    @Test
+    public void testNewBroadcastComparison2() throws Exception {
+        INDArray initial = Nd4j.create(3, 5);
+        INDArray mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
+        INDArray exp = Nd4j.create(new double[] {0, 0, 0, 1, 1});
+
+        for (int i = 0; i < initial.columns(); i++) {
+            initial.getColumn(i).assign(i);
+        }
+
+        Nd4j.getExecutioner().commit();
+
+
+        Nd4j.getExecutioner().exec(new BroadcastGreaterThan(initial, mask, initial, 1 ));
+
+
+
+        for (int i = 0; i < initial.rows(); i++) {
+            assertEquals(exp, initial.getRow(i));
+        }
+    }
+
+
+    @Test
+    public void testNewBroadcastComparison3() throws Exception {
+        INDArray initial = Nd4j.create(3, 5);
+        INDArray mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
+        INDArray exp = Nd4j.create(new double[] {0, 0, 1, 1, 1});
+
+        for (int i = 0; i < initial.columns(); i++) {
+            initial.getColumn(i).assign(i+1);
+        }
+
+        Nd4j.getExecutioner().commit();
+
+
+        Nd4j.getExecutioner().exec(new BroadcastGreaterThanOrEqual(initial, mask, initial, 1 ));
+
+
+
+        for (int i = 0; i < initial.rows(); i++) {
+            assertEquals(exp, initial.getRow(i));
+        }
     }
 
     @Override
