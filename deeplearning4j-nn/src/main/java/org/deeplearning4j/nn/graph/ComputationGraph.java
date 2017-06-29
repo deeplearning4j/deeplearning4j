@@ -28,6 +28,7 @@ import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.eval.*;
+import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Model;
@@ -1560,6 +1561,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         INDArray currLabels = labels[thisOutputNumber];
                         outputLayer.setLabels(currLabels);
                     } else {
+                        if((externalEpsilons == null || externalEpsilons.length == 0) && labels[thisOutputNumber] != null){
+                            throw new DL4JException("Layer \"" + current.getVertexName() + "\" of type "
+                                    + current.getLayer().getClass().getSimpleName() + " is set as network output "
+                                    + "(but isn't an IOutputLayer). Only IOutputLayer layers can be fit via backprop with"
+                                    + " a labels array. ");
+                        }
                         current.setEpsilon(externalEpsilons[thisOutputNumber]);
                         setVertexEpsilon[topologicalOrder[i]] = true;
                     }

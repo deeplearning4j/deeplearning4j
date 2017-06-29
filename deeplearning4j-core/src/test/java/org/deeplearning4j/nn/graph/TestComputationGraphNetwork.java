@@ -7,6 +7,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.datasets.datavec.RecordReaderMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
+import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
@@ -1001,5 +1002,27 @@ public class TestComputationGraphNetwork {
 
         g.calcL2();
         g.calcL1();
+    }
+
+    @Test(expected = DL4JException.class)
+    public void testErrorNoOutputLayer(){
+
+        ComputationGraphConfiguration c = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("dense", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
+                .setOutputs("dense")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(c);
+        cg.init();
+
+        INDArray f = Nd4j.create(1,10);
+        INDArray l = Nd4j.create(1, 10);
+
+        cg.setInputs(f);
+        cg.setLabels(l);
+
+        cg.computeGradientAndScore();
     }
 }

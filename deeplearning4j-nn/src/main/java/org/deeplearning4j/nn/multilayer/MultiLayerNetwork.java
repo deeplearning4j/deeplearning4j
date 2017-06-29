@@ -27,6 +27,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.berkeley.Triple;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.eval.*;
+import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.*;
 import org.deeplearning4j.nn.api.Updater;
@@ -2093,7 +2094,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         //Calculate score
         if (!(getOutputLayer() instanceof IOutputLayer)) {
-            throw new IllegalStateException(
+            throw new DL4JException(
                             "Cannot calculate gradient and score with respect to labels: final layer is not an IOutputLayer");
         }
         score = ((IOutputLayer) getOutputLayer()).computeScore(calcL1(true), calcL2(true), true);
