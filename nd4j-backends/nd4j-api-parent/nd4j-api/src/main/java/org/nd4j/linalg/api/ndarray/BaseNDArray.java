@@ -43,6 +43,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.Negative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -3616,6 +3617,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray reshape(char order, int... newShape) {
+        if (newShape == null || newShape.length < 2)
+            throw new ND4JIllegalStateException("Can't reshape(int...) without shape arguments. Got empty shape instead.");
+
         int numberNegativesOnes = 0;
         int[] shape = ArrayUtil.copy(newShape);
         for (int i = 0; i < shape.length; i++) {
