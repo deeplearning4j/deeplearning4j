@@ -350,7 +350,7 @@ template<typename OpType>
 				sPartials[threadIdx.x] = init;
 
 				// FIXME: this ugly fast fix.
-				__shared__ T extraZ[2];
+				__shared__ T extraZ[OpType::extraParamsLen > 0 ? OpType::extraParamsLen : 1];
 
 				//length for the tad
 
@@ -360,6 +360,7 @@ template<typename OpType>
 				__shared__ int tadElementWiseStride;
 				__shared__ int yTadElementWiseStride;
 
+			    T startingVal = OpType::startingValue(dx);
 
 				T reduction = OpType::startingValue(dx);
 				if (threadIdx.x == 0) {
@@ -393,7 +394,6 @@ template<typename OpType>
 
                 // code branch for TAD vs full array
                 if (tadLength == yLength) {
-                    printf("GOING NEW WAY\n");
                     int xCoord[MAX_RANK];
                     int yCoord[MAX_RANK];
 
@@ -408,11 +408,8 @@ template<typename OpType>
 					for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
 					    int xOffsetForTad = tadOffsets[i];
 
-					    if (threadIdx.x == 0 && OpType::extraParamsLen > 0) {
-					        T startingVal = OpType::startingValue(x);
-
-					        extraZ[0] = (T) startingVal;
-					        extraZ[1] = (T) startingVal;
+					    if (threadIdx.x < OpType::extraParamsLen) {
+					            extraZ[threadIdx.x] = (T) startingVal;
 				        }
 				        __syncthreads();
 
@@ -442,11 +439,8 @@ template<typename OpType>
 							int xOffsetForTad = tadOffsets[i];
 							int yOffsetForTad = yTadOffsets[i];
 
-							if (threadIdx.x == 0 && OpType::extraParamsLen > 0 ) {
-							    T startingVal = OpType::startingValue(x);
-
-					            extraZ[0] = (T) startingVal;
-					            extraZ[1] = (T) startingVal;
+							if (threadIdx.x < OpType::extraParamsLen) {
+					            extraZ[threadIdx.x] = (T) startingVal;
 				            }
 				            __syncthreads();
 
@@ -464,6 +458,8 @@ template<typename OpType>
                             __syncthreads();
                             if (threadIdx.x == 0)
 							    result[i] = OpType::postProcess(sPartials[threadIdx.x],tadLength, extraZ);
+
+							__syncthreads();
 						}
 					}
 					else {
@@ -514,6 +510,11 @@ template<typename OpType>
 						for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
 							int xOffsetForTad = tadOffsets[i];
 							int yOffsetForTad = yTadOffsets[i];
+
+							if (threadIdx.x < OpType::extraParamsLen) {
+					            extraZ[threadIdx.x] = (T) startingVal;
+				            }
+				            __syncthreads();
 
 							for(int j = threadIdx.x; j < tadLength; j += blockDim.x) {
                                 shape::ind2subC(xRank,xShape, j, xCoord);
