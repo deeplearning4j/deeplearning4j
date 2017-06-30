@@ -175,7 +175,7 @@ public class DefaultOpFactory implements OpFactory {
                 ret = new Mmul(x, y, x.length());
                 break;
             case "tensormmul":
-                ret = new TensorMmul(x, y, x.length());
+                ret = new TensorMmul(x, y,(int[][]) extraArgs[0]);
                 break;
 
 
@@ -397,6 +397,9 @@ public class DefaultOpFactory implements OpFactory {
                 break;
             case "rsub":
                 op = new RSubOp(x,y,z);
+                break;
+            case "neg":
+                op = new Negative(x,z);
                 break;
             default:
                 throw new ND4JIllegalStateException("No op found " + name);

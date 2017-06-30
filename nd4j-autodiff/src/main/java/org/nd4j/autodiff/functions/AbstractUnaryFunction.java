@@ -117,6 +117,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
                             DifferentialFunction<X> i_v1,
                             String opName) {
         if(i_v1.getValue() instanceof ArrayField) {
+            this.opType = OpState.OpType.TRANSFORM;
             ArrayField arrayField = (ArrayField) i_v1.getValue();
             addEdges(graph,
                     i_v1,

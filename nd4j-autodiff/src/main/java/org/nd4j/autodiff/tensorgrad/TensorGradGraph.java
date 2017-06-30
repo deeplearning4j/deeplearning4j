@@ -16,7 +16,9 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Created by agibsonccc on 4/11/17.
+ * Graph data structure for tensors
+ *
+ * @author Adam Gibson
  */
 @NoArgsConstructor
 @Data

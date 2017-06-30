@@ -26,6 +26,9 @@ public abstract class AbstractBinaryReduceFunction<X extends  Field<X>> extends 
         this.dimensions = dimensions;
     }
 
+    public AbstractBinaryReduceFunction(TensorGradGraph graph) {
+        super(graph);
+    }
 
 
     @Override

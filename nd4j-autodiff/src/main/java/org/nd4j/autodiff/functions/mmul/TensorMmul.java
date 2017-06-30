@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.functions.mmul;
 
 import com.google.common.primitives.Ints;
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.functions.AbstractBinaryReduceFunction;
@@ -19,6 +20,7 @@ import java.util.List;
 /**
  * Created by agibsonccc on 4/14/17.
  */
+@NoArgsConstructor
 public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction<X> {
     private int argNum;
     private int[][] axes;
@@ -30,10 +32,16 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
                       DifferentialFunction<X> i_v2,
                       DifferentialFunctionFactory<X> differentialFunctionFactory,
                       int[][] dimensions,int argNum) {
-        super(graph, i_v1, i_v2);
+        super(graph);
+        this.graph = graph;
+        this.differentialFunctionFactory = differentialFunctionFactory;
         this.axes = dimensions;
         this.argNum = argNum;
         this.differentialFunctionFactory = differentialFunctionFactory;
+        this.extraArgs = new Object[] {axes};
+        this.m_x1 = i_v1;
+        this.m_x2 = i_v2;
+
         if(!addedEdges) {
             ArrayField a = (ArrayField) i_v1.getValue();
             ArrayField b = (ArrayField) i_v2.getValue();
@@ -165,7 +173,8 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
             }
 
 
-            DifferentialFunction<X> at = differentialFunctionFactory.reshape(differentialFunctionFactory.permute
+            DifferentialFunction<X> at = differentialFunctionFactory
+                    .reshape(differentialFunctionFactory.permute
                     (a,newAxesA),newShapeA);
             DifferentialFunction<X> bt = differentialFunctionFactory.reshape(differentialFunctionFactory
                     .permute(b,newAxesB),newShapeB);

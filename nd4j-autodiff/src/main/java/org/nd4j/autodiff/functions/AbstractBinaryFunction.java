@@ -17,7 +17,6 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
 
     protected DifferentialFunction<X> m_x1;
     protected DifferentialFunction<X> m_x2;
-    protected Graph<NDArrayInformation,OpState> graph;
 
     public AbstractBinaryFunction(TensorGradGraph graph,
                                   DifferentialFunction<X> i_v1,
@@ -34,9 +33,9 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
         }
     }
 
-
-
-
+    public AbstractBinaryFunction(TensorGradGraph graph) {
+        this.graph = graph;
+    }
 
 
     @Override

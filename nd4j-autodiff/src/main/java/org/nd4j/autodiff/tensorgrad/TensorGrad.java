@@ -633,7 +633,7 @@ public class TensorGrad {
 
     private DifferentialFunction<ArrayField> getFunctionInput(TensorGradVariable iX) {
         return iX.getArrayField() == null ?
-                iX.getDifferentialFunction() : iX.getDifferentialFunction();
+                iX.getDifferentialFunction() : iX.getArrayField();
     }
 
     /**
@@ -1366,7 +1366,8 @@ public class TensorGrad {
      * @param opExecAction
      * @return
      */
-    public Op createOp(OpState.OpType opType,OpExecAction opExecAction) {
+    public Op createOp(OpState.OpType opType,
+                       OpExecAction opExecAction) {
         OpState opState = opExecAction.getOpState();
         switch (opType) {
             case SHAPE:

@@ -19,33 +19,35 @@
 
 package org.nd4j.linalg.api.ops.impl.accum;
 
+import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.complex.IComplexNumber;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseAccumulation;
 import org.nd4j.linalg.api.ops.Op;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * Dot product
  * @author Adam Gibson
  */
+@NoArgsConstructor
 public class TensorMmul extends BaseAccumulation {
+    private int[][] axes;
 
-    public TensorMmul() {}
-
-    public TensorMmul(INDArray x, INDArray y, INDArray z, long n) {
-        super(x, y, z, n);
-    }
-
-    public TensorMmul(INDArray x, INDArray y, long n) {
-        super(x, y, n);
-    }
-
-    public TensorMmul(INDArray x) {
-        super(x);
-    }
-
-    public TensorMmul(INDArray x, INDArray y) {
+    public TensorMmul(INDArray x, INDArray y, int[][] axes) {
         super(x, y);
+        this.axes = axes;
+        this.extraArgs = new Object[] {axes};
+    }
+
+    @Override
+    public boolean isExecSpecial() {
+        return true;
+    }
+
+    @Override
+    public void exec() {
+        this.z = Nd4j.tensorMmul(x,y,axes);
     }
 
     @Override
@@ -55,26 +57,17 @@ public class TensorMmul extends BaseAccumulation {
 
     @Override
     public String name() {
-        return "dot";
+        return "tensormmul";
     }
 
     @Override
     public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-        if (y() != null)
-            return new TensorMmul(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new TensorMmul(x.vectorAlongDimension(index, dimension));
-
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-        if (y() != null)
-            return new TensorMmul(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new TensorMmul(x.tensorAlongDimension(index, dimension));
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -182,4 +175,6 @@ public class TensorMmul extends BaseAccumulation {
     public IComplexNumber combineSubResults(IComplexNumber first, IComplexNumber second) {
         return first.add(second);
     }
+
+
 }

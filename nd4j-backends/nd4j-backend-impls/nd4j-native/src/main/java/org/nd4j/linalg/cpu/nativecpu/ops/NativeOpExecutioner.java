@@ -229,6 +229,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public INDArray exec(Accumulation op, int... dimension) {
         Arrays.sort(dimension);
 
+
         validateDataType(Nd4j.dataType(), op);
 
         if (extraz.get() == null)
@@ -793,7 +794,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     private void exec(Accumulation op) {
         if (op.x() instanceof IComplexNDArray || executionMode() == ExecutionMode.JAVA) {
             super.exec(op);
-        } else {
+        }
+        else if(op.isExecSpecial()) {
+            op.exec();
+        }
+        else {
             long st = profilingHookIn(op);
 
             validateDataType(Nd4j.dataType(), op);

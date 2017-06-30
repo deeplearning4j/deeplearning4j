@@ -59,16 +59,16 @@ public abstract class DifferentialFunction<X extends Field<X>>
      * @return the value of this function
      */
     public  X getValue(boolean freeze) {
-        boolean graphAlreadyFrozen = graph.isFrozen();
+        boolean graphAlreadyFrozen = this.graph.isFrozen();
         //if graph is already frozen leave it frozen
         if(freeze && !graphAlreadyFrozen) {
-            graph.freeze();
+            this.graph.freeze();
         }
 
         X val = doGetValue();
 
         if(freeze && !graphAlreadyFrozen) {
-            graph.unfreeze();
+            this.graph.unfreeze();
         }
 
         return val;
@@ -272,10 +272,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
                         .result(arrInfo)
                         .build();
 
-                graph.addEdge(
-                        v2VertexId,
-                        newVertex.vertexID(),opState,
-                        true);
+
             }
             else {
                 opState =  OpState.builder()
@@ -287,11 +284,6 @@ public abstract class DifferentialFunction<X extends Field<X>>
                         .extraArgs(extraArgs)
                         .result(arrInfo)
                         .build();
-
-                graph.addEdge(v2VertexId,
-                        newVertex.vertexID(),
-                        opState
-                        ,true);
             }
 
             opState2 = OpState.builder()
@@ -308,6 +300,10 @@ public abstract class DifferentialFunction<X extends Field<X>>
                     newVertex.vertexID(),
                     opState2,true);
 
+            graph.addEdge(v2VertexId,
+                    newVertex.vertexID(),
+                    opState
+                    ,true);
             newVertex.setOpState(opState2);
             arrInfo.setOwner(opState2);
             this.opState = opState;

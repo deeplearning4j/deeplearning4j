@@ -55,26 +55,25 @@ public class Mmul extends BaseAccumulation {
 
     @Override
     public String name() {
-        return "dot";
+        return "mmul";
     }
 
     @Override
     public Op opForDimension(int index, int dimension) {
-        INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
-        if (y() != null)
-            return new Mmul(xAlongDimension, y.vectorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Mmul(x.vectorAlongDimension(index, dimension));
+        throw new UnsupportedOperationException();
+
 
     }
 
     @Override
+    public boolean isPassThrough() {
+        return true;
+    }
+
+    @Override
     public Op opForDimension(int index, int... dimension) {
-        INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-        if (y() != null)
-            return new Mmul(xAlongDimension, y.tensorAlongDimension(index, dimension), xAlongDimension.length());
-        else
-            return new Mmul(x.tensorAlongDimension(index, dimension));
+        throw new UnsupportedOperationException();
+
     }
 
     @Override
