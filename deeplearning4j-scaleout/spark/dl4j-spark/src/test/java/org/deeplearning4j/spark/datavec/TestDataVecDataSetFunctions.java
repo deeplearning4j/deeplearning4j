@@ -25,6 +25,7 @@ import org.deeplearning4j.spark.BaseSparkTest;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import scala.Tuple2;
 
 import java.io.File;
@@ -389,7 +390,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
             int foundIndex = -1;
             DataSet ds = sparkData.get(i);
             for (int j = 0; j < 3; j++) {
-                if (ds.equals(localData.get(j))) {
+                if (dataSetsEqual(ds, localData.get(j))) {
                     if (foundIndex != -1)
                         fail(); //Already found this value -> suggests this spark value equals two or more of local version? (Shouldn't happen)
                     foundIndex = j;
@@ -400,9 +401,11 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
             }
         }
         int count = 0;
-        for (boolean b : found)
-            if (b)
+        for (boolean b : found) {
+            if (b) {
                 count++;
+            }
+        }
         assertEquals(3, count); //Expect all 3 and exactly 3 pairwise matches between spark and local versions
 
 
@@ -451,7 +454,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
             int foundIndex = -1;
             DataSet ds = sparkData.get(i);
             for (int j = 0; j < 3; j++) {
-                if (ds.equals(localData.get(j))) {
+                if (dataSetsEqual(ds, localData.get(j))) {
                     if (foundIndex != -1)
                         fail(); //Already found this value -> suggests this spark value equals two or more of local version? (Shouldn't happen)
                     foundIndex = j;
@@ -468,5 +471,38 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
         assertEquals(3, count); //Expect all 3 and exactly 3 pairwise matches between spark and local versions
     }
 
+
+    private static boolean dataSetsEqual(DataSet d1, DataSet d2){
+
+        if(!d1.getFeatures().equals(d2.getFeatures())){
+            return false;
+        }
+        if(d1.getLabels() == null && d2.getLabels() != null || d1.getLabels() != null && d2.getLabels() == null){
+            return false;
+        }
+        if(d1.getLabels() != null && !d1.getLabels().equals(d2.getLabels())){
+            return false;
+        }
+
+        return masksEqual(d1.getFeatureMatrix(), d2.getFeatureMatrix()) && masksEqual(d1.getLabelsMaskArray(), d2.getLabelsMaskArray());
+    }
+
+    private static boolean masksEqual(INDArray m1, INDArray m2){
+        if(m1 == null && m2 == null){
+            return true;
+        }
+        if(m1 != null && m2 != null){
+            return m1.equals(m2);
+        }
+        //One is null, other is not. Null and ones mask arrays are equal though
+        if (m1 != null && !m1.equals(Nd4j.ones(m1.shape()))) {
+            return false;
+        }
+        if (m2 != null && !m2.equals(Nd4j.ones(m2.shape()))) {
+            return false;
+        }
+
+        return true;
+    }
 
 }

@@ -69,6 +69,8 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
 
     private int cursor = 0;
 
+    private Pair<List<String>, String> preLoadedTokens;
+
     private CnnSentenceDataSetIterator(Builder builder) {
         this.sentenceProvider = builder.sentenceProvider;
         this.wordVectors = builder.wordVectors;
@@ -192,7 +194,26 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         if (sentenceProvider == null) {
             throw new UnsupportedOperationException("Cannot do next/hasNext without a sentence provider");
         }
-        return sentenceProvider.hasNext();
+
+        while(preLoadedTokens == null && sentenceProvider.hasNext()){
+            //Pre-load tokens. Because we filter out empty strings, or sentences with no valid words
+            //we need to pre-load some tokens. Otherwise, sentenceProvider could have 1 (invalid) sentence
+            //next, hasNext() would return true, but next(int) wouldn't be able to return anything
+            preLoadTokens();
+        }
+
+        return preLoadedTokens != null;
+    }
+
+    private void preLoadTokens(){
+        if(preLoadedTokens != null){
+            return;
+        }
+        Pair<String, String> p = sentenceProvider.nextSentence();
+        List<String> tokens = tokenizeSentence(p.getFirst());
+        if(tokens.size() > 0){
+            preLoadedTokens = new Pair<>(tokens, p.getSecond());
+        }
     }
 
     @Override
@@ -205,17 +226,33 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         if (sentenceProvider == null) {
             throw new UnsupportedOperationException("Cannot do next/hasNext without a sentence provider");
         }
+        if(!hasNext()){
+            throw new NoSuchElementException("No next element");
+        }
 
 
         List<Pair<List<String>, String>> tokenizedSentences = new ArrayList<>(num);
         int maxLength = -1;
         int minLength = Integer.MAX_VALUE; //Track to we know if we can skip mask creation for "all same length" case
-        for (int i = 0; i < num && sentenceProvider.hasNext(); i++) {
+        if(preLoadedTokens != null){
+            tokenizedSentences.add(preLoadedTokens);
+            maxLength = Math.max(maxLength, preLoadedTokens.getFirst().size());
+            minLength = Math.min(minLength, preLoadedTokens.getFirst().size());
+            preLoadedTokens = null;
+        }
+        for (int i = tokenizedSentences.size(); i < num && sentenceProvider.hasNext(); i++) {
             Pair<String, String> p = sentenceProvider.nextSentence();
             List<String> tokens = tokenizeSentence(p.getFirst());
 
-            maxLength = Math.max(maxLength, tokens.size());
-            tokenizedSentences.add(new Pair<>(tokens, p.getSecond()));
+            if(tokens.size() > 0) {
+                //Handle edge case: no tokens from sentence
+                maxLength = Math.max(maxLength, tokens.size());
+                minLength = Math.min(minLength, tokens.size());
+                tokenizedSentences.add(new Pair<>(tokens, p.getSecond()));
+            } else {
+                //Skip the current iterator
+                i--;
+            }
         }
 
         if (maxSentenceLength > 0 && maxLength > maxSentenceLength) {

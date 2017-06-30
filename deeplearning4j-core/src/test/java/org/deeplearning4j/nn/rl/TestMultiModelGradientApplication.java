@@ -14,6 +14,7 @@ import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.AdamUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import static org.junit.Assert.assertEquals;
@@ -34,7 +35,8 @@ public class TestMultiModelGradientApplication {
         int nOut = 10;
 
         for(boolean regularization : new boolean[]{false, true}) {
-            for (Updater u : new Updater[]{Updater.SGD, Updater.ADAM}) {
+            for (Updater u : new Updater[]{Updater.SGD, Updater.NESTEROVS, Updater.ADAM}) {
+//            for (Updater u : new Updater[]{Updater.ADAM}) {
 
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
                         .seed(12345)
@@ -56,7 +58,7 @@ public class TestMultiModelGradientApplication {
                 net1GradCalc.init();
 
                 Nd4j.getRandom().setSeed(12345);
-                MultiLayerNetwork net2GradUpd = new MultiLayerNetwork(conf);
+                MultiLayerNetwork net2GradUpd = new MultiLayerNetwork(conf.clone());
                 net2GradUpd.init();
 
                 assertEquals(net1GradCalc.params(), net2GradUpd.params());
@@ -95,6 +97,24 @@ public class TestMultiModelGradientApplication {
 
                 net1GradCalc.fit(f, l);
                 assertEquals(net1GradCalc.params(), net2GradUpd.params());
+
+
+                //=============================
+                if(u != Updater.SGD){
+                    net2GradUpd.getUpdater().getStateViewArray().assign(net1GradCalc.getUpdater().getStateViewArray());
+                }
+                assertEquals(net1GradCalc.params(), net2GradUpd.params());
+                assertEquals(net1GradCalc.getUpdater().getStateViewArray(), net2GradUpd.getUpdater().getStateViewArray());
+
+                //Remove the next 2 lines: fails - as net 1 is 1 iteration ahead
+                net1GradCalc.getLayerWiseConfigurations().setIterationCount(0);
+                net2GradUpd.getLayerWiseConfigurations().setIterationCount(0);
+
+                for (int i = 0; i < 100; i++) {
+                    net1GradCalc.fit(f, l);
+                    net2GradUpd.fit(f, l);
+                    assertEquals(net1GradCalc.params(), net2GradUpd.params());
+                }
             }
         }
     }
@@ -131,7 +151,7 @@ public class TestMultiModelGradientApplication {
                 net1GradCalc.init();
 
                 Nd4j.getRandom().setSeed(12345);
-                ComputationGraph net2GradUpd = new ComputationGraph(conf);
+                ComputationGraph net2GradUpd = new ComputationGraph(conf.clone());
                 net2GradUpd.init();
 
                 assertEquals(net1GradCalc.params(), net2GradUpd.params());
@@ -170,6 +190,24 @@ public class TestMultiModelGradientApplication {
 
                 net1GradCalc.fit(new INDArray[]{f}, new INDArray[]{l});
                 assertEquals(net1GradCalc.params(), net2GradUpd.params());
+
+                //=============================
+                if(u != Updater.SGD){
+                    net2GradUpd.getUpdater().getStateViewArray().assign(net1GradCalc.getUpdater().getStateViewArray());
+                }
+                assertEquals(net1GradCalc.params(), net2GradUpd.params());
+                assertEquals(net1GradCalc.getUpdater().getStateViewArray(), net2GradUpd.getUpdater().getStateViewArray());
+
+                //Remove the next 2 lines: fails - as net 1 is 1 iteration ahead
+                net1GradCalc.getConfiguration().setIterationCount(0);
+                net2GradUpd.getConfiguration().setIterationCount(0);
+
+
+                for (int i = 0; i < 100; i++) {
+                    net1GradCalc.fit(new INDArray[]{f}, new INDArray[]{l});
+                    net2GradUpd.fit(new INDArray[]{f}, new INDArray[]{l});
+                    assertEquals(net1GradCalc.params(), net2GradUpd.params());
+                }
             }
         }
     }

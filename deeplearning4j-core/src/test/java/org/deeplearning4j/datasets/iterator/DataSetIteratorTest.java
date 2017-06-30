@@ -115,7 +115,7 @@ public class DataSetIteratorTest {
         final int numRows = 28;
         final int numColumns = 28;
         int numChannels = 3;
-        int outputNum = LFWLoader.SUB_NUM_LABELS;
+        int outputNum = 4;
         int numSamples = 4;
         int batchSize = 2;
         int iterations = 1;
