@@ -23,25 +23,23 @@ import org.deeplearning4j.arbiter.evaluator.graph.GraphClassificationDataSetEval
 import org.deeplearning4j.arbiter.layers.DenseLayerSpace;
 import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
 import org.deeplearning4j.arbiter.multilayernetwork.MnistDataSetIteratorFactory;
-import org.deeplearning4j.arbiter.multilayernetwork.TestDL4JLocalExecution;
-import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
-import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
-import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
-import org.deeplearning4j.arbiter.saver.local.graph.LocalComputationGraphSaver;
-import org.deeplearning4j.arbiter.scoring.ScoreFunctions;
-import org.deeplearning4j.arbiter.task.ComputationGraphTaskCreator;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
+import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvider;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxTimeCondition;
+import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
-import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
+import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
+import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
 import org.deeplearning4j.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
-import org.deeplearning4j.arbiter.util.WebUtils;
+import org.deeplearning4j.arbiter.saver.local.graph.LocalComputationGraphSaver;
+import org.deeplearning4j.arbiter.scoring.ScoreFunctions;
+import org.deeplearning4j.arbiter.task.ComputationGraphTaskCreator;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.saver.InMemoryModelSaver;
@@ -53,10 +51,8 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.HashMap;
@@ -80,9 +76,9 @@ public class TestGraphLocalExecution {
                 .iterations(100)
                 .addInputs("in").setInputTypes(InputType.feedForward(4))
                 .addLayer("layer0", new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2,10))
-                        .activation(new DiscreteParameterSpace<>("relu", "tanh"))
+                        .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
                         .build(), "in")
-                .addLayer("out", new OutputLayerSpace.Builder().nOut(3).activation("softmax")
+                .addLayer("out", new OutputLayerSpace.Builder().nOut(3).activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "layer0")
                 .setOutputs("out")
                 .numEpochs(3)
@@ -142,9 +138,9 @@ public class TestGraphLocalExecution {
                 .iterations(1)
                 .addInputs("in").setInputTypes(InputType.feedForward(4))
                 .addLayer("first", new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
-                        .activation(new DiscreteParameterSpace<>("relu", "tanh"))
+                        .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
                         .build(), "in")   //1-2 identical layers (except nIn)
-                .addLayer("out", new OutputLayerSpace.Builder().nOut(3).activation("softmax")
+                .addLayer("out", new OutputLayerSpace.Builder().nOut(3).activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "first")
                 .setOutputs("out")
                 .earlyStoppingConfiguration(esConf)

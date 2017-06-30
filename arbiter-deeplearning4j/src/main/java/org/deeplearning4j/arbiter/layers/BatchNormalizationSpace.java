@@ -6,7 +6,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
-import org.deeplearning4j.arbiter.util.CollectionUtils;
+import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 
 import java.util.List;
@@ -37,7 +37,7 @@ public class BatchNormalizationSpace extends FeedForwardLayerSpace<BatchNormaliz
         this.gamma = builder.gamma;
         this.beta = builder.beta;
 
-        this.numParameters = CollectionUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUnique(collectLeaves());
     }
 
     @Override

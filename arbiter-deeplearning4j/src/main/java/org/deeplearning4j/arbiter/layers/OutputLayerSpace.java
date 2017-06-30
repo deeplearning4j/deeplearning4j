@@ -21,7 +21,7 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.deeplearning4j.arbiter.util.CollectionUtils;
+import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 
 /**
@@ -37,7 +37,7 @@ public class OutputLayerSpace extends BaseOutputLayerSpace<OutputLayer> {
     private OutputLayerSpace(Builder builder) {
         super(builder);
 
-        this.numParameters = CollectionUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUnique(collectLeaves());
     }
 
     @Override

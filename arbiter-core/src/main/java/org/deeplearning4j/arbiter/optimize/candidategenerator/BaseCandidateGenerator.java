@@ -23,7 +23,7 @@ import org.apache.commons.math3.random.SynchronizedRandomGenerator;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
-import org.deeplearning4j.arbiter.util.CollectionUtils;
+import org.deeplearning4j.arbiter.util.LeafUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -50,7 +50,7 @@ public abstract class BaseCandidateGenerator<T> implements CandidateGenerator<T>
 
     protected void initialize() {
         //First: collect leaf parameter spaces objects and remove duplicates
-        List<ParameterSpace> noDuplicatesList = CollectionUtils.getUnique(parameterSpace.collectLeaves());
+        List<ParameterSpace> noDuplicatesList = LeafUtils.getUniqueObjects(parameterSpace.collectLeaves());
 
         //Second: assign each a number
         int i = 0;

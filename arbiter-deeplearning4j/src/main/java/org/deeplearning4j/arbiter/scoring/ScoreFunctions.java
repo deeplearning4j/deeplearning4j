@@ -17,17 +17,14 @@
 package org.deeplearning4j.arbiter.scoring;
 
 
+import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.scoring.graph.*;
 import org.deeplearning4j.arbiter.scoring.multilayer.TestSetAccuracyScoreFunction;
 import org.deeplearning4j.arbiter.scoring.multilayer.TestSetF1ScoreFunction;
 import org.deeplearning4j.arbiter.scoring.multilayer.TestSetLossScoreFunction;
-import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.scoring.multilayer.TestSetRegressionScoreFunction;
-
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
-import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 /**
  * ScoreFunctions provides static methods for getting score functions for DL4J MultiLayerNetwork and ComputationGraph

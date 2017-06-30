@@ -1,6 +1,5 @@
 package org.deeplearning4j.arbiter.scoring.util;
 
-import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.scoring.RegressionValue;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.eval.RegressionEvaluation;

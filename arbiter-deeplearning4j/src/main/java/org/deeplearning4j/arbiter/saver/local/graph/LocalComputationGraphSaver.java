@@ -31,7 +31,6 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-
 import java.io.*;
 import java.nio.file.Files;
 

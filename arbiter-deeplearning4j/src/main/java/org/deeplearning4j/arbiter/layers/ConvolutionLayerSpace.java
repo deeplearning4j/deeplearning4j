@@ -21,12 +21,11 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
-import org.deeplearning4j.arbiter.util.CollectionUtils;
+import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
+import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.nd4j.linalg.convolution.Convolution;
 
 import java.util.List;
 
@@ -51,7 +50,7 @@ public class ConvolutionLayerSpace extends FeedForwardLayerSpace<ConvolutionLaye
         this.padding = builder.padding;
         this.convolutionMode = builder.convolutionMode;
 
-        this.numParameters = CollectionUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUnique(collectLeaves());
     }
 
     @Override

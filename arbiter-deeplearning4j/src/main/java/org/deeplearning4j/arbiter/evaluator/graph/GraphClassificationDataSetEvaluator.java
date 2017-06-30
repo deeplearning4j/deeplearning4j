@@ -24,7 +24,6 @@ import org.deeplearning4j.arbiter.optimize.api.evaluation.ModelEvaluator;
 import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.util.Map;

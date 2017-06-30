@@ -21,9 +21,9 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
-import org.deeplearning4j.arbiter.util.CollectionUtils;
+import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
+import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.RBM;
 
 import java.util.List;
@@ -45,7 +45,7 @@ public class RBMLayerSpace extends BasePretrainNetworkLayerSpace<RBM> {
         this.k = builder.k;
         this.sparsity = builder.sparsity;
 
-        this.numParameters = CollectionUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUnique(collectLeaves());
     }
     
     @Override

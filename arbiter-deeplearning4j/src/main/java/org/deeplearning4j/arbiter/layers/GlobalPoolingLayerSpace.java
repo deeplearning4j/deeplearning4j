@@ -6,12 +6,10 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
-import org.deeplearning4j.arbiter.util.CollectionUtils;
+import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 
-
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -38,7 +36,7 @@ public class GlobalPoolingLayerSpace extends LayerSpace<GlobalPoolingLayer> {
         this.poolingType = builder.poolingType;
         this.pNorm = builder.pNorm;
 
-        this.numParameters = CollectionUtils.countUnique(collectLeaves());
+        this.numParameters = LeafUtils.countUnique(collectLeaves());
     }
 
     @Override

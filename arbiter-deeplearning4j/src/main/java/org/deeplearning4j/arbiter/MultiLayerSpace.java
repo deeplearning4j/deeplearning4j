@@ -2,22 +2,20 @@ package org.deeplearning4j.arbiter;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
-import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
-import org.deeplearning4j.arbiter.util.CollectionUtils;
+import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
-import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
-import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
-import org.nd4j.shade.jackson.annotation.JsonTypeName;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -50,7 +48,12 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         this.layerSpaces = builder.layerSpaces;
 
         //Determine total number of parameters:
-        List<ParameterSpace> list = CollectionUtils.getUnique(collectLeaves());
+        //Collect the leaves, and make sure they are unique.
+        //Note that the *object instances* must be unique - and consequently we don't want to use .equals(), as
+        // this would incorrectly filter out equal range parameter spaces
+        List<ParameterSpace> allLeaves = collectLeaves();
+        List<ParameterSpace> list = LeafUtils.getUniqueObjects(allLeaves);
+
         for (ParameterSpace ps : list) numParameters += ps.numParameters();
 
 

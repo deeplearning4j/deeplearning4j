@@ -22,13 +22,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
+import org.deeplearning4j.arbiter.paramspace.misc.ActivationParameterSpaceAdapter;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +47,7 @@ import java.util.Map;
 
 @Data @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
 public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
-    protected ParameterSpace<String> activationFunction;
+    protected ParameterSpace<IActivation> activationFunction;
     protected ParameterSpace<WeightInit> weightInit;
     protected ParameterSpace<Double> biasInit;
     protected ParameterSpace<Distribution> dist;
@@ -205,7 +207,7 @@ public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
 
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T> {
-        protected ParameterSpace<String> activationFunction;
+        protected ParameterSpace<IActivation> activationFunction;
         protected ParameterSpace<WeightInit> weightInit;
         protected ParameterSpace<Double> biasInit;
         protected ParameterSpace<Distribution> dist;
@@ -228,11 +230,24 @@ public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
         protected ParameterSpace<Double> gradientNormalizationThreshold;
 
 
+        @Deprecated
         public T activation(String activationFunction) {
-            return activation(new FixedValue<>(activationFunction));
+            return activation(Activation.fromString(activationFunction));
         }
 
-        public T activation(ParameterSpace<String> activationFunction) {
+        public T activation(Activation activation){
+            return activation(new FixedValue<>(activation));
+        }
+
+        public T activation(IActivation iActivation){
+            return activationFn(new FixedValue<>(iActivation));
+        }
+
+        public T activation(ParameterSpace<Activation> activationFunction) {
+            return activationFn(new ActivationParameterSpaceAdapter(activationFunction));
+        }
+
+        public T activationFn(ParameterSpace<IActivation> activationFunction){
             this.activationFunction = activationFunction;
             return (T) this;
         }

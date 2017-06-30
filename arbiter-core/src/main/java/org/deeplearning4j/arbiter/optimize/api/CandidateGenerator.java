@@ -19,11 +19,9 @@ package org.deeplearning4j.arbiter.optimize.api;
 
 import org.deeplearning4j.arbiter.optimize.candidategenerator.GridSearchCandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.candidategenerator.RandomSearchGenerator;
-import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
-import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 /**
  * A CandidateGenerator proposes candidates (i.e., hyperparameter configurations) for evaluation.

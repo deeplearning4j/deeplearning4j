@@ -25,7 +25,6 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import javax.annotation.sql.DataSourceDefinitions;
 import java.util.concurrent.TimeUnit;
 
 /**

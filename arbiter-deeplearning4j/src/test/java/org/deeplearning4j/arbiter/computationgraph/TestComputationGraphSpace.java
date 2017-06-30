@@ -23,13 +23,15 @@ import org.deeplearning4j.arbiter.layers.OutputLayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
-import org.deeplearning4j.arbiter.util.CollectionUtils;
+import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.List;
@@ -64,6 +66,7 @@ public class TestComputationGraphSpace {
                 .addLayer("2", new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5).build(), "1")
                 .setOutputs("2")
                 .backprop(true).pretrain(false)
+                .setInputTypes(InputType.feedForward(10))
                 .build();
 
         int nParams = cgs.numParameters();
@@ -83,18 +86,19 @@ public class TestComputationGraphSpace {
                 .l2(new ContinuousParameterSpace(0.2,0.5))
                 .addInputs("in")
                 .addLayer("0",new DenseLayerSpace.Builder().nIn(10).nOut(10)
-                        .activation(new DiscreteParameterSpace<>("relu","tanh"))
+                        .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
                         .build(),"in")
                 .addLayer("1",new OutputLayerSpace.Builder().nIn(10).nOut(10)
-                        .activation("softmax").build(),"0")
+                        .activation(Activation.SOFTMAX).build(),"0")
                 .setOutputs("1")
+                .setInputTypes(InputType.feedForward(10))
                 .pretrain(false).backprop(true).build();
 
         int nParams = mls.numParameters();
         assertEquals(3,nParams);
 
         //Assign numbers to each leaf ParameterSpace object (normally done by candidate generator)
-        List<ParameterSpace> noDuplicatesList = CollectionUtils.getUnique(mls.collectLeaves());
+        List<ParameterSpace> noDuplicatesList = LeafUtils.getUniqueObjects(mls.collectLeaves());
 
         //Second: assign each a number
         int c=0;
