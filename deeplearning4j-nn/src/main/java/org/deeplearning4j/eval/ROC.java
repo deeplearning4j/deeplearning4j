@@ -198,7 +198,8 @@ public class ROC extends BaseEvaluation<ROC> {
                 INDArray newProbAndLabel = Nd4j.create(new int[]{newSize, 2}, 'c');
                 if(exampleCount > 0) {
                     //If statement to handle edge case: no examples, but we need to re-allocate right away
-                    newProbAndLabel.assign(probAndLabel.get(NDArrayIndex.interval(0, exampleCount), NDArrayIndex.all()));
+                    newProbAndLabel.get(NDArrayIndex.interval(0, exampleCount), NDArrayIndex.all())
+                            .assign(probAndLabel.get(NDArrayIndex.interval(0, exampleCount), NDArrayIndex.all()));
                 }
                 probAndLabel = newProbAndLabel;
             }
