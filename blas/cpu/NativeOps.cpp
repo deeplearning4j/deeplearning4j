@@ -337,7 +337,7 @@ void   NativeOps::execReduce3Double(Nd4jPointer *extraPointers,int opNum,
                                     int *yShapeInfo,
                                     double *result,
                                     int *resultShapeInfo) {
-    NativeOpExcutioner<double>::execReduce3(opNum,x,xShapeInfo,extraParams,y,yShapeInfo,result,resultShapeInfo);
+        NativeOpExcutioner<double>::execReduce3(opNum, x, xShapeInfo, extraParams, y, yShapeInfo, result, resultShapeInfo);
 }
 
 /**
@@ -380,16 +380,16 @@ void   NativeOps::execReduce3Double(Nd4jPointer *extraPointers,int opNum,
                                     int *resultShapeInfo,
                                     int *dimension,
                                     int dimensionLength) {
-    NativeOpExcutioner<double>::execReduce3(opNum,
-                                            x,
-                                            xShapeInfo,
-                                            extraParams,
-                                            y,
-                                            yShapeInfo,
-                                            result,
-                                            resultShapeInfo,
-                                            dimension,
-                                            dimensionLength);
+
+    if (extraPointers == nullptr || extraPointers[2] == 0) {
+        NativeOpExcutioner<double>::execReduce3(opNum, x, xShapeInfo, extraParams, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength);
+    } else {
+        // going tad-way
+        int *tadShapeInfo = reinterpret_cast<int *> (extraPointers[0]);
+        int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+
+        NativeOpExcutioner<double>::execReduce3TAD(opNum, x, xShapeInfo, extraParams, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets);
+    }
 
 }
 /**
@@ -1074,17 +1074,15 @@ void   NativeOps::execReduce3Float(Nd4jPointer *extraPointers,int opNum,
                                    int *resultShapeInfo,
                                    int *dimension,
                                    int dimensionLength) {
-    NativeOpExcutioner<float>::execReduce3(
-            opNum,
-            x,
-            xShapeInfo,
-            extraParams,
-            y,
-            yShapeInfo,
-            result,
-            resultShapeInfo,
-            dimension,
-            dimensionLength);
+    if (extraPointers == nullptr || extraPointers[2] == nullptr) {
+        NativeOpExcutioner<float>::execReduce3(opNum, x, xShapeInfo, extraParams, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength);
+    } else {
+        // going tad-way
+        int *tadShapeInfo = reinterpret_cast<int *> (extraPointers[0]);
+        int *tadOffsets = reinterpret_cast<int *>(extraPointers[1]);
+
+        NativeOpExcutioner<float>::execReduce3TAD(opNum, x, xShapeInfo, extraParams, y, yShapeInfo, result, resultShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets);
+    }
 
 }
 

@@ -480,6 +480,8 @@ template<typename OpType>
                             __syncthreads();
                             if (threadIdx.x == 0)
 							    result[i] = OpType::postProcess(sPartials[threadIdx.x],tadLength, extraZ);
+
+							__syncthreads();
 						}
 
 					}
@@ -572,6 +574,27 @@ template<typename OpType>
             }
 
 
+            static void exec( const int opNum,
+                              T *x, int *xShapeInfo,
+                              T *extraParamsVals,
+                              T *y,
+                              int *yShapeInfo,
+                              T *result,
+                              int *resultShapeInfoBuffer,
+                              int *dimension,
+                              int dimensionLength, int *tadShapeInfo, int *tadOffsets) {
+                DISPATCH_BY_OPNUM(exec, PARAMS(x,
+                                               xShapeInfo,
+                                               extraParamsVals,
+                                               y, yShapeInfo,
+                                               result,
+                                               resultShapeInfoBuffer,
+                                               dimension,
+                                               dimensionLength, tadShapeInfo, tadOffsets), REDUCE3_OPS);
+            }
+
+
+
             template<typename OpType>
 #ifdef __CUDACC__
             __host__
@@ -649,6 +672,70 @@ template<typename OpType>
                 return startingVal;
 
 
+            }
+
+            template<typename OpType>
+            static void exec(
+                    T *x,
+                    int *xShapeInfo,
+                    T *extraParams,
+                    T *y,
+                    int *yShapeInfo,
+                    T *result,
+                    int *resultShapeInfoBuffer,
+                    int *dimension,
+                    int dimensionLength, int *tadShapeInfo, int *tadOffsets) {
+
+                T extraParamsVals[2] = {(T) 0.0, (T) 0.0};
+                T startingVal = OpType::startingValue(x);
+
+                int tadEWS = shape::elementWiseStride(tadShapeInfo);
+                int tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                int yEWS = shape::elementWiseStride(yShapeInfo);
+                int tads = shape::length(xShapeInfo) / tadLength;
+
+                int *xShape = shape::shapeOf(tadShapeInfo);
+                int *xStride = shape::stride(tadShapeInfo);
+                int xRank = shape::rank(tadShapeInfo);
+
+                int *yShape = shape::shapeOf(yShapeInfo);
+                int *yStride = shape::stride(yShapeInfo);
+                int yRank = shape::rank(yShapeInfo);
+
+                int xCoord[MAX_RANK];
+                int yCoord[MAX_RANK];
+
+#pragma  omp parallel for proc_bind(AFFINITY) default(shared) private(xCoord, yCoord)
+                for (int r = 0; r < tads; r++) {
+                    int offset = tadOffsets[r];
+
+                    T *localExtraParams = nullptr;
+                    if (OpType::extraParamsLen > 0)
+                        localExtraParams = new T[OpType::extraParamsLen];
+                    for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) {
+                        localExtraParams[extraParamsIdx] = startingVal;
+                    }
+
+                    for (int f = 0; f < tadLength; f++) {
+                        if (shape::order(tadShapeInfo) == 'c') {
+                            shape::ind2subC(xRank, xShape, f, xCoord);
+                            shape::ind2subC(yRank, yShape, f, yCoord);
+                        } else {
+                            shape::ind2sub(xRank, xShape, f, xCoord);
+                            shape::ind2sub(yRank, yShape, f, yCoord);
+                        }
+
+                        Nd4jIndex xOffset = shape::getOffset(offset, xShape, xStride, xCoord, xRank);
+                        Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+
+                        result[r] = OpType::update(result[r], OpType::op(x[xOffset], y[yOffset], localExtraParams), localExtraParams);
+                    }
+
+                    result[r] = OpType::postProcess(result[r], tadLength, localExtraParams);
+
+                    if (localExtraParams != nullptr)
+                        delete (localExtraParams);
+                }
             }
 
             template<typename OpType>
