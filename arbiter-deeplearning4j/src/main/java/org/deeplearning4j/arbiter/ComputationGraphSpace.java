@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter;
 import lombok.*;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
 import org.deeplearning4j.arbiter.util.LeafUtils;
@@ -58,7 +59,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
     @JsonProperty
     private String[] networkOutputs;
     @JsonProperty
-    private InputType[] inputTypes;
+    private ParameterSpace<InputType[]> inputTypes;
     @JsonProperty
     private int numParameters;
 
@@ -90,7 +91,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         ComputationGraphConfiguration.GraphBuilder graphBuilder = builder.graphBuilder();
         graphBuilder.addInputs(this.networkInputs);
         graphBuilder.setOutputs(this.networkOutputs);
-        if (inputTypes != null && inputTypes.length > 0) graphBuilder.setInputTypes(inputTypes);
+        if (inputTypes != null ) graphBuilder.setInputTypes(inputTypes.getValue(values));
 
         //Build/add our layers and vertices:
         for (LayerConf c : layerSpaces) {
@@ -124,6 +125,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
             list.addAll(lc.layerSpace.collectLeaves());
         }
         if (cnnInputSize != null) list.addAll(cnnInputSize.collectLeaves());
+        if(inputTypes != null) list.add(inputTypes);
         return list;
     }
 
@@ -148,6 +150,10 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
             sb.append("Early stopping configuration:").append(earlyStoppingConfiguration.toString()).append("\n");
         } else {
             sb.append("Training # epochs:").append(numEpochs).append("\n");
+        }
+
+        if(inputTypes != null){
+            sb.append("Input types: ").append(inputTypes).append("\n");
         }
 
         return sb.toString();
@@ -178,7 +184,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         protected EarlyStoppingConfiguration<ComputationGraph> earlyStoppingConfiguration;
         protected String[] networkInputs;
         protected String[] networkOutputs;
-        protected InputType[] inputTypes;
+        protected ParameterSpace<InputType[]> inputTypes;
 
         //Need: input types
         //Early stopping configuration
@@ -215,6 +221,10 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         }
 
         public Builder setInputTypes(InputType... inputTypes) {
+            return setInputTypes(new FixedValue<InputType[]>(inputTypes));
+        }
+
+        public Builder setInputTypes(ParameterSpace<InputType[]> inputTypes){
             this.inputTypes = inputTypes;
             return this;
         }

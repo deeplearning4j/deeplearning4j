@@ -27,6 +27,7 @@ import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.junit.Test;
@@ -65,6 +66,7 @@ public class TestComputationGraphSpace {
                 .addLayer("2", new OutputLayerSpace.Builder().lossFunction(LossFunction.MCXENT).nIn(10).nOut(5).build(), "1")
                 .setOutputs("2")
                 .backprop(true).pretrain(false)
+                .setInputTypes(InputType.feedForward(10))
                 .build();
 
         int nParams = cgs.numParameters();
@@ -87,8 +89,9 @@ public class TestComputationGraphSpace {
                         .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
                         .build(),"in")
                 .addLayer("1",new OutputLayerSpace.Builder().nIn(10).nOut(10)
-                        .activation("softmax").build(),"0")
+                        .activation(Activation.SOFTMAX).build(),"0")
                 .setOutputs("1")
+                .setInputTypes(InputType.feedForward(10))
                 .pretrain(false).backprop(true).build();
 
         int nParams = mls.numParameters();
