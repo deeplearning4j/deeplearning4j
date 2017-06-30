@@ -61,6 +61,9 @@ public abstract class BaseCodecRecordReader extends FileRecordReader implements 
 
     @Override
     public List<List<Writable>> sequenceRecord() {
+        if (iter == null || !iter.hasNext()) {
+            this.advanceToNextLocation();
+        }
         File next = iter.next();
 
         try {
@@ -95,11 +98,6 @@ public abstract class BaseCodecRecordReader extends FileRecordReader implements 
     }
 
     @Override
-    public boolean hasNext() {
-        return iter.hasNext();
-    }
-
-    @Override
     public void setConf(Configuration conf) {
         super.setConf(conf);
         startFrame = conf.getInt(START_FRAME, 0);
@@ -119,7 +117,7 @@ public abstract class BaseCodecRecordReader extends FileRecordReader implements 
 
     @Override
     public SequenceRecord nextSequence() {
-        File next = iter.next();
+        File next = this.nextFile();
 
         List<List<Writable>> list;
         try {

@@ -56,45 +56,21 @@ public class FileRecordReader extends BaseRecordReader {
 
 
     protected void doInitialize(InputSplit split) {
-        /*URI[] locations = split.locations();
 
-        if (locations != null && locations.length >= 1) {
-            if (locations.length > 1) {
-                List<File> allFiles = new ArrayList<>();
-                for (URI location : locations) {
-                    File iter = new File(location);
-                    if (labels == null && appendLabel) {
-                        //root dir relative to example where the label is the parent directory and the root directory is
-                        //recursively the parent of that
-                        File parent = iter.getParentFile().getParentFile();
-                        //calculate the labels relative to the parent file
-                        labels = new ArrayList<>();
+        if (labels == null && appendLabel) {
+            URI[] locations = split.locations();
+            if (locations.length > 0) {
+                //root dir relative to example where the label is the parent directory and the root directory is
+                //recursively the parent of that
+                File parent = new File(locations[0]).getParentFile().getParentFile();
+                //calculate the labels relative to the parent file
+                labels = new ArrayList<>();
 
-                        for (File labelDir : parent.listFiles())
-                            labels.add(labelDir.getName());
-                    }
-
-                    if (iter.isDirectory()) {
-                        Iterator<File> allFiles2 = FileUtils.iterateFiles(iter, null, true);
-                        while (allFiles2.hasNext())
-                            allFiles.add(allFiles2.next());
-                    }
-
-                    else
-                        allFiles.add(iter);
-                }
-
-                iter = allFiles.listIterator();
-            } else {
-                File curr = new File(locations[0]);
-                if (curr.isDirectory())
-                    iter = FileUtils.iterateFiles(curr, null, true);
-                else
-                    iter = Collections.singletonList(curr).iterator();
+                for (File labelDir : parent.listFiles())
+                    labels.add(labelDir.getName());
             }
-        }*/
+        }
         locationsIterator = split.locationsPathIterator();
-
     }
 
     @Override
@@ -142,14 +118,14 @@ public class FileRecordReader extends BaseRecordReader {
 
     @Override
     public boolean hasNext() {
-        if (iter.hasNext()) {
+        if (iter != null && iter.hasNext()) {
             return true;
         }
         if (!locationsIterator.hasNext()) {
             return false;
         }
-        File file = new File(locationsIterator.next());
-        iter = FileUtils.iterateFiles(file, null, true);
+        // iter is exhausted, set to iterate of the next location
+        this.advanceToNextLocation();
         return iter != null && iter.hasNext();
     }
 
@@ -194,6 +170,9 @@ public class FileRecordReader extends BaseRecordReader {
 
     @Override
     public Record nextRecord() {
+        if (iter == null || !iter.hasNext()) {
+            this.advanceToNextLocation();
+        }
         File next = iter.next();
         this.currentFile = next;
         invokeListeners(next);
@@ -201,6 +180,27 @@ public class FileRecordReader extends BaseRecordReader {
 
         return new org.datavec.api.records.impl.Record(ret,
                         new RecordMetaDataURI(next.toURI(), FileRecordReader.class));
+    }
+
+    protected File nextFile() {
+        if (iter == null || !iter.hasNext()) {
+            this.advanceToNextLocation();
+        }
+        File next = iter.next();
+        this.currentFile = next;
+        return next;
+    }
+
+    protected void advanceToNextLocation () {
+        //File file;
+        String path = locationsIterator.next(); // should always have file:// preceding
+        System.out.print("Adv : ");
+        System.out.println(path);
+        File file = new File(URI.create(path));
+        if (file.isDirectory())
+            iter = FileUtils.iterateFiles(file, null, true);
+        else
+            iter = Collections.singletonList(file).iterator();
     }
 
     @Override

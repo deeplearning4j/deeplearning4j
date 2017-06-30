@@ -162,7 +162,7 @@ public class CSVSequenceRecordReaderTest {
             URI[] loc = locations();
             String[] arr = new String[loc.length];
             for (int i = 0; i < loc.length; i++) {
-                arr[i] = loc[i].getPath();
+                arr[i] = loc[i].toString();
             }
             return Arrays.asList(arr).iterator();
         }

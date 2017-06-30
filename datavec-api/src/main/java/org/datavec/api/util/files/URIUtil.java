@@ -15,7 +15,7 @@ public class URIUtil {
         try {
             // manually construct URI (this is faster)
             String sp = slashify(f.getAbsoluteFile().getPath(), false);
-            if (sp.startsWith("//"))
+            if (!sp.startsWith("//"))
                 sp = "//" + sp;
             return new URI("file", null, sp, null);
 
