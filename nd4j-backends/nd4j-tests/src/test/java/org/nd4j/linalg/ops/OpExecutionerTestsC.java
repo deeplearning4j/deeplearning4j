@@ -1020,6 +1020,27 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testNorm2_2() throws Exception {
+        INDArray array = Nd4j.rand(127,164, 100, 1, 1);
+
+        double norm2 = array.norm2Number().doubleValue();
+    }
+
+    /**
+     * This test fails, but that's ok.
+     * It's here only as reminder, that in some cases we can have EWS==1 for better performances.
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testTadEws() throws Exception {
+        INDArray array = Nd4j.create(32, 5, 10);
+        assertEquals(1, array.tensorAlongDimension(0, 1, 2).elementWiseStride());
+    }
+
+
+
+    @Test
     public void testTear1() {
         List<INDArray> arrays = new ArrayList<>();
         for (int i = 0; i < 10; i++) {

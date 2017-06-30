@@ -43,6 +43,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.Negative;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.indexing.conditions.Condition;
@@ -3616,7 +3617,37 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray reshape(char order, int... newShape) {
-        int[] shape = Shape.resolveNegativeShapeIfNeccessary(newShape);
+        if (newShape == null || newShape.length < 2)
+            throw new ND4JIllegalStateException("Can't reshape(int...) without shape arguments. Got empty shape instead.");
+
+        int numberNegativesOnes = 0;
+        int[] shape = ArrayUtil.copy(newShape);
+        for (int i = 0; i < shape.length; i++) {
+            if (shape[i] < 0) {
+                if (numberNegativesOnes >= 1)
+                    throw new IllegalArgumentException("Only one dimension can be negative ones");
+
+                numberNegativesOnes++;
+
+                int shapeLength = 1;
+                for (int j = 0; j < shape.length; j++)
+                    if (shape[j] >= 1)
+                        shapeLength *= shape[j];
+                int realShape = Math.abs(length() / shapeLength);
+                int[] thisNewShape = new int[shape.length];
+                for (int j = 0; j < shape.length; j++) {
+                    if (i != j) {
+                        thisNewShape[j] = shape[j];
+                    } else
+                        thisNewShape[j] = realShape;
+                }
+
+                shape = thisNewShape;
+                break;
+
+            }
+
+        }
 
 
         INDArray reshapeAttempt = Shape.newShapeNoCopy(this, shape, order == 'f');
@@ -3759,13 +3790,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.getExecutioner().exec(new Max(this), dimension);
     }
 
-    /**
-     *
-     *
-     * @param dimension the dimension to getScalar the mean along
-     * @return
-     */
-    @Override
     public INDArray amax(int... dimension) {
         return Nd4j.getExecutioner().exec(new AMax(this), dimension);
     }
@@ -3781,12 +3805,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.getExecutioner().exec(new Min(this), dimension);
     }
 
-    /**
-     *
-     * @param dimension
-     * @return
-     */
-    @Override
     public INDArray amin(int... dimension) {
         return Nd4j.getExecutioner().exec(new AMin(this), dimension);
     }
@@ -4310,6 +4328,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray broadcast(int... shape) {
         if (Shape.shapeEquals(shape, shape()))
             return this;
+
+        // if we're on scalar, we can just create new array
+        if (this.isScalar())
+            return Nd4j.createUninitialized(shape).assign(this.getDouble(0));
+
 
         boolean compatible = true;
         int count = shape.length - 1;

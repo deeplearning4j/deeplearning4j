@@ -244,16 +244,23 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         hostYShapeInfo, hostZShapeInfo, hostTadShapeInfo, devTadShapeInfo, devTadOffsets);
 
         if (op.y() != null) {
-            Pair<DataBuffer, DataBuffer> yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
+            if ((dimension.length == 1 &&  dimension[0] == Integer.MAX_VALUE )||op.x().tensorAlongDimension(0, dimension).lengthLong() != op.y().lengthLong()) {
+                Pair<DataBuffer, DataBuffer> yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
 
-            Pointer yDevTadShapeInfo = AtomicAllocator.getInstance().getPointer(yTadBuffers.getFirst(), context);
+                Pointer yDevTadShapeInfo = AtomicAllocator.getInstance().getPointer(yTadBuffers.getFirst(), context);
 
-            DataBuffer yOffsets = yTadBuffers.getSecond();
-            Pointer yDevTadOffsets =
-                            yOffsets == null ? null : AtomicAllocator.getInstance().getPointer(yOffsets, context);
+                DataBuffer yOffsets = yTadBuffers.getSecond();
+                Pointer yDevTadOffsets =
+                        yOffsets == null ? null : AtomicAllocator.getInstance().getPointer(yOffsets, context);
 
-            xShapeInfoHostPointer.put(12, yDevTadShapeInfo);
-            xShapeInfoHostPointer.put(13, yDevTadOffsets);
+                xShapeInfoHostPointer.put(12, yDevTadShapeInfo);
+                xShapeInfoHostPointer.put(13, yDevTadOffsets);
+            } else {
+                // TAD vs full array code branch
+
+                xShapeInfoHostPointer.put(12, AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context));
+                xShapeInfoHostPointer.put(13, null);
+            }
         }
 
 

@@ -309,10 +309,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         DataBuffer offsets = tadBuffers.getSecond();
         Pointer hostTadOffsets = offsets == null ? null : offsets.addressPointer();
 
+        // we're going to check, if that's TAD vs TAD comparison or TAD vs full array. if later - we're going slightly different route
+        boolean tvf = false;
+        if (op.y() != null)
+            if (op.x().tensorAlongDimension(0, dimension).lengthLong() == op.y().lengthLong())
+                tvf = true;
+
         /**
          * This is a pointer to a pointer in c.
          */
-        PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets);
+        //  FIXME: we need something better then 3rd element being non-null here...
+        PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets, tvf ? hostTadOffsets : null);
 
         long st = profilingHookIn(op, tadBuffers.getFirst());
 
@@ -323,6 +330,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
          * This gives us a pointer which is passed around in libnd4j.
          */
         Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension).addressPointer();
+
 
         if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if (op instanceof Variance) {
@@ -655,7 +663,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 if ((xEWS >= 1 && yEWS >= 1
                                 && xEWS == yEWS && !op.isExecSpecial()
-                                && op.x().ordering() == op.y().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
+                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
                     loop.execPairwiseTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
                                     xEWS, (FloatPointer) op.y().data().addressPointer(),
                                     yEWS, (FloatPointer) op.z().data().addressPointer(),
