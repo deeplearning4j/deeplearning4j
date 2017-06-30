@@ -228,6 +228,98 @@ public class TestUpdaters {
     }
 
     @Test
+    public void testNadamUpdater() {
+        INDArray m, v;
+        double lr = 0.01;
+        int iteration = 0;
+        double beta1 = 0.8;
+        double beta2 = 0.888;
+        double epsilon = Nadam.DEFAULT_NADAM_EPSILON;
+
+        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr)
+                        .iterations(iteration)
+                        .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).updater(
+                                new Nadam.Builder().learningRate(lr).beta1(beta1).beta2(beta2).epsilon(epsilon).build()
+                        ).build()
+                        ).build();
+
+        int numParams = conf.getLayer().initializer().numParams(conf);
+        INDArray params = Nd4j.create(1, numParams);
+        Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer.setBackpropGradientsViewArray(gradients);
+
+        Updater updater = UpdaterCreator.getUpdater(layer);
+        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
+        INDArray updaterState = Nd4j.create(1, updaterStateSize);
+        updater.setStateViewArray(layer, updaterState, true);
+
+        /*
+        * Making update for layer
+        * */
+        updater.update(layer, gradient, iteration, 1);
+
+        double beta1t = FastMath.pow(beta1, iteration + 1);
+
+        Gradient gradientCopyPreUpdate = new DefaultGradient();
+        INDArray g = gradients.dup();
+        INDArray wg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, nIn * nOut));
+        INDArray bg = g.get(NDArrayIndex.point(0), NDArrayIndex.interval(nIn * nOut, nIn * nOut + nOut));
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, wg);
+        gradientCopyPreUpdate.setGradientFor(DefaultParamInitializer.BIAS_KEY, bg);
+
+        int count = 0;
+        for (Map.Entry<String, INDArray> entry : gradientCopyPreUpdate.gradientForVariable().entrySet()) {
+            val = entry.getValue();
+            m = Nd4j.zeros(val.shape());
+            v = Nd4j.zeros(val.shape());
+
+            INDArray oneMinusBeta1Grad = val.mul(1.0 - beta1);
+            m.muli(beta1).addi(oneMinusBeta1Grad);
+
+            INDArray oneMinusBeta2GradSquared = val.mul(val).muli(1.0 - beta2);
+            v.muli(beta2).addi(oneMinusBeta2GradSquared);
+
+            INDArray biasCorrectedEstimateOfMomentum = m.mul(beta1).divi(1.0 - beta1t);
+            INDArray secondTerm = oneMinusBeta1Grad.divi(1.0 - beta1t);
+
+            INDArray alphat =  biasCorrectedEstimateOfMomentum.add(secondTerm).muli(lr);
+
+            INDArray sqrtV = Transforms.sqrt(v, false).addi(epsilon);
+
+            gradExpected = val.assign(alphat).divi(sqrtV);
+            if (!gradExpected.equals(gradient.getGradientFor(entry.getKey()))) {
+                System.out.println(Arrays.toString(gradExpected.dup().data().asFloat()));
+                System.out.println(Arrays.toString(gradient.getGradientFor(entry.getKey()).dup().data().asFloat()));
+            }
+            assertEquals(gradExpected, gradient.getGradientFor(entry.getKey()));
+            count++;
+        }
+
+        assertEquals("Count should be equal to 2, one for weight gradient and one for bias gradient", 2, count);
+
+        /*
+        * Check that we are not erroneously mutating moving avg gradient while calculating
+        * `biasCorrectedEstimateOfMomentum = m * beta1 /(1.0 - beta1t);`
+        * */
+        BaseMultiLayerUpdater baseUpdater = (BaseMultiLayerUpdater) updater;
+        UpdaterBlock ub = (UpdaterBlock)baseUpdater.getUpdaterBlocks().get(0);
+        NadamUpdater nadamUpdater = (NadamUpdater)ub.getGradientUpdater();
+
+
+        //Calculated for following setup: initialWeights are all equal to 1, beta1 = 0.8, beta2 = 0.888, learning rate = 0.01
+        double calculatedByHandMScalar = 0.2;
+        double[] expectedM = Nd4j.ones(1, numParams).mul(calculatedByHandMScalar).data().asDouble();
+
+        double[] actualM = Arrays.copyOfRange(nadamUpdater.getM().data().asDouble(), 0, numParams);
+        for(int i = 0; i < actualM.length; i++){
+            actualM[i] = Math.round(actualM[i] * 1e2) / 1e2;
+        }
+
+        assertEquals("Wrong weight gradient after first iteration's update", Arrays.equals(actualM, expectedM), true);
+
+    }
+
+    @Test
     public void testAdaMaxUpdater() {
         INDArray m, v;
         double lr = 0.01;

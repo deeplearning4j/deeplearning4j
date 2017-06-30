@@ -9,7 +9,7 @@ import org.nd4j.linalg.learning.config.*;
  * @author Adam Gibson
  */
 public enum Updater {
-    SGD, ADAM, ADAMAX, ADADELTA, NESTEROVS, ADAGRAD, RMSPROP, NONE,
+    SGD, ADAM, ADAMAX, ADADELTA, NESTEROVS, NADAM, ADAGRAD, RMSPROP, NONE,
     @Deprecated
     CUSTOM;
 
@@ -26,6 +26,8 @@ public enum Updater {
                 return new AdaDelta();
             case NESTEROVS:
                 return new Nesterovs();
+            case NADAM:
+                return new Nadam();
             case ADAGRAD:
                 return new AdaGrad();
             case RMSPROP:
