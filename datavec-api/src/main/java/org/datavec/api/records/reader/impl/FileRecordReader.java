@@ -39,6 +39,7 @@ import java.util.*;
 public class FileRecordReader extends BaseRecordReader {
 
     protected Iterator<File> iter;
+    protected Iterator<String> locationsIterator;
     protected Configuration conf;
     protected File currentFile;
     protected List<String> labels;
@@ -55,7 +56,7 @@ public class FileRecordReader extends BaseRecordReader {
 
 
     protected void doInitialize(InputSplit split) {
-        URI[] locations = split.locations();
+        /*URI[] locations = split.locations();
 
         if (locations != null && locations.length >= 1) {
             if (locations.length > 1) {
@@ -91,7 +92,8 @@ public class FileRecordReader extends BaseRecordReader {
                 else
                     iter = Collections.singletonList(curr).iterator();
             }
-        }
+        }*/
+        locationsIterator = split.locationsPathIterator();
 
     }
 
@@ -140,6 +142,14 @@ public class FileRecordReader extends BaseRecordReader {
 
     @Override
     public boolean hasNext() {
+        if (iter.hasNext()) {
+            return true;
+        }
+        if (!locationsIterator.hasNext()) {
+            return false;
+        }
+        File file = new File(locationsIterator.next());
+        iter = FileUtils.iterateFiles(file, null, true);
         return iter != null && iter.hasNext();
     }
 
