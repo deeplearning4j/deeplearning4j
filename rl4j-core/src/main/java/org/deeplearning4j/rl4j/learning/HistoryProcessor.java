@@ -78,7 +78,7 @@ public class HistoryProcessor implements IHistoryProcessor {
             int[] shape = raw.shape();
             Mat ocvmat = new Mat(shape[0], shape[1], CV_32FC(3), raw.data().pointer());
             Mat cvmat = new Mat(shape[0], shape[1], CV_8UC(3));
-            ocvmat.convertTo(cvmat, CV_8UC(3));
+            ocvmat.convertTo(cvmat, CV_8UC(3), 255.0, 0.0);
             Frame frame = openCVFrameConverter.convert(cvmat);
             try {
                 fmpegFrameRecorder.record(frame);
