@@ -49,6 +49,7 @@ import org.deeplearning4j.earlystopping.termination.MaxTimeIterationTerminationC
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -84,12 +85,12 @@ public class MNISTOptimizationTest {
                         .nIn(1).nOut(new IntegerParameterSpace(5, 30))
                         .kernelSize(new DiscreteParameterSpace<>(new int[]{3, 3}, new int[]{4, 4}, new int[]{5, 5}))
                         .stride(new DiscreteParameterSpace<>(new int[]{1, 1}, new int[]{2, 2}))
-                        .activation(new DiscreteParameterSpace<>("relu","softplus","leakyrelu"))
+                        .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.SOFTPLUS, Activation.LEAKYRELU))
                         .build(), new IntegerParameterSpace(1, 2), true) //1-2 identical layers
                 .addLayer(new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
-                        .activation(new DiscreteParameterSpace<>("relu", "tanh"))
+                        .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
                         .build(), new IntegerParameterSpace(0, 1), true)   //0 to 1 layers
-                .addLayer(new OutputLayerSpace.Builder().nOut(10).activation("softmax")
+                .addLayer(new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .earlyStoppingConfiguration(esConf)
                 .pretrain(false).backprop(true).build();

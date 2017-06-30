@@ -17,6 +17,7 @@
  */
 package org.deeplearning4j.arbiter.multilayernetwork;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.arbiter.layers.*;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
@@ -24,6 +25,8 @@ import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterS
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
 
 import java.util.List;
 import java.util.Random;
@@ -37,10 +40,10 @@ public class TestLayerSpace {
     public void testBasic1(){
 
         DenseLayer expected = new DenseLayer.Builder()
-                .nOut(13).activation("relu").build();
+                .nOut(13).activation(Activation.RELU).build();
 
         DenseLayerSpace space = new DenseLayerSpace.Builder()
-                .nOut(13).activation("relu").build();
+                .nOut(13).activation(Activation.RELU).build();
 
         int nParam = space.numParameters();
         assertEquals(0,nParam);
@@ -52,7 +55,7 @@ public class TestLayerSpace {
     @Test
     public void testBasic2(){
 
-        String[] actFns = new String[]{"softsign","relu","leakyrelu"};
+        Activation[] actFns = new Activation[]{Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
         Random r = new Random(12345);
 
         for( int i=0; i<20; i++ ) {
@@ -85,7 +88,7 @@ public class TestLayerSpace {
             assertEquals(20, l.getNOut());
             double lr = l.getLearningRate();
             double l2 = l.getL2();
-            String activation = l.getActivationFn().toString();
+            IActivation activation = l.getActivationFn();
 
             System.out.println(lr + "\t" + l2 + "\t" + activation);
 
@@ -117,8 +120,7 @@ public class TestLayerSpace {
 
     @Test
     public void testActivationLayer(){
-
-        String[] actFns = new String[]{"softsign","relu","leakyrelu"};
+        Activation[] actFns = new Activation[]{Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
 
         ActivationLayerSpace als = new ActivationLayerSpace.Builder()
                 .activation(new DiscreteParameterSpace<>(actFns))
@@ -142,7 +144,7 @@ public class TestLayerSpace {
             }
 
             ActivationLayer al = als.getValue(d);
-            String activation = al.getActivationFn().toString();
+            IActivation activation = al.getActivationFn();
 
             System.out.println(activation);
 
@@ -153,7 +155,7 @@ public class TestLayerSpace {
     @Test
     public void testEmbeddingLayer(){
 
-        String[] actFns = new String[]{"softsign","relu","leakyrelu"};
+        Activation[] actFns = new Activation[]{Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
 
         EmbeddingLayerSpace els = new EmbeddingLayerSpace.Builder()
                 .activation(new DiscreteParameterSpace<>(actFns))
@@ -178,7 +180,7 @@ public class TestLayerSpace {
             }
 
             EmbeddingLayer el = els.getValue(d);
-            String activation = el.getActivationFn().toString();
+            IActivation activation = el.getActivationFn();
             int nOut = el.getNOut();
 
             System.out.println(activation + "\t" + nOut);
@@ -191,7 +193,7 @@ public class TestLayerSpace {
     @Test
     public void testGravesBidirectionalLayer(){
 
-        String[] actFns = new String[]{"softsign","relu","leakyrelu"};
+        Activation[] actFns = new Activation[]{Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
 
         GravesBidirectionalLSTMLayerSpace ls = new GravesBidirectionalLSTMLayerSpace.Builder()
                 .activation(new DiscreteParameterSpace<>(actFns))
@@ -217,7 +219,7 @@ public class TestLayerSpace {
             }
 
             GravesBidirectionalLSTM el = ls.getValue(d);
-            String activation = el.getActivationFn().toString();
+            IActivation activation = el.getActivationFn();
             int nOut = el.getNOut();
             double forgetGate = el.getForgetGateBiasInit();
 
@@ -229,9 +231,9 @@ public class TestLayerSpace {
         }
     }
 
-    private static boolean containsActivationFunction(String[] activationFunctions, String activationFunction) {
-        for (String af : activationFunctions) {
-            if (activationFunction.startsWith(af)) return true;
+    private static boolean containsActivationFunction(Activation[] activationFunctions, IActivation activationFunction) {
+        for (Activation af : activationFunctions) {
+            if (activationFunction.equals(af.getActivationFunction())) return true;
         }
         return false;
     }

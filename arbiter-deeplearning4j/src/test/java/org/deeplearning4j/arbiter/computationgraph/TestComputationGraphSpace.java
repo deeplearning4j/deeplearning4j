@@ -30,6 +30,7 @@ import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.List;
@@ -83,7 +84,7 @@ public class TestComputationGraphSpace {
                 .l2(new ContinuousParameterSpace(0.2,0.5))
                 .addInputs("in")
                 .addLayer("0",new DenseLayerSpace.Builder().nIn(10).nOut(10)
-                        .activation(new DiscreteParameterSpace<>("relu","tanh"))
+                        .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
                         .build(),"in")
                 .addLayer("1",new OutputLayerSpace.Builder().nIn(10).nOut(10)
                         .activation("softmax").build(),"0")

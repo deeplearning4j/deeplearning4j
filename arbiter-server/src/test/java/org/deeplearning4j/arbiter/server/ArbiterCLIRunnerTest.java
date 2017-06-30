@@ -21,6 +21,7 @@ import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
@@ -49,9 +50,9 @@ public class ArbiterCLIRunnerTest {
                 .l2(new ContinuousParameterSpace(0.0001, 0.01))
                 .iterations(100)
                 .addLayer(new DenseLayerSpace.Builder().nIn(784).nOut(new IntegerParameterSpace(2,10))
-                        .activation(new DiscreteParameterSpace<>("relu","tanh"))
+                        .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
                         .build(),new IntegerParameterSpace(1,2),true)   //1-2 identical layers (except nIn)
-                .addLayer(new OutputLayerSpace.Builder().nOut(10).activation("softmax")
+                .addLayer(new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                 .numEpochs(3)
                 .pretrain(false).backprop(true).build();

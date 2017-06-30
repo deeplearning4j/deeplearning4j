@@ -51,6 +51,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
@@ -75,9 +76,9 @@ public class TestGraphLocalExecution {
                 .iterations(100)
                 .addInputs("in").setInputTypes(InputType.feedForward(4))
                 .addLayer("layer0", new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2,10))
-                        .activation(new DiscreteParameterSpace<>("relu", "tanh"))
+                        .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
                         .build(), "in")
-                .addLayer("out", new OutputLayerSpace.Builder().nOut(3).activation("softmax")
+                .addLayer("out", new OutputLayerSpace.Builder().nOut(3).activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "layer0")
                 .setOutputs("out")
                 .numEpochs(3)
@@ -137,9 +138,9 @@ public class TestGraphLocalExecution {
                 .iterations(1)
                 .addInputs("in").setInputTypes(InputType.feedForward(4))
                 .addLayer("first", new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
-                        .activation(new DiscreteParameterSpace<>("relu", "tanh"))
+                        .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
                         .build(), "in")   //1-2 identical layers (except nIn)
-                .addLayer("out", new OutputLayerSpace.Builder().nOut(3).activation("softmax")
+                .addLayer("out", new OutputLayerSpace.Builder().nOut(3).activation(Activation.SOFTMAX)
                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "first")
                 .setOutputs("out")
                 .earlyStoppingConfiguration(esConf)

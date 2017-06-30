@@ -55,6 +55,7 @@ import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
@@ -142,11 +143,11 @@ public class TestMultiLayerSpace {
                 .convolutionMode(ConvolutionMode.Same)
                 .addLayer(new ConvolutionLayerSpace.Builder().nIn(3).nOut(3).kernelSize(2,2).stride(1,1).build())
                 .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10)
-                        .activation(new DiscreteParameterSpace<>("relu","tanh"))
+                        .activation(new DiscreteParameterSpace<>(Activation.RELU,Activation.TANH))
                         .build(),
                         new IntegerParameterSpace(1,3),true)    //1-3 identical layers
                 .addLayer(new OutputLayerSpace.Builder().nIn(10).nOut(10)
-                        .activation("softmax").build())
+                        .activation(Activation.SOFTMAX).build())
                 .pretrain(false).backprop(true).build();
 
         int nParams = mls.numParameters();
@@ -347,7 +348,7 @@ public class TestMultiLayerSpace {
                         .nIn(1)
                         .stride(1, 1)
                         .nOut(layerSizeHyperparam)
-                        .activation("identity")
+                        .activation(Activation.IDENTITY)
                         .build())
                 .addLayer(new SubsamplingLayerSpace.Builder()
                         .poolingType(SubsamplingLayer.PoolingType.MAX)
@@ -359,19 +360,19 @@ public class TestMultiLayerSpace {
                         //Note that nIn need not be specified in later layers
                         .stride(1, 1)
                         .nOut(50)
-                        .activation("identity")
+                        .activation(Activation.IDENTITY)
                         .build())
                 .addLayer(new SubsamplingLayerSpace.Builder()
                         .poolingType(SubsamplingLayer.PoolingType.MAX)
                         .kernelSize(2,2)
                         .stride(2,2)
                         .build())
-                .addLayer(new DenseLayerSpace.Builder().activation("relu")
+                .addLayer(new DenseLayerSpace.Builder().activation(Activation.RELU)
                         .nOut(500).build())
                 .addLayer(new OutputLayerSpace.Builder()
                         .lossFunction(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                         .nOut(10)
-                        .activation("softmax")
+                        .activation(Activation.SOFTMAX)
                         .build())
                 .setInputType(InputType.convolutionalFlat(28, 28, 1))
                 .backprop(true).pretrain(false).build();

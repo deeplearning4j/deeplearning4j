@@ -23,12 +23,15 @@ import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.YamlMapper;
+import org.deeplearning4j.arbiter.paramspace.misc.ActivationParameterSpaceAdapter;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 
@@ -54,7 +57,7 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
     protected ParameterSpace<OptimizationAlgorithm> optimizationAlgo;
     protected ParameterSpace<Boolean> regularization;
     protected ParameterSpace<Boolean> schedules;
-    protected ParameterSpace<String> activationFunction;
+    protected ParameterSpace<IActivation> activationFunction;
     protected ParameterSpace<Double> biasInit;
     protected ParameterSpace<WeightInit> weightInit;
     protected ParameterSpace<Distribution> dist;
@@ -340,7 +343,7 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
     @SuppressWarnings("unchecked")
     protected abstract static class Builder<T extends Builder<T>> {
 
-        private ParameterSpace<String> activationFunction;
+        private ParameterSpace<IActivation> activationFunction;
         private ParameterSpace<WeightInit> weightInit;
         private ParameterSpace<Double> biasInit;
         private ParameterSpace<Boolean> useDropConnect;
@@ -441,11 +444,17 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
             return (T) this;
         }
 
+        @Deprecated
         public T activation(String activationFunction) {
-            return activation(new FixedValue<>(activationFunction));
+            return activation(new FixedValue<>(Activation.fromString(activationFunction)));
         }
 
-        public T activation(ParameterSpace<String> activationFunction) {
+
+        public T activation(ParameterSpace<Activation> activationFunction) {
+            return activationFn(new ActivationParameterSpaceAdapter(activationFunction));
+        }
+
+        public T activationFn(ParameterSpace<IActivation> activationFunction) {
             this.activationFunction = activationFunction;
             return (T) this;
         }
