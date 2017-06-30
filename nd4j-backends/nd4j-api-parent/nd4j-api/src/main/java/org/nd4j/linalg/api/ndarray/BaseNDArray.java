@@ -3759,6 +3759,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.getExecutioner().exec(new Max(this), dimension);
     }
 
+    /**
+     *
+     *
+     * @param dimension the dimension to getScalar the mean along
+     * @return
+     */
+    @Override
     public INDArray amax(int... dimension) {
         return Nd4j.getExecutioner().exec(new AMax(this), dimension);
     }
@@ -3774,6 +3781,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.getExecutioner().exec(new Min(this), dimension);
     }
 
+    /**
+     *
+     * @param dimension
+     * @return
+     */
+    @Override
     public INDArray amin(int... dimension) {
         return Nd4j.getExecutioner().exec(new AMin(this), dimension);
     }
