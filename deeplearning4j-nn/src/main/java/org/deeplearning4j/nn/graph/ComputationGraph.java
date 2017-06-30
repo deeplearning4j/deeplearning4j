@@ -2892,7 +2892,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             throw new IllegalStateException("Cannot evaluate a model with > 1 output arrays from a DataSetIterator");
         }
 
-        if (!iterator.hasNext())
+        if (iterator.resetSupported() && !iterator.hasNext())
             iterator.reset();
 
         DataSetIterator iter = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 2, true) : iterator;
@@ -2950,7 +2950,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             throw new IllegalStateException("Cannot evaluate a model using this method with > 1 output arrays");
         }
 
-        if (!iterator.hasNext())
+        if (iterator.resetSupported() && !iterator.hasNext())
             iterator.reset();
 
         MultiDataSetIterator iter =
