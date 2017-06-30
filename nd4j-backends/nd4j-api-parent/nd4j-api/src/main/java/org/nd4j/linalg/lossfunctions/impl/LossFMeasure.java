@@ -14,13 +14,18 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * F–measure loss function is a loss function design for training on imbalanced datasets.
  * Essentially, this loss function is a continuous approximation of the F_Beta evaluation measure, of which F_1 is
  * a special case.<br>
- *
+ * <br>
+ * <b>Note</b>: this implementation differs from that described in the original paper by Pastor-Pellicer et al. in
+ * one important way: instead of maximizing the F-measure loss function as presented there (equations 2/3), we minimize
+ * 1.0 - FMeasure. Consequently, a score of 0 is the minimum possible value (optimal predictions) and a score of 1.0 is
+ * the maximum possible value.<br>
+ * <br>
  * This implementation supports 2 types of operation:<br>
  * - Binary: single output/label (Typically sigmoid activation function)<br>
  * - Binary: 2-output/label (softmax activation function + 1-hot labels)<br>
- * Note that the beta value can be configured via the constructor.
+ * Note that the beta value can be configured via the constructor.<br>
  * <br>
- * The following situations are NOT currently supported, may be added in the future:
+ * The following situations are NOT currently supported, may be added in the future:<br>
  * - Multi-label (multiple independent binary outputs)<br>
  * - Multiclass (via micro or macro averaging)<br>
  *
@@ -62,7 +67,7 @@ public class LossFMeasure implements ILossFunction {
             return 0.0;
         }
 
-        return numerator / denominator;
+        return 1.0 - numerator / denominator;
     }
 
     private double[] computeScoreNumDenom(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask, boolean average){
@@ -134,6 +139,10 @@ public class LossFMeasure implements ILossFunction {
             dLdOut = Nd4j.create(labels.shape());
             dLdOut.getColumn(1).assign(labels.getColumn(1).mul(1+beta*beta).divi(denominator).subi(secondTerm));
         }
+
+        //Negate relative to description in paper, as we want to *minimize* 1.0-fMeasure, which is equivalent to
+        // maximizing fMeasure
+        dLdOut.negi();
 
         INDArray dLdPreOut = activationFn.backprop(preOutput, dLdOut).getFirst();
 
