@@ -63,6 +63,7 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
+import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 
 import java.io.File;
 import java.util.Arrays;
@@ -432,5 +433,39 @@ public class TestMultiLayerSpace {
         CandidateGenerator c = new RandomSearchGenerator<>(hyperparameterSpace,null);
 
         Candidate candidate = c.getCandidate();
+    }
+
+    @Test
+    public void testWeightedLossFunction(){
+
+        MultiLayerConfiguration expected = new NeuralNetConfiguration.Builder()
+                .learningRate(0.005)
+                .seed(12345)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .layer(2, new OutputLayer.Builder().lossFunction(new LossMSE(Nd4j.create(new double[]{1,2,3,4,5}))).nIn(10).nOut(5).build())
+                .backprop(true).pretrain(false)
+                .build();
+
+        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+                .learningRate(0.005)
+                .seed(12345)
+                .addLayer(new DenseLayerSpace.Builder().nIn(10).nOut(10).build(), new FixedValue<>(2), true) //2 identical layers
+                .addLayer(new OutputLayerSpace.Builder().iLossFunction(new LossMSE(Nd4j.create(new double[]{1,2,3,4,5}))).nIn(10).nOut(5).build())
+                .backprop(true).pretrain(false)
+                .build();
+
+        int nParams = mls.numParameters();
+        assertEquals(0,nParams);
+
+        MultiLayerConfiguration conf = mls.getValue(new double[0]).getMultiLayerConfiguration();
+
+        assertEquals(expected, conf);
+
+        String json = mls.toJson();
+        MultiLayerSpace fromJson = MultiLayerSpace.fromJson(json);
+
+        assertEquals(mls, fromJson);
     }
 }
