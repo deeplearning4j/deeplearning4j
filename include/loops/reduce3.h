@@ -351,15 +351,12 @@ template<typename OpType>
 
 				// FIXME: this ugly fast fix.
 				__shared__ T extraZ[2];
-				if (threadIdx.x == 0) {
-					extraZ[0] = (T) 0.0;
-					extraZ[1] = (T) 0.0;
-				}
-				__syncthreads();
+
 				//length for the tad
 
 				__shared__ Nd4jIndex resultLength;
 				__shared__ int tadLength;
+				__shared__ int yLength;
 				__shared__ int tadElementWiseStride;
 				__shared__ int yTadElementWiseStride;
 
@@ -387,16 +384,71 @@ template<typename OpType>
 
 					tadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
 					tadElementWiseStride = shape::elementWiseStride(tadOnlyShapeInfo);
-					yTadElementWiseStride = shape::elementWiseStride(yTadOnlyShapeInfo);
+					yLength = shape::length(yShapeInfo);
+
+					if (yTadOnlyShapeInfo != nullptr)
+					    yTadElementWiseStride = shape::elementWiseStride(yTadOnlyShapeInfo);
 				}
 				__syncthreads();
 
+                // code branch for TAD vs full array
+                if (tadLength == yLength) {
+                    printf("GOING NEW WAY\n");
+                    int xCoord[MAX_RANK];
+                    int yCoord[MAX_RANK];
 
-				if (!resultScalar) {
+                    int *yShape = shape::shapeOf(yShapeInfo);
+					int *yStride = shape::stride(yShapeInfo);
+					int *xShape = shape::shapeOf(tadOnlyShapeInfo);
+					int *xStride = shape::stride(tadOnlyShapeInfo);
+					int yRank = shape::rank(yShapeInfo);
+					int xRank = shape::rank(tadOnlyShapeInfo);
+
+
+					for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
+					    int xOffsetForTad = tadOffsets[i];
+
+					    if (threadIdx.x == 0 && OpType::extraParamsLen > 0) {
+					        T startingVal = OpType::startingValue(x);
+
+					        extraZ[0] = (T) startingVal;
+					        extraZ[1] = (T) startingVal;
+				        }
+				        __syncthreads();
+
+						for(int j = threadIdx.x; j < tadLength; j += blockDim.x) {
+                            shape::ind2subC(xRank,xShape, j, xCoord);
+                            shape::ind2subC(yRank,yShape, j, yCoord);
+
+                            Nd4jIndex xOffset = shape::getOffset(xOffsetForTad, xShape, xStride, xCoord, xRank);
+                            Nd4jIndex yOffset = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+
+							sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(dx[xOffset],dy[yOffset], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(dx[xOffset],dy[yOffset], extraZ), extraZ);
+						}
+						__syncthreads();
+
+                        T **sPartialsRef = (T **) &sPartials;
+				        aggregatePartials<OpType>(sPartialsRef, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, tadLength), extraZ);
+
+                        __syncthreads();
+                        if (threadIdx.x == 0)
+						    result[i] = OpType::postProcess(sPartials[threadIdx.x],tadLength, extraZ);
+
+						__syncthreads();
+					}
+                } else  if (!resultScalar) {
 					if(tadElementWiseStride >= 1 && yTadElementWiseStride) {
     					for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
 							int xOffsetForTad = tadOffsets[i];
 							int yOffsetForTad = yTadOffsets[i];
+
+							if (threadIdx.x == 0 && OpType::extraParamsLen > 0 ) {
+							    T startingVal = OpType::startingValue(x);
+
+					            extraZ[0] = (T) startingVal;
+					            extraZ[1] = (T) startingVal;
+				            }
+				            __syncthreads();
 
                             if (threadIdx.x < tadLength)
 							    sPartials[threadIdx.x] =  OpType::op(dx[xOffsetForTad + tadElementWiseStride * threadIdx.x],dy[yOffsetForTad + yTadElementWiseStride * threadIdx.x], extraZ);
