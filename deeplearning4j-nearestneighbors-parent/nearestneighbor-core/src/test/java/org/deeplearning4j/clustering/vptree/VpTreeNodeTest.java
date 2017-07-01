@@ -20,17 +20,80 @@ package org.deeplearning4j.clustering.vptree;
 
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.junit.Test;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.PriorityQueue;
+import java.util.TreeSet;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Anatoly Borisov
  */
 public class VpTreeNodeTest {
+
+
+    private static class DistIndex implements Comparable<DistIndex> {
+        public double dist;
+        public int index;
+        public int compareTo( DistIndex r ){ return Double.compare( dist,  r.dist ); }
+    }
+
+    @Test
+    public void knnManual() {
+        INDArray arr = Nd4j.randn(3,5);
+        VPTree t = new VPTree(arr,false);
+        int k = 1;
+        int m = arr.rows();
+        for (int targetIndex = 0; targetIndex < m; targetIndex++) {
+            // Do an exhaustive search
+            TreeSet<Integer> s = new TreeSet<>();
+            PriorityQueue<DistIndex> pq = new PriorityQueue<>();
+            for (int j = 0; j < m; j++) {
+                double d = arr.getRow(targetIndex).distance2(arr.getRow(j));
+                DistIndex di = new DistIndex();
+                di.dist = d;
+                di.index = j;
+                pq.add(di);
+            }
+
+            // keep closest k
+            for (int i = 0; i < k; i++) {
+                DistIndex di = pq.poll();
+                System.out.println("exhaustive d=" + di.dist);
+                s.add(di.index);
+            }
+
+            // Check what VPTree gives for results
+            List<DataPoint> results = new ArrayList<>();
+            List<Double> distances = new ArrayList<>();
+            t.search(arr.getRow(targetIndex), k, results, distances);
+            //List<DataPoint> items = t.getItems();
+            TreeSet<Integer> resultSet = new TreeSet<>();
+
+            // keep k in a set
+            for (int i = 0; i < k; ++i) {
+                DataPoint result = results.get(i);
+                int r = result.getIndex();
+                resultSet.add(r);
+            }
+
+            // check
+            for (int r : resultSet) {
+                assertTrue(String.format("VPTree result %d is not in the closest %d " +
+                        " from the exhaustive search.",r,k),s.contains(r));
+            }
+            for (int r : s) {
+                assertTrue(String.format("VPTree result %d is not in the closest %d " +
+                        " from the exhaustive search.",r,k),s.contains(r));
+            }
+        }
+    }
+
 
     @Test
     public void vpTreeTest() {
