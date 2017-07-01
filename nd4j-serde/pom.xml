@@ -18,7 +18,6 @@
         <module>nd4j-camel-routes</module>
         <module>nd4j-gson</module>
         <module>nd4j-jackson-reflectionloader</module>
-        <module>nd4j-binary</module>
     </modules>
 
 </project>
