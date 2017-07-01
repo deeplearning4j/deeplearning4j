@@ -103,40 +103,40 @@
 
     <profiles>
 
-          <!-- This controls skipping the test backend choice enforcement below -->
-          <profile>
+        <!-- This controls skipping the test backend choice enforcement below -->
+        <profile>
             <id>default</id>
             <activation>
-              <activeByDefault>true</activeByDefault>
+                <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
-              <skipBackendChoice>false</skipBackendChoice>
+                <skipBackendChoice>false</skipBackendChoice>
             </properties>
-          </profile>
-          <profile>
+        </profile>
+        <profile>
             <id>skipTestCompileAndRun</id>
             <activation>
-              <property>
-                <name>maven.test.skip</name>
-                <value>true</value>
-              </property>
+                <property>
+                    <name>maven.test.skip</name>
+                    <value>true</value>
+                </property>
             </activation>
             <properties>
-              <skipBackendChoice>true</skipBackendChoice>
+                <skipBackendChoice>true</skipBackendChoice>
             </properties>
-          </profile>
-          <profile>
+        </profile>
+        <profile>
             <id>skipTestRun</id>
             <activation>
-              <property>
-                <name>skipTests</name>
-              </property>
+                <property>
+                    <name>skipTests</name>
+                </property>
             </activation>
             <properties>
-              <skipBackendChoice>true</skipBackendChoice>
+                <skipBackendChoice>true</skipBackendChoice>
             </properties>
-          </profile>
-          <!-- end of backend choice enforcement control -->
+        </profile>
+        <!-- end of backend choice enforcement control -->
 
 
         <profile>
@@ -360,7 +360,7 @@
         <profile>
             <id>qa</id>
             <build>
-                  <plugins>
+                <plugins>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-dependency-plugin</artifactId>
@@ -460,8 +460,8 @@
         <module>deeplearning4j-nn</module>
         <module>deeplearning4j-modelimport</module>
         <module>deeplearning4j-keras</module>
-        <module>deeplearning4j-nearestneighbor-server</module>
         <module>deeplearning4j-zoo</module>
+        <module>deeplearning4j-nearestneighbors-parent</module>
     </modules>
 
     <licenses>
@@ -552,30 +552,30 @@
         </extensions>
 
         <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-enforcer-plugin</artifactId>
-            <version>1.4.1</version>
-            <executions>
-              <execution>
-                <phase>test</phase>
-                <id>enforce-choice-of-nd4j-test-backend</id>
-                <goals>
-                  <goal>enforce</goal>
-                </goals>
-                <configuration>
-                  <skip>${skipBackendChoice}</skip>
-                  <rules>
-                    <requireActiveProfile>
-                      <profiles>test-nd4j-native,test-nd4j-cuda-8.0</profiles>
-                      <all>false</all>
-                    </requireActiveProfile>
-                  </rules>
-                  <fail>true</fail>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>1.4.1</version>
+                <executions>
+                    <execution>
+                        <phase>test</phase>
+                        <id>enforce-choice-of-nd4j-test-backend</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <skip>${skipBackendChoice}</skip>
+                            <rules>
+                                <requireActiveProfile>
+                                    <profiles>test-nd4j-native,test-nd4j-cuda-8.0</profiles>
+                                    <all>false</all>
+                                </requireActiveProfile>
+                            </rules>
+                            <fail>true</fail>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
             </plugin>
@@ -638,46 +638,46 @@
             </plugin>
 
             <plugin>
-              <groupId>net.revelc.code.formatter</groupId>
-              <artifactId>formatter-maven-plugin</artifactId>
-              <version>2.0.0</version>
-              <configuration>
-                <configFile>${session.executionRootDirectory}/contrib/formatter.xml</configFile>
-                <directories>
-                  <directory>deeplearning4j-core</directory>
-                  <directory>deeplearning4j-scaleout</directory>
-                  <directory>deeplearning4j-ui-parent</directory>
-                  <directory>deeplearning4j-graph</directory>
-                  <directory>deeplearning4j-cuda</directory>
-                  <directory>deeplearning4j-nlp-parent</directory>
-                  <directory>deeplearning4j-nn</directory>
-                  <directory>deeplearning4j-modelimport</directory>
-                  <directory>deeplearning4j-keras</directory>
-                  <directory>deeplearning4j-nearestneighbor-server</directory>
-                  <directory>deeplearning4j-zoo</directory>
-                </directories>
-              </configuration>
+                <groupId>net.revelc.code.formatter</groupId>
+                <artifactId>formatter-maven-plugin</artifactId>
+                <version>2.0.0</version>
+                <configuration>
+                    <configFile>${session.executionRootDirectory}/contrib/formatter.xml</configFile>
+                    <directories>
+                        <directory>deeplearning4j-core</directory>
+                        <directory>deeplearning4j-scaleout</directory>
+                        <directory>deeplearning4j-ui-parent</directory>
+                        <directory>deeplearning4j-graph</directory>
+                        <directory>deeplearning4j-cuda</directory>
+                        <directory>deeplearning4j-nlp-parent</directory>
+                        <directory>deeplearning4j-nn</directory>
+                        <directory>deeplearning4j-modelimport</directory>
+                        <directory>deeplearning4j-keras</directory>
+                        <directory>deeplearning4j-zoo</directory>
+                        <directory>deeplearning4j-nearestneighbors-parent</directory>
+                    </directories>
+                </configuration>
             </plugin>
 
             <plugin>
-              <groupId>pl.project13.maven</groupId>
-              <artifactId>git-commit-id-plugin</artifactId>
-              <version>2.2.2</version>
-              <executions>
-                <execution>
-                  <goals>
-                    <goal>revision</goal>
-                  </goals>
-                  <phase>package</phase>
-                </execution>
-              </executions>
-              <configuration>
-                <generateGitPropertiesFile>true</generateGitPropertiesFile>
-                <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
-                <gitDescribe>
-                  <skip>true</skip>
-                </gitDescribe>
-              </configuration>
+                <groupId>pl.project13.maven</groupId>
+                <artifactId>git-commit-id-plugin</artifactId>
+                <version>2.2.2</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>package</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                    <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
+                    <gitDescribe>
+                        <skip>true</skip>
+                    </gitDescribe>
+                </configuration>
             </plugin>
 
         </plugins>
@@ -763,29 +763,29 @@
                     </configuration>
                 </plugin>
 
-            <plugin>
-              <groupId>org.eclipse.m2e</groupId>
-              <artifactId>lifecycle-mapping</artifactId>
-              <version>1.0.0</version>
-              <configuration>
-                <lifecycleMappingMetadata>
-                  <pluginExecutions>
-                    <pluginExecution>
-                      <pluginExecutionFilter>
-                        <groupId>com.lewisd</groupId>
-                        <artifactId>lint-maven-plugin</artifactId>
-                        <versionRange>[0.0.11,)</versionRange>
-                      </pluginExecutionFilter>
-                      <action>
-                        <ignore/>
-                      </action>
-                    </pluginExecution>
-                  </pluginExecutions>
-                </lifecycleMappingMetadata>
-              </configuration>
-            </plugin>
+                <plugin>
+                    <groupId>org.eclipse.m2e</groupId>
+                    <artifactId>lifecycle-mapping</artifactId>
+                    <version>1.0.0</version>
+                    <configuration>
+                        <lifecycleMappingMetadata>
+                            <pluginExecutions>
+                                <pluginExecution>
+                                    <pluginExecutionFilter>
+                                        <groupId>com.lewisd</groupId>
+                                        <artifactId>lint-maven-plugin</artifactId>
+                                        <versionRange>[0.0.11,)</versionRange>
+                                    </pluginExecutionFilter>
+                                    <action>
+                                        <ignore/>
+                                    </action>
+                                </pluginExecution>
+                            </pluginExecutions>
+                        </lifecycleMappingMetadata>
+                    </configuration>
+                </plugin>
 
-          </plugins>
+            </plugins>
 
         </pluginManagement>
     </build>
