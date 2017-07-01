@@ -1,26 +1,17 @@
 package org.deeplearning4j.nearestneighbor.server;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.mashape.unirest.http.ObjectMapper;
-import com.mashape.unirest.http.Unirest;
-import org.apache.commons.io.FileUtils;
-
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.nearestneighbor.client.NearestNeighborsClient;
-import org.deeplearning4j.nearestneighbor.model.Base64NDArrayBody;
-import org.deeplearning4j.nearestneighbor.model.NearestNeighborRequest;
 import org.deeplearning4j.nearestneighbor.model.NearstNeighborsResults;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.serde.base64.Nd4jBase64;
 import org.nd4j.serde.binary.BinarySerde;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.UUID;
 

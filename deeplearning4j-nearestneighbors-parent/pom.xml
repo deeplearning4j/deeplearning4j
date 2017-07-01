@@ -12,6 +12,7 @@
 
     <name>deeplearning4j-nearestneighbors-parent</name>
     <modules>
+        <module>deeplearning4j-nearestneighbor-server</module>
         <module>nearestneighbor-core</module>
         <module>deeplearning4j-nearestneighbors-client</module>
         <module>deeplearning4j-nearestneighbors-model</module>

@@ -71,7 +71,9 @@ public class NearestNeighborsServer {
         final INDArray points;
         try(InputStream  is = new FileInputStream(new File(ndarrayPath))) {
             byte[] bytes = IOUtils.toByteArray(is);
-            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+            ByteBuffer byteBuffer = ByteBuffer.allocateDirect(bytes.length);
+            byteBuffer.put(bytes);
+            byteBuffer.rewind();
             points = BinarySerde.toArray(byteBuffer);
         }
 
@@ -117,6 +119,7 @@ public class NearestNeighborsServer {
                 return internalServerError();
             }
         })));
+
         server = Server.forRouter(routingDsl.build(), Mode.DEV, port);
 
 
