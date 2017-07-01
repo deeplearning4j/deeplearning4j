@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.policy;
 
+import java.io.IOException;
 import lombok.AllArgsConstructor;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.learning.Learning;
@@ -18,7 +19,7 @@ public class DQNPolicy<O extends Encodable> extends Policy<O, Integer> {
 
     final private IDQN dqn;
 
-    public static <O extends Encodable> DQNPolicy<O> load(String path) {
+    public static <O extends Encodable> DQNPolicy<O> load(String path) throws IOException {
         return new DQNPolicy<O>(DQN.load(path));
     }
 
@@ -27,7 +28,7 @@ public class DQNPolicy<O extends Encodable> extends Policy<O, Integer> {
         return Learning.getMaxAction(output);
     }
 
-    public void save(String filename) {
+    public void save(String filename) throws IOException {
         dqn.save(filename);
     }
 

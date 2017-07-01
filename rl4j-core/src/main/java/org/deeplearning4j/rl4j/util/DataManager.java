@@ -37,15 +37,15 @@ public class DataManager {
     private boolean saveData;
     private String currentDir;
 
-    public DataManager() {
+    public DataManager() throws IOException {
         create(dataRoot, false);
     }
 
-    public DataManager(boolean saveData) {
+    public DataManager(boolean saveData) throws IOException {
         create(dataRoot, saveData);
     }
 
-    public DataManager(String dataRoot, boolean saveData) {
+    public DataManager(String dataRoot, boolean saveData) throws IOException {
         create(dataRoot, saveData);
     }
 
@@ -57,21 +57,15 @@ public class DataManager {
         }
     }
 
-    public static void save(String path, Learning learning) {
+    public static void save(String path, Learning learning) throws IOException {
         try (BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(path))) {
             save(os, learning);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
-    public static void save(OutputStream os, Learning learning) {
+    public static void save(OutputStream os, Learning learning) throws IOException {
 
-        ZipOutputStream zipfile = new ZipOutputStream(os);
-
-        try {
+        try (ZipOutputStream zipfile = new ZipOutputStream(os)) {
 
             ZipEntry config = new ZipEntry("configuration.json");
             zipfile.putNextEntry(config);
@@ -107,13 +101,10 @@ public class DataManager {
             zipfile.flush();
             zipfile.close();
 
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-
     }
 
-    public static <C> Pair<IDQN, C> load(File file, Class<C> cClass) {
+    public static <C> Pair<IDQN, C> load(File file, Class<C> cClass) throws IOException {
         log.info("Deserializing: " + file.getName());
 
         C conf = null;
@@ -140,36 +131,29 @@ public class DataManager {
             Files.copy(dqnstream, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
             dqn = new DQN(ModelSerializer.restoreMultiLayerNetwork(tmpFile));
             dqnstream.close();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
 
         return new Pair<IDQN, C>(dqn, conf);
     }
 
-    public static <C> Pair<IDQN, C> load(String path, Class<C> cClass) {
+    public static <C> Pair<IDQN, C> load(String path, Class<C> cClass) throws IOException {
         return load(new File(path), cClass);
     }
 
-    public static <C> Pair<IDQN, C> load(InputStream is, Class<C> cClass) {
-        try {
-            File tmpFile = File.createTempFile("restore", "learning");
-            Files.copy(is, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
-            return load(tmpFile, cClass);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null; //has crashed anyway
+    public static <C> Pair<IDQN, C> load(InputStream is, Class<C> cClass) throws IOException {
+        File tmpFile = File.createTempFile("restore", "learning");
+        Files.copy(is, Paths.get(tmpFile.getAbsolutePath()), StandardCopyOption.REPLACE_EXISTING);
+        return load(tmpFile, cClass);
     }
 
-    private void create(String dataRoot, boolean saveData) {
+    private void create(String dataRoot, boolean saveData) throws IOException {
         this.saveData = saveData;
         this.dataRoot = dataRoot;
         createSubdir();
     }
 
     //FIXME race condition if you create them at the same time where checking if dir exists is not atomic with the creation
-    public String createSubdir() {
+    public String createSubdir() throws IOException {
 
         if (!saveData)
             return "";
@@ -196,12 +180,8 @@ public class DataManager {
 
         File stat = new File(getStat());
         File info = new File(getInfo());
-        try {
-            stat.createNewFile();
-            info.createNewFile();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        stat.createNewFile();
+        info.createNewFile();
         return f.getAbsolutePath();
     }
 
@@ -221,31 +201,22 @@ public class DataManager {
         return currentDir + "/" + Constants.STATISTIC_FILENAME;
     }
 
-    public void appendStat(StatEntry statEntry) {
+    public void appendStat(StatEntry statEntry) throws IOException {
 
         if (!saveData)
             return;
 
         Path statPath = Paths.get(getStat());
         String toAppend = toJson(statEntry);
-        try {
-            Files.write(statPath, toAppend.getBytes(), StandardOpenOption.APPEND);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Files.write(statPath, toAppend.getBytes(), StandardOpenOption.APPEND);
 
     }
 
-    private String toJson(Object object) {
-        try {
-            return mapper.writeValueAsString(object) + "\n";
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
-        return "";
+    private String toJson(Object object) throws IOException {
+        return mapper.writeValueAsString(object) + "\n";
     }
 
-    public void writeInfo(ILearning iLearning) {
+    public void writeInfo(ILearning iLearning) throws IOException {
 
         if (!saveData)
             return;
@@ -256,12 +227,7 @@ public class DataManager {
                         iLearning.getConfiguration(), iLearning.getStepCounter(), System.currentTimeMillis());
         String toWrite = toJson(info);
 
-        try {
-            Files.write(infoPath, toWrite.getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        Files.write(infoPath, toWrite.getBytes(), StandardOpenOption.TRUNCATE_EXISTING);
     }
 
     private boolean childrenExist(File[] files, String children) {
@@ -275,7 +241,7 @@ public class DataManager {
         return exists;
     }
 
-    public void save(Learning learning) {
+    public void save(Learning learning) throws IOException {
 
         if (!saveData)
             return;

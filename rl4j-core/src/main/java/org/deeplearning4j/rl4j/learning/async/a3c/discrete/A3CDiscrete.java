@@ -37,7 +37,7 @@ public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, 
     @Getter
     final private AsyncGlobal asyncGlobal;
     @Getter
-    final private Policy<O, Integer> policy;
+    final private ACPolicy<O> policy;
     @Getter
     final private DataManager dataManager;
 

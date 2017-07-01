@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.network.ac;
 
+import java.io.IOException;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -27,9 +28,9 @@ public interface IActorCritic extends NeuralNet {
 
     void applyGradient(Gradient[] gradient, int batchSize);
 
-    void save(OutputStream stream);
+    void save(OutputStream streamValue, OutputStream streamPolicy) throws IOException;
 
-    void save(String path);
+    void save(String pathValue, String pathPolicy) throws IOException;
 
     double getLatestScore();
 

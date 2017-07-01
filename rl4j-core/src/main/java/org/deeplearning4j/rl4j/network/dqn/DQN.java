@@ -22,14 +22,8 @@ public class DQN implements IDQN {
         this.mln = mln;
     }
 
-    public static DQN load(String path) {
-        DQN dqn = null;
-        try {
-            dqn = new DQN(ModelSerializer.restoreMultiLayerNetwork(path));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return dqn;
+    public static DQN load(String path) throws IOException {
+        return new DQN(ModelSerializer.restoreMultiLayerNetwork(path));
     }
 
     public void fit(INDArray input, INDArray labels) {
@@ -75,19 +69,11 @@ public class DQN implements IDQN {
         return mln.score();
     }
 
-    public void save(OutputStream stream) {
-        try {
-            ModelSerializer.writeModel(mln, stream, true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void save(OutputStream stream) throws IOException {
+        ModelSerializer.writeModel(mln, stream, true);
     }
 
-    public void save(String path) {
-        try {
-            ModelSerializer.writeModel(mln, path, true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void save(String path) throws IOException {
+        ModelSerializer.writeModel(mln, path, true);
     }
 }

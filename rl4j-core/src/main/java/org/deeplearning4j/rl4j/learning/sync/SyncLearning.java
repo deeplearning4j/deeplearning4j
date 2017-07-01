@@ -28,30 +28,35 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
 
     public void train() {
 
-        log.info("training starting.");
+        try {
+            log.info("training starting.");
 
-        getDataManager().writeInfo(this);
-
-
-        while (getStepCounter() < getConfiguration().getMaxStep()) {
-
-            log.info("Epoch: " + getEpochCounter());
-
-            preEpoch();
-            DataManager.StatEntry statEntry = trainEpoch();
-            postEpoch();
-
-            incrementEpoch();
-
-            if (getStepCounter() - lastSave >= Constants.MODEL_SAVE_FREQ) {
-                getDataManager().save(this);
-                lastSave = getStepCounter();
-            }
-
-            getDataManager().appendStat(statEntry);
-            log.info("reward:" + statEntry.getReward());
             getDataManager().writeInfo(this);
 
+
+            while (getStepCounter() < getConfiguration().getMaxStep()) {
+
+                log.info("Epoch: " + getEpochCounter());
+
+                preEpoch();
+                DataManager.StatEntry statEntry = trainEpoch();
+                postEpoch();
+
+                incrementEpoch();
+
+                if (getStepCounter() - lastSave >= Constants.MODEL_SAVE_FREQ) {
+                    getDataManager().save(this);
+                    lastSave = getStepCounter();
+                }
+
+                getDataManager().appendStat(statEntry);
+                log.info("reward:" + statEntry.getReward());
+                getDataManager().writeInfo(this);
+
+            }
+        } catch (Exception e) {
+            log.error("Training failed.", e);
+            e.printStackTrace();
         }
 
 

@@ -30,10 +30,5 @@ public interface IDQN extends NeuralNet {
 
     void applyGradient(Gradient[] gradient, int batchSize);
 
-    void save(OutputStream stream);
-
-    void save(String path);
-
-
     double getLatestScore();
 }

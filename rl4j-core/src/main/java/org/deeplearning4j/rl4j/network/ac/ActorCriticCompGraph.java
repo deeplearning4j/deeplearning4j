@@ -23,6 +23,10 @@ public class ActorCriticCompGraph implements IActorCritic {
         this.cg = cg;
     }
 
+    public static ActorCriticCompGraph load(String path) throws IOException {
+        return new ActorCriticCompGraph(ModelSerializer.restoreComputationGraph(path));
+    }
+
     public void fit(INDArray input, INDArray[] labels) {
         cg.fit(new INDArray[] {input}, labels);
     }
@@ -55,20 +59,20 @@ public class ActorCriticCompGraph implements IActorCritic {
         return cg.score();
     }
 
-    public void save(OutputStream stream) {
-        try {
-            ModelSerializer.writeModel(cg, stream, true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void save(OutputStream stream) throws IOException {
+        ModelSerializer.writeModel(cg, stream, true);
     }
 
-    public void save(String path) {
-        try {
-            ModelSerializer.writeModel(cg, path, true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void save(String path) throws IOException {
+        ModelSerializer.writeModel(cg, path, true);
+    }
+
+    public void save(OutputStream streamValue, OutputStream streamPolicy) throws IOException {
+        throw new UnsupportedOperationException("Call save(stream)");
+    }
+
+    public void save(String pathValue, String pathPolicy) throws IOException {
+        throw new UnsupportedOperationException("Call save(path)");
     }
 }
 

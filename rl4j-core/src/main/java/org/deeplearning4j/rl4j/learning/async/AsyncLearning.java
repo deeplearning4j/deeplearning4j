@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.learning.async;
 
+import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -53,23 +54,23 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
 
     public void train() {
 
-        log.info("AsyncLearning training starting.");
-        launchThreads();
+        try {
+            log.info("AsyncLearning training starting.");
+            launchThreads();
 
-        //this is simply for stat purposes
-        getDataManager().writeInfo(this);
-        synchronized (this) {
-            while (!isTrainingComplete() && getAsyncGlobal().isRunning()) {
-                getPolicy().play(getMdp(), getHistoryProcessor());
-                getDataManager().writeInfo(this);
-                try {
+            //this is simply for stat purposes
+            getDataManager().writeInfo(this);
+            synchronized (this) {
+                while (!isTrainingComplete() && getAsyncGlobal().isRunning()) {
+                    getPolicy().play(getMdp(), getHistoryProcessor());
+                    getDataManager().writeInfo(this);
                     wait(20000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
                 }
             }
+        } catch (Exception e) {
+            log.error("Training failed.", e);
+            e.printStackTrace();
         }
-
     }
 
 

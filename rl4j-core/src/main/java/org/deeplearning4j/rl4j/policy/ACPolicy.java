@@ -1,6 +1,9 @@
 package org.deeplearning4j.rl4j.policy;
 
+import java.io.IOException;
 import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.network.ac.ActorCriticCompGraph;
+import org.deeplearning4j.rl4j.network.ac.ActorCriticSeparate;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -22,6 +25,13 @@ public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
         this.rd = rd;
     }
 
+    public static <O extends Encodable> ACPolicy<O> load(String path, Random rd) throws IOException {
+        return new ACPolicy<O>(ActorCriticCompGraph.load(path), rd);
+    }
+
+    public static <O extends Encodable> ACPolicy<O> load(String pathValue, String pathPolicy, Random rd) throws IOException {
+        return new ACPolicy<O>(ActorCriticSeparate.load(pathValue, pathPolicy), rd);
+    }
 
     public Integer nextAction(INDArray input) {
         INDArray output = IActorCritic.outputAll(input)[1];
@@ -37,9 +47,12 @@ public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
         return -1;
     }
 
-    public void save(String filename) {
-        //dqn.save(filename);
+    public void save(String filename) throws IOException {
+        IActorCritic.save(filename);
     }
 
+    public void save(String filenameValue, String filenamePolicy) throws IOException {
+        IActorCritic.save(filenameValue, filenamePolicy);
+    }
 
 }

@@ -25,6 +25,11 @@ public class ActorCriticSeparate implements IActorCritic {
         this.policyNet = policyNet;
     }
 
+    public static ActorCriticSeparate load(String pathValue, String pathPolicy) throws IOException {
+        return new ActorCriticSeparate(ModelSerializer.restoreMultiLayerNetwork(pathValue),
+                                       ModelSerializer.restoreMultiLayerNetwork(pathPolicy));
+    }
+
     public void fit(INDArray input, INDArray[] labels) {
 
         valueNet.fit(input, labels[0]);
@@ -68,12 +73,22 @@ public class ActorCriticSeparate implements IActorCritic {
         return valueNet.score();
     }
 
-    public void save(OutputStream stream) {
-        System.out.println("NOT IMPLEMENTED NOOO");
+    public void save(OutputStream stream) throws IOException {
+        throw new UnsupportedOperationException("Call save(streamValue, streamPolicy)");
     }
 
-    public void save(String path) {
-        System.out.println("NOT IMPLEMENTED NOOO");
+    public void save(String path) throws IOException {
+        throw new UnsupportedOperationException("Call save(pathValue, pathPolicy)");
+    }
+
+    public void save(OutputStream streamValue, OutputStream streamPolicy) throws IOException {
+        ModelSerializer.writeModel(valueNet, streamValue, true);
+        ModelSerializer.writeModel(policyNet, streamPolicy, true);
+    }
+
+    public void save(String pathValue, String pathPolicy) throws IOException {
+        ModelSerializer.writeModel(valueNet, pathValue, true);
+        ModelSerializer.writeModel(policyNet, pathPolicy, true);
     }
 }
 

@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.network;
 
+import java.io.IOException;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -58,12 +59,12 @@ public interface NeuralNet {
      * save the neural net into an OutputStream
      * @param os OutputStream to save in
      */
-    void save(OutputStream os);
+    void save(OutputStream os) throws IOException;
 
     /**
      * save the neural net into a filename
      * @param filename filename to save in
      */
-    void save(String filename);
+    void save(String filename) throws IOException;
 
 }
