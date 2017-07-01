@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.clustering.cluster;
 
-import org.deeplearning4j.berkeley.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
@@ -62,10 +62,10 @@ public class ClusterSet implements Serializable {
 
     public PointClassification classifyPoint(Point point, boolean moveClusterCenter) {
         Pair<Cluster, Double> nearestCluster = nearestCluster(point);
-        Cluster newCluster = nearestCluster.getFirst();
+        Cluster newCluster = nearestCluster.getKey();
         boolean locationChange = isPointLocationChange(point, newCluster);
         addPointToCluster(point, newCluster, moveClusterCenter);
-        return new PointClassification(nearestCluster.getFirst(), nearestCluster.getSecond(), locationChange);
+        return new PointClassification(nearestCluster.getKey(), nearestCluster.getValue(), locationChange);
     }
 
     private boolean isPointLocationChange(Point point, Cluster newCluster) {
@@ -98,7 +98,7 @@ public class ClusterSet implements Serializable {
             }
         }
 
-        return new Pair<>(nearestCluster, minDistance);
+        return Pair.of(nearestCluster, minDistance);
 
     }
 
@@ -109,7 +109,7 @@ public class ClusterSet implements Serializable {
     }
 
     public double getDistanceFromNearestCluster(Point point) {
-        return nearestCluster(point).getSecond();
+        return nearestCluster(point).getValue();
     }
 
     public String getClusterCenterId(String clusterId) {

@@ -3,12 +3,15 @@ package org.deeplearning4j.nearestneighbor.server;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
+import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.nearestneighbor.model.*;
+import org.jboss.netty.util.internal.ByteBufferUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.serde.base64.Nd4jBase64;
+import org.nd4j.serde.binary.BinarySerde;
 import play.Mode;
 import play.libs.Json;
 import play.routing.RoutingDsl;
@@ -17,6 +20,7 @@ import play.server.Server;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,7 +70,9 @@ public class NearestNeighborsServer {
 
         final INDArray points;
         try(InputStream  is = new FileInputStream(new File(ndarrayPath))) {
-            points = Nd4j.read(is);
+            byte[] bytes = IOUtils.toByteArray(is);
+            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+            points = BinarySerde.toArray(byteBuffer);
         }
 
         VPTree tree = new VPTree(points,similarityFunction,invert);

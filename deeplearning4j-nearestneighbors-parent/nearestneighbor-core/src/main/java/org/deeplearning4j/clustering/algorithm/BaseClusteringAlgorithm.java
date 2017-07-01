@@ -29,7 +29,7 @@ import org.deeplearning4j.clustering.iteration.IterationInfo;
 import org.deeplearning4j.clustering.strategy.ClusteringStrategy;
 import org.deeplearning4j.clustering.strategy.ClusteringStrategyType;
 import org.deeplearning4j.clustering.strategy.OptimisationStrategy;
-import org.deeplearning4j.util.MultiThreadUtils;
+import org.deeplearning4j.clustering.util.MultiThreadUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;

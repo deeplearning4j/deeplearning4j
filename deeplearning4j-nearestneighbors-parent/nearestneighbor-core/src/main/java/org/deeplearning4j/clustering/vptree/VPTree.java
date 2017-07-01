@@ -18,11 +18,11 @@
 
 package org.deeplearning4j.clustering.vptree;
 
-import org.deeplearning4j.berkeley.CounterMap;
-import org.deeplearning4j.berkeley.PriorityQueue;
+import org.deeplearning4j.clustering.berkeley.CounterMap;
+import org.deeplearning4j.clustering.berkeley.PriorityQueue;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.HeapItem;
-import org.deeplearning4j.util.MathUtils;
+import org.deeplearning4j.clustering.util.MathUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.Dot;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;

@@ -18,7 +18,7 @@
 
 package org.deeplearning4j.clustering.kdtree;
 
-import org.deeplearning4j.berkeley.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.factory.Nd4j;
@@ -132,7 +132,7 @@ public class KDTree implements Serializable {
         Collections.sort(best, new Comparator<Pair<Double, INDArray>>() {
             @Override
             public int compare(Pair<Double, INDArray> o1, Pair<Double, INDArray> o2) {
-                return Double.compare(o1.getFirst(), o2.getFirst());
+                return Double.compare(o1.getKey(), o2.getKey());
             }
         });
 
@@ -148,7 +148,7 @@ public class KDTree implements Serializable {
         double distance = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(point)).getFinalResult()
                         .doubleValue();
         if (distance <= dist) {
-            best.add(new Pair<>(distance, node.getPoint()));
+            best.add(Pair.of(distance, node.getPoint()));
         }
 
         HyperRect lower = rect.getLower(point, _disc);
@@ -170,7 +170,7 @@ public class KDTree implements Serializable {
     private Pair<Double, INDArray> nn(KDNode node, INDArray point, HyperRect rect, double dist, INDArray best,
                     int _disc) {
         if (node == null || rect.minDistance(point) > dist)
-            return new Pair<>(Double.POSITIVE_INFINITY, null);
+            return Pair.of(Double.POSITIVE_INFINITY, null);
 
         int _discNext = (_disc + 1) % dims;
         double dist2 = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(point)).getFinalResult().doubleValue();
@@ -185,21 +185,21 @@ public class KDTree implements Serializable {
         if (point.getDouble(_disc) < node.point.getDouble(_disc)) {
             Pair<Double, INDArray> left = nn(node.getLeft(), point, lower, dist, best, _discNext);
             Pair<Double, INDArray> right = nn(node.getRight(), point, upper, dist, best, _discNext);
-            if (left.getFirst() < dist)
+            if (left.getKey() < dist)
                 return left;
-            else if (right.getFirst() < dist)
+            else if (right.getKey() < dist)
                 return right;
 
         } else {
             Pair<Double, INDArray> left = nn(node.getRight(), point, upper, dist, best, _discNext);
             Pair<Double, INDArray> right = nn(node.getLeft(), point, lower, dist, best, _discNext);
-            if (left.getFirst() < dist)
+            if (left.getKey() < dist)
                 return left;
-            else if (right.getFirst() < dist)
+            else if (right.getKey() < dist)
                 return right;
         }
 
-        return new Pair<>(dist, best);
+        return Pair.of(dist, best);
 
     }
 
@@ -222,12 +222,12 @@ public class KDTree implements Serializable {
             qd = min(delete.getRight(), disc, _disc);
         } else if (delete.getLeft() != null)
             qd = max(delete.getLeft(), disc, _disc);
-        delete.point = qd.getFirst().point;
-        KDNode qFather = qd.getFirst().getParent();
-        if (qFather.getLeft() == qd.getFirst()) {
-            qFather.setLeft(delete(qd.getFirst(), disc));
-        } else if (qFather.getRight() == qd.getFirst()) {
-            qFather.setRight(delete(qd.getFirst(), disc));
+        delete.point = qd.getKey().point;
+        KDNode qFather = qd.getKey().getParent();
+        if (qFather.getLeft() == qd.getKey()) {
+            qFather.setLeft(delete(qd.getKey(), disc));
+        } else if (qFather.getRight() == qd.getKey()) {
+            qFather.setRight(delete(qd.getKey(), disc));
 
         }
 
@@ -251,8 +251,8 @@ public class KDTree implements Serializable {
             if (node.getRight() != null)
                 right = max(node.getRight(), disc, discNext);
             if (left != null && right != null) {
-                double pointLeft = left.getFirst().getPoint().getDouble(disc);
-                double pointRight = right.getFirst().getPoint().getDouble(disc);
+                double pointLeft = left.getKey().getPoint().getDouble(disc);
+                double pointRight = right.getKey().getPoint().getDouble(disc);
                 if (pointLeft > pointRight)
                     return left;
                 else
@@ -263,7 +263,7 @@ public class KDTree implements Serializable {
                 return right;
         }
 
-        return new Pair<>(node, _disc);
+        return Pair.of(node, _disc);
     }
 
 
@@ -282,8 +282,8 @@ public class KDTree implements Serializable {
             if (node.getRight() != null)
                 right = min(node.getRight(), disc, discNext);
             if (left != null && right != null) {
-                double pointLeft = left.getFirst().getPoint().getDouble(disc);
-                double pointRight = right.getFirst().getPoint().getDouble(disc);
+                double pointLeft = left.getKey().getPoint().getDouble(disc);
+                double pointRight = right.getKey().getPoint().getDouble(disc);
                 if (pointLeft < pointRight)
                     return left;
                 else
@@ -294,7 +294,7 @@ public class KDTree implements Serializable {
                 return right;
         }
 
-        return new Pair<>(node, _disc);
+        return Pair.of(node, _disc);
     }
 
     /**

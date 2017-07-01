@@ -5,6 +5,8 @@ import com.mashape.unirest.http.ObjectMapper;
 import com.mashape.unirest.http.Unirest;
 import org.apache.commons.io.FileUtils;
 
+import org.apache.commons.io.IOUtils;
+import org.deeplearning4j.nearestneighbor.client.NearestNeighborsClient;
 import org.deeplearning4j.nearestneighbor.model.Base64NDArrayBody;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborRequest;
 import org.deeplearning4j.nearestneighbor.model.NearstNeighborsResults;
@@ -14,9 +16,12 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.serde.base64.Nd4jBase64;
+import org.nd4j.serde.binary.BinarySerde;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
@@ -38,28 +43,13 @@ public class NearestNeighborsServerTest {
                 {3,4,5,6}
         });
 
-        FileUtils.write(fileSave, Nd4jBase64.base64String(arr));
-        // Only one time
-        Unirest.setObjectMapper(new ObjectMapper() {
-            private com.fasterxml.jackson.databind.ObjectMapper jacksonObjectMapper =
-                    new com.fasterxml.jackson.databind.ObjectMapper();
-
-            public <T> T readValue(String value, Class<T> valueType) {
-                try {
-                    return jacksonObjectMapper.readValue(value, valueType);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
-            public String writeValue(Object value) {
-                try {
-                    return jacksonObjectMapper.writeValueAsString(value);
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        });
+        FileOutputStream fileOutputStream = new FileOutputStream(fileSave);
+        ByteBuffer byteBuffer = BinarySerde.toByteBuffer(arr);
+        byte[] allBuffer = new byte[byteBuffer.capacity()];
+        byteBuffer.get(allBuffer);
+        IOUtils.write(allBuffer,fileOutputStream);
+        fileOutputStream.flush();
+        fileOutputStream.close();
         server.runMain(new String[] {"--ndarrayPath", fileSave.getAbsolutePath(), "--nearestNeighborsPort", "9050"});
     }
 
@@ -72,24 +62,12 @@ public class NearestNeighborsServerTest {
 
     @Test
     public void testServer() throws Exception {
-        NearestNeighborRequest request = new NearestNeighborRequest();
-        request.setInputIndex(0);
-        request.setK(1);
-        NearstNeighborsResults csvRecord = Unirest.post("http://localhost:9050/knn").header("accept", "application/json")
-                .header("Content-Type", "application/json")
-                .body(request)
-                .asObject(NearstNeighborsResults.class).getBody();
+        NearestNeighborsClient nearestNeighborsClient = new NearestNeighborsClient("http://localhost:9050");
+        NearstNeighborsResults csvRecord = nearestNeighborsClient.knn(0,1);
 
         assertEquals(1,csvRecord.getResults().size());
 
-        Base64NDArrayBody base64NDArrayBody = Base64NDArrayBody
-                .builder().k(1).ndarray(Nd4jBase64.base64String(arr.slice(0))).build();
-
-        NearstNeighborsResults csvRecord2 = Unirest.post("http://localhost:9050/knnnew")
-                .header("accept", "application/json")
-                .header("Content-Type", "application/json")
-                .body(base64NDArrayBody)
-                .asObject(NearstNeighborsResults.class).getBody();
+        NearstNeighborsResults csvRecord2 = nearestNeighborsClient.knnNew(1,arr.slice(0));
         assertEquals(1,csvRecord2.getResults().size());
 
 

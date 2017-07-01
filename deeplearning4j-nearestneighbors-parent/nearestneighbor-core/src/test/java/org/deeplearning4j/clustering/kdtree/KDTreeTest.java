@@ -19,7 +19,7 @@
 package org.deeplearning4j.clustering.kdtree;
 
 import com.google.common.primitives.Doubles;
-import org.deeplearning4j.berkeley.Pair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -44,7 +44,7 @@ public class KDTreeTest {
         tree.insert(half);
         tree.insert(one);
         Pair<Double, INDArray> pair = tree.nn(Nd4j.create(Nd4j.createBuffer(new double[] {0.5, 0.5})));
-        assertEquals(half, pair.getSecond());
+        assertEquals(half, pair.getValue());
     }
 
     public void testInsert() {
@@ -95,7 +95,7 @@ public class KDTreeTest {
         Pair<Double, INDArray> result = kdTree.nn(Nd4j.create(Nd4j.createBuffer(Doubles.toArray(pt))));
 
         // Always true for points in the unitary hypercube
-        assertTrue(result.getFirst() < Double.MAX_VALUE);
+        assertTrue(result.getKey() < Double.MAX_VALUE);
 
     }
 
