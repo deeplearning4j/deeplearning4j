@@ -290,19 +290,21 @@ public class LayerValidation {
     public static void generalValidation(String layerName, Layer layer, boolean useRegularization,
                     boolean useDropConnect, double dropOut, double l2, double l2Bias, double l1, double l1Bias,
                     Distribution dist) {
-        if (useDropConnect && (Double.isNaN(dropOut) && (Double.isNaN(layer.getDropOut()))))
-            log.warn("Layer \"" + layerName
-                            + "\" dropConnect is set to true but dropout rate has not been added to configuration.");
-        if (useDropConnect && layer.getDropOut() == 0.0)
-            log.warn("Layer \"" + layerName + " dropConnect is set to true but dropout rate is set to 0.0");
-        if (useRegularization && (Double.isNaN(l1) && layer != null && Double.isNaN(layer.getL1()) && Double.isNaN(l2)
-                        && Double.isNaN(layer.getL2()) && Double.isNaN(l2Bias) && Double.isNaN(l1Bias)
-                        && (Double.isNaN(dropOut) || dropOut == 0.0)
-                        && (Double.isNaN(layer.getDropOut()) || layer.getDropOut() == 0.0)))
-            log.warn("Layer \"" + layerName
-                            + "\" regularization is set to true but l1, l2 or dropout has not been added to configuration.");
 
         if (layer != null) {
+
+            if (useDropConnect && (Double.isNaN(dropOut) && (Double.isNaN(layer.getDropOut()))))
+                log.warn("Layer \"" + layerName
+                        + "\" dropConnect is set to true but dropout rate has not been added to configuration.");
+            if (useDropConnect && layer.getDropOut() == 0.0)
+                log.warn("Layer \"" + layerName + " dropConnect is set to true but dropout rate is set to 0.0");
+            if (useRegularization && (Double.isNaN(l1) && Double.isNaN(layer.getL1()) && Double.isNaN(l2)
+                    && Double.isNaN(layer.getL2()) && Double.isNaN(l2Bias) && Double.isNaN(l1Bias)
+                    && (Double.isNaN(dropOut) || dropOut == 0.0)
+                    && (Double.isNaN(layer.getDropOut()) || layer.getDropOut() == 0.0)))
+                log.warn("Layer \"" + layerName
+                        + "\" regularization is set to true but l1, l2 or dropout has not been added to configuration.");
+
             if (useRegularization) {
                 if (!Double.isNaN(l1) && Double.isNaN(layer.getL1())) {
                     layer.setL1(l1);

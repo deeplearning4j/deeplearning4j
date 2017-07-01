@@ -113,17 +113,13 @@ public class LocalResponseNormalization
 
         // sumPart = sum(a^j_{x,y} * gb^j_{x,y})
         for (int i = 1; i < halfN + 1; i++) {
-            tmp = sumPart.get(new INDArrayIndex[] {NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(),
-                            NDArrayIndex.all()});
-            addVal = reverse.get(new INDArrayIndex[] {NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
-                            NDArrayIndex.all()});
+            tmp = sumPart.get(NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
+            addVal = reverse.get(NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(), NDArrayIndex.all());
             sumPart.put(new INDArrayIndex[] {NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(),
                             NDArrayIndex.all()}, tmp.addi(addVal));
 
-            tmp = sumPart.get(new INDArrayIndex[] {NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
-                            NDArrayIndex.all()});
-            addVal = reverse.get(new INDArrayIndex[] {NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(),
-                            NDArrayIndex.all()});
+            tmp = sumPart.get(NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(), NDArrayIndex.all());
+            addVal = reverse.get(NDArrayIndex.all(), interval(i, channel), NDArrayIndex.all(), NDArrayIndex.all());
             sumPart.put(new INDArrayIndex[] {NDArrayIndex.all(), interval(0, channel - i), NDArrayIndex.all(),
                             NDArrayIndex.all()}, tmp.addi(addVal));
         }

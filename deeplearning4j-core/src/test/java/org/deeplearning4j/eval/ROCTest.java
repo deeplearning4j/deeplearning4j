@@ -717,4 +717,16 @@ public class ROCTest {
 
         assertEquals(1.0, roc.calculateAUCPR(), 1e-8);
     }
+
+
+    @Test
+    public void rocExactEdgeCaseReallocation(){
+
+        //Set reallocation block size to say 20, but then evaluate a 100-length array
+
+        ROC roc = new ROC(0, true, 50);
+
+        roc.eval(Nd4j.rand(100, 1), Nd4j.ones(100,1));
+
+    }
 }

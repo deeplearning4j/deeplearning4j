@@ -462,6 +462,7 @@
         <module>deeplearning4j-keras</module>
         <module>deeplearning4j-nearestneighbor-server</module>
         <module>deeplearning4j-zoo</module>
+        <module>deeplearning4j-nearestneighbors-parent</module>
     </modules>
 
     <licenses>

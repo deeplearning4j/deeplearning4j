@@ -245,6 +245,8 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                 longestSequence);
 
 
+
+
         MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(features.getFirst(), labels.getFirst(),
                                 features.getSecond(), labels.getSecond());
         if (collectMetaData) {

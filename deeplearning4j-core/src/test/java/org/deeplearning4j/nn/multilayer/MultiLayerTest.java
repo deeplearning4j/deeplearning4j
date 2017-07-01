@@ -1064,4 +1064,24 @@ public class MultiLayerTest {
         INDArray out1 = net.getLayer(1).activate(out0);
         assertEquals(preOut1, preOuts.get(2));
     }
+
+    @Test(expected = DL4JException.class)
+    public void testErrorNoOutputLayer(){
+
+        MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                .build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(c);
+        net.init();
+
+        INDArray f = Nd4j.create(1,10);
+        INDArray l = Nd4j.create(1, 10);
+
+        net.setInput(f);
+        net.setLabels(l);
+
+        net.computeGradientAndScore();
+    }
 }
