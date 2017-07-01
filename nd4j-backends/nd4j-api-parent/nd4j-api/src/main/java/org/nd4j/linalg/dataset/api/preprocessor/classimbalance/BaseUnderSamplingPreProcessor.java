@@ -15,15 +15,16 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 public abstract class BaseUnderSamplingPreProcessor {
 
     protected int tbpttWindowSize;
-    @Getter
     private boolean maskAllMajorityWindows = true;
-    @Getter
-	@Setter
     private boolean donotMaskMinorityWindows = false;
 
     public void donotMaskAllMajorityWindows(){
         this.maskAllMajorityWindows = false;
     }
+
+    public void donotMaskMinorityWindows(){
+		this.donotMaskMinorityWindows = true;
+	}
 
     public INDArray adjustMasks(INDArray label, INDArray labelMask, int minorityLabel, double targetDist) {
 
