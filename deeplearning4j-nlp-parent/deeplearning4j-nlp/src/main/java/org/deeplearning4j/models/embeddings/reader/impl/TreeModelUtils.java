@@ -92,7 +92,7 @@ public class TreeModelUtils<T extends SequenceElement> extends BasicModelUtils<T
         List<Double> distances = new ArrayList<>();
 
         // we need n+1 to address original datapoint removal
-        vpTree.search(new DataPoint(0, words), top, add, distances);
+        vpTree.search(words, top, add, distances);
 
         Collection<String> ret = new ArrayList<>();
         for (DataPoint e : add) {

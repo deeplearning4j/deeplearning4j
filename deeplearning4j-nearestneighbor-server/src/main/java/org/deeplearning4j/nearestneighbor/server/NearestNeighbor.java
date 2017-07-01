@@ -27,7 +27,7 @@ public class NearestNeighbor {
         if(input.isVector()) {
             List<DataPoint> add = new ArrayList<>();
             List<Double> distances = new ArrayList<>();
-            tree.search(new DataPoint(record.getInputIndex(), input), record.getK(), add, distances);
+            tree.search(input, record.getK(), add, distances);
             for(DataPoint dataPoint : add) {
                 results.add(new NearestNeighborsResult(dataPoint.getIndex()));
             }

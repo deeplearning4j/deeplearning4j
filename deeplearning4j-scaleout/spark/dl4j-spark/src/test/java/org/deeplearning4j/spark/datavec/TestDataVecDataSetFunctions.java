@@ -158,7 +158,8 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
         path = folder + "*";
 
         JavaPairRDD<String, PortableDataStream> origData = sc.binaryFiles(path);
-        assertEquals(3, origData.count()); //3 CSV sequences
+        assertEquals(3, origData.
+                count()); //3 CSV sequences
 
 
         SequenceRecordReader seqRR = new CSVSequenceRecordReader(1, ",");

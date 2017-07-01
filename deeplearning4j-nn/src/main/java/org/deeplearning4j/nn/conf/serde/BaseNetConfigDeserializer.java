@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.conf.serde;
 
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.nd4j.linalg.learning.config.*;

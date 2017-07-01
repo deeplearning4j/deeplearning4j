@@ -9,6 +9,7 @@ import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.nearestneighbor.model.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.serde.base64.Nd4jBase64;
 import play.Mode;
 import play.libs.Json;
@@ -16,6 +17,8 @@ import play.routing.RoutingDsl;
 import play.server.Server;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,9 +66,10 @@ public class NearestNeighborsServer {
             System.exit(1);
         }
 
-        String json = FileUtils.readFileToString(new File(ndarrayPath));
-        INDArray points = Nd4jBase64.fromBase64(json);
-
+        final INDArray points;
+        try(InputStream  is = new FileInputStream(new File(ndarrayPath))) {
+            points = Nd4j.read(is);
+        }
 
         VPTree tree = new VPTree(points,similarityFunction,invert);
 
@@ -94,7 +98,7 @@ public class NearestNeighborsServer {
                 INDArray arr = Nd4jBase64.fromBase64(record.getNdarray());
                 List<DataPoint> results = new ArrayList<>();
                 List<Double> distances =new ArrayList<>();
-                tree.search(new DataPoint(points.size(0) + 1,arr,invert),record.getK(),results,distances);
+                tree.search(arr,record.getK(),results,distances);
                 if (record == null)
                     return badRequest();
                 List<NearestNeighborsResult> nnResult = new ArrayList<>();
