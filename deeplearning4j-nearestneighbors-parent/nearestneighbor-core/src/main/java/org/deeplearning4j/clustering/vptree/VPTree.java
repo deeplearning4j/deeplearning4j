@@ -18,11 +18,11 @@
 
 package org.deeplearning4j.clustering.vptree;
 
-import org.deeplearning4j.berkeley.CounterMap;
-import org.deeplearning4j.berkeley.PriorityQueue;
+import org.deeplearning4j.clustering.berkeley.CounterMap;
+import org.deeplearning4j.clustering.berkeley.PriorityQueue;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.HeapItem;
-import org.deeplearning4j.util.MathUtils;
+import org.deeplearning4j.clustering.util.MathUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.Dot;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
@@ -264,7 +264,7 @@ public class VPTree {
     private Node buildFromPoints(final int lower, final int upper) {
         if (upper == lower)
             return null;
-        if(executorService == null)
+        if(executorService == null && lower == 0 && upper == items.size(0))
             executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
         final Node ret = new Node(lower, 0);
@@ -325,35 +325,39 @@ public class VPTree {
             ret.setThreshold(distance(items.getRow(lower), items.getRow(median)));
             ret.setIndex(lower);
 
+            Future<?> left = null;
+            Future<?> right = null;
+            if(lower + 1 !=  median) {
+                left = executorService.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        ret.setLeft(buildFromPoints(lower + 1, median));
+                    }
+                });
+            }
 
-            Future<?> left = executorService.submit(new Runnable() {
-                @Override
-                public void run() {
-                    ret.setLeft(buildFromPoints(lower + 1, median));
-                }
-            });
-
-            Future<?> right = executorService.submit(new Runnable() {
-                @Override
-                public void run() {
-                    ret.setRight(buildFromPoints(median, upper));
-                }
-            });
+            if(median != upper) {
+                right = executorService.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        ret.setRight(buildFromPoints(median, upper));
+                    }
+                });
+            }
 
             if(lower == 0 && upper == items.size(0)) {
                 try {
-                    left.get();
-                    right.get();
+                    if(left != null)
+                        left.get();
+
+                    if(right != null)
+                        right.get();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
 
                 if(executorService != null) {
-                    try {
-                        executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
+                    executorService.shutdown();
                 }
             }
 

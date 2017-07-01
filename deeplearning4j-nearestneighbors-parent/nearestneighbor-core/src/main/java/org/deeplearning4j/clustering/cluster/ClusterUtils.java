@@ -23,8 +23,8 @@ import org.deeplearning4j.clustering.info.ClusterInfo;
 import org.deeplearning4j.clustering.info.ClusterSetInfo;
 import org.deeplearning4j.clustering.optimisation.ClusteringOptimizationType;
 import org.deeplearning4j.clustering.strategy.OptimisationStrategy;
-import org.deeplearning4j.util.MathUtils;
-import org.deeplearning4j.util.MultiThreadUtils;
+import org.deeplearning4j.clustering.util.MathUtils;
+import org.deeplearning4j.clustering.util.MultiThreadUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
