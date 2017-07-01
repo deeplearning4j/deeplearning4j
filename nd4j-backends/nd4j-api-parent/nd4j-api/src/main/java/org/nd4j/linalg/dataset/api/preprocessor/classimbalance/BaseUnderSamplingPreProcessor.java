@@ -17,6 +17,8 @@ public abstract class BaseUnderSamplingPreProcessor {
     protected int tbpttWindowSize;
     @Getter
     private boolean maskAllMajorityWindows = true;
+    @Getter
+    private boolean donotMaskMinorityWindows = false;
 
     public void donotMaskAllMajorityWindows(){
         this.maskAllMajorityWindows = false;
@@ -75,7 +77,8 @@ public abstract class BaseUnderSamplingPreProcessor {
         INDArray majorityClass = Transforms.not(minorityLabels).muli(labelMask);
 
         //all minorityLabel class, keep masks as is
-        if (majorityClass.sumNumber().intValue() == 0) return labelMask;
+        //presence of minoriy class and donotmask minority windows set to true return label as is
+        if (majorityClass.sumNumber().intValue() == 0 || (minorityClass.sumNumber().intValue() > 0 && donotMaskMinorityWindows)) return labelMask;
         //all majority class and set to not mask all majority windows sample majority class by 1-targetMinorityDist
         if (minorityClass.sumNumber().intValue() == 0 && !maskAllMajorityWindows) return labelMask.muli(1-targetMinorityDist);
 
