@@ -18,6 +18,7 @@ public abstract class BaseUnderSamplingPreProcessor {
     @Getter
     private boolean maskAllMajorityWindows = true;
     @Getter
+	@Setter
     private boolean donotMaskMinorityWindows = false;
 
     public void donotMaskAllMajorityWindows(){
