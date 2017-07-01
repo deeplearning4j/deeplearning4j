@@ -1434,12 +1434,25 @@ public class TensorGrad {
      * @return
      */
     public List<Op> exec() {
+        /**
+         * Need to ensure op references
+         * are consistent across a graph.
+         *
+         * This means havig a central repository for
+         * the variables allocated and using those with in ndarrays
+         *
+         * We also need a mechanism of validating op structure.
+         * Exceptions thrown during calculation should happen
+         * in the graph very similar to nd4j.
+         */
         allocate();
         List<Op> ops = new ArrayList<>();
         if(graph().numVertices() == 0)
             throw new ND4JIllegalStateException("Unable to run exec pipeline. No vertices in graph");
 
-        for(OpExecAction opExecAction : graph().getOpOrder().getActions()) {
+
+        List<OpExecAction> opExecActions = graph().getOpOrder().getActions();
+        for(OpExecAction opExecAction : opExecActions) {
             Op op = createOp(
                     opExecAction.getOpState().getOpType(),
                     opExecAction);
