@@ -300,10 +300,7 @@ public class VPTree {
                 rightPoints = Nd4j.create(sortedDistances.length(),items.columns());
 
 
-            //immitate appending to an array list
-            /**
-             * Todo: vectorize
-             */
+
             int leftPointsIndex = 0;
             int rightPointsIndex = 0;
             for (int i = 0; i < distancesArr.length(); i++) {
