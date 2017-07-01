@@ -41,7 +41,7 @@ public class VpTreeNodeTest {
         VPTree tree = new VPTree(points);
         List<DataPoint> add = new ArrayList<>();
         List<Double> distances = new ArrayList<>();
-        tree.search(new DataPoint(0, Nd4j.create(new double[] {50, 50})), 1, add, distances);
+        tree.search(Nd4j.create(new double[] {50, 50}), 1, add, distances);
         DataPoint assertion = add.get(0);
         assertEquals(new DataPoint(0, Nd4j.create(new double[] {55, 55})), assertion);
 
