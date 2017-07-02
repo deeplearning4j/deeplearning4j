@@ -1205,6 +1205,17 @@ namespace simdOps {
 		}
 	};
 
+    template<typename T>
+    class Atan2 {
+    public:
+        no_op_exec_special
+        no_op_exec_special_cuda
+
+        op_def static T op(T d1, T d2, T *params) {
+            return nd4j::math::nd4j_atan2<T>(d1, d2);
+        }
+    };
+
 
 	template<typename T>
 	class Identity {
