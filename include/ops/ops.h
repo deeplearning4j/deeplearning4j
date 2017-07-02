@@ -1212,7 +1212,7 @@ namespace simdOps {
         no_op_exec_special_cuda
 
         op_def static T op(T d1, T d2, T *params) {
-            return nd4j::math::nd4j_atan2<T>(d1, d2);
+            return nd4j::math::nd4j_atan2<T>(d2, d1);
         }
     };
 
