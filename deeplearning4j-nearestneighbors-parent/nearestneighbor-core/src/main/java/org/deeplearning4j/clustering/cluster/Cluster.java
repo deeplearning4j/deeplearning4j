@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.clustering.cluster;
 
+import lombok.Data;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
@@ -26,6 +27,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * A cluster.
+ *
+ *
+ */
+@Data
 public class Cluster implements Serializable {
 
     private String id = UUID.randomUUID().toString();
@@ -40,23 +47,43 @@ public class Cluster implements Serializable {
         super();
     }
 
+    /**
+     *
+     * @param center
+     * @param distanceFunction
+     */
     public Cluster(Point center, String distanceFunction) {
         this.distanceFunction = distanceFunction;
         setCenter(center);
     }
 
 
-
+    /**
+     * Get the distance to the given
+     * point from the cluster
+     * @param point the point to get the distance for
+     * @return
+     */
     public double getDistanceToCenter(Point point) {
         return Nd4j.getExecutioner().execAndReturn(
                         Nd4j.getOpFactory().createAccum(distanceFunction, center.getArray(), point.getArray()))
                         .getFinalResult().doubleValue();
     }
 
+    /**
+     * Add a point to the cluster
+     * @param point
+     */
     public void addPoint(Point point) {
         addPoint(point, true);
     }
 
+    /**
+     * Add a point to the cluster
+     * @param point the point to add
+     * @param moveClusterCenter whether to update
+     *                          the cluster centroid or not
+     */
     public void addPoint(Point point, boolean moveClusterCenter) {
         if (moveClusterCenter) {
             center.getArray().muli(points.size()).addi(point.getArray()).divi(points.size() + 1);
@@ -64,15 +91,27 @@ public class Cluster implements Serializable {
         getPoints().add(point);
     }
 
+    /**
+     * Clear out the ponits
+     */
     public void removePoints() {
         if (getPoints() != null)
             getPoints().clear();
     }
 
+    /**
+     * Whether the cluster is empty or not
+     * @return
+     */
     public boolean isEmpty() {
         return points == null || points.isEmpty();
     }
 
+    /**
+     * Return the point with the given id
+     * @param id
+     * @return
+     */
     public Point getPoint(String id) {
         for (Point point : points)
             if (id.equals(point.getId()))
@@ -80,6 +119,11 @@ public class Cluster implements Serializable {
         return null;
     }
 
+    /**
+     * Remove the point and return it
+     * @param id
+     * @return
+     */
     public Point removePoint(String id) {
         Point removePoint = null;
         for (Point point : points)
@@ -90,36 +134,5 @@ public class Cluster implements Serializable {
         return removePoint;
     }
 
-    public Point getCenter() {
-        return center;
-    }
-
-    public void setCenter(Point center) {
-        this.center = center;
-    }
-
-    public List<Point> getPoints() {
-        return points;
-    }
-
-    public void setPoints(List<Point> points) {
-        this.points = points;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    public void setLabel(String label) {
-        this.label = label;
-    }
 
 }
