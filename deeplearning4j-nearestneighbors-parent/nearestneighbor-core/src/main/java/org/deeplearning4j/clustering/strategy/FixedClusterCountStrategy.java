@@ -36,6 +36,14 @@ public class FixedClusterCountStrategy extends BaseClusteringStrategy {
         return new FixedClusterCountStrategy(clusterCount, distanceFunction, false);
     }
 
+    /**
+     * @return
+     */
+    @Override
+    public boolean inverseDistanceCalculation() {
+        return false;
+    }
+
     public boolean isOptimizationDefined() {
         return false;
     }

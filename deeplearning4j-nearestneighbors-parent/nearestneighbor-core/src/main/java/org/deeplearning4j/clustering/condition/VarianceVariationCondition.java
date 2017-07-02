@@ -18,33 +18,44 @@
 
 package org.deeplearning4j.clustering.condition;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.clustering.iteration.IterationHistory;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.LessThan;
 
 import java.io.Serializable;
 
+/**
+ *
+ */
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class VarianceVariationCondition implements ClusteringAlgorithmCondition, Serializable {
 
     private Condition varianceVariationCondition;
     private int period;
 
-    protected VarianceVariationCondition() {
-        // no-op for serialization only
-    }
 
-    protected VarianceVariationCondition(Condition varianceVariationCondition, int period) {
-        super();
-        this.varianceVariationCondition = varianceVariationCondition;
-        this.period = period;
-    }
 
+    /**
+     *
+     * @param varianceVariation
+     * @param period
+     * @return
+     */
     public static VarianceVariationCondition varianceVariationLessThan(double varianceVariation, int period) {
         Condition condition = new LessThan(varianceVariation);
         return new VarianceVariationCondition(condition, period);
     }
 
 
+    /**
+     *
+     * @param iterationHistory
+     * @return
+     */
     public boolean isSatisfied(IterationHistory iterationHistory) {
         if (iterationHistory.getIterationCount() <= period)
             return false;
@@ -56,6 +67,7 @@ public class VarianceVariationCondition implements ClusteringAlgorithmCondition,
                             .getPointDistanceFromClusterVariance();
             variation /= iterationHistory.getIterationInfo(j - i - 1).getClusterSetInfo()
                             .getPointDistanceFromClusterVariance();
+
             if (!varianceVariationCondition.apply(variation))
                 return false;
         }

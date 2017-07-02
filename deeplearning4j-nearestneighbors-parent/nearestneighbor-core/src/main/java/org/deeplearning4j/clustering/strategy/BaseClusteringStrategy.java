@@ -18,41 +18,59 @@
 
 package org.deeplearning4j.clustering.strategy;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.Setter;
 import org.deeplearning4j.clustering.condition.ClusteringAlgorithmCondition;
 import org.deeplearning4j.clustering.condition.ConvergenceCondition;
 import org.deeplearning4j.clustering.condition.FixedIterationCountCondition;
 
 import java.io.Serializable;
-
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class BaseClusteringStrategy implements ClusteringStrategy, Serializable {
-
+    @Getter(AccessLevel.PUBLIC)
+    @Setter(AccessLevel.PROTECTED)
     protected ClusteringStrategyType type;
+    @Getter(AccessLevel.PUBLIC)
+    @Setter(AccessLevel.PROTECTED)
     protected Integer initialClusterCount;
+    @Getter(AccessLevel.PUBLIC)
+    @Setter(AccessLevel.PROTECTED)
     protected ClusteringAlgorithmCondition optimizationPhaseCondition;
+    @Getter(AccessLevel.PUBLIC)
+    @Setter(AccessLevel.PROTECTED)
     protected ClusteringAlgorithmCondition terminationCondition;
-
+    @Getter(AccessLevel.PUBLIC)
+    @Setter(AccessLevel.PROTECTED)
+    protected  boolean inverse;
+    @Getter(AccessLevel.PUBLIC)
+    @Setter(AccessLevel.PROTECTED)
     protected String distanceFunction;
-
+    @Getter(AccessLevel.PUBLIC)
+    @Setter(AccessLevel.PROTECTED)
     protected boolean allowEmptyClusters;
 
     protected BaseClusteringStrategy() {
         // no-op for serialization only
     }
 
-    protected BaseClusteringStrategy(ClusteringStrategyType type, Integer initialClusterCount, String distanceFunction,
-                    boolean allowEmptyClusters) {
-        super();
-        this.type = type;
-        this.initialClusterCount = initialClusterCount;
-        this.distanceFunction = distanceFunction;
-        this.allowEmptyClusters = allowEmptyClusters;
-    }
 
+    /**
+     *
+     * @param maxIterationCount
+     * @return
+     */
     public BaseClusteringStrategy endWhenIterationCountEquals(int maxIterationCount) {
         setTerminationCondition(FixedIterationCountCondition.iterationCountGreaterThan(maxIterationCount));
         return this;
     }
 
+    /**
+     *
+     * @param rate
+     * @return
+     */
     public BaseClusteringStrategy endWhenDistributionVariationRateLessThan(double rate) {
         setTerminationCondition(ConvergenceCondition.distributionVariationRateLessThan(rate));
         return this;
@@ -66,48 +84,5 @@ public abstract class BaseClusteringStrategy implements ClusteringStrategy, Seri
         return initialClusterCount;
     }
 
-    public void setInitialClusterCount(Integer clusterCount) {
-        this.initialClusterCount = clusterCount;
-    }
-
-    public String getDistanceFunction() {
-        return distanceFunction;
-    }
-
-    public void setDistanceFunction(String distanceFunction) {
-        this.distanceFunction = distanceFunction;
-    }
-
-    public boolean isAllowEmptyClusters() {
-        return allowEmptyClusters;
-    }
-
-    public void setAllowEmptyClusters(boolean allowEmptyClusters) {
-        this.allowEmptyClusters = allowEmptyClusters;
-    }
-
-    public ClusteringStrategyType getType() {
-        return type;
-    }
-
-    protected void setType(ClusteringStrategyType type) {
-        this.type = type;
-    }
-
-    public ClusteringAlgorithmCondition getOptimizationPhaseCondition() {
-        return optimizationPhaseCondition;
-    }
-
-    protected void setOptimizationPhaseCondition(ClusteringAlgorithmCondition optimizationPhaseCondition) {
-        this.optimizationPhaseCondition = optimizationPhaseCondition;
-    }
-
-    public ClusteringAlgorithmCondition getTerminationCondition() {
-        return terminationCondition;
-    }
-
-    protected void setTerminationCondition(ClusteringAlgorithmCondition terminationCondition) {
-        this.terminationCondition = terminationCondition;
-    }
 
 }

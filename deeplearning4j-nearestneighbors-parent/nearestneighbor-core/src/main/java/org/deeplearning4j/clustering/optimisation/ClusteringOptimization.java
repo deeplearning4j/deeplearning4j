@@ -18,37 +18,18 @@
 
 package org.deeplearning4j.clustering.optimisation;
 
-import java.io.Serializable;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+@Data
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class ClusteringOptimization implements Serializable {
 
     private ClusteringOptimizationType type;
     private double value;
-
-    protected ClusteringOptimization() {
-        // no-op for serialization only
-    }
-
-    public ClusteringOptimization(ClusteringOptimizationType type, double value) {
-        super();
-        this.type = type;
-        this.value = value;
-    }
-
-    public ClusteringOptimizationType getType() {
-        return type;
-    }
-
-    public void setType(ClusteringOptimizationType type) {
-        this.type = type;
-    }
-
-    public double getValue() {
-        return value;
-    }
-
-    public void setValue(double value) {
-        this.value = value;
-    }
 
 }

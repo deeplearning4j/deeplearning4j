@@ -20,8 +20,16 @@ package org.deeplearning4j.clustering.condition;
 
 import org.deeplearning4j.clustering.iteration.IterationHistory;
 
+/**
+ *
+ */
 public interface ClusteringAlgorithmCondition {
 
+    /**
+     *
+     * @param iterationHistory
+     * @return
+     */
     boolean isSatisfied(IterationHistory iterationHistory);
 
 }

@@ -18,10 +18,16 @@
 
 package org.deeplearning4j.clustering.info;
 
+import lombok.Data;
+
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ *
+ */
+@Data
 public class ClusterInfo implements Serializable {
 
     private double averagePointDistanceFromCenter;
@@ -34,6 +40,10 @@ public class ClusterInfo implements Serializable {
         this(false);
     }
 
+    /**
+     *
+     * @param threadSafe
+     */
     public ClusterInfo(boolean threadSafe) {
         super();
         if (threadSafe) {
@@ -41,6 +51,10 @@ public class ClusterInfo implements Serializable {
         }
     }
 
+    /**
+     *
+     * @return
+     */
     public Set<Map.Entry<String, Double>> getSortedPointDistancesFromCenter() {
         SortedSet<Map.Entry<String, Double>> sortedEntries = new TreeSet<>(new Comparator<Map.Entry<String, Double>>() {
             @Override
@@ -53,6 +67,10 @@ public class ClusterInfo implements Serializable {
         return sortedEntries;
     }
 
+    /**
+     *
+     * @return
+     */
     public Set<Map.Entry<String, Double>> getReverseSortedPointDistancesFromCenter() {
         SortedSet<Map.Entry<String, Double>> sortedEntries = new TreeSet<>(new Comparator<Map.Entry<String, Double>>() {
             @Override
@@ -65,6 +83,11 @@ public class ClusterInfo implements Serializable {
         return sortedEntries;
     }
 
+    /**
+     *
+     * @param maxDistance
+     * @return
+     */
     public List<String> getPointsFartherFromCenterThan(double maxDistance) {
         Set<Map.Entry<String, Double>> sorted = getReverseSortedPointDistancesFromCenter();
         List<String> ids = new ArrayList<>();
@@ -77,44 +100,5 @@ public class ClusterInfo implements Serializable {
     }
 
 
-    public double getAveragePointDistanceFromCenter() {
-        return averagePointDistanceFromCenter;
-    }
-
-    public void setAveragePointDistanceFromCenter(double averageDistanceFromCenter) {
-        this.averagePointDistanceFromCenter = averageDistanceFromCenter;
-    }
-
-    public double getTotalPointDistanceFromCenter() {
-        return totalPointDistanceFromCenter;
-    }
-
-    public void setTotalPointDistanceFromCenter(double sumOfSquaredError) {
-        this.totalPointDistanceFromCenter = sumOfSquaredError;
-    }
-
-    public Map<String, Double> getPointDistancesFromCenter() {
-        return pointDistancesFromCenter;
-    }
-
-    public void setPointDistancesFromCenter(Map<String, Double> distancesFromCenter) {
-        this.pointDistancesFromCenter = distancesFromCenter;
-    }
-
-    public double getPointDistanceFromCenterVariance() {
-        return pointDistanceFromCenterVariance;
-    }
-
-    public void setPointDistanceFromCenterVariance(double pointDistanceFromCenterVariance) {
-        this.pointDistanceFromCenterVariance = pointDistanceFromCenterVariance;
-    }
-
-    public double getMaxPointDistanceFromCenter() {
-        return maxPointDistanceFromCenter;
-    }
-
-    public void setMaxPointDistanceFromCenter(double maxPointDistanceFromCenter) {
-        this.maxPointDistanceFromCenter = maxPointDistanceFromCenter;
-    }
 
 }

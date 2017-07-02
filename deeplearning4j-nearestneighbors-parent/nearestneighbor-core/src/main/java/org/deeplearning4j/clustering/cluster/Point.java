@@ -18,7 +18,9 @@
 
 package org.deeplearning4j.clustering.cluster;
 
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -31,6 +33,7 @@ import java.util.UUID;
  *
  */
 @Data
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Point implements Serializable {
 
     private static final long serialVersionUID = -6658028541426027226L;
@@ -39,15 +42,21 @@ public class Point implements Serializable {
     private String label;
     private INDArray array;
 
-    protected Point() {
-        // no-op for serialization only
-    }
 
+    /**
+     *
+     * @param array
+     */
     public Point(INDArray array) {
         super();
         this.array = array;
     }
 
+    /**
+     *
+     * @param id
+     * @param array
+     */
     public Point(String id, INDArray array) {
         super();
         this.id = id;
@@ -80,6 +89,11 @@ public class Point implements Serializable {
         return arr;
     }
 
+    /**
+     *
+     * @param vectors
+     * @return
+     */
     public static List<Point> toPoints(List<INDArray> vectors) {
         List<Point> points = new ArrayList<>();
         for (INDArray vector : vectors)
