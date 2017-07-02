@@ -18,16 +18,15 @@
 
 package org.deeplearning4j.clustering.strategy;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.deeplearning4j.clustering.condition.ClusteringAlgorithmCondition;
 import org.deeplearning4j.clustering.condition.ConvergenceCondition;
 import org.deeplearning4j.clustering.condition.FixedIterationCountCondition;
 
 import java.io.Serializable;
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class BaseClusteringStrategy implements ClusteringStrategy, Serializable {
     @Getter(AccessLevel.PUBLIC)
     @Setter(AccessLevel.PROTECTED)
@@ -51,8 +50,16 @@ public abstract class BaseClusteringStrategy implements ClusteringStrategy, Seri
     @Setter(AccessLevel.PROTECTED)
     protected boolean allowEmptyClusters;
 
-    protected BaseClusteringStrategy() {
-        // no-op for serialization only
+    public BaseClusteringStrategy(ClusteringStrategyType type,
+                                  Integer initialClusterCount,
+                                  String distanceFunction,
+                                  boolean allowEmptyClusters,
+                                  boolean inverse) {
+        this.type = type;
+        this.initialClusterCount = initialClusterCount;
+        this.distanceFunction = distanceFunction;
+        this.allowEmptyClusters = allowEmptyClusters;
+        this.inverse = inverse;
     }
 
 
@@ -76,10 +83,19 @@ public abstract class BaseClusteringStrategy implements ClusteringStrategy, Seri
         return this;
     }
 
+    /**
+     *
+     * @param type
+     * @return
+     */
     public boolean isStrategyOfType(ClusteringStrategyType type) {
         return type.equals(this.type);
     }
 
+    /**
+     *
+     * @return
+     */
     public Integer getInitialClusterCount() {
         return initialClusterCount;
     }

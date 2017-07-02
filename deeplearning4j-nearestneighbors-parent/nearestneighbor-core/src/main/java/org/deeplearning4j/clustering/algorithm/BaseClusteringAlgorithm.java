@@ -145,9 +145,10 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
         clusterSet.addNewClusterWithCenter(points.remove(random.nextInt(points.size())));
         int initialClusterCount = clusteringStrategy.getInitialClusterCount();
 
-        //dxs: distances between each point and nearest cluster to that point
+        //dxs: distances between
+        // each point and nearest cluster to that point
         INDArray dxs = Nd4j.create(points.size());
-        dxs.addi(Double.MAX_VALUE);
+        dxs.addi(clusteringStrategy.inverseDistanceCalculation()  ? -Double.MAX_VALUE :  Double.MAX_VALUE);
 
         //Generate the initial cluster centers, by randomly selecting a point between 0 and max distance
         //Thus, we are more likely to select (as a new cluster center) a point that is far from an existing cluster
@@ -157,7 +158,9 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
             for (int i = 0; i < dxs.length(); i++) {
                 if (dxs.getDouble(i) >= r) {
                     clusterSet.addNewClusterWithCenter(points.remove(i));
-                    dxs = Nd4j.create(ArrayUtils.remove(dxs.data().asDouble(), i));
+                    dxs = Nd4j.create(ArrayUtils.remove(
+                            dxs.data()
+                            .asDouble(), i));
                     break;
                 }
             }
