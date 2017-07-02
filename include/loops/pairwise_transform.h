@@ -54,7 +54,8 @@
         (57,simdOps::Or),\
         (58,simdOps::Xor),\
         (59,simdOps::Remainder),\
-        (60,simdOps::FMod)
+        (60,simdOps::FMod),\
+        (69,simdOps::Atan2)
 
 
 

@@ -129,6 +129,24 @@ template<typename T>
         template<typename T>
         math_def inline T nd4j_tan(T val);
 
+		template<typename T>
+		math_def inline T nd4j_atan2(T val1, T val2);
+
+		template<>
+		math_def inline float16 nd4j_atan2<float16>(float16 value1, float16 value2) {
+			return (float16) atan2f((float) value1, (float) value2);
+		}
+
+		template<>
+		math_def inline float nd4j_atan2<float>(float value1, float value2) {
+			return atan2f(value1, value2);
+		}
+
+		template<>
+		math_def inline double nd4j_atan2<double>(double value1, double value2) {
+			return atan2(value1, value2);
+		}
+
         template<typename T>
         math_def inline T nd4j_tan(T val) {
             return nd4j_log((val + 1 / (1 - val)) * 0.5);
