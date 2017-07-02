@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.clustering.cluster;
 
+import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -26,6 +27,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ *
+ */
+@Data
 public class Point implements Serializable {
 
     private static final long serialVersionUID = -6658028541426027226L;
@@ -60,35 +65,26 @@ public class Point implements Serializable {
         this.array = array;
     }
 
+
+    /**
+     *
+     * @param matrix
+     * @return
+     */
+    public static List<Point> toPoints(INDArray matrix) {
+        List<Point> arr = new ArrayList<>(matrix.rows());
+        for(int i = 0; i < matrix.rows(); i++) {
+            arr.add(new Point(matrix.slice(i)));
+        }
+
+        return arr;
+    }
+
     public static List<Point> toPoints(List<INDArray> vectors) {
         List<Point> points = new ArrayList<>();
         for (INDArray vector : vectors)
             points.add(new Point(vector));
         return points;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getLabel() {
-        return label;
-    }
-
-    public void setLabel(String label) {
-        this.label = label;
-    }
-
-    public INDArray getArray() {
-        return array;
-    }
-
-    public void setArray(INDArray array) {
-        this.array = array;
     }
 
 

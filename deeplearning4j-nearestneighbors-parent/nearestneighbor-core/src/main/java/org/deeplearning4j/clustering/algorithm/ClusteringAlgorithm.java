@@ -23,8 +23,20 @@ import org.deeplearning4j.clustering.cluster.Point;
 
 import java.util.List;
 
+/**
+ * An interface for a clustering
+ * algorithm.
+ * This is for applying a clustering
+ * algorithm to a list of points.
+ */
 public interface ClusteringAlgorithm {
 
+    /**
+     * Apply a clustering
+     * algorithm for a given result
+     * @param points
+     * @return
+     */
     ClusterSet applyTo(List<Point> points);
 
 }

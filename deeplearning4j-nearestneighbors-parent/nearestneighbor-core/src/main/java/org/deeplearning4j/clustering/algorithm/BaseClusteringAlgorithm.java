@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.clustering.algorithm;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.clustering.cluster.Cluster;
 import org.deeplearning4j.clustering.cluster.ClusterSet;
@@ -49,10 +50,10 @@ import java.util.concurrent.ExecutorService;
  * @author Julien Roch
  *
  */
+@Slf4j
 public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializable {
 
     private static final long serialVersionUID = 338231277453149972L;
-    private static final Logger log = LoggerFactory.getLogger(BaseClusteringAlgorithm.class);
 
     private ClusteringStrategy clusteringStrategy;
     private IterationHistory iterationHistory;
@@ -70,10 +71,20 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
         this.exec = MultiThreadUtils.newExecutorService();
     }
 
+    /**
+     *
+     * @param clusteringStrategy
+     * @return
+     */
     public static BaseClusteringAlgorithm setup(ClusteringStrategy clusteringStrategy) {
         return new BaseClusteringAlgorithm(clusteringStrategy);
     }
 
+    /**
+     *
+     * @param points
+     * @return
+     */
     public ClusterSet applyTo(List<Point> points) {
         resetState(points);
         initClusters();
@@ -88,8 +99,11 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
         this.initialPoints = points;
     }
 
-    /** Run clustering iterations until a termination condition is hit.
-     * This is done by first classifying all points, and then updating cluster centers based on those classified points
+    /** Run clustering iterations until a
+     * termination condition is hit.
+     * This is done by first classifying all points,
+     * and then updating cluster centers based on
+     * those classified points
      */
     private void iterations() {
         int iterationCount = 0;
@@ -113,7 +127,9 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
                         new IterationInfo(currentIteration, clusterSetInfo));
     }
 
-    /**Initialize the cluster centers at random
+    /**
+     * Initialize the
+     * cluster centers at random
      */
     protected void initClusters() {
         log.info("Generating initial clusters");

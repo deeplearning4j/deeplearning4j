@@ -24,7 +24,7 @@ import org.deeplearning4j.clustering.strategy.FixedClusterCountStrategy;
 
 
 /**
- * 
+ *
  * @author Julien Roch
  *
  */
@@ -33,21 +33,41 @@ public class KMeansClustering extends BaseClusteringAlgorithm {
     private static final long serialVersionUID = 8476951388145944776L;
 
 
-
+    /**
+     *
+     * @param clusteringStrategy
+     */
     protected KMeansClustering(ClusteringStrategy clusteringStrategy) {
         super(clusteringStrategy);
     }
 
 
-
+    /**
+     * Setup a kmeans instance
+     * @param clusterCount the number of clusters
+     * @param maxIterationCount the max number of iterations
+     *                          to run kmeans
+     * @param distanceFunction the distance function to use for grouping
+     * @return
+     */
     public static KMeansClustering setup(int clusterCount, int maxIterationCount, String distanceFunction) {
         ClusteringStrategy clusteringStrategy = FixedClusterCountStrategy.setup(clusterCount, distanceFunction);
         clusteringStrategy.endWhenIterationCountEquals(maxIterationCount);
         return new KMeansClustering(clusteringStrategy);
     }
 
-    public static KMeansClustering setup(int clusterCount, double minDistributionVariationRate, String distanceFunction,
-                    boolean allowEmptyClusters) {
+    /**
+     *
+     * @param clusterCount
+     * @param minDistributionVariationRate
+     * @param distanceFunction
+     * @param allowEmptyClusters
+     * @return
+     */
+    public static KMeansClustering setup(int clusterCount,
+                                         double minDistributionVariationRate,
+                                         String distanceFunction,
+                                         boolean allowEmptyClusters) {
         ClusteringStrategy clusteringStrategy = FixedClusterCountStrategy.setup(clusterCount, distanceFunction);
         clusteringStrategy.endWhenDistributionVariationRateLessThan(minDistributionVariationRate);
         return new KMeansClustering(clusteringStrategy);
