@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.Atan2Op;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -62,6 +63,17 @@ public class Transforms {
      */
     public static double manhattanDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
         return d1.distance1(d2);
+    }
+
+    /**
+     * Atan2 operation, new INDArray instance will be returned
+     *
+     * @param x
+     * @param y
+     * @return
+     */
+    public static INDArray atan2(@NonNull INDArray x, @NonNull INDArray y) {
+        return Nd4j.getExecutioner().execAndReturn(new Atan2Op(x, y, Nd4j.createUninitialized(x.shape(), x.ordering())));
     }
 
     /**
