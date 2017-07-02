@@ -4358,7 +4358,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     public void testAtan2_1() throws Exception {
         INDArray x = Nd4j.create(10).assign(-1.0);
         INDArray y = Nd4j.create(10).assign(0.0);
-        INDArray exp = Nd4j.create(10).assign(-Math.PI / 2);
+        INDArray exp = Nd4j.create(10).assign(Math.PI);
 
         INDArray z = Transforms.atan2(x, y);
 
@@ -4368,8 +4368,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testAtan2_2() throws Exception {
-        INDArray x = Nd4j.create(10).assign(0.0);
-        INDArray y = Nd4j.create(10).assign(1.0);
+        INDArray x = Nd4j.create(10).assign(1.0);
+        INDArray y = Nd4j.create(10).assign(0.0);
         INDArray exp = Nd4j.create(10).assign(0.0);
 
         INDArray z = Transforms.atan2(x, y);
