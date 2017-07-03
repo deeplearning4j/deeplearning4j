@@ -311,9 +311,13 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         // we're going to check, if that's TAD vs TAD comparison or TAD vs full array. if later - we're going slightly different route
         boolean tvf = false;
-        if (op.y() != null)
-            if (op.x().tensorAlongDimension(0, dimension).lengthLong() == op.y().lengthLong())
+        if (op.y() != null) {
+            if (op.x().tensorAlongDimension(0, dimension).lengthLong() == op.y().lengthLong()) {
                 tvf = true;
+            } else if (op.y().lengthLong() != op.x().lengthLong()) {
+                throw new ND4JIllegalStateException("Op.X [" + op.x().lengthLong() + "] and Op.Y [" + op.y().lengthLong() + "] lengths should match");
+            }
+        }
 
         /**
          * This is a pointer to a pointer in c.

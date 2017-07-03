@@ -58,6 +58,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -4334,6 +4335,17 @@ public class Nd4jTestsC extends BaseNd4jTest {
             double res = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(initial.getRow(i).dup(), needle)).getFinalResult().doubleValue();
             assertEquals("Failed at " + i, reduced.getDouble(i), res, 0.001);
         }
+    }
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testTadReduce3_5() throws Exception {
+        INDArray initial = Nd4j.create(5, 10);
+        for (int i = 0; i < initial.rows(); i++) {
+            initial.getRow(i).assign(i+1);
+        }
+        INDArray needle = Nd4j.create(2, 10).assign(1.0);
+        INDArray reduced = Nd4j.getExecutioner().exec(new EuclideanDistance(initial, needle), 1);
+
     }
 
     @Test
