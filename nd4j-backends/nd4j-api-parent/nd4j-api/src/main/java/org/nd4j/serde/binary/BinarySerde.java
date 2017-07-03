@@ -9,8 +9,13 @@ import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.FileChannel;
 
 /**
  * Created by agibsonccc on 7/1/17.
@@ -226,8 +231,37 @@ public class BinarySerde {
     }
 
 
+    /**
+     * Write an ndarray to disk in
+     * binary format
+     * @param arr the array to write
+     * @param toWrite the file tow rite to
+     * @throws IOException
+     */
+    public static void writeArrayToDisk(INDArray arr,File toWrite) throws IOException {
+        try(FileOutputStream os = new FileOutputStream(toWrite)) {
+            FileChannel channel = os.getChannel();
+            ByteBuffer buffer = BinarySerde.toByteBuffer(arr);
+            channel.write(buffer);
+        }
+    }
 
 
+    /**
+     * Read an ndarray from disk
+     * @param readFrom
+     * @return
+     * @throws IOException
+     */
+    public static INDArray readFromDisk(File readFrom) throws IOException {
+        try(FileInputStream os = new FileInputStream(readFrom)) {
+            FileChannel channel = os.getChannel();
+            ByteBuffer buffer = ByteBuffer.allocateDirect((int) readFrom.length());
+            channel.read(buffer);
+            INDArray ret = toArray(buffer);
+            return ret;
+        }
+    }
 
 
 }
