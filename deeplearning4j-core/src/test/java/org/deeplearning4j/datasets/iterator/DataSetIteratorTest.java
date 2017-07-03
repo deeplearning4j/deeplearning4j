@@ -209,7 +209,7 @@ public class DataSetIteratorTest {
 
         model.fit(cifar);
 
-        cifar.test(10);
+        cifar = new CifarDataSetIterator(batchSize, 10, false);
         Evaluation eval = new Evaluation(cifar.getLabels());
         while (cifar.hasNext()) {
             DataSet testDS = cifar.next(batchSize);
