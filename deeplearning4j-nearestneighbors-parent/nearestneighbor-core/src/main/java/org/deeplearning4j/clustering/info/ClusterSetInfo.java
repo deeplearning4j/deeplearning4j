@@ -36,21 +36,35 @@ public class ClusterSetInfo implements Serializable {
     private Table<String, String, Double> distancesBetweenClustersCenters = HashBasedTable.create();
     private AtomicInteger pointLocationChange;
     private boolean threadSafe;
+    private boolean inverse;
 
-    public ClusterSetInfo() {
-        this(false);
+    public ClusterSetInfo(boolean inverse) {
+        this(inverse,false);
     }
 
-    public ClusterSetInfo(boolean threadSafe) {
+    /**
+     *
+     * @param inverse
+     * @param threadSafe
+     */
+    public ClusterSetInfo(boolean inverse,boolean threadSafe) {
         this.pointLocationChange = new AtomicInteger(0);
         this.threadSafe = threadSafe;
+        this.inverse = inverse;
         if (threadSafe) {
             clustersInfos = Collections.synchronizedMap(clustersInfos);
         }
     }
 
+
+    /**
+     *
+     * @param clusterSet
+     * @param threadSafe
+     * @return
+     */
     public static ClusterSetInfo initialize(ClusterSet clusterSet, boolean threadSafe) {
-        ClusterSetInfo info = new ClusterSetInfo();
+        ClusterSetInfo info = new ClusterSetInfo(clusterSet.isInverse(),threadSafe);
         for (int i = 0, j = clusterSet.getClusterCount(); i < j; i++)
             info.addClusterInfo(clusterSet.getClusters().get(i).getId());
         return info;
@@ -63,7 +77,7 @@ public class ClusterSetInfo implements Serializable {
     }
 
     public ClusterInfo addClusterInfo(String clusterId) {
-        ClusterInfo clusterInfo = new ClusterInfo(threadSafe);
+        ClusterInfo clusterInfo = new ClusterInfo(this.threadSafe);
         clustersInfos.put(clusterId, clusterInfo);
         return clusterInfo;
     }

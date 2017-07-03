@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.clustering.algorithm;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.clustering.cluster.Cluster;
@@ -51,6 +53,7 @@ import java.util.concurrent.ExecutorService;
  *
  */
 @Slf4j
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializable {
 
     private static final long serialVersionUID = 338231277453149972L;
@@ -63,9 +66,6 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
     private transient ExecutorService exec;
 
 
-    protected BaseClusteringAlgorithm() {
-        // no-op for serialization only
-    }
 
     protected BaseClusteringAlgorithm(ClusteringStrategy clusteringStrategy) {
         this.clusteringStrategy = clusteringStrategy;
@@ -141,7 +141,7 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
 
         //Initialize the ClusterSet with a single cluster center (based on position of one of the points chosen randomly)
         Random random = new Random();
-        clusterSet = new ClusterSet(clusteringStrategy.getDistanceFunction());
+        clusterSet = new ClusterSet(clusteringStrategy.getDistanceFunction(),clusteringStrategy.inverseDistanceCalculation());
         clusterSet.addNewClusterWithCenter(points.remove(random.nextInt(points.size())));
         int initialClusterCount = clusteringStrategy.getInitialClusterCount();
 
@@ -152,7 +152,8 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
 
         //Generate the initial cluster centers, by randomly selecting a point between 0 and max distance
         //Thus, we are more likely to select (as a new cluster center) a point that is far from an existing cluster
-        while (clusterSet.getClusterCount() < initialClusterCount && !points.isEmpty()) {
+        while (clusterSet.getClusterCount() < initialClusterCount &&
+                !points.isEmpty()) {
             dxs = ClusterUtils.computeSquareDistancesFromNearestCluster(clusterSet, points, dxs, exec);
             double r = random.nextFloat() * dxs.maxNumber().doubleValue();
             for (int i = 0; i < dxs.length(); i++) {

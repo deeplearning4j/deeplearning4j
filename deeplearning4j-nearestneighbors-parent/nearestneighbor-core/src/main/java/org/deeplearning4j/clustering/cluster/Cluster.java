@@ -91,10 +91,18 @@ public class Cluster implements Serializable {
      */
     public void addPoint(Point point, boolean moveClusterCenter) {
         if (moveClusterCenter) {
-            center.getArray()
-                    .muli(points.size())
-                    .addi(point.getArray())
-                    .divi(points.size() + 1);
+           if(isInverse()) {
+               center.getArray()
+                       .muli(points.size())
+                       .subi(point.getArray())
+                       .divi(points.size() + 1);
+           }
+           else {
+               center.getArray()
+                       .muli(points.size())
+                       .addi(point.getArray())
+                       .divi(points.size() + 1);
+           }
         }
 
         getPoints().add(point);

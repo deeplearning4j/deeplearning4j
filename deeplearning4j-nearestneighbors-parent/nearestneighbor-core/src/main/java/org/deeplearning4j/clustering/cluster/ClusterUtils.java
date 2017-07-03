@@ -109,6 +109,10 @@ public class ClusterUtils {
         cluster.setCenter(center);
     }
 
+    /**
+     *
+     * @param info
+     */
     public static void deriveClusterInfoDistanceStatistics(ClusterInfo info) {
         int pointCount = info.getPointDistancesFromCenter().size();
         if (pointCount == 0)
@@ -117,17 +121,26 @@ public class ClusterUtils {
         double[] distances =
                 ArrayUtils.toPrimitive(
                         info.getPointDistancesFromCenter().values().toArray(new Double[] {}));
-        double max = MathUtils.max(distances);
+        double max = info.isInverse() ? MathUtils.min(distances) : MathUtils.max(distances);
         double total = MathUtils.sum(distances);
-
         info.setMaxPointDistanceFromCenter(max);
         info.setTotalPointDistanceFromCenter(total);
         info.setAveragePointDistanceFromCenter(total / pointCount);
         info.setPointDistanceFromCenterVariance(MathUtils.variance(distances));
     }
 
+    /**
+     *
+     * @param clusterSet
+     * @param points
+     * @param previousDxs
+     * @param executorService
+     * @return
+     */
     public static INDArray computeSquareDistancesFromNearestCluster(final ClusterSet clusterSet,
-                                                                    final List<Point> points, INDArray previousDxs, ExecutorService executorService) {
+                                                                    final List<Point> points,
+                                                                    INDArray previousDxs,
+                                                                    ExecutorService executorService) {
         final int pointsCount = points.size();
         final INDArray dxs = Nd4j.create(pointsCount);
         final Cluster newCluster = clusterSet.getClusters().get(clusterSet.getClusters().size() - 1);
@@ -138,22 +151,35 @@ public class ClusterUtils {
             tasks.add(new Runnable() {
                 public void run() {
                     Point point = points.get(i2);
-                    dxs.putScalar(i2, Math.pow(newCluster.getDistanceToCenter(point), 2));
+                    double dist = clusterSet.isInverse()? newCluster.getDistanceToCenter(
+                            point) : Math.pow(newCluster.getDistanceToCenter(
+                            point), 2);
+                    dxs.putScalar(i2, clusterSet.isInverse() ? dist : dist);
                 }
             });
 
         }
+
         MultiThreadUtils.parallelTasks(tasks, executorService);
 
         for (int i = 0; i < pointsCount; i++) {
             double previousMinDistance = previousDxs.getDouble(i);
-            if (dxs.getDouble(i) > previousMinDistance)
+            if(clusterSet.isInverse()) {
+                if (dxs.getDouble(i) < previousMinDistance)
+                    dxs.putScalar(i, previousMinDistance);
+            }
+            else if (dxs.getDouble(i) > previousMinDistance)
                 dxs.putScalar(i, previousMinDistance);
         }
 
         return dxs;
     }
 
+    /**
+     *
+     * @param clusterSet
+     * @return
+     */
     public static ClusterSetInfo computeClusterSetInfo(ClusterSet clusterSet) {
         ExecutorService executor = MultiThreadUtils.newExecutorService();
         ClusterSetInfo info = computeClusterSetInfo(clusterSet, executor);
@@ -162,7 +188,7 @@ public class ClusterUtils {
     }
 
     public static ClusterSetInfo computeClusterSetInfo(final ClusterSet clusterSet, ExecutorService executorService) {
-        final ClusterSetInfo info = new ClusterSetInfo(true);
+        final ClusterSetInfo info = new ClusterSetInfo(clusterSet.isInverse(),true);
         int clusterCount = clusterSet.getClusterCount();
 
         List<Runnable> tasks = new ArrayList<>();
@@ -176,6 +202,8 @@ public class ClusterUtils {
                 }
             });
         }
+
+
         MultiThreadUtils.parallelTasks(tasks, executorService);
 
         tasks = new ArrayList<>();
@@ -193,7 +221,8 @@ public class ClusterUtils {
                                             fromCluster.getCenter().getArray(),
                                             toCluster.getCenter().getArray()))
                                     .getFinalResult().doubleValue();
-                            info.getDistancesBetweenClustersCenters().put(fromCluster.getId(), toCluster.getId(),
+                            info.getDistancesBetweenClustersCenters().put(
+                                    fromCluster.getId(), toCluster.getId(),
                                     distance);
                         }
                     } catch (Exception e) {
@@ -217,18 +246,21 @@ public class ClusterUtils {
      * @return
      */
     public static ClusterInfo computeClusterInfos(Cluster cluster, String distanceFunction) {
-        ClusterInfo info = new ClusterInfo(true);
+        ClusterInfo info = new ClusterInfo(cluster.isInverse(),true);
         for (int i = 0, j = cluster.getPoints().size(); i < j; i++) {
             Point point = cluster.getPoints().get(i);
             //shouldn't need to inverse here. other parts of
             //the code should interpret the "distance" or score here
             double distance = Nd4j.getExecutioner()
                     .execAndReturn(Nd4j.getOpFactory().createAccum(distanceFunction,
-                            cluster.getCenter().getArray(), point.getArray()))
+                            cluster.getCenter().getArray(),
+                            point.getArray()))
                     .getFinalResult().doubleValue();
             info.getPointDistancesFromCenter().put(point.getId(), distance);
-            info.setTotalPointDistanceFromCenter(info.getTotalPointDistanceFromCenter() + distance);
+            double diff = info.getTotalPointDistanceFromCenter() + distance;
+            info.setTotalPointDistanceFromCenter(diff);
         }
+
         if (!cluster.getPoints().isEmpty())
             info.setAveragePointDistanceFromCenter(info.getTotalPointDistanceFromCenter() / cluster.getPoints().size());
         return info;
@@ -262,6 +294,13 @@ public class ClusterUtils {
         return false;
     }
 
+    /**
+     *
+     * @param clusterSet
+     * @param info
+     * @param count
+     * @return
+     */
     public static List<Cluster> getMostSpreadOutClusters(final ClusterSet clusterSet, final ClusterSetInfo info,
                                                          int count) {
         List<Cluster> clusters = new ArrayList<>(clusterSet.getClusters());
@@ -270,9 +309,10 @@ public class ClusterUtils {
                 Double o1TotalDistance = info.getClusterInfo(o1.getId()).getTotalPointDistanceFromCenter();
                 Double o2TotalDistance = info.getClusterInfo(o2.getId()).getTotalPointDistanceFromCenter();
                 int comp = o1TotalDistance.compareTo(o2TotalDistance);
-                return !inverse ? -comp : comp;
+                return !clusterSet.getClusters().get(0).isInverse() ? -comp : comp;
             }
         });
+
         return clusters.subList(0, count);
     }
 
@@ -288,8 +328,19 @@ public class ClusterUtils {
         List<Cluster> clusters = new ArrayList<>();
         for (Cluster cluster : clusterSet.getClusters()) {
             ClusterInfo clusterInfo = info.getClusterInfo(cluster.getId());
-            if (clusterInfo != null && clusterInfo.getAveragePointDistanceFromCenter() > maximumAverageDistance)
-                clusters.add(cluster);
+            if(clusterInfo != null) {
+                //distances
+                if(clusterInfo.isInverse()) {
+                    if (clusterInfo.getAveragePointDistanceFromCenter() < maximumAverageDistance)
+                        clusters.add(cluster);
+                }
+                else {
+                    if (clusterInfo.getAveragePointDistanceFromCenter() > maximumAverageDistance)
+                        clusters.add(cluster);
+                }
+
+            }
+
         }
         return clusters;
     }
@@ -306,8 +357,15 @@ public class ClusterUtils {
         List<Cluster> clusters = new ArrayList<>();
         for (Cluster cluster : clusterSet.getClusters()) {
             ClusterInfo clusterInfo = info.getClusterInfo(cluster.getId());
-            if (clusterInfo != null && clusterInfo.getMaxPointDistanceFromCenter() > maximumDistance)
-                clusters.add(cluster);
+            if(clusterInfo != null) {
+                if(clusterInfo.isInverse() && clusterInfo.getMaxPointDistanceFromCenter() < maximumDistance) {
+                    clusters.add(cluster);
+                }
+                else if(clusterInfo.getMaxPointDistanceFromCenter() > maximumDistance) {
+                    clusters.add(cluster);
+
+                }
+            }
         }
         return clusters;
     }
@@ -327,11 +385,23 @@ public class ClusterUtils {
         return clustersToSplit.size();
     }
 
+    /**
+     *
+     * @param clusterSet
+     * @param clusterSetInfo
+     * @param maxWithinClusterDistance
+     * @param executorService
+     * @return
+     */
     public static int splitClustersWhereAverageDistanceFromCenterGreaterThan(ClusterSet clusterSet,
                                                                              ClusterSetInfo clusterSetInfo, double maxWithinClusterDistance, ExecutorService executorService) {
         List<Cluster> clustersToSplit = getClustersWhereAverageDistanceFromCenterGreaterThan(clusterSet, clusterSetInfo,
                 maxWithinClusterDistance);
-        splitClusters(clusterSet, clusterSetInfo, clustersToSplit, maxWithinClusterDistance, executorService);
+        splitClusters(clusterSet,
+                clusterSetInfo,
+                clustersToSplit,
+                maxWithinClusterDistance,
+                executorService);
         return clustersToSplit.size();
     }
 
@@ -372,8 +442,11 @@ public class ClusterUtils {
      * @param maxDistance
      * @param executorService
      */
-    public static void splitClusters(final ClusterSet clusterSet, final ClusterSetInfo clusterSetInfo,
-                                     List<Cluster> clusters, final double maxDistance, ExecutorService executorService) {
+    public static void splitClusters(final ClusterSet clusterSet,
+                                     final ClusterSetInfo clusterSetInfo,
+                                     List<Cluster> clusters,
+                                     final double maxDistance,
+                                     ExecutorService executorService) {
         final Random random = new Random();
         List<Runnable> tasks = new ArrayList<>();
         for (final Cluster cluster : clusters) {
@@ -415,7 +488,7 @@ public class ClusterUtils {
                 }
             });
         }
-        
+
         MultiThreadUtils.parallelTasks(tasks, executorService);
     }
 }

@@ -76,8 +76,7 @@ public class KMeansClustering extends BaseClusteringAlgorithm {
                                          boolean inverse,
                                          boolean allowEmptyClusters) {
         ClusteringStrategy clusteringStrategy = FixedClusterCountStrategy.setup(clusterCount,
-                distanceFunction,inverse);
-        clusteringStrategy.endWhenDistributionVariationRateLessThan(minDistributionVariationRate);
+                distanceFunction,inverse).endWhenDistributionVariationRateLessThan(minDistributionVariationRate);
         return new KMeansClustering(clusteringStrategy);
     }
 

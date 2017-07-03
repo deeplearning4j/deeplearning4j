@@ -25,7 +25,6 @@ import org.deeplearning4j.clustering.condition.FixedIterationCountCondition;
 
 import java.io.Serializable;
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
-@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class BaseClusteringStrategy implements ClusteringStrategy, Serializable {
     @Getter(AccessLevel.PUBLIC)
@@ -62,6 +61,10 @@ public abstract class BaseClusteringStrategy implements ClusteringStrategy, Seri
         this.inverse = inverse;
     }
 
+    public BaseClusteringStrategy(ClusteringStrategyType clusteringStrategyType, int initialClusterCount, String distanceFunction, boolean inverse) {
+           this(clusteringStrategyType,initialClusterCount,distanceFunction,false,inverse);
+    }
+
 
     /**
      *
@@ -81,6 +84,14 @@ public abstract class BaseClusteringStrategy implements ClusteringStrategy, Seri
     public BaseClusteringStrategy endWhenDistributionVariationRateLessThan(double rate) {
         setTerminationCondition(ConvergenceCondition.distributionVariationRateLessThan(rate));
         return this;
+    }
+
+    /**
+     * @return
+     */
+    @Override
+    public boolean inverseDistanceCalculation() {
+        return inverse;
     }
 
     /**

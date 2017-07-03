@@ -27,7 +27,6 @@ import org.deeplearning4j.clustering.iteration.IterationHistory;
  */
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class FixedClusterCountStrategy extends BaseClusteringStrategy {
-    public static int defaultIterationCount = 100;
 
 
     protected FixedClusterCountStrategy(Integer initialClusterCount,
@@ -58,7 +57,7 @@ public class FixedClusterCountStrategy extends BaseClusteringStrategy {
      */
     @Override
     public boolean inverseDistanceCalculation() {
-        return false;
+        return inverse;
     }
 
     public boolean isOptimizationDefined() {
