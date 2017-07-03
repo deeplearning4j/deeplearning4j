@@ -48,43 +48,42 @@ import static org.bytedeco.javacpp.opencv_imgproc.COLOR_BGR2YCrCb;
  * https://github.com/szagoruyko/cifar.torch
  */
 public class CifarLoader extends NativeImageLoader implements Serializable {
-    public final static int NUM_TRAIN_IMAGES = 50000;
-    public final static int NUM_TEST_IMAGES = 10000;
-    public final static int NUM_LABELS = 10; // Note 6000 imgs per class
-    public final static int HEIGHT = 32;
-    public final static int WIDTH = 32;
-    public final static int CHANNELS = 3;
-    public final static int BYTEFILELEN = 3073;
+    public static final int NUM_TRAIN_IMAGES = 50000;
+    public static final int NUM_TEST_IMAGES = 10000;
+    public static final int NUM_LABELS = 10; // Note 6000 imgs per class
+    public static final int HEIGHT = 32;
+    public static final int WIDTH = 32;
+    public static final int CHANNELS = 3;
+    public static final boolean DEFAULT_USE_SPECIAL_PREPROC = false;
+    public static final boolean DEFAULT_SHUFFLE = true;
 
-    public static String dataBinUrl = "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz";
-    public static String localDir = "cifar";
-    public static String dataBinFile = "cifar-10-batches-bin";
-    public static File fullDir = new File(BASE_DIR, FilenameUtils.concat(localDir, dataBinFile));
-    public static File meanVarPath = new File(fullDir, "meanVarPath.txt");
+    private static final int BYTEFILELEN = 3073;
+    private static final String[] TRAINFILENAMES =
+            {"data_batch_1.bin", "data_batch_2.bin", "data_batch_3.bin", "data_batch_4.bin", "data_batch5.bin"};
+    private static final String TESTFILENAME = "test_batch.bin";
+    private static final String dataBinUrl = "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz";
+    private static final String localDir = "cifar";
+    private static final String dataBinFile = "cifar-10-batches-bin";
+    private static final String labelFileName = "batches.meta.txt";
+    private static final int numToConvertDS = 10000; // Each file is 10000 images, limiting for file preprocess load
 
-    protected static String labelFileName = "batches.meta.txt";
-    protected static InputStream inputStream;
-    protected static InputStream trainInputStream;
-    protected static InputStream testInputStream;
-    protected static List<DataSet> inputBatched;
-    protected static List<String> labels = new ArrayList<>();
+    protected final File fullDir;
+    protected final File meanVarPath;
+    protected final String trainFilesSerialized;
+    protected final String testFilesSerialized;
 
-    public static String[] TRAINFILENAMES =
-                    {"data_batch_1.bin", "data_batch_2.bin", "data_batch_3.bin", "data_batch_4.bin", "data_batch5.bin"};
-    public static String TESTFILENAME = "test_batch.bin";
-    protected static String trainFilesSerialized = FilenameUtils.concat(fullDir.toString(), "cifar_train_serialized");
-    protected static String testFilesSerialized = FilenameUtils.concat(fullDir.toString(), "cifar_test_serialized.ser");
-    protected static boolean train = true;
-    public static boolean useSpecialPreProcessCifar = false;
+    protected InputStream inputStream;
+    protected InputStream trainInputStream;
+    protected InputStream testInputStream;
+    protected List<String> labels = new ArrayList<>();
     public static Map<String, String> cifarDataMap = new HashMap<>();
 
-    protected static int height = HEIGHT;
-    protected static int width = WIDTH;
-    protected static int channels = CHANNELS;
-    protected static long seed = System.currentTimeMillis();
-    protected static boolean shuffle = true;
+
+    protected boolean train;
+    protected boolean useSpecialPreProcessCifar;
+    protected long seed;
+    protected boolean shuffle = true;
     protected int numExamples = 0;
-    protected static int numToConvertDS = 10000; // Each file is 10000 images, limiting for file preprocess load
     protected double uMean = 0;
     protected double uStd = 0;
     protected double vMean = 0;
@@ -94,43 +93,56 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     protected DataSet loadDS = new DataSet();
     protected int fileNum = 0;
 
+    private static File getDefaultDirectory(){
+        return new File(BASE_DIR, FilenameUtils.concat(localDir, dataBinFile));
+    }
+
     public CifarLoader() {
-        this(height, width, channels, null, train, useSpecialPreProcessCifar, fullDir, seed, shuffle);
+        this(true);
     }
 
     public CifarLoader(boolean train) {
-        this(height, width, channels, null, train, useSpecialPreProcessCifar, fullDir, seed, shuffle);
+        this(train, null);
     }
 
     public CifarLoader(boolean train, File fullPath) {
-        this(height, width, channels, null, train, useSpecialPreProcessCifar, fullPath, seed, shuffle);
+        this(HEIGHT, WIDTH, CHANNELS, null, train, DEFAULT_USE_SPECIAL_PREPROC, fullPath, System.currentTimeMillis(), DEFAULT_SHUFFLE);
     }
 
     public CifarLoader(int height, int width, int channels, boolean train, boolean useSpecialPreProcessCifar) {
-        this(height, width, channels, null, train, useSpecialPreProcessCifar, fullDir, seed, shuffle);
+        this(height, width, channels, null, train, useSpecialPreProcessCifar);
     }
 
     public CifarLoader(int height, int width, int channels, ImageTransform imgTransform, boolean train,
                     boolean useSpecialPreProcessCifar) {
-        this(height, width, channels, imgTransform, train, useSpecialPreProcessCifar, fullDir, seed, shuffle);
+        this(height, width, channels, imgTransform, train, useSpecialPreProcessCifar, DEFAULT_SHUFFLE);
     }
 
     public CifarLoader(int height, int width, int channels, ImageTransform imgTransform, boolean train,
                     boolean useSpecialPreProcessCifar, boolean shuffle) {
-        this(height, width, channels, imgTransform, train, useSpecialPreProcessCifar, fullDir, seed, shuffle);
+        this(height, width, channels, imgTransform, train, useSpecialPreProcessCifar, null, System.currentTimeMillis(), shuffle);
     }
 
     public CifarLoader(int height, int width, int channels, ImageTransform imgTransform, boolean train,
-                    boolean useSpecialPreProcessCifar, File fullPath, long seed, boolean shuffle) {
+                    boolean useSpecialPreProcessCifar, File fullDir, long seed, boolean shuffle) {
         super(height, width, channels, imgTransform);
         this.height = height;
         this.width = width;
         this.channels = channels;
         this.train = train;
         this.useSpecialPreProcessCifar = useSpecialPreProcessCifar;
-        this.fullDir = fullPath;
         this.seed = seed;
         this.shuffle = shuffle;
+
+        if(fullDir == null){
+            this.fullDir = getDefaultDirectory();
+        } else {
+            this.fullDir = fullDir;
+        }
+        meanVarPath = new File(this.fullDir, "meanVarPath.txt");
+        trainFilesSerialized = FilenameUtils.concat(this.fullDir.toString(), "cifar_train_serialized");
+        testFilesSerialized = FilenameUtils.concat(this.fullDir.toString(), "cifar_test_serialized.ser");
+
         load();
     }
 
@@ -156,7 +168,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         throw new UnsupportedOperationException();
     }
 
-    public void generateMaps() {
+    protected void generateMaps() {
         cifarDataMap.put("filesFilename", new File(dataBinUrl).getName());
         cifarDataMap.put("filesURL", dataBinUrl);
         cifarDataMap.put("filesFilenameUnzipped", dataBinFile);
@@ -176,12 +188,12 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         }
     }
 
-    public void load() {
+    protected void load() {
         if (!cifarRawFilesExist() && !fullDir.exists()) {
             generateMaps();
             fullDir.mkdir();
 
-            log.info("Downloading {}...", localDir);
+            log.info("Downloading CIFAR data set");
             downloadAndUntar(cifarDataMap, new File(BASE_DIR, localDir));
         }
         try {
@@ -196,7 +208,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
             }
             testInputStream = new FileInputStream(new File(fullDir, TESTFILENAME));
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
 
         if (labels.isEmpty())
@@ -219,7 +231,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         setInputStream();
     }
 
-    public boolean cifarRawFilesExist() {
+    private boolean cifarRawFilesExist() {
         File f = new File(fullDir, TESTFILENAME);
         if (!f.exists())
             return false;
@@ -445,19 +457,6 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         numExamples = 0;
         fileNum = 0;
         load();
-    }
-
-    public void train() {
-        train = true;
-        setInputStream();
-    }
-
-    public void test() {
-        train = false;
-        setInputStream();
-        shuffle = false;
-        numExamples = 0;
-        fileNum = 0;
     }
 
 }
