@@ -11,9 +11,9 @@ import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.UniformDistribution;
-import org.deeplearning4j.nn.conf.graph.LayerVertex;
-import org.deeplearning4j.nn.conf.graph.MergeVertex;
-import org.deeplearning4j.nn.conf.graph.SubsetVertex;
+import org.deeplearning4j.nn.conf.graph.*;
+import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
+import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
@@ -1024,5 +1024,51 @@ public class TestComputationGraphNetwork {
         cg.setLabels(l);
 
         cg.computeGradientAndScore();
+    }
+
+
+    @Test
+    public void testMergeVertexAddition(){
+
+        //When a vertex supports only one input, and gets multiple inputs - we should automatically add a merge
+        //vertex
+
+        NeuralNetConfiguration nnc = new NeuralNetConfiguration();
+        nnc.setLayer(new DenseLayer.Builder().build());
+        GraphVertex[] singleInputVertices = new GraphVertex[]{
+                new L2NormalizeVertex(),
+                new LayerVertex( nnc, null),
+                new PoolHelperVertex(),
+                new PreprocessorVertex(),
+                new ReshapeVertex(new int[]{1,1}),
+                new ScaleVertex(1.0),
+                new ShiftVertex(1.0),
+                new SubsetVertex(1,1),
+                new UnstackVertex(0,2),
+                new DuplicateToTimeSeriesVertex("in1"),
+                new LastTimeStepVertex("in1")
+        };
+
+        for(GraphVertex gv : singleInputVertices){
+            ComputationGraphConfiguration c = new NeuralNetConfiguration.Builder()
+                    .graphBuilder()
+                    .addInputs("in1","in2")
+                    .addVertex("gv", gv, "in1", "in2")
+                    .setOutputs("gv")
+                    .build();
+
+            boolean foundMerge = false;
+            for(GraphVertex g : c.getVertices().values()){
+                if(g instanceof MergeVertex){
+                    foundMerge = true;
+                    break;
+                }
+            }
+
+            if(!foundMerge){
+                fail("Network did not add merge vertex for vertex " + gv.getClass());
+            }
+        }
+
     }
 }

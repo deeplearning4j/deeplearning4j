@@ -581,17 +581,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                         String... layerInputs) {
             NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
             builder.layer(layer);
-            vertices.put(layerName, new LayerVertex(builder.build(), preProcessor));
-
-            //Automatically insert a MergeNode if layerInputs.length > 1
-            //Layers can only have 1 input
-            if (layerInputs != null && layerInputs.length > 1) {
-                String mergeName = layerName + "-merge";
-                addVertex(mergeName, new MergeVertex(), layerInputs);
-                this.vertexInputs.put(layerName, Collections.singletonList(mergeName));
-            } else if (layerInputs != null) {
-                this.vertexInputs.put(layerName, Arrays.asList(layerInputs));
-            }
+            addVertex(layerName, new LayerVertex(builder.build(), preProcessor), layerInputs);
             layer.setLayerName(layerName);
             return this;
         }
@@ -691,7 +681,15 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          */
         public GraphBuilder addVertex(String vertexName, GraphVertex vertex, String... vertexInputs) {
             vertices.put(vertexName, vertex);
-            this.vertexInputs.put(vertexName, Arrays.asList(vertexInputs));
+
+            //Automatically insert a MergeNode if this vertex can only take 1 input (layer vertices, etc)
+            if (vertex.maxVertexInputs() == 1 && vertexInputs != null && vertexInputs.length > 1) {
+                String mergeName = vertexName + "-merge";
+                addVertex(mergeName, new MergeVertex(), vertexInputs);
+                this.vertexInputs.put(vertexName, Collections.singletonList(mergeName));
+            } else if (vertexInputs != null) {
+                this.vertexInputs.put(vertexName, Arrays.asList(vertexInputs));
+            }
             return this;
         }
 
