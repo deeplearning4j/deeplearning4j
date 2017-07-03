@@ -8,7 +8,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -51,6 +53,16 @@ public class BinarySerdeTest {
         assertEquals(arr, back);
     }
 
+
+    @Test
+    public void testReadWriteFile() throws Exception {
+     File tmpFile = new File(System.getProperty("java.io.tmpdir"),"ndarraytmp-" + UUID.randomUUID().toString() + " .bin");
+        tmpFile.deleteOnExit();
+        INDArray rand = Nd4j.randn(5,5);
+        BinarySerde.writeArrayToDisk(rand,tmpFile);
+        INDArray fromDisk = BinarySerde.readFromDisk(tmpFile);
+        assertEquals(rand,fromDisk);
+    }
 
     @Test
     public void timeOldVsNew() throws Exception {
