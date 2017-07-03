@@ -52,7 +52,7 @@ public class LeNet extends ZooModel {
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
-        if(pretrainedType==PretrainedType.MNIST)
+        if (pretrainedType == PretrainedType.MNIST)
             return "http://blob.deeplearning4j.org/models/lenet_dl4j_mnist_inference.zip";
         else
             return null;
@@ -60,7 +60,7 @@ public class LeNet extends ZooModel {
 
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
-        if(pretrainedType==PretrainedType.MNIST)
+        if (pretrainedType == PretrainedType.MNIST)
             return 3337733202L;
         else
             return 0L;
@@ -77,18 +77,11 @@ public class LeNet extends ZooModel {
     }
 
     public MultiLayerConfiguration conf() {
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .trainingWorkspaceMode(workspaceMode)
-                        .inferenceWorkspaceMode(workspaceMode)
-                        .seed(seed)
-                        .iterations(iterations)
-                        .activation(Activation.IDENTITY)
-                        .weightInit(WeightInit.XAVIER)
-                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                        .updater(new AdaDelta())
-                        .regularization(false)
-                        .convolutionMode(ConvolutionMode.Same)
-                        .list()
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().trainingWorkspaceMode(workspaceMode)
+                        .inferenceWorkspaceMode(workspaceMode).seed(seed).iterations(iterations)
+                        .activation(Activation.IDENTITY).weightInit(WeightInit.XAVIER)
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).updater(new AdaDelta())
+                        .regularization(false).convolutionMode(ConvolutionMode.Same).list()
                         // block 1
                         .layer(0, new ConvolutionLayer.Builder(new int[] {5, 5}, new int[] {1, 1}).name("cnn1")
                                         .nIn(inputShape[0]).nOut(20).activation(Activation.RELU).build())
@@ -102,8 +95,8 @@ public class LeNet extends ZooModel {
                         // fully connected
                         .layer(4, new DenseLayer.Builder().name("ffn1").activation(Activation.RELU).nOut(500).build())
                         // output
-                        .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                        .name("output").nOut(numLabels).activation(Activation.SOFTMAX) // radial basis function required
+                        .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).name("output")
+                                        .nOut(numLabels).activation(Activation.SOFTMAX) // radial basis function required
                                         .build())
                         .setInputType(InputType.convolutionalFlat(inputShape[2], inputShape[1], inputShape[0]))
                         .backprop(true).pretrain(false).build();

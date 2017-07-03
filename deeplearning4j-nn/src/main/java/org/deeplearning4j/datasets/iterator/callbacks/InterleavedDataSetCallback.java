@@ -36,20 +36,16 @@ public class InterleavedDataSetCallback implements DataSetCallback {
     }
 
     protected void initializeWorkspaces(long size) {
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .initialSize(size)
-                .overallocationLimit(bufferSize)
-                .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
-                .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                .policySpill(SpillPolicy.EXTERNAL)
-                .policyLearning(LearningPolicy.NONE)
-                .build();
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(size)
+                        .overallocationLimit(bufferSize).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                        .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.EXTERNAL)
+                        .policyLearning(LearningPolicy.NONE).build();
 
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         int cDevice = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         for (int i = 0; i < numDevices; i++) {
             Nd4j.getAffinityManager().unsafeSetDevice(i);
-            workspaces.add(Nd4j.getWorkspaceManager().createNewWorkspace(configuration,"IDSC-" + i, i));
+            workspaces.add(Nd4j.getWorkspaceManager().createNewWorkspace(configuration, "IDSC-" + i, i));
         }
 
         Nd4j.getAffinityManager().unsafeSetDevice(cDevice);

@@ -18,39 +18,38 @@ import org.ansj.util.Graph;
  */
 public class BaseAnalysis extends Analysis {
 
-	@Override
-	protected List<Term> getResult(final Graph graph) {
-		Merger merger = new Merger() {
-			@Override
-			public List<Term> merger() {
-				graph.walkPath();
-				return getResult();
-			}
+    @Override
+    protected List<Term> getResult(final Graph graph) {
+        Merger merger = new Merger() {
+            @Override
+            public List<Term> merger() {
+                graph.walkPath();
+                return getResult();
+            }
 
-			private List<Term> getResult() {
-				List<Term> result = new ArrayList<Term>();
-				int length = graph.terms.length - 1;
-				for (int i = 0; i < length; i++) {
-					if (graph.terms[i] != null) {
-						result.add(graph.terms[i]);
-					}
-				}
+            private List<Term> getResult() {
+                List<Term> result = new ArrayList<Term>();
+                int length = graph.terms.length - 1;
+                for (int i = 0; i < length; i++) {
+                    if (graph.terms[i] != null) {
+                        result.add(graph.terms[i]);
+                    }
+                }
 
-				setRealName(graph, result);
-				return result;
-			}
-		};
-		return merger.merger();
-	}
+                setRealName(graph, result);
+                return result;
+            }
+        };
+        return merger.merger();
+    }
 
-	public BaseAnalysis() {
-	};
+    public BaseAnalysis() {};
 
-	public BaseAnalysis(Reader reader) {
-		super.resetContent(new AnsjReader(reader));
-	}
+    public BaseAnalysis(Reader reader) {
+        super.resetContent(new AnsjReader(reader));
+    }
 
-	public static Result parse(String str) {
-		return new BaseAnalysis().parseStr(str);
-	}
+    public static Result parse(String str) {
+        return new BaseAnalysis().parseStr(str);
+    }
 }

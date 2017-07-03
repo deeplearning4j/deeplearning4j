@@ -46,7 +46,7 @@ public class LocalFileModelSaver implements EarlyStoppingModelSaver<MultiLayerNe
         this.encoding = encoding;
 
         File dir = new File(directory);
-        if(!dir.exists()){
+        if (!dir.exists()) {
             dir.mkdirs();
         }
     }

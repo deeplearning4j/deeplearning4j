@@ -62,11 +62,12 @@ public class EncodingHandler implements MessageHandler {
             atomicBoundary.compareAndSet(-1, (int) (updates.lengthLong() * boundary));
 
         //return compressor.compress(updates);
-        INDArray encoded = Nd4j.getExecutioner().thresholdEncode(updates, threshold, boundary == null ? null : atomicBoundary.get());
+        INDArray encoded = Nd4j.getExecutioner().thresholdEncode(updates, threshold,
+                        boundary == null ? null : atomicBoundary.get());
 
         //if (encoded != null)
-            //log.info("Encoded length: {}, Original/encoded ratio: {}", encoded.data().length(), String.format("%.3f", encoded.data().length() * 100.0 / updates.lengthLong()));
-            //log.info("Thread: {}; Encoded length: {}", Thread.currentThread().getId(), Arrays.toString(encoded.data().asInt()));
+        //log.info("Encoded length: {}, Original/encoded ratio: {}", encoded.data().length(), String.format("%.3f", encoded.data().length() * 100.0 / updates.lengthLong()));
+        //log.info("Thread: {}; Encoded length: {}", Thread.currentThread().getId(), Arrays.toString(encoded.data().asInt()));
 
         return encoded;
     }
@@ -98,6 +99,7 @@ public class EncodingHandler implements MessageHandler {
         if (message != null) {
             sendMessage(message);
             return true;
-        } else return false;
+        } else
+            return false;
     }
 }

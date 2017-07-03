@@ -45,7 +45,7 @@ public class FancyBlockingQueue<E> implements BlockingQueue<E>, Registerable {
     protected ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
 
-    public FancyBlockingQueue(@NonNull BlockingQueue<E> queue){
+    public FancyBlockingQueue(@NonNull BlockingQueue<E> queue) {
         this(queue, -1);
     }
 

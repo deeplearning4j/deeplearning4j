@@ -21,15 +21,14 @@ public class PrecisionRecallCurve extends BaseCurve {
     private Double area;
 
     public PrecisionRecallCurve(@JsonProperty("threshold") double[] threshold,
-                                @JsonProperty("precision") double[] precision,
-                                @JsonProperty("recall") double[] recall) {
+                    @JsonProperty("precision") double[] precision, @JsonProperty("recall") double[] recall) {
         this.threshold = threshold;
         this.precision = precision;
         this.recall = recall;
     }
 
     @Override
-    public int numPoints(){
+    public int numPoints() {
         return threshold.length;
     }
 
@@ -52,7 +51,7 @@ public class PrecisionRecallCurve extends BaseCurve {
      * @param i Point number, 0 to numPoints()-1 inclusive
      * @return Threshold of a given point
      */
-    public double getThreshold(int i){
+    public double getThreshold(int i) {
         Preconditions.checkArgument(i >= 0 && i < threshold.length, "Invalid index: " + i);
         return threshold[i];
     }
@@ -61,7 +60,7 @@ public class PrecisionRecallCurve extends BaseCurve {
      * @param i Point number, 0 to numPoints()-1 inclusive
      * @return Precision of a given point
      */
-    public double getPrecision(int i){
+    public double getPrecision(int i) {
         Preconditions.checkArgument(i >= 0 && i < precision.length, "Invalid index: " + i);
         return precision[i];
     }
@@ -70,7 +69,7 @@ public class PrecisionRecallCurve extends BaseCurve {
      * @param i Point number, 0 to numPoints()-1 inclusive
      * @return Recall of a given point
      */
-    public double getRecall(int i){
+    public double getRecall(int i) {
         Preconditions.checkArgument(i >= 0 && i < recall.length, "Invalid index: " + i);
         return recall[i];
     }
@@ -78,8 +77,8 @@ public class PrecisionRecallCurve extends BaseCurve {
     /**
      * @return The area under the precision recall curve
      */
-    public double calculateAUPRC(){
-        if(area != null){
+    public double calculateAUPRC() {
+        if (area != null) {
             return area;
         }
 
@@ -87,11 +86,11 @@ public class PrecisionRecallCurve extends BaseCurve {
         return area;
     }
 
-    public static PrecisionRecallCurve fromJson(String json){
+    public static PrecisionRecallCurve fromJson(String json) {
         return fromJson(json, PrecisionRecallCurve.class);
     }
 
-    public static PrecisionRecallCurve fromYaml(String yaml){
+    public static PrecisionRecallCurve fromYaml(String yaml) {
         return fromYaml(yaml, PrecisionRecallCurve.class);
     }
 

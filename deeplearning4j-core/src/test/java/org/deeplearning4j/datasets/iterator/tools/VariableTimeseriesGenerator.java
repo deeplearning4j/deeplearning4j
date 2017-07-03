@@ -31,11 +31,13 @@ public class VariableTimeseriesGenerator implements DataSetIterator {
 
     protected AtomicInteger counter = new AtomicInteger(0);
 
-    public VariableTimeseriesGenerator(long seed, int numBatches, int batchSize, int values, int timestepsMin, int timestepsMax) {
+    public VariableTimeseriesGenerator(long seed, int numBatches, int batchSize, int values, int timestepsMin,
+                    int timestepsMax) {
         this(seed, numBatches, batchSize, values, timestepsMin, timestepsMax, 0);
     }
 
-    public VariableTimeseriesGenerator(long seed, int numBatches, int batchSize, int values, int timestepsMin, int timestepsMax, int firstMaxima) {
+    public VariableTimeseriesGenerator(long seed, int numBatches, int batchSize, int values, int timestepsMin,
+                    int timestepsMax, int firstMaxima) {
         this.rng = new Random(seed);
         this.values = values;
         this.batchSize = batchSize;
@@ -51,7 +53,8 @@ public class VariableTimeseriesGenerator implements DataSetIterator {
 
     @Override
     public DataSet next(int num) {
-        int localMaxima = isFirst && firstMaxima > 0 ? firstMaxima: minTS == maxTS ? minTS : rng.nextInt(maxTS - minTS) + minTS;
+        int localMaxima = isFirst && firstMaxima > 0 ? firstMaxima
+                        : minTS == maxTS ? minTS : rng.nextInt(maxTS - minTS) + minTS;
 
         if (isFirst)
             log.info("Local maxima: {}", localMaxima);
@@ -59,7 +62,7 @@ public class VariableTimeseriesGenerator implements DataSetIterator {
         isFirst = false;
 
 
-        int[] shapeFeatures = new int[]{batchSize, values, localMaxima};
+        int[] shapeFeatures = new int[] {batchSize, values, localMaxima};
         int[] shapeLabels = new int[] {batchSize, 10};
         int[] shapeFMasks = new int[] {batchSize, localMaxima};
         int[] shapeLMasks = new int[] {batchSize, 10};

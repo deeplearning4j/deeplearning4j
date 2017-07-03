@@ -43,7 +43,8 @@ public class DefaultTrainerContext implements TrainerContext {
                     WorkspaceMode mode, int averagingFrequency) {
 
         DefaultTrainer trainer = DefaultTrainer.builder().originalModel(model).replicatedModel(model).threadId(threadId)
-                        .parallelWrapper(wrapper).workspaceMode(mode).useMDS(useMDS).averagingFrequency(averagingFrequency).build();
+                        .parallelWrapper(wrapper).workspaceMode(mode).useMDS(useMDS)
+                        .averagingFrequency(averagingFrequency).build();
 
         trainer.setName("DefaultTrainer thread " + threadId);
         trainer.setDaemon(true);

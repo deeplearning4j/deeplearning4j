@@ -28,9 +28,10 @@ public class ROCBinaryTest {
         int nOut = 4;
         int[] shape = {nExamples, nOut};
 
-        for( int thresholdSteps : new int[]{30, 0}) {   //0 == exact
+        for (int thresholdSteps : new int[] {30, 0}) { //0 == exact
 
-            INDArray labels = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(shape), 0.5));
+            INDArray labels =
+                            Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(shape), 0.5));
 
             INDArray predicted = Nd4j.rand(shape);
             INDArray binaryPredicted = predicted.gt(0.5);
@@ -77,7 +78,7 @@ public class ROCBinaryTest {
 
     @Test
     public void testRocBinaryMerging() {
-        for( int nSteps : new int[]{30, 0}) {   //0 == exact
+        for (int nSteps : new int[] {30, 0}) { //0 == exact
             int nOut = 4;
             int[] shape1 = {30, nOut};
             int[] shape2 = {50, nOut};
@@ -108,21 +109,21 @@ public class ROCBinaryTest {
     @Test
     public void testROCBinaryPerOutputMasking() {
 
-        for( int nSteps : new int[]{30, 0}) {   //0 == exact
+        for (int nSteps : new int[] {30, 0}) { //0 == exact
 
             //Here: we'll create a test array, then insert some 'masked out' values, and ensure we get the same results
-            INDArray mask = Nd4j.create(new double[][]{{1, 1, 1}, {0, 1, 1}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1}});
+            INDArray mask = Nd4j.create(new double[][] {{1, 1, 1}, {0, 1, 1}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1}});
 
-            INDArray labels = Nd4j.create(new double[][]{{0, 1, 0}, {1, 1, 0}, {0, 1, 1}, {0, 0, 1}, {1, 1, 1}});
+            INDArray labels = Nd4j.create(new double[][] {{0, 1, 0}, {1, 1, 0}, {0, 1, 1}, {0, 0, 1}, {1, 1, 1}});
 
             //Remove the 1 masked value for each column
-            INDArray labelsExMasked = Nd4j.create(new double[][]{{0, 1, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 1}});
+            INDArray labelsExMasked = Nd4j.create(new double[][] {{0, 1, 0}, {0, 1, 0}, {0, 0, 1}, {1, 1, 1}});
 
-            INDArray predicted = Nd4j.create(new double[][]{{0.9, 0.4, 0.6}, {0.2, 0.8, 0.4}, {0.6, 0.1, 0.1},
-                    {0.3, 0.7, 0.2}, {0.8, 0.6, 0.6}});
+            INDArray predicted = Nd4j.create(new double[][] {{0.9, 0.4, 0.6}, {0.2, 0.8, 0.4}, {0.6, 0.1, 0.1},
+                            {0.3, 0.7, 0.2}, {0.8, 0.6, 0.6}});
 
-            INDArray predictedExMasked = Nd4j
-                    .create(new double[][]{{0.9, 0.4, 0.6}, {0.6, 0.8, 0.4}, {0.3, 0.7, 0.1}, {0.8, 0.6, 0.6}});
+            INDArray predictedExMasked = Nd4j.create(
+                            new double[][] {{0.9, 0.4, 0.6}, {0.6, 0.8, 0.4}, {0.3, 0.7, 0.1}, {0.8, 0.6, 0.6}});
 
             ROCBinary rbMasked = new ROCBinary(nSteps);
             rbMasked.eval(labels, predicted, mask);

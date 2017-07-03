@@ -62,22 +62,27 @@ public class AsyncDataSetIterator implements DataSetIterator {
     }
 
     public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize, boolean useWorkspace, Integer deviceId) {
-        this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace, new DefaultCallback(), deviceId);
+        this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace, new DefaultCallback(),
+                        deviceId);
     }
 
-    public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize, boolean useWorkspace, DataSetCallback callback) {
+    public AsyncDataSetIterator(DataSetIterator baseIterator, int queueSize, boolean useWorkspace,
+                    DataSetCallback callback) {
         this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace, callback);
     }
 
-    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace) {
+    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue,
+                    boolean useWorkspace) {
         this(iterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace, null);
     }
 
-    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace, DataSetCallback callback) {
+    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue,
+                    boolean useWorkspace, DataSetCallback callback) {
         this(iterator, queueSize, queue, useWorkspace, callback, Nd4j.getAffinityManager().getDeviceForCurrentThread());
     }
 
-    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace, DataSetCallback callback, Integer deviceId) {
+    public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue,
+                    boolean useWorkspace, DataSetCallback callback, Integer deviceId) {
         if (queueSize < 2)
             queueSize = 2;
 
@@ -216,7 +221,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
      *
      * PLEASE NOTE: After shutdown() call, this instance can't be used anymore
      */
-    public void shutdown(){
+    public void shutdown() {
         buffer.clear();
 
         if (thread != null)
@@ -309,7 +314,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
             if (nextElement != null && nextElement != terminator) {
                 return true;
-            } else if(nextElement == terminator)
+            } else if (nextElement == terminator)
                 return false;
 
 
@@ -372,19 +377,16 @@ public class AsyncDataSetIterator implements DataSetIterator {
         private DataSetIterator iterator;
         private DataSet terminator;
         private AtomicBoolean isShutdown = new AtomicBoolean(false);
-        private WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .minSize(10 * 1024L * 1024L)
-                .overallocationLimit(prefetchSize + 1)
-                .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                .policySpill(SpillPolicy.REALLOCATE)
-                .build();
+        private WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().minSize(10 * 1024L * 1024L)
+                        .overallocationLimit(prefetchSize + 1).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                        .policyLearning(LearningPolicy.FIRST_LOOP).policyAllocation(AllocationPolicy.OVERALLOCATE)
+                        .policySpill(SpillPolicy.REALLOCATE).build();
 
         private MemoryWorkspace workspace;
 
 
-        protected AsyncPrefetchThread(@NonNull BlockingQueue<DataSet> queue, @NonNull DataSetIterator iterator, @NonNull DataSet terminator, MemoryWorkspace workspace) {
+        protected AsyncPrefetchThread(@NonNull BlockingQueue<DataSet> queue, @NonNull DataSetIterator iterator,
+                        @NonNull DataSet terminator, MemoryWorkspace workspace) {
             this.queue = queue;
             this.iterator = iterator;
             this.terminator = terminator;
@@ -429,7 +431,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
             } finally {
                 //log.info("Trying destroy...");
                 //if (useWorkspace)
-                    //Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).destroyWorkspace();
+                //Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).destroyWorkspace();
                 isShutdown.set(true);
             }
         }

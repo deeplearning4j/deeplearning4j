@@ -28,7 +28,7 @@ import java.io.Serializable;
  *
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type",
-        defaultImpl = LegacyDistributionHelper.class)
+                defaultImpl = LegacyDistributionHelper.class)
 public abstract class Distribution implements Serializable, Cloneable {
 
     private static final long serialVersionUID = 5401741214954998498L;

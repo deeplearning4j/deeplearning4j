@@ -153,8 +153,9 @@ public class EvaluationTools {
 
             Component headerDivLeft = new ComponentDiv(HEADER_DIV_TEXT_PAD_STYLE);
             Component headerDiv = new ComponentDiv(HEADER_DIV_STYLE, new ComponentText(headerText, HEADER_TEXT_STYLE));
-            Component c = getRocFromPoints(ROC_TITLE, roc, rocMultiClass.getCountActualPositive(i), rocMultiClass.getCountActualNegative(i),
-                            rocMultiClass.calculateAUC(i), rocMultiClass.calculateAUCPR(i));
+            Component c = getRocFromPoints(ROC_TITLE, roc, rocMultiClass.getCountActualPositive(i),
+                            rocMultiClass.getCountActualNegative(i), rocMultiClass.calculateAUC(i),
+                            rocMultiClass.calculateAUCPR(i));
             Component c2 = getPRCharts(PR_TITLE, PR_THRESHOLD_TITLE, rocMultiClass.getPrecisionRecallCurve(i));
             components.add(headerDivLeft);
             components.add(headerDiv);
@@ -170,8 +171,7 @@ public class EvaluationTools {
         double[] zeroOne = new double[] {0.0, 1.0};
 
         ChartLine chartLine = new ChartLine.Builder(title, CHART_STYLE).setXMin(0.0).setXMax(1.0).setYMin(0.0)
-                        .setYMax(1.0).addSeries("ROC", roc.getX(), roc.getY())
-                        .addSeries("", zeroOne, zeroOne).build();
+                        .setYMax(1.0).addSeries("ROC", roc.getX(), roc.getY()).addSeries("", zeroOne, zeroOne).build();
 
         ComponentTable ct = new ComponentTable.Builder(TABLE_STYLE).header("Field", "Value")
                         .content(new String[][] {{"AUROC: Area under ROC:", String.format("%.5f", auc)},
@@ -187,7 +187,7 @@ public class EvaluationTools {
     }
 
     private static Component getPRCharts(String precisionRecallTitle, String prThresholdTitle,
-                                         PrecisionRecallCurve prCurve) {
+                    PrecisionRecallCurve prCurve) {
 
         ComponentDiv divLeft =
                         new ComponentDiv(INNER_DIV_STYLE, getPrecisionRecallCurve(precisionRecallTitle, prCurve));

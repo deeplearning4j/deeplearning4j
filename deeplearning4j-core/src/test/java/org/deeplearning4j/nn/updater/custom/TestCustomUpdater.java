@@ -22,35 +22,26 @@ import static org.junit.Assert.assertTrue;
 public class TestCustomUpdater {
 
     @Test
-    public void testCustomUpdater(){
+    public void testCustomUpdater() {
 
         //Create a simple custom updater, equivalent to SGD updater
 
         double lr = 0.03;
 
         Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .learningRate(lr)
-                .activation(Activation.TANH)
-                .updater(new CustomIUpdater())  //Specify custom IUpdater
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .layer(1, new OutputLayer.Builder().nIn(10).nOut(10)
-                        .lossFunction(LossFunctions.LossFunction.MSE).build())
-                .build();
+        MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder().seed(12345).learningRate(lr)
+                        .activation(Activation.TANH).updater(new CustomIUpdater()) //Specify custom IUpdater
+                        .list().layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                        .layer(1, new OutputLayer.Builder().nIn(10).nOut(10)
+                                        .lossFunction(LossFunctions.LossFunction.MSE).build())
+                        .build();
 
         Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .learningRate(lr)
-                .activation(Activation.TANH)
-                .updater(Updater.SGD)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .layer(1, new OutputLayer.Builder().nIn(10).nOut(10)
-                        .lossFunction(LossFunctions.LossFunction.MSE).build())
-                .build();
+        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().seed(12345).learningRate(lr)
+                        .activation(Activation.TANH).updater(Updater.SGD).list()
+                        .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(1, new OutputLayer.Builder()
+                                        .nIn(10).nOut(10).lossFunction(LossFunctions.LossFunction.MSE).build())
+                        .build();
 
         //First: Check updater config
         assertTrue(conf1.getConf(0).getLayer().getIUpdater() instanceof CustomIUpdater);
@@ -58,13 +49,13 @@ public class TestCustomUpdater {
         assertTrue(conf2.getConf(0).getLayer().getIUpdater() instanceof Sgd);
         assertTrue(conf2.getConf(1).getLayer().getIUpdater() instanceof Sgd);
 
-        CustomIUpdater u0_0 = (CustomIUpdater)conf1.getConf(0).getLayer().getIUpdater();
-        CustomIUpdater u0_1 = (CustomIUpdater)conf1.getConf(1).getLayer().getIUpdater();
+        CustomIUpdater u0_0 = (CustomIUpdater) conf1.getConf(0).getLayer().getIUpdater();
+        CustomIUpdater u0_1 = (CustomIUpdater) conf1.getConf(1).getLayer().getIUpdater();
         assertEquals(lr, u0_0.getLearningRate(), 1e-6);
         assertEquals(lr, u0_1.getLearningRate(), 1e-6);
 
-        Sgd u1_0 = (Sgd)conf2.getConf(0).getLayer().getIUpdater();
-        Sgd u1_1 = (Sgd)conf2.getConf(1).getLayer().getIUpdater();
+        Sgd u1_0 = (Sgd) conf2.getConf(0).getLayer().getIUpdater();
+        Sgd u1_1 = (Sgd) conf2.getConf(1).getLayer().getIUpdater();
         assertEquals(lr, u1_0.getLearningRate(), 1e-6);
         assertEquals(lr, u1_1.getLearningRate(), 1e-6);
 

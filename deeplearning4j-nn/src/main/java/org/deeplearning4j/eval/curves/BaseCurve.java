@@ -38,11 +38,11 @@ public abstract class BaseCurve {
     /**
      * @return Area under the curve
      */
-    protected double calculateArea(){
+    protected double calculateArea() {
         return calculateArea(getX(), getY());
     }
 
-    protected double calculateArea(double[] x, double[] y){
+    protected double calculateArea(double[] x, double[] y) {
         int nPoints = x.length;
         double area = 0.0;
         for (int i = 0; i < nPoints - 1; i++) {
@@ -62,14 +62,14 @@ public abstract class BaseCurve {
         return area;
     }
 
-    protected String format(double d, int precision){
+    protected String format(double d, int precision) {
         return String.format("%." + precision + "f", d);
     }
 
     /**
      * @return  JSON representation of the curve
      */
-    public String toJson(){
+    public String toJson() {
         try {
             return BaseEvaluation.getObjectMapper().writeValueAsString(this);
         } catch (JsonProcessingException e) {
@@ -80,7 +80,7 @@ public abstract class BaseCurve {
     /**
      * @return YAML  representation of the curve
      */
-    public String toYaml(){
+    public String toYaml() {
         try {
             return BaseEvaluation.getYamlMapper().writeValueAsString(this);
         } catch (JsonProcessingException e) {
@@ -95,10 +95,10 @@ public abstract class BaseCurve {
      * @param <T>        Type
      * @return           Instance of the curve
      */
-    public static <T extends BaseCurve> T fromJson(String json, Class<T> curveClass){
-        try{
+    public static <T extends BaseCurve> T fromJson(String json, Class<T> curveClass) {
+        try {
             return BaseEvaluation.getObjectMapper().readValue(json, curveClass);
-        }catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -110,10 +110,10 @@ public abstract class BaseCurve {
      * @param <T>        Type
      * @return           Instance of the curve
      */
-    public static <T extends BaseCurve> T fromYaml(String yaml, Class<T> curveClass){
-        try{
+    public static <T extends BaseCurve> T fromYaml(String yaml, Class<T> curveClass) {
+        try {
             return BaseEvaluation.getYamlMapper().readValue(yaml, curveClass);
-        }catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

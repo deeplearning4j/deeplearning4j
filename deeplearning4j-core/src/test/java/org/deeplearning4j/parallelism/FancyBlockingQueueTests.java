@@ -20,7 +20,7 @@ public class FancyBlockingQueueTests {
     public void testFancyQueue1() throws Exception {
         final FancyBlockingQueue<Integer> queue = new FancyBlockingQueue<>(new LinkedBlockingQueue<Integer>(512), 4);
         long f = 0;
-        for(int x = 0; x < 512; x++) {
+        for (int x = 0; x < 512; x++) {
             queue.add(x);
             f += x;
         }
@@ -65,7 +65,7 @@ public class FancyBlockingQueueTests {
     public void testFancyQueue2() throws Exception {
         final FancyBlockingQueue<Integer> queue = new FancyBlockingQueue<>(new LinkedBlockingQueue<Integer>(512), 4);
         long f = 0;
-        for(int x = 0; x < 512; x++) {
+        for (int x = 0; x < 512; x++) {
             queue.add(x);
             f += x;
         }
@@ -115,7 +115,7 @@ public class FancyBlockingQueueTests {
     public void testFancyQueue3() throws Exception {
         final FancyBlockingQueue<Integer> queue = new FancyBlockingQueue<>(new LinkedBlockingQueue<Integer>(512), 4);
         long f = 0;
-        for(int x = 0; x < 512; x++) {
+        for (int x = 0; x < 512; x++) {
             queue.add(x);
             f += x;
         }
@@ -158,7 +158,7 @@ public class FancyBlockingQueueTests {
     public void testFancyQueue4() throws Exception {
         final FancyBlockingQueue<Integer> queue = new FancyBlockingQueue<>(new LinkedBlockingQueue<Integer>(512), 4);
         long f = 0;
-        for(int x = 0; x < 512; x++) {
+        for (int x = 0; x < 512; x++) {
             queue.add(x);
             f += x;
         }

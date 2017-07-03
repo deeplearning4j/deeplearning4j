@@ -88,7 +88,7 @@ public class ConfusionMatrix<T extends Comparable<? super T>> implements Seriali
      * Gives the applyTransformToDestination of all classes in the confusion matrix.
      */
     public List<T> getClasses() {
-        if(classes == null)
+        if (classes == null)
             classes = new ArrayList<>();
         return classes;
     }

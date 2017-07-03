@@ -15,41 +15,41 @@ import org.ansj.recognition.Recognition;
  * 
  */
 public class IDCardRecognition implements Recognition {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = -32133440735240290L;
-	private static final Nature ID_CARD_NATURE = new Nature("idcard");
+    /**
+     * 
+     */
+    private static final long serialVersionUID = -32133440735240290L;
+    private static final Nature ID_CARD_NATURE = new Nature("idcard");
 
-	@Override
-	public void recognition(Result result) {
+    @Override
+    public void recognition(Result result) {
 
-		List<Term> terms = result.getTerms() ;
-		
-		for (Term term : terms) {
-			if ("m".equals(term.getNatureStr())) {
+        List<Term> terms = result.getTerms();
 
-				if (term.getName().length() == 18) {
-					term.setNature(ID_CARD_NATURE);
-				} else if (term.getName().length() == 17) {
-					Term to = term.to();
-					if ("x".equals(to.getName())) {
-						term.merage(to);
-						to.setName(null);
-						term.setNature(ID_CARD_NATURE);
-					}
-				}
+        for (Term term : terms) {
+            if ("m".equals(term.getNatureStr())) {
 
-			}
-		}
+                if (term.getName().length() == 18) {
+                    term.setNature(ID_CARD_NATURE);
+                } else if (term.getName().length() == 17) {
+                    Term to = term.to();
+                    if ("x".equals(to.getName())) {
+                        term.merage(to);
+                        to.setName(null);
+                        term.setNature(ID_CARD_NATURE);
+                    }
+                }
 
-		for (Iterator<Term> iterator = terms.iterator(); iterator.hasNext();) {
-			Term term = iterator.next();
-			if (term.getName() == null) {
-				iterator.remove();
-			}
-		}
+            }
+        }
 
-	}
+        for (Iterator<Term> iterator = terms.iterator(); iterator.hasNext();) {
+            Term term = iterator.next();
+            if (term.getName() == null) {
+                iterator.remove();
+            }
+        }
+
+    }
 
 }

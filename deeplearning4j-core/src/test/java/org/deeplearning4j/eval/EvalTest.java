@@ -725,15 +725,15 @@ public class EvalTest {
     }
 
     @Test
-    public void testF1FBeta_MicroMacroAveraging(){
+    public void testF1FBeta_MicroMacroAveraging() {
         //Confusion matrix: rows = actual, columns = predicted
         //[3, 1, 0]
         //[2, 2, 1]
         //[0, 3, 4]
 
-        INDArray zero = Nd4j.create(new double[]{1,0,0});
-        INDArray one = Nd4j.create(new double[]{0,1,0});
-        INDArray two  = Nd4j.create(new double[]{0,0,1});
+        INDArray zero = Nd4j.create(new double[] {1, 0, 0});
+        INDArray one = Nd4j.create(new double[] {0, 1, 0});
+        INDArray two = Nd4j.create(new double[] {0, 0, 1});
 
         Evaluation e = new Evaluation();
         apply(e, 3, zero, zero);
@@ -744,55 +744,55 @@ public class EvalTest {
         apply(e, 3, one, two);
         apply(e, 4, two, two);
 
-        assertEquals(3, e.confusion.getCount(0,0));
-        assertEquals(1, e.confusion.getCount(0,1));
-        assertEquals(0, e.confusion.getCount(0,2));
-        assertEquals(2, e.confusion.getCount(1,0));
-        assertEquals(2, e.confusion.getCount(1,1));
-        assertEquals(1, e.confusion.getCount(1,2));
-        assertEquals(0, e.confusion.getCount(2,0));
-        assertEquals(3, e.confusion.getCount(2,1));
-        assertEquals(4, e.confusion.getCount(2,2));
+        assertEquals(3, e.confusion.getCount(0, 0));
+        assertEquals(1, e.confusion.getCount(0, 1));
+        assertEquals(0, e.confusion.getCount(0, 2));
+        assertEquals(2, e.confusion.getCount(1, 0));
+        assertEquals(2, e.confusion.getCount(1, 1));
+        assertEquals(1, e.confusion.getCount(1, 2));
+        assertEquals(0, e.confusion.getCount(2, 0));
+        assertEquals(3, e.confusion.getCount(2, 1));
+        assertEquals(4, e.confusion.getCount(2, 2));
 
         double beta = 3.5;
         double[] prec = new double[3];
         double[] rec = new double[3];
-        for( int i=0; i<3; i++ ){
-            prec[i] = e.truePositives().get(i) / (double)(e.truePositives().get(i) + e.falsePositives().get(i));
-            rec[i] = e.truePositives().get(i) / (double)(e.truePositives().get(i) + e.falseNegatives().get(i));
+        for (int i = 0; i < 3; i++) {
+            prec[i] = e.truePositives().get(i) / (double) (e.truePositives().get(i) + e.falsePositives().get(i));
+            rec[i] = e.truePositives().get(i) / (double) (e.truePositives().get(i) + e.falseNegatives().get(i));
         }
 
         //Binarized confusion
         //class 0:
         // [3, 1]       [tp fn]
         // [2, 10]      [fp tn]
-        assertEquals(3, (int)e.truePositives().get(0));
-        assertEquals(1, (int)e.falseNegatives().get(0));
-        assertEquals(2, (int)e.falsePositives().get(0));
-        assertEquals(10, (int)e.trueNegatives().get(0));
+        assertEquals(3, (int) e.truePositives().get(0));
+        assertEquals(1, (int) e.falseNegatives().get(0));
+        assertEquals(2, (int) e.falsePositives().get(0));
+        assertEquals(10, (int) e.trueNegatives().get(0));
 
         //class 1:
         // [2, 3]       [tp fn]
         // [4, 7]       [fp tn]
-        assertEquals(2, (int)e.truePositives().get(1));
-        assertEquals(3, (int)e.falseNegatives().get(1));
-        assertEquals(4, (int)e.falsePositives().get(1));
-        assertEquals(7, (int)e.trueNegatives().get(1));
+        assertEquals(2, (int) e.truePositives().get(1));
+        assertEquals(3, (int) e.falseNegatives().get(1));
+        assertEquals(4, (int) e.falsePositives().get(1));
+        assertEquals(7, (int) e.trueNegatives().get(1));
 
         //class 2:
         // [4, 3]       [tp fn]
         // [1, 8]       [fp tn]
-        assertEquals(4, (int)e.truePositives().get(2));
-        assertEquals(3, (int)e.falseNegatives().get(2));
-        assertEquals(1, (int)e.falsePositives().get(2));
-        assertEquals(8, (int)e.trueNegatives().get(2));
+        assertEquals(4, (int) e.truePositives().get(2));
+        assertEquals(3, (int) e.falseNegatives().get(2));
+        assertEquals(1, (int) e.falsePositives().get(2));
+        assertEquals(8, (int) e.trueNegatives().get(2));
 
         double[] fBeta = new double[3];
         double[] f1 = new double[3];
         double[] mcc = new double[3];
-        for( int i=0; i<3; i++ ){
-            fBeta[i] = (1+beta*beta)*prec[i]*rec[i] / (beta*beta*prec[i] + rec[i]);
-            f1[i] = 2*prec[i]*rec[i] / (prec[i] + rec[i]);
+        for (int i = 0; i < 3; i++) {
+            fBeta[i] = (1 + beta * beta) * prec[i] * rec[i] / (beta * beta * prec[i] + rec[i]);
+            f1[i] = 2 * prec[i] * rec[i] / (prec[i] + rec[i]);
             assertEquals(fBeta[i], e.fBeta(beta, i), 1e-6);
             assertEquals(f1[i], e.f1(i), 1e-6);
 
@@ -803,7 +803,7 @@ public class EvalTest {
             double tn = e.trueNegatives().get(i);
             double fp = e.falsePositives().get(i);
             double fn = e.falseNegatives().get(i);
-            mcc[i] = (tp*tn - fp*fn) / Math.sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn));
+            mcc[i] = (tp * tn - fp * fn) / Math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn));
             assertEquals(mcc[i], e.matthewsCorrelation(i), 1e-6);
         }
 
@@ -817,7 +817,7 @@ public class EvalTest {
         double macroF1 = 0.0;
         double macroFBeta = 0.0;
         double macroMcc = 0.0;
-        for( int i=0; i<3; i++ ){
+        for (int i = 0; i < 3; i++) {
             tp += e.truePositives().get(i);
             fn += e.falseNegatives().get(i);
             fp += e.falsePositives().get(i);
@@ -835,11 +835,12 @@ public class EvalTest {
         macroFBeta /= 3;
         macroMcc /= 3;
 
-        double microPrecision = tp / (double)(tp + fp);
-        double microRecall = tp / (double)(tp + fn);
-        double microFBeta = (1+beta*beta)*microPrecision*microRecall / (beta*beta*microPrecision + microRecall);
-        double microF1 = 2*microPrecision*microRecall / (microPrecision + microRecall);
-        double microMcc = (tp*tn - fp*fn) / Math.sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn));
+        double microPrecision = tp / (double) (tp + fp);
+        double microRecall = tp / (double) (tp + fn);
+        double microFBeta =
+                        (1 + beta * beta) * microPrecision * microRecall / (beta * beta * microPrecision + microRecall);
+        double microF1 = 2 * microPrecision * microRecall / (microPrecision + microRecall);
+        double microMcc = (tp * tn - fp * fn) / Math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn));
 
         assertEquals(microPrecision, e.precision(EvaluationAveraging.Micro), 1e-6);
         assertEquals(microRecall, e.recall(EvaluationAveraging.Micro), 1e-6);
@@ -857,24 +858,24 @@ public class EvalTest {
 
     }
 
-    private static void apply(Evaluation e, int nTimes, INDArray predicted, INDArray actual){
-        for( int i=0; i<nTimes; i++ ){
+    private static void apply(Evaluation e, int nTimes, INDArray predicted, INDArray actual) {
+        for (int i = 0; i < nTimes; i++) {
             e.eval(actual, predicted);
         }
     }
 
 
     @Test
-    public void testConfusionMatrixStats(){
+    public void testConfusionMatrixStats() {
 
         Evaluation e = new Evaluation();
 
-        INDArray c0 = Nd4j.create(new double[]{1,0,0});
-        INDArray c1 = Nd4j.create(new double[]{0,1,0});
-        INDArray c2 = Nd4j.create(new double[]{0,0,1});
+        INDArray c0 = Nd4j.create(new double[] {1, 0, 0});
+        INDArray c1 = Nd4j.create(new double[] {0, 1, 0});
+        INDArray c2 = Nd4j.create(new double[] {0, 0, 1});
 
-        apply(e, 3, c2, c0);    //Predicted class 2 when actually class 0, 3 times
-        apply(e, 2, c0, c1);    //Predicted class 0 when actually class 1, 2 times
+        apply(e, 3, c2, c0); //Predicted class 2 when actually class 0, 3 times
+        apply(e, 2, c0, c1); //Predicted class 0 when actually class 1, 2 times
 
         String s1 = "Examples labeled as 0 classified by model as 2: 3 times";
         String s2 = "Examples labeled as 1 classified by model as 0: 2 times";

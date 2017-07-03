@@ -12,27 +12,27 @@ import org.ansj.app.keyword.Keyword;
  */
 public class Summary {
 
-	/**
-	 * 关键词
-	 */
-	private List<Keyword> keyWords = null;
+    /**
+     * 关键词
+     */
+    private List<Keyword> keyWords = null;
 
-	/**
-	 * 摘要
-	 */
-	private String summary;
+    /**
+     * 摘要
+     */
+    private String summary;
 
-	public Summary(List<Keyword> keyWords, String summary) {
-		this.keyWords = keyWords;
-		this.summary = summary;
-	}
+    public Summary(List<Keyword> keyWords, String summary) {
+        this.keyWords = keyWords;
+        this.summary = summary;
+    }
 
-	public List<Keyword> getKeyWords() {
-		return keyWords;
-	}
+    public List<Keyword> getKeyWords() {
+        return keyWords;
+    }
 
-	public String getSummary() {
-		return summary;
-	}
+    public String getSummary() {
+        return summary;
+    }
 
 }

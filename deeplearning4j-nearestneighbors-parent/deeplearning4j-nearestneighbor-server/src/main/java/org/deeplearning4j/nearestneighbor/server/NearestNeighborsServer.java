@@ -69,7 +69,7 @@ public class NearestNeighborsServer {
         }
 
         final INDArray points;
-        try(InputStream  is = new FileInputStream(new File(ndarrayPath))) {
+        try (InputStream is = new FileInputStream(new File(ndarrayPath))) {
             byte[] bytes = IOUtils.toByteArray(is);
             ByteBuffer byteBuffer = ByteBuffer.allocateDirect(bytes.length);
             byteBuffer.put(bytes);
@@ -77,7 +77,7 @@ public class NearestNeighborsServer {
             points = BinarySerde.toArray(byteBuffer);
         }
 
-        VPTree tree = new VPTree(points,similarityFunction,invert);
+        VPTree tree = new VPTree(points, similarityFunction, invert);
 
 
         RoutingDsl routingDsl = new RoutingDsl();
@@ -85,11 +85,12 @@ public class NearestNeighborsServer {
         routingDsl.POST("/knn").routeTo(FunctionUtil.function0((() -> {
             try {
                 NearestNeighborRequest record = Json.fromJson(request().body().asJson(), NearestNeighborRequest.class);
-                NearestNeighbor nearestNeighbor = NearestNeighbor.builder()
-                        .points(points).record(record).tree(tree).build();
+                NearestNeighbor nearestNeighbor =
+                                NearestNeighbor.builder().points(points).record(record).tree(tree).build();
                 if (record == null)
                     return badRequest();
-                NearstNeighborsResults results = NearstNeighborsResults.builder().results(nearestNeighbor.search()).build();
+                NearstNeighborsResults results =
+                                NearstNeighborsResults.builder().results(nearestNeighbor.search()).build();
                 return ok(Json.toJson(results));
 
             } catch (Exception e) {
@@ -103,12 +104,12 @@ public class NearestNeighborsServer {
                 Base64NDArrayBody record = Json.fromJson(request().body().asJson(), Base64NDArrayBody.class);
                 INDArray arr = Nd4jBase64.fromBase64(record.getNdarray());
                 List<DataPoint> results = new ArrayList<>();
-                List<Double> distances =new ArrayList<>();
-                tree.search(arr,record.getK(),results,distances);
+                List<Double> distances = new ArrayList<>();
+                tree.search(arr, record.getK(), results, distances);
                 if (record == null)
                     return badRequest();
                 List<NearestNeighborsResult> nnResult = new ArrayList<>();
-                for(DataPoint dataPoint : results) {
+                for (DataPoint dataPoint : results) {
                     nnResult.add(new NearestNeighborsResult(dataPoint.getIndex()));
                 }
                 NearstNeighborsResults results2 = NearstNeighborsResults.builder().results(nnResult).build();

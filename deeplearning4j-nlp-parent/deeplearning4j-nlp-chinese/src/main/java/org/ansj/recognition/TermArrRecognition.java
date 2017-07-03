@@ -9,5 +9,5 @@ import org.ansj.domain.Term;
  *
  */
 public interface TermArrRecognition {
-	public void recognition(Term[] terms) ;
+    public void recognition(Term[] terms);
 }

@@ -47,21 +47,13 @@ public class ChineseTokenizerTest {
         //tokenizerFactory.setTokenPreProcessor(new ChineseTokenizer());
 
         //Generates a word-vector from the dataset stored in resources folder
-        Word2Vec vec = new Word2Vec.Builder()
-                .minWordFrequency(2)
-                .iterations(5)
-                .layerSize(100)
-                .seed(42)
-                .learningRate(0.1)
-                .windowSize(20)
-                .iterate(iter)
-                .tokenizerFactory(tokenizerFactory)
-                .build();
+        Word2Vec vec = new Word2Vec.Builder().minWordFrequency(2).iterations(5).layerSize(100).seed(42)
+                        .learningRate(0.1).windowSize(20).iterate(iter).tokenizerFactory(tokenizerFactory).build();
         vec.fit();
         WordVectorSerializer.writeWordVectors(vec, new File("src/test/resources/chineseNameWordVector.txt"));
 
         //trains a model that can find out all names from news(Suffix txt),It uses word vector generated
-       // WordVectors wordVectors;
+        // WordVectors wordVectors;
 
         //test model,Whether the model find out name from unknow text;
 

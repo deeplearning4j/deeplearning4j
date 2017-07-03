@@ -19,7 +19,7 @@ public class VirtualIteratorTest {
 
     @Test
     public void testIteration1() throws Exception {
-        List<Integer> integers= new ArrayList<>();
+        List<Integer> integers = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
             integers.add(i);
         }

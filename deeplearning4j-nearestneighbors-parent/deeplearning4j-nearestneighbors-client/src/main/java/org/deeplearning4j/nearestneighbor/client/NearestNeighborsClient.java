@@ -29,7 +29,7 @@ public class NearestNeighborsClient {
         // Only one time
         Unirest.setObjectMapper(new ObjectMapper() {
             private org.nd4j.shade.jackson.databind.ObjectMapper jacksonObjectMapper =
-                    new org.nd4j.shade.jackson.databind.ObjectMapper();
+                            new org.nd4j.shade.jackson.databind.ObjectMapper();
 
             public <T> T readValue(String value, Class<T> valueType) {
                 try {
@@ -62,14 +62,13 @@ public class NearestNeighborsClient {
      * @return
      * @throws Exception
      */
-    public NearstNeighborsResults knn(int index,int k) throws Exception {
+    public NearstNeighborsResults knn(int index, int k) throws Exception {
         NearestNeighborRequest request = new NearestNeighborRequest();
         request.setInputIndex(index);
         request.setK(k);
         NearstNeighborsResults ret = Unirest.post(url + "/knn").header("accept", "application/json")
-                .header("Content-Type", "application/json")
-                .body(request)
-                .asObject(NearstNeighborsResults.class).getBody();
+                        .header("Content-Type", "application/json").body(request).asObject(NearstNeighborsResults.class)
+                        .getBody();
         return ret;
     }
 
@@ -84,14 +83,12 @@ public class NearestNeighborsClient {
      * @throws Exception
      */
     public NearstNeighborsResults knnNew(int k, INDArray arr) throws Exception {
-        Base64NDArrayBody base64NDArrayBody = Base64NDArrayBody
-                .builder().k(k).ndarray(Nd4jBase64.base64String(arr)).build();
+        Base64NDArrayBody base64NDArrayBody =
+                        Base64NDArrayBody.builder().k(k).ndarray(Nd4jBase64.base64String(arr)).build();
 
-        NearstNeighborsResults ret = Unirest.post(url + "/knnnew")
-                .header("accept", "application/json")
-                .header("Content-Type", "application/json")
-                .body(base64NDArrayBody)
-                .asObject(NearstNeighborsResults.class).getBody();
+        NearstNeighborsResults ret = Unirest.post(url + "/knnnew").header("accept", "application/json")
+                        .header("Content-Type", "application/json").body(base64NDArrayBody)
+                        .asObject(NearstNeighborsResults.class).getBody();
 
         return ret;
     }

@@ -46,7 +46,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
         }
     }
 
-    protected String layerId(){
+    protected String layerId() {
         String name = insideLayer.conf().getLayer().getLayerName();
         return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + insideLayer.getIndex() + ")";
     }

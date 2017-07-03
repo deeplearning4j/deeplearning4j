@@ -43,12 +43,16 @@ public class GradientCheckTestsMasking {
         private final Activation act;
         private final int nOut;
         private final int labelWidth;
+
         GradientCheckSimpleScenario(ILossFunction lf, Activation act, int nOut, int labelWidth) {
-            this.lf = lf; this.act = act; this.nOut = nOut; this.labelWidth = labelWidth;
+            this.lf = lf;
+            this.act = act;
+            this.nOut = nOut;
+            this.labelWidth = labelWidth;
         }
-        
+
     }
-    
+
     @Test
     public void gradientCheckMaskingOutputSimple() {
 
@@ -62,14 +66,17 @@ public class GradientCheckTestsMasking {
 
         int nIn = 4;
         int layerSize = 3;
-        
+
         GradientCheckSimpleScenario[] scenarios = new GradientCheckSimpleScenario[] {
-            new GradientCheckSimpleScenario(LossFunctions.LossFunction.MCXENT.getILossFunction(), Activation.SOFTMAX, 2, 2),
-            new GradientCheckSimpleScenario(LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(), Activation.TANH, 10, 3),
-            new GradientCheckSimpleScenario(LossMixtureDensity.builder().gaussians(2).labelWidth(4).build(), Activation.IDENTITY, 12, 4),
-            new GradientCheckSimpleScenario(LossFunctions.LossFunction.L2.getILossFunction(), Activation.SOFTMAX, 2, 2)
-        };
-        
+                        new GradientCheckSimpleScenario(LossFunctions.LossFunction.MCXENT.getILossFunction(),
+                                        Activation.SOFTMAX, 2, 2),
+                        new GradientCheckSimpleScenario(LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
+                                        Activation.TANH, 10, 3),
+                        new GradientCheckSimpleScenario(LossMixtureDensity.builder().gaussians(2).labelWidth(4).build(),
+                                        Activation.IDENTITY, 12, 4),
+                        new GradientCheckSimpleScenario(LossFunctions.LossFunction.L2.getILossFunction(),
+                                        Activation.SOFTMAX, 2, 2)};
+
         for (GradientCheckSimpleScenario s : scenarios) {
 
             Random r = new Random(12345L);
@@ -103,8 +110,7 @@ public class GradientCheckTestsMasking {
                                 .layer(0, new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
                                                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                                                 .updater(Updater.NONE).build())
-                                .layer(1, new RnnOutputLayer.Builder(s.lf)
-                                                .activation(s.act).nIn(layerSize).nOut(s.nOut)
+                                .layer(1, new RnnOutputLayer.Builder(s.lf).activation(s.act).nIn(layerSize).nOut(s.nOut)
                                                 .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
                                                 .updater(Updater.NONE).build())
                                 .pretrain(false).backprop(true).build();
@@ -367,8 +373,7 @@ public class GradientCheckTestsMasking {
 
                 Nd4j.getRandom().setSeed(12345);
                 ComputationGraphConfiguration cg = new NeuralNetConfiguration.Builder().updater(Updater.NONE)
-                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 2))
-                                .seed(12345)
+                                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 2)).seed(12345)
                                 .graphBuilder().addInputs("in")
                                 .addLayer("0", new GravesLSTM.Builder().nIn(nIn).nOut(layerSize)
                                                 .activation(Activation.TANH).build(), "in")

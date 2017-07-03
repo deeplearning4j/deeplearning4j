@@ -31,11 +31,11 @@ public class TestGradientNormalization {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
-        INDArray gradArray = Nd4j.rand(1,220).muli(10).subi(5);
+        INDArray gradArray = Nd4j.rand(1, 220).muli(10).subi(5);
         layer.setBackpropGradientsViewArray(gradArray);
-        INDArray weightGrad = Shape.newShapeNoCopy(gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,200)),
-                new int[]{10,20},true);
-        INDArray biasGrad = gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(200,220));
+        INDArray weightGrad = Shape.newShapeNoCopy(gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 200)),
+                        new int[] {10, 20}, true);
+        INDArray biasGrad = gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(200, 220));
         INDArray weightGradCopy = weightGrad.dup();
         INDArray biasGradCopy = biasGrad.dup();
         Gradient gradient = new DefaultGradient(gradArray);
@@ -110,11 +110,11 @@ public class TestGradientNormalization {
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
-        INDArray gradArray = Nd4j.rand(1,220).muli(10).subi(5);
+        INDArray gradArray = Nd4j.rand(1, 220).muli(10).subi(5);
         layer.setBackpropGradientsViewArray(gradArray);
-        INDArray weightGrad = Shape.newShapeNoCopy(gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,200)),
-                new int[]{10,20},true);
-        INDArray biasGrad = gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(200,220));
+        INDArray weightGrad = Shape.newShapeNoCopy(gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 200)),
+                        new int[] {10, 20}, true);
+        INDArray biasGrad = gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(200, 220));
         INDArray weightGradCopy = weightGrad.dup();
         INDArray biasGradCopy = biasGrad.dup();
         Gradient gradient = new DefaultGradient(gradArray);
@@ -166,11 +166,12 @@ public class TestGradientNormalization {
             int numParams = conf.getLayer().initializer().numParams(conf);
             INDArray params = Nd4j.create(1, numParams);
             Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
-            INDArray gradArray = Nd4j.rand(1,220).muli(t == 0 ? 0.05 : 10).subi(t == 0 ? 0 : 5);
+            INDArray gradArray = Nd4j.rand(1, 220).muli(t == 0 ? 0.05 : 10).subi(t == 0 ? 0 : 5);
             layer.setBackpropGradientsViewArray(gradArray);
-            INDArray weightGrad = Shape.newShapeNoCopy(gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0,200)),
-                    new int[]{10,20},true);
-            INDArray biasGrad = gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(200,220));
+            INDArray weightGrad =
+                            Shape.newShapeNoCopy(gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(0, 200)),
+                                            new int[] {10, 20}, true);
+            INDArray biasGrad = gradArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(200, 220));
             INDArray weightGradCopy = weightGrad.dup();
             INDArray biasGradCopy = biasGrad.dup();
             Gradient gradient = new DefaultGradient(gradArray);

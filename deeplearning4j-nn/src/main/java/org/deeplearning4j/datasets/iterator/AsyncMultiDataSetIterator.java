@@ -63,19 +63,23 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         this(baseIterator, queueSize, new LinkedBlockingQueue<MultiDataSet>(queueSize), useWorkspace);
     }
 
-    public AsyncMultiDataSetIterator(MultiDataSetIterator baseIterator, int queueSize, boolean useWorkspace, Integer deviceId) {
+    public AsyncMultiDataSetIterator(MultiDataSetIterator baseIterator, int queueSize, boolean useWorkspace,
+                    Integer deviceId) {
         this(baseIterator, queueSize, new LinkedBlockingQueue<MultiDataSet>(queueSize), useWorkspace, null, deviceId);
     }
 
-    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue, boolean useWorkspace) {
+    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue,
+                    boolean useWorkspace) {
         this(iterator, queueSize, new LinkedBlockingQueue<MultiDataSet>(queueSize), useWorkspace, null);
     }
 
-    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue, boolean useWorkspace, DataSetCallback callback) {
+    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue,
+                    boolean useWorkspace, DataSetCallback callback) {
         this(iterator, queueSize, queue, useWorkspace, callback, Nd4j.getAffinityManager().getDeviceForCurrentThread());
     }
 
-    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue, boolean useWorkspace, DataSetCallback callback, Integer deviceId) {
+    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue,
+                    boolean useWorkspace, DataSetCallback callback, Integer deviceId) {
 
         if (queueSize < 2)
             queueSize = 2;
@@ -202,7 +206,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
      *
      * PLEASE NOTE: After shutdown() call, this instance can't be used anymore
      */
-    public void shutdown(){
+    public void shutdown() {
         buffer.clear();
 
 
@@ -239,7 +243,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
             if (nextElement != null && nextElement != terminator) {
                 return true;
-            } else if(nextElement == terminator)
+            } else if (nextElement == terminator)
                 return false;
 
 
@@ -303,19 +307,16 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         private MultiDataSet terminator;
         private AtomicBoolean isShutdown = new AtomicBoolean(false);
         private AtomicLong internalCounter = new AtomicLong(0);
-        private WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .minSize(10 * 1024L * 1024L)
-                .overallocationLimit(prefetchSize + 1)
-                .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                .policySpill(SpillPolicy.REALLOCATE)
-                .build();
+        private WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().minSize(10 * 1024L * 1024L)
+                        .overallocationLimit(prefetchSize + 1).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                        .policyLearning(LearningPolicy.FIRST_LOOP).policyAllocation(AllocationPolicy.OVERALLOCATE)
+                        .policySpill(SpillPolicy.REALLOCATE).build();
 
         private MemoryWorkspace workspace;
 
 
-        protected AsyncPrefetchThread(@NonNull BlockingQueue<MultiDataSet> queue, @NonNull MultiDataSetIterator iterator, @NonNull MultiDataSet terminator) {
+        protected AsyncPrefetchThread(@NonNull BlockingQueue<MultiDataSet> queue,
+                        @NonNull MultiDataSetIterator iterator, @NonNull MultiDataSet terminator) {
             this.queue = queue;
             this.iterator = iterator;
             this.terminator = terminator;
@@ -353,8 +354,8 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                     if (smth != null)
                         queue.put(smth);
 
-//                    if (internalCounter.incrementAndGet() % 100 == 0)
-//                        Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
+                    //                    if (internalCounter.incrementAndGet() % 100 == 0)
+                    //                        Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
                 }
                 queue.put(terminator);
             } catch (InterruptedException e) {
@@ -369,7 +370,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             } finally {
                 //log.info("Trying destroy...");
                 //if (useWorkspaces)
-                    //Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).destroyWorkspace();
+                //Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).destroyWorkspace();
                 isShutdown.set(true);
             }
         }

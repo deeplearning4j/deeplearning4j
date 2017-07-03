@@ -39,7 +39,7 @@ public class ClusterSetInfo implements Serializable {
     private boolean inverse;
 
     public ClusterSetInfo(boolean inverse) {
-        this(inverse,false);
+        this(inverse, false);
     }
 
     /**
@@ -47,7 +47,7 @@ public class ClusterSetInfo implements Serializable {
      * @param inverse
      * @param threadSafe
      */
-    public ClusterSetInfo(boolean inverse,boolean threadSafe) {
+    public ClusterSetInfo(boolean inverse, boolean threadSafe) {
         this.pointLocationChange = new AtomicInteger(0);
         this.threadSafe = threadSafe;
         this.inverse = inverse;
@@ -64,7 +64,7 @@ public class ClusterSetInfo implements Serializable {
      * @return
      */
     public static ClusterSetInfo initialize(ClusterSet clusterSet, boolean threadSafe) {
-        ClusterSetInfo info = new ClusterSetInfo(clusterSet.isInverse(),threadSafe);
+        ClusterSetInfo info = new ClusterSetInfo(clusterSet.isInverse(), threadSafe);
         for (int i = 0, j = clusterSet.getClusterCount(); i < j; i++)
             info.addClusterInfo(clusterSet.getClusters().get(i).getId());
         return info;

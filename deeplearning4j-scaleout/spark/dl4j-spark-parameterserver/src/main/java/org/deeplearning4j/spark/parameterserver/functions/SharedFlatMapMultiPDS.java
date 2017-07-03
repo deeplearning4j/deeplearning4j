@@ -21,7 +21,8 @@ import java.util.Iterator;
 /**
  * Created by raver119 on 14.06.17.
  */
-public class SharedFlatMapMultiPDS<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<PortableDataStream>, R> {
+public class SharedFlatMapMultiPDS<R extends TrainingResult>
+                extends BaseFlatMapFunctionAdaptee<Iterator<PortableDataStream>, R> {
 
     public SharedFlatMapMultiPDS(TrainingWorker<R> worker) {
         this(worker, null);
@@ -33,7 +34,8 @@ public class SharedFlatMapMultiPDS<R extends TrainingResult> extends BaseFlatMap
 }
 
 
-class SharedFlatMapMultiPDSAdapter<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<PortableDataStream>, R> {
+class SharedFlatMapMultiPDSAdapter<R extends TrainingResult>
+                implements FlatMapFunctionAdapter<Iterator<PortableDataStream>, R> {
 
     protected final SharedTrainingWorker worker;
     protected final PortableDataStreamMDSCallback callback;

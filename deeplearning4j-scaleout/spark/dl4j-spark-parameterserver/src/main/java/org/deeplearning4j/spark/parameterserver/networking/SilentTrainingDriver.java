@@ -90,7 +90,8 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
     }
 
     @Override
-    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Transport transport, Storage storage, Clipboard clipboard) {
+    public void init(@NonNull VoidConfiguration voidConfiguration, @NonNull Transport transport, Storage storage,
+                    Clipboard clipboard) {
         this.voidConfiguration = voidConfiguration;
         this.transport = transport;
     }
@@ -110,7 +111,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
             this method will be invoked on master, and will do 2 things:
             1) silently update params via given StepFunction
             2) propagate this message to everyone
-
+        
             on workers, it just enqueues updates into the FancyBlockingQueue
          */
         // if accumulator is defined, we're working at Worker level, so it's not our problem what happens inside
@@ -118,7 +119,7 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
             if (message.getOriginatorId() == transport.getOwnOriginatorId()) {
                 //log.info("Skipping since originators match");
                 return;
-            };
+            } ;
 
             /*
                 we're just putting messages here. if thread gets blocked - messages won't be arriving,

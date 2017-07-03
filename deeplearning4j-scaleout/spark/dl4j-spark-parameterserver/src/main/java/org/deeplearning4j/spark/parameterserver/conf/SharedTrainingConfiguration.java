@@ -15,19 +15,23 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SharedTrainingConfiguration implements Serializable{
+public class SharedTrainingConfiguration implements Serializable {
     protected VoidConfiguration voidConfiguration;
 
-    @Builder.Default protected WorkspaceMode workspaceMode = WorkspaceMode.SEPARATE;
-    @Builder.Default protected int prefetchSize = 2;
-    @Builder.Default protected boolean epochReset = false;
-    @Builder.Default protected int numberOfWorkersPerNode = -1;
-    @Builder.Default protected long debugLongerIterations = 0L;
+    @Builder.Default
+    protected WorkspaceMode workspaceMode = WorkspaceMode.SEPARATE;
+    @Builder.Default
+    protected int prefetchSize = 2;
+    @Builder.Default
+    protected boolean epochReset = false;
+    @Builder.Default
+    protected int numberOfWorkersPerNode = -1;
+    @Builder.Default
+    protected long debugLongerIterations = 0L;
 
     // TODO: decide, if we abstract this one out, or not
     protected double threshold;
     protected String messageHandlerClass;
-
 
 
 

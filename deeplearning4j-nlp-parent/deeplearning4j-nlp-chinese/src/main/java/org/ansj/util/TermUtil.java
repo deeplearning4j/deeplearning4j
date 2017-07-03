@@ -19,182 +19,182 @@ import org.ansj.recognition.arrimpl.ForeignPersonRecognition;
  */
 public class TermUtil {
 
-	/**
-	 * 将两个term合并为一个全新的term
-	 * 
-	 * @param termNatures
-	 * @return
-	 */
-	public static Term makeNewTermNum(Term from, Term to, TermNatures termNatures) {
-		Term term = new Term(from.getName() + to.getName(), from.getOffe(), termNatures);
-		term.termNatures().numAttr = from.termNatures().numAttr;
-		TermUtil.termLink(term, to.to());
-		TermUtil.termLink(term.from(), term);
-		return term;
-	}
+    /**
+     * 将两个term合并为一个全新的term
+     * 
+     * @param termNatures
+     * @return
+     */
+    public static Term makeNewTermNum(Term from, Term to, TermNatures termNatures) {
+        Term term = new Term(from.getName() + to.getName(), from.getOffe(), termNatures);
+        term.termNatures().numAttr = from.termNatures().numAttr;
+        TermUtil.termLink(term, to.to());
+        TermUtil.termLink(term.from(), term);
+        return term;
+    }
 
-	public static void termLink(Term from, Term to) {
-		if (from == null || to == null)
-			return;
-		from.setTo(to);
-		to.setFrom(from);
-	}
+    public static void termLink(Term from, Term to) {
+        if (from == null || to == null)
+            return;
+        from.setTo(to);
+        to.setFrom(from);
+    }
 
-	public static enum InsertTermType{
-		/**
-		 * 跳过 0 
-		 */
-		SKIP,
-		/**
-		 * 替换 1
-		 */
-		REPLACE,
-		/**
-		 * 累积分值 保证顺序,由大到小 2
-		 */
-		SCORE_ADD_SORT
-	}
-	
-	/**
-	 * 将一个term插入到链表中的对应位置中, 如果这个term已经存在参照type type 0.跳过 1. 替换 2.累积分值 保证顺序,由大到小
-	 * 
-	 * @param terms
-	 * @param term
-	 */
-	public static void insertTerm(Term[] terms, Term term, InsertTermType type) {
-		Term self = terms[term.getOffe()];
+    public static enum InsertTermType {
+        /**
+         * 跳过 0 
+         */
+        SKIP,
+        /**
+         * 替换 1
+         */
+        REPLACE,
+        /**
+         * 累积分值 保证顺序,由大到小 2
+         */
+        SCORE_ADD_SORT
+    }
 
-		if (self == null) {
-			terms[term.getOffe()] = term;
-			return;
-		}
+    /**
+     * 将一个term插入到链表中的对应位置中, 如果这个term已经存在参照type type 0.跳过 1. 替换 2.累积分值 保证顺序,由大到小
+     * 
+     * @param terms
+     * @param term
+     */
+    public static void insertTerm(Term[] terms, Term term, InsertTermType type) {
+        Term self = terms[term.getOffe()];
 
-		int len = term.getName().length();
+        if (self == null) {
+            terms[term.getOffe()] = term;
+            return;
+        }
 
-		// 如果是第一位置
-		if (self.getName().length() == len) {
-			if (type == InsertTermType.REPLACE) {
-				term.setNext(self.next());
-				terms[term.getOffe()] = term;
-			} else if (type == InsertTermType.SCORE_ADD_SORT) {
-				self.score(self.score() + term.score());
-				self.selfScore(self.selfScore() + term.selfScore());
-			}
-			return;
-		}
-		
-		if(self.getName().length() > len){
-			term.setNext(self) ;
-			terms[term.getOffe()] = term;
-			return;
-		}
+        int len = term.getName().length();
 
-		Term next = self;
-		Term before = self;
-		while ((next = before.next()) != null) {
-			if (next.getName().length() == len) {
-				if (type == InsertTermType.REPLACE) {
-					term.setNext(next.next());
-					before.setNext(term);
-				} else if (type == InsertTermType.SCORE_ADD_SORT) {
-					next.score(next.score() + term.score());
-					next.selfScore(next.selfScore() + term.selfScore());
-				}
-				return;
-			} else if (next.getName().length() > len) {
-				before.setNext(term);
-				term.setNext(next);
-				return;
-			}
-			before = next;
-		}
+        // 如果是第一位置
+        if (self.getName().length() == len) {
+            if (type == InsertTermType.REPLACE) {
+                term.setNext(self.next());
+                terms[term.getOffe()] = term;
+            } else if (type == InsertTermType.SCORE_ADD_SORT) {
+                self.score(self.score() + term.score());
+                self.selfScore(self.selfScore() + term.selfScore());
+            }
+            return;
+        }
 
-		before.setNext(term); // 如果都没有命中
-	}
+        if (self.getName().length() > len) {
+            term.setNext(self);
+            terms[term.getOffe()] = term;
+            return;
+        }
 
-	public static void insertTermNum(Term[] terms, Term term) {
-		terms[term.getOffe()] = term;
-	}
+        Term next = self;
+        Term before = self;
+        while ((next = before.next()) != null) {
+            if (next.getName().length() == len) {
+                if (type == InsertTermType.REPLACE) {
+                    term.setNext(next.next());
+                    before.setNext(term);
+                } else if (type == InsertTermType.SCORE_ADD_SORT) {
+                    next.score(next.score() + term.score());
+                    next.selfScore(next.selfScore() + term.selfScore());
+                }
+                return;
+            } else if (next.getName().length() > len) {
+                before.setNext(term);
+                term.setNext(next);
+                return;
+            }
+            before = next;
+        }
 
-	public static void insertTerm(Term[] terms, List<Term> tempList, TermNatures nr) {
-		StringBuilder sb = new StringBuilder();
-		int offe = tempList.get(0).getOffe();
-		for (Term term : tempList) {
-			sb.append(term.getName());
-			terms[term.getOffe()] = null;
-		}
-		Term term = new Term(sb.toString(), offe, TermNatures.NR);
-		insertTermNum(terms, term);
-	}
+        before.setNext(term); // 如果都没有命中
+    }
 
-	protected static Term setToAndfrom(Term to, Term from) {
-		
-		from.setTo(to);
-		to.setFrom(from);
-		return from;
-	}
+    public static void insertTermNum(Term[] terms, Term term) {
+        terms[term.getOffe()] = term;
+    }
 
-	private static final HashMap<String, int[]> companyMap = CompanyAttrLibrary.getCompanyMap();
+    public static void insertTerm(Term[] terms, List<Term> tempList, TermNatures nr) {
+        StringBuilder sb = new StringBuilder();
+        int offe = tempList.get(0).getOffe();
+        for (Term term : tempList) {
+            sb.append(term.getName());
+            terms[term.getOffe()] = null;
+        }
+        Term term = new Term(sb.toString(), offe, TermNatures.NR);
+        insertTermNum(terms, term);
+    }
 
-	/**
-	 * 得到细颗粒度的分词，并且确定词性
-	 * 
-	 * @return 返回是null说明已经是最细颗粒度
-	 */
-	public static void parseNature(Term term) {
-		if (!Nature.NW.equals(term.natrue())) {
-			return;
-		}
+    protected static Term setToAndfrom(Term to, Term from) {
 
-		String name = term.getName();
+        from.setTo(to);
+        to.setFrom(from);
+        return from;
+    }
 
-		if (name.length() <= 3) {
-			return;
-		}
+    private static final HashMap<String, int[]> companyMap = CompanyAttrLibrary.getCompanyMap();
 
-		// 是否是外国人名
-		if (ForeignPersonRecognition.isFName(name)) {
-			term.setNature(NatureLibrary.getNature("nrf"));
-			return;
-		}
+    /**
+     * 得到细颗粒度的分词，并且确定词性
+     * 
+     * @return 返回是null说明已经是最细颗粒度
+     */
+    public static void parseNature(Term term) {
+        if (!Nature.NW.equals(term.natrue())) {
+            return;
+        }
 
-		List<Term> subTerm = term.getSubTerm();
+        String name = term.getName();
 
-		// 判断是否是机构名
-		term.setSubTerm(subTerm);
-		Term first = subTerm.get(0);
-		Term last = subTerm.get(subTerm.size() - 1);
-		int[] is = companyMap.get(first.getName());
-		int all = 0;
+        if (name.length() <= 3) {
+            return;
+        }
 
-		is = companyMap.get(last.getName());
-		if (is != null) {
-			all += is[1];
-		}
+        // 是否是外国人名
+        if (ForeignPersonRecognition.isFName(name)) {
+            term.setNature(NatureLibrary.getNature("nrf"));
+            return;
+        }
 
-		if (all > 1000) {
-			term.setNature(NatureLibrary.getNature("nt"));
-			return;
-		}
-	}
+        List<Term> subTerm = term.getSubTerm();
 
-	/**
-	 * 从from到to生成subterm
-	 * 
-	 * @param terms
-	 * @param from
-	 * @param to
-	 * @return
-	 */
-	public static List<Term> getSubTerm(Term from, Term to) {
-		
-		List<Term> subTerm = new ArrayList<Term>(3);
+        // 判断是否是机构名
+        term.setSubTerm(subTerm);
+        Term first = subTerm.get(0);
+        Term last = subTerm.get(subTerm.size() - 1);
+        int[] is = companyMap.get(first.getName());
+        int all = 0;
 
-		while ((from = from.to()) != to) {
-			subTerm.add(from);
-		}
+        is = companyMap.get(last.getName());
+        if (is != null) {
+            all += is[1];
+        }
 
-		return subTerm;
-	}
+        if (all > 1000) {
+            term.setNature(NatureLibrary.getNature("nt"));
+            return;
+        }
+    }
+
+    /**
+     * 从from到to生成subterm
+     * 
+     * @param terms
+     * @param from
+     * @param to
+     * @return
+     */
+    public static List<Term> getSubTerm(Term from, Term to) {
+
+        List<Term> subTerm = new ArrayList<Term>(3);
+
+        while ((from = from.to()) != to) {
+            subTerm.add(from);
+        }
+
+        return subTerm;
+    }
 
 }

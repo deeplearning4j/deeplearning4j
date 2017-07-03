@@ -361,7 +361,7 @@ public class InMemoryLookupCache implements VocabCache<VocabWord>, Serializable 
             } else {
                 tokens.put(word.getLabel(), word);
                 vocabs.put(word.getLabel(), word);
-                wordFrequencies.incrementCount(word.getLabel(),(float)  word.getElementFrequency());
+                wordFrequencies.incrementCount(word.getLabel(), (float) word.getElementFrequency());
             }
             totalWordOccurrences.addAndGet((long) word.getElementFrequency());
         }

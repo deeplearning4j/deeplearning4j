@@ -22,10 +22,12 @@ import org.nd4j.parameterserver.distributed.transport.Transport;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class SilentUpdatesMessage extends BaseVoidMessage implements TrainingMessage, RequestMessage  {
+public class SilentUpdatesMessage extends BaseVoidMessage implements TrainingMessage, RequestMessage {
 
-    @Getter protected long updateId;
-    @Getter protected INDArray updates;
+    @Getter
+    protected long updateId;
+    @Getter
+    protected INDArray updates;
     protected long frameId;
 
     protected SilentUpdatesMessage() {
@@ -39,7 +41,8 @@ public class SilentUpdatesMessage extends BaseVoidMessage implements TrainingMes
 
 
     @Override
-    public void attachContext(VoidConfiguration voidConfiguration, TrainingDriver<? extends TrainingMessage> trainer, Clipboard clipboard, Transport transport, Storage storage, NodeRole role, short shardIndex) {
+    public void attachContext(VoidConfiguration voidConfiguration, TrainingDriver<? extends TrainingMessage> trainer,
+                    Clipboard clipboard, Transport transport, Storage storage, NodeRole role, short shardIndex) {
         this.voidConfiguration = voidConfiguration;
         this.trainer = trainer;
         this.transport = transport;

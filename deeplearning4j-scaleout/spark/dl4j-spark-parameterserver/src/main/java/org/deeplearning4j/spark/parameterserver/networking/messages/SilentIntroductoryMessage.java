@@ -9,7 +9,7 @@ import org.nd4j.parameterserver.distributed.messages.DistributedMessage;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class SilentIntroductoryMessage extends BaseVoidMessage implements DistributedMessage{
+public class SilentIntroductoryMessage extends BaseVoidMessage implements DistributedMessage {
     protected String localIp;
     protected int port;
 
@@ -26,7 +26,7 @@ public class SilentIntroductoryMessage extends BaseVoidMessage implements Distri
     public void processMessage() {
         /*
             basically we just want to send our IP, and get our new shardIndex in return. haha. bad idea obviously, but still...
-
+        
             or, we can skip direct addressing here, use passive addressing instead, like in client mode?
          */
 

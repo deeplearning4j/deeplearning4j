@@ -278,7 +278,7 @@ public abstract class Layer implements Serializable, Cloneable {
      * @param paramName    Parameter name
      * @return             IUpdater for the parameter
      */
-    public IUpdater getIUpdaterByParam(String paramName){
+    public IUpdater getIUpdaterByParam(String paramName) {
         return iUpdater;
     }
 
@@ -477,7 +477,7 @@ public abstract class Layer implements Serializable, Cloneable {
          *
          * @param updater Updater to use
          */
-        public T updater(IUpdater updater){
+        public T updater(IUpdater updater) {
             this.iupdater = updater;
             return (T) this;
         }

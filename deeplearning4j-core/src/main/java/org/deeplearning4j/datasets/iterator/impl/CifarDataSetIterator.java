@@ -40,7 +40,7 @@ public class CifarDataSetIterator extends RecordReaderDataSetIterator {
      */
     public CifarDataSetIterator(int batchSize, int numExamples, boolean train) {
         this(batchSize, numExamples, new int[] {HEIGHT, WIDTH, CHANNELS}, CifarLoader.NUM_LABELS, null,
-                CifarLoader.DEFAULT_USE_SPECIAL_PREPROC, train);
+                        CifarLoader.DEFAULT_USE_SPECIAL_PREPROC, train);
     }
 
     /**
