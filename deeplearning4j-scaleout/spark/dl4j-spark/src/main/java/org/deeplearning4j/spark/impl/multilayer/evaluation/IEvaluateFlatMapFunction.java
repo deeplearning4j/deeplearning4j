@@ -103,7 +103,7 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
                         "Network did not have same number of parameters as the broadcast set parameters");
             graph.setParams(val);
 
-            T eval = graph.doEvaluation(new SparkADSI(new IteratorDataSetIterator(dataSetIterator, evalBatchSize), 2, new LinkedBlockingDeque<DataSet>(2), true, new DefaultCallback(), Nd4j.getAffinityManager().getDeviceForCurrentThread()), evaluation)[0];
+            T eval = graph.doEvaluation(new SparkADSI(new IteratorDataSetIterator(dataSetIterator, evalBatchSize), 2, true), evaluation)[0];
             return Collections.singletonList(eval);
 
         } else {
@@ -114,7 +114,7 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
                         "Network did not have same number of parameters as the broadcast set parameters");
             network.setParameters(val);
 
-            T eval = network.doEvaluation(new IteratorDataSetIterator(dataSetIterator, evalBatchSize), evaluation)[0];
+            T eval = network.doEvaluation(new SparkADSI(new IteratorDataSetIterator(dataSetIterator, evalBatchSize), 2, true), evaluation)[0];
             return Collections.singletonList(eval);
         }
     }

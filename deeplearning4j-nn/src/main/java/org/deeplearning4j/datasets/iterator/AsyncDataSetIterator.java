@@ -44,6 +44,9 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
     protected DataSetCallback callback;
 
+    protected AsyncDataSetIterator() {
+        //
+    }
 
     public AsyncDataSetIterator(DataSetIterator baseIterator) {
         this(baseIterator, 8);
@@ -70,7 +73,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
     }
 
     public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace) {
-        this(iterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace, null);
+        this(iterator, queueSize, queue, useWorkspace, new DefaultCallback());
     }
 
     public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace, DataSetCallback callback) {
