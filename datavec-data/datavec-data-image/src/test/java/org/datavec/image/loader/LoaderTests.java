@@ -138,7 +138,7 @@ public class LoaderTests {
         int channels = 3;
         CifarLoader loader = new CifarLoader(row, col, channels, null, false, false, false);
         DataSet data;
-        for (int i = 0; i < loader.NUM_TEST_IMAGES / numExamples; i++) {
+        for (int i = 0; i < CifarLoader.NUM_TEST_IMAGES / numExamples; i++) {
             loader.next(numExamples);
         }
         data = loader.next(numExamples);
@@ -175,13 +175,9 @@ public class LoaderTests {
         int row = 32;
         int col = 32;
         int channels = 3;
-        File dir1 = new File(CifarLoader.trainFilesSerialized + "1.ser");
-        //        File dir5 = new File(CifarLoader.trainFilesSerialized + "5.ser");
         CifarLoader cifar = new CifarLoader(row, col, channels, null, true, true, false);
-        assertTrue(dir1.exists());
         DataSet result = cifar.next(1);
         assertEquals(result.getFeatureMatrix().length(), 32 * 32 * 3, 0.0);
-
     }
 
 }
