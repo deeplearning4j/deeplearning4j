@@ -60,6 +60,16 @@ public class L2Vertex extends GraphVertex {
     }
 
     @Override
+    public int minVertexInputs() {
+        return 2;
+    }
+
+    @Override
+    public int maxVertexInputs() {
+        return 2;
+    }
+
+    @Override
     public int hashCode() {
         return 433682566;
     }

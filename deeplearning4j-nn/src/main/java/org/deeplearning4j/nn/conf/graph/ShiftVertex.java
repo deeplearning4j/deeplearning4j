@@ -47,7 +47,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
-@EqualsAndHashCode()
+@EqualsAndHashCode(callSuper = false)
 public class ShiftVertex extends GraphVertex {
 
     public ShiftVertex(@JsonProperty("shiftFactor") double shiftFactor) {
@@ -64,6 +64,16 @@ public class ShiftVertex extends GraphVertex {
     @Override
     public int numParams(boolean backprop) {
         return 0;
+    }
+
+    @Override
+    public int minVertexInputs() {
+        return 1;
+    }
+
+    @Override
+    public int maxVertexInputs() {
+        return 1;
     }
 
     @Override
