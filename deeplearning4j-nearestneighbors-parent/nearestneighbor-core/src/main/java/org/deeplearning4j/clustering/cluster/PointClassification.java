@@ -18,26 +18,21 @@
 
 package org.deeplearning4j.clustering.cluster;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
 @Data
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
 public class PointClassification implements Serializable {
 
     private Cluster cluster;
     private double distanceFromCenter;
     private boolean newLocation;
 
-    protected PointClassification() {
-        // no-op for serialization only
-    }
-
-    public PointClassification(Cluster cluster, double distanceFromCenter, boolean newLocation) {
-        super();
-        this.cluster = cluster;
-        this.distanceFromCenter = distanceFromCenter;
-        this.newLocation = newLocation;
-    }
 
 }

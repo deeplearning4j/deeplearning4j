@@ -21,26 +21,79 @@ package org.deeplearning4j.clustering.strategy;
 import org.deeplearning4j.clustering.condition.ClusteringAlgorithmCondition;
 import org.deeplearning4j.clustering.iteration.IterationHistory;
 
+/**
+ *
+ */
 public interface ClusteringStrategy {
 
+    /**
+     *
+     * @return
+     */
+    boolean inverseDistanceCalculation();
+
+    /**
+     *
+     * @return
+     */
     ClusteringStrategyType getType();
 
+    /**
+     *
+     * @param type
+     * @return
+     */
     boolean isStrategyOfType(ClusteringStrategyType type);
 
+    /**
+     *
+     * @return
+     */
     Integer getInitialClusterCount();
 
+    /**
+     *
+     * @return
+     */
     String getDistanceFunction();
 
+    /**
+     *
+     * @return
+     */
     boolean isAllowEmptyClusters();
 
+    /**
+     *
+     * @return
+     */
     ClusteringAlgorithmCondition getTerminationCondition();
 
+    /**
+     *
+     * @return
+     */
     boolean isOptimizationDefined();
 
+    /**
+     *
+     * @param iterationHistory
+     * @return
+     */
     boolean isOptimizationApplicableNow(IterationHistory iterationHistory);
 
+    /**
+     *
+     * @param maxIterationCount
+     * @return
+     */
     BaseClusteringStrategy endWhenIterationCountEquals(int maxIterationCount);
 
+    /**
+     *
+     * @param rate
+     * @return
+     */
     BaseClusteringStrategy endWhenDistributionVariationRateLessThan(double rate);
 
 }

@@ -18,28 +18,42 @@
 
 package org.deeplearning4j.clustering.cluster;
 
+import lombok.Data;
 import org.apache.commons.lang3.tuple.Pair;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
 import java.util.*;
 
+@Data
 public class ClusterSet implements Serializable {
 
     private String distanceFunction;
     private List<Cluster> clusters;
     private Map<String, String> pointDistribution;
+    private boolean inverse;
 
-    public ClusterSet() {
-        this(null);
+    public ClusterSet(boolean inverse) {
+        this(null,inverse);
     }
 
-    public ClusterSet(String distanceFunction) {
+    public ClusterSet(String distanceFunction,boolean inverse) {
         this.distanceFunction = distanceFunction;
+        this.inverse = inverse;
         this.clusters = Collections.synchronizedList(new ArrayList<Cluster>());
         this.pointDistribution = Collections.synchronizedMap(new HashMap<String, String>());
     }
 
+
+    public boolean isInverse() {
+        return inverse;
+    }
+
+    /**
+     *
+     * @param center
+     * @return
+     */
     public Cluster addNewClusterWithCenter(Point center) {
         Cluster newCluster = new Cluster(center, distanceFunction);
         getClusters().add(newCluster);
@@ -47,19 +61,39 @@ public class ClusterSet implements Serializable {
         return newCluster;
     }
 
+    /**
+     *
+     * @param point
+     * @return
+     */
     public PointClassification classifyPoint(Point point) {
         return classifyPoint(point, true);
     }
 
+    /**
+     *
+     * @param points
+     */
     public void classifyPoints(List<Point> points) {
         classifyPoints(points, true);
     }
 
+    /**
+     *
+     * @param points
+     * @param moveClusterCenter
+     */
     public void classifyPoints(List<Point> points, boolean moveClusterCenter) {
         for (Point point : points)
             classifyPoint(point, moveClusterCenter);
     }
 
+    /**
+     *
+     * @param point
+     * @param moveClusterCenter
+     * @return
+     */
     public PointClassification classifyPoint(Point point, boolean moveClusterCenter) {
         Pair<Cluster, Double> nearestCluster = nearestCluster(point);
         Cluster newCluster = nearestCluster.getKey();
@@ -84,44 +118,85 @@ public class ClusterSet implements Serializable {
     }
 
 
+    /**
+     *
+     * @param point
+     * @return
+     */
     public Pair<Cluster, Double> nearestCluster(Point point) {
 
         Cluster nearestCluster = null;
-        double minDistance = Float.MAX_VALUE;
+        double minDistance = isInverse() ? Float.MIN_VALUE : Float.MAX_VALUE;
 
         double currentDistance;
         for (Cluster cluster : getClusters()) {
             currentDistance = cluster.getDistanceToCenter(point);
-            if (currentDistance < minDistance) {
-                minDistance = currentDistance;
-                nearestCluster = cluster;
+            if(isInverse()) {
+                if (currentDistance > minDistance) {
+                    minDistance = currentDistance;
+                    nearestCluster = cluster;
+                }
             }
+            else {
+                if (currentDistance < minDistance) {
+                    minDistance = currentDistance;
+                    nearestCluster = cluster;
+                }
+            }
+
         }
 
         return Pair.of(nearestCluster, minDistance);
 
     }
 
+    /**
+     *
+     * @param m1
+     * @param m2
+     * @return
+     */
     public double getDistance(Point m1, Point m2) {
         return Nd4j.getExecutioner()
                         .execAndReturn(Nd4j.getOpFactory().createAccum(distanceFunction, m1.getArray(), m2.getArray()))
                         .getFinalResult().doubleValue();
     }
 
+    /**
+     *
+     * @param point
+     * @return
+     */
     public double getDistanceFromNearestCluster(Point point) {
         return nearestCluster(point).getValue();
     }
 
+
+    /**
+     *
+     * @param clusterId
+     * @return
+     */
     public String getClusterCenterId(String clusterId) {
         Point clusterCenter = getClusterCenter(clusterId);
         return clusterCenter == null ? null : clusterCenter.getId();
     }
 
+    /**
+     *
+     * @param clusterId
+     * @return
+     */
     public Point getClusterCenter(String clusterId) {
         Cluster cluster = getCluster(clusterId);
         return cluster == null ? null : cluster.getCenter();
     }
 
+    /**
+     *
+     * @param id
+     * @return
+     */
     public Cluster getCluster(String id) {
         for (int i = 0, j = clusters.size(); i < j; i++)
             if (id.equals(clusters.get(i).getId()))
@@ -129,15 +204,27 @@ public class ClusterSet implements Serializable {
         return null;
     }
 
+    /**
+     *
+     * @return
+     */
     public int getClusterCount() {
         return getClusters() == null ? 0 : getClusters().size();
     }
 
+    /**
+     *
+     */
     public void removePoints() {
         for (Cluster cluster : getClusters())
             cluster.removePoints();
     }
 
+    /**
+     *
+     * @param count
+     * @return
+     */
     public List<Cluster> getMostPopulatedClusters(int count) {
         List<Cluster> mostPopulated = new ArrayList<>(clusters);
         Collections.sort(mostPopulated, new Comparator<Cluster>() {
@@ -148,6 +235,10 @@ public class ClusterSet implements Serializable {
         return mostPopulated.subList(0, count);
     }
 
+    /**
+     *
+     * @return
+     */
     public List<Cluster> removeEmptyClusters() {
         List<Cluster> emptyClusters = new ArrayList<>();
         for (Cluster cluster : clusters)
@@ -155,30 +246,6 @@ public class ClusterSet implements Serializable {
                 emptyClusters.add(cluster);
         clusters.removeAll(emptyClusters);
         return emptyClusters;
-    }
-
-    public List<Cluster> getClusters() {
-        return clusters;
-    }
-
-    public void setClusters(List<Cluster> clusters) {
-        this.clusters = clusters;
-    }
-
-    public String getAccumulation() {
-        return distanceFunction;
-    }
-
-    public void setAccumulation(String distanceFunction) {
-        this.distanceFunction = distanceFunction;
-    }
-
-    public Map<String, String> getPointDistribution() {
-        return pointDistribution;
-    }
-
-    public void setPointDistribution(Map<String, String> pointDistribution) {
-        this.pointDistribution = pointDistribution;
     }
 
 }

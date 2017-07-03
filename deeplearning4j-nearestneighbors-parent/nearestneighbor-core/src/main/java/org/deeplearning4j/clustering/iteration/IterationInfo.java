@@ -18,19 +18,20 @@
 
 package org.deeplearning4j.clustering.iteration;
 
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.clustering.info.ClusterSetInfo;
 
 import java.io.Serializable;
 
+@Data
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class IterationInfo implements Serializable {
 
     private int index;
     private ClusterSetInfo clusterSetInfo;
     private boolean strategyApplied;
-
-    protected IterationInfo() {
-        // no-op for serialization only
-    }
 
     public IterationInfo(int index) {
         super();
@@ -42,32 +43,5 @@ public class IterationInfo implements Serializable {
         this.index = index;
         this.clusterSetInfo = clusterSetInfo;
     }
-
-
-
-    public int getIndex() {
-        return index;
-    }
-
-    public void setIndex(int index) {
-        this.index = index;
-    }
-
-    public ClusterSetInfo getClusterSetInfo() {
-        return clusterSetInfo;
-    }
-
-    public void setClusterSetInfo(ClusterSetInfo clusterSetInfo) {
-        this.clusterSetInfo = clusterSetInfo;
-    }
-
-    public boolean isStrategyApplied() {
-        return strategyApplied;
-    }
-
-    public void setStrategyApplied(boolean optimizationApplied) {
-        this.strategyApplied = optimizationApplied;
-    }
-
 
 }

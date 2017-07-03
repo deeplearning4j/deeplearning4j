@@ -18,33 +18,39 @@
 
 package org.deeplearning4j.clustering.condition;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.clustering.iteration.IterationHistory;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.LessThan;
 
 import java.io.Serializable;
 
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PROTECTED)
 public class ConvergenceCondition implements ClusteringAlgorithmCondition, Serializable {
 
     private Condition convergenceCondition;
     private double pointsDistributionChangeRate;
 
-    protected ConvergenceCondition() {
 
-    }
-
-    protected ConvergenceCondition(Condition varianceVariationCondition, double pointsDistributionChangeRate) {
-        super();
-        this.convergenceCondition = varianceVariationCondition;
-        this.pointsDistributionChangeRate = pointsDistributionChangeRate;
-    }
-
+    /**
+     *
+     * @param pointsDistributionChangeRate
+     * @return
+     */
     public static ConvergenceCondition distributionVariationRateLessThan(double pointsDistributionChangeRate) {
         Condition condition = new LessThan(pointsDistributionChangeRate);
         return new ConvergenceCondition(condition, pointsDistributionChangeRate);
     }
 
 
+    /**
+     *
+     * @param iterationHistory
+     * @return
+     */
     public boolean isSatisfied(IterationHistory iterationHistory) {
         int iterationCount = iterationHistory.getIterationCount();
         if (iterationCount <= 1)
