@@ -38,7 +38,7 @@ public class TransformProcessRecordReader implements RecordReader {
      */
     @Override
     public void initialize(InputSplit split) throws IOException, InterruptedException {
-
+        recordReader.initialize(split);
     }
 
     /**
@@ -51,7 +51,7 @@ public class TransformProcessRecordReader implements RecordReader {
      */
     @Override
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
-
+        recordReader.initialize(conf, split);
     }
 
     @Override

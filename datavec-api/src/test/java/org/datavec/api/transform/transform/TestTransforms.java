@@ -50,7 +50,11 @@ import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransfo
 import junit.framework.TestCase;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
+import org.junit.Assert;
 import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.shade.jackson.core.JsonFactory;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -247,6 +251,88 @@ public class TestTransforms {
                         transform.map(Collections.singletonList((Writable) new Text("one"))));
         assertEquals(Collections.singletonList((Writable) new Text("two")),
                         transform.map(Collections.singletonList((Writable) new Text("two"))));
+    }
+
+    @Test
+    public void testConcatenateStringColumnsTransform() throws Exception {
+        final String DELIMITER = " ";
+        final String NEW_COLUMN = "NewColumn";
+        final List<String> CONCAT_COLUMNS = Arrays.asList("ConcatenatedColumn1", "ConcatenatedColumn2", "ConcatenatedColumn3");
+        final List<String> ALL_COLUMNS = Arrays.asList("ConcatenatedColumn1", "OtherColumn4", "ConcatenatedColumn2",
+                "OtherColumn5", "ConcatenatedColumn3", "OtherColumn6");
+        final List<Text> COLUMN_VALUES = Arrays.asList(new Text("string1"), new Text("other4"),
+                new Text("string2"), new Text("other5"),
+                new Text("string3"), new Text("other6"));
+        final String NEW_COLUMN_VALUE = "string1 string2 string3";
+
+        Transform transform = new ConcatenateStringColumns(NEW_COLUMN, DELIMITER, CONCAT_COLUMNS);
+        String[] allColumns = ALL_COLUMNS.toArray(new String[ALL_COLUMNS.size()]);
+        Schema schema = new Schema.Builder().addColumnsString(allColumns).build();
+
+        List<String> outputColumns = new ArrayList<>(ALL_COLUMNS);
+        outputColumns.add(NEW_COLUMN);
+        Schema newSchema = transform.transform(schema);
+        Assert.assertEquals(outputColumns, newSchema.getColumnNames());
+
+        List<Writable> input = new ArrayList<>();
+        for (Writable value : COLUMN_VALUES)
+            input.add(value);
+
+        transform.setInputSchema(schema);
+        List<Writable> transformed = transform.map(input);
+        Assert.assertEquals(NEW_COLUMN_VALUE, transformed.get(transformed.size() - 1).toString());
+
+        List<Text> outputColumnValues = new ArrayList<>(COLUMN_VALUES);
+        outputColumnValues.add(new Text(NEW_COLUMN_VALUE));
+        Assert.assertEquals(outputColumnValues, transformed);
+
+        ObjectMapper om = TestUtil.initMapper(new JsonFactory());
+        String s = om.writeValueAsString(transform);
+        Transform transform2 = om.readValue(s, ConcatenateStringColumns.class);
+        Assert.assertEquals(transform, transform2);
+    }
+
+    @Test
+    public void testChangeCaseStringTransform() throws Exception {
+        final String STRING_COLUMN = "StringColumn";
+        final List<String> ALL_COLUMNS = Arrays.asList(STRING_COLUMN, "OtherColumn");
+        final String TEXT_MIXED_CASE = "UPPER lower MiXeD";
+        final String TEXT_UPPER_CASE = TEXT_MIXED_CASE.toUpperCase();
+        final String TEXT_LOWER_CASE = TEXT_MIXED_CASE.toLowerCase();
+
+        Transform transform = new ChangeCaseStringTransform(STRING_COLUMN);
+        String[] allColumns = ALL_COLUMNS.toArray(new String[ALL_COLUMNS.size()]);
+        Schema schema = new Schema.Builder().addColumnsString(allColumns).build();
+        transform.setInputSchema(schema);
+        Schema newSchema = transform.transform(schema);
+        List<String> outputColumns = new ArrayList<>(ALL_COLUMNS);
+        Assert.assertEquals(outputColumns, newSchema.getColumnNames());
+
+        transform = new ChangeCaseStringTransform(STRING_COLUMN, ChangeCaseStringTransform.CaseType.LOWER);
+        transform.setInputSchema(schema);
+        List<Writable> input = new ArrayList<>();
+        input.add(new Text(TEXT_MIXED_CASE));
+        input.add(new Text(TEXT_MIXED_CASE));
+        List<Writable> output = new ArrayList<>();
+        output.add(new Text(TEXT_LOWER_CASE));
+        output.add(new Text(TEXT_MIXED_CASE));
+        List<Writable> transformed = transform.map(input);
+        Assert.assertEquals(transformed.get(0).toString(), TEXT_LOWER_CASE);
+        Assert.assertEquals(transformed, output);
+
+        transform = new ChangeCaseStringTransform(STRING_COLUMN, ChangeCaseStringTransform.CaseType.UPPER);
+        transform.setInputSchema(schema);
+        output.clear();
+        output.add(new Text(TEXT_UPPER_CASE));
+        output.add(new Text(TEXT_MIXED_CASE));
+        transformed = transform.map(input);
+        Assert.assertEquals(transformed.get(0).toString(), TEXT_UPPER_CASE);
+        Assert.assertEquals(transformed, output);
+
+        ObjectMapper om = TestUtil.initMapper(new JsonFactory());
+        String s = om.writeValueAsString(transform);
+        Transform transform2 = om.readValue(s, ChangeCaseStringTransform.class);
+        Assert.assertEquals(transform, transform2);
     }
 
     @Test
@@ -1287,4 +1373,48 @@ public class TestTransforms {
         assertEquals(Collections.emptyList(), t_newcol_trim_p2.mapSequence(exp1));
         assertEquals(Collections.emptyList(), t_newcol_trim_m2.mapSequence(exp1));
     }
+
+    @Test
+    public void testStringListToCountsNDArrayTransform() throws Exception {
+
+        StringListToCountsNDArrayTransform t = new StringListToCountsNDArrayTransform(
+                "inCol", "outCol", Arrays.asList("cat","dog","horse"), ",", false, true);
+
+        Schema s = new Schema.Builder().addColumnString("inCol").build();
+        t.setInputSchema(s);
+
+        List<Writable> l = Collections.<Writable>singletonList(new Text("cat,cat,dog,dog,dog,unknown"));
+
+        List<Writable> out = t.map(l);
+
+        assertEquals(Collections.singletonList(new NDArrayWritable(Nd4j.create(new double[]{2,3,0}))), out);
+
+        ObjectMapper om = TestUtil.initMapper(new JsonFactory());
+        String json = om.writeValueAsString(t);
+        Transform transform2 = om.readValue(json, StringListToCountsNDArrayTransform.class);
+        Assert.assertEquals(t, transform2);
+    }
+
+
+    @Test
+    public void testStringListToIndicesNDArrayTransform() throws Exception {
+
+        StringListToIndicesNDArrayTransform t = new StringListToIndicesNDArrayTransform(
+                "inCol", "outCol", Arrays.asList("apple", "cat","dog","horse"), ",", false, true);
+
+        Schema s = new Schema.Builder().addColumnString("inCol").build();
+        t.setInputSchema(s);
+
+        List<Writable> l = Collections.<Writable>singletonList(new Text("cat,dog,dog,dog,unknown"));
+
+        List<Writable> out = t.map(l);
+
+        assertEquals(Collections.singletonList(new NDArrayWritable(Nd4j.create(new double[]{1,2,2,2}))), out);
+
+        ObjectMapper om = TestUtil.initMapper(new JsonFactory());
+        String json = om.writeValueAsString(t);
+        Transform transform2 = om.readValue(json, StringListToIndicesNDArrayTransform.class);
+        Assert.assertEquals(t, transform2);
+    }
+
 }
