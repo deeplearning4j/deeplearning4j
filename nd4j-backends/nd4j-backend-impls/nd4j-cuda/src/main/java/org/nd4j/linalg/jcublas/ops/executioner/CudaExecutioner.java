@@ -245,6 +245,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (op.y() != null) {
             if ((dimension.length == 1 &&  dimension[0] == Integer.MAX_VALUE )||op.x().tensorAlongDimension(0, dimension).lengthLong() != op.y().lengthLong()) {
+                if (op.x().lengthLong() != op.y().lengthLong())
+                    throw new ND4JIllegalStateException("Op.X [" + op.x().lengthLong() + "] and Op.Y [" + op.y().lengthLong() + "] lengths should match");
+
                 Pair<DataBuffer, DataBuffer> yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
 
                 Pointer yDevTadShapeInfo = AtomicAllocator.getInstance().getPointer(yTadBuffers.getFirst(), context);
