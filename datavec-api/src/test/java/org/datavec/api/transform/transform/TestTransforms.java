@@ -50,7 +50,11 @@ import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransfo
 import junit.framework.TestCase;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
+import org.junit.Assert;
 import org.junit.Test;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.shade.jackson.core.JsonFactory;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -1369,4 +1373,48 @@ public class TestTransforms {
         assertEquals(Collections.emptyList(), t_newcol_trim_p2.mapSequence(exp1));
         assertEquals(Collections.emptyList(), t_newcol_trim_m2.mapSequence(exp1));
     }
+
+    @Test
+    public void testStringListToCountsNDArrayTransform() throws Exception {
+
+        StringListToCountsNDArrayTransform t = new StringListToCountsNDArrayTransform(
+                "inCol", "outCol", Arrays.asList("cat","dog","horse"), ",", false, true);
+
+        Schema s = new Schema.Builder().addColumnString("inCol").build();
+        t.setInputSchema(s);
+
+        List<Writable> l = Collections.<Writable>singletonList(new Text("cat,cat,dog,dog,dog,unknown"));
+
+        List<Writable> out = t.map(l);
+
+        assertEquals(Collections.singletonList(new NDArrayWritable(Nd4j.create(new double[]{2,3,0}))), out);
+
+        ObjectMapper om = TestUtil.initMapper(new JsonFactory());
+        String json = om.writeValueAsString(t);
+        Transform transform2 = om.readValue(json, StringListToCountsNDArrayTransform.class);
+        Assert.assertEquals(t, transform2);
+    }
+
+
+    @Test
+    public void testStringListToIndicesNDArrayTransform() throws Exception {
+
+        StringListToIndicesNDArrayTransform t = new StringListToIndicesNDArrayTransform(
+                "inCol", "outCol", Arrays.asList("apple", "cat","dog","horse"), ",", false, true);
+
+        Schema s = new Schema.Builder().addColumnString("inCol").build();
+        t.setInputSchema(s);
+
+        List<Writable> l = Collections.<Writable>singletonList(new Text("cat,dog,dog,dog,unknown"));
+
+        List<Writable> out = t.map(l);
+
+        assertEquals(Collections.singletonList(new NDArrayWritable(Nd4j.create(new double[]{1,2,2,2}))), out);
+
+        ObjectMapper om = TestUtil.initMapper(new JsonFactory());
+        String json = om.writeValueAsString(t);
+        Transform transform2 = om.readValue(json, StringListToIndicesNDArrayTransform.class);
+        Assert.assertEquals(t, transform2);
+    }
+
 }

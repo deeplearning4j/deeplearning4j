@@ -24,12 +24,18 @@ public class StringListToIndicesNDArrayTransform extends StringListToCountsNDArr
      * @param delimiter      The delimiter for the Strings to convert
      * @param ignoreUnknown  Whether to ignore unknown tokens
      */
+    public StringListToIndicesNDArrayTransform(String columnName, List<String> vocabulary, String delimiter,
+                                               boolean binary, boolean ignoreUnknown) {
+        super(columnName, vocabulary, delimiter, binary, ignoreUnknown);
+    }
+
     public StringListToIndicesNDArrayTransform(@JsonProperty("columnName") String columnName,
+                                               @JsonProperty("newColumnName") String newColumnName,
                                                @JsonProperty("vocabulary") List<String> vocabulary,
                                                @JsonProperty("delimiter") String delimiter,
                                                @JsonProperty("binary") boolean binary,
                                                @JsonProperty("ignoreUnknown") boolean ignoreUnknown) {
-        super(columnName, vocabulary, delimiter, binary, ignoreUnknown);
+        super(columnName, newColumnName, vocabulary, delimiter, binary, ignoreUnknown);
     }
 
     @Override

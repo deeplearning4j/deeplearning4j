@@ -19,8 +19,8 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * Converts String column into a bag-of-words (BOW) represented
- * as an NDArray of "counts."
+ * Converts String column into a bag-of-words (BOW) represented as an NDArray of "counts."<br>
+ * Note that the original column is removed in the process
  *
  * @author dave@skymind.io
  */
@@ -28,6 +28,7 @@ import java.util.*;
 @EqualsAndHashCode(callSuper = false, exclude = {"columnIdx"})
 public class StringListToCountsNDArrayTransform extends BaseTransform {
     protected final String columnName;
+    protected final String newColumnName;
     protected final List<String> vocabulary;
     protected final String delimiter;
     protected final boolean binary;
@@ -43,12 +44,25 @@ public class StringListToCountsNDArrayTransform extends BaseTransform {
      * @param delimiter      The delimiter for the Strings to convert
      * @param ignoreUnknown  Whether to ignore unknown tokens
      */
+    public StringListToCountsNDArrayTransform(String columnName, List<String> vocabulary, String delimiter,
+                                              boolean binary, boolean ignoreUnknown) {
+        this(columnName, columnName+"[BOW]", vocabulary, delimiter, binary, ignoreUnknown);
+    }
+
+    /**
+     * @param columnName     The name of the column to convert
+     * @param vocabulary     The possible tokens that may be present.
+     * @param delimiter      The delimiter for the Strings to convert
+     * @param ignoreUnknown  Whether to ignore unknown tokens
+     */
     public StringListToCountsNDArrayTransform(@JsonProperty("columnName") String columnName,
+                                              @JsonProperty("newColumnName") String newColumnName,
                                               @JsonProperty("vocabulary") List<String> vocabulary,
                                               @JsonProperty("delimiter") String delimiter,
                                               @JsonProperty("binary") boolean binary,
                                               @JsonProperty("ignoreUnknown") boolean ignoreUnknown) {
         this.columnName = columnName;
+        this.newColumnName = newColumnName;
         this.vocabulary = vocabulary;
         this.delimiter = delimiter;
         this.binary = binary;
@@ -85,8 +99,7 @@ public class StringListToCountsNDArrayTransform extends BaseTransform {
                 if (t.getColumnType() != ColumnType.String)
                     throw new IllegalStateException("Cannot convert non-string type");
 
-                String columnName = this.columnName + "[BOW]";
-                ColumnMetaData meta = new NDArrayMetaData(columnName, new int[]{vocabulary.size()});
+                ColumnMetaData meta = new NDArrayMetaData(newColumnName, new int[]{vocabulary.size()});
                 newMeta.add(meta);
             } else {
                 newMeta.add(t);
