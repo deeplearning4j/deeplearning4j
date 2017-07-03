@@ -56,6 +56,16 @@ public class MergeVertex extends GraphVertex {
     }
 
     @Override
+    public int minVertexInputs() {
+        return 2;
+    }
+
+    @Override
+    public int maxVertexInputs() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                     INDArray paramsView, boolean initializeParams) {
         return new org.deeplearning4j.nn.graph.vertex.impl.MergeVertex(graph, name, idx);
