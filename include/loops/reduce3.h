@@ -376,28 +376,54 @@ template<typename OpType>
                         int yCoord[MAX_RANK];
 
 
+                        int limit = xTadLength / maxBlock;
+				        if (xTadLength % maxBlock > 0)
+				            limit++;
+
+
                         for (int r = blockIdx.x; r < xTads; r += blockDim.x * gridDim.x) {
                             T *x = dx + xOffsets[r];
 
-                            if (threadIdx.x < xTadLength && threadIdx.x < maxBlock) // FIXME:
-                                tempX[threadIdx.x] = x[threadIdx.x];
+                            if (threadIdx.x < xTadLength && threadIdx.x < maxBlock) {
+                                if (shape::order(xTadShapeInfo) == 'c') {
+                                    shape::ind2subC(xRank, xShape, threadIdx.x, xCoord);
+                                } else {
+                                    shape::ind2sub(xRank, xShape, threadIdx.x, xCoord);
+                                }
+
+                                Nd4jIndex xO = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+
+                                tempX[threadIdx.x] = x[xO];
+                            }
 
                             for (int g = 0; g < yTads; g++) {
                                 T *y = dy + yOffsets[g];
 
                                 int ri = (r * yTads) + g;
 
+                                sPartials[threadIdx.x] = startingVal;
                                 if (threadIdx.x < OpType::extraParamsLen) {
 					                extraZ[threadIdx.x] = (T) startingVal;
 				                }
 				                __syncthreads();
 
-                                for (int t = 0; t < xTadLength / maxBlock + 1; t++) {
+                                // we might have data too large for single cache block, rendering cache useless though :(
+                                for (int t = 0; t < limit; t++) {
 
-                                    // we reset tempX IF we have > tiles
-                                    if (t >= 1 || xTadLength / maxBlock + 1 && g > 0)
-                                        if (threadIdx.x + (t * maxBlock) < xTadLength)
-                                            tempX[threadIdx.x] = x[threadIdx.x + (t * maxBlock)];
+                                    // we reset tempX IF we have >1 tiles
+                                    if (t >= 1 || (limit > 1 && g > 0))
+                                        if (threadIdx.x + (t * maxBlock) < xTadLength) {
+                                            if (shape::order(xTadShapeInfo) == 'c') {
+                                                shape::ind2subC(xRank, xShape, threadIdx.x + (t * maxBlock), xCoord);
+                                            } else {
+                                                shape::ind2sub(xRank, xShape, threadIdx.x + (t * maxBlock), xCoord);
+                                            }
+
+                                            Nd4jIndex xO = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+
+                                            tempX[threadIdx.x] = x[xO];
+            //                                tempX[threadIdx.x] = x[threadIdx.x + (t * maxBlock)];
+                                        }
 
                                     for (int f = threadIdx.x + (t * maxBlock); f < xTadLength && f < threadIdx.x + ((t + 1) * maxBlock); f += blockDim.x * gridDim.x) {
                                         if (shape::order(yTadShapeInfo) == 'c') {
@@ -408,7 +434,7 @@ template<typename OpType>
 
                                         Nd4jIndex yO = shape::getOffset(0, yShape, yStride, yCoord, yRank);
 
-                                        sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(tempX[f], y[yO], extraZ), extraZ);
+                                        sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(tempX[threadIdx.x], y[yO], extraZ), extraZ);
                                     }
 
                                     // we MUST step through this block altogether
@@ -422,7 +448,6 @@ template<typename OpType>
 
                                 if (threadIdx.x == 0) {
 							        result[ri] = OpType::postProcess(sPartials[threadIdx.x],xTadLength, extraZ);
-							        printf("RI [%i, %i]: %f\n", r, g, result[ri]);
 							    }
 
 							    __syncthreads();
