@@ -646,6 +646,28 @@ template<typename OpType>
                                                dimensionLength, tadShapeInfo, tadOffsets), REDUCE3_OPS);
             }
 
+            static void execAll( const int opNum,
+                              T *x,
+                              int *xShapeInfo,
+                              T *extraParamsVals,
+                              T *y,
+                              int *yShapeInfo,
+                              T *result,
+                              int *resultShapeInfoBuffer,
+                              int *dimension,
+                              int dimensionLength,
+                              int *xTadShapeInfo, int *xOffsets,
+                              int *yTadShapeInfo, int *yOffsets) {
+                DISPATCH_BY_OPNUM(execAll, PARAMS(x,
+                                               xShapeInfo,
+                                               extraParamsVals,
+                                               y, yShapeInfo,
+                                               result,
+                                               resultShapeInfoBuffer,
+                                               dimension,
+                                               dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets), REDUCE3_OPS);
+            }
+
 
 
             template<typename OpType>
@@ -727,6 +749,87 @@ template<typename OpType>
 
             }
 
+
+            template<typename OpType>
+            static void execAll(
+                    T *x,
+                    int *xShapeInfo,
+                    T *extraParams,
+                    T *y,
+                    int *yShapeInfo,
+                    T *result,
+                    int *resultShapeInfoBuffer,
+                    int *dimension,
+                    int dimensionLength, int *xTadShapeInfo, int *xOffsets, int *yTadShapeInfo, int *yOffsets) {
+
+                int xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+                int yTadLength = shape::tadLength(yShapeInfo, dimension, dimensionLength);
+
+                int xTads = shape::length(xShapeInfo) / xTadLength;
+                int yTads = shape::length(yShapeInfo) / yTadLength;
+
+                int *xShape = shape::shapeOf(xTadShapeInfo);
+                int *xStride = shape::stride(xTadShapeInfo);
+                int xRank = shape::rank(xTadShapeInfo);
+
+                int *yShape = shape::shapeOf(yTadShapeInfo);
+                int *yStride = shape::stride(yTadShapeInfo);
+                int yRank = shape::rank(yTadShapeInfo);
+
+
+                int xCoord[MAX_RANK];
+                int yCoord[MAX_RANK];
+
+                T startingVal = OpType::startingValue(x);
+
+#pragma  omp parallel for proc_bind(AFFINITY) default(shared) private(xCoord, yCoord)
+                for (int r = 0; r < xTads; r++) {
+                    int xOffset = xOffsets[r];
+
+                    T *lX = x + xOffset;
+
+                    for (int g = 0; g < yTads; g++) {
+                        int yOffset = yOffsets[g];
+                        T *lY = y + yOffset;
+
+                        int ri = (r * yTads) + g;
+
+                        T *localExtraParams = nullptr;
+                        if (OpType::extraParamsLen > 0)
+                            localExtraParams = new T[OpType::extraParamsLen];
+                        for (int extraParamsIdx = 0; extraParamsIdx < OpType::extraParamsLen; extraParamsIdx++) {
+                            localExtraParams[extraParamsIdx] = startingVal;
+                        }
+
+                        for (int f = 0; f < xTadLength; f++) {
+                            if (shape::order(yTadShapeInfo) == 'c') {
+                                shape::ind2subC(yRank, yShape, f, yCoord);
+                            } else {
+                                shape::ind2sub(yRank, yShape, f, yCoord);
+                            }
+
+                            if (shape::order(xTadShapeInfo) == 'c') {
+                                shape::ind2subC(xRank, xShape, f, xCoord);
+                            } else {
+                                shape::ind2sub(xRank, xShape, f, xCoord);
+                            }
+
+                            Nd4jIndex xO = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                            Nd4jIndex yO = shape::getOffset(0, yShape, yStride, yCoord, yRank);
+
+                            result[ri] = OpType::update(result[ri], OpType::op(lX[xO], lY[yO], localExtraParams), localExtraParams);
+                        }
+
+                        result[ri] = OpType::postProcess(result[ri], xTadLength, localExtraParams);
+
+                        if (localExtraParams != nullptr)
+                            delete[] localExtraParams;
+                    }
+                }
+
+            }
+
+
             template<typename OpType>
             static void exec(
                     T *x,
@@ -787,7 +890,7 @@ template<typename OpType>
                     result[r] = OpType::postProcess(result[r], tadLength, localExtraParams);
 
                     if (localExtraParams != nullptr)
-                        delete (localExtraParams);
+                        delete[] localExtraParams;
                 }
             }
 

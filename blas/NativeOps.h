@@ -304,6 +304,59 @@ public:
                              int *resultShapeInfoBuffer,
                              int *dimension,
                              int dimensionLength);
+
+    void execReduce3AllDouble(Nd4jPointer *extraPointers,
+                             int opNum,
+                             double *x,
+                             int *xInfo,
+                             double *extraParamsVals,
+                             double *y,
+                             int *yInfo,
+                             double *result,
+                             int *resultShapeInfoBuffer,
+                             int *dimension,
+                             int dimensionLength,
+                             int *xTadShapeInfo,
+                             int *xOffsets,
+                             int *yTadShapeInfo,
+                             int *yOffsets);
+
+    void execReduce3AllFloat(Nd4jPointer *extraPointers,
+                              int opNum,
+                              float *x,
+                              int *xInfo,
+                              float *extraParamsVals,
+                              float *y,
+                              int *yInfo,
+                              float *result,
+                              int *resultShapeInfoBuffer,
+                              int *dimension,
+                              int dimensionLength,
+                              int *xTadShapeInfo,
+                              int *xOffsets,
+                              int *yTadShapeInfo,
+                              int *yOffsets);
+
+    void execReduce3AllHalf(Nd4jPointer *extraPointers,
+                              int opNum,
+                              float16 *x,
+                              int *xInfo,
+                              float16 *extraParamsVals,
+                              float16 *y,
+                              int *yInfo,
+                              float16 *result,
+                              int *resultShapeInfoBuffer,
+                              int *dimension,
+                              int dimensionLength,
+                              int *xTadShapeInfo,
+                              int *xOffsets,
+                              int *yTadShapeInfo,
+                              int *yOffsets);
+
+
+
+
+
     /**
      *
      * @param opNum

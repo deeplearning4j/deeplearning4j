@@ -6254,3 +6254,61 @@ void NativeOps::decodeThresholdHalf(Nd4jPointer *extraPointers, void *dx, Nd4jIn
     decoderKernelHalf<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz);
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
+
+
+void NativeOps::execReduce3AllDouble(Nd4jPointer *extraPointers,
+									 int opNum,
+									 double *x,
+									 int *xInfo,
+									 double *extraParamsVals,
+									 double *y,
+									 int *yInfo,
+									 double *result,
+									 int *resultShapeInfoBuffer,
+									 int *dimension,
+									 int dimensionLength,
+									 int *xTadShapeInfo,
+									 int *xOffsets,
+									 int *yTadShapeInfo,
+									 int *yOffsets) {
+
+
+}
+
+void NativeOps::execReduce3AllFloat(Nd4jPointer *extraPointers,
+									int opNum,
+									float *x,
+									int *xInfo,
+									float *extraParamsVals,
+									float *y,
+									int *yInfo,
+									float *result,
+									int *resultShapeInfoBuffer,
+									int *dimension,
+									int dimensionLength,
+									int *xTadShapeInfo,
+									int *xOffsets,
+									int *yTadShapeInfo,
+									int *yOffsets) {
+
+
+}
+
+void NativeOps::execReduce3AllHalf(Nd4jPointer *extraPointers,
+								   int opNum,
+								   float16 *x,
+								   int *xInfo,
+								   float16 *extraParamsVals,
+								   float16 *y,
+								   int *yInfo,
+								   float16 *result,
+								   int *resultShapeInfoBuffer,
+								   int *dimension,
+								   int dimensionLength,
+								   int *xTadShapeInfo,
+								   int *xOffsets,
+								   int *yTadShapeInfo,
+								   int *yOffsets) {
+
+
+}

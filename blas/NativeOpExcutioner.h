@@ -355,6 +355,37 @@ public:
                                              dimensionLength);
     }
 
+    static void execReduce3All(int opNum,
+                            T *x,
+                            int *xShapeInfo,
+                            T *extraParamsVals,
+                            T *y,
+                            int *yShapeInfo,
+                            T *result,
+                            int *resultShapeInfoBuffer,
+                            int *dimension,
+                            int dimensionLength,
+                            int *xTadShapeInfo,
+                            int *xOffsets,
+                            int *yTadShapeInfo,
+                            int *yOffsets) {
+
+        functions::reduce3::Reduce3<T>::execAll(opNum,
+                                             x,
+                                             xShapeInfo,
+                                             extraParamsVals,
+                                             y,
+                                             yShapeInfo,
+                                             result,
+                                             resultShapeInfoBuffer,
+                                             dimension,
+                                             dimensionLength,
+                                             xTadShapeInfo,
+                                             xOffsets,
+                                             yTadShapeInfo,
+                                             yOffsets);
+    }
+
     static void execReduce3TAD(int opNum,
                             T *x,
                             int *xShapeInfo,
