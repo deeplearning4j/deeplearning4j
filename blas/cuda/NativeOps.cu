@@ -6291,7 +6291,39 @@ void NativeOps::execReduce3AllFloat(Nd4jPointer *extraPointers,
 									int *yTadShapeInfo,
 									int *yOffsets) {
 
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
 
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+    int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
+
+
+    if (debug && verbose)
+        printf("F119 opNum:[%i]\n", opNum);
+
+    int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+    float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
+
+    dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[7], dimensionLength, sizeof(float), 2);
+
+    if (verbose && launchDims.x == 1)
+        printf("AF119 opNum:[%i]\n", opNum);
+
+    reduce3AllFloat<<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(
+                opNum,
+                        x,
+                        xInfo,
+                        y,
+                        yInfo,
+                        extraParamsVals,
+                        result,
+                        resultShapeInfoBuffer,
+                        dimension,
+                        dimensionLength,
+                        1, allocationPointer, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
 }
 
 void NativeOps::execReduce3AllHalf(Nd4jPointer *extraPointers,
