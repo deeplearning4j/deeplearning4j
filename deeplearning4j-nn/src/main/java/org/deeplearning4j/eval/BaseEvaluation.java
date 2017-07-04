@@ -38,10 +38,10 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
 
         //Serialize fields only, not using getters
         ret.setVisibilityChecker(ret.getSerializationConfig().getDefaultVisibilityChecker()
-                .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
-                .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+                        .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
+                        .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
+                        .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
+                        .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
         return ret;
     }
 
@@ -81,7 +81,7 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
         }
 
         throw new UnsupportedOperationException(
-                this.getClass().getSimpleName() + " does not support per-output masking");
+                        this.getClass().getSimpleName() + " does not support per-output masking");
     }
 
     /**

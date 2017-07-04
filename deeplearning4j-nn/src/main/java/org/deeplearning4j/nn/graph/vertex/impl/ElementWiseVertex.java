@@ -125,7 +125,8 @@ public class ElementWiseVertex extends BaseGraphVertex {
                 for (int i = 0; i < nInForwardPass; i++) {
                     out_product[i] = epsilon.dup();
                     for (int j = 0; j < nInForwardPass; ++j) {
-                        if (i != j) out_product[i].muli(inputs[j]);
+                        if (i != j)
+                            out_product[i].muli(inputs[j]);
                     }
                 }
                 return new Pair<>(null, out_product);

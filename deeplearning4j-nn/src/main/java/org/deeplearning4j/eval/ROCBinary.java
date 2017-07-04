@@ -26,7 +26,6 @@ import java.util.List;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@NoArgsConstructor
 public class ROCBinary extends BaseEvaluation<ROCBinary> {
     public static final int DEFAULT_STATS_PRECISION = 4;
 
@@ -37,11 +36,15 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
     private boolean rocRemoveRedundantPts;
     private List<String> labels;
 
+    public ROCBinary() {
+        this(0);
+    }
+
     /**
      * @param thresholdSteps Number of threshold steps to use for the ROC calculation. Set to 0 for exact ROC calculation
      */
     public ROCBinary(int thresholdSteps) {
-        this( thresholdSteps, true);
+        this(thresholdSteps, true);
     }
 
     /**
@@ -77,22 +80,22 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
         }
 
         int n = labels.size(1);
-        if(underlying == null){
+        if (underlying == null) {
             underlying = new ROC[n];
-            for( int i=0; i<n; i++ ){
+            for (int i = 0; i < n; i++) {
                 underlying[i] = new ROC(thresholdSteps, rocRemoveRedundantPts);
             }
         }
 
         int[] perExampleNonMaskedIdxs = null;
-        for( int i=0; i<n; i++ ){
+        for (int i = 0; i < n; i++) {
             INDArray prob = networkPredictions.getColumn(i);
             INDArray label = labels.getColumn(i);
-            if(maskArray != null){
+            if (maskArray != null) {
                 //If mask array is present, pull out the non-masked rows only
                 INDArray m;
                 boolean perExampleMasking = false;
-                if(maskArray.isColumnVector()){
+                if (maskArray.isColumnVector()) {
                     //Per-example masking
                     m = maskArray;
                     perExampleMasking = true;
@@ -102,7 +105,7 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
                 }
                 int[] rowsToPull;
 
-                if(perExampleNonMaskedIdxs != null){
+                if (perExampleNonMaskedIdxs != null) {
                     //Reuse, per-example masking
                     rowsToPull = perExampleNonMaskedIdxs;
                 } else {
@@ -110,17 +113,17 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
                     rowsToPull = new int[nonMaskedCount];
                     int maskSize = m.size(0);
                     int used = 0;
-                    for( int j=0; j<maskSize; j++ ){
-                        if(m.getDouble(j) != 0.0){
+                    for (int j = 0; j < maskSize; j++) {
+                        if (m.getDouble(j) != 0.0) {
                             rowsToPull[used++] = j;
                         }
                     }
-                    if(perExampleMasking){
+                    if (perExampleMasking) {
                         perExampleNonMaskedIdxs = rowsToPull;
                     }
                 }
 
-                prob = Nd4j.pullRows(prob, 1, rowsToPull);  //1: tensor along dim 1
+                prob = Nd4j.pullRows(prob, 1, rowsToPull); //1: tensor along dim 1
                 label = Nd4j.pullRows(label, 1, rowsToPull);
             }
 
@@ -138,11 +141,11 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
         }
 
         //Both have data
-        if(underlying.length != other.underlying.length){
-            throw new UnsupportedOperationException("Cannot merge ROCBinary: this expects " + underlying.length +
-                    "outputs, other expects " + other.underlying.length + " outputs");
+        if (underlying.length != other.underlying.length) {
+            throw new UnsupportedOperationException("Cannot merge ROCBinary: this expects " + underlying.length
+                            + "outputs, other expects " + other.underlying.length + " outputs");
         }
-        for( int i=0; i<underlying.length; i++ ){
+        for (int i = 0; i < underlying.length; i++) {
             this.underlying[i].merge(other.underlying[i]);
         }
     }
@@ -192,7 +195,7 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
      * @param outputNum Number of the output to get the ROC curve for
      * @return ROC curve
      */
-    public RocCurve getRocCurve(int outputNum){
+    public RocCurve getRocCurve(int outputNum) {
         assertIndex(outputNum);
 
         return underlying[outputNum].getRocCurve();
@@ -203,7 +206,7 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
      * @param outputNum Number of the output to get the P-R curve for
      * @return  Precision recall curve
      */
-    public PrecisionRecallCurve getPrecisionRecallCurve(int outputNum){
+    public PrecisionRecallCurve getPrecisionRecallCurve(int outputNum) {
         assertIndex(outputNum);
         return underlying[outputNum].getPrecisionRecallCurve();
     }
@@ -215,7 +218,7 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
      */
     public double calculateAverageAuc() {
         double ret = 0.0;
-        for(int i = 0; i < numLabels(); i++) {
+        for (int i = 0; i < numLabels(); i++) {
             ret += calculateAUC(i);
         }
 
@@ -271,13 +274,14 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
 
         sb.append(header);
 
-        if(underlying != null) {
+        if (underlying != null) {
             for (int i = 0; i < underlying.length; i++) {
                 double auc = calculateAUC(i);
 
                 String label = (labels == null ? String.valueOf(i) : labels.get(i));
 
-                sb.append("\n").append(String.format(pattern, label, auc, getCountActualPositive(i), getCountActualNegative(i)));
+                sb.append("\n").append(String.format(pattern, label, auc, getCountActualPositive(i),
+                                getCountActualNegative(i)));
             }
         } else {
             //Empty evaluation

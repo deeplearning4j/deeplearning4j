@@ -90,7 +90,7 @@ public class VariationalAutoencoder implements Layer {
                         .getNumSamples();
     }
 
-    protected String layerId(){
+    protected String layerId() {
         String name = this.conf().getLayer().getLayerName();
         return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + index + ")";
     }
@@ -224,7 +224,7 @@ public class VariationalAutoencoder implements Layer {
             INDArray lastDecActivations = decoderActivations[decoderActivations.length - 1];
             Nd4j.gemm(lastDecActivations, dpdpxz, dLdxzw, true, false, scaleFactor, gemmCConstant);
             if (l == 0) {
-                dpdpxz.sum(dLdxzb, 0);  //dLdxzb array is initialized/zeroed first in sum op
+                dpdpxz.sum(dLdxzb, 0); //dLdxzb array is initialized/zeroed first in sum op
                 if (numSamples > 1) {
                     dLdxzb.muli(scaleFactor);
                 }
@@ -556,7 +556,7 @@ public class VariationalAutoencoder implements Layer {
 
     @Override
     public void setParam(String key, INDArray val) {
-        if(paramTable().containsKey(key)){
+        if (paramTable().containsKey(key)) {
             paramTable().get(key).assign(val);
         } else {
             throw new IllegalArgumentException("Unknown parameter: " + key + " - " + layerId());
@@ -651,7 +651,7 @@ public class VariationalAutoencoder implements Layer {
         INDArray lastEncoderActivation = fwd.encoderActivations[fwd.encoderActivations.length - 1];
         Nd4j.gemm(lastEncoderActivation, currentDelta, dLdMeanW, true, false, 1.0, 0.0);
         INDArray dLdMeanB = gradientViews.get(VariationalAutoencoderParamInitializer.PZX_MEAN_B);
-        currentDelta.sum(dLdMeanB, 0);  //dLdMeanB is initialized/zeroed first in sum op
+        currentDelta.sum(dLdMeanB, 0); //dLdMeanB is initialized/zeroed first in sum op
 
         gradient.gradientForVariable().put(VariationalAutoencoderParamInitializer.PZX_MEAN_W, dLdMeanW);
         gradient.gradientForVariable().put(VariationalAutoencoderParamInitializer.PZX_MEAN_B, dLdMeanB);
@@ -681,7 +681,7 @@ public class VariationalAutoencoder implements Layer {
                 actInput = fwd.encoderActivations[i - 1];
             }
             Nd4j.gemm(actInput, currentDelta, dLdW, true, false, 1.0, 0.0);
-            currentDelta.sum(dLdB, 0);  //dLdB is initialized/zeroed first in sum op
+            currentDelta.sum(dLdB, 0); //dLdB is initialized/zeroed first in sum op
 
             gradient.gradientForVariable().put(wKey, dLdW);
             gradient.gradientForVariable().put(bKey, dLdB);
@@ -860,7 +860,7 @@ public class VariationalAutoencoder implements Layer {
             return;
         }
 
-        for (IterationListener listener: listeners)
+        for (IterationListener listener : listeners)
             iterationListeners.add(listener);
     }
 
@@ -923,7 +923,7 @@ public class VariationalAutoencoder implements Layer {
             solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();
             //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
             Updater updater = solver.getOptimizer().getUpdater();
-            int updaterStateSize = (int)conf().getLayer().getIUpdater().stateSize(numParams());
+            int updaterStateSize = (int) conf().getLayer().getIUpdater().stateSize(numParams());
             if (updaterStateSize > 0) {
                 updater.setStateViewArray(this, Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order()),
                                 true);
@@ -968,8 +968,8 @@ public class VariationalAutoencoder implements Layer {
      */
     public INDArray reconstructionLogProbability(INDArray data, int numSamples) {
         if (numSamples <= 0) {
-            throw new IllegalArgumentException("Invalid input: numSamples must be > 0. Got: " + numSamples
-                    + " " + layerId());
+            throw new IllegalArgumentException(
+                            "Invalid input: numSamples must be > 0. Got: " + numSamples + " " + layerId());
         }
         if (reconstructionDistribution instanceof LossFunctionWrapper) {
             throw new UnsupportedOperationException("Cannot calculate reconstruction log probability when using "

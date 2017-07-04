@@ -193,9 +193,9 @@ public class CenterLossOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn
         ILossFunction lossFunction = layerConf().getLossFn();
         INDArray labels2d = getLabels2d();
         if (labels2d.size(1) != preOut.size(1)) {
-            throw new DL4JInvalidInputException("Labels array numColumns (size(1) = " + labels2d.size(1)
-                            + ") does not match output layer" + " number of outputs (nOut = " + preOut.size(1)
-                    + ") " + layerId());
+            throw new DL4JInvalidInputException(
+                            "Labels array numColumns (size(1) = " + labels2d.size(1) + ") does not match output layer"
+                                            + " number of outputs (nOut = " + preOut.size(1) + ") " + layerId());
         }
 
         INDArray delta = lossFunction.computeGradient(labels2d, preOut, layerConf().getActivationFn(), maskArray);

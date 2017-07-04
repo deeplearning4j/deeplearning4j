@@ -27,9 +27,7 @@ public class JointParallelDataSetIteratorTest {
         DataSetIterator iteratorB = new SimpleVariableGenerator(119, 100, 32, 100, 10);
 
         JointParallelDataSetIterator jpdsi = new JointParallelDataSetIterator.Builder(InequalityHandling.STOP_EVERYONE)
-                .addSourceIterator(iteratorA)
-                .addSourceIterator(iteratorB)
-                .build();
+                        .addSourceIterator(iteratorA).addSourceIterator(iteratorB).build();
 
         int cnt = 0;
         int example = 0;
@@ -38,8 +36,10 @@ public class JointParallelDataSetIteratorTest {
             assertNotNull("Failed on iteration " + cnt, ds);
 
 
-            assertEquals("Failed on iteration " + cnt,(double) example, ds.getFeatures().meanNumber().doubleValue(), 0.001);
-            assertEquals("Failed on iteration " + cnt, (double) example + 0.5, ds.getLabels().meanNumber().doubleValue(), 0.001);
+            assertEquals("Failed on iteration " + cnt, (double) example, ds.getFeatures().meanNumber().doubleValue(),
+                            0.001);
+            assertEquals("Failed on iteration " + cnt, (double) example + 0.5,
+                            ds.getLabels().meanNumber().doubleValue(), 0.001);
 
             cnt++;
             if (cnt % 2 == 0)
@@ -61,9 +61,7 @@ public class JointParallelDataSetIteratorTest {
         DataSetIterator iteratorB = new SimpleVariableGenerator(119, 100, 32, 100, 10);
 
         JointParallelDataSetIterator jpdsi = new JointParallelDataSetIterator.Builder(InequalityHandling.PASS_NULL)
-                .addSourceIterator(iteratorA)
-                .addSourceIterator(iteratorB)
-                .build();
+                        .addSourceIterator(iteratorA).addSourceIterator(iteratorB).build();
 
         int cnt = 0;
         int example = 0;
@@ -77,8 +75,10 @@ public class JointParallelDataSetIteratorTest {
                 nulls++;
 
             if (cnt % 2 == 2) {
-                assertEquals("Failed on iteration " + cnt, (double) example, ds.getFeatures().meanNumber().doubleValue(), 0.001);
-                assertEquals("Failed on iteration " + cnt, (double) example + 0.5, ds.getLabels().meanNumber().doubleValue(), 0.001);
+                assertEquals("Failed on iteration " + cnt, (double) example,
+                                ds.getFeatures().meanNumber().doubleValue(), 0.001);
+                assertEquals("Failed on iteration " + cnt, (double) example + 0.5,
+                                ds.getLabels().meanNumber().doubleValue(), 0.001);
             }
 
 
@@ -103,9 +103,7 @@ public class JointParallelDataSetIteratorTest {
         DataSetIterator iteratorB = new SimpleVariableGenerator(119, 100, 32, 100, 10);
 
         JointParallelDataSetIterator jpdsi = new JointParallelDataSetIterator.Builder(InequalityHandling.RELOCATE)
-                .addSourceIterator(iteratorA)
-                .addSourceIterator(iteratorB)
-                .build();
+                        .addSourceIterator(iteratorA).addSourceIterator(iteratorB).build();
 
         int cnt = 0;
         int example = 0;
@@ -113,8 +111,10 @@ public class JointParallelDataSetIteratorTest {
             DataSet ds = jpdsi.next();
             assertNotNull("Failed on iteration " + cnt, ds);
 
-            assertEquals("Failed on iteration " + cnt, (double) example, ds.getFeatures().meanNumber().doubleValue(), 0.001);
-            assertEquals("Failed on iteration " + cnt, (double) example + 0.5, ds.getLabels().meanNumber().doubleValue(), 0.001);
+            assertEquals("Failed on iteration " + cnt, (double) example, ds.getFeatures().meanNumber().doubleValue(),
+                            0.001);
+            assertEquals("Failed on iteration " + cnt, (double) example + 0.5,
+                            ds.getLabels().meanNumber().doubleValue(), 0.001);
 
 
             cnt++;
@@ -141,9 +141,7 @@ public class JointParallelDataSetIteratorTest {
         DataSetIterator iteratorB = new SimpleVariableGenerator(119, 100, 32, 100, 10);
 
         JointParallelDataSetIterator jpdsi = new JointParallelDataSetIterator.Builder(InequalityHandling.RESET)
-                .addSourceIterator(iteratorA)
-                .addSourceIterator(iteratorB)
-                .build();
+                        .addSourceIterator(iteratorA).addSourceIterator(iteratorB).build();
 
         int cnt = 0;
         int cnt_sec = 0;
@@ -154,15 +152,21 @@ public class JointParallelDataSetIteratorTest {
             assertNotNull("Failed on iteration " + cnt, ds);
 
             if (cnt % 2 == 0) {
-                assertEquals("Failed on iteration " + cnt, (double) example, ds.getFeatures().meanNumber().doubleValue(), 0.001);
-                assertEquals("Failed on iteration " + cnt, (double) example + 0.5, ds.getLabels().meanNumber().doubleValue(), 0.001);
+                assertEquals("Failed on iteration " + cnt, (double) example,
+                                ds.getFeatures().meanNumber().doubleValue(), 0.001);
+                assertEquals("Failed on iteration " + cnt, (double) example + 0.5,
+                                ds.getLabels().meanNumber().doubleValue(), 0.001);
             } else {
                 if (cnt <= 200) {
-                    assertEquals("Failed on iteration " + cnt, (double) example, ds.getFeatures().meanNumber().doubleValue(), 0.001);
-                    assertEquals("Failed on iteration " + cnt, (double) example + 0.5, ds.getLabels().meanNumber().doubleValue(), 0.001);
+                    assertEquals("Failed on iteration " + cnt, (double) example,
+                                    ds.getFeatures().meanNumber().doubleValue(), 0.001);
+                    assertEquals("Failed on iteration " + cnt, (double) example + 0.5,
+                                    ds.getLabels().meanNumber().doubleValue(), 0.001);
                 } else {
-                    assertEquals("Failed on iteration " + cnt + ", second iteration " + cnt_sec, (double) example_sec, ds.getFeatures().meanNumber().doubleValue(), 0.001);
-                    assertEquals("Failed on iteration " + cnt + ", second iteration " + cnt_sec, (double) example_sec + 0.5, ds.getLabels().meanNumber().doubleValue(), 0.001);
+                    assertEquals("Failed on iteration " + cnt + ", second iteration " + cnt_sec, (double) example_sec,
+                                    ds.getFeatures().meanNumber().doubleValue(), 0.001);
+                    assertEquals("Failed on iteration " + cnt + ", second iteration " + cnt_sec,
+                                    (double) example_sec + 0.5, ds.getLabels().meanNumber().doubleValue(), 0.001);
                 }
             }
 

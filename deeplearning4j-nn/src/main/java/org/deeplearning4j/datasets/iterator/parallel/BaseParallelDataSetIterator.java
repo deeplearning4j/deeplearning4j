@@ -55,46 +55,47 @@ public abstract class BaseParallelDataSetIterator implements ParallelDataSetIter
         switch (inequalityHandling) {
             // FIXME: RESET should be applicable ONLY to producers which return TRUE for resetSupported();
             case RESET: {
-                    resetTracker.set(true, curIdx);
+                resetTracker.set(true, curIdx);
 
-                    // we don't want to have endless loop here, so we only do reset until all producers depleted at least once
-                    if (resetTracker.allTrue()) {
-                        allDepleted.set(true);
-                        return false;
-                    }
-
-                    reset(curIdx);
-
-                    // triggering possible adsi underneath
-                    hasNextFor(curIdx);
-
-                    return true;
+                // we don't want to have endless loop here, so we only do reset until all producers depleted at least once
+                if (resetTracker.allTrue()) {
+                    allDepleted.set(true);
+                    return false;
                 }
+
+                reset(curIdx);
+
+                // triggering possible adsi underneath
+                hasNextFor(curIdx);
+
+                return true;
+            }
             case RELOCATE: {
-                    // TODO: transparent switch to next producer should happen here
-                    while (!hasNext) {
-                        stepForward();
-                        hasNext = hasNextFor(getCurrentProducerIndex());
-                        states.set(hasNext, getCurrentProducerIndex());
+                // TODO: transparent switch to next producer should happen here
+                while (!hasNext) {
+                    stepForward();
+                    hasNext = hasNextFor(getCurrentProducerIndex());
+                    states.set(hasNext, getCurrentProducerIndex());
 
-                        if (states.allFalse())
-                            return false;
-                    }
-
-                    return true;
-                }
-            case PASS_NULL: {
-                    // we just return true here, no matter what's up
-                    return true;
-                }
-            case STOP_EVERYONE: {
-                    if (!states.allTrue())
+                    if (states.allFalse())
                         return false;
-
-                    return true;
                 }
+
+                return true;
+            }
+            case PASS_NULL: {
+                // we just return true here, no matter what's up
+                return true;
+            }
+            case STOP_EVERYONE: {
+                if (!states.allTrue())
+                    return false;
+
+                return true;
+            }
             default:
-                throw new ND4JIllegalStateException("Unknown InequalityHanding option was passed in: " + inequalityHandling);
+                throw new ND4JIllegalStateException(
+                                "Unknown InequalityHanding option was passed in: " + inequalityHandling);
         }
     }
 
@@ -105,7 +106,7 @@ public abstract class BaseParallelDataSetIterator implements ParallelDataSetIter
     }
 
     protected int getCurrentProducerIndex() {
-        return (int)(counter.get() % numProducers);
+        return (int) (counter.get() % numProducers);
     }
 
     protected void stepForward() {
@@ -114,7 +115,7 @@ public abstract class BaseParallelDataSetIterator implements ParallelDataSetIter
 
     @Override
     public void reset() {
-        for(int i = 0; i < numProducers; i++)
+        for (int i = 0; i < numProducers; i++)
             reset(i);
     }
 

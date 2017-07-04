@@ -17,8 +17,7 @@ import static org.junit.Assert.*;
  */
 public class VirtualDataSetIteratorTest {
     @Before
-    public void setUp() throws Exception {
-    }
+    public void setUp() throws Exception {}
 
 
     @Test

@@ -43,20 +43,22 @@ public class Cluster implements Serializable {
     public Cluster() {
         super();
     }
+
     /**
      *
      * @param center
      * @param distanceFunction
      */
-    public Cluster(Point center,String distanceFunction){
-        this(center,false,distanceFunction);
+    public Cluster(Point center, String distanceFunction) {
+        this(center, false, distanceFunction);
     }
+
     /**
      *
      * @param center
      * @param distanceFunction
      */
-    public Cluster(Point center, boolean inverse,String distanceFunction) {
+    public Cluster(Point center, boolean inverse, String distanceFunction) {
         this.distanceFunction = distanceFunction;
         this.inverse = inverse;
         setCenter(center);
@@ -71,8 +73,8 @@ public class Cluster implements Serializable {
      */
     public double getDistanceToCenter(Point point) {
         return Nd4j.getExecutioner().execAndReturn(
-                Nd4j.getOpFactory().createAccum(distanceFunction, center.getArray(), point.getArray()))
-                .getFinalResult().doubleValue();
+                        Nd4j.getOpFactory().createAccum(distanceFunction, center.getArray(), point.getArray()))
+                        .getFinalResult().doubleValue();
     }
 
     /**
@@ -91,18 +93,11 @@ public class Cluster implements Serializable {
      */
     public void addPoint(Point point, boolean moveClusterCenter) {
         if (moveClusterCenter) {
-           if(isInverse()) {
-               center.getArray()
-                       .muli(points.size())
-                       .subi(point.getArray())
-                       .divi(points.size() + 1);
-           }
-           else {
-               center.getArray()
-                       .muli(points.size())
-                       .addi(point.getArray())
-                       .divi(points.size() + 1);
-           }
+            if (isInverse()) {
+                center.getArray().muli(points.size()).subi(point.getArray()).divi(points.size() + 1);
+            } else {
+                center.getArray().muli(points.size()).addi(point.getArray()).divi(points.size() + 1);
+            }
         }
 
         getPoints().add(point);

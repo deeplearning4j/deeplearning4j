@@ -54,7 +54,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
     public Gradient gradient() {
         throw new UnsupportedOperationException(
                         "gradient() method for layerwise pretraining: not supported for LSTMs (pretraining not possible) "
-                        + layerId());
+                                        + layerId());
     }
 
     @Override

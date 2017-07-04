@@ -56,7 +56,8 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     protected NeuralNetConfiguration conf;
     protected static final Logger log = LoggerFactory.getLogger(BaseOptimizer.class);
-    @Getter protected StepFunction stepFunction;
+    @Getter
+    protected StepFunction stepFunction;
     protected Collection<IterationListener> iterationListeners = new ArrayList<>();
     protected Collection<TerminationCondition> terminationConditions = new ArrayList<>();
     protected Model model;
@@ -250,7 +251,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
             //invoke listeners
             int iterationCount = BaseOptimizer.getIterationCount(model);
-            try(MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 for (IterationListener listener : iterationListeners)
                     listener.iterationDone(model, iterationCount);
             }
@@ -272,7 +273,8 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         for (TerminationCondition condition : terminationConditions) {
             //log.info("terminations: {}", condition);
             if (condition.terminate(score, oldScore, new Object[] {gradient})) {
-                log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}", i, score, oldScore, condition);
+                log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}", i, score,
+                                oldScore, condition);
                 if (condition instanceof EpsTermination && conf.getLayer() != null
                                 && conf.getLearningRatePolicy() == LearningRatePolicy.Score) {
                     model.applyLearningRateScoreDecay();

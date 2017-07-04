@@ -18,13 +18,14 @@ import java.util.NoSuchElementException;
  * @since : June 2,2017
  */
 
-public class ChineseTokenizer implements Tokenizer{
+public class ChineseTokenizer implements Tokenizer {
 
     private TokenPreProcess tokenPreProcess;
     private List<Term> tokenList;
     private Iterator<Term> tokenIter;
 
     public ChineseTokenizer() {}
+
     public ChineseTokenizer(String toTokenize) {
         Result result = NlpAnalysis.parse(toTokenize);
         this.tokenList = result.getTerms();
@@ -46,7 +47,8 @@ public class ChineseTokenizer implements Tokenizer{
         if (!hasMoreTokens()) {
             throw new NoSuchElementException();
         }
-        return this.tokenPreProcess != null ? this.tokenPreProcess.preProcess(tokenIter.next().getName()) : tokenIter.next().getName();
+        return this.tokenPreProcess != null ? this.tokenPreProcess.preProcess(tokenIter.next().getName())
+                        : tokenIter.next().getName();
     }
 
     @Override

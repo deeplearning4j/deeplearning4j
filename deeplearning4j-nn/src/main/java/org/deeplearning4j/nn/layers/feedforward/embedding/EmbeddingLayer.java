@@ -73,7 +73,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         }
 
         INDArray biasGradientsView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
-        delta.sum(biasGradientsView, 0);    //biasGradientView is initialized/zeroed first in sum op
+        delta.sum(biasGradientsView, 0); //biasGradientView is initialized/zeroed first in sum op
 
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradients);
@@ -88,8 +88,8 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
             //Assume shape is [numExamples,1], and each entry is an integer index
             throw new DL4JInvalidInputException(
                             "Cannot do forward pass for embedding layer with input more than one column. "
-                            + "Expected input shape: [numExamples,1] with each entry being an integer index "
-                            + layerId());
+                                            + "Expected input shape: [numExamples,1] with each entry being an integer index "
+                                            + layerId());
         }
 
         int[] indexes = new int[input.length()];

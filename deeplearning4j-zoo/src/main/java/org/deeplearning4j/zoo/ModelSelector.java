@@ -39,7 +39,7 @@ public class ModelSelector {
      * @return A hashmap of zoo types and models.
      */
     public static Map<ZooType, ZooModel> select(ZooType zooType, int numLabels, int seed, int iterations,
-                                                WorkspaceMode workspaceMode) {
+                    WorkspaceMode workspaceMode) {
         return select(new HashMap<ZooType, ZooModel>(), zooType, numLabels, seed, iterations, workspaceMode);
     }
 
@@ -61,17 +61,18 @@ public class ModelSelector {
      * @param zooTypes
      * @return A hashmap of zoo types and models.
      */
-    public static Map<ZooType, ZooModel> select(int numLabels, int seed, int iterations, WorkspaceMode workspaceMode, ZooType... zooTypes) {
+    public static Map<ZooType, ZooModel> select(int numLabels, int seed, int iterations, WorkspaceMode workspaceMode,
+                    ZooType... zooTypes) {
         Map<ZooType, ZooModel> netmap = new HashMap<>();
 
-        for(ZooType zooType : zooTypes) {
+        for (ZooType zooType : zooTypes) {
             select(netmap, zooType, numLabels, seed, iterations, workspaceMode);
         }
         return netmap;
     }
 
-    private static Map<ZooType, ZooModel> select(Map<ZooType, ZooModel> netmap, ZooType zooType, int numLabels, int seed, int iterations,
-                    WorkspaceMode workspaceMode) {
+    private static Map<ZooType, ZooModel> select(Map<ZooType, ZooModel> netmap, ZooType zooType, int numLabels,
+                    int seed, int iterations, WorkspaceMode workspaceMode) {
 
         switch (zooType) {
             case ALL:

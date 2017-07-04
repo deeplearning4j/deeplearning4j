@@ -38,7 +38,8 @@ import java.util.Map.Entry;
  * 
  * @author Dan Klein
  */
-@Getter(AccessLevel.PRIVATE) @Setter(AccessLevel.PRIVATE)
+@Getter(AccessLevel.PRIVATE)
+@Setter(AccessLevel.PRIVATE)
 @JsonIgnoreProperties({"mf"})
 public class Counter<E> implements Serializable {
     private static final long serialVersionUID = 1L;

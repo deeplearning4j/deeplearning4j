@@ -14,18 +14,18 @@ import org.ansj.exception.LibraryException;
  */
 public class Jar2Stream extends PathToStream {
 
-	@Override
-	public InputStream toStream(String path) {
-		if (path.contains("|")) {
-			String[] split = path.split("\\|");
-			try {
-				return Class.forName(split[0].substring(6)).getResourceAsStream(split[1].trim());
-			} catch (ClassNotFoundException e) {
-				throw new LibraryException(e);
-			}
-		} else {
-			return DicReader.getInputStream(path.substring(6));
-		}
-	}
+    @Override
+    public InputStream toStream(String path) {
+        if (path.contains("|")) {
+            String[] split = path.split("\\|");
+            try {
+                return Class.forName(split[0].substring(6)).getResourceAsStream(split[1].trim());
+            } catch (ClassNotFoundException e) {
+                throw new LibraryException(e);
+            }
+        } else {
+            return DicReader.getInputStream(path.substring(6));
+        }
+    }
 
 }

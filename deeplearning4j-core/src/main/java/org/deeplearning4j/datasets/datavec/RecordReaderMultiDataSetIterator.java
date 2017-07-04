@@ -114,7 +114,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
 
         for (Map.Entry<String, RecordReader> entry : recordReaders.entrySet()) {
             RecordReader rr = entry.getValue();
-            if(!collectMetaData && rr.batchesSupported()){
+            if (!collectMetaData && rr.batchesSupported()) {
                 //Batch case, for efficiency: ImageRecordReader etc
                 List<Writable> batch = rr.next(num);
                 if (nextRRValsBatched == null) {
@@ -177,15 +177,15 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         for (List<List<Writable>> exampleData : nextRRVals.values()) {
             minExamples = Math.min(minExamples, exampleData.size());
         }
-        if(nextRRValsBatched != null){
-            for(List<Writable> exampleData : nextRRValsBatched.values()){
+        if (nextRRValsBatched != null) {
+            for (List<Writable> exampleData : nextRRValsBatched.values()) {
                 //Assume all NDArrayWritables here
-                for(Writable w : exampleData){
-                    if(!(w instanceof NDArrayWritable)){
-                        throw new UnsupportedOperationException("Batch-supporting RecordReader should only return " +
-                                "NDArrayWritables; got " + w.getClass());
+                for (Writable w : exampleData) {
+                    if (!(w instanceof NDArrayWritable)) {
+                        throw new UnsupportedOperationException("Batch-supporting RecordReader should only return "
+                                        + "NDArrayWritables; got " + w.getClass());
                     }
-                    int n = ((NDArrayWritable)w).get().size(0);
+                    int n = ((NDArrayWritable) w).get().size(0);
                     minExamples = Math.min(minExamples, n);
                 }
             }
@@ -223,32 +223,19 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
             }
         }
         Pair<INDArray[], INDArray[]> features = convertFeaturesOrLabels(new INDArray[inputs.size()],
-                new INDArray[inputs.size()],
-                inputs,
-                minExamples,
-                nextRRVals,
-                nextRRValsBatched,
-                nextSeqRRVals,
-                longestTS,
-                longestSequence);
+                        new INDArray[inputs.size()], inputs, minExamples, nextRRVals, nextRRValsBatched, nextSeqRRVals,
+                        longestTS, longestSequence);
 
 
         //Third: create the outputs/labels
         Pair<INDArray[], INDArray[]> labels = convertFeaturesOrLabels(new INDArray[outputs.size()],
-                new INDArray[outputs.size()],
-                outputs,
-                minExamples,
-                nextRRVals,
-                nextRRValsBatched,
-                nextSeqRRVals,
-                longestTS,
-                longestSequence);
-
+                        new INDArray[outputs.size()], outputs, minExamples, nextRRVals, nextRRValsBatched,
+                        nextSeqRRVals, longestTS, longestSequence);
 
 
 
         MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(features.getFirst(), labels.getFirst(),
-                                features.getSecond(), labels.getSecond());
+                        features.getSecond(), labels.getSecond());
         if (collectMetaData) {
             mds.setExampleMetaData(nextMetas);
         }
@@ -257,19 +244,14 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         return mds;
     }
 
-    private Pair<INDArray[], INDArray[]> convertFeaturesOrLabels(INDArray[] featuresOrLabels,
-                                                                 INDArray[] masks,
-                                                                 List<SubsetDetails> subsetDetails,
-                                                                 int minExamples,
-                                                                 Map<String,List<List<Writable>>> nextRRVals,
-                                                                 Map<String, List<Writable>> nextRRValsBatched,
-                                                                 Map<String, List<List<List<Writable>>>> nextSeqRRVals,
-                                                                 int longestTS,
-                                                                 int[] longestSequence){
+    private Pair<INDArray[], INDArray[]> convertFeaturesOrLabels(INDArray[] featuresOrLabels, INDArray[] masks,
+                    List<SubsetDetails> subsetDetails, int minExamples, Map<String, List<List<Writable>>> nextRRVals,
+                    Map<String, List<Writable>> nextRRValsBatched,
+                    Map<String, List<List<List<Writable>>>> nextSeqRRVals, int longestTS, int[] longestSequence) {
         boolean hasMasks = false;
         int i = 0;
         for (SubsetDetails d : subsetDetails) {
-            if(nextRRValsBatched != null && nextRRValsBatched.containsKey(d.readerName)){
+            if (nextRRValsBatched != null && nextRRValsBatched.containsKey(d.readerName)) {
                 //Standard reader, but batch ops
                 featuresOrLabels[i] = convertWritablesBatched(nextRRValsBatched.get(d.readerName), d);
             } else if (nextRRVals.containsKey(d.readerName)) {
@@ -292,39 +274,39 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
     }
 
 
-    private INDArray convertWritablesBatched(List<Writable> list, SubsetDetails details){
+    private INDArray convertWritablesBatched(List<Writable> list, SubsetDetails details) {
         INDArray arr;
-        if(details.entireReader){
+        if (details.entireReader) {
             //Expect to have a SINGLE INDArray here
-            if(list.size() > 1){
-                throw new UnsupportedOperationException("Cannot use batched operations on entire reader with multiple "
-                        + "writables");
+            if (list.size() > 1) {
+                throw new UnsupportedOperationException(
+                                "Cannot use batched operations on entire reader with multiple " + "writables");
             }
-            arr = ((NDArrayWritable)list.get(0)).get();
-        } else if(details.subsetStart == details.subsetEndInclusive || details.oneHot){
-            arr = ((NDArrayWritable)list.get(details.subsetStart)).get();
+            arr = ((NDArrayWritable) list.get(0)).get();
+        } else if (details.subsetStart == details.subsetEndInclusive || details.oneHot) {
+            arr = ((NDArrayWritable) list.get(details.subsetStart)).get();
         } else {
             //Should never happen
             throw new UnsupportedOperationException("Unknown operation for batch reader");
         }
 
-        if(!details.oneHot || arr.size(1) == details.oneHotNumClasses ){
+        if (!details.oneHot || arr.size(1) == details.oneHotNumClasses) {
             //Not one-hot: no conversion required
             //Also, ImageRecordReader already does the one-hot conversion internally
             return arr;
         }
 
         //Do one-hot conversion
-        if(arr.size(1) != 1 ){
-            throw new UnsupportedOperationException("Cannot do conversion to one hot using batched reader: " +
-                    details.oneHotNumClasses + " output classes, but array.size(1) is " + arr.size(1) +
-                    " (must be equal to 1 or numClasses = " + details.oneHotNumClasses + ")");
+        if (arr.size(1) != 1) {
+            throw new UnsupportedOperationException("Cannot do conversion to one hot using batched reader: "
+                            + details.oneHotNumClasses + " output classes, but array.size(1) is " + arr.size(1)
+                            + " (must be equal to 1 or numClasses = " + details.oneHotNumClasses + ")");
         }
 
         int n = arr.size(0);
         INDArray out = Nd4j.create(n, details.oneHotNumClasses);
-        for( int i=0; i<n; i++ ){
-            int v = arr.getInt(i,0);
+        for (int i = 0; i < n; i++) {
+            int v = arr.getInt(i, 0);
             out.putScalar(i, v, 1.0);
         }
 
@@ -357,14 +339,14 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                 //Need to check for multiple NDArrayWritables, or mixed NDArrayWritable + DoubleWritable etc
 
                 int length = 0;
-                for( int i=details.subsetStart; i<=details.subsetEndInclusive; i++ ){
+                for (int i = details.subsetStart; i <= details.subsetEndInclusive; i++) {
                     Writable w = list.get(0).get(i);
-                    if(w instanceof NDArrayWritable){
+                    if (w instanceof NDArrayWritable) {
                         INDArray a = ((NDArrayWritable) w).get();
-                        if(!a.isRowVector()){
+                        if (!a.isRowVector()) {
                             throw new UnsupportedOperationException("Multiple writables present but NDArrayWritable is "
-                                    + "not a row vector. Can only concat row vectors with other writables. Shape: "
-                                    + Arrays.toString(a.shape()));
+                                            + "not a row vector. Can only concat row vectors with other writables. Shape: "
+                                            + Arrays.toString(a.shape()));
                         }
                         length += a.length();
                     } else {
@@ -400,9 +382,9 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                 Writable w = c.get(details.subsetStart);
                 //Index of class
                 int classIdx = w.toInt();
-                if(classIdx >= details.oneHotNumClasses){
-                    throw new DL4JException("Cannot convert sequence writables to one-hot: class index " +
-                            classIdx + " >= numClass (" + details.oneHotNumClasses + ")");
+                if (classIdx >= details.oneHotNumClasses) {
+                    throw new DL4JException("Cannot convert sequence writables to one-hot: class index " + classIdx
+                                    + " >= numClass (" + details.oneHotNumClasses + ")");
                 }
                 arr.putScalar(i, w.toInt(), 1.0);
             } else {
@@ -421,10 +403,10 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                     for (int j = details.subsetStart; j <= details.subsetEndInclusive; j++) {
                         Writable w = iter.next();
 
-                        if(w instanceof NDArrayWritable){
+                        if (w instanceof NDArrayWritable) {
                             INDArray toPut = ((NDArrayWritable) w).get();
-                            arr.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.interval(k, k+toPut.length())},
-                                    toPut);
+                            arr.put(new INDArrayIndex[] {NDArrayIndex.point(i),
+                                            NDArrayIndex.interval(k, k + toPut.length())}, toPut);
                             k += toPut.length();
                         } else {
                             arr.putScalar(i, k, w.toDouble());
@@ -465,7 +447,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
             maxTSLength = list.get(0).size();
         INDArray arr;
 
-        if(list.get(0).size() == 0){
+        if (list.get(0).size() == 0) {
             throw new ZeroLengthSequenceException("Zero length sequence encountered");
         }
 
@@ -474,8 +456,8 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         int size = 0;
         if (details.entireReader) {
             //Need to account for NDArrayWritables etc in list:
-            for(Writable w : firstStep){
-                if(w instanceof NDArrayWritable){
+            for (Writable w : firstStep) {
+                if (w instanceof NDArrayWritable) {
                     size += ((NDArrayWritable) w).get().size(1);
                 } else {
                     size++;
@@ -485,16 +467,16 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
             size = details.oneHotNumClasses;
         } else {
             //Need to account for NDArrayWritables etc in list:
-            for( int i=details.subsetStart; i<=details.subsetEndInclusive; i++ ){
+            for (int i = details.subsetStart; i <= details.subsetEndInclusive; i++) {
                 Writable w = firstStep.get(i);
-                if(w instanceof NDArrayWritable){
+                if (w instanceof NDArrayWritable) {
                     size += ((NDArrayWritable) w).get().size(1);
                 } else {
                     size++;
                 }
             }
         }
-        arr = Nd4j.create(new int[]{minValues, size, maxTSLength},'f');
+        arr = Nd4j.create(new int[] {minValues, size, maxTSLength}, 'f');
 
         boolean needMaskArray = false;
         for (List<List<Writable>> c : list) {
@@ -502,9 +484,10 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                 needMaskArray = true;
         }
 
-        if(needMaskArray && alignmentMode == AlignmentMode.EQUAL_LENGTH ){
-            throw new UnsupportedOperationException("Alignment mode is set to EQUAL_LENGTH but variable length data was "
-                    + "encountered. Use AlignmentMode.ALIGN_START or AlignmentMode.ALIGN_END with variable length data");
+        if (needMaskArray && alignmentMode == AlignmentMode.EQUAL_LENGTH) {
+            throw new UnsupportedOperationException(
+                            "Alignment mode is set to EQUAL_LENGTH but variable length data was "
+                                            + "encountered. Use AlignmentMode.ALIGN_START or AlignmentMode.ALIGN_END with variable length data");
         }
 
         INDArray maskArray;
@@ -539,11 +522,11 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                     while (iter.hasNext()) {
                         Writable w = iter.next();
 
-                        if(w instanceof NDArrayWritable){
+                        if (w instanceof NDArrayWritable) {
                             INDArray row = ((NDArrayWritable) w).get();
 
-                            arr.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.interval(j, j+row.length())
-                                    , NDArrayIndex.point(k)}, row);
+                            arr.put(new INDArrayIndex[] {NDArrayIndex.point(i),
+                                            NDArrayIndex.interval(j, j + row.length()), NDArrayIndex.point(k)}, row);
                             j += row.length();
                         } else {
                             arr.putScalar(i, j, k, w.toDouble());
@@ -561,9 +544,9 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                             w = iter.next();
                     }
                     int classIdx = w.toInt();
-                    if(classIdx >= details.oneHotNumClasses){
-                        throw new DL4JException("Cannot convert sequence writables to one-hot: class index " +
-                                classIdx + " >= numClass (" + details.oneHotNumClasses + ")");
+                    if (classIdx >= details.oneHotNumClasses) {
+                        throw new DL4JException("Cannot convert sequence writables to one-hot: class index " + classIdx
+                                        + " >= numClass (" + details.oneHotNumClasses + ")");
                     }
                     arr.putScalar(i, classIdx, k, 1.0);
                 } else {
@@ -572,10 +555,10 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                     for (int j = details.subsetStart; j <= details.subsetEndInclusive; j++) {
                         Writable w = timeStep.get(j);
 
-                        if(w instanceof NDArrayWritable){
+                        if (w instanceof NDArrayWritable) {
                             INDArray row = ((NDArrayWritable) w).get();
-                            arr.put(new INDArrayIndex[]{NDArrayIndex.point(i), NDArrayIndex.interval(l, l+row.length()), NDArrayIndex.point(k)},
-                                    row);
+                            arr.put(new INDArrayIndex[] {NDArrayIndex.point(i),
+                                            NDArrayIndex.interval(l, l + row.length()), NDArrayIndex.point(k)}, row);
 
                             l += row.length();
                         } else {

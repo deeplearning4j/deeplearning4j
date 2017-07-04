@@ -27,11 +27,13 @@ public class VariableMultiTimeseriesGenerator implements MultiDataSetIterator {
 
     protected AtomicInteger counter = new AtomicInteger(0);
 
-    public VariableMultiTimeseriesGenerator(long seed, int numBatches, int batchSize, int values, int timestepsMin, int timestepsMax) {
+    public VariableMultiTimeseriesGenerator(long seed, int numBatches, int batchSize, int values, int timestepsMin,
+                    int timestepsMax) {
         this(seed, numBatches, batchSize, values, timestepsMin, timestepsMax, 0);
     }
 
-    public VariableMultiTimeseriesGenerator(long seed, int numBatches, int batchSize, int values, int timestepsMin, int timestepsMax, int firstMaxima) {
+    public VariableMultiTimeseriesGenerator(long seed, int numBatches, int batchSize, int values, int timestepsMin,
+                    int timestepsMax, int firstMaxima) {
         this.rng = new Random(seed);
         this.values = values;
         this.batchSize = batchSize;
@@ -47,7 +49,8 @@ public class VariableMultiTimeseriesGenerator implements MultiDataSetIterator {
 
     @Override
     public MultiDataSet next(int num) {
-        int localMaxima = isFirst && firstMaxima > 0 ? firstMaxima: minTS == maxTS ? minTS : rng.nextInt(maxTS - minTS) + minTS;
+        int localMaxima = isFirst && firstMaxima > 0 ? firstMaxima
+                        : minTS == maxTS ? minTS : rng.nextInt(maxTS - minTS) + minTS;
 
         if (isFirst)
             log.info("Local maxima: {}", localMaxima);
@@ -55,7 +58,7 @@ public class VariableMultiTimeseriesGenerator implements MultiDataSetIterator {
         isFirst = false;
 
 
-        int[] shapeFeatures = new int[]{batchSize, values, localMaxima};
+        int[] shapeFeatures = new int[] {batchSize, values, localMaxima};
         int[] shapeLabels = new int[] {batchSize, 10};
         int[] shapeFMasks = new int[] {batchSize, localMaxima};
         int[] shapeLMasks = new int[] {batchSize, 10};
@@ -68,7 +71,8 @@ public class VariableMultiTimeseriesGenerator implements MultiDataSetIterator {
 
         counter.getAndIncrement();
 
-        return new org.nd4j.linalg.dataset.MultiDataSet(new INDArray[]{features}, new INDArray[]{labels}, new INDArray[]{fMasks}, new INDArray[]{lMasks});
+        return new org.nd4j.linalg.dataset.MultiDataSet(new INDArray[] {features}, new INDArray[] {labels},
+                        new INDArray[] {fMasks}, new INDArray[] {lMasks});
     }
 
     @Override

@@ -52,7 +52,7 @@ public class EvaluationToolsTests {
             net.fit(ds);
         }
 
-        for(int numSteps : new int[]{20, 0}) {
+        for (int numSteps : new int[] {20, 0}) {
             ROC roc = new ROC(numSteps);
             iter.reset();
 
@@ -63,7 +63,7 @@ public class EvaluationToolsTests {
 
 
             String str = EvaluationTools.rocChartToHtml(roc);
-//            System.out.println(str);
+            //            System.out.println(str);
         }
     }
 
@@ -88,7 +88,7 @@ public class EvaluationToolsTests {
             net.fit(ds);
         }
 
-        for(int numSteps : new int[]{20, 0}) {
+        for (int numSteps : new int[] {20, 0}) {
             ROCMultiClass roc = new ROCMultiClass(numSteps);
             iter.reset();
 

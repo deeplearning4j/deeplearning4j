@@ -47,21 +47,31 @@ public class DefaultTrainer extends Thread implements Trainer {
     protected Model replicatedModel;
 
     // TODO: make queue size configurable
-    @Builder.Default protected LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>(1);
-    @Builder.Default protected LinkedBlockingQueue<MultiDataSet> queueMDS = new LinkedBlockingQueue<>(1);
-    @Builder.Default protected AtomicInteger running = new AtomicInteger(0);
-    @Builder.Default protected AtomicBoolean shouldUpdate = new AtomicBoolean(false);
-    @Builder.Default protected AtomicBoolean shouldStop = new AtomicBoolean(false);
+    @Builder.Default
+    protected LinkedBlockingQueue<DataSet> queue = new LinkedBlockingQueue<>(1);
+    @Builder.Default
+    protected LinkedBlockingQueue<MultiDataSet> queueMDS = new LinkedBlockingQueue<>(1);
+    @Builder.Default
+    protected AtomicInteger running = new AtomicInteger(0);
+    @Builder.Default
+    protected AtomicBoolean shouldUpdate = new AtomicBoolean(false);
+    @Builder.Default
+    protected AtomicBoolean shouldStop = new AtomicBoolean(false);
     protected Exception thrownException;
-    @Builder.Default protected volatile boolean useMDS = false;
+    @Builder.Default
+    protected volatile boolean useMDS = false;
     protected final String uuid = UUID.randomUUID().toString();
-    @Builder.Default protected boolean onRootModel = false;
-    @Builder.Default protected volatile AtomicLong lastEtlTime = new AtomicLong(0);
+    @Builder.Default
+    protected boolean onRootModel = false;
+    @Builder.Default
+    protected volatile AtomicLong lastEtlTime = new AtomicLong(0);
 
-    @Builder.Default protected AtomicBoolean nullMode = new AtomicBoolean(false);
+    @Builder.Default
+    protected AtomicBoolean nullMode = new AtomicBoolean(false);
     protected DataSet nullDataSet;
 
-    @Builder.Default protected AtomicBoolean isStopped = new AtomicBoolean(false);
+    @Builder.Default
+    protected AtomicBoolean isStopped = new AtomicBoolean(false);
 
     protected ParallelWrapper parallelWrapper;
     protected WorkspaceMode workspaceMode;
@@ -274,7 +284,8 @@ public class DefaultTrainer extends Thread implements Trainer {
                     if (!((MultiLayerNetwork) replicatedModel).isInitCalled())
                         this.replicatedModel.init();
 
-                    ((MultiLayerNetwork) replicatedModel).getLayerWiseConfigurations().setTrainingWorkspaceMode(workspaceMode);
+                    ((MultiLayerNetwork) replicatedModel).getLayerWiseConfigurations()
+                                    .setTrainingWorkspaceMode(workspaceMode);
                 }
             } else if (originalModel instanceof ComputationGraph) {
                 if (!onRootModel) {
@@ -318,7 +329,8 @@ public class DefaultTrainer extends Thread implements Trainer {
                     else {
                         // this code branch is for debugging only, please ignore :)
                         if (nullDataSet == null)
-                            nullDataSet = new org.nd4j.linalg.dataset.DataSet(Nd4j.create(64, 28 * 28), Nd4j.create(64, 10));
+                            nullDataSet = new org.nd4j.linalg.dataset.DataSet(Nd4j.create(64, 28 * 28),
+                                            Nd4j.create(64, 10));
 
                         dataSet = nullDataSet;
                     }
@@ -327,22 +339,28 @@ public class DefaultTrainer extends Thread implements Trainer {
                         fit(dataSet);
 
                         // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
-                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported() && iterationsCounter.incrementAndGet() % averagingFrequency == 0 && averagingRequired()) {
+                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported()
+                                        && iterationsCounter.incrementAndGet() % averagingFrequency == 0
+                                        && averagingRequired()) {
                             // we ensure all operations are finished in this training round
                             Nd4j.getExecutioner().commit();
 
                             // we ensure memory is updated on host side
-                            Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(), AffinityManager.Location.HOST);
+                            Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(),
+                                            AffinityManager.Location.HOST);
 
                             if (replicatedModel instanceof MultiLayerNetwork) {
                                 Updater updaterReplica = ((MultiLayerNetwork) replicatedModel).getUpdater();
                                 if (updaterReplica.getStateViewArray() != null)
-                                    Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
+                                    Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(),
+                                                    AffinityManager.Location.HOST);
                             } else {
-                                ComputationGraphUpdater updaterReplica = ((ComputationGraph) replicatedModel).getUpdater();
+                                ComputationGraphUpdater updaterReplica =
+                                                ((ComputationGraph) replicatedModel).getUpdater();
 
                                 if (updaterReplica.getStateViewArray() != null)
-                                    Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
+                                    Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(),
+                                                    AffinityManager.Location.HOST);
                             }
                         }
 
@@ -359,17 +377,21 @@ public class DefaultTrainer extends Thread implements Trainer {
                         fit(dataSet);
 
                         // if we don't support cross-device stuff (like multi-gpu on windows) - sync back to host
-                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported() && iterationsCounter.incrementAndGet() % averagingFrequency == 0 && averagingRequired()) {
+                        if (!Nd4j.getAffinityManager().isCrossDeviceAccessSupported()
+                                        && iterationsCounter.incrementAndGet() % averagingFrequency == 0
+                                        && averagingRequired()) {
                             // we ensure all operations are finished in this training round
                             Nd4j.getExecutioner().commit();
 
                             // we ensure memory is updated on host side
-                            Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(), AffinityManager.Location.HOST);
+                            Nd4j.getAffinityManager().ensureLocation(replicatedModel.params(),
+                                            AffinityManager.Location.HOST);
 
                             ComputationGraphUpdater updaterReplica = ((ComputationGraph) replicatedModel).getUpdater();
 
                             if (updaterReplica.getStateViewArray() != null)
-                                Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(), AffinityManager.Location.HOST);
+                                Nd4j.getAffinityManager().ensureLocation(updaterReplica.getStateViewArray(),
+                                                AffinityManager.Location.HOST);
                         }
 
                         running.decrementAndGet();

@@ -40,23 +40,26 @@ public class VpTreeNodeTest {
     private static class DistIndex implements Comparable<DistIndex> {
         public double dist;
         public int index;
-        public int compareTo( DistIndex r ){ return Double.compare( dist,  r.dist ); }
+
+        public int compareTo(DistIndex r) {
+            return Double.compare(dist, r.dist);
+        }
     }
 
     @Test
     public void testKnnK() {
-        INDArray arr = Nd4j.randn(10,5);
-        VPTree t = new VPTree(arr,false);
+        INDArray arr = Nd4j.randn(10, 5);
+        VPTree t = new VPTree(arr, false);
         List<DataPoint> resultList = new ArrayList<>();
         List<Double> distances = new ArrayList<>();
-        t.search(arr.getRow(0),5,resultList,distances);
-        assertEquals(5,resultList.size());
+        t.search(arr.getRow(0), 5, resultList, distances);
+        assertEquals(5, resultList.size());
     }
 
     @Test
     public void knnManual() {
-        INDArray arr = Nd4j.randn(3,5);
-        VPTree t = new VPTree(arr,false);
+        INDArray arr = Nd4j.randn(3, 5);
+        VPTree t = new VPTree(arr, false);
         int k = 1;
         int m = arr.rows();
         for (int targetIndex = 0; targetIndex < m; targetIndex++) {
@@ -94,12 +97,12 @@ public class VpTreeNodeTest {
 
             // check
             for (int r : resultSet) {
-                assertTrue(String.format("VPTree result %d is not in the closest %d " +
-                        " from the exhaustive search.",r,k),s.contains(r));
+                assertTrue(String.format("VPTree result %d is not in the closest %d " + " from the exhaustive search.",
+                                r, k), s.contains(r));
             }
             for (int r : s) {
-                assertTrue(String.format("VPTree result %d is not in the closest %d " +
-                        " from the exhaustive search.",r,k),s.contains(r));
+                assertTrue(String.format("VPTree result %d is not in the closest %d " + " from the exhaustive search.",
+                                r, k), s.contains(r));
             }
         }
     }

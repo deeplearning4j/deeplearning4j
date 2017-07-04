@@ -57,7 +57,7 @@ public class ModelSavingCallback implements EvaluationCallback {
     @Override
     public void call(EvaluativeListener listener, Model model, long invocationsCount, IEvaluation[] evaluations) {
 
-        String temp = template.replaceAll("%d","" + invocationsCount);
+        String temp = template.replaceAll("%d", "" + invocationsCount);
 
         String finalName = FilenameUtils.concat(rootFolder.getAbsolutePath(), temp);
         save(model, finalName);

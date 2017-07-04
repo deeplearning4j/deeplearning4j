@@ -29,28 +29,28 @@ import static org.junit.Assert.assertNotEquals;
 public class TestMultiModelGradientApplication {
 
     @Test
-    public void testGradientApplyMultiLayerNetwork(){
+    public void testGradientApplyMultiLayerNetwork() {
         int minibatch = 7;
         int nIn = 10;
         int nOut = 10;
 
-        for(boolean regularization : new boolean[]{false, true}) {
-            for (Updater u : new Updater[]{Updater.SGD, Updater.NESTEROVS, Updater.ADAM}) {
-//            for (Updater u : new Updater[]{Updater.ADAM}) {
+        for (boolean regularization : new boolean[] {false, true}) {
+            for (Updater u : new Updater[] {Updater.SGD, Updater.NESTEROVS, Updater.ADAM}) {
+                //            for (Updater u : new Updater[]{Updater.ADAM}) {
 
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .seed(12345)
-                        .activation(Activation.TANH)
-                        .weightInit(WeightInit.XAVIER)
-                        .updater(u).learningRate(0.1)
-                        .regularization(regularization)
-                        .l1(regularization ? 0.2 : 0.0).l2(regularization ? 0.3 : 0.0)
-                        .list()
-                        .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(10).build())
-                        .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                        .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                .activation(Activation.SOFTMAX).nIn(10).nOut(nOut).build())
-                        .build();
+                MultiLayerConfiguration conf =
+                                new NeuralNetConfiguration.Builder().seed(12345).activation(Activation.TANH)
+                                                .weightInit(WeightInit.XAVIER).updater(u).learningRate(0.1)
+                                                .regularization(regularization).l1(regularization ? 0.2 : 0.0)
+                                                .l2(regularization ? 0.3 : 0.0).list()
+                                                .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(10).build())
+                                                .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(2,
+                                                                new OutputLayer.Builder(
+                                                                                LossFunctions.LossFunction.MCXENT)
+                                                                                                .activation(Activation.SOFTMAX)
+                                                                                                .nIn(10).nOut(nOut)
+                                                                                                .build())
+                                                .build();
 
 
                 Nd4j.getRandom().setSeed(12345);
@@ -81,14 +81,14 @@ public class TestMultiModelGradientApplication {
                 net2GradUpd.computeGradientAndScore();
 
                 Gradient g = net1GradCalc.gradient();
-                INDArray gBefore = g.gradient().dup();                                  //Net 1 gradient should be modified
-                INDArray net2GradBefore = net2GradUpd.gradient().gradient().dup();      //But net 2 gradient should not be
+                INDArray gBefore = g.gradient().dup(); //Net 1 gradient should be modified
+                INDArray net2GradBefore = net2GradUpd.gradient().gradient().dup(); //But net 2 gradient should not be
                 net2GradUpd.getUpdater().update(net2GradUpd, g, 0, minibatch);
                 INDArray gAfter = g.gradient().dup();
                 INDArray net2GradAfter = net2GradUpd.gradient().gradient().dup();
 
-                assertNotEquals(gBefore, gAfter);                                       //Net 1 gradient should be modified
-                assertEquals(net2GradBefore, net2GradAfter);                            //But net 2 gradient should not be
+                assertNotEquals(gBefore, gAfter); //Net 1 gradient should be modified
+                assertEquals(net2GradBefore, net2GradAfter); //But net 2 gradient should not be
 
 
                 //Also: if we apply the gradient using a subi op, we should get the same final params as if we did a fit op
@@ -100,11 +100,12 @@ public class TestMultiModelGradientApplication {
 
 
                 //=============================
-                if(u != Updater.SGD){
+                if (u != Updater.SGD) {
                     net2GradUpd.getUpdater().getStateViewArray().assign(net1GradCalc.getUpdater().getStateViewArray());
                 }
                 assertEquals(net1GradCalc.params(), net2GradUpd.params());
-                assertEquals(net1GradCalc.getUpdater().getStateViewArray(), net2GradUpd.getUpdater().getStateViewArray());
+                assertEquals(net1GradCalc.getUpdater().getStateViewArray(),
+                                net2GradUpd.getUpdater().getStateViewArray());
 
                 //Remove the next 2 lines: fails - as net 1 is 1 iteration ahead
                 net1GradCalc.getLayerWiseConfigurations().setIterationCount(0);
@@ -121,29 +122,27 @@ public class TestMultiModelGradientApplication {
 
 
     @Test
-    public void testGradientApplyComputationGraph(){
+    public void testGradientApplyComputationGraph() {
         int minibatch = 7;
         int nIn = 10;
         int nOut = 10;
 
-        for(boolean regularization : new boolean[]{false, true}) {
-            for (Updater u : new Updater[]{Updater.SGD, Updater.ADAM}) {
+        for (boolean regularization : new boolean[] {false, true}) {
+            for (Updater u : new Updater[] {Updater.SGD, Updater.ADAM}) {
 
-                ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .seed(12345)
-                        .activation(Activation.TANH)
-                        .weightInit(WeightInit.XAVIER)
-                        .updater(u).learningRate(0.1)
-                        .regularization(regularization)
-                        .l1(regularization ? 0.2 : 0.0).l2(regularization ? 0.3 : 0.0)
-                        .graphBuilder()
-                        .addInputs("in")
-                        .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(10).build(), "in")
-                        .addLayer("1", new DenseLayer.Builder().nIn(10).nOut(10).build(), "0")
-                        .addLayer("2", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                .activation(Activation.SOFTMAX).nIn(10).nOut(nOut).build(), "1")
-                        .setOutputs("2")
-                        .build();
+                ComputationGraphConfiguration conf =
+                                new NeuralNetConfiguration.Builder().seed(12345).activation(Activation.TANH)
+                                                .weightInit(WeightInit.XAVIER).updater(u).learningRate(0.1)
+                                                .regularization(regularization).l1(regularization ? 0.2 : 0.0)
+                                                .l2(regularization ? 0.3 : 0.0).graphBuilder().addInputs("in")
+                                                .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(10).build(), "in")
+                                                .addLayer("1", new DenseLayer.Builder().nIn(10).nOut(10).build(), "0")
+                                                .addLayer("2", new OutputLayer.Builder(
+                                                                LossFunctions.LossFunction.MCXENT)
+                                                                                .activation(Activation.SOFTMAX).nIn(10)
+                                                                                .nOut(nOut).build(),
+                                                                "1")
+                                                .setOutputs("2").build();
 
 
                 Nd4j.getRandom().setSeed(12345);
@@ -174,29 +173,30 @@ public class TestMultiModelGradientApplication {
                 net2GradUpd.computeGradientAndScore();
 
                 Gradient g = net1GradCalc.gradient();
-                INDArray gBefore = g.gradient().dup();                                  //Net 1 gradient should be modified
-                INDArray net2GradBefore = net2GradUpd.gradient().gradient().dup();      //But net 2 gradient should not be
+                INDArray gBefore = g.gradient().dup(); //Net 1 gradient should be modified
+                INDArray net2GradBefore = net2GradUpd.gradient().gradient().dup(); //But net 2 gradient should not be
                 net2GradUpd.getUpdater().update(g, 0, minibatch);
                 INDArray gAfter = g.gradient().dup();
                 INDArray net2GradAfter = net2GradUpd.gradient().gradient().dup();
 
-                assertNotEquals(gBefore, gAfter);                                       //Net 1 gradient should be modified
-                assertEquals(net2GradBefore, net2GradAfter);                            //But net 2 gradient should not be
+                assertNotEquals(gBefore, gAfter); //Net 1 gradient should be modified
+                assertEquals(net2GradBefore, net2GradAfter); //But net 2 gradient should not be
 
 
                 //Also: if we apply the gradient using a subi op, we should get the same final params as if we did a fit op
                 // on the original network
                 net2GradUpd.params().subi(g.gradient());
 
-                net1GradCalc.fit(new INDArray[]{f}, new INDArray[]{l});
+                net1GradCalc.fit(new INDArray[] {f}, new INDArray[] {l});
                 assertEquals(net1GradCalc.params(), net2GradUpd.params());
 
                 //=============================
-                if(u != Updater.SGD){
+                if (u != Updater.SGD) {
                     net2GradUpd.getUpdater().getStateViewArray().assign(net1GradCalc.getUpdater().getStateViewArray());
                 }
                 assertEquals(net1GradCalc.params(), net2GradUpd.params());
-                assertEquals(net1GradCalc.getUpdater().getStateViewArray(), net2GradUpd.getUpdater().getStateViewArray());
+                assertEquals(net1GradCalc.getUpdater().getStateViewArray(),
+                                net2GradUpd.getUpdater().getStateViewArray());
 
                 //Remove the next 2 lines: fails - as net 1 is 1 iteration ahead
                 net1GradCalc.getConfiguration().setIterationCount(0);
@@ -204,8 +204,8 @@ public class TestMultiModelGradientApplication {
 
 
                 for (int i = 0; i < 100; i++) {
-                    net1GradCalc.fit(new INDArray[]{f}, new INDArray[]{l});
-                    net2GradUpd.fit(new INDArray[]{f}, new INDArray[]{l});
+                    net1GradCalc.fit(new INDArray[] {f}, new INDArray[] {l});
+                    net2GradUpd.fit(new INDArray[] {f}, new INDArray[] {l});
                     assertEquals(net1GradCalc.params(), net2GradUpd.params());
                 }
             }

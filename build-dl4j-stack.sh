@@ -200,11 +200,7 @@ else
 fi
 pushd nd4j
 maybeUpdateRepo
-if [ "$CHIP" == "cpu" ]; then
-  checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true -pl '!:nd4j-cuda-8.0,!:nd4j-cuda-8.0-platform,!:nd4j-tests' $ND4J_OPTIONS $MVN_OPTS
-else
-  checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true $ND4J_OPTIONS $MVN_OPTS
-fi
+checkexit bash buildmultiplescalaversions.sh clean install -Dmaven.javadoc.skip=true $ND4J_OPTIONS $MVN_OPTS
 popd
 
 # build and install datavec

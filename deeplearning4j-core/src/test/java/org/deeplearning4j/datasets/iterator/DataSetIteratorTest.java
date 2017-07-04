@@ -128,7 +128,7 @@ public class DataSetIteratorTest {
         MultiLayerConfiguration.Builder builder = new NeuralNetConfiguration.Builder().seed(seed).iterations(iterations)
                         .gradientNormalization(GradientNormalization.RenormalizeL2PerLayer)
                         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).list()
-                        .layer(0, new ConvolutionLayer.Builder(5,5).nIn(numChannels).nOut(6)
+                        .layer(0, new ConvolutionLayer.Builder(5, 5).nIn(numChannels).nOut(6)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.RELU).build())
                         .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
                                         .stride(1, 1).build())

@@ -46,10 +46,9 @@ public class KerasLRN extends KerasLayer {
         super(layerConfig, enforceTrainingConfig);
         Map<String, Object> lrnParams = getInnerLayerConfigFromConfig(layerConfig);
 
-        LocalResponseNormalization.Builder builder = new LocalResponseNormalization.Builder()
-                .name(this.layerName).dropOut(this.dropout)
-                .alpha((double) lrnParams.get("alpha")).beta((double) lrnParams.get("beta"))
-                .k((int) lrnParams.get("k")).n((int) lrnParams.get("n"));
+        LocalResponseNormalization.Builder builder = new LocalResponseNormalization.Builder().name(this.layerName)
+                        .dropOut(this.dropout).alpha((double) lrnParams.get("alpha"))
+                        .beta((double) lrnParams.get("beta")).k((int) lrnParams.get("k")).n((int) lrnParams.get("n"));
         this.layer = builder.build();
         this.vertex = null;
     }

@@ -52,20 +52,17 @@ public class LossFunctionGradientCheck {
     @Test
     public void lossFunctionGradientCheck() {
 
-        ILossFunction[] lossFunctions = new ILossFunction[] {
-                new LossBinaryXENT(), new LossBinaryXENT(),
+        ILossFunction[] lossFunctions = new ILossFunction[] {new LossBinaryXENT(), new LossBinaryXENT(),
                         new LossCosineProximity(), new LossHinge(), new LossKLD(), new LossKLD(), new LossL1(),
                         new LossL1(), new LossL1(), new LossL2(), new LossL2(), new LossMAE(), new LossMAE(),
                         new LossMAPE(), new LossMAPE(), new LossMCXENT(), new LossMSE(), new LossMSE(), new LossMSLE(),
                         new LossMSLE(), new LossNegativeLogLikelihood(), new LossNegativeLogLikelihood(),
-                        new LossPoisson(), new LossSquaredHinge(),
-                        new LossFMeasure(), new LossFMeasure(2.0), new LossFMeasure(), new LossFMeasure(2.0),
+                        new LossPoisson(), new LossSquaredHinge(), new LossFMeasure(), new LossFMeasure(2.0),
+                        new LossFMeasure(), new LossFMeasure(2.0),
                         LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
-                        LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
-                };
+                        LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),};
 
-        String[] outputActivationFn = new String[] {
-                "sigmoid", //xent
+        String[] outputActivationFn = new String[] {"sigmoid", //xent
                         "sigmoid", //xent
                         "tanh", //cosine
                         "tanh", //hinge -> trying to predict 1 or -1
@@ -88,7 +85,7 @@ public class LossFunctionGradientCheck {
                         "sigmoid", //nll
                         "softmax", //nll + softmax
                         "sigmoid", //poisson - requires positive predictions due to log... not sure if this is the best option
-                        "tanh",    //squared hinge
+                        "tanh", //squared hinge
                         "sigmoid", //f-measure (binary, single sigmoid output)
                         "sigmoid", //f-measure (binary, single sigmoid output)
                         "softmax", //f-measure (binary, 2-label softmax output)
@@ -97,8 +94,7 @@ public class LossFunctionGradientCheck {
                         "tanh", // MixtureDensity + tanh
         };
 
-        int[] nOut = new int[] {
-                1, //xent
+        int[] nOut = new int[] {1, //xent
                         3, //xent
                         5, //cosine
                         3, //hinge
@@ -206,10 +202,8 @@ public class LossFunctionGradientCheck {
                         new LossMAPE(), new LossMCXENT(), new LossMSE(), new LossMSE(), new LossMSLE(), new LossMSLE(),
                         new LossNegativeLogLikelihood(), new LossNegativeLogLikelihood(), new LossPoisson(),
                         new LossSquaredHinge(), new LossFMeasure(), new LossFMeasure(2.0), new LossFMeasure(),
-                        new LossFMeasure(2.0),
-                        LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
-                        LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
-        };
+                        new LossFMeasure(2.0), LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
+                        LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),};
 
         String[] outputActivationFn = new String[] {"sigmoid", //xent
                         "sigmoid", //xent
@@ -233,7 +227,7 @@ public class LossFunctionGradientCheck {
                         "sigmoid", //nll
                         "softmax", //nll + softmax
                         "sigmoid", //poisson - requires positive predictions due to log... not sure if this is the best option
-                        "tanh",    //squared hinge
+                        "tanh", //squared hinge
                         "sigmoid", //f-measure (binary, single sigmoid output)
                         "sigmoid", //f-measure (binary, single sigmoid output)
                         "softmax", //f-measure (binary, 2-label softmax output)
@@ -296,7 +290,7 @@ public class LossFunctionGradientCheck {
                 } catch (IOException ex) {
                     ex.printStackTrace();
                     assertEquals("Tests failed: serialization of " + lossFunctions[i], 0, 1);
-                }                
+                }
                 Nd4j.getRandom().setSeed(12345);
                 MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().iterations(1)
                                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).seed(12345)
@@ -440,28 +434,29 @@ public class LossFunctionGradientCheck {
                 BooleanIndexing.replaceWhere(ret[1], 1, Conditions.greaterThanOrEqual(0.5));
                 break;
             case "LossFMeasure":
-                if(labelsShape[1] == 1){
+                if (labelsShape[1] == 1) {
                     //single binary output case
-                    ret[1] = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(labelsShape), 0.5));
-                    if(labelsShape[0] >= 2){
+                    ret[1] = Nd4j.getExecutioner()
+                                    .exec(new BernoulliDistribution(Nd4j.createUninitialized(labelsShape), 0.5));
+                    if (labelsShape[0] >= 2) {
                         //Ensure we have at least one "0" and one "1"
                         int count = ret[1].sumNumber().intValue();
                         if (count == 0) {
-                            ret[1].putScalar(0,0,1.0);
-                        } else if( count == ret[1].size(0)){
-                            ret[1].putScalar(0,0,0.0);
+                            ret[1].putScalar(0, 0, 1.0);
+                        } else if (count == ret[1].size(0)) {
+                            ret[1].putScalar(0, 0, 0.0);
                         }
                     }
                 } else {
                     //"softmax style" binary output case
                     ret[1] = Nd4j.create(labelsShape);
-                    for( int i=0; i<labelsShape[0]; i++ ){
-                        ret[1].putScalar(i, i%labelsShape[1], 1.0);
+                    for (int i = 0; i < labelsShape[0]; i++) {
+                        ret[1].putScalar(i, i % labelsShape[1], 1.0);
                     }
                 }
                 break;
             case "LossMixtureDensity":
-                LossMixtureDensity lmd = (LossMixtureDensity)l;
+                LossMixtureDensity lmd = (LossMixtureDensity) l;
                 int labelWidth = lmd.getLabelWidth();
                 ret[1] = Nd4j.rand(new int[] {labelsShape[0], labelWidth});
                 break;

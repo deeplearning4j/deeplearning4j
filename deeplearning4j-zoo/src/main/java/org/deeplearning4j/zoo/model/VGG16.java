@@ -56,11 +56,11 @@ public class VGG16 extends ZooModel {
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
-        if(pretrainedType==PretrainedType.IMAGENET)
+        if (pretrainedType == PretrainedType.IMAGENET)
             return "http://blob.deeplearning4j.org/models/vgg16_dl4j_inference.zip";
-        else if(pretrainedType==PretrainedType.CIFAR10)
+        else if (pretrainedType == PretrainedType.CIFAR10)
             return "http://blob.deeplearning4j.org/models/vgg16_dl4j_cifar10_inference.v1.zip";
-        else if(pretrainedType==PretrainedType.VGGFACE)
+        else if (pretrainedType == PretrainedType.VGGFACE)
             return "http://blob.deeplearning4j.org/models/vgg16_dl4j_vggface_inference.v1.zip";
         else
             return null;
@@ -68,11 +68,11 @@ public class VGG16 extends ZooModel {
 
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
-        if(pretrainedType==PretrainedType.IMAGENET)
+        if (pretrainedType == PretrainedType.IMAGENET)
             return 3501732770L;
-        if(pretrainedType==PretrainedType.CIFAR10)
+        if (pretrainedType == PretrainedType.CIFAR10)
             return 2192260131L;
-        if(pretrainedType==PretrainedType.VGGFACE)
+        if (pretrainedType == PretrainedType.VGGFACE)
             return 2706403553L;
         else
             return 0L;
@@ -96,9 +96,9 @@ public class VGG16 extends ZooModel {
                                         .trainingWorkspaceMode(workspaceMode).inferenceWorkspaceMode(workspaceMode)
                                         .list()
                                         // block 1
-                                        .layer(0, new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1).padding(
-                                                        1, 1).nIn(inputShape[0]).nOut(64).cudnnAlgoMode(cudnnAlgoMode)
-                                                        .build())
+                                        .layer(0, new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1)
+                                                        .padding(1, 1).nIn(inputShape[0]).nOut(64)
+                                                        .cudnnAlgoMode(cudnnAlgoMode).build())
                                         .layer(1, new ConvolutionLayer.Builder().kernelSize(3, 3).stride(1, 1)
                                                         .padding(1, 1).nOut(64).cudnnAlgoMode(
                                                                         cudnnAlgoMode)

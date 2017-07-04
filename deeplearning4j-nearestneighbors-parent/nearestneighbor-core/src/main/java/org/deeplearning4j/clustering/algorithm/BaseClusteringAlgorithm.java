@@ -109,8 +109,8 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
     private void iterations() {
         int iterationCount = 0;
         while ((clusteringStrategy.getTerminationCondition() != null
-                && !clusteringStrategy.getTerminationCondition().isSatisfied(iterationHistory))
-                || iterationHistory.getMostRecentIterationInfo().isStrategyApplied()) {
+                        && !clusteringStrategy.getTerminationCondition().isSatisfied(iterationHistory))
+                        || iterationHistory.getMostRecentIterationInfo().isStrategyApplied()) {
             currentIteration++;
             removePoints();
             classifyPoints();
@@ -123,12 +123,9 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
         //Classify points. This also adds each point to the ClusterSet
         ClusterSetInfo clusterSetInfo = ClusterUtils.classifyPoints(clusterSet, initialPoints, exec);
         //Update the cluster centers, based on the points within each cluster
-        ClusterUtils.refreshClustersCenters(
-                clusterSet,
-                clusterSetInfo, exec);
-        iterationHistory.getIterationsInfos().put(
-                currentIteration,
-                new IterationInfo(currentIteration, clusterSetInfo));
+        ClusterUtils.refreshClustersCenters(clusterSet, clusterSetInfo, exec);
+        iterationHistory.getIterationsInfos().put(currentIteration,
+                        new IterationInfo(currentIteration, clusterSetInfo));
     }
 
     /**
@@ -141,27 +138,25 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
 
         //Initialize the ClusterSet with a single cluster center (based on position of one of the points chosen randomly)
         Random random = new Random();
-        clusterSet = new ClusterSet(clusteringStrategy.getDistanceFunction(),clusteringStrategy.inverseDistanceCalculation());
+        clusterSet = new ClusterSet(clusteringStrategy.getDistanceFunction(),
+                        clusteringStrategy.inverseDistanceCalculation());
         clusterSet.addNewClusterWithCenter(points.remove(random.nextInt(points.size())));
         int initialClusterCount = clusteringStrategy.getInitialClusterCount();
 
         //dxs: distances between
         // each point and nearest cluster to that point
         INDArray dxs = Nd4j.create(points.size());
-        dxs.addi(clusteringStrategy.inverseDistanceCalculation()  ? -Double.MAX_VALUE :  Double.MAX_VALUE);
+        dxs.addi(clusteringStrategy.inverseDistanceCalculation() ? -Double.MAX_VALUE : Double.MAX_VALUE);
 
         //Generate the initial cluster centers, by randomly selecting a point between 0 and max distance
         //Thus, we are more likely to select (as a new cluster center) a point that is far from an existing cluster
-        while (clusterSet.getClusterCount() < initialClusterCount &&
-                !points.isEmpty()) {
+        while (clusterSet.getClusterCount() < initialClusterCount && !points.isEmpty()) {
             dxs = ClusterUtils.computeSquareDistancesFromNearestCluster(clusterSet, points, dxs, exec);
             double r = random.nextFloat() * dxs.maxNumber().doubleValue();
             for (int i = 0; i < dxs.length(); i++) {
                 if (dxs.getDouble(i) >= r) {
                     clusterSet.addNewClusterWithCenter(points.remove(i));
-                    dxs = Nd4j.create(ArrayUtils.remove(
-                            dxs.data()
-                            .asDouble(), i));
+                    dxs = Nd4j.create(ArrayUtils.remove(dxs.data().asDouble(), i));
                     break;
                 }
             }
@@ -169,7 +164,7 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
 
         ClusterSetInfo initialClusterSetInfo = ClusterUtils.computeClusterSetInfo(clusterSet);
         iterationHistory.getIterationsInfos().put(currentIteration,
-                new IterationInfo(currentIteration, initialClusterSetInfo));
+                        new IterationInfo(currentIteration, initialClusterSetInfo));
     }
 
     protected void applyClusteringStrategy() {
@@ -183,9 +178,9 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
                 iterationHistory.getMostRecentIterationInfo().setStrategyApplied(true);
 
                 if (clusteringStrategy.isStrategyOfType(ClusteringStrategyType.FIXED_CLUSTER_COUNT)
-                        && clusterSet.getClusterCount() < clusteringStrategy.getInitialClusterCount()) {
+                                && clusterSet.getClusterCount() < clusteringStrategy.getInitialClusterCount()) {
                     int splitCount = ClusterUtils.splitMostSpreadOutClusters(clusterSet, clusterSetInfo,
-                            clusteringStrategy.getInitialClusterCount() - clusterSet.getClusterCount(), exec);
+                                    clusteringStrategy.getInitialClusterCount() - clusterSet.getClusterCount(), exec);
                     if (splitCount > 0)
                         iterationHistory.getMostRecentIterationInfo().setStrategyApplied(true);
                 }
@@ -204,7 +199,7 @@ public class BaseClusteringAlgorithm implements ClusteringAlgorithm, Serializabl
 
     private boolean isStrategyApplicableNow() {
         return clusteringStrategy.isOptimizationDefined() && iterationHistory.getIterationCount() != 0
-                && clusteringStrategy.isOptimizationApplicableNow(iterationHistory);
+                        && clusteringStrategy.isOptimizationApplicableNow(iterationHistory);
     }
 
     protected int removeEmptyClusters(ClusterSetInfo clusterSetInfo) {

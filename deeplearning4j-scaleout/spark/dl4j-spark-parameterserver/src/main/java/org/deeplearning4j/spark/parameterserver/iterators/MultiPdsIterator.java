@@ -17,7 +17,8 @@ public class MultiPdsIterator implements Iterator<MultiDataSet> {
     protected final Iterator<PortableDataStream> iterator;
     protected final PortableDataStreamMDSCallback callback;
 
-    public MultiPdsIterator(@NonNull Iterator<PortableDataStream> pds, @NonNull PortableDataStreamMDSCallback callback) {
+    public MultiPdsIterator(@NonNull Iterator<PortableDataStream> pds,
+                    @NonNull PortableDataStreamMDSCallback callback) {
         this.iterator = pds;
         this.callback = callback;
     }

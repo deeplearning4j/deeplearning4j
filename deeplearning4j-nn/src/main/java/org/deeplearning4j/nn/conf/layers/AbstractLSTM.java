@@ -109,7 +109,7 @@ public abstract class AbstractLSTM extends BaseRecurrentLayer {
          */
         public T forgetGateBiasInit(double biasInit) {
             this.forgetGateBiasInit = biasInit;
-            return (T)this;
+            return (T) this;
         }
 
         /**
@@ -119,7 +119,7 @@ public abstract class AbstractLSTM extends BaseRecurrentLayer {
          * @param gateActivationFn Activation function for the LSTM gates
          */
         public T gateActivationFunction(String gateActivationFn) {
-            return (T)gateActivationFunction(Activation.fromString(gateActivationFn));
+            return (T) gateActivationFunction(Activation.fromString(gateActivationFn));
         }
 
         /**
@@ -129,7 +129,7 @@ public abstract class AbstractLSTM extends BaseRecurrentLayer {
          * @param gateActivationFn Activation function for the LSTM gates
          */
         public T gateActivationFunction(Activation gateActivationFn) {
-            return (T)gateActivationFunction(gateActivationFn.getActivationFunction());
+            return (T) gateActivationFunction(gateActivationFn.getActivationFunction());
         }
 
         /**
@@ -140,7 +140,7 @@ public abstract class AbstractLSTM extends BaseRecurrentLayer {
          */
         public T gateActivationFunction(IActivation gateActivationFn) {
             this.gateActivationFn = gateActivationFn;
-            return (T)this;
+            return (T) this;
         }
 
     }

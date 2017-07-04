@@ -65,7 +65,7 @@ public class LocalFileGraphSaver implements EarlyStoppingModelSaver<ComputationG
         this.encoding = encoding;
 
         File dir = new File(directory);
-        if(!dir.exists()){
+        if (!dir.exists()) {
             dir.mkdirs();
         }
     }

@@ -24,6 +24,7 @@ import org.deeplearning4j.clustering.condition.ConvergenceCondition;
 import org.deeplearning4j.clustering.condition.FixedIterationCountCondition;
 
 import java.io.Serializable;
+
 @AllArgsConstructor(access = AccessLevel.PROTECTED)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class BaseClusteringStrategy implements ClusteringStrategy, Serializable {
@@ -41,7 +42,7 @@ public abstract class BaseClusteringStrategy implements ClusteringStrategy, Seri
     protected ClusteringAlgorithmCondition terminationCondition;
     @Getter(AccessLevel.PUBLIC)
     @Setter(AccessLevel.PROTECTED)
-    protected  boolean inverse;
+    protected boolean inverse;
     @Getter(AccessLevel.PUBLIC)
     @Setter(AccessLevel.PROTECTED)
     protected String distanceFunction;
@@ -49,11 +50,8 @@ public abstract class BaseClusteringStrategy implements ClusteringStrategy, Seri
     @Setter(AccessLevel.PROTECTED)
     protected boolean allowEmptyClusters;
 
-    public BaseClusteringStrategy(ClusteringStrategyType type,
-                                  Integer initialClusterCount,
-                                  String distanceFunction,
-                                  boolean allowEmptyClusters,
-                                  boolean inverse) {
+    public BaseClusteringStrategy(ClusteringStrategyType type, Integer initialClusterCount, String distanceFunction,
+                    boolean allowEmptyClusters, boolean inverse) {
         this.type = type;
         this.initialClusterCount = initialClusterCount;
         this.distanceFunction = distanceFunction;
@@ -61,8 +59,9 @@ public abstract class BaseClusteringStrategy implements ClusteringStrategy, Seri
         this.inverse = inverse;
     }
 
-    public BaseClusteringStrategy(ClusteringStrategyType clusteringStrategyType, int initialClusterCount, String distanceFunction, boolean inverse) {
-           this(clusteringStrategyType,initialClusterCount,distanceFunction,false,inverse);
+    public BaseClusteringStrategy(ClusteringStrategyType clusteringStrategyType, int initialClusterCount,
+                    String distanceFunction, boolean inverse) {
+        this(clusteringStrategyType, initialClusterCount, distanceFunction, false, inverse);
     }
 
 

@@ -23,7 +23,6 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@NoArgsConstructor
 public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
     public static final int DEFAULT_STATS_PRECISION = 4;
 
@@ -32,6 +31,11 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
     @JsonSerialize(using = ROCArraySerializer.class)
     private ROC[] underlying;
     private List<String> labels;
+
+    public ROCMultiClass() {
+        //Default to exact
+        this(0);
+    }
 
     /**
      * @param thresholdSteps Number of threshold steps to use for the ROC calculation. Set to 0 for exact ROC calculation
@@ -60,7 +64,7 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
         return stats(DEFAULT_STATS_PRECISION);
     }
 
-    public String stats(int printPrecision){
+    public String stats(int printPrecision) {
 
         StringBuilder sb = new StringBuilder();
 
@@ -75,21 +79,22 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
         String header = String.format(patternHeader, "Label", "AUC", "# Pos", "# Neg");
 
         String pattern = "%-" + (maxLabelsLength + 5) + "s" //Label
-                + "%-12." + printPrecision + "f" //AUC
-                + "%-10d%-10d"; //Count pos, count neg
+                        + "%-12." + printPrecision + "f" //AUC
+                        + "%-10d%-10d"; //Count pos, count neg
 
         sb.append(header);
 
-        if(underlying != null) {
+        if (underlying != null) {
             for (int i = 0; i < underlying.length; i++) {
                 double auc = calculateAUC(i);
 
                 String label = (labels == null ? String.valueOf(i) : labels.get(i));
 
-                sb.append("\n").append(String.format(pattern, label, auc, getCountActualPositive(i), getCountActualNegative(i)));
+                sb.append("\n").append(String.format(pattern, label, auc, getCountActualPositive(i),
+                                getCountActualNegative(i)));
             }
 
-            sb.append("Average AUC: ").append(String.format("%-12."+printPrecision+"f", calculateAverageAUC()));
+            sb.append("Average AUC: ").append(String.format("%-12." + printPrecision + "f", calculateAverageAUC()));
         } else {
             //Empty evaluation
             sb.append("\n-- No Data --\n");
@@ -119,7 +124,7 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
         int n = labels.size(1);
         if (underlying == null) {
             underlying = new ROC[n];
-            for( int i=0; i<n; i++ ){
+            for (int i = 0; i < n; i++) {
                 underlying[i] = new ROC(thresholdSteps, rocRemoveRedundantPts);
             }
         }
@@ -132,8 +137,8 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
                                             + " vs. expected number of label classes = " + underlying.length);
         }
 
-        for( int i=0; i<n; i++ ){
-            INDArray prob = predictions.getColumn(i);   //Probability of class i
+        for (int i = 0; i < n; i++) {
+            INDArray prob = predictions.getColumn(i); //Probability of class i
             INDArray label = labels.getColumn(i);
             underlying[i].eval(label, prob);
         }
@@ -144,7 +149,7 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
      * @param classIdx Class index to get the ROC curve for
      * @return ROC curve for the given class
      */
-    public RocCurve getRocCurve(int classIdx){
+    public RocCurve getRocCurve(int classIdx) {
         assertIndex(classIdx);
         return underlying[classIdx].getRocCurve();
     }
@@ -154,7 +159,7 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
      * @param classIdx Class to get the P-R curve for
      * @return  Precision recall curve for the given class
      */
-    public PrecisionRecallCurve getPrecisionRecallCurve(int classIdx){
+    public PrecisionRecallCurve getPrecisionRecallCurve(int classIdx) {
         assertIndex(classIdx);
         return underlying[classIdx].getPrecisionRecallCurve();
     }
@@ -231,17 +236,17 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
         }
 
         //Both have data
-        if(underlying.length != other.underlying.length){
-            throw new UnsupportedOperationException("Cannot merge ROCBinary: this expects " + underlying.length +
-                    "outputs, other expects " + other.underlying.length + " outputs");
+        if (underlying.length != other.underlying.length) {
+            throw new UnsupportedOperationException("Cannot merge ROCBinary: this expects " + underlying.length
+                            + "outputs, other expects " + other.underlying.length + " outputs");
         }
-        for( int i=0; i<underlying.length; i++ ){
+        for (int i = 0; i < underlying.length; i++) {
             this.underlying[i].merge(other.underlying[i]);
         }
     }
 
-    public int getNumClasses(){
-        if(underlying == null){
+    public int getNumClasses() {
+        if (underlying == null) {
             return -1;
         }
         return underlying.length;
