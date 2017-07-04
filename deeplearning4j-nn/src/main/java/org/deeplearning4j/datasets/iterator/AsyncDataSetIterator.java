@@ -28,22 +28,25 @@ import java.util.concurrent.locks.LockSupport;
  */
 @Slf4j
 public class AsyncDataSetIterator implements DataSetIterator {
-    private DataSetIterator backedIterator;
+    protected DataSetIterator backedIterator;
 
-    private DataSet terminator = new DataSet();
-    private DataSet nextElement = null;
-    private BlockingQueue<DataSet> buffer;
-    private AsyncPrefetchThread thread;
-    private AtomicBoolean shouldWork = new AtomicBoolean(true);
-    private volatile RuntimeException throwable = null;
-    private boolean useWorkspace = true;
-    private int prefetchSize;
-    private String workspaceId;
-    private Integer deviceId;
-    private AtomicBoolean hasDepleted = new AtomicBoolean(false);
+    protected DataSet terminator = new DataSet();
+    protected DataSet nextElement = null;
+    protected BlockingQueue<DataSet> buffer;
+    protected AsyncPrefetchThread thread;
+    protected AtomicBoolean shouldWork = new AtomicBoolean(true);
+    protected volatile RuntimeException throwable = null;
+    protected boolean useWorkspace = true;
+    protected int prefetchSize;
+    protected String workspaceId;
+    protected Integer deviceId;
+    protected AtomicBoolean hasDepleted = new AtomicBoolean(false);
 
-    private DataSetCallback callback;
+    protected DataSetCallback callback;
 
+    protected AsyncDataSetIterator() {
+        //
+    }
 
     public AsyncDataSetIterator(DataSetIterator baseIterator) {
         this(baseIterator, 8);
@@ -70,7 +73,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
     }
 
     public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace) {
-        this(iterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace, null);
+        this(iterator, queueSize, queue, useWorkspace, new DefaultCallback());
     }
 
     public AsyncDataSetIterator(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace, DataSetCallback callback) {
@@ -172,6 +175,10 @@ public class AsyncDataSetIterator implements DataSetIterator {
     @Override
     public boolean asyncSupported() {
         return false;
+    }
+
+    protected void externalCall() {
+        // for spark
     }
 
     /**
@@ -395,6 +402,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
         @Override
         public void run() {
+            externalCall();
             try {
                 if (useWorkspace)
                     workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, workspaceId);

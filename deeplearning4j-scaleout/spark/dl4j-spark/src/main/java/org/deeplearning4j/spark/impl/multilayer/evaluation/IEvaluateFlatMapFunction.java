@@ -23,16 +23,20 @@ import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
+import org.deeplearning4j.datasets.iterator.callbacks.DefaultCallback;
 import org.deeplearning4j.eval.IEvaluation;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.spark.iterator.SparkADSI;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.concurrent.LinkedBlockingDeque;
 
 /**
  * Function to evaluate data (using an IEvaluation instance), in a distributed manner
@@ -99,7 +103,7 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
                         "Network did not have same number of parameters as the broadcast set parameters");
             graph.setParams(val);
 
-            T eval = graph.doEvaluation(new IteratorDataSetIterator(dataSetIterator, evalBatchSize), evaluation)[0];
+            T eval = graph.doEvaluation(new SparkADSI(new IteratorDataSetIterator(dataSetIterator, evalBatchSize), 2, true), evaluation)[0];
             return Collections.singletonList(eval);
 
         } else {
@@ -110,7 +114,7 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
                         "Network did not have same number of parameters as the broadcast set parameters");
             network.setParameters(val);
 
-            T eval = network.doEvaluation(new IteratorDataSetIterator(dataSetIterator, evalBatchSize), evaluation)[0];
+            T eval = network.doEvaluation(new SparkADSI(new IteratorDataSetIterator(dataSetIterator, evalBatchSize), 2, true), evaluation)[0];
             return Collections.singletonList(eval);
         }
     }
