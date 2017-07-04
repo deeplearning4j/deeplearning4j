@@ -17,9 +17,10 @@ public class ROCArraySerializer extends JsonSerializer<ROC[]> {
     private static final ROCSerializer serializer = new ROCSerializer();
 
     @Override
-    public void serialize(ROC[] rocs, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException, JsonProcessingException {
+    public void serialize(ROC[] rocs, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+                    throws IOException, JsonProcessingException {
         jsonGenerator.writeStartArray();
-        for(ROC r : rocs){
+        for (ROC r : rocs) {
             jsonGenerator.writeStartObject();
             jsonGenerator.writeStringField("@class", ROC.class.getName());
             serializer.serialize(r, jsonGenerator, serializerProvider);

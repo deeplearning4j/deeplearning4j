@@ -173,7 +173,8 @@ public class Glove implements Serializable {
         while (pair2.hasNext()) {
             Pair<String, String> next = pair2.next();
             if (coOccurrenceCounts.getCount(next.getFirst(), next.getSecond()) > gloveWeightLookupTable.getMaxCount()) {
-                coOccurrenceCounts.setCount(next.getFirst(), next.getSecond(), (float) gloveWeightLookupTable.getMaxCount());
+                coOccurrenceCounts.setCount(next.getFirst(), next.getSecond(),
+                                (float) gloveWeightLookupTable.getMaxCount());
             }
             counts.add(new Triple<>(next.getFirst(), next.getSecond(),
                             coOccurrenceCounts.getCount(next.getFirst(), next.getSecond())));
@@ -198,8 +199,7 @@ public class Glove implements Serializable {
                         new PairFunction<Tuple2<String, Tuple2<String, Float>>, VocabWord, Tuple2<VocabWord, Float>>() {
                             @Override
                             public Tuple2<VocabWord, Tuple2<VocabWord, Float>> call(
-                                            Tuple2<String, Tuple2<String, Float>> stringTuple2Tuple2)
-                                            throws Exception {
+                                            Tuple2<String, Tuple2<String, Float>> stringTuple2Tuple2) throws Exception {
                                 VocabWord w1 = vocabCacheBroadcast.getValue().wordFor(stringTuple2Tuple2._1());
                                 VocabWord w2 = vocabCacheBroadcast.getValue().wordFor(stringTuple2Tuple2._2()._1());
                                 return new Tuple2<>(w1, new Tuple2<>(w2, stringTuple2Tuple2._2()._2()));

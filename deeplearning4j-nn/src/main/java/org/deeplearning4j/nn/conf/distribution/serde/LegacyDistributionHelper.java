@@ -13,7 +13,7 @@ import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 @JsonDeserialize(using = LegacyDistributionDeserializer.class)
 public class LegacyDistributionHelper extends Distribution {
 
-    private LegacyDistributionHelper(){
+    private LegacyDistributionHelper() {
 
     }
 

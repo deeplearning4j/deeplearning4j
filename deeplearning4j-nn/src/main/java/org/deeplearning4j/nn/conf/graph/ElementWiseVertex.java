@@ -73,7 +73,7 @@ public class ElementWiseVertex extends GraphVertex {
 
     @Override
     public int maxVertexInputs() {
-        switch (op){
+        switch (op) {
             case Add:
             case Product:
                 //No upper bound

@@ -24,11 +24,11 @@ public class NearestNeighbor {
     public List<NearestNeighborsResult> search() {
         INDArray input = points.slice(record.getInputIndex());
         List<NearestNeighborsResult> results = new ArrayList<>();
-        if(input.isVector()) {
+        if (input.isVector()) {
             List<DataPoint> add = new ArrayList<>();
             List<Double> distances = new ArrayList<>();
             tree.search(input, record.getK(), add, distances);
-            for(DataPoint dataPoint : add) {
+            for (DataPoint dataPoint : add) {
                 results.add(new NearestNeighborsResult(dataPoint.getIndex()));
             }
         }

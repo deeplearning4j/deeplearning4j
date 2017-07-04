@@ -13,20 +13,18 @@ import java.util.Collection;
 /**
  * @author raver119@gmail.com
  */
-public class SharedTrainingAggregateFunction implements Function2<SharedTrainingAccumulationTuple, SharedTrainingResult, SharedTrainingAccumulationTuple> {
+public class SharedTrainingAggregateFunction implements
+                Function2<SharedTrainingAccumulationTuple, SharedTrainingResult, SharedTrainingAccumulationTuple> {
 
     @Override
-    public SharedTrainingAccumulationTuple call(SharedTrainingAccumulationTuple tuple, SharedTrainingResult result) throws Exception {
+    public SharedTrainingAccumulationTuple call(SharedTrainingAccumulationTuple tuple, SharedTrainingResult result)
+                    throws Exception {
         if (tuple == null) {
-            return SharedTrainingAccumulationTuple.builder()
-                    .updaterStateArray(result.getUpdaterStateArray())
-                    .scoreSum(result.getScoreSum())
-                    .listenerStaticInfo(result.getListenerStaticInfo())
-                    .listenerUpdates(result.getListenerUpdates())
-                    .listenerMetaData(result.getListenerMetaData())
-                    .sparkTrainingStats(result.getSparkTrainingStats())
-                    .aggregationsCount(result.getAggregationsCount())
-                    .build();
+            return SharedTrainingAccumulationTuple.builder().updaterStateArray(result.getUpdaterStateArray())
+                            .scoreSum(result.getScoreSum()).listenerStaticInfo(result.getListenerStaticInfo())
+                            .listenerUpdates(result.getListenerUpdates()).listenerMetaData(result.getListenerMetaData())
+                            .sparkTrainingStats(result.getSparkTrainingStats())
+                            .aggregationsCount(result.getAggregationsCount()).build();
         }
 
 
@@ -85,14 +83,9 @@ public class SharedTrainingAggregateFunction implements Function2<SharedTraining
         }
 
 
-        return SharedTrainingAccumulationTuple.builder()
-                .scoreSum(score)
-                .updaterStateArray(updaterStateSum)
-                .aggregationsCount(aggregationsCount)
-                .sparkTrainingStats(stats)
-                .listenerMetaData(listenerMetaData)
-                .listenerUpdates(listenerUpdates)
-                .listenerStaticInfo(listenerStaticInfo)
-                .build();
+        return SharedTrainingAccumulationTuple.builder().scoreSum(score).updaterStateArray(updaterStateSum)
+                        .aggregationsCount(aggregationsCount).sparkTrainingStats(stats)
+                        .listenerMetaData(listenerMetaData).listenerUpdates(listenerUpdates)
+                        .listenerStaticInfo(listenerStaticInfo).build();
     }
 }

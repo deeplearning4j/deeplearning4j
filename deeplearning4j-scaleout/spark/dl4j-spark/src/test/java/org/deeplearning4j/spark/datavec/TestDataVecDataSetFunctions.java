@@ -158,8 +158,7 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
         path = folder + "*";
 
         JavaPairRDD<String, PortableDataStream> origData = sc.binaryFiles(path);
-        assertEquals(3, origData.
-                count()); //3 CSV sequences
+        assertEquals(3, origData.count()); //3 CSV sequences
 
 
         SequenceRecordReader seqRR = new CSVSequenceRecordReader(1, ",");
@@ -473,26 +472,27 @@ public class TestDataVecDataSetFunctions extends BaseSparkTest {
     }
 
 
-    private static boolean dataSetsEqual(DataSet d1, DataSet d2){
+    private static boolean dataSetsEqual(DataSet d1, DataSet d2) {
 
-        if(!d1.getFeatures().equals(d2.getFeatures())){
+        if (!d1.getFeatures().equals(d2.getFeatures())) {
             return false;
         }
-        if(d1.getLabels() == null && d2.getLabels() != null || d1.getLabels() != null && d2.getLabels() == null){
+        if (d1.getLabels() == null && d2.getLabels() != null || d1.getLabels() != null && d2.getLabels() == null) {
             return false;
         }
-        if(d1.getLabels() != null && !d1.getLabels().equals(d2.getLabels())){
+        if (d1.getLabels() != null && !d1.getLabels().equals(d2.getLabels())) {
             return false;
         }
 
-        return masksEqual(d1.getFeatureMatrix(), d2.getFeatureMatrix()) && masksEqual(d1.getLabelsMaskArray(), d2.getLabelsMaskArray());
+        return masksEqual(d1.getFeatureMatrix(), d2.getFeatureMatrix())
+                        && masksEqual(d1.getLabelsMaskArray(), d2.getLabelsMaskArray());
     }
 
-    private static boolean masksEqual(INDArray m1, INDArray m2){
-        if(m1 == null && m2 == null){
+    private static boolean masksEqual(INDArray m1, INDArray m2) {
+        if (m1 == null && m2 == null) {
             return true;
         }
-        if(m1 != null && m2 != null){
+        if (m1 != null && m2 != null) {
             return m1.equals(m2);
         }
         //One is null, other is not. Null and ones mask arrays are equal though

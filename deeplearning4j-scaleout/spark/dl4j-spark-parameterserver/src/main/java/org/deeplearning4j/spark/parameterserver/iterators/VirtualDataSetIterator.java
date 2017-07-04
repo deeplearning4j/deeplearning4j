@@ -32,34 +32,34 @@ public class VirtualDataSetIterator implements DataSetIterator {
     }
 
     /*
-
+    
     // TODO: to be implemented
-
+    
     @Override
     public void attachThread(int producer) {
         throw new UnsupportedOperationException();
     }
-
+    
     @Override
     public boolean hasNextFor() {
         return false;
     }
-
+    
     @Override
     public boolean hasNextFor(int consumer) {
         return false;
     }
-
+    
     @Override
     public DataSet nextFor(int consumer) {
         return null;
     }
-
+    
     @Override
     public DataSet nextFor() {
         return null;
     }
-
+    
     */
     @Override
     public boolean resetSupported() {
@@ -80,7 +80,8 @@ public class VirtualDataSetIterator implements DataSetIterator {
     @Override
     public boolean hasNext() {
         // just checking if that's not the last iterator, or if that's the last one - check if it has something
-        return position.get() < iterators.size() - 1 || (position.get() < iterators.size() && iterators.get(position.get()).hasNext());
+        return position.get() < iterators.size() - 1
+                        || (position.get() < iterators.size() && iterators.get(position.get()).hasNext());
     }
 
     @Override

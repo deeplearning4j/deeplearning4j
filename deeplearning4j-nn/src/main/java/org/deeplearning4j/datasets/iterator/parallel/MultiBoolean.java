@@ -50,9 +50,10 @@ public class MultiBoolean {
      * @param value
      * @param entry
      */
-    public void set(boolean value, int entry){
+    public void set(boolean value, int entry) {
         if (entry > numEntries || entry < 0)
-            throw new ND4JIllegalStateException("Entry index given (" + entry + ")in is higher then configured one (" + numEntries + ")");
+            throw new ND4JIllegalStateException(
+                            "Entry index given (" + entry + ")in is higher then configured one (" + numEntries + ")");
 
         if (oneTime && this.timeTracker.get(entry))
             return;
@@ -73,8 +74,9 @@ public class MultiBoolean {
      * @return
      */
     public boolean get(int entry) {
-        if (entry > numEntries  || entry < 0)
-            throw new ND4JIllegalStateException("Entry index given (" + entry + ")in is higher then configured one (" + numEntries + ")");
+        if (entry > numEntries || entry < 0)
+            throw new ND4JIllegalStateException(
+                            "Entry index given (" + entry + ")in is higher then configured one (" + numEntries + ")");
 
         return (this.holder & 1 << (entry + 1)) != 0;
     }

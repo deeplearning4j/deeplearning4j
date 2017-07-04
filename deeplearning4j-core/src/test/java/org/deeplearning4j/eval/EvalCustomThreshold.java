@@ -20,7 +20,7 @@ import static org.junit.Assert.fail;
 public class EvalCustomThreshold {
 
     @Test
-    public void testEvaluationCustomBinaryThreshold(){
+    public void testEvaluationCustomBinaryThreshold() {
         Nd4j.getRandom().setSeed(12345);
 
         //Sanity checks: 0.5 threshold for 1-output and 2-output binary cases
@@ -34,15 +34,15 @@ public class EvalCustomThreshold {
         probs.diviColumnVector(probs.sum(1));
         INDArray labels = Nd4j.create(nExamples, nOut);
         Random r = new Random(12345);
-        for( int i=0; i<nExamples; i++ ){
+        for (int i = 0; i < nExamples; i++) {
             labels.putScalar(i, r.nextInt(2), 1.0);
         }
 
         e.eval(labels, probs);
         e05.eval(labels, probs);
-        e05v2.eval(labels.getColumn(1), probs.getColumn(1));    //"single output binary" case
+        e05v2.eval(labels.getColumn(1), probs.getColumn(1)); //"single output binary" case
 
-        for(Evaluation e2 : new Evaluation[]{e05, e05v2}){
+        for (Evaluation e2 : new Evaluation[] {e05, e05v2}) {
             assertEquals(e.accuracy(), e2.accuracy(), 1e-6);
             assertEquals(e.f1(), e2.f1(), 1e-6);
             assertEquals(e.precision(), e2.precision(), 1e-6);
@@ -86,7 +86,7 @@ public class EvalCustomThreshold {
     }
 
     @Test
-    public void testEvaluationCostArray(){
+    public void testEvaluationCostArray() {
 
 
         int nExamples = 20;
@@ -95,7 +95,7 @@ public class EvalCustomThreshold {
         probs.diviColumnVector(probs.sum(1));
         INDArray labels = Nd4j.create(nExamples, nOut);
         Random r = new Random(12345);
-        for( int j=0; j<nExamples; j++ ){
+        for (int j = 0; j < nExamples; j++) {
             labels.putScalar(j, r.nextInt(2), 1.0);
         }
 
@@ -104,8 +104,8 @@ public class EvalCustomThreshold {
         e.eval(labels, probs);
 
         //Sanity check: "all equal" cost array - equal to no cost array
-        for( int i=1; i<=3; i++ ){
-            Evaluation e2 = new Evaluation(Nd4j.valueArrayOf(new int[]{1,nOut}, i));
+        for (int i = 1; i <= 3; i++) {
+            Evaluation e2 = new Evaluation(Nd4j.valueArrayOf(new int[] {1, nOut}, i));
             e2.eval(labels, probs);
 
             assertEquals(e.accuracy(), e2.accuracy(), 1e-6);
@@ -116,20 +116,16 @@ public class EvalCustomThreshold {
         }
 
         //Manual checks:
-        INDArray costArray = Nd4j.create(new double[]{5,2,1});
-        labels = Nd4j.create(new double[][]{
-                {1,0,0},
-                {0,1,0},
-                {0,0,1}});
-        probs = Nd4j.create(new double[][]{
-                {0.2,0.3,0.5},      //1.0, 0.6, 0.5
-                {0.1,0.4,0.5},      //0.5, 0.8, 0.5
-                {0.1,0.1,0.8}});    //0.5, 0.2, 0.8
+        INDArray costArray = Nd4j.create(new double[] {5, 2, 1});
+        labels = Nd4j.create(new double[][] {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}});
+        probs = Nd4j.create(new double[][] {{0.2, 0.3, 0.5}, //1.0, 0.6, 0.5
+                        {0.1, 0.4, 0.5}, //0.5, 0.8, 0.5
+                        {0.1, 0.1, 0.8}}); //0.5, 0.2, 0.8
 
         //With no cost array: only last example is predicted correctly
         e = new Evaluation();
         e.eval(labels, probs);
-        assertEquals(1.0/3, e.accuracy(), 1e-6);
+        assertEquals(1.0 / 3, e.accuracy(), 1e-6);
 
         //With cost array: all examples predicted correctly
         Evaluation e2 = new Evaluation(costArray);
@@ -138,32 +134,33 @@ public class EvalCustomThreshold {
     }
 
     @Test
-    public void testEvaluationBinaryCustomThreshold(){
+    public void testEvaluationBinaryCustomThreshold() {
 
         //Sanity check: same results for 0.5 threshold vs. default (no threshold)
         int nExamples = 20;
         int nOut = 2;
         INDArray probs = Nd4j.rand(nExamples, nOut);
-        INDArray labels = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(nExamples,nOut),0.5));
+        INDArray labels = Nd4j.getExecutioner()
+                        .exec(new BernoulliDistribution(Nd4j.createUninitialized(nExamples, nOut), 0.5));
 
         EvaluationBinary eStd = new EvaluationBinary();
         eStd.eval(labels, probs);
 
-        EvaluationBinary eb05 = new EvaluationBinary(Nd4j.create(new double[]{0.5, 0.5}));
+        EvaluationBinary eb05 = new EvaluationBinary(Nd4j.create(new double[] {0.5, 0.5}));
         eb05.eval(labels, probs);
 
-        EvaluationBinary eb05v2 = new EvaluationBinary(Nd4j.create(new double[]{0.5, 0.5}));
-        for( int i=0; i<nExamples; i++ ){
+        EvaluationBinary eb05v2 = new EvaluationBinary(Nd4j.create(new double[] {0.5, 0.5}));
+        for (int i = 0; i < nExamples; i++) {
             eb05v2.eval(labels.getRow(i), probs.getRow(i));
         }
 
-        for(EvaluationBinary eb2 : new EvaluationBinary[]{eb05, eb05v2}){
+        for (EvaluationBinary eb2 : new EvaluationBinary[] {eb05, eb05v2}) {
             assertArrayEquals(eStd.getCountTruePositive(), eb2.getCountTruePositive());
             assertArrayEquals(eStd.getCountFalsePositive(), eb2.getCountFalsePositive());
             assertArrayEquals(eStd.getCountTrueNegative(), eb2.getCountTrueNegative());
             assertArrayEquals(eStd.getCountFalseNegative(), eb2.getCountFalseNegative());
 
-            for( int j=0; j<nOut; j++ ){
+            for (int j = 0; j < nOut; j++) {
                 assertEquals(eStd.accuracy(j), eb2.accuracy(j), 1e-6);
                 assertEquals(eStd.f1(j), eb2.f1(j), 1e-6);
             }
@@ -181,7 +178,7 @@ public class EvalCustomThreshold {
         INDArray probs4 = probs.mul(4);
         probs4 = Transforms.min(probs4, 1.0);
 
-        EvaluationBinary ebThreshold = new EvaluationBinary(Nd4j.create(new double[]{0.25, 0.125}));
+        EvaluationBinary ebThreshold = new EvaluationBinary(Nd4j.create(new double[] {0.25, 0.125}));
         ebThreshold.eval(labels, probs);
 
         EvaluationBinary ebStd2 = new EvaluationBinary();

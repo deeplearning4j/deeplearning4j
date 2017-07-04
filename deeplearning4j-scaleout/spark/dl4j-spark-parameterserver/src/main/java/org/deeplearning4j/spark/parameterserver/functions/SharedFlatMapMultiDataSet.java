@@ -15,7 +15,8 @@ import java.util.Iterator;
 /**
  * Created by raver119 on 13.06.17.
  */
-public class SharedFlatMapMultiDataSet<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<MultiDataSet>, R> {
+public class SharedFlatMapMultiDataSet<R extends TrainingResult>
+                extends BaseFlatMapFunctionAdaptee<Iterator<MultiDataSet>, R> {
 
     public SharedFlatMapMultiDataSet(TrainingWorker<R> worker) {
         super(new SharedFlatMapMultiDataSetAdapter<R>(worker));
@@ -23,7 +24,8 @@ public class SharedFlatMapMultiDataSet<R extends TrainingResult> extends BaseFla
 }
 
 
-class SharedFlatMapMultiDataSetAdapter<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<MultiDataSet>, R> {
+class SharedFlatMapMultiDataSetAdapter<R extends TrainingResult>
+                implements FlatMapFunctionAdapter<Iterator<MultiDataSet>, R> {
 
     private final SharedTrainingWorker worker;
 

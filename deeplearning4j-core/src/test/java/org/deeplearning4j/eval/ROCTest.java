@@ -230,25 +230,27 @@ public class ROCTest {
                         {0, 1}, {0, 1}});
 
         INDArray predictions3d = Nd4j.create(2, 2, 5);
-        INDArray firstTSp = predictions3d.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all()).transpose();
-        assertArrayEquals(new int[]{5, 2}, firstTSp.shape());
+        INDArray firstTSp =
+                        predictions3d.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all()).transpose();
+        assertArrayEquals(new int[] {5, 2}, firstTSp.shape());
         firstTSp.assign(predictions2d.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
 
-        INDArray secondTSp = predictions3d.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).transpose();
-        assertArrayEquals(new int[]{5, 2}, secondTSp.shape());
+        INDArray secondTSp =
+                        predictions3d.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).transpose();
+        assertArrayEquals(new int[] {5, 2}, secondTSp.shape());
         secondTSp.assign(predictions2d.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()));
 
         INDArray labels3d = Nd4j.create(2, 2, 5);
         INDArray firstTS = labels3d.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.all()).transpose();
-        assertArrayEquals(new int[]{5, 2}, firstTS.shape());
+        assertArrayEquals(new int[] {5, 2}, firstTS.shape());
         firstTS.assign(actual2d.get(NDArrayIndex.interval(0, 5), NDArrayIndex.all()));
 
         INDArray secondTS = labels3d.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.all()).transpose();
-        assertArrayEquals(new int[]{5, 2}, secondTS.shape());
+        assertArrayEquals(new int[] {5, 2}, secondTS.shape());
         secondTS.assign(actual2d.get(NDArrayIndex.interval(5, 10), NDArrayIndex.all()));
 
-        for( int steps : new int[]{10, 0}) {        //0 steps: exact
-//            System.out.println("Steps: " + steps);
+        for (int steps : new int[] {10, 0}) { //0 steps: exact
+            //            System.out.println("Steps: " + steps);
             ROC rocExp = new ROC(steps);
             rocExp.eval(actual2d, predictions2d);
 
@@ -297,7 +299,7 @@ public class ROCTest {
         mask.get(NDArrayIndex.point(1), NDArrayIndex.all()).assign(1);
 
 
-        for( int steps : new int[]{20, 0}) {        //0 steps: exact
+        for (int steps : new int[] {20, 0}) { //0 steps: exact
             ROC rocExp = new ROC(steps);
             rocExp.eval(actual2d, predictions2d);
 
@@ -328,7 +330,7 @@ public class ROCTest {
             labels.putScalar(i, r.nextInt(2), 1.0);
         }
 
-        for( int numSteps : new int[]{30, 0}) { //Steps = 0: exact
+        for (int numSteps : new int[] {30, 0}) { //Steps = 0: exact
             ROC roc = new ROC(numSteps);
             roc.eval(labels, predictions);
 
@@ -369,7 +371,7 @@ public class ROCTest {
         labels2.getColumn(0).addi(labels3.getColumn(1));
         labels2.getColumn(1).addi(labels3.getColumn(2));
 
-        for(int numSteps : new int[]{30, 0}) {  //Steps = 0: exact
+        for (int numSteps : new int[] {30, 0}) { //Steps = 0: exact
 
             ROCMultiClass rocMultiClass3 = new ROCMultiClass(numSteps);
             ROCMultiClass rocMultiClass2 = new ROCMultiClass(numSteps);
@@ -397,8 +399,8 @@ public class ROCTest {
         int minibatch = 64;
         int nROCs = 3;
 
-        for( int steps : new int[]{0}) {        //0 steps: exact
-//            int steps = 20;
+        for (int steps : new int[] {0}) { //0 steps: exact
+            //            int steps = 20;
 
             Nd4j.getRandom().setSeed(12345);
             Random r = new Random(12345);
@@ -446,8 +448,8 @@ public class ROCTest {
         int nROCs = 3;
         int nClasses = 3;
 
-        for( int steps : new int[]{20, 0}) {        //0 steps: exact
-//            int steps = 20;
+        for (int steps : new int[] {20, 0}) { //0 steps: exact
+            //            int steps = 20;
 
             Nd4j.getRandom().setSeed(12345);
             Random r = new Random(12345);
@@ -492,13 +494,11 @@ public class ROCTest {
         DataSetIterator iter = new IrisDataSetIterator(150, 150);
 
         Nd4j.getRandom().setSeed(12345);
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.XAVIER)
-                .seed(12345)
-                .list()
-                        .layer(0, new DenseLayer.Builder().nIn(4).nOut(4).activation(Activation.TANH).build())
-                        .layer(1, new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
-                                  .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER).seed(12345)
+                        .list()
+                        .layer(0, new DenseLayer.Builder().nIn(4).nOut(4).activation(Activation.TANH).build()).layer(1,
+                                        new OutputLayer.Builder().nIn(4).nOut(3).activation(Activation.SOFTMAX)
+                                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
                         .build();
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -514,7 +514,7 @@ public class ROCTest {
             net.fit(ds);
         }
 
-        for( int steps : new int[]{32, 0}){ //Steps = 0: exact
+        for (int steps : new int[] {32, 0}) { //Steps = 0: exact
             System.out.println("steps: " + steps);
 
             iter.reset();
@@ -522,8 +522,8 @@ public class ROCTest {
             INDArray f = ds.getFeatures();
             INDArray l = ds.getLabels();
             INDArray out = net.output(f);
-//            System.out.println(f);
-//            System.out.println(out);
+            //            System.out.println(f);
+            //            System.out.println(out);
             ROCMultiClass manual = new ROCMultiClass(steps);
             manual.eval(l, out);
 
@@ -545,23 +545,23 @@ public class ROCTest {
     }
 
     @Test
-    public void testAUCPrecisionRecall(){
+    public void testAUCPrecisionRecall() {
         //Assume 2 positive examples, at 0.33 and 0.66 predicted, 1 negative example at 0.25 prob
         //at threshold 0 to 0.24999: tp=2, fp=1, fn=0, tn=0 prec=2/(2+1)=0.666, recall=2/2=1.0
         //at threshold 0.25 to 0.33: tp=2, fp=0, fn=0, tn=1 prec=2/2=1, recall=2/2=1
         //at threshold 0.331 to 0.66: tp=1, fp=0, fn=1, tn=1 prec=1/1=1, recall=1/2=0.5
         //at threshold 0.661 to 1.0:  tp=0, fp=0, fn=2, tn=1 prec=0/0=1, recall=0/2=0
 
-//        for( int steps : new int[]{10, 0}) {    //0 steps = exact
-        for( int steps : new int[]{0}) {    //0 steps = exact
+        //        for( int steps : new int[]{10, 0}) {    //0 steps = exact
+        for (int steps : new int[] {0}) { //0 steps = exact
             String msg = "Steps = " + steps;
             //area: 1.0
             ROC r = new ROC(steps);
             INDArray zero = Nd4j.zeros(1);
             INDArray one = Nd4j.ones(1);
-            r.eval(zero, Nd4j.create(new double[]{0.25}));
-            r.eval(one, Nd4j.create(new double[]{0.33}));
-            r.eval(one, Nd4j.create(new double[]{0.66}));
+            r.eval(zero, Nd4j.create(new double[] {0.25}));
+            r.eval(one, Nd4j.create(new double[] {0.33}));
+            r.eval(one, Nd4j.create(new double[] {0.66}));
 
             PrecisionRecallCurve prc = r.getPrecisionRecallCurve();
 
@@ -576,12 +576,12 @@ public class ROCTest {
             //Area: 0.5 + 0.25 + 0.5*0.5*(0.66666-0.5) = 0.5+0.25+0.04165 = 0.7916666666667
             //But, we use 10 steps so the calculation might not match this exactly, but should be close
             r = new ROC(steps);
-            r.eval(one, Nd4j.create(new double[]{0.33}));
-            r.eval(zero, Nd4j.create(new double[]{0.5}));
-            r.eval(one, Nd4j.create(new double[]{0.66}));
+            r.eval(one, Nd4j.create(new double[] {0.33}));
+            r.eval(zero, Nd4j.create(new double[] {0.5}));
+            r.eval(one, Nd4j.create(new double[] {0.66}));
 
             double precision;
-            if(steps == 0){
+            if (steps == 0) {
                 precision = 1e-8;
             } else {
                 precision = 1e-4;
@@ -592,7 +592,7 @@ public class ROCTest {
 
 
     @Test
-    public void testRocAucExact(){
+    public void testRocAucExact() {
 
         //Check the implementation vs. Scikitlearn
         /*
@@ -600,18 +600,18 @@ public class ROCTest {
         prob = np.random.rand(30,1)
         label = np.random.randint(0,2,(30,1))
         positiveClass = 1;
-
+        
         fpr, tpr, thr = sklearn.metrics.roc_curve(label, prob, positiveClass, None, False)
         auc = sklearn.metrics.auc(fpr, tpr)
-
+        
         #PR curve
         p, r, t = precision_recall_curve(label, prob, positiveClass)
-
+        
         #sklearn.metrics.average_precision_score: http://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html
         # "This score corresponds to the area under the precision-recall curve."
         auprc = sklearn.metrics.average_precision_score(label, prob)
         print(auprc)
-
+        
         fpr
         [ 0.          0.15789474  0.15789474  0.31578947  0.31578947  0.52631579
           0.52631579  0.68421053  0.68421053  0.84210526  0.84210526  0.89473684
@@ -624,9 +624,9 @@ public class ROCTest {
         [ 0.99401459  0.96130674  0.92961609  0.79082252  0.74771481  0.67687371
           0.65641118  0.64247533  0.46759901  0.31637555  0.20456028  0.18391881
           0.17091426  0.0083883 ]
-
+        
         p, r, t = precision_recall_curve(label, prob)
-
+        
         Precision
         [ 0.39285714  0.37037037  0.38461538  0.36        0.33333333  0.34782609
           0.36363636  0.38095238  0.35        0.31578947  0.27777778  0.29411765
@@ -645,35 +645,39 @@ public class ROCTest {
           0.65356987  0.65641118  0.67687371  0.71745362  0.72368535  0.72968908
           0.74771481  0.74890664  0.79082252  0.80981255  0.87217591  0.92961609
           0.96130674  0.96451452  0.9646476   0.99401459]
-
+        
         AUPRC
         0.398963619227
          */
 
-        double[] p = new double[]{0.92961609, 0.31637555, 0.18391881, 0.20456028, 0.56772503, 0.5955447, 0.96451452,
-                0.6531771, 0.74890664, 0.65356987, 0.74771481, 0.96130674, 0.0083883 , 0.10644438, 0.29870371,
-                0.65641118, 0.80981255, 0.87217591, 0.9646476 , 0.72368535, 0.64247533, 0.71745362, 0.46759901,
-                0.32558468, 0.43964461, 0.72968908, 0.99401459, 0.67687371, 0.79082252, 0.17091426};
+        double[] p = new double[] {0.92961609, 0.31637555, 0.18391881, 0.20456028, 0.56772503, 0.5955447, 0.96451452,
+                        0.6531771, 0.74890664, 0.65356987, 0.74771481, 0.96130674, 0.0083883, 0.10644438, 0.29870371,
+                        0.65641118, 0.80981255, 0.87217591, 0.9646476, 0.72368535, 0.64247533, 0.71745362, 0.46759901,
+                        0.32558468, 0.43964461, 0.72968908, 0.99401459, 0.67687371, 0.79082252, 0.17091426};
 
-        double[] l = new double[]{1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1};
+        double[] l = new double[] {1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0,
+                        0, 1};
 
-        double[] fpr_skl = new double[]{0.0, 0.0, 0.15789474, 0.15789474, 0.31578947, 0.31578947, 0.52631579, 0.52631579, 0.68421053, 0.68421053, 0.84210526, 0.84210526, 0.89473684, 0.89473684, 1.0};
-        double[] tpr_skl = new double[]{0.0, 0.09090909, 0.09090909, 0.18181818, 0.18181818, 0.36363636, 0.36363636, 0.45454545, 0.45454545, 0.72727273, 0.72727273, 0.90909091, 0.90909091, 1.0, 1.0};
+        double[] fpr_skl = new double[] {0.0, 0.0, 0.15789474, 0.15789474, 0.31578947, 0.31578947, 0.52631579,
+                        0.52631579, 0.68421053, 0.68421053, 0.84210526, 0.84210526, 0.89473684, 0.89473684, 1.0};
+        double[] tpr_skl = new double[] {0.0, 0.09090909, 0.09090909, 0.18181818, 0.18181818, 0.36363636, 0.36363636,
+                        0.45454545, 0.45454545, 0.72727273, 0.72727273, 0.90909091, 0.90909091, 1.0, 1.0};
         //Note the change to the last value: same TPR and FPR at 0.0083883 and 0.0 -> we add the 0.0 threshold edge case + combine with the previous one. Same result
-        double[] thr_skl = new double[]{1.0, 0.99401459, 0.96130674, 0.92961609, 0.79082252, 0.74771481, 0.67687371, 0.65641118, 0.64247533, 0.46759901, 0.31637555, 0.20456028, 0.18391881, 0.17091426, 0.0};
+        double[] thr_skl = new double[] {1.0, 0.99401459, 0.96130674, 0.92961609, 0.79082252, 0.74771481, 0.67687371,
+                        0.65641118, 0.64247533, 0.46759901, 0.31637555, 0.20456028, 0.18391881, 0.17091426, 0.0};
 
-        INDArray prob = Nd4j.create(p, new int[]{30,1});
-        INDArray label = Nd4j.create(l, new int[]{30,1});
+        INDArray prob = Nd4j.create(p, new int[] {30, 1});
+        INDArray label = Nd4j.create(l, new int[] {30, 1});
 
         ROC roc = new ROC(0);
         roc.eval(label, prob);
 
         RocCurve rocCurve = roc.getRocCurve();
 
-//        System.out.println("Thr: " + Arrays.toString(rocCurve[0]));
-//        System.out.println("FPR: " + Arrays.toString(rocCurve[1]));
-//        System.out.println("TPR: " + Arrays.toString(rocCurve[2]));
-//        System.out.println("AUC: " + roc.calculateAUC());
+        //        System.out.println("Thr: " + Arrays.toString(rocCurve[0]));
+        //        System.out.println("FPR: " + Arrays.toString(rocCurve[1]));
+        //        System.out.println("TPR: " + Arrays.toString(rocCurve[2]));
+        //        System.out.println("AUC: " + roc.calculateAUC());
 
         assertArrayEquals(thr_skl, rocCurve.getThreshold(), 1e-6);
         assertArrayEquals(fpr_skl, rocCurve.getFpr(), 1e-6);
@@ -706,11 +710,9 @@ public class ROCTest {
 
 
 
-
-
         //Check edge case: perfect classifier
-        prob = Nd4j.create(new double[]{0.1,0.2, 0.5, 0.9}, new int[]{4,1});
-        label = Nd4j.create(new double[]{0,0,1,1}, new int[]{4,1});
+        prob = Nd4j.create(new double[] {0.1, 0.2, 0.5, 0.9}, new int[] {4, 1});
+        label = Nd4j.create(new double[] {0, 0, 1, 1}, new int[] {4, 1});
         roc = new ROC(0);
         roc.eval(label, prob);
         assertEquals(1.0, roc.calculateAUC(), 1e-8);
@@ -720,13 +722,13 @@ public class ROCTest {
 
 
     @Test
-    public void rocExactEdgeCaseReallocation(){
+    public void rocExactEdgeCaseReallocation() {
 
         //Set reallocation block size to say 20, but then evaluate a 100-length array
 
         ROC roc = new ROC(0, true, 50);
 
-        roc.eval(Nd4j.rand(100, 1), Nd4j.ones(100,1));
+        roc.eval(Nd4j.rand(100, 1), Nd4j.ones(100, 1));
 
     }
 }

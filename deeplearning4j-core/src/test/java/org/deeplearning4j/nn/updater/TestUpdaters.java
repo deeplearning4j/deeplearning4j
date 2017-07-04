@@ -75,7 +75,7 @@ public class TestUpdaters {
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
-        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
+        int updaterStateSize = (int) layer.conf().getLayer().getIUpdater().stateSize(numParams);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
@@ -142,7 +142,7 @@ public class TestUpdaters {
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
-        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
+        int updaterStateSize = (int) layer.conf().getLayer().getIUpdater().stateSize(numParams);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
@@ -186,7 +186,7 @@ public class TestUpdaters {
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
-        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
+        int updaterStateSize = (int) layer.conf().getLayer().getIUpdater().stateSize(numParams);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
@@ -236,12 +236,13 @@ public class TestUpdaters {
         double beta2 = 0.888;
         double epsilon = Nadam.DEFAULT_NADAM_EPSILON;
 
-        NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr)
-                        .iterations(iteration)
-                        .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut).updater(
-                                new Nadam.Builder().learningRate(lr).beta1(beta1).beta2(beta2).epsilon(epsilon).build()
-                        ).build()
-                        ).build();
+        NeuralNetConfiguration conf =
+                        new NeuralNetConfiguration.Builder().learningRate(lr).iterations(iteration)
+                                        .layer(new DenseLayer.Builder().nIn(nIn).nOut(nOut)
+                                                        .updater(new Nadam.Builder().learningRate(lr).beta1(beta1)
+                                                                        .beta2(beta2).epsilon(epsilon).build())
+                                                        .build())
+                                        .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
@@ -249,7 +250,7 @@ public class TestUpdaters {
         layer.setBackpropGradientsViewArray(gradients);
 
         Updater updater = UpdaterCreator.getUpdater(layer);
-        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
+        int updaterStateSize = (int) layer.conf().getLayer().getIUpdater().stateSize(numParams);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
@@ -282,7 +283,7 @@ public class TestUpdaters {
             INDArray biasCorrectedEstimateOfMomentum = m.mul(beta1).divi(1.0 - beta1t);
             INDArray secondTerm = oneMinusBeta1Grad.divi(1.0 - beta1t);
 
-            INDArray alphat =  biasCorrectedEstimateOfMomentum.add(secondTerm).muli(lr);
+            INDArray alphat = biasCorrectedEstimateOfMomentum.add(secondTerm).muli(lr);
 
             INDArray sqrtV = Transforms.sqrt(v, false).addi(epsilon);
 
@@ -302,8 +303,8 @@ public class TestUpdaters {
         * `biasCorrectedEstimateOfMomentum = m * beta1 /(1.0 - beta1t);`
         * */
         BaseMultiLayerUpdater baseUpdater = (BaseMultiLayerUpdater) updater;
-        UpdaterBlock ub = (UpdaterBlock)baseUpdater.getUpdaterBlocks().get(0);
-        NadamUpdater nadamUpdater = (NadamUpdater)ub.getGradientUpdater();
+        UpdaterBlock ub = (UpdaterBlock) baseUpdater.getUpdaterBlocks().get(0);
+        NadamUpdater nadamUpdater = (NadamUpdater) ub.getGradientUpdater();
 
 
         //Calculated for following setup: initialWeights are all equal to 1, beta1 = 0.8, beta2 = 0.888, learning rate = 0.01
@@ -311,7 +312,7 @@ public class TestUpdaters {
         double[] expectedM = Nd4j.ones(1, numParams).mul(calculatedByHandMScalar).data().asDouble();
 
         double[] actualM = Arrays.copyOfRange(nadamUpdater.getM().data().asDouble(), 0, numParams);
-        for(int i = 0; i < actualM.length; i++){
+        for (int i = 0; i < actualM.length; i++) {
             actualM[i] = Math.round(actualM[i] * 1e2) / 1e2;
         }
 
@@ -329,16 +330,16 @@ public class TestUpdaters {
         double epsilon = AdaMax.DEFAULT_ADAMAX_EPSILON;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr)
-                .iterations(iteration).adamMeanDecay(beta1).adamVarDecay(beta2).layer(new DenseLayer.Builder()
-                        .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADAMAX).build())
-                .build();
+                        .iterations(iteration).adamMeanDecay(beta1).adamVarDecay(beta2).layer(new DenseLayer.Builder()
+                                        .nIn(nIn).nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.ADAMAX).build())
+                        .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
-        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
+        int updaterStateSize = (int) layer.conf().getLayer().getIUpdater().stateSize(numParams);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
@@ -395,7 +396,7 @@ public class TestUpdaters {
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
-        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
+        int updaterStateSize = (int) layer.conf().getLayer().getIUpdater().stateSize(numParams);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
@@ -443,7 +444,7 @@ public class TestUpdaters {
         Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
-        int updaterStateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
+        int updaterStateSize = (int) layer.conf().getLayer().getIUpdater().stateSize(numParams);
         INDArray updaterState = Nd4j.create(1, updaterStateSize);
         updater.setStateViewArray(layer, updaterState, true);
 
@@ -913,7 +914,7 @@ public class TestUpdaters {
                                 .layer(3, new DenseLayer.Builder().nIn(10).nOut(10).name("l3")
                                                 .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
                                 .layer(4, new OutputLayer.Builder().nIn(10).nOut(10).name("l4")
-                                        .updater(org.deeplearning4j.nn.conf.Updater.ADAMAX).build())
+                                                .updater(org.deeplearning4j.nn.conf.Updater.ADAMAX).build())
                                 .build();
 
                 MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -1021,9 +1022,11 @@ public class TestUpdaters {
             int nParams4 = 10 * 10 + 10;
             assertEquals(nParams0 + nParams1 + nParams2 + nParams3, ub4.getParamOffsetStart());
             assertEquals(nParams0 + nParams1 + nParams2 + nParams3 + nParams4, ub4.getParamOffsetEnd());
-            int nUpdaterVals4 = 2*nParams4; //2x for AdaGrad
-            assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2 + nUpdaterVals3, ub4.getUpdaterViewOffsetStart());
-            assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2 + nUpdaterVals3 + nUpdaterVals4, ub4.getUpdaterViewOffsetEnd());
+            int nUpdaterVals4 = 2 * nParams4; //2x for AdaGrad
+            assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2 + nUpdaterVals3,
+                            ub4.getUpdaterViewOffsetStart());
+            assertEquals(nUpdaterVals0 + nUpdaterVals1 + nUpdaterVals2 + nUpdaterVals3 + nUpdaterVals4,
+                            ub4.getUpdaterViewOffsetEnd());
         }
     }
 
@@ -1071,7 +1074,7 @@ public class TestUpdaters {
 
 
     @Test
-    public void testUpdaterConfigDeprecatedMethods(){
+    public void testUpdaterConfigDeprecatedMethods() {
         //.momentum(), .epsilon() etc - these are now deprecated, but we still want them to work as expected
         // until they are actually removed
 
@@ -1080,39 +1083,42 @@ public class TestUpdaters {
         double adamMean = 0.1;
         double adamVar = 0.2;
         double momentum = 0.3;
-        Map<Integer,Double> momentumSchedule = new HashMap<>();
+        Map<Integer, Double> momentumSchedule = new HashMap<>();
         momentumSchedule.put(0, 0.35);
         momentumSchedule.put(10, 0.34);
         double rmsDecay = 0.4;
 
-        for( boolean useEnum : new boolean[]{true, false}) {
+        for (boolean useEnum : new boolean[] {true, false}) {
             NeuralNetConfiguration.ListBuilder listBuilder = new NeuralNetConfiguration.Builder()
-                    //Multiple updaters
-                    .learningRate(lr)
-                    .epsilon(eps)
-                    //Adam
-                    .adamMeanDecay(adamMean)
-                    .adamVarDecay(adamVar)
-                    //Momentum
-                    .momentum(momentum)
-                    .momentumAfter(momentumSchedule)
-                    //RMSProp
-                    .rmsDecay(rmsDecay)
-                    .list();
-            if(useEnum){
-                listBuilder.layer(0, new DenseLayer.Builder().nIn(10).nOut(10).updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
-                        .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).updater(org.deeplearning4j.nn.conf.Updater.ADAM).build())
-                        .layer(2, new DenseLayer.Builder().nIn(10).nOut(10).updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
-                        .layer(3, new DenseLayer.Builder().nIn(10).nOut(10).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
-                        .layer(4, new DenseLayer.Builder().nIn(10).nOut(10).updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
-                        .layer(5, new DenseLayer.Builder().nIn(10).nOut(10).updater(org.deeplearning4j.nn.conf.Updater.RMSPROP).build());
+                            //Multiple updaters
+                            .learningRate(lr).epsilon(eps)
+                            //Adam
+                            .adamMeanDecay(adamMean).adamVarDecay(adamVar)
+                            //Momentum
+                            .momentum(momentum).momentumAfter(momentumSchedule)
+                            //RMSProp
+                            .rmsDecay(rmsDecay).list();
+            if (useEnum) {
+                listBuilder.layer(0,
+                                new DenseLayer.Builder().nIn(10).nOut(10)
+                                                .updater(org.deeplearning4j.nn.conf.Updater.SGD).build())
+                                .layer(1, new DenseLayer.Builder().nIn(10).nOut(10)
+                                                .updater(org.deeplearning4j.nn.conf.Updater.ADAM).build())
+                                .layer(2, new DenseLayer.Builder().nIn(10).nOut(10)
+                                                .updater(org.deeplearning4j.nn.conf.Updater.ADADELTA).build())
+                                .layer(3, new DenseLayer.Builder().nIn(10).nOut(10)
+                                                .updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
+                                .layer(4, new DenseLayer.Builder().nIn(10).nOut(10)
+                                                .updater(org.deeplearning4j.nn.conf.Updater.ADAGRAD).build())
+                                .layer(5, new DenseLayer.Builder().nIn(10).nOut(10)
+                                                .updater(org.deeplearning4j.nn.conf.Updater.RMSPROP).build());
             } else {
                 listBuilder.layer(0, new DenseLayer.Builder().nIn(10).nOut(10).updater(new Sgd()).build())
-                        .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).updater(new Adam()).build())
-                        .layer(2, new DenseLayer.Builder().nIn(10).nOut(10).updater(new AdaDelta()).build())
-                        .layer(3, new DenseLayer.Builder().nIn(10).nOut(10).updater(new Nesterovs()).build())
-                        .layer(4, new DenseLayer.Builder().nIn(10).nOut(10).updater(new AdaGrad()).build())
-                        .layer(5, new DenseLayer.Builder().nIn(10).nOut(10).updater(new RmsProp()).build());
+                                .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).updater(new Adam()).build())
+                                .layer(2, new DenseLayer.Builder().nIn(10).nOut(10).updater(new AdaDelta()).build())
+                                .layer(3, new DenseLayer.Builder().nIn(10).nOut(10).updater(new Nesterovs()).build())
+                                .layer(4, new DenseLayer.Builder().nIn(10).nOut(10).updater(new AdaGrad()).build())
+                                .layer(5, new DenseLayer.Builder().nIn(10).nOut(10).updater(new RmsProp()).build());
             }
 
 
@@ -1130,7 +1136,7 @@ public class TestUpdaters {
             //Adadelta: no params
 
             Nesterovs nesterovs = (Nesterovs) conf.getConf(3).getLayer().getIUpdater();
-            assertEquals(lr, nesterovs.getLearningRate(), 1e-6 );
+            assertEquals(lr, nesterovs.getLearningRate(), 1e-6);
             assertEquals(momentum, nesterovs.getMomentum(), 1e-6);
             assertEquals(momentumSchedule, nesterovs.getMomentumSchedule());
 

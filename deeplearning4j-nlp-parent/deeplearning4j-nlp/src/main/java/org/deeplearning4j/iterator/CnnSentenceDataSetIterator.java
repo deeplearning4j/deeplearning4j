@@ -195,7 +195,7 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
             throw new UnsupportedOperationException("Cannot do next/hasNext without a sentence provider");
         }
 
-        while(preLoadedTokens == null && sentenceProvider.hasNext()){
+        while (preLoadedTokens == null && sentenceProvider.hasNext()) {
             //Pre-load tokens. Because we filter out empty strings, or sentences with no valid words
             //we need to pre-load some tokens. Otherwise, sentenceProvider could have 1 (invalid) sentence
             //next, hasNext() would return true, but next(int) wouldn't be able to return anything
@@ -205,13 +205,13 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         return preLoadedTokens != null;
     }
 
-    private void preLoadTokens(){
-        if(preLoadedTokens != null){
+    private void preLoadTokens() {
+        if (preLoadedTokens != null) {
             return;
         }
         Pair<String, String> p = sentenceProvider.nextSentence();
         List<String> tokens = tokenizeSentence(p.getFirst());
-        if(tokens.size() > 0){
+        if (tokens.size() > 0) {
             preLoadedTokens = new Pair<>(tokens, p.getSecond());
         }
     }
@@ -226,7 +226,7 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         if (sentenceProvider == null) {
             throw new UnsupportedOperationException("Cannot do next/hasNext without a sentence provider");
         }
-        if(!hasNext()){
+        if (!hasNext()) {
             throw new NoSuchElementException("No next element");
         }
 
@@ -234,7 +234,7 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         List<Pair<List<String>, String>> tokenizedSentences = new ArrayList<>(num);
         int maxLength = -1;
         int minLength = Integer.MAX_VALUE; //Track to we know if we can skip mask creation for "all same length" case
-        if(preLoadedTokens != null){
+        if (preLoadedTokens != null) {
             tokenizedSentences.add(preLoadedTokens);
             maxLength = Math.max(maxLength, preLoadedTokens.getFirst().size());
             minLength = Math.min(minLength, preLoadedTokens.getFirst().size());
@@ -244,7 +244,7 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
             Pair<String, String> p = sentenceProvider.nextSentence();
             List<String> tokens = tokenizeSentence(p.getFirst());
 
-            if(tokens.size() > 0) {
+            if (tokens.size() > 0) {
                 //Handle edge case: no tokens from sentence
                 maxLength = Math.max(maxLength, tokens.size());
                 minLength = Math.min(minLength, tokens.size());

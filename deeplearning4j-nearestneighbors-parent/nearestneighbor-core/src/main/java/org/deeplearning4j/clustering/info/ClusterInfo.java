@@ -38,14 +38,14 @@ public class ClusterInfo implements Serializable {
     private Map<String, Double> pointDistancesFromCenter = new ConcurrentHashMap<>();
 
     public ClusterInfo(boolean inverse) {
-        this(false,inverse);
+        this(false, inverse);
     }
 
     /**
      *
      * @param threadSafe
      */
-    public ClusterInfo(boolean threadSafe,boolean inverse) {
+    public ClusterInfo(boolean threadSafe, boolean inverse) {
         super();
         this.inverse = inverse;
         if (threadSafe) {
@@ -94,13 +94,13 @@ public class ClusterInfo implements Serializable {
         Set<Map.Entry<String, Double>> sorted = getReverseSortedPointDistancesFromCenter();
         List<String> ids = new ArrayList<>();
         for (Map.Entry<String, Double> entry : sorted) {
-            if(inverse && entry.getValue() < -maxDistance) {
+            if (inverse && entry.getValue() < -maxDistance) {
                 if (entry.getValue() < -maxDistance)
                     break;
             }
 
-            else if(entry.getValue() > maxDistance)
-                    break;
+            else if (entry.getValue() > maxDistance)
+                break;
 
             ids.add(entry.getKey());
         }

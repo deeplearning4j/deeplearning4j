@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author raver119@gmail.com
  */
 @Slf4j
-public class CudaGradientsAccumulator implements GradientsAccumulator, Registerable{
+public class CudaGradientsAccumulator implements GradientsAccumulator, Registerable {
     protected ThreadLocal<INDArray> accumulator = new ThreadLocal<>();
 
     protected int parties;
@@ -58,14 +58,9 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
     protected boolean isDebug = false;
     protected final boolean relocatable;
 
-    protected WorkspaceConfiguration appliedConfiguration = WorkspaceConfiguration.builder()
-            .minSize(5 * 1024 * 1024L)
-            .overallocationLimit(0.3)
-            .policyMirroring(MirroringPolicy.FULL)
-            .policySpill(SpillPolicy.REALLOCATE)
-            .policyLearning(LearningPolicy.FIRST_LOOP)
-            .policyReset(ResetPolicy.BLOCK_LEFT)
-            .build();
+    protected WorkspaceConfiguration appliedConfiguration = WorkspaceConfiguration.builder().minSize(5 * 1024 * 1024L)
+                    .overallocationLimit(0.3).policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
+                    .policyLearning(LearningPolicy.FIRST_LOOP).policyReset(ResetPolicy.BLOCK_LEFT).build();
 
     public CudaGradientsAccumulator(double parties) {
         this(Nd4j.getAffinityManager().getNumberOfDevices(), 1e-3);
@@ -80,7 +75,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
         this(parties, new EncodingHandler(threshold), 100 * 1024 * 1024L, 10, 1.0);
     }
 
-    protected CudaGradientsAccumulator(int parties, @NonNull MessageHandler handler, long initialMemory, int queueSize, Double boundary) {
+    protected CudaGradientsAccumulator(int parties, @NonNull MessageHandler handler, long initialMemory, int queueSize,
+                    Double boundary) {
         this.parties = parties;
         this.handler = handler;
         this.initialMemory = initialMemory;
@@ -88,23 +84,21 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
         this.boundary = boundary;
 
         // maybe not the best idea in the world, but we'll use cyclic workspace of 25MB to receive updates
-        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .initialSize(initialMemory)
-                .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
-                .policyAllocation(AllocationPolicy.STRICT)
-                .policySpill(SpillPolicy.FAIL)
-                .policyLearning(LearningPolicy.NONE)
-                .build();
+        WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().initialSize(initialMemory)
+                        .policyReset(ResetPolicy.ENDOFBUFFER_REACHED).policyAllocation(AllocationPolicy.STRICT)
+                        .policySpill(SpillPolicy.FAIL).policyLearning(LearningPolicy.NONE).build();
 
 
         // we want to know, if we'll have to relocate data if accessed from different threads/devices
-        relocatable = Nd4j.getAffinityManager().getNumberOfDevices() > 1 && !Nd4j.getAffinityManager().isCrossDeviceAccessSupported();
+        relocatable = Nd4j.getAffinityManager().getNumberOfDevices() > 1
+                        && !Nd4j.getAffinityManager().isCrossDeviceAccessSupported();
 
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
 
         // we are going to take single-device systems as edge case: cpu & small models at single-gpu systems.
         if (parties > numDevices && numDevices != 1)
-            throw new ND4JIllegalStateException("Number of parties ["+ parties +"] should be less or equal to number of devices [" + numDevices + "]");
+            throw new ND4JIllegalStateException("Number of parties [" + parties
+                            + "] should be less or equal to number of devices [" + numDevices + "]");
 
         // pre-create Queues for local workers
         int curDev = Nd4j.getAffinityManager().getDeviceForCurrentThread();
@@ -116,7 +110,7 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             int cDevice = numDevices > 1 ? i % numDevices : 0;
 
             Nd4j.getAffinityManager().unsafeSetDevice(cDevice);
-            MemoryWorkspace ws = Nd4j.getWorkspaceManager().createNewWorkspace(configuration,"CGA-" + i, cDevice);
+            MemoryWorkspace ws = Nd4j.getWorkspaceManager().createNewWorkspace(configuration, "CGA-" + i, cDevice);
             //ws.enableDebug(true);
             workspaces.add(ws);
 
@@ -244,7 +238,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
 
                     // if we have multiple devices without p2p support - just duplicate messages right from host side
                     if (relocatable) {
-                        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(appliedConfiguration, "CGA_APPLY")) {
+                        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
+                                        .getAndActivateWorkspace(appliedConfiguration, "CGA_APPLY")) {
                             INDArray compressed_copy = compressed.unsafeDuplication(true);
                             INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed_copy, updates);
                         }
@@ -307,7 +302,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
 
                     // if we have multiple devices without p2p support - just duplicate messages right from host side
                     if (relocatable) {
-                        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(appliedConfiguration, "CGA_APPLY")) {
+                        try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
+                                        .getAndActivateWorkspace(appliedConfiguration, "CGA_APPLY")) {
                             INDArray compressed_copy = compressed.unsafeDuplication(true);
                             INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed_copy, updates);
                         }
@@ -432,8 +428,11 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
 
                 try (MemoryWorkspace workspace = workspaces.get(i).notifyScopeEntered()) {
                     // we might just scope out of workspace here, instead of throwing error out
-                    if (array.data().length() > (initialMemory / queueSize) / Nd4j.sizeOfDataType(array.data().dataType()))
-                        throw new ND4JIllegalStateException("Not enough memory to handle update: [" + array.data().length() * Nd4j.sizeOfDataType(array.data().dataType()) + " bytes required]. Please increase memory amount for GradientsAccumulator");
+                    if (array.data().length() > (initialMemory / queueSize)
+                                    / Nd4j.sizeOfDataType(array.data().dataType()))
+                        throw new ND4JIllegalStateException("Not enough memory to handle update: ["
+                                        + array.data().length() * Nd4j.sizeOfDataType(array.data().dataType())
+                                        + " bytes required]. Please increase memory amount for GradientsAccumulator");
 
                     INDArray compressed = array.unsafeDuplication();
                     try {
@@ -483,7 +482,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
          */
         public Builder(int parties) {
             if (parties < 1)
-                throw new DL4JInvalidConfigException("Number of parties for GradientsAccumulation should be positive value");
+                throw new DL4JInvalidConfigException(
+                                "Number of parties for GradientsAccumulation should be positive value");
 
             this.parties = parties;
         }
@@ -553,7 +553,8 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
                     handler = new EncodingHandler(threshold, boundary);
             }
 
-            CudaGradientsAccumulator accumulator = new CudaGradientsAccumulator(parties, handler, initialMemory, queueSize, boundary);
+            CudaGradientsAccumulator accumulator =
+                            new CudaGradientsAccumulator(parties, handler, initialMemory, queueSize, boundary);
 
             return accumulator;
         }

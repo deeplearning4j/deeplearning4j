@@ -41,7 +41,8 @@ import java.util.Random;
  * @author Alex Black
  */
 @Slf4j
-public abstract class BaseTrainingMaster<R extends TrainingResult, W extends TrainingWorker<R>> implements TrainingMaster<R, W> {
+public abstract class BaseTrainingMaster<R extends TrainingResult, W extends TrainingWorker<R>>
+                implements TrainingMaster<R, W> {
     protected static ObjectMapper jsonMapper;
     protected static ObjectMapper yamlMapper;
 
@@ -179,7 +180,7 @@ public abstract class BaseTrainingMaster<R extends TrainingResult, W extends Tra
 
         log.info("Initiating RDD<DataSet> export at {}", baseDir);
         JavaRDD<String> paths = trainingData
-                .mapPartitionsWithIndex(new BatchAndExportDataSetsFunction(batchSizePerWorker, dataDir), true);
+                        .mapPartitionsWithIndex(new BatchAndExportDataSetsFunction(batchSizePerWorker, dataDir), true);
         paths.saveAsTextFile(pathsDir);
         log.info("RDD<DataSet> export complete at {}", baseDir);
 
@@ -195,7 +196,7 @@ public abstract class BaseTrainingMaster<R extends TrainingResult, W extends Tra
 
         log.info("Initiating RDD<MultiDataSet> export at {}", baseDir);
         JavaRDD<String> paths = trainingData.mapPartitionsWithIndex(
-                new BatchAndExportMultiDataSetsFunction(batchSizePerWorker, dataDir), true);
+                        new BatchAndExportMultiDataSetsFunction(batchSizePerWorker, dataDir), true);
         paths.saveAsTextFile(pathsDir);
         log.info("RDD<MultiDataSet> export complete at {}", baseDir);
 

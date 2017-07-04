@@ -83,7 +83,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         return (LayerConfT) this.conf.getLayer();
     }
 
-    protected String layerId(){
+    protected String layerId() {
         String name = this.conf().getLayer().getLayerName();
         return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + index + ")";
     }
@@ -139,7 +139,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             return;
         }
 
-        for (IterationListener listener: listeners)
+        for (IterationListener listener : listeners)
             iterationListeners.add(listener);
     }
 
@@ -157,7 +157,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         return nextLayerGradient;
     }
 
-    @Override @Deprecated
+    @Override
+    @Deprecated
     public INDArray derivativeActivation(INDArray input) {
         throw new UnsupportedOperationException("Deprecated - " + layerId());
     }
@@ -327,7 +328,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             length += getParam(s).length();
         if (params.length() != length)
             throw new IllegalArgumentException("Unable to set parameters: must be of length " + length
-                    + ", got params of length " + params.length() + " - " + layerId());
+                            + ", got params of length " + params.length() + " - " + layerId());
         int idx = 0;
         Set<String> paramKeySet = this.params.keySet();
         for (String s : paramKeySet) {
@@ -404,12 +405,12 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             if (input.rank() != 2) {
                 throw new DL4JInvalidInputException("Input that is not a matrix; expected matrix (rank 2), got rank "
                                 + input.rank() + " array with shape " + Arrays.toString(input.shape())
-                        + ". Missing preprocessor or wrong input type? " + layerId());
+                                + ". Missing preprocessor or wrong input type? " + layerId());
             }
-            throw new DL4JInvalidInputException("Input size (" + input.columns() + " columns; shape = "
-                            + Arrays.toString(input.shape())
-                            + ") is invalid: does not match layer input size (layer # inputs = " + W.size(0)
-                    + ") " + layerId());
+            throw new DL4JInvalidInputException(
+                            "Input size (" + input.columns() + " columns; shape = " + Arrays.toString(input.shape())
+                                            + ") is invalid: does not match layer input size (layer # inputs = "
+                                            + W.size(0) + ") " + layerId());
         }
 
         if (conf.isUseDropConnect() && training && conf.getLayer().getDropOut() > 0) {
@@ -616,7 +617,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();
             //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
             Updater updater = solver.getOptimizer().getUpdater();
-            int updaterStateSize = (int)conf().getLayer().getIUpdater().stateSize(numParams());
+            int updaterStateSize = (int) conf().getLayer().getIUpdater().stateSize(numParams());
             if (updaterStateSize > 0)
                 updater.setStateViewArray(this, Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order()),
                                 true);
@@ -650,8 +651,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public Layer transpose() {
         if (!(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.FeedForwardLayer))
-            throw new UnsupportedOperationException("Unsupported layer type: " + conf.getLayer().getClass().getName()
-                    + " - " + layerId());
+            throw new UnsupportedOperationException(
+                            "Unsupported layer type: " + conf.getLayer().getClass().getName() + " - " + layerId());
 
         INDArray w = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);

@@ -21,8 +21,7 @@ public class RocCurve extends BaseCurve {
 
     private Double auc;
 
-    public RocCurve(@JsonProperty("threshold") double[] threshold,
-                    @JsonProperty("fpr") double[] fpr,
+    public RocCurve(@JsonProperty("threshold") double[] threshold, @JsonProperty("fpr") double[] fpr,
                     @JsonProperty("tpr") double[] tpr) {
         this.threshold = threshold;
         this.fpr = fpr;
@@ -31,7 +30,7 @@ public class RocCurve extends BaseCurve {
 
 
     @Override
-    public int numPoints(){
+    public int numPoints() {
         return threshold.length;
     }
 
@@ -54,7 +53,7 @@ public class RocCurve extends BaseCurve {
      * @param i Point number, 0 to numPoints()-1 inclusive
      * @return Threshold of a given point
      */
-    public double getThreshold(int i){
+    public double getThreshold(int i) {
         Preconditions.checkArgument(i >= 0 && i < threshold.length, "Invalid index: " + i);
         return threshold[i];
     }
@@ -63,7 +62,7 @@ public class RocCurve extends BaseCurve {
      * @param i Point number, 0 to numPoints()-1 inclusive
      * @return True positive rate of a given point
      */
-    public double getTruePositiveRate(int i){
+    public double getTruePositiveRate(int i) {
         Preconditions.checkArgument(i >= 0 && i < tpr.length, "Invalid index: " + i);
         return tpr[i];
     }
@@ -72,7 +71,7 @@ public class RocCurve extends BaseCurve {
      * @param i Point number, 0 to numPoints()-1 inclusive
      * @return False positive rate of a given point
      */
-    public double getFalsePositiveRate(int i){
+    public double getFalsePositiveRate(int i) {
         Preconditions.checkArgument(i >= 0 && i < fpr.length, "Invalid index: " + i);
         return fpr[i];
     }
@@ -80,8 +79,8 @@ public class RocCurve extends BaseCurve {
     /**
      * Calculate and return the area under ROC curve
      */
-    public double calculateAUC(){
-        if(auc != null){
+    public double calculateAUC() {
+        if (auc != null) {
             return auc;
         }
 
@@ -89,11 +88,11 @@ public class RocCurve extends BaseCurve {
         return auc;
     }
 
-    public static RocCurve fromJson(String json){
+    public static RocCurve fromJson(String json) {
         return fromJson(json, RocCurve.class);
     }
 
-    public static RocCurve fromYaml(String yaml){
+    public static RocCurve fromYaml(String yaml) {
         return fromYaml(yaml, RocCurve.class);
     }
 

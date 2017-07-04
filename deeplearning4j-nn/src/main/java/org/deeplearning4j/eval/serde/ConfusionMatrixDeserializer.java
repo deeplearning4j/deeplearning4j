@@ -22,11 +22,12 @@ import java.util.Map;
  */
 public class ConfusionMatrixDeserializer extends JsonDeserializer<ConfusionMatrix<Integer>> {
     @Override
-    public ConfusionMatrix<Integer> deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+    public ConfusionMatrix<Integer> deserialize(JsonParser jp, DeserializationContext ctxt)
+                    throws IOException, JsonProcessingException {
         JsonNode n = jp.getCodec().readTree(jp);
 
         //Get class names/labels
-        ArrayNode classesNode = (ArrayNode)n.get("classes");
+        ArrayNode classesNode = (ArrayNode) n.get("classes");
         List<Integer> classes = new ArrayList<>();
         for (JsonNode cn : classesNode) {
             classes.add(cn.asInt());
@@ -34,20 +35,20 @@ public class ConfusionMatrixDeserializer extends JsonDeserializer<ConfusionMatri
 
         ConfusionMatrix<Integer> cm = new ConfusionMatrix<>(classes);
 
-        ObjectNode matrix = (ObjectNode)n.get("matrix");
-        Iterator<Map.Entry<String,JsonNode>> matrixIter = matrix.fields();
-        while(matrixIter.hasNext()){
-            Map.Entry<String,JsonNode> e = matrixIter.next();
+        ObjectNode matrix = (ObjectNode) n.get("matrix");
+        Iterator<Map.Entry<String, JsonNode>> matrixIter = matrix.fields();
+        while (matrixIter.hasNext()) {
+            Map.Entry<String, JsonNode> e = matrixIter.next();
 
             int actualClass = Integer.parseInt(e.getKey());
             ArrayNode an = (ArrayNode) e.getValue();
 
-            ArrayNode innerMultiSetKey = (ArrayNode)an.get(0);
-            ArrayNode innerMultiSetCount = (ArrayNode)an.get(1);
+            ArrayNode innerMultiSetKey = (ArrayNode) an.get(0);
+            ArrayNode innerMultiSetCount = (ArrayNode) an.get(1);
 
             Iterator<JsonNode> iterKey = innerMultiSetKey.iterator();
             Iterator<JsonNode> iterCnt = innerMultiSetCount.iterator();
-            while(iterKey.hasNext()){
+            while (iterKey.hasNext()) {
                 int predictedClass = iterKey.next().asInt();
                 int count = iterCnt.next().asInt();
 

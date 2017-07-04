@@ -23,7 +23,8 @@ public class DefaultCallback implements DataSetCallback {
                 Nd4j.getAffinityManager().ensureLocation(dataSet.getLabels(), AffinityManager.Location.DEVICE);
 
             if (dataSet.getFeaturesMaskArray() != null)
-                Nd4j.getAffinityManager().ensureLocation(dataSet.getFeaturesMaskArray(), AffinityManager.Location.DEVICE);
+                Nd4j.getAffinityManager().ensureLocation(dataSet.getFeaturesMaskArray(),
+                                AffinityManager.Location.DEVICE);
 
             if (dataSet.getLabelsMaskArray() != null)
                 Nd4j.getAffinityManager().ensureLocation(dataSet.getLabelsMaskArray(), AffinityManager.Location.DEVICE);
@@ -35,19 +36,23 @@ public class DefaultCallback implements DataSetCallback {
         if (multiDataSet != null) {
             if (multiDataSet.getFeatures() != null)
                 for (int i = 0; i < multiDataSet.getFeatures().length; i++)
-                    Nd4j.getAffinityManager().ensureLocation(multiDataSet.getFeatures()[i], AffinityManager.Location.DEVICE);
+                    Nd4j.getAffinityManager().ensureLocation(multiDataSet.getFeatures()[i],
+                                    AffinityManager.Location.DEVICE);
 
             if (multiDataSet.getLabels() != null)
                 for (int i = 0; i < multiDataSet.getLabels().length; i++)
-                    Nd4j.getAffinityManager().ensureLocation(multiDataSet.getLabels()[i], AffinityManager.Location.DEVICE);
+                    Nd4j.getAffinityManager().ensureLocation(multiDataSet.getLabels()[i],
+                                    AffinityManager.Location.DEVICE);
 
             if (multiDataSet.getFeaturesMaskArrays() != null)
                 for (int i = 0; i < multiDataSet.getFeaturesMaskArrays().length; i++)
-                    Nd4j.getAffinityManager().ensureLocation(multiDataSet.getFeaturesMaskArrays()[i], AffinityManager.Location.DEVICE);
+                    Nd4j.getAffinityManager().ensureLocation(multiDataSet.getFeaturesMaskArrays()[i],
+                                    AffinityManager.Location.DEVICE);
 
             if (multiDataSet.getLabelsMaskArrays() != null)
                 for (int i = 0; i < multiDataSet.getLabelsMaskArrays().length; i++)
-                    Nd4j.getAffinityManager().ensureLocation(multiDataSet.getLabelsMaskArrays()[i], AffinityManager.Location.DEVICE);
+                    Nd4j.getAffinityManager().ensureLocation(multiDataSet.getLabelsMaskArrays()[i],
+                                    AffinityManager.Location.DEVICE);
         }
     }
 

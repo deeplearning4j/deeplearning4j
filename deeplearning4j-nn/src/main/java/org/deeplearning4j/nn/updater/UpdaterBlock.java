@@ -72,7 +72,8 @@ public class UpdaterBlock {
         if (gradientUpdater == null) {
             ParamState varState = layersAndVariablesInBlock.get(0);
             String varName = varState.getParamName();
-            gradientUpdater = varState.getLayer().conf().getLayer().getIUpdaterByParam(varName).instantiate(updaterView, updaterViewRequiresInitialization); //UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getParamName());
+            gradientUpdater = varState.getLayer().conf().getLayer().getIUpdaterByParam(varName).instantiate(updaterView,
+                            updaterViewRequiresInitialization); //UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getParamName());
         }
     }
 
@@ -89,8 +90,8 @@ public class UpdaterBlock {
         return !vs.getLayer().conf().isPretrain(); //Skip if not pretrain
     }
 
-    public GradientUpdater getGradientUpdater(){
-        if(gradientUpdater == null){
+    public GradientUpdater getGradientUpdater() {
+        if (gradientUpdater == null) {
             init();
         }
         return gradientUpdater;
@@ -105,20 +106,23 @@ public class UpdaterBlock {
         update(iteration, false, gradientView, null);
     }
 
-    public void updateExternalGradient(int iteration, INDArray fullNetworkGradientView, INDArray fullNetworkParamsArray){
+    public void updateExternalGradient(int iteration, INDArray fullNetworkGradientView,
+                    INDArray fullNetworkParamsArray) {
         //Extract the relevant subset from the external network
         update(iteration, true, fullNetworkGradientView, fullNetworkParamsArray);
     }
 
-    private void update(int iteration, boolean externalGradient, INDArray fullNetworkGradientView, INDArray fullNetworkParamsArray){
+    private void update(int iteration, boolean externalGradient, INDArray fullNetworkGradientView,
+                    INDArray fullNetworkParamsArray) {
         //Initialize the updater, if necessary
         if (gradientUpdater == null) {
             init();
         }
 
         INDArray blockGradViewArray;
-        if(externalGradient){
-            blockGradViewArray = fullNetworkGradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramOffsetStart, paramOffsetEnd));
+        if (externalGradient) {
+            blockGradViewArray = fullNetworkGradientView.get(NDArrayIndex.point(0),
+                            NDArrayIndex.interval(paramOffsetStart, paramOffsetEnd));
         } else {
             blockGradViewArray = gradientView;
         }
@@ -141,9 +145,11 @@ public class UpdaterBlock {
         for (ParamState p : layersAndVariablesInBlock) {
             INDArray paramView;
             INDArray gradView;
-            if(externalGradient){
-                paramView = fullNetworkParamsArray.get(NDArrayIndex.point(0), NDArrayIndex.interval(p.getParamOffsetStart(), p.getParamOffsetEnd()));
-                gradView = fullNetworkGradientView.get(NDArrayIndex.point(0), NDArrayIndex.interval(p.getParamOffsetStart(), p.getParamOffsetEnd()));
+            if (externalGradient) {
+                paramView = fullNetworkParamsArray.get(NDArrayIndex.point(0),
+                                NDArrayIndex.interval(p.getParamOffsetStart(), p.getParamOffsetEnd()));
+                gradView = fullNetworkGradientView.get(NDArrayIndex.point(0),
+                                NDArrayIndex.interval(p.getParamOffsetStart(), p.getParamOffsetEnd()));
             } else {
                 //Standard case
                 paramView = p.getParamView();
@@ -236,7 +242,7 @@ public class UpdaterBlock {
         double newMomentum = 0.0;
         if (layer.conf().getLayer().getIUpdater() instanceof Nesterovs) {
             if (conf.getLayer().getMomentumSchedule() != null
-                    && conf.getLayer().getMomentumSchedule().containsKey(iteration)) {
+                            && conf.getLayer().getMomentumSchedule().containsKey(iteration)) {
                 newMomentum = conf.getLayer().getMomentumSchedule().get(iteration);
             } else {
                 newMomentum = conf.getLayer().getMomentum();

@@ -34,10 +34,10 @@ public class ClusterSet implements Serializable {
     private boolean inverse;
 
     public ClusterSet(boolean inverse) {
-        this(null,inverse);
+        this(null, inverse);
     }
 
-    public ClusterSet(String distanceFunction,boolean inverse) {
+    public ClusterSet(String distanceFunction, boolean inverse) {
         this.distanceFunction = distanceFunction;
         this.inverse = inverse;
         this.clusters = Collections.synchronizedList(new ArrayList<Cluster>());
@@ -131,13 +131,12 @@ public class ClusterSet implements Serializable {
         double currentDistance;
         for (Cluster cluster : getClusters()) {
             currentDistance = cluster.getDistanceToCenter(point);
-            if(isInverse()) {
+            if (isInverse()) {
                 if (currentDistance > minDistance) {
                     minDistance = currentDistance;
                     nearestCluster = cluster;
                 }
-            }
-            else {
+            } else {
                 if (currentDistance < minDistance) {
                     minDistance = currentDistance;
                     nearestCluster = cluster;

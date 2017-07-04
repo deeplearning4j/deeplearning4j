@@ -19,7 +19,7 @@ public class UpdaterUtils {
         org.deeplearning4j.nn.conf.layers.Layer l2 = layer2.conf().getLayer();
         IUpdater u1 = l1.getIUpdaterByParam(param1);
         IUpdater u2 = l2.getIUpdaterByParam(param2);
-        if(!u1.equals(u2)){
+        if (!u1.equals(u2)) {
             //Different updaters or different config
             return false;
         }

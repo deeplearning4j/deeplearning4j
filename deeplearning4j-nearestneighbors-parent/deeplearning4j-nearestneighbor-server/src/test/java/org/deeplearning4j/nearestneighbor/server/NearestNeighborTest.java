@@ -28,19 +28,14 @@ public class NearestNeighborTest {
 
     @Test
     public void testNearestNeighbor() {
-        INDArray arr = Nd4j.create(new double[][]{
-                {1,2,3,4},
-                {1,2,3,5},
-                {3,4,5,6}
-        });
+        INDArray arr = Nd4j.create(new double[][] {{1, 2, 3, 4}, {1, 2, 3, 5}, {3, 4, 5, 6}});
 
-        VPTree vpTree = new VPTree(arr,false);
+        VPTree vpTree = new VPTree(arr, false);
         NearestNeighborRequest request = new NearestNeighborRequest();
         request.setK(2);
         request.setInputIndex(0);
-        NearestNeighbor nearestNeighbor = NearestNeighbor.builder().tree(vpTree)
-                .points(arr).record(request).build();
-        assertEquals(1,nearestNeighbor.search().get(0).getIndex());
+        NearestNeighbor nearestNeighbor = NearestNeighbor.builder().tree(vpTree).points(arr).record(request).build();
+        assertEquals(1, nearestNeighbor.search().get(0).getIndex());
     }
 
 
@@ -62,19 +57,17 @@ public class NearestNeighborTest {
     public void testServer() throws Exception {
         int localPort = getAvailablePort();
         Nd4j.getRandom().setSeed(7);
-        INDArray rand = Nd4j.randn(10,5);
-        File writeToTmp = new File(System.getProperty("java.io.tmpdir"),"ndarray" + UUID.randomUUID().toString());
+        INDArray rand = Nd4j.randn(10, 5);
+        File writeToTmp = new File(System.getProperty("java.io.tmpdir"), "ndarray" + UUID.randomUUID().toString());
         writeToTmp.deleteOnExit();
-        BinarySerde.writeArrayToDisk(rand,writeToTmp);
+        BinarySerde.writeArrayToDisk(rand, writeToTmp);
         NearestNeighborsServer server = new NearestNeighborsServer();
-        server.runMain(
-                "--ndarrayPath",writeToTmp.getAbsolutePath(),
-                "--nearestNeighborsPort",String.valueOf(localPort)
-        );
+        server.runMain("--ndarrayPath", writeToTmp.getAbsolutePath(), "--nearestNeighborsPort",
+                        String.valueOf(localPort));
 
-        NearestNeighborsClient client = new NearestNeighborsClient("http://localhost:"+ localPort);
-        NearstNeighborsResults result = client.knnNew(5,rand.getRow(0));
-        assertEquals(5,result.getResults().size());
+        NearestNeighborsClient client = new NearestNeighborsClient("http://localhost:" + localPort);
+        NearstNeighborsResults result = client.knnNew(5, rand.getRow(0));
+        assertEquals(5, result.getResults().size());
         server.stop();
     }
 

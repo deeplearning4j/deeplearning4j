@@ -35,19 +35,24 @@ public class FileSplitParallelDataSetIterator extends BaseParallelDataSetIterato
 
     protected List<DataSetIterator> asyncIterators = new ArrayList<>();
 
-    public FileSplitParallelDataSetIterator(@NonNull File rootFolder, @NonNull String pattern, @NonNull FileCallback callback) {
+    public FileSplitParallelDataSetIterator(@NonNull File rootFolder, @NonNull String pattern,
+                    @NonNull FileCallback callback) {
         this(rootFolder, pattern, callback, Nd4j.getAffinityManager().getNumberOfDevices());
     }
 
-    public FileSplitParallelDataSetIterator(@NonNull File rootFolder, @NonNull String pattern, @NonNull FileCallback callback, int numThreads) {
+    public FileSplitParallelDataSetIterator(@NonNull File rootFolder, @NonNull String pattern,
+                    @NonNull FileCallback callback, int numThreads) {
         this(rootFolder, pattern, callback, numThreads, InequalityHandling.STOP_EVERYONE);
     }
 
-    public FileSplitParallelDataSetIterator(@NonNull File rootFolder, @NonNull String pattern, @NonNull FileCallback callback, int numThreads, @NonNull InequalityHandling inequalityHandling) {
+    public FileSplitParallelDataSetIterator(@NonNull File rootFolder, @NonNull String pattern,
+                    @NonNull FileCallback callback, int numThreads, @NonNull InequalityHandling inequalityHandling) {
         this(rootFolder, pattern, callback, numThreads, 2, inequalityHandling);
     }
 
-    public FileSplitParallelDataSetIterator(@NonNull File rootFolder, @NonNull String pattern, @NonNull FileCallback callback, int numThreads, int bufferPerThread, @NonNull InequalityHandling inequalityHandling) {
+    public FileSplitParallelDataSetIterator(@NonNull File rootFolder, @NonNull String pattern,
+                    @NonNull FileCallback callback, int numThreads, int bufferPerThread,
+                    @NonNull InequalityHandling inequalityHandling) {
         super(numThreads);
 
         if (!rootFolder.exists() || !rootFolder.isDirectory())
@@ -57,7 +62,7 @@ public class FileSplitParallelDataSetIterator extends BaseParallelDataSetIterato
         this.inequalityHandling = inequalityHandling;
         this.buffer = bufferPerThread;
 
-        String modifiedPattern = pattern.replaceAll("\\%d",".*.");
+        String modifiedPattern = pattern.replaceAll("\\%d", ".*.");
 
         IOFileFilter fileFilter = new RegexFileFilter(modifiedPattern);
 
@@ -70,13 +75,14 @@ public class FileSplitParallelDataSetIterator extends BaseParallelDataSetIterato
 
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         int cnt = 0;
-        for (List<File> part: Lists.partition(files, files.size() / numThreads)) {
+        for (List<File> part : Lists.partition(files, files.size() / numThreads)) {
             // discard remainder
             if (cnt >= numThreads)
                 break;
 
             int cDev = cnt % numDevices;
-            asyncIterators.add(new AsyncDataSetIterator(new FileSplitDataSetIterator(part, callback), bufferPerThread, true, cDev));
+            asyncIterators.add(new AsyncDataSetIterator(new FileSplitDataSetIterator(part, callback), bufferPerThread,
+                            true, cDev));
             cnt++;
         }
 
@@ -84,7 +90,7 @@ public class FileSplitParallelDataSetIterator extends BaseParallelDataSetIterato
 
     @Override
     public boolean hasNextFor(int consumer) {
-        if (consumer >= numProducers  || consumer < 0)
+        if (consumer >= numProducers || consumer < 0)
             throw new ND4JIllegalStateException("Non-existent consumer was requested");
 
         return asyncIterators.get(consumer).hasNext();

@@ -119,11 +119,11 @@ public class FineTuneConfiguration {
             return this;
         }
 
-        public Builder updater(IUpdater updater){
+        public Builder updater(IUpdater updater) {
             return iUpdater(updater);
         }
 
-        public Builder updater(Updater updater){
+        public Builder updater(Updater updater) {
             this.updater = updater;
             return updater(updater.getIUpdaterWithDefaultConfig());
         }
@@ -276,8 +276,8 @@ public class FineTuneConfiguration {
 
         //Perform validation. This also sets the defaults for updaters. For example, Updater.RMSProp -> set rmsDecay
         if (l != null) {
-            LayerValidation.updaterValidation(l.getLayerName(), l, learningRate, momentum, momentumSchedule, adamMeanDecay,
-                            adamVarDecay, rho, rmsDecay, epsilon);
+            LayerValidation.updaterValidation(l.getLayerName(), l, learningRate, momentum, momentumSchedule,
+                            adamMeanDecay, adamVarDecay, rho, rmsDecay, epsilon);
 
             boolean useDropCon = (useDropConnect == null ? nnc.isUseDropConnect() : useDropConnect);
             LayerValidation.generalValidation(l.getLayerName(), l, nnc.isUseRegularization(), useDropCon, dropOut, l2,

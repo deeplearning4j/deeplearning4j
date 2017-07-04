@@ -24,164 +24,164 @@ import org.nlpcn.commons.lang.util.CollectionUtil;
  */
 public class LearnTool {
 
-	private SplitWord splitWord = null;
+    private SplitWord splitWord = null;
 
-	/**
-	 * 是否开启学习机
-	 */
-	public boolean isAsianName = true;
+    /**
+     * 是否开启学习机
+     */
+    public boolean isAsianName = true;
 
-	public boolean isForeignName = true;
+    public boolean isForeignName = true;
 
-	/**
-	 * 告诉大家你学习了多少个词了
-	 */
-	public int count;
+    /**
+     * 告诉大家你学习了多少个词了
+     */
+    public int count;
 
-	/**
-	 * 新词发现的结果集.可以序列化到硬盘.然后可以当做训练集来做.
-	 */
-	private final SmartForest<NewWord> sf = new SmartForest<NewWord>();
+    /**
+     * 新词发现的结果集.可以序列化到硬盘.然后可以当做训练集来做.
+     */
+    private final SmartForest<NewWord> sf = new SmartForest<NewWord>();
 
-	/**
-	 * 学习新词排除用户自定义词典那中的词语
-	 */
-	private Forest[] forests;
+    /**
+     * 学习新词排除用户自定义词典那中的词语
+     */
+    private Forest[] forests;
 
-	/**
-	 * 公司名称学习.
-	 * 
-	 * @param graph
-	 */
-	public void learn(Graph graph, SplitWord splitWord, Forest... forests) {
+    /**
+     * 公司名称学习.
+     * 
+     * @param graph
+     */
+    public void learn(Graph graph, SplitWord splitWord, Forest... forests) {
 
-		this.splitWord = splitWord;
+        this.splitWord = splitWord;
 
-		this.forests = forests;
+        this.forests = forests;
 
-		// 亚洲人名识别
-		if (isAsianName) {
-			findAsianPerson(graph);
-		}
+        // 亚洲人名识别
+        if (isAsianName) {
+            findAsianPerson(graph);
+        }
 
-		// 外国人名识别
-		if (isForeignName) {
-			findForeignPerson(graph);
-		}
+        // 外国人名识别
+        if (isForeignName) {
+            findForeignPerson(graph);
+        }
 
-	}
+    }
 
-	private void findAsianPerson(Graph graph) {
-		List<NewWord> newWords = new AsianPersonRecognition().getNewWords(graph.terms);
-		addListToTerm(newWords);
-	}
+    private void findAsianPerson(Graph graph) {
+        List<NewWord> newWords = new AsianPersonRecognition().getNewWords(graph.terms);
+        addListToTerm(newWords);
+    }
 
-	private void findForeignPerson(Graph graph) {
-		List<NewWord> newWords = new ForeignPersonRecognition().getNewWords(graph.terms);
-		addListToTerm(newWords);
-	}
+    private void findForeignPerson(Graph graph) {
+        List<NewWord> newWords = new ForeignPersonRecognition().getNewWords(graph.terms);
+        addListToTerm(newWords);
+    }
 
-	// 批量将新词加入到词典中
-	private void addListToTerm(List<NewWord> newWords) {
-		if (newWords.size() == 0)
-			return;
-		for (NewWord newWord : newWords) {
+    // 批量将新词加入到词典中
+    private void addListToTerm(List<NewWord> newWords) {
+        if (newWords.size() == 0)
+            return;
+        for (NewWord newWord : newWords) {
 
-			TermNatures termNatures = new NatureRecognition(forests).getTermNatures(newWord.getName());
+            TermNatures termNatures = new NatureRecognition(forests).getTermNatures(newWord.getName());
 
-			if (termNatures == TermNatures.NULL) {
-				addTerm(newWord);
-			}
-		}
-	}
+            if (termNatures == TermNatures.NULL) {
+                addTerm(newWord);
+            }
+        }
+    }
 
-	/**
-	 * 增加一个新词到树中
-	 * 
-	 * @param newWord
-	 */
-	public void addTerm(NewWord newWord) {
-		NewWord temp = null;
-		SmartForest<NewWord> smartForest = null;
-		if ((smartForest = sf.getBranch(newWord.getName())) != null && smartForest.getParam() != null) {
-			temp = smartForest.getParam();
-			temp.update(newWord.getNature(), newWord.getAllFreq());
-		} else {
-			count++;
-			if (splitWord == null) {
-				newWord.setScore(-1);
-			} else {
-				newWord.setScore(-splitWord.cohesion(newWord.getName()));
-			}
+    /**
+     * 增加一个新词到树中
+     * 
+     * @param newWord
+     */
+    public void addTerm(NewWord newWord) {
+        NewWord temp = null;
+        SmartForest<NewWord> smartForest = null;
+        if ((smartForest = sf.getBranch(newWord.getName())) != null && smartForest.getParam() != null) {
+            temp = smartForest.getParam();
+            temp.update(newWord.getNature(), newWord.getAllFreq());
+        } else {
+            count++;
+            if (splitWord == null) {
+                newWord.setScore(-1);
+            } else {
+                newWord.setScore(-splitWord.cohesion(newWord.getName()));
+            }
 
-			synchronized (sf) {
-				sf.add(newWord.getName(), newWord);
-			}
-		}
-	}
+            synchronized (sf) {
+                sf.add(newWord.getName(), newWord);
+            }
+        }
+    }
 
-	public SmartForest<NewWord> getForest() {
-		return this.sf;
-	}
+    public SmartForest<NewWord> getForest() {
+        return this.sf;
+    }
 
-	/**
-	 * 返回学习到的新词.
-	 * 
-	 * @param num 返回数目.0为全部返回
-	 * @return
-	 */
-	public List<Entry<String, Double>> getTopTree(int num) {
-		return getTopTree(num, null);
-	}
+    /**
+     * 返回学习到的新词.
+     * 
+     * @param num 返回数目.0为全部返回
+     * @return
+     */
+    public List<Entry<String, Double>> getTopTree(int num) {
+        return getTopTree(num, null);
+    }
 
-	public List<Entry<String, Double>> getTopTree(int num, Nature nature) {
-		if (sf.branches == null) {
-			return null;
-		}
-		HashMap<String, Double> hm = new HashMap<String, Double>();
-		for (int i = 0; i < sf.branches.length; i++) {
-			valueResult(sf.branches[i], hm, nature);
-		}
-		List<Entry<String, Double>> sortMapByValue = CollectionUtil.sortMapByValue(hm, -1);
-		if (num == 0) {
-			return sortMapByValue;
-		} else {
-			num = Math.min(num, sortMapByValue.size());
-			return sortMapByValue.subList(0, num);
-		}
-	}
+    public List<Entry<String, Double>> getTopTree(int num, Nature nature) {
+        if (sf.branches == null) {
+            return null;
+        }
+        HashMap<String, Double> hm = new HashMap<String, Double>();
+        for (int i = 0; i < sf.branches.length; i++) {
+            valueResult(sf.branches[i], hm, nature);
+        }
+        List<Entry<String, Double>> sortMapByValue = CollectionUtil.sortMapByValue(hm, -1);
+        if (num == 0) {
+            return sortMapByValue;
+        } else {
+            num = Math.min(num, sortMapByValue.size());
+            return sortMapByValue.subList(0, num);
+        }
+    }
 
-	private void valueResult(SmartForest<NewWord> smartForest, HashMap<String, Double> hm, Nature nature) {
+    private void valueResult(SmartForest<NewWord> smartForest, HashMap<String, Double> hm, Nature nature) {
 
-		if (smartForest == null || smartForest.branches == null) {
-			return;
-		}
-		for (int i = 0; i < smartForest.branches.length; i++) {
-			NewWord param = smartForest.branches[i].getParam();
-			if (smartForest.branches[i].getStatus() == 3) {
-				if (param.isActive() && (nature == null || param.getNature().equals(nature))) {
-					hm.put(param.getName(), param.getScore());
-				}
-			} else if (smartForest.branches[i].getStatus() == 2) {
-				if (param.isActive() && (nature == null || param.getNature().equals(nature))) {
-					hm.put(param.getName(), param.getScore());
-				}
-				valueResult(smartForest.branches[i], hm, nature);
-			} else {
-				valueResult(smartForest.branches[i], hm, nature);
-			}
-		}
-	}
+        if (smartForest == null || smartForest.branches == null) {
+            return;
+        }
+        for (int i = 0; i < smartForest.branches.length; i++) {
+            NewWord param = smartForest.branches[i].getParam();
+            if (smartForest.branches[i].getStatus() == 3) {
+                if (param.isActive() && (nature == null || param.getNature().equals(nature))) {
+                    hm.put(param.getName(), param.getScore());
+                }
+            } else if (smartForest.branches[i].getStatus() == 2) {
+                if (param.isActive() && (nature == null || param.getNature().equals(nature))) {
+                    hm.put(param.getName(), param.getScore());
+                }
+                valueResult(smartForest.branches[i], hm, nature);
+            } else {
+                valueResult(smartForest.branches[i], hm, nature);
+            }
+        }
+    }
 
-	/**
-	 * 尝试激活，新词
-	 * 
-	 * @param name
-	 */
-	public void active(String name) {
-		SmartForest<NewWord> branch = sf.getBranch(name);
-		if (branch != null && branch.getParam() != null) {
-			branch.getParam().setActive(true);
-		}
-	}
+    /**
+     * 尝试激活，新词
+     * 
+     * @param name
+     */
+    public void active(String name) {
+        SmartForest<NewWord> branch = sf.getBranch(name);
+        if (branch != null && branch.getParam() != null) {
+            branch.getParam().setActive(true);
+        }
+    }
 }

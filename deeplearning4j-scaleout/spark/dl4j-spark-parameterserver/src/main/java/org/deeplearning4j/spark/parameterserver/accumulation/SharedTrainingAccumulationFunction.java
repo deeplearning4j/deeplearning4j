@@ -14,10 +14,12 @@ import java.util.Collection;
 /**
  * @author raver119@gmail.com
  */
-public class SharedTrainingAccumulationFunction implements Function2<SharedTrainingAccumulationTuple, SharedTrainingAccumulationTuple, SharedTrainingAccumulationTuple> {
+public class SharedTrainingAccumulationFunction implements
+                Function2<SharedTrainingAccumulationTuple, SharedTrainingAccumulationTuple, SharedTrainingAccumulationTuple> {
 
     @Override
-    public SharedTrainingAccumulationTuple call(SharedTrainingAccumulationTuple tuple1, SharedTrainingAccumulationTuple tuple2) throws Exception {
+    public SharedTrainingAccumulationTuple call(SharedTrainingAccumulationTuple tuple1,
+                    SharedTrainingAccumulationTuple tuple2) throws Exception {
         // if one of tuples is null - return other one
         if (tuple1 == null)
             return tuple2;
@@ -32,7 +34,8 @@ public class SharedTrainingAccumulationFunction implements Function2<SharedTrain
             stateView = tuple1.getUpdaterStateArray().addi(tuple2.getUpdaterStateArray());
         } else if (tuple1.getUpdaterStateArray() != null || tuple2.getUpdaterStateArray() != null) {
             // only one of state views exists. just use it
-            stateView = tuple1.getUpdaterStateArray() != null ? tuple1.getUpdaterStateArray() : tuple2.getUpdaterStateArray();
+            stateView = tuple1.getUpdaterStateArray() != null ? tuple1.getUpdaterStateArray()
+                            : tuple2.getUpdaterStateArray();
         }
 
         // we assume that aggregationsCount field is set only for entries that hold updaters state
@@ -79,14 +82,9 @@ public class SharedTrainingAccumulationFunction implements Function2<SharedTrain
 
 
 
-        return SharedTrainingAccumulationTuple.builder()
-                .scoreSum(score)
-                .updaterStateArray(stateView)
-                .aggregationsCount(aggregationsCount)
-                .sparkTrainingStats(stats)
-                .listenerMetaData(listenerMetaData)
-                .listenerUpdates(listenerUpdates)
-                .listenerStaticInfo(listenerStaticInfo)
-                .build();
+        return SharedTrainingAccumulationTuple.builder().scoreSum(score).updaterStateArray(stateView)
+                        .aggregationsCount(aggregationsCount).sparkTrainingStats(stats)
+                        .listenerMetaData(listenerMetaData).listenerUpdates(listenerUpdates)
+                        .listenerStaticInfo(listenerStaticInfo).build();
     }
 }

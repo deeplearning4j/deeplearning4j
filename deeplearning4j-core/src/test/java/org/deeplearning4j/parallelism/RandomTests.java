@@ -41,49 +41,33 @@ public class RandomTests {
             Thread thread = new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                            .seed(119)
-                            .iterations(1) // Training iterations as above
-                            .regularization(true).l2(0.0005)
-                /*
-                    Uncomment the following for learning decay and bias
-                 */
-                            .learningRate(.01)//.biasLearningRate(0.02)
-                            //.learningRateDecayPolicy(LearningRatePolicy.Inverse).lrPolicyDecayRate(0.001).lrPolicyPower(0.75)
-                            .weightInit(WeightInit.XAVIER)
-                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                            .updater(Updater.NESTEROVS).momentum(0.9)
-                            .trainingWorkspaceMode(WorkspaceMode.SINGLE)
-                            .list()
-                            .layer(0, new ConvolutionLayer.Builder(5, 5)
-                                    //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
-                                    .nIn(1)
-                                    .stride(1, 1)
-                                    .nOut(20)
-                                    .activation(Activation.IDENTITY)
-                                    .build())
-                            .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
-                                    .kernelSize(2,2)
-                                    .stride(2,2)
-                                    .build())
-                            .layer(2, new ConvolutionLayer.Builder(5, 5)
-                                    //Note that nIn need not be specified in later layers
-                                    .stride(1, 1)
-                                    .nOut(50)
-                                    .activation(Activation.IDENTITY)
-                                    .build())
-                            .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
-                                    .kernelSize(2,2)
-                                    .stride(2,2)
-                                    .build())
-                            .layer(4, new DenseLayer.Builder().activation(Activation.RELU)
-                                    .nOut(500).build())
-                            .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                    .nOut(10)
-                                    .activation(Activation.SOFTMAX)
-                                    .build())
-                            .setInputType(InputType.convolutionalFlat(28,28,1)) //See note below
-                            .backprop(true).pretrain(false).build();
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(119).iterations(1) // Training iterations as above
+                                    .regularization(true).l2(0.0005)
+                                    /*
+                                    Uncomment the following for learning decay and bias
+                                     */
+                                    .learningRate(.01)//.biasLearningRate(0.02)
+                                    //.learningRateDecayPolicy(LearningRatePolicy.Inverse).lrPolicyDecayRate(0.001).lrPolicyPower(0.75)
+                                    .weightInit(WeightInit.XAVIER)
+                                    .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                                    .updater(Updater.NESTEROVS).momentum(0.9)
+                                    .trainingWorkspaceMode(WorkspaceMode.SINGLE).list()
+                                    .layer(0, new ConvolutionLayer.Builder(5, 5)
+                                                    //nIn and nOut specify depth. nIn here is the nChannels and nOut is the number of filters to be applied
+                                                    .nIn(1).stride(1, 1).nOut(20).activation(Activation.IDENTITY)
+                                                    .build())
+                                    .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                                                    .kernelSize(2, 2).stride(2, 2).build())
+                                    .layer(2, new ConvolutionLayer.Builder(5, 5)
+                                                    //Note that nIn need not be specified in later layers
+                                                    .stride(1, 1).nOut(50).activation(Activation.IDENTITY).build())
+                                    .layer(3, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                                                    .kernelSize(2, 2).stride(2, 2).build())
+                                    .layer(4, new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build())
+                                    .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                                                    .nOut(10).activation(Activation.SOFTMAX).build())
+                                    .setInputType(InputType.convolutionalFlat(28, 28, 1)) //See note below
+                                    .backprop(true).pretrain(false).build();
 
                     MultiLayerNetwork network = new MultiLayerNetwork(conf);
                     network.init();
@@ -105,19 +89,16 @@ public class RandomTests {
 
 
     @Test
-    public void testRngInitMLN(){
+    public void testRngInitMLN() {
         Nd4j.getRandom().setSeed(12345);
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .activation(Activation.TANH)
-                .weightInit(WeightInit.XAVIER)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX).nIn(10).nOut(10).build())
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345).activation(Activation.TANH)
+                        .weightInit(WeightInit.XAVIER).list()
+                        .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                        .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build()).layer(2,
+                                        new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                                        .activation(Activation.SOFTMAX).nIn(10).nOut(10).build())
+                        .build();
 
         String json = conf.toJson();
 

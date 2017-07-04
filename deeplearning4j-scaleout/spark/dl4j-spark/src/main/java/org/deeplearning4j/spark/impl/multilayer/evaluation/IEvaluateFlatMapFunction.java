@@ -23,16 +23,20 @@ import org.apache.spark.broadcast.Broadcast;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
+import org.deeplearning4j.datasets.iterator.callbacks.DefaultCallback;
 import org.deeplearning4j.eval.IEvaluation;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.spark.iterator.SparkADSI;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.concurrent.LinkedBlockingDeque;
 
 /**
  * Function to evaluate data (using an IEvaluation instance), in a distributed manner
@@ -43,8 +47,8 @@ import java.util.Iterator;
  */
 public class IEvaluateFlatMapFunction<T extends IEvaluation> extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, T> {
 
-    public IEvaluateFlatMapFunction(boolean isCompGraph, Broadcast<String> json, Broadcast<INDArray> params, int evalBatchSize,
-                    T evaluation) {
+    public IEvaluateFlatMapFunction(boolean isCompGraph, Broadcast<String> json, Broadcast<INDArray> params,
+                    int evalBatchSize, T evaluation) {
         super(new IEvaluateFlatMapFunctionAdapter<>(isCompGraph, json, params, evalBatchSize, evaluation));
     }
 }
@@ -73,8 +77,8 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
      *                              this. Used to avoid doing too many at once (and hence memory issues)
      * @param evaluation Initial evaulation instance (i.e., empty Evaluation or RegressionEvaluation instance)
      */
-    public IEvaluateFlatMapFunctionAdapter(boolean isCompGraph, Broadcast<String> json, Broadcast<INDArray> params, int evalBatchSize,
-                    T evaluation) {
+    public IEvaluateFlatMapFunctionAdapter(boolean isCompGraph, Broadcast<String> json, Broadcast<INDArray> params,
+                    int evalBatchSize, T evaluation) {
         this.isCompGraph = isCompGraph;
         this.json = json;
         this.params = params;
@@ -91,15 +95,17 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
         MultiLayerNetwork network = null;
         ComputationGraph graph = null;
         INDArray val = params.value().unsafeDuplication();
-        if(isCompGraph){
+        if (isCompGraph) {
             graph = new ComputationGraph(ComputationGraphConfiguration.fromJson(json.getValue()));
             graph.init();
             if (val.length() != graph.numParams(false))
                 throw new IllegalStateException(
-                        "Network did not have same number of parameters as the broadcast set parameters");
+                                "Network did not have same number of parameters as the broadcast set parameters");
             graph.setParams(val);
 
-            T eval = graph.doEvaluation(new IteratorDataSetIterator(dataSetIterator, evalBatchSize), evaluation)[0];
+            T eval = graph.doEvaluation(
+                            new SparkADSI(new IteratorDataSetIterator(dataSetIterator, evalBatchSize), 2, true),
+                            evaluation)[0];
             return Collections.singletonList(eval);
 
         } else {
@@ -107,10 +113,12 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
             network.init();
             if (val.length() != network.numParams(false))
                 throw new IllegalStateException(
-                        "Network did not have same number of parameters as the broadcast set parameters");
+                                "Network did not have same number of parameters as the broadcast set parameters");
             network.setParameters(val);
 
-            T eval = network.doEvaluation(new IteratorDataSetIterator(dataSetIterator, evalBatchSize), evaluation)[0];
+            T eval = network.doEvaluation(
+                            new SparkADSI(new IteratorDataSetIterator(dataSetIterator, evalBatchSize), 2, true),
+                            evaluation)[0];
             return Collections.singletonList(eval);
         }
     }

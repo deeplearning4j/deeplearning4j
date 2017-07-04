@@ -23,17 +23,11 @@ public class SharedTrainingAggregateFunctionTest {
         INDArray updates2 = Nd4j.create(1000).assign(2.0);
         INDArray expUpdates = Nd4j.create(1000).assign(3.0);
 
-        SharedTrainingResult result1 = SharedTrainingResult.builder()
-                .updaterStateArray(updates1)
-                .aggregationsCount(1)
-                .scoreSum(1.0)
-                .build();
+        SharedTrainingResult result1 = SharedTrainingResult.builder().updaterStateArray(updates1).aggregationsCount(1)
+                        .scoreSum(1.0).build();
 
-        SharedTrainingResult result2 = SharedTrainingResult.builder()
-                .updaterStateArray(updates2)
-                .aggregationsCount(1)
-                .scoreSum(2.0)
-                .build();
+        SharedTrainingResult result2 = SharedTrainingResult.builder().updaterStateArray(updates2).aggregationsCount(1)
+                        .scoreSum(2.0).build();
 
         // testing null + result
         SharedTrainingAggregateFunction aggregateFunction = new SharedTrainingAggregateFunction();

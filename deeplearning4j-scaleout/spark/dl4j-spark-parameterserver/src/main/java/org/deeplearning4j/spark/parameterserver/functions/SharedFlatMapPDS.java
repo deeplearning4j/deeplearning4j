@@ -16,7 +16,8 @@ import org.nd4j.linalg.dataset.DataSet;
 import java.util.Collections;
 import java.util.Iterator;
 
-public class SharedFlatMapPDS<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<PortableDataStream>, R> {
+public class SharedFlatMapPDS<R extends TrainingResult>
+                extends BaseFlatMapFunctionAdaptee<Iterator<PortableDataStream>, R> {
 
     public SharedFlatMapPDS(TrainingWorker<R> worker) {
         this(worker, null);
@@ -28,7 +29,8 @@ public class SharedFlatMapPDS<R extends TrainingResult> extends BaseFlatMapFunct
 }
 
 
-class SharedFlatMapPDSAdapter<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<PortableDataStream>, R> {
+class SharedFlatMapPDSAdapter<R extends TrainingResult>
+                implements FlatMapFunctionAdapter<Iterator<PortableDataStream>, R> {
 
     protected final SharedTrainingWorker worker;
     protected final PortableDataStreamCallback callback;

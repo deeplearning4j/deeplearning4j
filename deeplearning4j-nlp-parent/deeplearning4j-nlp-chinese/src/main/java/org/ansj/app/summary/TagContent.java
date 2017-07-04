@@ -15,41 +15,41 @@ import org.nlpcn.commons.lang.tire.domain.SmartForest;
  */
 public class TagContent {
 
-	private String beginTag, endTag;
+    private String beginTag, endTag;
 
-	public TagContent(String beginTag, String endTag) {
-		this.beginTag = beginTag;
-		this.endTag = endTag;
-	}
+    public TagContent(String beginTag, String endTag) {
+        this.beginTag = beginTag;
+        this.endTag = endTag;
+    }
 
-	public String tagContent(Summary summary) {
-		return tagContent(summary.getKeyWords(), summary.getSummary());
-	}
+    public String tagContent(Summary summary) {
+        return tagContent(summary.getKeyWords(), summary.getSummary());
+    }
 
-	public String tagContent(List<Keyword> keyWords, String content) {
-		SmartForest<Double> sf = new SmartForest<Double>();
-		for (Keyword keyWord : keyWords) {
-			sf.add(keyWord.getName().toLowerCase(), keyWord.getScore());
-		}
+    public String tagContent(List<Keyword> keyWords, String content) {
+        SmartForest<Double> sf = new SmartForest<Double>();
+        for (Keyword keyWord : keyWords) {
+            sf.add(keyWord.getName().toLowerCase(), keyWord.getScore());
+        }
 
-		SmartGetWord<Double> sgw = new SmartGetWord<Double>(sf, content.toLowerCase());
+        SmartGetWord<Double> sgw = new SmartGetWord<Double>(sf, content.toLowerCase());
 
-		int beginOffe = 0;
-		String temp = null;
-		StringBuilder sb = new StringBuilder();
-		while ((temp = sgw.getFrontWords()) != null) {
-			sb.append(content.substring(beginOffe, sgw.offe));
-			sb.append(beginTag);
-			sb.append(content.substring(sgw.offe, sgw.offe + temp.length()));
-			sb.append(endTag);
-			beginOffe = sgw.offe + temp.length();
-		}
+        int beginOffe = 0;
+        String temp = null;
+        StringBuilder sb = new StringBuilder();
+        while ((temp = sgw.getFrontWords()) != null) {
+            sb.append(content.substring(beginOffe, sgw.offe));
+            sb.append(beginTag);
+            sb.append(content.substring(sgw.offe, sgw.offe + temp.length()));
+            sb.append(endTag);
+            beginOffe = sgw.offe + temp.length();
+        }
 
-		if (beginOffe <= content.length() - 1) {
-			sb.append(content.substring(beginOffe, content.length()));
-		}
+        if (beginOffe <= content.length() - 1) {
+            sb.append(content.substring(beginOffe, content.length()));
+        }
 
-		return sb.toString();
-	}
+        return sb.toString();
+    }
 
 }

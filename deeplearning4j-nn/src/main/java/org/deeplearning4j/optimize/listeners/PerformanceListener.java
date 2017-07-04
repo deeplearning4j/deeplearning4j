@@ -92,7 +92,7 @@ public class PerformanceListener implements IterationListener {
                 input = model.input();
             }
 
-//            long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1, input.rank()));
+            //            long tadLength = Shape.getTADLength(input.shape(), ArrayUtil.range(1, input.rank()));
 
             long numSamples = input.size(0);
 

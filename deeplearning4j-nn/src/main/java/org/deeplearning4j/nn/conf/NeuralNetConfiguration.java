@@ -278,7 +278,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                             .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                             .tBPTTBackwardLength(tbpttBackLength).cnnInputSize(this.cnnInputSize)
                             .setInputType(this.inputType).trainingWorkspaceMode(globalConfig.trainingWorkspaceMode)
-                            .cacheMode(globalConfig.cacheMode).inferenceWorkspaceMode(globalConfig.inferenceWorkspaceMode).confs(list).build();
+                            .cacheMode(globalConfig.cacheMode)
+                            .inferenceWorkspaceMode(globalConfig.inferenceWorkspaceMode).confs(list).build();
         }
 
     }
@@ -393,11 +394,12 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         SimpleModule customDeserializerModule = new SimpleModule();
         customDeserializerModule.setDeserializerModifier(new BeanDeserializerModifier() {
             @Override
-            public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc, JsonDeserializer<?> deserializer){
+            public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc,
+                            JsonDeserializer<?> deserializer) {
                 //Use our custom deserializers to handle backward compatibility for updaters -> IUpdater
                 if (beanDesc.getBeanClass() == MultiLayerConfiguration.class) {
                     return new MultiLayerConfigurationDeserializer(deserializer);
-                } else if(beanDesc.getBeanClass() == ComputationGraphConfiguration.class){
+                } else if (beanDesc.getBeanClass() == ComputationGraphConfiguration.class) {
                     return new ComputationGraphConfigurationDeserializer(deserializer);
                 }
                 return deserializer;
@@ -957,7 +959,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          *
          * @param updater Updater to use
          */
-        public Builder updater(IUpdater updater){
+        public Builder updater(IUpdater updater) {
             this.iUpdater = updater;
             return this;
         }
@@ -1177,11 +1179,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     layer.setDropOut(dropOut);
                 if (layer.getUpdater() == null)
                     layer.setUpdater(updater);
-                if (layer.getIUpdater() == null){
+                if (layer.getIUpdater() == null) {
                     layer.setIUpdater(iUpdater.clone());
                 }
-                LayerValidation.updaterValidation(layerName, layer, learningRate, momentum, momentumSchedule, adamMeanDecay,
-                                adamVarDecay, rho, rmsDecay, epsilon);
+                LayerValidation.updaterValidation(layerName, layer, learningRate, momentum, momentumSchedule,
+                                adamMeanDecay, adamVarDecay, rho, rmsDecay, epsilon);
                 if (layer.getGradientNormalization() == null)
                     layer.setGradientNormalization(gradientNormalization);
                 if (Double.isNaN(layer.getGradientNormalizationThreshold()))

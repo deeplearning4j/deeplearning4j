@@ -29,13 +29,10 @@ import org.deeplearning4j.clustering.iteration.IterationHistory;
 public class FixedClusterCountStrategy extends BaseClusteringStrategy {
 
 
-    protected FixedClusterCountStrategy(Integer initialClusterCount,
-                                        String distanceFunction,
-                                        boolean allowEmptyClusters,
-                                        boolean inverse) {
-        super(ClusteringStrategyType.FIXED_CLUSTER_COUNT,
-                initialClusterCount, distanceFunction,
-                allowEmptyClusters,inverse);
+    protected FixedClusterCountStrategy(Integer initialClusterCount, String distanceFunction,
+                    boolean allowEmptyClusters, boolean inverse) {
+        super(ClusteringStrategyType.FIXED_CLUSTER_COUNT, initialClusterCount, distanceFunction, allowEmptyClusters,
+                        inverse);
     }
 
     /**
@@ -45,11 +42,8 @@ public class FixedClusterCountStrategy extends BaseClusteringStrategy {
      * @param inverse
      * @return
      */
-    public static FixedClusterCountStrategy setup(
-            int clusterCount
-            , String distanceFunction,boolean inverse) {
-        return new FixedClusterCountStrategy(clusterCount,
-                distanceFunction, false,inverse);
+    public static FixedClusterCountStrategy setup(int clusterCount, String distanceFunction, boolean inverse) {
+        return new FixedClusterCountStrategy(clusterCount, distanceFunction, false, inverse);
     }
 
     /**

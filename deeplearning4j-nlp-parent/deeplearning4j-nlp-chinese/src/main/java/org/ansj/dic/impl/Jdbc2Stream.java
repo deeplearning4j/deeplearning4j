@@ -23,16 +23,10 @@ public class Jdbc2Stream extends PathToStream {
     private static final byte[] LINE = "\n".getBytes();
 
     static {
-        String[] drivers = {"org.h2.Driver",
-                "com.ibm.db2.jcc.DB2Driver",
-                "org.hsqldb.jdbcDriver",
-                "org.gjt.mm.mysql.Driver",
-                "oracle.jdbc.OracleDriver",
-                "org.postgresql.Driver",
-                "net.sourceforge.jtds.jdbc.Driver",
-                "com.microsoft.sqlserver.jdbc.SQLServerDriver",
-                "org.sqlite.JDBC",
-                "com.mysql.jdbc.Driver"};
+        String[] drivers = {"org.h2.Driver", "com.ibm.db2.jcc.DB2Driver", "org.hsqldb.jdbcDriver",
+                        "org.gjt.mm.mysql.Driver", "oracle.jdbc.OracleDriver", "org.postgresql.Driver",
+                        "net.sourceforge.jtds.jdbc.Driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver",
+                        "org.sqlite.JDBC", "com.mysql.jdbc.Driver"};
         for (String driverClassName : drivers) {
             try {
                 try {
@@ -62,9 +56,9 @@ public class Jdbc2Stream extends PathToStream {
         String logStr = jdbc + "|" + username + "|********|" + sqlStr;
 
         try (Connection conn = DriverManager.getConnection(jdbc, username, password);
-             PreparedStatement statement = conn.prepareStatement(sqlStr);
-             ResultSet rs = statement.executeQuery();
-             ByteArrayOutputStream baos = new ByteArrayOutputStream(100 * 1024)) {
+                        PreparedStatement statement = conn.prepareStatement(sqlStr);
+                        ResultSet rs = statement.executeQuery();
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream(100 * 1024)) {
 
             int i, count;
             while (rs.next()) {

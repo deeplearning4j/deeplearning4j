@@ -16,27 +16,27 @@ import org.ansj.exception.LibraryException;
  */
 public abstract class PathToStream {
 
-	public static InputStream stream(String path) {
-		try {
-			if (path.startsWith("file://")) {
-				return new File2Stream().toStream(path);
-			} else if (path.startsWith("jdbc://")) {
-				return new Jdbc2Stream().toStream(path);
-			} else if (path.startsWith("jar://")) {
-				return new Jar2Stream().toStream(path);
-			} else if (path.startsWith("class://")) {
-				((PathToStream) Class.forName(path.substring(8).split("\\|")[0]).newInstance()).toStream(path);
-			} else if (path.startsWith("http://")||path.startsWith("https://")) {
-				return new Url2Stream().toStream(path);
-			} else {
-				return new File2Stream().toStream(path);
-			}
-		} catch (Exception e) {
-			throw new LibraryException(e);
-		}
-		throw new LibraryException("not find method type in path " + path);
-	}
+    public static InputStream stream(String path) {
+        try {
+            if (path.startsWith("file://")) {
+                return new File2Stream().toStream(path);
+            } else if (path.startsWith("jdbc://")) {
+                return new Jdbc2Stream().toStream(path);
+            } else if (path.startsWith("jar://")) {
+                return new Jar2Stream().toStream(path);
+            } else if (path.startsWith("class://")) {
+                ((PathToStream) Class.forName(path.substring(8).split("\\|")[0]).newInstance()).toStream(path);
+            } else if (path.startsWith("http://") || path.startsWith("https://")) {
+                return new Url2Stream().toStream(path);
+            } else {
+                return new File2Stream().toStream(path);
+            }
+        } catch (Exception e) {
+            throw new LibraryException(e);
+        }
+        throw new LibraryException("not find method type in path " + path);
+    }
 
-	public abstract InputStream toStream(String path);
+    public abstract InputStream toStream(String path);
 
 }

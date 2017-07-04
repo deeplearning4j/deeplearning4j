@@ -553,11 +553,11 @@ public class MagicQueue<T> implements BlockingQueue<T> {
                             if (ds.getFeaturesMaskArray() != null)
                                 ds.setFeaturesMaskArray(ds.getFeaturesMaskArray().migrate());
                             //Nd4j.getAffinityManager().touch(ds.getFeaturesMaskArray());
-
+                            
                             if (ds.getLabelsMaskArray() != null)
                                 ds.setLabelsMaskArray(ds.getLabelsMaskArray().migrate());
                             //Nd4j.getAffinityManager().touch(ds.getLabelsMaskArray());
-
+                            
                             ds.setFeatures(ds.getFeatures().migrate());
                             ds.setLabels(ds.getLabels().migrate());
                             */

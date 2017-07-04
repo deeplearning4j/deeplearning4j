@@ -153,7 +153,9 @@ public class SharedTrainingWrapper {
              * 2) If not, and there's > 1 devices in system (as in Multi-GPU system) - use numberOfDevices as number of workers
              * 3) otherwise, let's assume that's regular multi-core node, so we'll use 1..6 workers, depending on number of cores/4
              */
-            int numWorkers = trainingConfiguration.getNumberOfWorkersPerNode() > 0 ? trainingConfiguration.getNumberOfWorkersPerNode() : numDevices > 1 ? numDevices : Math.min(6, Math.max(1, numCores / 4));
+            int numWorkers = trainingConfiguration.getNumberOfWorkersPerNode() > 0
+                            ? trainingConfiguration.getNumberOfWorkersPerNode()
+                            : numDevices > 1 ? numDevices : Math.min(6, Math.max(1, numCores / 4));
 
             if (numDevices > 1 && numWorkers > numDevices)
                 log.warn("WARNING! Using more workers then number of available computational devices!");
@@ -175,18 +177,20 @@ public class SharedTrainingWrapper {
 
                 // this accumulator will provide sharing gradients over network, via WiredEncodedHandler. But we create it only once
                 if (accumulator == null) {
-                    accumulator = new CudaGradientsAccumulator.Builder(numWorkers)
-                            .messageHandler(handler)
-                            .encodingThreshold(trainingConfiguration.getThreshold())
-                            // TODO: make this configurable
-                            .memoryParameters(200 * 1024 * 1024L, numWorkers * 2)
-                            .build();
+                    accumulator = new CudaGradientsAccumulator.Builder(numWorkers).messageHandler(handler)
+                                    .encodingThreshold(trainingConfiguration.getThreshold())
+                                    // TODO: make this configurable
+                                    .memoryParameters(200 * 1024 * 1024L, numWorkers * 2).build();
 
                     // FIXME: implement support for Custom transport implementation
-                    Transport transport = voidConfiguration.getTransportType() == TransportType.ROUTED ? new RoutedTransport() : voidConfiguration.getTransportType() == TransportType.BROADCAST ? new MulticastTransport() : null;
+                    Transport transport =
+                                    voidConfiguration.getTransportType() == TransportType.ROUTED ? new RoutedTransport()
+                                                    : voidConfiguration.getTransportType() == TransportType.BROADCAST
+                                                                    ? new MulticastTransport() : null;
 
                     if (transport == null)
-                        throw new DL4JInvalidConfigException("No Transport implementation was defined for this training session!");
+                        throw new DL4JInvalidConfigException(
+                                        "No Transport implementation was defined for this training session!");
 
                     // let's check for spark local edge case
                     if (!VoidParameterServer.getInstance().isInit()) {
@@ -211,7 +215,8 @@ public class SharedTrainingWrapper {
                         localIP = "127.0.0.1";
 
                     // FIXME: do we need port here, in case of Multicast/Broadcast Transport?
-                    SilentIntroductoryMessage sim = new SilentIntroductoryMessage(localIP, voidConfiguration.getUnicastPort());
+                    SilentIntroductoryMessage sim =
+                                    new SilentIntroductoryMessage(localIP, voidConfiguration.getUnicastPort());
 
                     // we're sending this message to all shards, though it's just one Shard by design here - Spark Master
                     VoidParameterServer.getInstance().sendMessageToAllShards(sim);
@@ -222,20 +227,18 @@ public class SharedTrainingWrapper {
                 // if we're going to extend iteratation for debugging purposes - let's do that here
                 if (trainingConfiguration.getDebugLongerIterations() > 0) {
                     log.warn("Adding SleepyListener: {} ms", trainingConfiguration.getDebugLongerIterations());
-                    model.addListeners(SleepyTrainingListener.builder().timerIteration(trainingConfiguration.getDebugLongerIterations()).build());
+                    model.addListeners(SleepyTrainingListener.builder()
+                                    .timerIteration(trainingConfiguration.getDebugLongerIterations()).build());
                 }
 
                 // we're launching PW only if number of workers is more then 1
                 if (numWorkers > 1) {
                     log.info("Params at PW: {}", originalModel.params().meanNumber().doubleValue());
 
-                    wrapper = new ParallelWrapper.Builder<>(originalModel)
-                            .workers(numWorkers)
-                            .workspaceMode(trainingConfiguration.getWorkspaceMode())
-                            .trainingMode(ParallelWrapper.TrainingMode.CUSTOM)
-                            .gradientsAccumulator(accumulator)
-                            .prefetchBuffer(trainingConfiguration.getPrefetchSize())
-                            .build();
+                    wrapper = new ParallelWrapper.Builder<>(originalModel).workers(numWorkers)
+                                    .workspaceMode(trainingConfiguration.getWorkspaceMode())
+                                    .trainingMode(ParallelWrapper.TrainingMode.CUSTOM).gradientsAccumulator(accumulator)
+                                    .prefetchBuffer(trainingConfiguration.getPrefetchSize()).build();
                 } else {
                     log.info("Using standalone model instead...");
 
@@ -245,10 +248,12 @@ public class SharedTrainingWrapper {
 
                     // ok. attaching accumulator to model
                     if (model instanceof ComputationGraph) {
-                        ((ComputationGraph) originalModel).getConfiguration().setTrainingWorkspaceMode(trainingConfiguration.getWorkspaceMode());
+                        ((ComputationGraph) originalModel).getConfiguration()
+                                        .setTrainingWorkspaceMode(trainingConfiguration.getWorkspaceMode());
                         ((ComputationGraph) originalModel).setGradientsAccumulator(accumulator);
                     } else if (model instanceof MultiLayerNetwork) {
-                        ((MultiLayerNetwork) originalModel).getLayerWiseConfigurations().setTrainingWorkspaceMode(trainingConfiguration.getWorkspaceMode());
+                        ((MultiLayerNetwork) originalModel).getLayerWiseConfigurations()
+                                        .setTrainingWorkspaceMode(trainingConfiguration.getWorkspaceMode());
                         ((MultiLayerNetwork) originalModel).setGradientsAccumulator(accumulator);
                     }
                 }
@@ -310,14 +315,9 @@ public class SharedTrainingWrapper {
             }
 
             // FIXME: fill stats here
-            return SharedTrainingResult.builder()
-                    .aggregationsCount(1)
-                    .scoreSum(originalModel.score())
-                    .updaterStateArray(updaterState)
-                    .listenerMetaData(new ArrayList<>())
-                    .listenerStaticInfo(new ArrayList<>())
-                    .listenerUpdates(new ArrayList<>())
-                    .build();
+            return SharedTrainingResult.builder().aggregationsCount(1).scoreSum(originalModel.score())
+                            .updaterStateArray(updaterState).listenerMetaData(new ArrayList<>())
+                            .listenerStaticInfo(new ArrayList<>()).listenerUpdates(new ArrayList<>()).build();
         } else {
             // blocking call right here, all non-master threads will be blocked here
             try {

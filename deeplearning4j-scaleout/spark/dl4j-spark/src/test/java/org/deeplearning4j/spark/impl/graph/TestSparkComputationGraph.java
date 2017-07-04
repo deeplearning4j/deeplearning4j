@@ -44,18 +44,14 @@ import static org.junit.Assert.assertNotEquals;
 
 public class TestSparkComputationGraph extends BaseSparkTest {
 
-    public static ComputationGraph getBasicNetIris2Class(){
+    public static ComputationGraph getBasicNetIris2Class() {
 
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.XAVIER)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("l0", new DenseLayer.Builder().nIn(4).nOut(10).build(), "in")
-                .addLayer("l1", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation(Activation.SOFTMAX)
-                        .nIn(10).nOut(2).build(), "l0")
-                .setOutputs("l1")
-                .build();
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
+                        .graphBuilder().addInputs("in")
+                        .addLayer("l0", new DenseLayer.Builder().nIn(4).nOut(10).build(), "in")
+                        .addLayer("l1", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX).nIn(10).nOut(2).build(), "l0")
+                        .setOutputs("l1").build();
 
         ComputationGraph cg = new ComputationGraph(conf);
         cg.init();
@@ -259,13 +255,13 @@ public class TestSparkComputationGraph extends BaseSparkTest {
 
 
     @Test
-    public void testEvaluationAndRoc(){
-        DataSetIterator iter = new IrisDataSetIterator(5,150);
+    public void testEvaluationAndRoc() {
+        DataSetIterator iter = new IrisDataSetIterator(5, 150);
 
         //Make a 2-class version of iris:
         List<DataSet> l = new ArrayList<>();
         iter.reset();
-        while(iter.hasNext()){
+        while (iter.hasNext()) {
             DataSet ds = iter.next();
             INDArray newL = Nd4j.create(ds.getLabels().size(0), 2);
             newL.putColumn(0, ds.getLabels().getColumn(0));

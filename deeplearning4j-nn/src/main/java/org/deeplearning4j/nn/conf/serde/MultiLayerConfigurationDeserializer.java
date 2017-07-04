@@ -16,15 +16,16 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
     }
 
     @Override
-    public MultiLayerConfiguration deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-        MultiLayerConfiguration conf = (MultiLayerConfiguration)defaultDeserializer.deserialize(jp, ctxt);
+    public MultiLayerConfiguration deserialize(JsonParser jp, DeserializationContext ctxt)
+                    throws IOException, JsonProcessingException {
+        MultiLayerConfiguration conf = (MultiLayerConfiguration) defaultDeserializer.deserialize(jp, ctxt);
 
         //Updater configuration changed after 0.8.0 release
         //Previously: enumerations and fields. Now: classes
         //Here, we manually create the appropriate Updater instances, if the IUpdater field is empty
 
         Layer[] layers = new Layer[conf.getConfs().size()];
-        for( int i=0; i<layers.length; i++ ){
+        for (int i = 0; i < layers.length; i++) {
             layers[i] = conf.getConf(i).getLayer();
         }
 

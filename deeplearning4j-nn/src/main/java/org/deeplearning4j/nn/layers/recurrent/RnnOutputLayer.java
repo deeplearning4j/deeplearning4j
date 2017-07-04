@@ -57,8 +57,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
         if (input.rank() != 3)
-            throw new UnsupportedOperationException("Input is not rank 3. Got input with rank " + input.rank() + " "
-                    + layerId());
+            throw new UnsupportedOperationException(
+                            "Input is not rank 3. Got input with rank " + input.rank() + " " + layerId());
         INDArray inputTemp = input;
         this.input = TimeSeriesUtils.reshape3dTo2d(input);
         Pair<Gradient, INDArray> gradAndEpsilonNext = super.backpropGradient(epsilon);
@@ -130,8 +130,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     public INDArray output(boolean training) {
         //Assume that input is 3d
         if (input.rank() != 3)
-            throw new IllegalArgumentException("input must be rank 3. Got input with rank " + input.rank() + " "
-                    + layerId());
+            throw new IllegalArgumentException(
+                            "input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
         INDArray preOutput2d = preOutput2d(training);
 
         //if(conf.getLayer().getActivationFunction().equals("softmax")) {
@@ -158,8 +158,8 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
     @Override
     public INDArray activate(boolean training) {
         if (input.rank() != 3)
-            throw new UnsupportedOperationException("Input must be rank 3. Got input with rank " + input.rank()
-                    + " " + layerId());
+            throw new UnsupportedOperationException(
+                            "Input must be rank 3. Got input with rank " + input.rank() + " " + layerId());
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         if (conf.isUseDropConnect() && training) {
@@ -188,9 +188,9 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
             } else if (maskArray.rank() == 3) {
                 this.maskArray = TimeSeriesUtils.reshape3dTo2d(maskArray);
             } else {
-                throw new UnsupportedOperationException("Invalid mask array: must be rank 2 or 3 (got: rank "
-                                + maskArray.rank() + ", shape = " + Arrays.toString(maskArray.shape()) + ") "
-                        + layerId());
+                throw new UnsupportedOperationException(
+                                "Invalid mask array: must be rank 2 or 3 (got: rank " + maskArray.rank() + ", shape = "
+                                                + Arrays.toString(maskArray.shape()) + ") " + layerId());
             }
         } else {
             this.maskArray = null;

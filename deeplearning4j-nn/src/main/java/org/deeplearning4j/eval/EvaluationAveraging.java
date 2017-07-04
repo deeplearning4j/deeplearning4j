@@ -9,6 +9,5 @@ package org.deeplearning4j.eval;
  * @author Alex Black
  */
 public enum EvaluationAveraging {
-    Macro,
-    Micro
+    Macro, Micro
 }

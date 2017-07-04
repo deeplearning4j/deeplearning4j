@@ -15,25 +15,27 @@ import java.util.List;
 import java.util.Map;
 
 
-public class ComputationGraphConfigurationDeserializer extends BaseNetConfigDeserializer<ComputationGraphConfiguration> {
+public class ComputationGraphConfigurationDeserializer
+                extends BaseNetConfigDeserializer<ComputationGraphConfiguration> {
 
     public ComputationGraphConfigurationDeserializer(JsonDeserializer<?> defaultDeserializer) {
         super(defaultDeserializer, ComputationGraphConfiguration.class);
     }
 
     @Override
-    public ComputationGraphConfiguration deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-        ComputationGraphConfiguration conf = (ComputationGraphConfiguration)defaultDeserializer.deserialize(jp, ctxt);
+    public ComputationGraphConfiguration deserialize(JsonParser jp, DeserializationContext ctxt)
+                    throws IOException, JsonProcessingException {
+        ComputationGraphConfiguration conf = (ComputationGraphConfiguration) defaultDeserializer.deserialize(jp, ctxt);
 
         //Updater configuration changed after 0.8.0 release
         //Previously: enumerations and fields. Now: classes
         //Here, we manually create the appropriate Updater instances, if the IUpdater field is empty
 
         List<Layer> layerList = new ArrayList<>();
-        Map<String,GraphVertex> vertices = conf.getVertices();
-        for(Map.Entry<String,GraphVertex> entry : vertices.entrySet()){
-            if(entry.getValue() instanceof LayerVertex){
-                LayerVertex lv = (LayerVertex)entry.getValue();
+        Map<String, GraphVertex> vertices = conf.getVertices();
+        for (Map.Entry<String, GraphVertex> entry : vertices.entrySet()) {
+            if (entry.getValue() instanceof LayerVertex) {
+                LayerVertex lv = (LayerVertex) entry.getValue();
                 layerList.add(lv.getLayerConf().getLayer());
             }
         }

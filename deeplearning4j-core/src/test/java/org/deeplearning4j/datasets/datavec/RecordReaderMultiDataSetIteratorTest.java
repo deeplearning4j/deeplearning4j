@@ -596,9 +596,7 @@ public class RecordReaderMultiDataSetIteratorTest {
         assertEquals(d1.getLabels(), mds.getLabels(0));
 
         //Check label assignment:
-        INDArray expLabels = Nd4j.create(new double[][]{
-                {1, 0},
-                {0, 1}});
+        INDArray expLabels = Nd4j.create(new double[][] {{1, 0}, {0, 1}});
 
         assertEquals(expLabels, d1.getLabels());
         assertEquals(expLabels, d2.getLabels());
