@@ -38,6 +38,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 public class CosineSimilarity extends BaseAccumulation {
     private Number constantNormalizedByNorm2X, constantNormalizedByNorm2Y;
 
+
     public CosineSimilarity() {
         passThrough = true;
     }
@@ -74,7 +75,15 @@ public class CosineSimilarity extends BaseAccumulation {
         extraArgs[1] = 0.0f;
     }
 
+    public CosineSimilarity(INDArray x, INDArray y, INDArray z, boolean allDistances) {
+        this(x,y,z, x.lengthLong());
+        isComplex = allDistances;
+    }
 
+    public CosineSimilarity(INDArray x, INDArray y, boolean allDistances) {
+        this(x,y);
+        isComplex = allDistances;
+    }
 
     @Override
     public double update(double accum, double x) {

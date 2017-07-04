@@ -36,6 +36,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     protected Number finalResult;
     protected IComplexNumber finalResultComplex;
     protected boolean applyFinalTransform = true;
+    protected boolean isComplex = false;
 
     public BaseAccumulation() {}
 
@@ -250,5 +251,13 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     @Override
     public IComplexNumber getFinalResultComplex() {
         return finalResultComplex;
+    }
+
+    /**
+     * This method is only used for Distance functions
+     * @return
+     */
+    public boolean isComplexAccumulation() {
+        return isComplex;
     }
 }

@@ -248,6 +248,18 @@ public abstract class NativeOps extends Pointer {
                                            IntPointer xShapeInfo, DoublePointer extraParamsVals, DoublePointer y, IntPointer yShapeInfo,
                                            DoublePointer result, IntPointer resultShapeInfoBuffer, IntPointer dimension, int dimensionLength);
 
+    public abstract void execReduce3AllDouble(PointerPointer extraPointers, int opNum, DoublePointer x,
+                                           IntPointer xShapeInfo, DoublePointer extraParamsVals, DoublePointer y, IntPointer yShapeInfo,
+                                           DoublePointer result, IntPointer resultShapeInfoBuffer, IntPointer dimension, int dimensionLength, IntPointer xTadShape, IntPointer xOffsets, IntPointer yTadShape, IntPointer yOffsets);
+
+    public abstract void execReduce3AllFloat(PointerPointer extraPointers, int opNum, FloatPointer x,
+                                              IntPointer xShapeInfo, FloatPointer extraParamsVals, FloatPointer y, IntPointer yShapeInfo,
+                                             FloatPointer result, IntPointer resultShapeInfoBuffer, IntPointer dimension, int dimensionLength, IntPointer xTadShape, IntPointer xOffsets, IntPointer yTadShape, IntPointer yOffsets);
+
+    public abstract void execReduce3AllHalf(PointerPointer extraPointers, int opNum, @Cast("float16*") ShortPointer x,
+                                              IntPointer xShapeInfo, @Cast("float16*") ShortPointer extraParamsVals, @Cast("float16*") ShortPointer y, IntPointer yShapeInfo,
+                                            @Cast("float16*") ShortPointer result, IntPointer resultShapeInfoBuffer, IntPointer dimension, int dimensionLength, IntPointer xTadShape, IntPointer xOffsets, IntPointer yTadShape, IntPointer yOffsets);
+
     /**
      *
      * @param opNum
