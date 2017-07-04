@@ -48,6 +48,7 @@ import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.nd4j.linalg.heartbeat.reports.Environment;
@@ -574,9 +575,23 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @return                IEvaluation instance
      */
     public <T extends IEvaluation> T doEvaluation(JavaRDD<DataSet> data, T emptyEvaluation, int evalBatchSize) {
+        return doEvaluation(data, evalBatchSize, emptyEvaluation)[0];
+    }
+
+    /**
+     * Perform distributed evaluation of any type of {@link IEvaluation} - or multiple IEvaluation instances.
+     * Distributed equivalent of {@link MultiLayerNetwork#doEvaluation(DataSetIterator, IEvaluation[])}
+     *
+     * @param data             Data to evaluate on
+     * @param emptyEvaluations Empty evaluation instances. Starting point (serialized/duplicated, then merged)
+     * @param evalBatchSize    Evaluation batch size
+     * @param <T>              Type of evaluation instance to return
+     * @return IEvaluation instances
+     */
+    public <T extends IEvaluation> T[] doEvaluation(JavaRDD<DataSet> data, int evalBatchSize, T... emptyEvaluations) {
         IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(false, sc.broadcast(conf.toJson()),
-                        sc.broadcast(network.params()), evalBatchSize, emptyEvaluation);
-        JavaRDD<T> evaluations = data.mapPartitions(evalFn);
+                sc.broadcast(network.params()), evalBatchSize, emptyEvaluations);
+        JavaRDD<T[]> evaluations = data.mapPartitions(evalFn);
         return evaluations.reduce(new IEvaluationReduceFunction<T>());
     }
 }
