@@ -1,6 +1,8 @@
 package org.deeplearning4j.nearestneighbor.server;
 
+import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.vptree.VPTree;
+import org.deeplearning4j.clustering.vptree.VPTreeFillSearch;
 import org.deeplearning4j.nearestneighbor.client.NearestNeighborsClient;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborRequest;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborsResult;
@@ -13,6 +15,8 @@ import org.nd4j.serde.binary.BinarySerde;
 import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
@@ -67,5 +71,22 @@ public class NearestNeighborTest {
         server.stop();
     }
 
+
+
+    @Test
+    public void testFullSearch() throws Exception {
+        int numRows = 1000;
+        int numCols = 100;
+        int numNeighbors = 42;
+        INDArray points = Nd4j.rand(numRows, numCols);
+        VPTree tree = new VPTree(points);
+        INDArray query = Nd4j.rand(new int[]{1,numCols});
+        VPTreeFillSearch fillSearch = new VPTreeFillSearch(tree,numNeighbors,query);
+        fillSearch.search();
+        List<DataPoint> results = fillSearch.getResults();
+        List<Double> distances = fillSearch.getDistances();
+        assertEquals(numNeighbors,distances.size());
+        assertEquals(numNeighbors,results.size());
+    }
 
 }

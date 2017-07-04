@@ -6,6 +6,7 @@ import com.beust.jcommander.ParameterException;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.vptree.VPTree;
+import org.deeplearning4j.clustering.vptree.VPTreeFillSearch;
 import org.deeplearning4j.nearestneighbor.model.*;
 import org.jboss.netty.util.internal.ByteBufferUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -22,6 +23,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static play.mvc.Controller.request;
@@ -68,16 +70,8 @@ public class NearestNeighborsServer {
             System.exit(1);
         }
 
-        final INDArray points;
-        try (InputStream is = new FileInputStream(new File(ndarrayPath))) {
-            byte[] bytes = IOUtils.toByteArray(is);
-            ByteBuffer byteBuffer = ByteBuffer.allocateDirect(bytes.length);
-            byteBuffer.put(bytes);
-            byteBuffer.rewind();
-            points = BinarySerde.toArray(byteBuffer);
-        }
-
-        VPTree tree = new VPTree(points, similarityFunction, invert);
+        final INDArray points = BinarySerde.readFromDisk(new File(ndarrayPath));
+        VPTree tree = new VPTree(points,similarityFunction,invert);
 
 
         RoutingDsl routingDsl = new RoutingDsl();
@@ -85,12 +79,18 @@ public class NearestNeighborsServer {
         routingDsl.POST("/knn").routeTo(FunctionUtil.function0((() -> {
             try {
                 NearestNeighborRequest record = Json.fromJson(request().body().asJson(), NearestNeighborRequest.class);
-                NearestNeighbor nearestNeighbor =
-                                NearestNeighbor.builder().points(points).record(record).tree(tree).build();
-                if (record == null)
-                    return badRequest();
-                NearstNeighborsResults results =
-                                NearstNeighborsResults.builder().results(nearestNeighbor.search()).build();
+                NearestNeighbor nearestNeighbor = NearestNeighbor.builder()
+                        .points(points)
+                        .record(record)
+                        .tree(tree)
+                        .build();
+
+                if(record == null)
+                    return badRequest(Json.toJson(Collections.singletonMap("status","invalid json passed.")));
+
+                NearstNeighborsResults results = NearstNeighborsResults.builder().results(nearestNeighbor.search()).build();
+
+
                 return ok(Json.toJson(results));
 
             } catch (Exception e) {
@@ -102,16 +102,31 @@ public class NearestNeighborsServer {
         routingDsl.POST("/knnnew").routeTo(FunctionUtil.function0((() -> {
             try {
                 Base64NDArrayBody record = Json.fromJson(request().body().asJson(), Base64NDArrayBody.class);
+                if(record == null)
+                    return badRequest(Json.toJson(Collections.singletonMap("status","invalid json passed.")));
+
                 INDArray arr = Nd4jBase64.fromBase64(record.getNdarray());
-                List<DataPoint> results = new ArrayList<>();
-                List<Double> distances = new ArrayList<>();
-                tree.search(arr, record.getK(), results, distances);
-                if (record == null)
-                    return badRequest();
+                List<DataPoint> results;
+                List<Double> distances;
+
+                if(record.isForceFillK()) {
+                    VPTreeFillSearch vpTreeFillSearch = new VPTreeFillSearch(tree,record.getK(),arr);
+                    results = vpTreeFillSearch.getResults();
+                    distances = vpTreeFillSearch.getDistances();
+                }
+                else {
+                    results = new ArrayList<>();
+                    distances =new ArrayList<>();
+                    tree.search(arr,record.getK(),results,distances);
+
+
+                }
+
                 List<NearestNeighborsResult> nnResult = new ArrayList<>();
-                for (DataPoint dataPoint : results) {
+                for(DataPoint dataPoint : results) {
                     nnResult.add(new NearestNeighborsResult(dataPoint.getIndex()));
                 }
+
                 NearstNeighborsResults results2 = NearstNeighborsResults.builder().results(nnResult).build();
                 return ok(Json.toJson(results2));
 
