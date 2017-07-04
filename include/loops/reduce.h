@@ -41,7 +41,9 @@
         (13, simdOps::AMax) ,\
         (14, simdOps::AMin) ,\
         (15, simdOps::AMean) ,\
-        (16, simdOps::Entropy)
+        (16, simdOps::Entropy) ,\
+        (17, simdOps::LogEntropy) ,\
+        (18, simdOps::ShannonEntropy)
 
 
 //an op for the kernel
