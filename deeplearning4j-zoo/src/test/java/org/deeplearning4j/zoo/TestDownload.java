@@ -32,7 +32,7 @@ public class TestDownload {
     @Test
     public void testDownloadAllModels() throws Exception {
         // clean up
-        if(ZooModel.ROOT_CACHE_DIR.exists())
+        if (ZooModel.ROOT_CACHE_DIR.exists())
             ZooModel.ROOT_CACHE_DIR.delete();
 
         // iterate through each available model
@@ -42,8 +42,8 @@ public class TestDownload {
             log.info("Testing zoo model " + entry.getKey());
             ZooModel model = entry.getValue();
 
-            for(PretrainedType pretrainedType : PretrainedType.values()) {
-                if(model.pretrainedAvailable(pretrainedType)) {
+            for (PretrainedType pretrainedType : PretrainedType.values()) {
+                if (model.pretrainedAvailable(pretrainedType)) {
                     model.initPretrained(pretrainedType);
                 }
             }

@@ -74,11 +74,11 @@ public class MultiBooleanTest {
     public void testBoolean5() throws Exception {
         MultiBoolean bool = new MultiBoolean(5, true, true);
 
-        for(int i = 0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {
             bool.set(false, i);
         }
 
-        for(int i = 0; i < 5; i++) {
+        for (int i = 0; i < 5; i++) {
             bool.set(true, i);
         }
 

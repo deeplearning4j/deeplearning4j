@@ -77,7 +77,7 @@ public class ModelSerializer {
      * @throws IOException
      */
     public static void writeModel(@NonNull Model model, @NonNull OutputStream stream, boolean saveUpdater)
-            throws IOException {
+                    throws IOException {
         ZipOutputStream zipfile = new ZipOutputStream(new CloseShieldOutputStream(stream));
 
         // Save configuration as JSON
@@ -146,7 +146,7 @@ public class ModelSerializer {
      * @throws IOException
      */
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull File file, boolean loadUpdater)
-            throws IOException {
+                    throws IOException {
         ZipFile zipFile = new ZipFile(file);
 
         boolean gotConfig = false;
@@ -248,7 +248,7 @@ public class ModelSerializer {
             return network;
         } else
             throw new IllegalStateException("Model wasnt found within file: gotConfig: [" + gotConfig
-                    + "], gotCoefficients: [" + gotCoefficients + "], gotUpdater: [" + gotUpdaterState + "]");
+                            + "], gotCoefficients: [" + gotCoefficients + "], gotUpdater: [" + gotUpdaterState + "]");
     }
 
 
@@ -260,11 +260,11 @@ public class ModelSerializer {
      * @throws IOException
      */
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull InputStream is, boolean loadUpdater)
-            throws IOException {
+                    throws IOException {
         File tmpFile = File.createTempFile("restore", "multiLayer");
         tmpFile.deleteOnExit();
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
-        IOUtils.copy(is,bos);
+        IOUtils.copy(is, bos);
         bos.flush();
         IOUtils.closeQuietly(bos);
         return restoreMultiLayerNetwork(tmpFile, loadUpdater);
@@ -294,7 +294,7 @@ public class ModelSerializer {
      * @throws IOException
      */
     public static MultiLayerNetwork restoreMultiLayerNetwork(@NonNull String path, boolean loadUpdater)
-            throws IOException {
+                    throws IOException {
         return restoreMultiLayerNetwork(new File(path), loadUpdater);
     }
 
@@ -317,7 +317,7 @@ public class ModelSerializer {
      * @throws IOException
      */
     public static ComputationGraph restoreComputationGraph(@NonNull String path, boolean loadUpdater)
-            throws IOException {
+                    throws IOException {
         return restoreComputationGraph(new File(path), loadUpdater);
     }
 
@@ -330,11 +330,11 @@ public class ModelSerializer {
      * @throws IOException
      */
     public static ComputationGraph restoreComputationGraph(@NonNull InputStream is, boolean loadUpdater)
-            throws IOException {
+                    throws IOException {
         File tmpFile = File.createTempFile("restore", "compGraph");
         tmpFile.deleteOnExit();
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(tmpFile));
-        IOUtils.copy(is,bos);
+        IOUtils.copy(is, bos);
         bos.flush();
         IOUtils.closeQuietly(bos);
         return restoreComputationGraph(tmpFile, loadUpdater);
@@ -472,7 +472,7 @@ public class ModelSerializer {
             return cg;
         } else
             throw new IllegalStateException("Model wasnt found within file: gotConfig: [" + gotConfig
-                    + "], gotCoefficients: [" + gotCoefficients + "], gotUpdater: [" + gotUpdaterState + "]");
+                            + "], gotCoefficients: [" + gotCoefficients + "], gotUpdater: [" + gotUpdaterState + "]");
     }
 
     /**
@@ -491,7 +491,7 @@ public class ModelSerializer {
                     if (network.getLayers() != null && network.getLayers().length > 0) {
                         for (Layer layer : network.getLayers()) {
                             if (layer instanceof RBM
-                                    || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
+                                            || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
                                 task.setArchitectureType(Task.ArchitectureType.RBM);
                                 break;
                             }
@@ -499,7 +499,7 @@ public class ModelSerializer {
                                 task.setArchitectureType(Task.ArchitectureType.CONVOLUTION);
                                 break;
                             } else if (layer.type().equals(Layer.Type.RECURRENT)
-                                    || layer.type().equals(Layer.Type.RECURSIVE)) {
+                                            || layer.type().equals(Layer.Type.RECURSIVE)) {
                                 task.setArchitectureType(Task.ArchitectureType.RECURRENT);
                                 break;
                             }
@@ -516,7 +516,7 @@ public class ModelSerializer {
                     if (network.getLayers() != null && network.getLayers().length > 0) {
                         for (Layer layer : network.getLayers()) {
                             if (layer instanceof RBM
-                                    || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
+                                            || layer instanceof org.deeplearning4j.nn.layers.feedforward.rbm.RBM) {
                                 task.setArchitectureType(Task.ArchitectureType.RBM);
                                 break;
                             }
@@ -524,7 +524,7 @@ public class ModelSerializer {
                                 task.setArchitectureType(Task.ArchitectureType.CONVOLUTION);
                                 break;
                             } else if (layer.type().equals(Layer.Type.RECURRENT)
-                                    || layer.type().equals(Layer.Type.RECURSIVE)) {
+                                            || layer.type().equals(Layer.Type.RECURSIVE)) {
                                 task.setArchitectureType(Task.ArchitectureType.RECURRENT);
                                 break;
                             }
@@ -556,10 +556,10 @@ public class ModelSerializer {
             // copy existing model to temporary file
             File tempFile = File.createTempFile("tempcopy", "temp");
             tempFile.deleteOnExit();
-            Files.copy(f,tempFile);
+            Files.copy(f, tempFile);
             try (ZipFile zipFile = new ZipFile(tempFile);
-                 ZipOutputStream writeFile =
-                         new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(f)))) {
+                            ZipOutputStream writeFile =
+                                            new ZipOutputStream(new BufferedOutputStream(new FileOutputStream(f)))) {
                 // roll over existing files within model, and copy them one by one
                 Enumeration<? extends ZipEntry> entries = zipFile.entries();
                 while (entries.hasMoreElements()) {
@@ -628,7 +628,7 @@ public class ModelSerializer {
         File tmpFile = File.createTempFile("restore", "normalizer");
         tmpFile.deleteOnExit();
         BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(tmpFile));
-        IOUtils.copy(is,bufferedOutputStream);
+        IOUtils.copy(is, bufferedOutputStream);
         bufferedOutputStream.flush();
         IOUtils.closeQuietly(bufferedOutputStream);
         return restoreNormalizerFromFile(tmpFile);

@@ -18,21 +18,22 @@ import java.io.IOException;
  */
 public class ROCSerializer extends JsonSerializer<ROC> {
     @Override
-    public void serialize(ROC roc, JsonGenerator jsonGenerator, SerializerProvider serializerProvider) throws IOException {
-        if(roc.isExact()){
+    public void serialize(ROC roc, JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
+                    throws IOException {
+        if (roc.isExact()) {
             //For exact ROC implementation: force AUC and AUPRC calculation, so result can be stored in JSON, such
             //that we have them once deserialized.
             //Due to potentially huge size, exact mode doesn't store the original predictions in JSON
             roc.calculateAUC();
             roc.calculateAUCPR();
         }
-        jsonGenerator.writeNumberField("thresholdSteps",roc.getThresholdSteps());
-        jsonGenerator.writeNumberField("countActualPositive",roc.getCountActualPositive());
-        jsonGenerator.writeNumberField("countActualNegative",roc.getCountActualNegative());
+        jsonGenerator.writeNumberField("thresholdSteps", roc.getThresholdSteps());
+        jsonGenerator.writeNumberField("countActualPositive", roc.getCountActualPositive());
+        jsonGenerator.writeNumberField("countActualNegative", roc.getCountActualNegative());
         jsonGenerator.writeObjectField("counts", roc.getCounts());
         jsonGenerator.writeNumberField("auc", roc.calculateAUC());
         jsonGenerator.writeNumberField("auprc", roc.calculateAUCPR());
-        if(roc.isExact()){
+        if (roc.isExact()) {
             //Store ROC and PR curves only for exact mode... they are redundant + can be calculated again for thresholded mode
             jsonGenerator.writeObjectField("rocCurve", roc.getRocCurve());
             jsonGenerator.writeObjectField("prCurve", roc.getPrecisionRecallCurve());
@@ -43,7 +44,8 @@ public class ROCSerializer extends JsonSerializer<ROC> {
     }
 
     @Override
-    public void serializeWithType(ROC value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer) throws IOException {
+    public void serializeWithType(ROC value, JsonGenerator gen, SerializerProvider serializers, TypeSerializer typeSer)
+                    throws IOException {
         typeSer.writeTypePrefixForObject(value, gen);
         serialize(value, gen, serializers);
         typeSer.writeTypeSuffixForObject(value, gen);

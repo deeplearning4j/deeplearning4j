@@ -26,7 +26,8 @@ public class JointParallelDataSetIterator extends BaseParallelDataSetIterator {
     protected int bufferSizePerDevice;
 
 
-    public JointParallelDataSetIterator(@NonNull List<DataSetIterator> iterators, boolean singleDeviceMode, int bufferSize, @NonNull InequalityHandling inequalityHandling) {
+    public JointParallelDataSetIterator(@NonNull List<DataSetIterator> iterators, boolean singleDeviceMode,
+                    int bufferSize, @NonNull InequalityHandling inequalityHandling) {
         super(iterators.size());
         this.enforceSingleDevice = singleDeviceMode;
         this.bufferSizePerDevice = bufferSize;
@@ -48,7 +49,7 @@ public class JointParallelDataSetIterator extends BaseParallelDataSetIterator {
             log.error("WARNING: number of splits doesn't match number of devices!");
 
         int cnt = 0;
-        for (DataSetIterator iterator: originals) {
+        for (DataSetIterator iterator : originals) {
             int cDev = cnt % numDevices;
             asyncIterators.add(new AsyncDataSetIterator(iterator, bufferSizePerDevice, true, cDev));
             cnt++;
@@ -91,7 +92,7 @@ public class JointParallelDataSetIterator extends BaseParallelDataSetIterator {
         public Builder(@NonNull List<DataSetIterator> iterators, @NonNull InequalityHandling inequalityHandling) {
             this.inequalityHandling = inequalityHandling;
 
-            for (DataSetIterator iterator: iterators)
+            for (DataSetIterator iterator : iterators)
                 addSourceIterator(iterator);
         }
 
@@ -110,7 +111,7 @@ public class JointParallelDataSetIterator extends BaseParallelDataSetIterator {
         }
 
         protected boolean hasIterator(DataSetIterator iterator) {
-            for (DataSetIterator iter: iterators){
+            for (DataSetIterator iter : iterators) {
                 if (iter == iterator)
                     return true;
             }
@@ -131,7 +132,8 @@ public class JointParallelDataSetIterator extends BaseParallelDataSetIterator {
 
 
         public JointParallelDataSetIterator build() {
-            JointParallelDataSetIterator jpdsi = new JointParallelDataSetIterator(iterators, enforceSingleDevice, bufferSize, inequalityHandling);
+            JointParallelDataSetIterator jpdsi = new JointParallelDataSetIterator(iterators, enforceSingleDevice,
+                            bufferSize, inequalityHandling);
 
             return jpdsi;
         }

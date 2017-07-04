@@ -257,12 +257,12 @@ public class KerasLayer {
                 // check if user registered a custom config
                 Class<? extends KerasLayer> customConfig = customLayers.get(layerClassName);
 
-                if(customConfig == null)
+                if (customConfig == null)
                     throw new UnsupportedKerasConfigurationException("Unsupported keras layer type " + layerClassName);
                 try {
                     Constructor constructor = customConfig.getConstructor(Map.class);
                     layer = (KerasLayer) constructor.newInstance(layerConfig);
-                } catch(Exception e) {
+                } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
                 break;

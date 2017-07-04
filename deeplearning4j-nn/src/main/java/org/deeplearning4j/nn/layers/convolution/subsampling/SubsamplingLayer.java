@@ -229,7 +229,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 return new Pair<>(retGradient, epsilon);
             default:
                 throw new IllegalStateException("Unknown or unsupported pooling type: " + layerConf().getPoolingType()
-                        + " "  + layerId());
+                                + " " + layerId());
         }
 
         //Finally: we want the output strides for the epsilons to match the strides in the activations from the layer below
@@ -321,7 +321,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                 return input;
             default:
                 throw new IllegalStateException("Unknown/not supported pooling type: " + layerConf().getPoolingType()
-                        + " " + layerId());
+                                + " " + layerId());
         }
         return reduced.reshape('c', miniBatch, inDepth, outH, outW);
     }

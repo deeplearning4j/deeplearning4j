@@ -22,291 +22,291 @@ import org.nlpcn.commons.lang.util.MapCount;
  */
 public class SummaryComputer {
 
-	private static final Set<String> FILTER_SET = new HashSet<String>();
+    private static final Set<String> FILTER_SET = new HashSet<String>();
 
-	static {
-		FILTER_SET.add("w");
-		FILTER_SET.add("null");
-	}
+    static {
+        FILTER_SET.add("w");
+        FILTER_SET.add("null");
+    }
 
-	/**
-	 * summaryLength
-	 */
-	private int len = 300;
+    /**
+     * summaryLength
+     */
+    private int len = 300;
 
-	private boolean isSplitSummary = true;
+    private boolean isSplitSummary = true;
 
-	String title, content;
+    String title, content;
 
-	public SummaryComputer(String title, String content) {
-		this.title = title;
-		this.content = content;
-	}
+    public SummaryComputer(String title, String content) {
+        this.title = title;
+        this.content = content;
+    }
 
-	public SummaryComputer(int len, String title, String content) {
-		this.len = len;
-		this.title = title;
-		this.content = content;
-	}
+    public SummaryComputer(int len, String title, String content) {
+        this.len = len;
+        this.title = title;
+        this.content = content;
+    }
 
-	public SummaryComputer(int len, boolean isSplitSummary, String title, String content) {
-		this.len = len;
-		this.title = title;
-		this.content = content;
-		this.isSplitSummary = isSplitSummary;
-	}
+    public SummaryComputer(int len, boolean isSplitSummary, String title, String content) {
+        this.len = len;
+        this.title = title;
+        this.content = content;
+        this.isSplitSummary = isSplitSummary;
+    }
 
-	/**
-	 * 计算摘要，利用关键词抽取计算
-	 * 
-	 * @return
-	 */
-	public Summary toSummary() {
-		return toSummary(new ArrayList<Keyword>());
-	}
+    /**
+     * 计算摘要，利用关键词抽取计算
+     * 
+     * @return
+     */
+    public Summary toSummary() {
+        return toSummary(new ArrayList<Keyword>());
+    }
 
-	/**
-	 * 根据用户查询串计算摘要
-	 * 
-	 * @return
-	 */
-	public Summary toSummary(String query) {
+    /**
+     * 根据用户查询串计算摘要
+     * 
+     * @return
+     */
+    public Summary toSummary(String query) {
 
-		List<Term> parse = NlpAnalysis.parse(query).getTerms();
+        List<Term> parse = NlpAnalysis.parse(query).getTerms();
 
-		List<Keyword> keywords = new ArrayList<Keyword>();
-		for (Term term : parse) {
-			if (FILTER_SET.contains(term.natrue().natureStr)) {
-				continue;
-			}
-			keywords.add(new Keyword(term.getName(), term.termNatures().allFreq, 1));
-		}
+        List<Keyword> keywords = new ArrayList<Keyword>();
+        for (Term term : parse) {
+            if (FILTER_SET.contains(term.natrue().natureStr)) {
+                continue;
+            }
+            keywords.add(new Keyword(term.getName(), term.termNatures().allFreq, 1));
+        }
 
-		return toSummary(keywords);
-	}
+        return toSummary(keywords);
+    }
 
-	/**
-	 * 计算摘要，传入用户自己算好的关键词
-	 * 
-	 * @return
-	 */
-	public Summary toSummary(List<Keyword> keywords) {
+    /**
+     * 计算摘要，传入用户自己算好的关键词
+     * 
+     * @return
+     */
+    public Summary toSummary(List<Keyword> keywords) {
 
-		if (keywords == null) {
-			keywords = new ArrayList<Keyword>();
-		}
+        if (keywords == null) {
+            keywords = new ArrayList<Keyword>();
+        }
 
-		if (keywords.size() == 0) {
+        if (keywords.size() == 0) {
 
-			KeyWordComputer kc = new KeyWordComputer(10);
-			keywords = kc.computeArticleTfidf(title, content);
-		}
-		return explan(keywords, content);
-	}
+            KeyWordComputer kc = new KeyWordComputer(10);
+            keywords = kc.computeArticleTfidf(title, content);
+        }
+        return explan(keywords, content);
+    }
 
-	/**
-	 * 计算摘要
-	 * 
-	 * @param keyword
-	 * @param content
-	 * @return
-	 */
-	private Summary explan(List<Keyword> keywords, String content) {
+    /**
+     * 计算摘要
+     * 
+     * @param keyword
+     * @param content
+     * @return
+     */
+    private Summary explan(List<Keyword> keywords, String content) {
 
-		SmartForest<Double> sf = new SmartForest<Double>();
+        SmartForest<Double> sf = new SmartForest<Double>();
 
-		for (Keyword keyword : keywords) {
-			sf.add(keyword.getName(), keyword.getScore());
-		}
+        for (Keyword keyword : keywords) {
+            sf.add(keyword.getName(), keyword.getScore());
+        }
 
-		// 先断句
-		List<Sentence> sentences = toSentenceList(content.toCharArray());
-		
-		for (Sentence sentence : sentences) {
-			computeScore(sentence, sf);
-		}
+        // 先断句
+        List<Sentence> sentences = toSentenceList(content.toCharArray());
 
-		double maxScore = 0;
-		int maxIndex = 0;
+        for (Sentence sentence : sentences) {
+            computeScore(sentence, sf);
+        }
 
-		MapCount<String> mc = new MapCount<>();
+        double maxScore = 0;
+        int maxIndex = 0;
 
-		for (int i = 0; i < sentences.size(); i++) {
-			double tempScore = sentences.get(i).score;
-			int tempLength = sentences.get(i).value.length();
-			mc.addAll(sentences.get(i).mc.get());
+        MapCount<String> mc = new MapCount<>();
 
-			if (tempLength >= len) {
-				tempScore = tempScore * mc.get().size();
-				if (maxScore < tempScore) {
-					maxScore = tempScore;
-					maxIndex = i;
-					continue;
-				}
-				mc.get().clear();
-			}
-			for (int j = i + 1; j < sentences.size(); j++) {
-				tempScore += sentences.get(j).score;
-				tempLength += sentences.get(j).value.length();
-				mc.addAll(sentences.get(j).mc.get());
+        for (int i = 0; i < sentences.size(); i++) {
+            double tempScore = sentences.get(i).score;
+            int tempLength = sentences.get(i).value.length();
+            mc.addAll(sentences.get(i).mc.get());
 
-				if (tempLength >= len) {
-					tempScore = tempScore * mc.get().size();
-					if (maxScore < tempScore) {
-						maxScore = tempScore;
-						maxIndex = i;
-					}
-					mc.get().clear();
-					break;
-				}
-			}
+            if (tempLength >= len) {
+                tempScore = tempScore * mc.get().size();
+                if (maxScore < tempScore) {
+                    maxScore = tempScore;
+                    maxIndex = i;
+                    continue;
+                }
+                mc.get().clear();
+            }
+            for (int j = i + 1; j < sentences.size(); j++) {
+                tempScore += sentences.get(j).score;
+                tempLength += sentences.get(j).value.length();
+                mc.addAll(sentences.get(j).mc.get());
 
-			if (tempLength < len) {
-				tempScore = tempScore * mc.get().size();
-				if (maxScore < tempScore) {
-					maxScore = tempScore;
-					maxIndex = i;
-					break;
-				}
-				mc.get().clear();
-			}
-		}
+                if (tempLength >= len) {
+                    tempScore = tempScore * mc.get().size();
+                    if (maxScore < tempScore) {
+                        maxScore = tempScore;
+                        maxIndex = i;
+                    }
+                    mc.get().clear();
+                    break;
+                }
+            }
 
-		StringBuilder sb = new StringBuilder();
-		for (int i = maxIndex; i < sentences.size(); i++) {
-			sb.append(sentences.get(i).value);
-			if (sb.length() > len) {
-				break;
-			}
-		}
+            if (tempLength < len) {
+                tempScore = tempScore * mc.get().size();
+                if (maxScore < tempScore) {
+                    maxScore = tempScore;
+                    maxIndex = i;
+                    break;
+                }
+                mc.get().clear();
+            }
+        }
 
-		String summaryStr = sb.toString();
+        StringBuilder sb = new StringBuilder();
+        for (int i = maxIndex; i < sentences.size(); i++) {
+            sb.append(sentences.get(i).value);
+            if (sb.length() > len) {
+                break;
+            }
+        }
 
-		/**
-		 * 是否强制文本长度。对于abc这种字符算半个长度
-		 */
+        String summaryStr = sb.toString();
 
-		if (isSplitSummary && sb.length() > len) {
-			double value = len;
+        /**
+         * 是否强制文本长度。对于abc这种字符算半个长度
+         */
 
-			StringBuilder newSummary = new StringBuilder();
-			char c = 0;
-			for (int i = 0; i < sb.length(); i++) {
-				c = sb.charAt(i);
-				if (c < 256) {
-					value -= 0.5;
-				} else {
-					value -= 1;
-				}
+        if (isSplitSummary && sb.length() > len) {
+            double value = len;
 
-				if (value < 0) {
-					break;
-				}
+            StringBuilder newSummary = new StringBuilder();
+            char c = 0;
+            for (int i = 0; i < sb.length(); i++) {
+                c = sb.charAt(i);
+                if (c < 256) {
+                    value -= 0.5;
+                } else {
+                    value -= 1;
+                }
 
-				newSummary.append(c);
-			}
+                if (value < 0) {
+                    break;
+                }
 
-			summaryStr = newSummary.toString();
-		}
+                newSummary.append(c);
+            }
 
-		return new Summary(keywords, summaryStr);
-	}
+            summaryStr = newSummary.toString();
+        }
 
-	/**
-	 * 计算一个句子的分数
-	 * 
-	 * @param sentence
-	 * @param sf
-	 */
-	private void computeScore(Sentence sentence, SmartForest<Double> forest) {
-		SmartGetWord<Double> sgw = new SmartGetWord<Double>(forest, sentence.value);
-		String name = null;
-		while ((name = sgw.getFrontWords()) != null) {
-			sentence.updateScore(name, sgw.getParam());
-		}
-		if (sentence.score == 0) {
-			sentence.score = sentence.value.length() * -0.005;
-		} else {
-			sentence.score /= Math.log(sentence.value.length() + 3);
-		}
-	}
+        return new Summary(keywords, summaryStr);
+    }
 
-	public List<Sentence> toSentenceList(char[] chars) {
+    /**
+     * 计算一个句子的分数
+     * 
+     * @param sentence
+     * @param sf
+     */
+    private void computeScore(Sentence sentence, SmartForest<Double> forest) {
+        SmartGetWord<Double> sgw = new SmartGetWord<Double>(forest, sentence.value);
+        String name = null;
+        while ((name = sgw.getFrontWords()) != null) {
+            sentence.updateScore(name, sgw.getParam());
+        }
+        if (sentence.score == 0) {
+            sentence.score = sentence.value.length() * -0.005;
+        } else {
+            sentence.score /= Math.log(sentence.value.length() + 3);
+        }
+    }
 
-		StringBuilder sb = new StringBuilder();
+    public List<Sentence> toSentenceList(char[] chars) {
 
-		List<Sentence> sentences = new ArrayList<Sentence>();
+        StringBuilder sb = new StringBuilder();
 
-		for (int i = 0; i < chars.length; i++) {
-			if (sb.length() == 0 && (Character.isWhitespace(chars[i]) || chars[i] == ' ')) {
-				continue;
-			}
+        List<Sentence> sentences = new ArrayList<Sentence>();
 
-			sb.append(chars[i]);
-			switch (chars[i]) {
-			case '.':
-				if (i < chars.length - 1 && chars[i + 1] > 128) {
-					insertIntoList(sb, sentences);
-					sb = new StringBuilder();
-				}
-				break;
-			//case ' ':
-			case '	':
-			case '　':
-			case ' ':
-			case ',':
-			case '。':
-			case ';':
-			case '；':
-			case '!':
-			case '！':
-			case '，':
-			case '?':
-			case '？':
-			case '\n':
-			case '\r':
-				insertIntoList(sb, sentences);
-				sb = new StringBuilder();
-			}
-		}
+        for (int i = 0; i < chars.length; i++) {
+            if (sb.length() == 0 && (Character.isWhitespace(chars[i]) || chars[i] == ' ')) {
+                continue;
+            }
 
-		if (sb.length() > 0) {
-			insertIntoList(sb, sentences);
-		}
+            sb.append(chars[i]);
+            switch (chars[i]) {
+                case '.':
+                    if (i < chars.length - 1 && chars[i + 1] > 128) {
+                        insertIntoList(sb, sentences);
+                        sb = new StringBuilder();
+                    }
+                    break;
+                //case ' ':
+                case '	':
+                case '　':
+                case ' ':
+                case ',':
+                case '。':
+                case ';':
+                case '；':
+                case '!':
+                case '！':
+                case '，':
+                case '?':
+                case '？':
+                case '\n':
+                case '\r':
+                    insertIntoList(sb, sentences);
+                    sb = new StringBuilder();
+            }
+        }
 
-		return sentences;
-	}
+        if (sb.length() > 0) {
+            insertIntoList(sb, sentences);
+        }
 
-	private void insertIntoList(StringBuilder sb, List<Sentence> sentences) {
-		String content = sb.toString().trim();
-		if (content.length() > 0) {
-			sentences.add(new Sentence(content));
-		}
-	}
+        return sentences;
+    }
 
-	/*
-	 * 句子对象
-	 */
-	public class Sentence {
-		String value;
-		private double score;
+    private void insertIntoList(StringBuilder sb, List<Sentence> sentences) {
+        String content = sb.toString().trim();
+        if (content.length() > 0) {
+            sentences.add(new Sentence(content));
+        }
+    }
 
-		private MapCount<String> mc = new MapCount<>();
+    /*
+     * 句子对象
+     */
+    public class Sentence {
+        String value;
+        private double score;
 
-		public Sentence(String value) {
-			this.value = value.trim();
-		}
+        private MapCount<String> mc = new MapCount<>();
 
-		public void updateScore(String name, double score) {
-			mc.add(name);
-			Double size = mc.get().get(name);
-			this.score += score / size;
-		}
+        public Sentence(String value) {
+            this.value = value.trim();
+        }
 
-		@Override
-		public String toString() {
-			return value;
-		}
-	}
+        public void updateScore(String name, double score) {
+            mc.add(name);
+            Double size = mc.get().get(name);
+            this.score += score / size;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+    }
 
 }

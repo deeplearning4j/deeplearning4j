@@ -39,39 +39,35 @@ public class TimeIterationListener implements IterationListener {
     private int iterationCount;
     private AtomicLong iterationCounter = new AtomicLong(0);
 
-    private static final Logger log = LoggerFactory.getLogger( TimeIterationListener.class );
-    
+    private static final Logger log = LoggerFactory.getLogger(TimeIterationListener.class);
+
     /**
      * Constructor
      * @param iterationCount The global number of iteration of the process 
      */
-    public TimeIterationListener( int iterationCount )
-    {
+    public TimeIterationListener(int iterationCount) {
         this.iterationCount = iterationCount;
         start = System.currentTimeMillis();
     }
-    
+
     @Override
-    public boolean invoked()
-    {
+    public boolean invoked() {
         return invoked;
     }
 
     @Override
-    public void invoke()
-    {
+    public void invoke() {
         invoked = true;
     }
 
     @Override
-    public void iterationDone( Model model, int iteration)
-    {
+    public void iterationDone(Model model, int iteration) {
         long currentIteration = iterationCounter.incrementAndGet();
         long elapsed = System.currentTimeMillis() - start;
         long remaining = (iterationCount - currentIteration) * elapsed / currentIteration;
-        long minutes = remaining / ( 1000 * 60 );
-        Date date = new Date( start + elapsed + remaining );
-        log.info( "Remaining time : " + minutes + "mn - End expected : " + date.toString() );
+        long minutes = remaining / (1000 * 60);
+        Date date = new Date(start + elapsed + remaining);
+        log.info("Remaining time : " + minutes + "mn - End expected : " + date.toString());
     }
 
 }

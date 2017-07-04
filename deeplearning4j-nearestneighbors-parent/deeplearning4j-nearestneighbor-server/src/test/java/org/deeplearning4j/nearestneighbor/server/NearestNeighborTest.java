@@ -24,19 +24,14 @@ public class NearestNeighborTest {
 
     @Test
     public void testNearestNeighbor() {
-        INDArray arr = Nd4j.create(new double[][]{
-                {1,2,3,4},
-                {1,2,3,5},
-                {3,4,5,6}
-        });
+        INDArray arr = Nd4j.create(new double[][] {{1, 2, 3, 4}, {1, 2, 3, 5}, {3, 4, 5, 6}});
 
-        VPTree vpTree = new VPTree(arr,false);
+        VPTree vpTree = new VPTree(arr, false);
         NearestNeighborRequest request = new NearestNeighborRequest();
         request.setK(2);
         request.setInputIndex(0);
-        NearestNeighbor nearestNeighbor = NearestNeighbor.builder().tree(vpTree)
-                .points(arr).record(request).build();
-        assertEquals(1,nearestNeighbor.search().get(0).getIndex());
+        NearestNeighbor nearestNeighbor = NearestNeighbor.builder().tree(vpTree).points(arr).record(request).build();
+        assertEquals(1, nearestNeighbor.search().get(0).getIndex());
     }
 
 

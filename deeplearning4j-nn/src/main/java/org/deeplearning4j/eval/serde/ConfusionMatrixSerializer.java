@@ -19,7 +19,8 @@ import java.util.Map;
  */
 public class ConfusionMatrixSerializer extends JsonSerializer<ConfusionMatrix<Integer>> {
     @Override
-    public void serialize(ConfusionMatrix<Integer> cm, JsonGenerator gen, SerializerProvider provider) throws IOException, JsonProcessingException {
+    public void serialize(ConfusionMatrix<Integer> cm, JsonGenerator gen, SerializerProvider provider)
+                    throws IOException, JsonProcessingException {
         List<Integer> classes = cm.getClasses();
         Map<Integer, Multiset<Integer>> matrix = cm.getMatrix();
 
@@ -30,8 +31,8 @@ public class ConfusionMatrixSerializer extends JsonSerializer<ConfusionMatrix<In
             int used = 0;
             for (Integer j : ms.elementSet()) {
                 int count = ms.count(j);
-                arr[0][used] = j;           //j = Predicted class
-                arr[1][used] = count;       //prediction count
+                arr[0][used] = j; //j = Predicted class
+                arr[1][used] = count; //prediction count
                 used++;
             }
             m2.put(i, arr);

@@ -1037,15 +1037,11 @@ public class MultiLayerTest {
 
 
     @Test
-    public void testComputeZ(){
+    public void testComputeZ() {
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.XAVIER)
-                .activation(Activation.TANH)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
+                        .activation(Activation.TANH).list().layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                        .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -1053,7 +1049,7 @@ public class MultiLayerTest {
         INDArray in = Nd4j.rand(10, 10);
         List<INDArray> preOuts = net.computeZ(in, false);
 
-        assertEquals(3, preOuts.size());    //Includes original input
+        assertEquals(3, preOuts.size()); //Includes original input
         assertEquals(in, preOuts.get(0));
 
         INDArray preOut0 = net.getLayer(0).preOutput(in);
@@ -1066,17 +1062,15 @@ public class MultiLayerTest {
     }
 
     @Test(expected = DL4JException.class)
-    public void testErrorNoOutputLayer(){
+    public void testErrorNoOutputLayer() {
 
-        MultiLayerConfiguration c = new NeuralNetConfiguration.Builder()
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .build();
+        MultiLayerConfiguration c = new NeuralNetConfiguration.Builder().list()
+                        .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(c);
         net.init();
 
-        INDArray f = Nd4j.create(1,10);
+        INDArray f = Nd4j.create(1, 10);
         INDArray l = Nd4j.create(1, 10);
 
         net.setInput(f);

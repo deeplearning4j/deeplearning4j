@@ -97,14 +97,15 @@ public class MultiDataSetWrapperIterator implements DataSetIterator {
     public DataSet next() {
         MultiDataSet mds = iterator.next();
         if (mds.getFeatures().length > 1 || mds.getLabels().length > 1)
-            throw new UnsupportedOperationException("This iterator is able to convert MultiDataSet with number of inputs/outputs of 1");
+            throw new UnsupportedOperationException(
+                            "This iterator is able to convert MultiDataSet with number of inputs/outputs of 1");
 
         INDArray features = mds.getFeatures()[0];
         INDArray labels = mds.getLabels() != null ? mds.getLabels()[0] : features;
         INDArray fMask = mds.getFeaturesMaskArrays() != null ? mds.getFeaturesMaskArrays()[0] : null;
         INDArray lMask = mds.getLabelsMaskArrays() != null ? mds.getLabelsMaskArrays()[0] : null;
 
-        DataSet ds =new DataSet(features, labels, fMask, lMask);
+        DataSet ds = new DataSet(features, labels, fMask, lMask);
 
         if (preProcessor != null)
             preProcessor.preProcess(ds);

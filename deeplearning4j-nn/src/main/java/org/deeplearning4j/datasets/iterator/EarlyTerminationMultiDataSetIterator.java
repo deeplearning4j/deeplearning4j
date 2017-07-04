@@ -22,7 +22,9 @@ public class EarlyTerminationMultiDataSetIterator implements MultiDataSetIterato
      * @param terminationPoint, minibatches after which hasNext() will return false
      */
     public EarlyTerminationMultiDataSetIterator(MultiDataSetIterator underlyingIterator, int terminationPoint) {
-        if (terminationPoint <= 0 ) throw new IllegalArgumentException("Termination point (the number of calls to .next() or .next(num)) has to be > 0");
+        if (terminationPoint <= 0)
+            throw new IllegalArgumentException(
+                            "Termination point (the number of calls to .next() or .next(num)) has to be > 0");
         this.underlyingIterator = underlyingIterator;
         this.terminationPoint = terminationPoint;
     }
@@ -32,8 +34,7 @@ public class EarlyTerminationMultiDataSetIterator implements MultiDataSetIterato
         if (minibatchCount < terminationPoint) {
             minibatchCount++;
             return underlyingIterator.next(num);
-        }
-        else {
+        } else {
             throw new RuntimeException("Calls to next have exceeded termination point.");
         }
     }
@@ -74,8 +75,7 @@ public class EarlyTerminationMultiDataSetIterator implements MultiDataSetIterato
         if (minibatchCount < terminationPoint) {
             minibatchCount++;
             return underlyingIterator.next();
-        }
-        else {
+        } else {
             throw new RuntimeException("Calls to next have exceeded the allotted number of minibatches.");
         }
     }

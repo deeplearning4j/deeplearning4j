@@ -10,6 +10,6 @@ import org.ansj.domain.Result;
  * @author Ansj
  *
  */
-public interface Recognition extends Serializable{
-	public void recognition(Result result) ;
+public interface Recognition extends Serializable {
+    public void recognition(Result result);
 }

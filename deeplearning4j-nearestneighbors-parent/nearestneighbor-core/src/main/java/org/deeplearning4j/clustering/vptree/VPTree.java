@@ -52,13 +52,14 @@ public class VPTree {
     private String similarityFunction;
     private boolean invert = true;
     private ExecutorService executorService;
+
     /**
      *
      * @param points
      * @param invert
      */
-    public VPTree(INDArray points,boolean invert) {
-        this(points,"euclidean",invert);
+    public VPTree(INDArray points, boolean invert) {
+        this(points, "euclidean", invert);
     }
 
     /**
@@ -82,16 +83,14 @@ public class VPTree {
      * @param similarityFunction the similarity function to use
      * @param invert whether to invert the metric (different optimization objective)
      */
-    public VPTree(List<DataPoint> items,
-                  CounterMap<DataPoint, DataPoint> distances,
-                  String similarityFunction,
-                  boolean invert) {
-        if(this.items == null) {
+    public VPTree(List<DataPoint> items, CounterMap<DataPoint, DataPoint> distances, String similarityFunction,
+                    boolean invert) {
+        if (this.items == null) {
             this.items = Nd4j.create(items.size());
         }
 
-        for(int i = 0; i < items.size(); i++) {
-            this.items.putRow(i,items.get(i).getPoint());
+        for (int i = 0; i < items.size(); i++) {
+            this.items.putRow(i, items.get(i).getPoint());
         }
 
         this.distances = distances;
@@ -108,9 +107,9 @@ public class VPTree {
      * @param invert
      */
     public VPTree(List<DataPoint> items, String similarityFunction, boolean invert) {
-        this.items = Nd4j.create(items.size(),items.get(0).getPoint().columns());
-        for(int i = 0; i < items.size(); i++) {
-            this.items.putRow(i,items.get(i).getPoint());
+        this.items = Nd4j.create(items.size(), items.get(0).getPoint().columns());
+        for (int i = 0; i < items.size(); i++) {
+            this.items.putRow(i, items.get(i).getPoint());
         }
 
         this.invert = invert;
@@ -198,33 +197,28 @@ public class VPTree {
         this.items = items;
     }
 
-    private void calcDistancesRelativeTo(INDArray basePoint,INDArray distancesArr) {
+    private void calcDistancesRelativeTo(INDArray basePoint, INDArray distancesArr) {
         switch (similarityFunction) {
             case "euclidean":
-                Nd4j.getExecutioner().exec(new EuclideanDistance(items,
-                        basePoint,items.length()),1);
+                Nd4j.getExecutioner().exec(new EuclideanDistance(items, basePoint, items.length()), 1);
                 break;
 
             case "cosinesimilarity":
-                Nd4j.getExecutioner().exec(new CosineSimilarity(items,
-                        basePoint,distancesArr,items.length()),1);
+                Nd4j.getExecutioner().exec(new CosineSimilarity(items, basePoint, distancesArr, items.length()), 1);
                 break;
             case "manhattan":
-                Nd4j.getExecutioner().exec(new ManhattanDistance(items,
-                        basePoint,distancesArr,items.length()),1);
+                Nd4j.getExecutioner().exec(new ManhattanDistance(items, basePoint, distancesArr, items.length()), 1);
                 break;
             case "dot":
-                Nd4j.getExecutioner().exec(new Dot(items,
-                        basePoint,distancesArr,items.length()),1);
+                Nd4j.getExecutioner().exec(new Dot(items, basePoint, distancesArr, items.length()), 1);
                 break;
             default:
-                Nd4j.getExecutioner().exec(new EuclideanDistance(items,
-                        basePoint,distancesArr,items.length()),1);
+                Nd4j.getExecutioner().exec(new EuclideanDistance(items, basePoint, distancesArr, items.length()), 1);
                 break;
 
         }
 
-        if(invert)
+        if (invert)
             distancesArr.negi();
 
     }
@@ -234,28 +228,28 @@ public class VPTree {
      * Euclidean distance
      * @return the distance between the two points
      */
-    public float distance(INDArray arr1,INDArray arr2) {
+    public float distance(INDArray arr1, INDArray arr2) {
         switch (similarityFunction) {
             case "euclidean":
-                float ret = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(arr1,arr2))
-                        .getFinalResult().floatValue();
+                float ret = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(arr1, arr2)).getFinalResult()
+                                .floatValue();
                 return invert ? -ret : ret;
 
             case "cosinesimilarity":
-                float ret2 = Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(arr1,arr2))
-                        .getFinalResult().floatValue();
+                float ret2 = Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(arr1, arr2)).getFinalResult()
+                                .floatValue();
                 return invert ? -ret2 : ret2;
 
             case "manhattan":
-                float ret3 = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(arr1,arr2))
-                        .getFinalResult().floatValue();
+                float ret3 = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(arr1, arr2)).getFinalResult()
+                                .floatValue();
                 return invert ? -ret3 : ret3;
             case "dot":
-                float dotRet = (float) Nd4j.getBlasWrapper().dot(arr1,arr2);
+                float dotRet = (float) Nd4j.getBlasWrapper().dot(arr1, arr2);
                 return invert ? -dotRet : dotRet;
             default:
-                float ret4 = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(arr1,arr2))
-                        .getFinalResult().floatValue();
+                float ret4 = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(arr1, arr2)).getFinalResult()
+                                .floatValue();
                 return invert ? -ret4 : ret4;
 
         }
@@ -264,7 +258,7 @@ public class VPTree {
     private Node buildFromPoints(final int lower, final int upper) {
         if (upper == lower)
             return null;
-        if(executorService == null && lower == 0 && upper == items.size(0))
+        if (executorService == null && lower == 0 && upper == items.size(0))
             executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
         final Node ret = new Node(lower, 0);
@@ -276,31 +270,31 @@ public class VPTree {
             INDArray distancesArr = null;
             INDArray sortedDistances = null;
 
-            if(distancesArr == null)
-                distancesArr = Nd4j.create(items.rows(),1);
+            if (distancesArr == null)
+                distancesArr = Nd4j.create(items.rows(), 1);
 
-            if(sortedDistances == null)
-                sortedDistances = Nd4j.create(items.rows(),1);
+            if (sortedDistances == null)
+                sortedDistances = Nd4j.create(items.rows(), 1);
 
 
             INDArray basePoint = items.getRow(randomPoint);
             //run a distance compute wrt each row given the base point
-            calcDistancesRelativeTo(basePoint,distancesArr);
+            calcDistancesRelativeTo(basePoint, distancesArr);
 
             sortedDistances.assign(distancesArr);
 
-            Nd4j.sort(sortedDistances,0,false);
+            Nd4j.sort(sortedDistances, 0, false);
 
 
             final double medianDistance = sortedDistances.getDouble(sortedDistances.length() / 2);
-            INDArray leftPoints = null,rightPoints = null;
+            INDArray leftPoints = null, rightPoints = null;
 
             //only allocate left/right points once
-            if(leftPoints == null)
-                leftPoints = Nd4j.create(sortedDistances.length(),items.columns());
+            if (leftPoints == null)
+                leftPoints = Nd4j.create(sortedDistances.length(), items.columns());
 
-            if(rightPoints == null)
-                rightPoints = Nd4j.create(sortedDistances.length(),items.columns());
+            if (rightPoints == null)
+                rightPoints = Nd4j.create(sortedDistances.length(), items.columns());
 
 
 
@@ -308,9 +302,9 @@ public class VPTree {
             int rightPointsIndex = 0;
             for (int i = 0; i < distancesArr.length(); i++) {
                 if (distancesArr.getDouble(i) < medianDistance) {
-                    leftPoints.putRow(leftPointsIndex++,items.getRow(i));
+                    leftPoints.putRow(leftPointsIndex++, items.getRow(i));
                 } else {
-                    rightPoints.putRow(rightPointsIndex++,items.getRow(i));
+                    rightPoints.putRow(rightPointsIndex++, items.getRow(i));
                 }
             }
 
@@ -318,7 +312,7 @@ public class VPTree {
                 items.putRow(i, leftPoints.getRow(i));
             }
 
-            for (int i = 0; i < rightPointsIndex;i++) {
+            for (int i = 0; i < rightPointsIndex; i++) {
                 items.putRow(i + leftPointsIndex, rightPoints.getRow(i));
             }
 
@@ -327,7 +321,7 @@ public class VPTree {
 
             Future<?> left = null;
             Future<?> right = null;
-            if(lower + 1 !=  median) {
+            if (lower + 1 != median) {
                 left = executorService.submit(new Runnable() {
                     @Override
                     public void run() {
@@ -336,7 +330,7 @@ public class VPTree {
                 });
             }
 
-            if(median != upper) {
+            if (median != upper) {
                 right = executorService.submit(new Runnable() {
                     @Override
                     public void run() {
@@ -345,18 +339,18 @@ public class VPTree {
                 });
             }
 
-            if(lower == 0 && upper == items.size(0)) {
+            if (lower == 0 && upper == items.size(0)) {
                 try {
-                    if(left != null)
+                    if (left != null)
                         left.get();
 
-                    if(right != null)
+                    if (right != null)
                         right.get();
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
 
-                if(executorService != null) {
+                if (executorService != null) {
                     executorService.shutdown();
                 }
             }
@@ -386,7 +380,7 @@ public class VPTree {
 
         while (!pq.isEmpty()) {
             int idx = pq.peek().getIndex();
-            results.add(new DataPoint(idx,items.getRow(idx)));
+            results.add(new DataPoint(idx, items.getRow(idx)));
             distances.add(pq.peek().getDistance());
             pq.next();
         }

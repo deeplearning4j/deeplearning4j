@@ -78,15 +78,22 @@ public class SleepyTrainingListener implements TrainingListener {
     @Setter(AccessLevel.NONE)
     protected final transient ThreadLocal<AtomicLong> lastIteration = new ThreadLocal<>();
 
-    @Builder.Default protected long timerEE = 0L;
-    @Builder.Default protected long timerES = 0L;
-    @Builder.Default protected long timerFF = 0L;
-    @Builder.Default protected long timerBP = 0L;
-    @Builder.Default protected long timerIteration = 0L;
+    @Builder.Default
+    protected long timerEE = 0L;
+    @Builder.Default
+    protected long timerES = 0L;
+    @Builder.Default
+    protected long timerFF = 0L;
+    @Builder.Default
+    protected long timerBP = 0L;
+    @Builder.Default
+    protected long timerIteration = 0L;
 
-    @Builder.Default protected SleepMode sleepMode = SleepMode.PARK;
+    @Builder.Default
+    protected SleepMode sleepMode = SleepMode.PARK;
 
-    @Builder.Default protected TimeMode timeMode = TimeMode.SIMPLE;
+    @Builder.Default
+    protected TimeMode timeMode = TimeMode.SIMPLE;
 
     protected void sleep(long sleepTimeMs) {
         if (sleepTimeMs < 1)
@@ -97,10 +104,9 @@ public class SleepyTrainingListener implements TrainingListener {
                 LockSupport.parkNanos(sleepTimeMs * 1000000);
                 break;
             case BUSY: {
-                    long target = System.currentTimeMillis() + sleepTimeMs;
-                    while (System.currentTimeMillis() < target)
-                        ;;
-                }
+                long target = System.currentTimeMillis() + sleepTimeMs;
+                while (System.currentTimeMillis() < target);;
+            }
                 break;
             case SLEEP:
                 try {

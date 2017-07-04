@@ -22,12 +22,16 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 /**
  * @author raver119@gmail.com
  */
-public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResult> implements TrainingWorker<SharedTrainingResult> {
+public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResult>
+                implements TrainingWorker<SharedTrainingResult> {
 
-    @Getter private final Broadcast<NetBroadcastTuple> broadcastModel;
-    @Getter private final Broadcast<SharedTrainingConfiguration> broadcastConfiguration;
+    @Getter
+    private final Broadcast<NetBroadcastTuple> broadcastModel;
+    @Getter
+    private final Broadcast<SharedTrainingConfiguration> broadcastConfiguration;
 
-    public SharedTrainingWorker(Broadcast<NetBroadcastTuple> broadcastModel, Broadcast<SharedTrainingConfiguration> broadcastConfiguration) {
+    public SharedTrainingWorker(Broadcast<NetBroadcastTuple> broadcastModel,
+                    Broadcast<SharedTrainingConfiguration> broadcastConfiguration) {
         // our initial model is stored here.
         this.broadcastModel = broadcastModel;
         this.broadcastConfiguration = broadcastConfiguration;
@@ -60,7 +64,8 @@ public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResul
                 network.getUpdater().getStateViewArray().assign(tuple.getUpdaterState());
 
             return network;
-        } else return null;
+        } else
+            return null;
     }
 
     @Override
@@ -79,7 +84,8 @@ public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResul
                 network.getUpdater().getUpdaterStateViewArray().assign(tuple.getUpdaterState());
 
             return network;
-        } else return null;
+        } else
+            return null;
     }
 
     @Override
@@ -103,17 +109,20 @@ public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResul
     }
 
     @Override
-    public Pair<SharedTrainingResult, SparkTrainingStats> processMinibatchWithStats(DataSet dataSet, MultiLayerNetwork network, boolean isLast) {
+    public Pair<SharedTrainingResult, SparkTrainingStats> processMinibatchWithStats(DataSet dataSet,
+                    MultiLayerNetwork network, boolean isLast) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Pair<SharedTrainingResult, SparkTrainingStats> processMinibatchWithStats(DataSet dataSet, ComputationGraph graph, boolean isLast) {
+    public Pair<SharedTrainingResult, SparkTrainingStats> processMinibatchWithStats(DataSet dataSet,
+                    ComputationGraph graph, boolean isLast) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public Pair<SharedTrainingResult, SparkTrainingStats> processMinibatchWithStats(MultiDataSet dataSet, ComputationGraph graph, boolean isLast) {
+    public Pair<SharedTrainingResult, SparkTrainingStats> processMinibatchWithStats(MultiDataSet dataSet,
+                    ComputationGraph graph, boolean isLast) {
         throw new UnsupportedOperationException();
     }
 

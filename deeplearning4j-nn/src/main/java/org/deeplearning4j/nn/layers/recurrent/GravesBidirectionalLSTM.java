@@ -87,7 +87,7 @@ public class GravesBidirectionalLSTM
         if (truncatedBPTT) {
             throw new UnsupportedOperationException(
                             "Time step for bidirectional RNN not supported: it has to run on a batch of data all at once "
-                            + layerId());
+                                            + layerId());
         }
 
         final FwdPassReturn fwdPass = activateHelperDirectional(true, null, null, true, true);
@@ -182,21 +182,21 @@ public class GravesBidirectionalLSTM
     private INDArray activateOutput(final boolean training, boolean forBackprop) {
 
 
-        final FwdPassReturn forwardsEval =
-                        LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
-                                        getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
-                                        getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
-                                        getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), training,
-                                        null, null, forBackprop, true,
-                                        GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray, true);
+        final FwdPassReturn forwardsEval = LSTMHelpers.activateHelper(this, this.conf,
+                        this.layerConf().getGateActivationFn(), this.input,
+                        getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
+                        getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
+                        getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), training, null, null,
+                        forBackprop, true, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray,
+                        true);
 
-        final FwdPassReturn backwardsEval =
-                        LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
-                                        getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
-                                        getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
-                                        getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS), training,
-                                        null, null, forBackprop, false,
-                                        GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS, maskArray, true);
+        final FwdPassReturn backwardsEval = LSTMHelpers.activateHelper(this, this.conf,
+                        this.layerConf().getGateActivationFn(), this.input,
+                        getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
+                        getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
+                        getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS), training, null, null,
+                        forBackprop, false, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
+                        maskArray, true);
 
 
         //sum outputs
@@ -285,15 +285,15 @@ public class GravesBidirectionalLSTM
     public INDArray rnnTimeStep(INDArray input) {
         throw new UnsupportedOperationException(
                         "you can not time step a bidirectional RNN, it has to run on a batch of data all at once "
-                        + layerId());
+                                        + layerId());
     }
 
 
 
     @Override
     public INDArray rnnActivateUsingStoredState(INDArray input, boolean training, boolean storeLastForTBPTT) {
-        throw new UnsupportedOperationException("Cannot set stored state: bidirectional RNNs don't have stored state "
-                + layerId());
+        throw new UnsupportedOperationException(
+                        "Cannot set stored state: bidirectional RNNs don't have stored state " + layerId());
     }
 
 

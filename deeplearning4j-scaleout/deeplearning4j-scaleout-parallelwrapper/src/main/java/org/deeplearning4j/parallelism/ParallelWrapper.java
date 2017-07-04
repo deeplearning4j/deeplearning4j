@@ -91,7 +91,9 @@ public class ParallelWrapper implements AutoCloseable {
     protected ThreadPoolExecutor executorService;
 
     protected final AtomicInteger workerCounter = new AtomicInteger(0);
-    @Getter @Setter protected GradientsAccumulator gradientsAccumulator;
+    @Getter
+    @Setter
+    protected GradientsAccumulator gradientsAccumulator;
 
     private MagicQueue mq;
 
@@ -128,7 +130,8 @@ public class ParallelWrapper implements AutoCloseable {
                 t.setDaemon(true);
                 t.setUncaughtExceptionHandler(handler);
 
-                Nd4j.getAffinityManager().attachThreadToDevice(t, cThread % Nd4j.getAffinityManager().getNumberOfDevices());
+                Nd4j.getAffinityManager().attachThreadToDevice(t,
+                                cThread % Nd4j.getAffinityManager().getNumberOfDevices());
 
                 return t;
             }
@@ -187,8 +190,11 @@ public class ParallelWrapper implements AutoCloseable {
                     log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
                                     Nd4j.getAffinityManager().getNumberOfDevices());
 
-                iterator = new AsyncMultiDataSetIterator(source, prefetchSize, new LinkedBlockingQueue<>(prefetchSize * workers), true, new InterleavedDataSetCallback(prefetchSize * 2));
-            } else iterator = new AsyncMultiDataSetIterator(source, prefetchSize);
+                iterator = new AsyncMultiDataSetIterator(source, prefetchSize,
+                                new LinkedBlockingQueue<>(prefetchSize * workers), true,
+                                new InterleavedDataSetCallback(prefetchSize * 2));
+            } else
+                iterator = new AsyncMultiDataSetIterator(source, prefetchSize);
         }
 
         AtomicInteger locker = new AtomicInteger(0);
@@ -235,7 +241,8 @@ public class ParallelWrapper implements AutoCloseable {
                     /*
                         average model, and propagate it to whole
                     */
-                    if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers && zoo[0].averagingRequired()) {
+                    if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers
+                                    && zoo[0].averagingRequired()) {
                         // averaging model
                         double score = getScore(locker);
 
@@ -274,17 +281,17 @@ public class ParallelWrapper implements AutoCloseable {
         if (prefetchSize > 0 && source.asyncSupported())
             ((AsyncMultiDataSetIterator) iterator).shutdown();
 
-/*
+        /*
         // TODO: get rid of this code, 0 model is not replicated anyway
         // now we transfer models back from workers
         List<Model> models = new ArrayList<>();
         for (int i = 0; i < zoo.length; i++) {
             models.add(zoo[0].getModel());
         }
-
+        
         // actual transfer code depends on trainer
         trainerContext.finalizeTraining(model, models.toArray(new Model[0]));
-*/
+        */
         try {
             close();
         } catch (Exception e) {
@@ -323,43 +330,43 @@ public class ParallelWrapper implements AutoCloseable {
     }
 
     private void averageUpdatersState(AtomicInteger locker, double score) {
-            // averaging updaters state
-            if (model instanceof MultiLayerNetwork) {
-                if (averageUpdaters) {
-                    Updater updater = ((MultiLayerNetwork) model).getUpdater();
-                    int batchSize = 0;
+        // averaging updaters state
+        if (model instanceof MultiLayerNetwork) {
+            if (averageUpdaters) {
+                Updater updater = ((MultiLayerNetwork) model).getUpdater();
+                int batchSize = 0;
 
-                    if (updater != null && updater.getStateViewArray() != null) {
-                        List<INDArray> updaters = new ArrayList<>();
-                        for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                            MultiLayerNetwork workerModel = (MultiLayerNetwork) zoo[cnt].getModel();
-                            updaters.add(workerModel.getUpdater().getStateViewArray());
-                            batchSize += workerModel.batchSize();
-                        }
-
-                        Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
+                if (updater != null && updater.getStateViewArray() != null) {
+                    List<INDArray> updaters = new ArrayList<>();
+                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                        MultiLayerNetwork workerModel = (MultiLayerNetwork) zoo[cnt].getModel();
+                        updaters.add(workerModel.getUpdater().getStateViewArray());
+                        batchSize += workerModel.batchSize();
                     }
+
+                    Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
                 }
-
-                ((MultiLayerNetwork) model).setScore(score);
-            } else if (model instanceof ComputationGraph) {
-                if (averageUpdaters) {
-                    ComputationGraphUpdater updater = ((ComputationGraph) model).getUpdater();
-                    int batchSize = 0;
-
-                    if (updater != null && updater.getStateViewArray() != null) {
-                        List<INDArray> updaters = new ArrayList<>();
-                        for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
-                            ComputationGraph workerModel = (ComputationGraph) zoo[cnt].getModel();
-                            updaters.add(workerModel.getUpdater().getStateViewArray());
-                            batchSize += workerModel.batchSize();
-                        }
-                        Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
-                    }
-                }
-
-                ((ComputationGraph) model).setScore(score);
             }
+
+            ((MultiLayerNetwork) model).setScore(score);
+        } else if (model instanceof ComputationGraph) {
+            if (averageUpdaters) {
+                ComputationGraphUpdater updater = ((ComputationGraph) model).getUpdater();
+                int batchSize = 0;
+
+                if (updater != null && updater.getStateViewArray() != null) {
+                    List<INDArray> updaters = new ArrayList<>();
+                    for (int cnt = 0; cnt < workers && cnt < locker.get(); cnt++) {
+                        ComputationGraph workerModel = (ComputationGraph) zoo[cnt].getModel();
+                        updaters.add(workerModel.getUpdater().getStateViewArray());
+                        batchSize += workerModel.batchSize();
+                    }
+                    Nd4j.averageAndPropagate(updater.getStateViewArray(), updaters);
+                }
+            }
+
+            ((ComputationGraph) model).setScore(score);
+        }
     }
 
 
@@ -477,7 +484,9 @@ public class ParallelWrapper implements AutoCloseable {
                     log.warn("Number of workers [{}] isn't optimal for available devices [{}]", workers,
                                     Nd4j.getAffinityManager().getNumberOfDevices());
 
-                iterator = new AsyncDataSetIterator(source, prefetchSize, new LinkedBlockingQueue<>(prefetchSize * workers), true, new InterleavedDataSetCallback(prefetchSize * 2));
+                iterator = new AsyncDataSetIterator(source, prefetchSize,
+                                new LinkedBlockingQueue<>(prefetchSize * workers), true,
+                                new InterleavedDataSetCallback(prefetchSize * 2));
 
             } else
                 iterator = new AsyncDataSetIterator(source, prefetchSize);
@@ -490,7 +499,7 @@ public class ParallelWrapper implements AutoCloseable {
         log.info("Starting ParallelWrapper training round...");
         long intcnt = 0;
         while (iterator.hasNext() && !stopFit.get()) {
-        //while (intcnt < 1000) {
+            //while (intcnt < 1000) {
             intcnt++;
             DataSet dataSet = iterator.next();
             long time2 = System.currentTimeMillis();
@@ -510,9 +519,9 @@ public class ParallelWrapper implements AutoCloseable {
 
             if (zoo == null)
                 throw new IllegalStateException(
-                        "ParallelWrapper.shutdown() has been called too early and will fail from this point forward.");
+                                "ParallelWrapper.shutdown() has been called too early and will fail from this point forward.");
 
-            zoo[pos].feedDataSet(dataSet, lastEtlTime );
+            zoo[pos].feedDataSet(dataSet, lastEtlTime);
 
             /*
                 if all workers are dispatched now, join till all are finished
@@ -542,7 +551,8 @@ public class ParallelWrapper implements AutoCloseable {
                     /*
                         average model, and propagate it to whole
                     */
-                    if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers && zoo[0].averagingRequired()) {
+                    if (iterationsCounter.get() % averagingFrequency == 0 && pos + 1 == workers
+                                    && zoo[0].averagingRequired()) {
                         long timeA1 = System.currentTimeMillis();
 
                         // model averaging happens within
@@ -594,7 +604,7 @@ public class ParallelWrapper implements AutoCloseable {
         for (int i = 0; i < zoo.length; i++) {
             models.add(zoo[0].getModel());
         }
-
+        
         // actual transfer code depends on trainer
         trainerContext.finalizeTraining(model, models.toArray(new Model[0]));
         */
@@ -623,7 +633,7 @@ public class ParallelWrapper implements AutoCloseable {
 
                 /*
                 zoo[cnt].setUncaughtExceptionHandler(handler);
-
+                
                 if (zoo[cnt] instanceof Thread) {
                     Nd4j.getAffinityManager().attachThreadToDevice((Thread) zoo[cnt], cnt % numDevices);
                 }
@@ -806,24 +816,25 @@ public class ParallelWrapper implements AutoCloseable {
 
             switch (trainingMode) {
                 case AVERAGING: {
-                        this.trainerContext = new DefaultTrainerContext();
-                        this.accumulator = null;
-                        log.info("Creating new AveragingTraining instance");
-                    }
+                    this.trainerContext = new DefaultTrainerContext();
+                    this.accumulator = null;
+                    log.info("Creating new AveragingTraining instance");
+                }
                     break;
                 case SHARED_GRADIENTS: {
-                        this.trainerContext = new SymmetricTrainerContext();
-                        if (this.accumulator == null) {
-                            log.info("Creating new GradientsAccumulator instance");
-                            this.accumulator = new CudaGradientsAccumulator(workers, 1e-3);
-                        }
+                    this.trainerContext = new SymmetricTrainerContext();
+                    if (this.accumulator == null) {
+                        log.info("Creating new GradientsAccumulator instance");
+                        this.accumulator = new CudaGradientsAccumulator(workers, 1e-3);
                     }
+                }
                     break;
                 case CUSTOM: {
-                        this.trainerContext = new SymmetricTrainerContext();
-                        if (this.accumulator == null)
-                            throw new DL4JInvalidConfigException("Please specify GradientsAccumulator fo encoded gradients mode");
-                    }
+                    this.trainerContext = new SymmetricTrainerContext();
+                    if (this.accumulator == null)
+                        throw new DL4JInvalidConfigException(
+                                        "Please specify GradientsAccumulator fo encoded gradients mode");
+                }
                     break;
                 default:
                     throw new UnsupportedOperationException("Unknown trainingMode: [" + trainingMode + "]");

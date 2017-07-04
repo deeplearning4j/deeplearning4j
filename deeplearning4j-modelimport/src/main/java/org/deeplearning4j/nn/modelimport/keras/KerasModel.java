@@ -289,7 +289,8 @@ public class KerasModel {
         }
     }
 
-    protected List<String> helperRecurseWeightsArchive(Hdf5Archive weightsArchive, String weightsRoot, String layerName){
+    protected List<String> helperRecurseWeightsArchive(Hdf5Archive weightsArchive, String weightsRoot,
+                    String layerName) {
         return new LinkedList<>();
     }
 
@@ -304,14 +305,13 @@ public class KerasModel {
                     throws InvalidKerasConfigurationException, UnsupportedKerasConfigurationException {
         // check to ensure naming scheme doesn't include forward slash
         boolean includesSlash = false;
-        for(String layerName : this.layers.keySet()) {
-            if(layerName.contains("/"))
+        for (String layerName : this.layers.keySet()) {
+            if (layerName.contains("/"))
                 includesSlash = true;
         }
         List<String> layerGroups;
-        if(!includesSlash) {
-            layerGroups =
-                    weightsRoot != null ? weightsArchive.getGroups(weightsRoot) : weightsArchive.getGroups();
+        if (!includesSlash) {
+            layerGroups = weightsRoot != null ? weightsArchive.getGroups(weightsRoot) : weightsArchive.getGroups();
         } else {
             layerGroups = new ArrayList<>(this.layers.keySet());
         }
@@ -322,21 +322,19 @@ public class KerasModel {
             // there's a bug where if a layer name contains a forward slash, the first fragment must be appended
             // to the name of the dataset...it appears h5 interprets the forward slash as a data group
             String[] layerFragments = layerName.split("/");
-            if(layerFragments.length > 1) {
+            if (layerFragments.length > 1) {
                 try {
                     layerParamNames = weightsRoot != null
-                            ? weightsArchive.getDataSets(weightsRoot, layerName + "/" + layerFragments[0])
-                            : weightsArchive.getDataSets(layerName + "/" + layerFragments[0]);
+                                    ? weightsArchive.getDataSets(weightsRoot, layerName + "/" + layerFragments[0])
+                                    : weightsArchive.getDataSets(layerName + "/" + layerFragments[0]);
                 } catch (Exception e) {
                     // TODO: fix this horrible ugliness
-                    layerParamNames = weightsRoot != null
-                            ? weightsArchive.getDataSets(weightsRoot, layerName)
-                            : weightsArchive.getDataSets(layerName);
+                    layerParamNames = weightsRoot != null ? weightsArchive.getDataSets(weightsRoot, layerName)
+                                    : weightsArchive.getDataSets(layerName);
                 }
             } else {
-                layerParamNames = weightsRoot != null
-                    ? weightsArchive.getDataSets(weightsRoot, layerName)
-                    : weightsArchive.getDataSets(layerName);
+                layerParamNames = weightsRoot != null ? weightsArchive.getDataSets(weightsRoot, layerName)
+                                : weightsArchive.getDataSets(layerName);
             }
             if (layerParamNames.isEmpty())
                 continue;
@@ -360,7 +358,8 @@ public class KerasModel {
                  * will be named "dense_1_W:0."
                  */
                 // TODO fix the SLASH issue with layer names
-                Matcher layerNameMatcher = Pattern.compile(layerFragments[layerFragments.length-1]).matcher(layerParamName);
+                Matcher layerNameMatcher =
+                                Pattern.compile(layerFragments[layerFragments.length - 1]).matcher(layerParamName);
                 if (!layerNameMatcher.find())
                     throw new InvalidKerasConfigurationException(
                                     "Unable to parse layer/parameter name " + layerParamName + " for stored weights.");
@@ -386,13 +385,13 @@ public class KerasModel {
                     paramName = tfParamNbMatcher.replaceFirst("");
 
                 INDArray paramValue;
-                if(layerFragments.length > 1) {
-                    paramValue =
-                            weightsRoot != null ? weightsArchive.readDataSet(layerFragments[0]+"/"+layerParamName, weightsRoot, layerName)
+                if (layerFragments.length > 1) {
+                    paramValue = weightsRoot != null ? weightsArchive
+                                    .readDataSet(layerFragments[0] + "/" + layerParamName, weightsRoot, layerName)
                                     : weightsArchive.readDataSet(layerParamName, layerName);
                 } else {
-                    paramValue =
-                            weightsRoot != null ? weightsArchive.readDataSet(layerParamName, weightsRoot, layerName)
+                    paramValue = weightsRoot != null
+                                    ? weightsArchive.readDataSet(layerParamName, weightsRoot, layerName)
                                     : weightsArchive.readDataSet(layerParamName, layerName);
                 }
                 weights.put(paramName, paramValue);

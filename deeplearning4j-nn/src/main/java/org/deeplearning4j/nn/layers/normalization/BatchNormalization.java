@@ -213,7 +213,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         } else {
             // TODO setup BatchNorm for RNN http://arxiv.org/pdf/1510.01378v1.pdf
             throw new IllegalStateException(
-                            "The layer prior to BatchNorm in the configuration is not currently supported. " + layerId());
+                            "The layer prior to BatchNorm in the configuration is not currently supported. "
+                                            + layerId());
         }
 
         return new Pair<>(retGradient, nextEpsilon);
@@ -271,9 +272,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                     var = x.var(false, 0, 2, 3);
                     break;
                 default:
-                    throw new IllegalStateException(
-                                    "Batch normalization on activations of rank " + x.rank() + " not supported "
-                                            + layerId());
+                    throw new IllegalStateException("Batch normalization on activations of rank " + x.rank()
+                                    + " not supported " + layerId());
             }
 
 
@@ -364,7 +364,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         } else {
             // TODO setup BatchNorm for RNN http://arxiv.org/pdf/1510.01378v1.pdf
             throw new IllegalStateException(
-                            "The layer prior to BatchNorm in the configuration is not currently supported. " + layerId());
+                            "The layer prior to BatchNorm in the configuration is not currently supported. "
+                                            + layerId());
         }
 
         // store mean and var if using batch mean while training

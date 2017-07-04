@@ -944,58 +944,53 @@ public class TestComputationGraphNetwork {
 
 
     @Test
-    public void testSetOutputsMultipleCalls(){
+    public void testSetOutputsMultipleCalls() {
 
         //Users generally shouldn't do this, but multiple setOutputs calls should *replace* not *add* outputs
 
-        ComputationGraphConfiguration c = new NeuralNetConfiguration.Builder().graphBuilder()
-                .addInputs("in")
-                .addLayer("out", new OutputLayer.Builder().nIn(10).nOut(5).build(), "in")
-                .setOutputs("out")
-                .setOutputs("out")
-                .build();
+        ComputationGraphConfiguration c = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
+                        .addLayer("out", new OutputLayer.Builder().nIn(10).nOut(5).build(), "in").setOutputs("out")
+                        .setOutputs("out").build();
 
         List<String> l = c.getNetworkOutputs();
         assertEquals(1, l.size());
     }
 
     @Test
-    public void testDropoutValidation(){
+    public void testDropoutValidation() {
         //At one point: this threw an exception due to incorrect validation
-        for(boolean dropConnect : new boolean[]{false, true}) {
-            new NeuralNetConfiguration.Builder()
-                    .regularization(true).useDropConnect(dropConnect)
-                    .dropOut(0.5)
-                    .graphBuilder()
-                    .setInputTypes(InputType.feedForward(1))
-                    .addInputs("input1")
-                    .addLayer("output", new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                            .nIn(1).nOut(1).activation(Activation.SIGMOID).build(), "input1")
-                    .setOutputs("output")
-                    .pretrain(false).backprop(true).backpropType(BackpropType.Standard)
-                    .build();
+        for (boolean dropConnect : new boolean[] {false, true}) {
+            new NeuralNetConfiguration.Builder().regularization(true).useDropConnect(dropConnect).dropOut(0.5)
+                            .graphBuilder().setInputTypes(InputType.feedForward(1)).addInputs("input1")
+                            .addLayer("output",
+                                            new OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(1).nOut(1)
+                                                            .activation(Activation.SIGMOID).build(),
+                                            "input1")
+                            .setOutputs("output").pretrain(false).backprop(true).backpropType(BackpropType.Standard)
+                            .build();
         }
     }
 
     @Test
-    public void testNoParamLayersL1L2(){
+    public void testNoParamLayersL1L2() {
 
         //Don't care about this being valid
-        ComputationGraphConfiguration c = new NeuralNetConfiguration.Builder()
-                .regularization(true).l1(0.5).l2(0.6)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("sub1", new SubsamplingLayer.Builder(2,2).build(), "in")
-                .addLayer("sub2", new Subsampling1DLayer.Builder(2).build(), "sub1")
-                .addLayer("act", new ActivationLayer.Builder().activation(Activation.TANH).build(), "sub2")
-                .addLayer("pad", new ZeroPaddingLayer.Builder(2,3).build(), "act")
-                .addLayer("lrn", new LocalResponseNormalization.Builder().build(), "pad")
-                .addLayer("pool", new GlobalPoolingLayer.Builder(PoolingType.AVG).build(), "act")
-                .addLayer("drop", new DropoutLayer.Builder(0.5).build(), "pool")
-                .addLayer("dense", new DenseLayer.Builder().nIn(1).nOut(1).build(), "drop")
-                .addLayer("loss", new LossLayer.Builder(LossFunctions.LossFunction.MCXENT).build(), "dense")
-                .setOutputs("loss")
-                .build();
+        ComputationGraphConfiguration c =
+                        new NeuralNetConfiguration.Builder().regularization(true).l1(0.5).l2(0.6).graphBuilder()
+                                        .addInputs("in")
+                                        .addLayer("sub1", new SubsamplingLayer.Builder(2, 2).build(), "in")
+                                        .addLayer("sub2", new Subsampling1DLayer.Builder(2).build(), "sub1")
+                                        .addLayer("act", new ActivationLayer.Builder().activation(Activation.TANH)
+                                                        .build(), "sub2")
+                                        .addLayer("pad", new ZeroPaddingLayer.Builder(2, 3).build(), "act")
+                                        .addLayer("lrn", new LocalResponseNormalization.Builder().build(), "pad")
+                                        .addLayer("pool", new GlobalPoolingLayer.Builder(PoolingType.AVG).build(),
+                                                        "act")
+                                        .addLayer("drop", new DropoutLayer.Builder(0.5).build(), "pool")
+                                        .addLayer("dense", new DenseLayer.Builder().nIn(1).nOut(1).build(), "drop")
+                                        .addLayer("loss", new LossLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                                        .build(), "dense")
+                                        .setOutputs("loss").build();
 
         ComputationGraph g = new ComputationGraph(c);
         g.init();
@@ -1005,19 +1000,16 @@ public class TestComputationGraphNetwork {
     }
 
     @Test(expected = DL4JException.class)
-    public void testErrorNoOutputLayer(){
+    public void testErrorNoOutputLayer() {
 
-        ComputationGraphConfiguration c = new NeuralNetConfiguration.Builder()
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("dense", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in")
-                .setOutputs("dense")
-                .build();
+        ComputationGraphConfiguration c = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
+                        .addLayer("dense", new DenseLayer.Builder().nIn(10).nOut(10).build(), "in").setOutputs("dense")
+                        .build();
 
         ComputationGraph cg = new ComputationGraph(c);
         cg.init();
 
-        INDArray f = Nd4j.create(1,10);
+        INDArray f = Nd4j.create(1, 10);
         INDArray l = Nd4j.create(1, 10);
 
         cg.setInputs(f);
@@ -1028,44 +1020,31 @@ public class TestComputationGraphNetwork {
 
 
     @Test
-    public void testMergeVertexAddition(){
+    public void testMergeVertexAddition() {
 
         //When a vertex supports only one input, and gets multiple inputs - we should automatically add a merge
         //vertex
 
         NeuralNetConfiguration nnc = new NeuralNetConfiguration();
         nnc.setLayer(new DenseLayer.Builder().build());
-        GraphVertex[] singleInputVertices = new GraphVertex[]{
-                new L2NormalizeVertex(),
-                new LayerVertex( nnc, null),
-                new PoolHelperVertex(),
-                new PreprocessorVertex(),
-                new ReshapeVertex(new int[]{1,1}),
-                new ScaleVertex(1.0),
-                new ShiftVertex(1.0),
-                new SubsetVertex(1,1),
-                new UnstackVertex(0,2),
-                new DuplicateToTimeSeriesVertex("in1"),
-                new LastTimeStepVertex("in1")
-        };
+        GraphVertex[] singleInputVertices = new GraphVertex[] {new L2NormalizeVertex(), new LayerVertex(nnc, null),
+                        new PoolHelperVertex(), new PreprocessorVertex(), new ReshapeVertex(new int[] {1, 1}),
+                        new ScaleVertex(1.0), new ShiftVertex(1.0), new SubsetVertex(1, 1), new UnstackVertex(0, 2),
+                        new DuplicateToTimeSeriesVertex("in1"), new LastTimeStepVertex("in1")};
 
-        for(GraphVertex gv : singleInputVertices){
-            ComputationGraphConfiguration c = new NeuralNetConfiguration.Builder()
-                    .graphBuilder()
-                    .addInputs("in1","in2")
-                    .addVertex("gv", gv, "in1", "in2")
-                    .setOutputs("gv")
-                    .build();
+        for (GraphVertex gv : singleInputVertices) {
+            ComputationGraphConfiguration c = new NeuralNetConfiguration.Builder().graphBuilder()
+                            .addInputs("in1", "in2").addVertex("gv", gv, "in1", "in2").setOutputs("gv").build();
 
             boolean foundMerge = false;
-            for(GraphVertex g : c.getVertices().values()){
-                if(g instanceof MergeVertex){
+            for (GraphVertex g : c.getVertices().values()) {
+                if (g instanceof MergeVertex) {
                     foundMerge = true;
                     break;
                 }
             }
 
-            if(!foundMerge){
+            if (!foundMerge) {
                 fail("Network did not add merge vertex for vertex " + gv.getClass());
             }
         }

@@ -17,42 +17,42 @@ import org.nlpcn.commons.lang.tire.domain.Forest;
  */
 public class DicRecognition implements Recognition {
 
-	private static final long serialVersionUID = 7487741700410080896L;
+    private static final long serialVersionUID = 7487741700410080896L;
 
-	private Forest[] forests = null;
+    private Forest[] forests = null;
 
-	public DicRecognition() {
-		forests = DicLibrary.gets(DicLibrary.DEFAULT);
-	}
+    public DicRecognition() {
+        forests = DicLibrary.gets(DicLibrary.DEFAULT);
+    }
 
-	public DicRecognition(String[] keys) {
-		forests = DicLibrary.gets(keys);
-	}
+    public DicRecognition(String[] keys) {
+        forests = DicLibrary.gets(keys);
+    }
 
-	/**
-	 * @param forests
-	 */
-	public DicRecognition(Forest[] forests) {
-		this.forests = forests;
-	}
+    /**
+     * @param forests
+     */
+    public DicRecognition(Forest[] forests) {
+        this.forests = forests;
+    }
 
-	public DicRecognition(Forest forest) {
-		this.forests = new Forest[] { forest };
-	}
+    public DicRecognition(Forest forest) {
+        this.forests = new Forest[] {forest};
+    }
 
-	@Override
-	public void recognition(Result result) {
-		for (Forest forest : forests) {
-			if (forest == null) {
-				continue;
-			}
-			recognition(result, forest);
-		}
-	}
+    @Override
+    public void recognition(Result result) {
+        for (Forest forest : forests) {
+            if (forest == null) {
+                continue;
+            }
+            recognition(result, forest);
+        }
+    }
 
-	private void recognition(Result result, Forest forest) {
-		List<Term> terms = result.getTerms();
+    private void recognition(Result result, Forest forest) {
+        List<Term> terms = result.getTerms();
 
-	}
+    }
 
 }

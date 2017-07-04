@@ -22,7 +22,8 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 public class SymmetricTrainer extends DefaultTrainer implements CommunicativeTrainer {
     protected GradientsAccumulator accumulator;
 
-    public SymmetricTrainer(@NonNull Model originalModel, int threadIdx, @NonNull WorkspaceMode mode, @NonNull ParallelWrapper wrapper) {
+    public SymmetricTrainer(@NonNull Model originalModel, int threadIdx, @NonNull WorkspaceMode mode,
+                    @NonNull ParallelWrapper wrapper) {
         super();
         this.originalModel = originalModel;
         this.threadId = threadIdx;
@@ -62,7 +63,6 @@ public class SymmetricTrainer extends DefaultTrainer implements CommunicativeTra
         // need to attach this device id to accumulator's workspaces
         accumulator.touch();
     }
-
 
 
 

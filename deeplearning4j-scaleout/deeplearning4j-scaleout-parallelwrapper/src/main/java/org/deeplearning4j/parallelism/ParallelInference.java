@@ -182,7 +182,6 @@ public class ParallelInference {
 
 
 
-
         /**
          * This method defines, how many model copies will be used for inference.
          *

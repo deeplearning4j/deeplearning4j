@@ -164,14 +164,14 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
      *
      * @param collectMetaData Whether to collect metadata or  not
      */
-    public void setCollectMetaData(boolean collectMetaData){
-        if(underlying != null){
+    public void setCollectMetaData(boolean collectMetaData) {
+        if (underlying != null) {
             underlying.setCollectMetaData(collectMetaData);
         }
         this.collectMetaData = collectMetaData;
     }
 
-    private void initializeUnderlying(Record next){
+    private void initializeUnderlying(Record next) {
         int totalSize = next.getRecord().size();
 
         //allow people to specify label index as -1 and infer the last possible label
@@ -182,15 +182,15 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         recordReader.reset();
 
         RecordReaderMultiDataSetIterator.Builder builder = new RecordReaderMultiDataSetIterator.Builder(batchSize);
-        if(recordReader instanceof SequenceRecordReader){
+        if (recordReader instanceof SequenceRecordReader) {
             builder.addSequenceReader(READER_KEY, (SequenceRecordReader) recordReader);
         } else {
             builder.addReader(READER_KEY, recordReader);
         }
 
-        if(regression){
+        if (regression) {
             builder.addOutput(READER_KEY, labelIndex, labelIndexTo);
-        } else if(numPossibleLabels >= 1){
+        } else if (numPossibleLabels >= 1) {
             builder.addOutputOneHot(READER_KEY, labelIndex, numPossibleLabels);
         }
 
@@ -198,7 +198,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         //In general: can't assume label indices are all at the start or end (event though 99% of the time they are)
         //If they are: easy. If not: use 2 inputs in the underlying as a workaround, and concat them
 
-        if(labelIndex >= 0 && (labelIndex == 0 || labelIndexTo == totalSize - 1)){
+        if (labelIndex >= 0 && (labelIndex == 0 || labelIndexTo == totalSize - 1)) {
             //Labels are first or last -> one input in underlying
             int inputFrom;
             int inputTo;
@@ -217,7 +217,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             builder.addInput(READER_KEY, inputFrom, inputTo);
 
             underlyingIsDisjoint = false;
-        } else if(labelIndex >= 0){
+        } else if (labelIndex >= 0) {
             //Multiple inputs
             int firstFrom = 0;
             int firstTo = labelIndex - 1;
@@ -237,19 +237,19 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
         underlying = builder.build();
 
-        if(collectMetaData){
+        if (collectMetaData) {
             underlying.setCollectMetaData(true);
         }
     }
 
-    private DataSet mdsToDataSet(MultiDataSet mds){
+    private DataSet mdsToDataSet(MultiDataSet mds) {
         INDArray f;
         INDArray fm;
-        if(underlyingIsDisjoint){
+        if (underlyingIsDisjoint) {
             //Rare case: 2 input arrays -> concat
             INDArray f1 = getOrNull(mds.getFeatures(), 0);
             INDArray f2 = getOrNull(mds.getFeatures(), 1);
-            fm = getOrNull(mds.getFeaturesMaskArrays(), 0);     //Per-example masking only on the input -> same for both
+            fm = getOrNull(mds.getFeaturesMaskArrays(), 0); //Per-example masking only on the input -> same for both
 
             //Can assume 2d features here
             f = Nd4j.hstack(f1, f2);
@@ -264,11 +264,11 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
         DataSet ds = new DataSet(f, l, fm, lm);
 
-        if(collectMetaData){
+        if (collectMetaData) {
             List<Serializable> temp = mds.getExampleMetaData();
             List<Serializable> temp2 = new ArrayList<>(temp.size());
-            for(Serializable s : temp){
-                RecordMetaDataComposableMap m = (RecordMetaDataComposableMap)s;
+            for (Serializable s : temp) {
+                RecordMetaDataComposableMap m = (RecordMetaDataComposableMap) s;
                 temp2.add(m.getMeta().get(READER_KEY));
             }
             ds.setExampleMetaData(temp2);
@@ -276,11 +276,11 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
         //Edge case, for backward compatibility:
         //If labelIdx == -1 && numPossibleLabels == -1 -> no labels -> set labels array to features array
-        if(labelIndex == -1 && numPossibleLabels == -1 && ds.getLabels() == null){
+        if (labelIndex == -1 && numPossibleLabels == -1 && ds.getLabels() == null) {
             ds.setLabels(ds.getFeatures());
         }
 
-        if(preProcessor != null){
+        if (preProcessor != null) {
             preProcessor.preProcess(ds);
         }
 
@@ -297,7 +297,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
             return last;
         }
 
-        if(underlying == null){
+        if (underlying == null) {
             Record next = recordReader.nextRecord();
             initializeUnderlying(next);
         }
@@ -308,8 +308,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     }
 
     //Package private
-    static INDArray getOrNull(INDArray[] arr, int idx){
-        if(arr == null || arr.length == 0){
+    static INDArray getOrNull(INDArray[] arr, int idx) {
+        if (arr == null || arr.length == 0) {
             return null;
         }
         return arr[idx];
@@ -355,7 +355,7 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
     @Override
     public void reset() {
         batchNum = 0;
-        if(underlying != null){
+        if (underlying != null) {
             underlying.reset();
         }
     }
@@ -383,7 +383,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
 
     @Override
     public boolean hasNext() {
-        return (((sequenceIter != null && sequenceIter.hasNext()) || recordReader.hasNext()) && (maxNumBatches < 0 || batchNum < maxNumBatches));
+        return (((sequenceIter != null && sequenceIter.hasNext()) || recordReader.hasNext())
+                        && (maxNumBatches < 0 || batchNum < maxNumBatches));
     }
 
     @Override
@@ -422,14 +423,14 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
      * @throws IOException If an error occurs during loading of the data
      */
     public DataSet loadFromMetaData(List<RecordMetaData> list) throws IOException {
-        if(underlying == null){
+        if (underlying == null) {
             Record r = recordReader.loadFromMetaData(list.get(0));
             initializeUnderlying(r);
         }
 
         //Convert back to composable:
         List<RecordMetaData> l = new ArrayList<>(list.size());
-        for(RecordMetaData m : list){
+        for (RecordMetaData m : list) {
             l.add(new RecordMetaDataComposableMap(Collections.singletonMap(READER_KEY, m)));
         }
         MultiDataSet m = underlying.loadFromMetaData(l);

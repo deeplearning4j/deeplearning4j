@@ -77,7 +77,9 @@ import java.util.*;
 @EqualsAndHashCode(exclude = {"stats", "listeners", "iterationCount", "rng", "lastExportedRDDId", "lastRDDExportPath",
                 "trainingMasterUID"})
 @Slf4j
-public class ParameterAveragingTrainingMaster extends BaseTrainingMaster<ParameterAveragingTrainingResult, ParameterAveragingTrainingWorker> implements TrainingMaster<ParameterAveragingTrainingResult, ParameterAveragingTrainingWorker> {
+public class ParameterAveragingTrainingMaster
+                extends BaseTrainingMaster<ParameterAveragingTrainingResult, ParameterAveragingTrainingWorker>
+                implements TrainingMaster<ParameterAveragingTrainingResult, ParameterAveragingTrainingWorker> {
 
     protected static final int COALESCE_THRESHOLD = 3;
 
@@ -132,7 +134,7 @@ public class ParameterAveragingTrainingMaster extends BaseTrainingMaster<Paramet
     public ParameterAveragingTrainingMaster(boolean saveUpdater, Integer numWorkers, int rddDataSetNumExamples,
                     int batchSizePerWorker, int averagingFrequency, int prefetchNumBatches) {
         this(saveUpdater, numWorkers, rddDataSetNumExamples, batchSizePerWorker, averagingFrequency, 2,
-                prefetchNumBatches, Repartition.Always, RepartitionStrategy.Balanced, false);
+                        prefetchNumBatches, Repartition.Always, RepartitionStrategy.Balanced, false);
     }
 
     /**
@@ -151,7 +153,8 @@ public class ParameterAveragingTrainingMaster extends BaseTrainingMaster<Paramet
                     int batchSizePerWorker, int averagingFrequency, int aggregationDepth, int prefetchNumBatches,
                     Repartition repartition, RepartitionStrategy repartitionStrategy, boolean collectTrainingStats) {
         this(saveUpdater, numWorkers, rddDataSetNumExamples, batchSizePerWorker, averagingFrequency, aggregationDepth,
-                prefetchNumBatches, repartition, repartitionStrategy, StorageLevel.MEMORY_ONLY_SER(), collectTrainingStats);
+                        prefetchNumBatches, repartition, repartitionStrategy, StorageLevel.MEMORY_ONLY_SER(),
+                        collectTrainingStats);
     }
 
     public ParameterAveragingTrainingMaster(boolean saveUpdater, Integer numWorkers, int rddDataSetNumExamples,
@@ -159,7 +162,8 @@ public class ParameterAveragingTrainingMaster extends BaseTrainingMaster<Paramet
                     Repartition repartition, RepartitionStrategy repartitionStrategy, StorageLevel storageLevel,
                     boolean collectTrainingStats) {
         checkArgument(numWorkers > 0, "Invalid number of workers: " + numWorkers + " (must be >= 1)");
-        checkArgument(rddDataSetNumExamples > 0, "Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
+        checkArgument(rddDataSetNumExamples > 0,
+                        "Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
         checkArgument(averagingFrequency > 0, "Invalid input: averaging frequency must be >= 1");
         checkArgument(aggregationDepth > 0, "Invalid input: tree aggregation depth must be >= 1");
 
@@ -332,7 +336,8 @@ public class ParameterAveragingTrainingMaster extends BaseTrainingMaster<Paramet
         }
     }
 
-    protected <T, Repr extends JavaRDDLike<T, Repr>> long getTotalDataSetObjectCount(JavaRDDLike<T, Repr> trainingData) {
+    protected <T, Repr extends JavaRDDLike<T, Repr>> long getTotalDataSetObjectCount(
+                    JavaRDDLike<T, Repr> trainingData) {
         if (collectTrainingStats)
             stats.logCountStart();
         long totalDataSetObjectCount = trainingData.count();
@@ -810,8 +815,9 @@ public class ParameterAveragingTrainingMaster extends BaseTrainingMaster<Paramet
 
         if (collectTrainingStats)
             stats.logAggregateStartTime();
-        ParameterAveragingAggregationTuple tuple = results.treeAggregate(null, new ParameterAveragingElementAddFunction(),
-                        new ParameterAveragingElementCombineFunction(), this.aggregationDepth);
+        ParameterAveragingAggregationTuple tuple =
+                        results.treeAggregate(null, new ParameterAveragingElementAddFunction(),
+                                        new ParameterAveragingElementCombineFunction(), this.aggregationDepth);
         INDArray params = tuple.getParametersSum();
         int aggCount = tuple.getAggregationsCount();
         SparkTrainingStats aggregatedStats = tuple.getSparkTrainingStats();
@@ -972,8 +978,10 @@ public class ParameterAveragingTrainingMaster extends BaseTrainingMaster<Paramet
          * @param rddDataSetNumExamples Number of examples in each DataSet object in the {@code RDD<DataSet>}
          */
         public Builder(Integer numWorkers, int rddDataSetNumExamples) {
-            checkArgument(numWorkers == null || numWorkers > 0, "Invalid number of workers: " + numWorkers + " (must be >= 1)");
-            checkArgument(rddDataSetNumExamples > 0, "Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
+            checkArgument(numWorkers == null || numWorkers > 0,
+                            "Invalid number of workers: " + numWorkers + " (must be >= 1)");
+            checkArgument(rddDataSetNumExamples > 0,
+                            "Invalid rdd data set size: " + rddDataSetNumExamples + " (must be >= 1)");
             this.numWorkers = numWorkers;
             this.rddDataSetNumExamples = rddDataSetNumExamples;
         }

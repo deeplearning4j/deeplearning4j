@@ -15,22 +15,22 @@ import org.nlpcn.commons.lang.util.logging.LogFactory;
  */
 public class DicReader {
 
-	private static final Log logger = LogFactory.getLog();
+    private static final Log logger = LogFactory.getLog();
 
-	public static BufferedReader getReader(String name) {
-		// maven工程修改词典加载方式
-		InputStream in = DicReader.class.getResourceAsStream("/" + name);
-		try {
-			return new BufferedReader(new InputStreamReader(in, "UTF-8"));
-		} catch (UnsupportedEncodingException e) {
-			logger.warn("不支持的编码", e);
-		}
-		return null;
-	}
+    public static BufferedReader getReader(String name) {
+        // maven工程修改词典加载方式
+        InputStream in = DicReader.class.getResourceAsStream("/" + name);
+        try {
+            return new BufferedReader(new InputStreamReader(in, "UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            logger.warn("不支持的编码", e);
+        }
+        return null;
+    }
 
-	public static InputStream getInputStream(String name) {
-		// maven工程修改词典加载方式
-		InputStream in = DicReader.class.getResourceAsStream("/" + name);
-		return in;
-	}
+    public static InputStream getInputStream(String name) {
+        // maven工程修改词典加载方式
+        InputStream in = DicReader.class.getResourceAsStream("/" + name);
+        return in;
+    }
 }

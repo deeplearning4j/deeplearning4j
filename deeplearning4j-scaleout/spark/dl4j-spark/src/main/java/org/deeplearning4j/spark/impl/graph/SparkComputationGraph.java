@@ -565,8 +565,7 @@ public class SparkComputationGraph extends SparkListenable {
      * @return ROC for the entire data set
      */
     public ROC evaluateROC(JavaRDD<DataSet> data) {
-        return evaluateROC(data, DEFAULT_ROC_THRESHOLD_STEPS,
-                DEFAULT_EVAL_SCORE_BATCH_SIZE);
+        return evaluateROC(data, DEFAULT_ROC_THRESHOLD_STEPS, DEFAULT_EVAL_SCORE_BATCH_SIZE);
     }
 
     /**
@@ -635,7 +634,7 @@ public class SparkComputationGraph extends SparkListenable {
      */
     public <T extends IEvaluation> T doEvaluation(JavaRDD<DataSet> data, T emptyEvaluation, int evalBatchSize) {
         IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(true, sc.broadcast(conf.toJson()),
-                sc.broadcast(network.params()), evalBatchSize, emptyEvaluation);
+                        sc.broadcast(network.params()), evalBatchSize, emptyEvaluation);
         JavaRDD<T> evaluations = data.mapPartitions(evalFn);
         return evaluations.reduce(new IEvaluationReduceFunction<T>());
     }

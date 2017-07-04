@@ -50,15 +50,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
      * Note: Currently only supported with cuDNN.
      */
     public enum FwdAlgo {
-        IMPLICIT_GEMM,
-        IMPLICIT_PRECOMP_GEMM,
-        GEMM,
-        DIRECT,
-        FFT,
-        FFT_TILING,
-        WINOGRAD,
-        WINOGRAD_NONFUSED,
-        COUNT
+        IMPLICIT_GEMM, IMPLICIT_PRECOMP_GEMM, GEMM, DIRECT, FFT, FFT_TILING, WINOGRAD, WINOGRAD_NONFUSED, COUNT
     }
 
     /** The backward filter algorithm to use when {@link AlgoMode} is set to "USER_SPECIFIED".
@@ -66,14 +58,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
      * Note: Currently only supported with cuDNN.
      */
     public enum BwdFilterAlgo {
-        ALGO_0,
-        ALGO_1,
-        FFT,
-        ALGO_3,
-        WINOGRAD,
-        WINOGRAD_NONFUSED,
-        FFT_TILING,
-        COUNT
+        ALGO_0, ALGO_1, FFT, ALGO_3, WINOGRAD, WINOGRAD_NONFUSED, FFT_TILING, COUNT
     }
 
     /** The backward data algorithm to use when {@link AlgoMode} is set to "USER_SPECIFIED".
@@ -81,13 +66,7 @@ public class ConvolutionLayer extends FeedForwardLayer {
      * Note: Currently only supported with cuDNN.
      */
     public enum BwdDataAlgo {
-        ALGO_0,
-        ALGO_1,
-        FFT,
-        FFT_TILING,
-        WINOGRAD,
-        WINOGRAD_NONFUSED,
-        COUNT
+        ALGO_0, ALGO_1, FFT, FFT_TILING, WINOGRAD, WINOGRAD_NONFUSED, COUNT
     }
 
     /** Defaults to "PREFER_FASTEST", but "NO_WORKSPACE" uses less memory. */
