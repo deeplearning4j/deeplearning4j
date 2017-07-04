@@ -32,7 +32,7 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
     private ROC[] underlying;
     private List<String> labels;
 
-    public ROCMultiClass(){
+    public ROCMultiClass() {
         //Default to exact
         this(0);
     }

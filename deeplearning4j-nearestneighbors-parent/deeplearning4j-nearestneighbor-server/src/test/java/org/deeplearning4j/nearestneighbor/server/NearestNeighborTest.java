@@ -53,19 +53,17 @@ public class NearestNeighborTest {
     public void testServer() throws Exception {
         int localPort = getAvailablePort();
         Nd4j.getRandom().setSeed(7);
-        INDArray rand = Nd4j.randn(10,5);
-        File writeToTmp = new File(System.getProperty("java.io.tmpdir"),"ndarray" + UUID.randomUUID().toString());
+        INDArray rand = Nd4j.randn(10, 5);
+        File writeToTmp = new File(System.getProperty("java.io.tmpdir"), "ndarray" + UUID.randomUUID().toString());
         writeToTmp.deleteOnExit();
-        BinarySerde.writeArrayToDisk(rand,writeToTmp);
+        BinarySerde.writeArrayToDisk(rand, writeToTmp);
         NearestNeighborsServer server = new NearestNeighborsServer();
-        server.runMain(
-                "--ndarrayPath",writeToTmp.getAbsolutePath(),
-                "--nearestNeighborsPort",String.valueOf(localPort)
-        );
+        server.runMain("--ndarrayPath", writeToTmp.getAbsolutePath(), "--nearestNeighborsPort",
+                        String.valueOf(localPort));
 
-        NearestNeighborsClient client = new NearestNeighborsClient("http://localhost:"+ localPort);
-        NearstNeighborsResults result = client.knnNew(5,rand.getRow(0));
-        assertEquals(5,result.getResults().size());
+        NearestNeighborsClient client = new NearestNeighborsClient("http://localhost:" + localPort);
+        NearstNeighborsResults result = client.knnNew(5, rand.getRow(0));
+        assertEquals(5, result.getResults().size());
         server.stop();
     }
 

@@ -9,14 +9,12 @@ import org.apache.spark.api.java.JavaSparkContext;
 public class BaseSparkKryoTest extends BaseSparkTest {
 
     @Override
-    public JavaSparkContext getContext(){
+    public JavaSparkContext getContext() {
         if (sc != null) {
             return sc;
         }
 
-        SparkConf sparkConf = new SparkConf()
-                .setMaster("local[" + numExecutors() + "]")
-                .setAppName("sparktest");
+        SparkConf sparkConf = new SparkConf().setMaster("local[" + numExecutors() + "]").setAppName("sparktest");
 
         sparkConf.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
         sparkConf.set("spark.kryo.registrator", "org.nd4j.Nd4jRegistrator");

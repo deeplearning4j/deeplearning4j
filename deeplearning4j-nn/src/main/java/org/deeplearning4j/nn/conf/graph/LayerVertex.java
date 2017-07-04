@@ -67,7 +67,7 @@ public class LayerVertex extends GraphVertex {
         if (!(o instanceof LayerVertex))
             return false;
         LayerVertex lv = (LayerVertex) o;
-        if((layerConf == null && lv.layerConf != null) || (layerConf != null && lv.layerConf == null)){
+        if ((layerConf == null && lv.layerConf != null) || (layerConf != null && lv.layerConf == null)) {
             return false;
         }
         if (layerConf != null && !layerConf.equals(lv.layerConf))

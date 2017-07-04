@@ -36,7 +36,7 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
     private boolean rocRemoveRedundantPts;
     private List<String> labels;
 
-    public ROCBinary(){
+    public ROCBinary() {
         this(0);
     }
 

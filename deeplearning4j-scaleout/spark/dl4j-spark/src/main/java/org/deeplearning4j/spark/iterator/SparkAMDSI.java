@@ -48,22 +48,27 @@ public class SparkAMDSI extends AsyncMultiDataSetIterator {
     }
 
     public SparkAMDSI(MultiDataSetIterator baseIterator, int queueSize, boolean useWorkspace, Integer deviceId) {
-        this(baseIterator, queueSize, new LinkedBlockingQueue<MultiDataSet>(queueSize), useWorkspace, new DefaultCallback(), deviceId);
+        this(baseIterator, queueSize, new LinkedBlockingQueue<MultiDataSet>(queueSize), useWorkspace,
+                        new DefaultCallback(), deviceId);
     }
 
-    public SparkAMDSI(MultiDataSetIterator baseIterator, int queueSize, boolean useWorkspace, DataSetCallback callback) {
+    public SparkAMDSI(MultiDataSetIterator baseIterator, int queueSize, boolean useWorkspace,
+                    DataSetCallback callback) {
         this(baseIterator, queueSize, new LinkedBlockingQueue<MultiDataSet>(queueSize), useWorkspace, callback);
     }
 
-    public SparkAMDSI(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue, boolean useWorkspace) {
+    public SparkAMDSI(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue,
+                    boolean useWorkspace) {
         this(iterator, queueSize, queue, useWorkspace, null);
     }
 
-    public SparkAMDSI(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue, boolean useWorkspace, DataSetCallback callback) {
+    public SparkAMDSI(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue,
+                    boolean useWorkspace, DataSetCallback callback) {
         this(iterator, queueSize, queue, useWorkspace, callback, Nd4j.getAffinityManager().getDeviceForCurrentThread());
     }
 
-    public SparkAMDSI(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue, boolean useWorkspace, DataSetCallback callback, Integer deviceId) {
+    public SparkAMDSI(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue,
+                    boolean useWorkspace, DataSetCallback callback, Integer deviceId) {
         this();
 
         if (queueSize < 2)
@@ -100,7 +105,8 @@ public class SparkAMDSI extends AsyncMultiDataSetIterator {
 
     protected class SparkPrefetchThread extends AsyncPrefetchThread {
 
-        protected SparkPrefetchThread(@NonNull BlockingQueue<MultiDataSet> queue, @NonNull MultiDataSetIterator iterator, @NonNull MultiDataSet terminator) {
+        protected SparkPrefetchThread(@NonNull BlockingQueue<MultiDataSet> queue,
+                        @NonNull MultiDataSetIterator iterator, @NonNull MultiDataSet terminator) {
             super(queue, iterator, terminator);
         }
     }

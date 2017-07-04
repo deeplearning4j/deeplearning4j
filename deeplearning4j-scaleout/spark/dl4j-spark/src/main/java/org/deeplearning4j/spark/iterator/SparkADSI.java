@@ -48,7 +48,8 @@ public class SparkADSI extends AsyncDataSetIterator {
     }
 
     public SparkADSI(DataSetIterator baseIterator, int queueSize, boolean useWorkspace, Integer deviceId) {
-        this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace, new DefaultCallback(), deviceId);
+        this(baseIterator, queueSize, new LinkedBlockingQueue<DataSet>(queueSize), useWorkspace, new DefaultCallback(),
+                        deviceId);
     }
 
     public SparkADSI(DataSetIterator baseIterator, int queueSize, boolean useWorkspace, DataSetCallback callback) {
@@ -59,11 +60,13 @@ public class SparkADSI extends AsyncDataSetIterator {
         this(iterator, queueSize, queue, useWorkspace, new DefaultCallback());
     }
 
-    public SparkADSI(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace, DataSetCallback callback) {
+    public SparkADSI(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace,
+                    DataSetCallback callback) {
         this(iterator, queueSize, queue, useWorkspace, callback, Nd4j.getAffinityManager().getDeviceForCurrentThread());
     }
 
-    public SparkADSI(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace, DataSetCallback callback, Integer deviceId) {
+    public SparkADSI(DataSetIterator iterator, int queueSize, BlockingQueue<DataSet> queue, boolean useWorkspace,
+                    DataSetCallback callback, Integer deviceId) {
         this();
 
         if (queueSize < 2)
@@ -101,7 +104,8 @@ public class SparkADSI extends AsyncDataSetIterator {
 
     public class SparkPrefetchThread extends AsyncPrefetchThread {
 
-        protected SparkPrefetchThread(BlockingQueue<DataSet> queue, DataSetIterator iterator, DataSet terminator, MemoryWorkspace workspace) {
+        protected SparkPrefetchThread(BlockingQueue<DataSet> queue, DataSetIterator iterator, DataSet terminator,
+                        MemoryWorkspace workspace) {
             super(queue, iterator, terminator, workspace);
         }
 

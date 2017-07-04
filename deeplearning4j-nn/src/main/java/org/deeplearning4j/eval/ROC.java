@@ -69,7 +69,7 @@ public class ROC extends BaseEvaluation<ROC> {
     private boolean rocRemoveRedundantPts;
     private int exactAllocBlockSize;
 
-    public ROC(){
+    public ROC() {
         //Default to exact
         this(0);
     }
