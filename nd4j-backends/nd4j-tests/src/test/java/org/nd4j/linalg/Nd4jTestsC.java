@@ -4390,6 +4390,93 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testAllDistances1() throws Exception {
+        INDArray initialX = Nd4j.create(5, 10);
+        INDArray initialY = Nd4j.create(7, 10);
+        for (int i = 0; i < initialX.rows(); i++) {
+            initialX.getRow(i).assign(i+1);
+        }
+
+        for (int i = 0; i < initialY.rows(); i++) {
+            initialY.getRow(i).assign(i+101);
+        }
+
+        INDArray result = Transforms.allEuclideanDistances(initialX, initialY, 1);
+
+        assertEquals(5 * 7, result.length());
+
+        for (int x = 0; x < initialX.rows(); x++) {
+
+            INDArray rowX = initialX.getRow(x).dup();
+
+            for (int y = 0; y < initialY.rows(); y++) {
+
+                double res = result.getDouble(x, y);
+                double exp = Transforms.euclideanDistance(rowX, initialY.getRow(y).dup());
+
+                assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
+            }
+        }
+    }
+
+
+    @Test
+    public void testAllDistances2() throws Exception {
+        INDArray initialX = Nd4j.create(5, 10);
+        INDArray initialY = Nd4j.create(7, 10);
+        for (int i = 0; i < initialX.rows(); i++) {
+            initialX.getRow(i).assign(i+1);
+        }
+
+        for (int i = 0; i < initialY.rows(); i++) {
+            initialY.getRow(i).assign(i+101);
+        }
+
+        INDArray result = Transforms.allManhattanDistances(initialX, initialY, 1);
+
+        assertEquals(5 * 7, result.length());
+
+        for (int x = 0; x < initialX.rows(); x++) {
+
+            INDArray rowX = initialX.getRow(x).dup();
+
+            for (int y = 0; y < initialY.rows(); y++) {
+
+                double res = result.getDouble(x, y);
+                double exp = Transforms.manhattanDistance(rowX, initialY.getRow(y).dup());
+
+                assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
+            }
+        }
+    }
+
+
+    @Test
+    public void testAllDistances3() throws Exception {
+        Nd4j.getRandom().setSeed(123);
+
+        INDArray initialX = Nd4j.rand(5, 10);
+        INDArray initialY = initialX.mul(-1);
+
+        INDArray result = Transforms.allCosineSimilarities(initialX, initialY, 1);
+
+        assertEquals(5 * 5, result.length());
+
+        for (int x = 0; x < initialX.rows(); x++) {
+
+            INDArray rowX = initialX.getRow(x).dup();
+
+            for (int y = 0; y < initialY.rows(); y++) {
+
+                double res = result.getDouble(x, y);
+                double exp = Transforms.cosineSim(rowX, initialY.getRow(y).dup());
+
+                assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
+            }
+        }
+    }
+
     @Override
     public char ordering() {
         return 'c';
