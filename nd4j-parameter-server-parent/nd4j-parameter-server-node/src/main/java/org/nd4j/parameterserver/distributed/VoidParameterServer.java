@@ -193,8 +193,7 @@ public class VoidParameterServer {
                 this.transport = transport;
 
                 // first we need to check, if our current IP matches designated shards or backup
-                if (nodeRole == NodeRole.NONE && (voidConfiguration.getForcedRole() == null
-                                || voidConfiguration.getForcedRole() == NodeRole.NONE)) {
+                if (nodeRole == NodeRole.NONE && (voidConfiguration.getForcedRole() == null || voidConfiguration.getForcedRole() == NodeRole.NONE)) {
                     Pair<NodeRole, String> pair = null;
                     if (voidConfiguration.getShardAddresses().size() == 1
                                     && voidConfiguration.getShardAddresses().get(0).contains("127.0.0.1")) {
@@ -242,11 +241,9 @@ public class VoidParameterServer {
                         nodeRole = voidConfiguration.getForcedRole();
 
                     // if we're using forced roles here, we'll assume that controllerAddress belongs to this box
-                    String localIp = voidConfiguration.getExecutionMode() == ExecutionMode.MANAGED
-                                    ? voidConfiguration.getControllerAddress() : "127.0.0.1";
+                    String localIp = voidConfiguration.getExecutionMode() == ExecutionMode.MANAGED ? voidConfiguration.getControllerAddress() : "127.0.0.1";
 
-                    this.transport.init(voidConfiguration, clipboard, nodeRole, localIp,
-                                    voidConfiguration.getUnicastPort(), shardIndex);
+                    this.transport.init(voidConfiguration, clipboard, nodeRole, localIp, voidConfiguration.getUnicastPort(), shardIndex);
                 }
 
 
@@ -280,8 +277,7 @@ public class VoidParameterServer {
                         //executor.submit(processingRunnables[x);
 
                         // TODO: maybe find the way to guarantee affinity in some other way, to make different devices usable as well?
-                        Nd4j.getAffinityManager().attachThreadToDevice(processingThreads[x],
-                                        Nd4j.getAffinityManager().getDeviceForCurrentThread());
+                        Nd4j.getAffinityManager().attachThreadToDevice(processingThreads[x], Nd4j.getAffinityManager().getDeviceForCurrentThread());
                         processingThreads[x].setDaemon(true);
                         processingThreads[x].setName("VoidParameterServer messages handling thread");
                         processingThreads[x].start();

@@ -470,7 +470,7 @@ public class Shape {
         int size_2 = sizeUnsafe(shapeInformation, 2);
         if (dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2)
             throw new IllegalArgumentException("Invalid indices: cannot get [" + dim0 + "," + dim1 + "," + dim2
-                            + "] from a " + Arrays.toString(shapeInformation) + " NDArray");
+                    + "] from a " + Arrays.toString(shapeInformation) + " NDArray");
 
         if (size_0 != 1)
             offset += dim0 * strideUnsafe(shapeInformation, 0, 3);

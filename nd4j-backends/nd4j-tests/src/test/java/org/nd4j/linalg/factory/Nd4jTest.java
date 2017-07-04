@@ -115,7 +115,8 @@ public class Nd4jTest extends BaseNd4jTest {
         String path1 = "src/test/resources/writeNumpy.csv";
         String path2 = "src/test/resources/writeNumpyExpected.csv";
         Nd4j.writeNumpy(arr, path1, ",");
-        assertEquals("The files differ!", FileUtils.readFileToString(new File(path1), "utf-8"),
-                        FileUtils.readFileToString(new File(path2), "utf-8"));
+        assertEquals("The files differ!",
+                     FileUtils.readFileToString(new File(path1), "utf-8"),
+                     FileUtils.readFileToString(new File(path2), "utf-8"));
     }
 }

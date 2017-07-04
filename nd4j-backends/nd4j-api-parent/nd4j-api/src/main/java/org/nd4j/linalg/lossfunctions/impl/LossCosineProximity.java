@@ -18,10 +18,10 @@ public class LossCosineProximity implements ILossFunction {
 
     public INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         if (labels.size(1) != preOutput.size(1)) {
-            throw new IllegalArgumentException(
-                            "Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer"
-                                            + " number of outputs (nOut = " + preOutput.size(1) + ") ");
-
+            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
+                            + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
+                            + ") ");
+            
         }
         /*
          mean of -(y.dot(yhat)/||y||*||yhat||)
@@ -39,11 +39,11 @@ public class LossCosineProximity implements ILossFunction {
         scoreArr.diviColumnVector(ymag);
 
         if (mask != null) {
-            if (!mask.isColumnVector()) {
+            if(!mask.isColumnVector()){
                 //Per-output masking doesn't really make sense for cosine proximity
-                throw new UnsupportedOperationException("Expected column vector mask array for LossCosineProximity."
-                                + " Got mask array with shape " + Arrays.toString(mask.shape())
-                                + "; per-output masking is not " + "supported for LossCosineProximity");
+                throw new UnsupportedOperationException("Expected column vector mask array for LossCosineProximity." +
+                        " Got mask array with shape " + Arrays.toString(mask.shape()) + "; per-output masking is not " +
+                        "supported for LossCosineProximity");
             }
             scoreArr.muliColumnVector(mask);
         }
@@ -72,10 +72,10 @@ public class LossCosineProximity implements ILossFunction {
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         if (labels.size(1) != preOutput.size(1)) {
-            throw new IllegalArgumentException(
-                            "Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer"
-                                            + " number of outputs (nOut = " + preOutput.size(1) + ") ");
-
+            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
+                            + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
+                            + ") ");
+            
         }
         INDArray yhat = activationFn.getActivation(preOutput.dup(), true);
         INDArray yL2norm = labels.norm2(1);

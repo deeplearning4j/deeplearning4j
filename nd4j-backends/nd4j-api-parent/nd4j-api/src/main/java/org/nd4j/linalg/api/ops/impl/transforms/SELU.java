@@ -94,8 +94,7 @@ public class SELU extends BaseTransformOp {
 
     @Override
     public float op(float d1) {
-        return d1 > 0.0f ? (float) SELU_LAMBDA * d1
-                        : (float) ((float) SELU_LAMBDA * ((float) SELU_ALPHA * FastMath.exp(d1) - (float) SELU_ALPHA));
+        return d1 > 0.0f ? (float) SELU_LAMBDA * d1 : (float) ((float) SELU_LAMBDA * ((float) SELU_ALPHA * FastMath.exp(d1) - (float) SELU_ALPHA));
     }
 
     @Override
@@ -117,6 +116,6 @@ public class SELU extends BaseTransformOp {
     @Override
     public Op opForDimension(int index, int... dimension) {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
-        return new SELU(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+            return new SELU(xAlongDimension, z.tensorAlongDimension(index, dimension), xAlongDimension.length());
     }
 }

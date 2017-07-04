@@ -219,20 +219,23 @@ public class FloatDataBufferTest extends BaseNd4jTest {
     }
 
     @Test
-    public void testReallocation() {
-        DataBuffer buffer = Nd4j.createBuffer(new float[] {1, 2, 3, 4});
+    public void testReallocation(){
+        DataBuffer buffer = Nd4j.createBuffer(new float[]{1, 2, 3, 4});
         assertEquals(4, buffer.capacity());
         buffer.reallocate(6);
         assertEquals(6, buffer.capacity());
     }
 
     @Test
-    public void testReallocationWorkspace() {
-        WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder().initialSize(10 * 1024L * 1024L)
-                        .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.NONE).build();
-        MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "SOME_ID");
+    public void testReallocationWorkspace(){
+        WorkspaceConfiguration initialConfig = WorkspaceConfiguration.builder()
+                .initialSize(10 * 1024L * 1024L)
+                .policyAllocation(AllocationPolicy.STRICT)
+                .policyLearning(LearningPolicy.NONE)
+                .build();
+        MemoryWorkspace  workspace = Nd4j.getWorkspaceManager().getAndActivateWorkspace(initialConfig, "SOME_ID");
 
-        DataBuffer buffer = Nd4j.createBuffer(new float[] {1, 2, 3, 4});
+        DataBuffer buffer = Nd4j.createBuffer(new float[]{1, 2, 3, 4});
         assertTrue(buffer.isAttached());
         assertEquals(4, buffer.capacity());
         buffer.reallocate(6);

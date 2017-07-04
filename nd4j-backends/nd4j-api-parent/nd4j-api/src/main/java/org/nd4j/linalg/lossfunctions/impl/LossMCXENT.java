@@ -55,10 +55,10 @@ public class LossMCXENT implements ILossFunction {
 
     private INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         if (labels.size(1) != preOutput.size(1)) {
-            throw new IllegalArgumentException(
-                            "Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer"
-                                            + " number of outputs (nOut = " + preOutput.size(1) + ") ");
-
+            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
+                            + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
+                            + ") ");
+            
         }
         INDArray scoreArr;
         //if ("softmax".equals(activationFn)) {
@@ -111,10 +111,10 @@ public class LossMCXENT implements ILossFunction {
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         if (labels.size(1) != preOutput.size(1)) {
-            throw new IllegalArgumentException(
-                            "Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer"
-                                            + " number of outputs (nOut = " + preOutput.size(1) + ") ");
-
+            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
+                            + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
+                            + ") ");
+            
         }
         INDArray grad;
         //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
@@ -122,7 +122,7 @@ public class LossMCXENT implements ILossFunction {
 
         if (activationFn instanceof ActivationSoftmax) {
 
-            if (mask != null && LossUtil.isPerOutputMasking(output, mask)) {
+            if(mask != null && LossUtil.isPerOutputMasking(output, mask)){
                 throw new UnsupportedOperationException("Per output masking for MCXENT + softmax: not supported");
             }
 

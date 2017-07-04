@@ -42,6 +42,8 @@ public class AeronNDArraySerde extends BinarySerde {
 
 
 
+
+
     /**
      * Create an ndarray
      * from the unsafe buffer.
@@ -53,7 +55,7 @@ public class AeronNDArraySerde extends BinarySerde {
      * @return the ndarray derived from this buffer
      */
     public static Pair<INDArray, ByteBuffer> toArrayAndByteBuffer(DirectBuffer buffer, int offset) {
-        return toArrayAndByteBuffer(buffer.byteBuffer(), offset);
+        return toArrayAndByteBuffer(buffer.byteBuffer(),offset);
     }
 
 

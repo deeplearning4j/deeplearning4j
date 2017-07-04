@@ -28,12 +28,11 @@ public class Adam implements IUpdater {
     private double beta2 = DEFAULT_ADAM_BETA2_VAR_DECAY; // gradient sqrd decay rate
     private double epsilon = DEFAULT_ADAM_EPSILON;
 
-    public Adam() {
-        this(DEFAULT_ADAM_LEARNING_RATE, DEFAULT_ADAM_BETA1_MEAN_DECAY, DEFAULT_ADAM_BETA2_VAR_DECAY,
-                        DEFAULT_ADAM_EPSILON);
+    public Adam(){
+        this(DEFAULT_ADAM_LEARNING_RATE, DEFAULT_ADAM_BETA1_MEAN_DECAY, DEFAULT_ADAM_BETA2_VAR_DECAY, DEFAULT_ADAM_EPSILON);
     }
 
-    public Adam(double learningRate, double beta1, double beta2, double epsilon) {
+    public Adam(double learningRate, double beta1, double beta2, double epsilon){
         this.learningRate = learningRate;
         this.beta1 = beta1;
         this.beta2 = beta2;
@@ -42,7 +41,7 @@ public class Adam implements IUpdater {
 
     @Override
     public long stateSize(long numParams) {
-        return 2 * numParams;
+        return 2*numParams;
     }
 
     @Override
@@ -52,7 +51,7 @@ public class Adam implements IUpdater {
 
     @Override
     public GradientUpdater instantiate(INDArray viewArray, boolean initializeViewArray) {
-        AdamUpdater u = new AdamUpdater(this);
+        AdamUpdater u =  new AdamUpdater(this);
         int[] gradientShape = viewArray.shape();
         gradientShape = Arrays.copyOf(gradientShape, gradientShape.length);
         gradientShape[1] /= 2;
@@ -73,6 +72,7 @@ public class Adam implements IUpdater {
         private double beta2 = DEFAULT_ADAM_BETA2_VAR_DECAY;
         private double epsilon = DEFAULT_ADAM_EPSILON;
 
-        public Builder() {}
+        public Builder() {
+        }
     }
 }
