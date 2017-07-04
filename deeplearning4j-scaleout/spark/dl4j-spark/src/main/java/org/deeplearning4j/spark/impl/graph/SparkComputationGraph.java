@@ -56,6 +56,7 @@ import scala.Tuple2;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Array;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -697,7 +698,8 @@ public class SparkComputationGraph extends SparkListenable {
      */
     @SuppressWarnings("unchecked")
     public <T extends IEvaluation> T doEvaluation(JavaRDD<DataSet> data, T emptyEvaluation, int evalBatchSize) {
-        return doEvaluation(data, evalBatchSize, (T[])new Object[]{emptyEvaluation} )[0];
+        IEvaluation[] arr = new IEvaluation[]{emptyEvaluation};
+        return (T)doEvaluation(data, evalBatchSize, arr)[0];
     }
 
     /**
