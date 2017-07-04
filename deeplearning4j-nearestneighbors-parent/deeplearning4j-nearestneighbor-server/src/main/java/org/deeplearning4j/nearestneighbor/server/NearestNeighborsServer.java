@@ -51,7 +51,7 @@ public class NearestNeighborsServer {
 
     private Server server;
 
-    public void runMain(String[] args) throws Exception {
+    public void runMain(String... args) throws Exception {
         JCommander jcmdr = new JCommander(this);
 
         try {
