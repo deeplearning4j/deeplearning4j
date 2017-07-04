@@ -16,9 +16,9 @@ import org.nd4j.linalg.factory.Nd4j;
 import scala.collection.JavaConversions;
 
 import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.Assert.assertEquals;
 
@@ -172,5 +172,32 @@ public class TestKryo extends BaseSparkKryoTest {
 
         scala.collection.Map<Integer,Double> m2 = JavaConversions.mapAsScalaMap(m);
         testSerialization(m2, si);
+    }
+
+    @Test
+    public void testJavaTypes(){
+
+        Map<Object,Object> m = new HashMap<>();
+        m.put("key", "value");
+
+        SerializerInstance si = sc.env().serializer().newInstance();
+
+        testSerialization(Collections.singletonMap("key","value"), si);
+        testSerialization(Collections.synchronizedMap(m), si);
+        testSerialization(Collections.emptyMap(), si);
+        testSerialization(new ConcurrentHashMap<>(m), si);
+        testSerialization(Collections.unmodifiableMap(m), si);
+
+        testSerialization(Arrays.asList("s"), si);
+        testSerialization(Collections.singleton("s"), si);
+        testSerialization(Collections.synchronizedList(Arrays.asList("s")), si);
+        testSerialization(Collections.emptyList(), si);
+        testSerialization(new CopyOnWriteArrayList<>(Arrays.asList("s")), si);
+        testSerialization(Collections.unmodifiableList(Arrays.asList("s")), si);
+
+        testSerialization(Collections.singleton("s"), si);
+        testSerialization(Collections.synchronizedSet(new HashSet<>(Arrays.asList("s"))), si);
+        testSerialization(Collections.emptySet(), si);
+        testSerialization(Collections.unmodifiableSet(new HashSet<>(Arrays.asList("s"))), si);
     }
 }
