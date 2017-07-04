@@ -33,17 +33,14 @@ public class ImageSparkTransformServerTest {
     public static void before() throws Exception {
         server = new ImageSparkTransformServer();
 
-        ImageTransformProcess imgTransformProcess = new ImageTransformProcess.Builder()
-                .seed(12345)
-                .scaleImageTransform(10)
-                .cropImageTransform(5)
-                .build();
+        ImageTransformProcess imgTransformProcess = new ImageTransformProcess.Builder().seed(12345)
+                        .scaleImageTransform(10).cropImageTransform(5).build();
 
         FileUtils.write(fileSave, imgTransformProcess.toJson());
 
         Unirest.setObjectMapper(new ObjectMapper() {
             private org.nd4j.shade.jackson.databind.ObjectMapper jacksonObjectMapper =
-                    new org.nd4j.shade.jackson.databind.ObjectMapper();
+                            new org.nd4j.shade.jackson.databind.ObjectMapper();
 
             public <T> T readValue(String value, Class<T> valueType) {
                 try {
@@ -74,21 +71,26 @@ public class ImageSparkTransformServerTest {
 
     @Test
     public void testImageServer() throws Exception {
-        SingleImageRecord record = new SingleImageRecord(new ClassPathResource("testimages/class0/0.jpg").getFile().toURI());
-        JsonNode jsonNode = Unirest.post("http://localhost:9060/transformincrementalarray").header("accept", "application/json")
-                .header("Content-Type", "application/json").body(record).asJson().getBody();
-        Base64NDArrayBody array = Unirest.post("http://localhost:9060/transformincrementalarray").header("accept", "application/json")
-                .header("Content-Type", "application/json").body(record).asObject(Base64NDArrayBody.class).getBody();
+        SingleImageRecord record =
+                        new SingleImageRecord(new ClassPathResource("testimages/class0/0.jpg").getFile().toURI());
+        JsonNode jsonNode = Unirest.post("http://localhost:9060/transformincrementalarray")
+                        .header("accept", "application/json").header("Content-Type", "application/json").body(record)
+                        .asJson().getBody();
+        Base64NDArrayBody array = Unirest.post("http://localhost:9060/transformincrementalarray")
+                        .header("accept", "application/json").header("Content-Type", "application/json").body(record)
+                        .asObject(Base64NDArrayBody.class).getBody();
 
         BatchImageRecord batch = new BatchImageRecord();
         batch.add(new ClassPathResource("testimages/class0/0.jpg").getFile().toURI());
         batch.add(new ClassPathResource("testimages/class0/1.png").getFile().toURI());
         batch.add(new ClassPathResource("testimages/class0/2.jpg").getFile().toURI());
 
-        JsonNode jsonNodeBatch = Unirest.post("http://localhost:9060/transformarray").header("accept", "application/json")
-                .header("Content-Type", "application/json").body(batch).asJson().getBody();
-        Base64NDArrayBody batchArray = Unirest.post("http://localhost:9060/transformarray").header("accept", "application/json")
-                .header("Content-Type", "application/json").body(batch).asObject(Base64NDArrayBody.class).getBody();
+        JsonNode jsonNodeBatch =
+                        Unirest.post("http://localhost:9060/transformarray").header("accept", "application/json")
+                                        .header("Content-Type", "application/json").body(batch).asJson().getBody();
+        Base64NDArrayBody batchArray = Unirest.post("http://localhost:9060/transformarray")
+                        .header("accept", "application/json").header("Content-Type", "application/json").body(batch)
+                        .asObject(Base64NDArrayBody.class).getBody();
 
         INDArray result = getNDArray(jsonNode);
         assertEquals(1, result.size(0));

@@ -91,12 +91,12 @@ public class Java2DNativeImageLoader extends NativeImageLoader {
 
     @Override
     public INDArray asRowVector(Object image) throws IOException {
-        return image instanceof BufferedImage ? asRowVector((BufferedImage)image) : null;
+        return image instanceof BufferedImage ? asRowVector((BufferedImage) image) : null;
     }
 
     @Override
     public INDArray asMatrix(Object image) throws IOException {
-        return image instanceof BufferedImage ? asMatrix((BufferedImage)image) : null;
+        return image instanceof BufferedImage ? asMatrix((BufferedImage) image) : null;
     }
 
 }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,8 +40,7 @@ import java.util.Arrays;
 public class NDArrayColumnsMathOpTransform extends BaseColumnsMathOpTransform {
 
     public NDArrayColumnsMathOpTransform(@JsonProperty("newColumnName") String newColumnName,
-                                         @JsonProperty("mathOp") MathOp mathOp,
-                                         @JsonProperty("columns") String... columns) {
+                    @JsonProperty("mathOp") MathOp mathOp, @JsonProperty("columns") String... columns) {
         super(newColumnName, mathOp, columns);
     }
 
@@ -60,9 +59,11 @@ public class NDArrayColumnsMathOpTransform extends BaseColumnsMathOpTransform {
         for (int i = 1; i < columns.length; i++) {
             NDArrayMetaData meta2 = (NDArrayMetaData) inputSchema.getMetaData(columns[i]);
             if (!Arrays.equals(meta.getShape(), meta2.getShape())) {
-                throw new UnsupportedOperationException("Cannot perform NDArray operation on columns with different shapes: "
-                        + "Columns \"" + columns[0] + "\" and \"" + columns[i] + "\" have shapes: "
-                        + Arrays.toString(meta.getShape()) + " and " + Arrays.toString(meta2.getShape()));
+                throw new UnsupportedOperationException(
+                                "Cannot perform NDArray operation on columns with different shapes: " + "Columns \""
+                                                + columns[0] + "\" and \"" + columns[i] + "\" have shapes: "
+                                                + Arrays.toString(meta.getShape()) + " and "
+                                                + Arrays.toString(meta2.getShape()));
             }
         }
 
@@ -100,7 +101,7 @@ public class NDArrayColumnsMathOpTransform extends BaseColumnsMathOpTransform {
             case ScalarMin:
             case ScalarMax:
                 throw new IllegalArgumentException(
-                        "Invalid MathOp: cannot use " + mathOp + " with NDArrayColumnsMathOpTransform");
+                                "Invalid MathOp: cannot use " + mathOp + " with NDArrayColumnsMathOpTransform");
             default:
                 throw new RuntimeException("Unknown MathOp: " + mathOp);
         }
@@ -114,7 +115,7 @@ public class NDArrayColumnsMathOpTransform extends BaseColumnsMathOpTransform {
     @Override
     public String toString() {
         return "NDArrayColumnsMathOpTransform(newColumnName=\"" + newColumnName + "\",mathOp=" + mathOp + ",columns="
-                + Arrays.toString(columns) + ")";
+                        + Arrays.toString(columns) + ")";
     }
 
     @Override

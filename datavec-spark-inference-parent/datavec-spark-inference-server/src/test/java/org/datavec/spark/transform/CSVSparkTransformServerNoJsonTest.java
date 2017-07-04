@@ -69,22 +69,22 @@ public class CSVSparkTransformServerNoJsonTest {
 
 
 
-
     @Test
     public void testServer() throws Exception {
-       assertTrue(server.getTransform() == null);
+        assertTrue(server.getTransform() == null);
         JsonNode jsonStatus = Unirest.post("http://localhost:9050/transformprocess")
-                .header("accept", "application/json")
-                .header("Content-Type", "application/json").body(transformProcess.toJson())
-                .asJson().getBody();
+                        .header("accept", "application/json").header("Content-Type", "application/json")
+                        .body(transformProcess.toJson()).asJson().getBody();
         assumeNotNull(server.getTransform());
 
         String[] values = new String[] {"1.0", "2.0"};
         SingleCSVRecord record = new SingleCSVRecord(values);
-        JsonNode jsonNode = Unirest.post("http://localhost:9050/transformincremental").header("accept", "application/json")
-                        .header("Content-Type", "application/json").body(record).asJson().getBody();
-        SingleCSVRecord singleCsvRecord = Unirest.post("http://localhost:9050/transformincremental").header("accept", "application/json")
-                        .header("Content-Type", "application/json").body(record).asObject(SingleCSVRecord.class).getBody();
+        JsonNode jsonNode =
+                        Unirest.post("http://localhost:9050/transformincremental").header("accept", "application/json")
+                                        .header("Content-Type", "application/json").body(record).asJson().getBody();
+        SingleCSVRecord singleCsvRecord = Unirest.post("http://localhost:9050/transformincremental")
+                        .header("accept", "application/json").header("Content-Type", "application/json").body(record)
+                        .asObject(SingleCSVRecord.class).getBody();
 
         BatchCSVRecord batchCSVRecord = new BatchCSVRecord();
         for (int i = 0; i < 3; i++)

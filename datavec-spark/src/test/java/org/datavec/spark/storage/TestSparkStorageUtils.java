@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,11 +43,14 @@ import static org.junit.Assert.assertTrue;
 public class TestSparkStorageUtils extends BaseSparkTest {
 
     @Test
-    public void testSaveRestoreMapFile(){
+    public void testSaveRestoreMapFile() {
         List<List<Writable>> l = new ArrayList<>();
-        l.add(Arrays.<org.datavec.api.writable.Writable>asList(new Text("zero"), new IntWritable(0), new DoubleWritable(0), new NDArrayWritable(Nd4j.valueArrayOf(10, 0.0))));
-        l.add(Arrays.<org.datavec.api.writable.Writable>asList(new Text("one"), new IntWritable(11), new DoubleWritable(11.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 11.0))));
-        l.add(Arrays.<org.datavec.api.writable.Writable>asList(new Text("two"), new IntWritable(22), new DoubleWritable(22.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 22.0))));
+        l.add(Arrays.<org.datavec.api.writable.Writable>asList(new Text("zero"), new IntWritable(0),
+                        new DoubleWritable(0), new NDArrayWritable(Nd4j.valueArrayOf(10, 0.0))));
+        l.add(Arrays.<org.datavec.api.writable.Writable>asList(new Text("one"), new IntWritable(11),
+                        new DoubleWritable(11.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 11.0))));
+        l.add(Arrays.<org.datavec.api.writable.Writable>asList(new Text("two"), new IntWritable(22),
+                        new DoubleWritable(22.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 22.0))));
 
         JavaRDD<List<Writable>> rdd = sc.parallelize(l);
 
@@ -57,13 +60,13 @@ public class TestSparkStorageUtils extends BaseSparkTest {
         String path = "file:///" + f.getAbsolutePath();
 
         SparkStorageUtils.saveMapFile(path, rdd);
-        JavaPairRDD<Long,List<Writable>> restored = SparkStorageUtils.restoreMapFile(path, sc);
+        JavaPairRDD<Long, List<Writable>> restored = SparkStorageUtils.restoreMapFile(path, sc);
 
-        Map<Long,List<Writable>> m = restored.collectAsMap();
+        Map<Long, List<Writable>> m = restored.collectAsMap();
 
         assertEquals(3, m.size());
-        for( int i=0; i<3; i++ ){
-            assertEquals(l.get(i), m.get((long)i));
+        for (int i = 0; i < 3; i++) {
+            assertEquals(l.get(i), m.get((long) i));
         }
 
 
@@ -82,25 +85,31 @@ public class TestSparkStorageUtils extends BaseSparkTest {
     }
 
     @Test
-    public void testSaveRestoreMapFileSequences(){
+    public void testSaveRestoreMapFileSequences() {
         List<List<List<Writable>>> l = new ArrayList<>();
         l.add(Arrays.asList(
-                Arrays.<org.datavec.api.writable.Writable>asList(new Text("zero"), new IntWritable(0), new DoubleWritable(0), new NDArrayWritable(Nd4j.valueArrayOf(10, 0.0))),
-                Arrays.<org.datavec.api.writable.Writable>asList(new Text("one"), new IntWritable(1), new DoubleWritable(1.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 1.0))),
-                Arrays.<org.datavec.api.writable.Writable>asList(new Text("two"), new IntWritable(2), new DoubleWritable(2.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 2.0))))
-        );
+                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("zero"), new IntWritable(0),
+                                        new DoubleWritable(0), new NDArrayWritable(Nd4j.valueArrayOf(10, 0.0))),
+                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("one"), new IntWritable(1),
+                                        new DoubleWritable(1.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 1.0))),
+                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("two"), new IntWritable(2),
+                                        new DoubleWritable(2.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 2.0)))));
 
         l.add(Arrays.asList(
-                Arrays.<org.datavec.api.writable.Writable>asList(new Text("Bzero"), new IntWritable(10), new DoubleWritable(10), new NDArrayWritable(Nd4j.valueArrayOf(10, 10.0))),
-                Arrays.<org.datavec.api.writable.Writable>asList(new Text("Bone"), new IntWritable(11), new DoubleWritable(11.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 11.0))),
-                Arrays.<org.datavec.api.writable.Writable>asList(new Text("Btwo"), new IntWritable(12), new DoubleWritable(12.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 12.0))))
-        );
+                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Bzero"), new IntWritable(10),
+                                        new DoubleWritable(10), new NDArrayWritable(Nd4j.valueArrayOf(10, 10.0))),
+                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Bone"), new IntWritable(11),
+                                        new DoubleWritable(11.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 11.0))),
+                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Btwo"), new IntWritable(12),
+                                        new DoubleWritable(12.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 12.0)))));
 
         l.add(Arrays.asList(
-                Arrays.<org.datavec.api.writable.Writable>asList(new Text("Czero"), new IntWritable(20), new DoubleWritable(20), new NDArrayWritable(Nd4j.valueArrayOf(10, 20.0))),
-                Arrays.<org.datavec.api.writable.Writable>asList(new Text("Cone"), new IntWritable(21), new DoubleWritable(21.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 21.0))),
-                Arrays.<org.datavec.api.writable.Writable>asList(new Text("Ctwo"), new IntWritable(22), new DoubleWritable(22.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 22.0))))
-        );
+                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Czero"), new IntWritable(20),
+                                        new DoubleWritable(20), new NDArrayWritable(Nd4j.valueArrayOf(10, 20.0))),
+                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Cone"), new IntWritable(21),
+                                        new DoubleWritable(21.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 21.0))),
+                        Arrays.<org.datavec.api.writable.Writable>asList(new Text("Ctwo"), new IntWritable(22),
+                                        new DoubleWritable(22.0), new NDArrayWritable(Nd4j.valueArrayOf(10, 22.0)))));
 
         JavaRDD<List<List<Writable>>> rdd = sc.parallelize(l);
 
@@ -110,13 +119,13 @@ public class TestSparkStorageUtils extends BaseSparkTest {
         String path = "file:///" + f.getAbsolutePath();
 
         SparkStorageUtils.saveMapFileSequences(path, rdd);
-        JavaPairRDD<Long,List<List<Writable>>> restored = SparkStorageUtils.restoreMapFileSequences(path, sc);
+        JavaPairRDD<Long, List<List<Writable>>> restored = SparkStorageUtils.restoreMapFileSequences(path, sc);
 
-        Map<Long,List<List<Writable>>> m = restored.collectAsMap();
+        Map<Long, List<List<Writable>>> m = restored.collectAsMap();
 
         assertEquals(3, m.size());
-        for( int i=0; i<3; i++ ){
-            assertEquals(l.get(i), m.get((long)i));
+        for (int i = 0; i < 3; i++) {
+            assertEquals(l.get(i), m.get((long) i));
         }
 
         //Also test sequence file:
@@ -132,7 +141,6 @@ public class TestSparkStorageUtils extends BaseSparkTest {
         assertEquals(3, restored2.size());
         assertTrue(l.containsAll(restored2) && restored2.containsAll(l));
     }
-
 
 
 

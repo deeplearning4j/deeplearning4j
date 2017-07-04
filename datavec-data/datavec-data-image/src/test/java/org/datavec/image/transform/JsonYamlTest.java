@@ -24,33 +24,28 @@ public class JsonYamlTest {
         int CV_BGR2GRAY = 6;
 
 
-        ImageTransformProcess itp = new ImageTransformProcess.Builder()
-                .colorConversionTransform(COLOR_BGR2Luv)
-                .cropImageTransform(10)
-                .equalizeHistTransform(CV_BGR2GRAY)
-                .flipImageTransform(0)
-                .resizeImageTransform(300, 300)
-                .rotateImageTransform(30)
-                .scaleImageTransform(3)
-                .warpImageTransform((float)0.5)
+        ImageTransformProcess itp = new ImageTransformProcess.Builder().colorConversionTransform(COLOR_BGR2Luv)
+                        .cropImageTransform(10).equalizeHistTransform(CV_BGR2GRAY).flipImageTransform(0)
+                        .resizeImageTransform(300, 300).rotateImageTransform(30).scaleImageTransform(3)
+                        .warpImageTransform((float) 0.5)
 
-                // Note : since randomCropTransform use random value
-                // the results from each case(json, yaml, ImageTransformProcess)
-                // can be different
-                // don't use the below line
-                // if you uncomment it, you will get fail from below assertions
-                //  .randomCropTransform(seed, 50, 50)
+                        // Note : since randomCropTransform use random value
+                        // the results from each case(json, yaml, ImageTransformProcess)
+                        // can be different
+                        // don't use the below line
+                        // if you uncomment it, you will get fail from below assertions
+                        //  .randomCropTransform(seed, 50, 50)
 
-                // Note : you will get "java.lang.NoClassDefFoundError: Could not initialize class org.bytedeco.javacpp.avutil"
-                // it needs to add the below dependency
-                // <dependency>
-                //     <groupId>org.bytedeco.javacpp-presets</groupId>
-                //     <artifactId>ffmpeg-platform</artifactId>
-                // </dependency>
-                // FFmpeg has license issues, be careful to use it
-                //.filterImageTransform("noise=alls=20:allf=t+u,format=rgba", 100, 100, 4)
+                        // Note : you will get "java.lang.NoClassDefFoundError: Could not initialize class org.bytedeco.javacpp.avutil"
+                        // it needs to add the below dependency
+                        // <dependency>
+                        //     <groupId>org.bytedeco.javacpp-presets</groupId>
+                        //     <artifactId>ffmpeg-platform</artifactId>
+                        // </dependency>
+                        // FFmpeg has license issues, be careful to use it
+                        //.filterImageTransform("noise=alls=20:allf=t+u,format=rgba", 100, 100, 4)
 
-                .build();
+                        .build();
 
         String asJson = itp.toJson();
         String asYaml = itp.toYaml();

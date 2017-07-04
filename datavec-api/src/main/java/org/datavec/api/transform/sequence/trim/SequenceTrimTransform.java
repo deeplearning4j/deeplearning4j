@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -48,7 +48,7 @@ public class SequenceTrimTransform implements Transform {
      * @param trimFromStart  If true: Trim values from the start of the sequence. If false: trim values from the end.
      */
     public SequenceTrimTransform(@JsonProperty("numStepsToTrim") int numStepsToTrim,
-                                 @JsonProperty("trimFromStart") boolean trimFromStart){
+                    @JsonProperty("trimFromStart") boolean trimFromStart) {
         this.numStepsToTrim = numStepsToTrim;
         this.trimFromStart = trimFromStart;
     }
@@ -97,19 +97,19 @@ public class SequenceTrimTransform implements Transform {
     public List<List<Writable>> mapSequence(List<List<Writable>> sequence) {
         int start = 0;
         int end = sequence.size();
-        if(trimFromStart){
+        if (trimFromStart) {
             start += numStepsToTrim;
         } else {
             end -= numStepsToTrim;
         }
 
-        if(end < start){
+        if (end < start) {
             return Collections.emptyList();
         }
 
-        List<List<Writable>> out = new ArrayList<>(end-start);
+        List<List<Writable>> out = new ArrayList<>(end - start);
 
-        for( int i=start; i<end; i++ ){
+        for (int i = start; i < end; i++) {
             out.add(sequence.get(i));
         }
 

@@ -320,8 +320,8 @@ public class TestYamlJsonSerde {
 
     @Test
     public void testReducer() {
-        IAssociativeReducer[] reducers = new IAssociativeReducer[] {new Reducer.Builder(ReduceOp.TakeFirst).keyColumns("KeyCol")
-                        .stdevColumns("Stdev").minColumns("min").countUniqueColumns("B").build()};
+        IAssociativeReducer[] reducers = new IAssociativeReducer[] {new Reducer.Builder(ReduceOp.TakeFirst)
+                        .keyColumns("KeyCol").stdevColumns("Stdev").minColumns("min").countUniqueColumns("B").build()};
 
         for (IAssociativeReducer r : reducers) {
             String yaml = y.serialize(r);

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,7 +30,7 @@ import java.util.*;
  * @author Alex Black
  */
 @AllArgsConstructor
-@NoArgsConstructor  //For Jackson/json
+@NoArgsConstructor //For Jackson/json
 @Builder(builderClassName = "Builder", builderMethodName = "Builder")
 @Data
 public class NDArrayAnalysis implements ColumnAnalysis {
@@ -40,7 +40,7 @@ public class NDArrayAnalysis implements ColumnAnalysis {
     private long minLength;
     private long maxLength;
     private long totalNDArrayValues;
-    private Map<Integer,Long> countsByRank;
+    private Map<Integer, Long> countsByRank;
     private double minValue;
     private double maxValue;
     protected double[] histogramBuckets;
@@ -53,18 +53,18 @@ public class NDArrayAnalysis implements ColumnAnalysis {
     }
 
     @Override
-    public String toString(){
-        Map<Integer,Long> sortedCountsByRank = new LinkedHashMap<>();
-        List<Integer> keys = new ArrayList<>(countsByRank == null ? Collections.<Integer>emptySet() : countsByRank.keySet());
+    public String toString() {
+        Map<Integer, Long> sortedCountsByRank = new LinkedHashMap<>();
+        List<Integer> keys =
+                        new ArrayList<>(countsByRank == null ? Collections.<Integer>emptySet() : countsByRank.keySet());
         Collections.sort(keys);
-        for(Integer i : keys ){
+        for (Integer i : keys) {
             sortedCountsByRank.put(i, countsByRank.get(i));
         }
 
-        return "NDArrayAnalysis(countTotal=" + countTotal
-                + ",countNull=" + countNull + ",minLength=" + minLength + ",maxLength=" + maxLength
-                + ",totalValuesAllNDArrays=" + totalNDArrayValues + ",minValue=" + minValue
-                + ",maxValue=" + maxValue + ",countsByNDArrayRank=" + sortedCountsByRank + ")";
+        return "NDArrayAnalysis(countTotal=" + countTotal + ",countNull=" + countNull + ",minLength=" + minLength
+                        + ",maxLength=" + maxLength + ",totalValuesAllNDArrays=" + totalNDArrayValues + ",minValue="
+                        + minValue + ",maxValue=" + maxValue + ",countsByNDArrayRank=" + sortedCountsByRank + ")";
     }
 
 

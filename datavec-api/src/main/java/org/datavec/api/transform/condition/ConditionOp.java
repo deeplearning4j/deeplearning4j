@@ -25,7 +25,7 @@ public enum ConditionOp {
     LessThan, LessOrEqual, GreaterThan, GreaterOrEqual, Equal, NotEqual, InSet, NotInSet;
 
 
-    public boolean apply(double x, double value, Set<Double> set){
+    public boolean apply(double x, double value, Set<Double> set) {
         switch (this) {
             case LessThan:
                 return x < value;
@@ -49,7 +49,7 @@ public enum ConditionOp {
     }
 
 
-    public boolean apply(float x, float value, Set<Float> set){
+    public boolean apply(float x, float value, Set<Float> set) {
         switch (this) {
             case LessThan:
                 return x < value;
@@ -72,7 +72,7 @@ public enum ConditionOp {
         }
     }
 
-    public boolean apply(int x, int value, Set<Integer> set){
+    public boolean apply(int x, int value, Set<Integer> set) {
         switch (this) {
             case LessThan:
                 return x < value;
@@ -95,7 +95,7 @@ public enum ConditionOp {
         }
     }
 
-    public boolean apply(long x, long value, Set<Long> set){
+    public boolean apply(long x, long value, Set<Long> set) {
         switch (this) {
             case LessThan:
                 return x < value;
@@ -119,7 +119,7 @@ public enum ConditionOp {
     }
 
 
-    public boolean apply(String x, String value, Set<String> set){
+    public boolean apply(String x, String value, Set<String> set) {
         switch (this) {
             case Equal:
                 return value.equals(x);

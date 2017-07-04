@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,7 +41,7 @@ public class SequenceWritablesToStringFunction implements Function<List<List<Wri
     /**
      * Function with default delimiters ("," and "\n")
      */
-    public SequenceWritablesToStringFunction(){
+    public SequenceWritablesToStringFunction() {
         this(DEFAULT_DELIMITER);
     }
 
@@ -49,7 +49,7 @@ public class SequenceWritablesToStringFunction implements Function<List<List<Wri
      * function with default delimiter ("\n") between time steps
      * @param delim Delimiter between values within a single time step
      */
-    public SequenceWritablesToStringFunction(String delim){
+    public SequenceWritablesToStringFunction(String delim) {
         this(delim, DEFAULT_TIME_STEP_DELIMITER, null);
     }
 
@@ -67,8 +67,8 @@ public class SequenceWritablesToStringFunction implements Function<List<List<Wri
 
         StringBuilder sb = new StringBuilder();
         boolean firstLine = true;
-        for(List<Writable> timeStep : c){
-            if(!firstLine){
+        for (List<Writable> timeStep : c) {
+            if (!firstLine) {
                 sb.append(timeStepDelimiter);
             }
             WritablesToStringFunction.append(timeStep, sb, delimiter, quote);

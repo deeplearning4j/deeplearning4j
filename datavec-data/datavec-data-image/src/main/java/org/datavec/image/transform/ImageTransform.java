@@ -31,15 +31,15 @@ import java.util.Random;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonSubTypes(value = {@JsonSubTypes.Type(value = ColorConversionTransform.class, name = "ColorConversionTransform"),
-        @JsonSubTypes.Type(value = CropImageTransform.class, name = "CropImageTransform"),
-        @JsonSubTypes.Type(value = EqualizeHistTransform.class, name = "EqualizeHistTransform"),
-        @JsonSubTypes.Type(value = FilterImageTransform.class, name = "FilterImageTransform"),
-        @JsonSubTypes.Type(value = FlipImageTransform.class, name = "FlipImageTransform"),
-        @JsonSubTypes.Type(value = RandomCropTransform.class, name = "RandomCropTransform"),
-        @JsonSubTypes.Type(value = ResizeImageTransform.class, name = "ResizeImageTransform"),
-        @JsonSubTypes.Type(value = RotateImageTransform.class, name = "RotateImageTransform"),
-        @JsonSubTypes.Type(value = ScaleImageTransform.class, name = "ScaleImageTransform"),
-        @JsonSubTypes.Type(value = WarpImageTransform.class, name = "WarpImageTransform")})
+                @JsonSubTypes.Type(value = CropImageTransform.class, name = "CropImageTransform"),
+                @JsonSubTypes.Type(value = EqualizeHistTransform.class, name = "EqualizeHistTransform"),
+                @JsonSubTypes.Type(value = FilterImageTransform.class, name = "FilterImageTransform"),
+                @JsonSubTypes.Type(value = FlipImageTransform.class, name = "FlipImageTransform"),
+                @JsonSubTypes.Type(value = RandomCropTransform.class, name = "RandomCropTransform"),
+                @JsonSubTypes.Type(value = ResizeImageTransform.class, name = "ResizeImageTransform"),
+                @JsonSubTypes.Type(value = RotateImageTransform.class, name = "RotateImageTransform"),
+                @JsonSubTypes.Type(value = ScaleImageTransform.class, name = "ScaleImageTransform"),
+                @JsonSubTypes.Type(value = WarpImageTransform.class, name = "WarpImageTransform")})
 
 public interface ImageTransform {
 

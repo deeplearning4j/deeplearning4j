@@ -62,7 +62,8 @@ public class LargestBlobCropTransform extends BaseImageTransform<Mat> {
      * @param upperThresh   Upper threshold for either Canny or Threshold
      * @param isCanny       Whether the edge detector is Canny or Threshold
      */
-    public LargestBlobCropTransform(Random random, int mode, int method, int blurWidth, int blurHeight, int lowerThresh, int upperThresh, boolean isCanny) {
+    public LargestBlobCropTransform(Random random, int mode, int method, int blurWidth, int blurHeight, int lowerThresh,
+                    int upperThresh, boolean isCanny) {
         super(random);
         this.rng = Nd4j.getRandom();
         this.mode = mode;

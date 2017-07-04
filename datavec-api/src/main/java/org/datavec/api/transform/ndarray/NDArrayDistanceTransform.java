@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -49,9 +49,9 @@ public class NDArrayDistanceTransform implements Transform {
     private Schema inputSchema;
 
     public NDArrayDistanceTransform(@JsonProperty("newColumnName") @NonNull String newColumnName,
-                                    @JsonProperty("distance") @NonNull Distance distance,
-                                    @JsonProperty("firstCol") @NonNull String firstCol,
-                                    @JsonProperty("secondCol") @NonNull String secondCol) {
+                    @JsonProperty("distance") @NonNull Distance distance,
+                    @JsonProperty("firstCol") @NonNull String firstCol,
+                    @JsonProperty("secondCol") @NonNull String secondCol) {
         this.newColumnName = newColumnName;
         this.distance = distance;
         this.firstCol = firstCol;
@@ -62,15 +62,15 @@ public class NDArrayDistanceTransform implements Transform {
     @Override
     public String toString() {
         return "NDArrayDistanceTransform(newColumnName=\"" + newColumnName + "\",distance=" + distance + ",firstCol="
-                + firstCol + ",secondCol=" + secondCol + ")";
+                        + firstCol + ",secondCol=" + secondCol + ")";
     }
 
     @Override
-    public void setInputSchema(Schema inputSchema){
-        if(!inputSchema.hasColumn(firstCol)){
+    public void setInputSchema(Schema inputSchema) {
+        if (!inputSchema.hasColumn(firstCol)) {
             throw new IllegalStateException("Input schema does not have first column: " + firstCol);
         }
-        if(!inputSchema.hasColumn(secondCol)){
+        if (!inputSchema.hasColumn(secondCol)) {
             throw new IllegalStateException("Input schema does not have first column: " + secondCol);
         }
 
@@ -140,12 +140,12 @@ public class NDArrayDistanceTransform implements Transform {
 
     @Override
     public String[] outputColumnNames() {
-        return new String[]{outputColumnName()};
+        return new String[] {outputColumnName()};
     }
 
     @Override
     public String[] columnNames() {
-        return new String[]{firstCol, secondCol};
+        return new String[] {firstCol, secondCol};
     }
 
     @Override

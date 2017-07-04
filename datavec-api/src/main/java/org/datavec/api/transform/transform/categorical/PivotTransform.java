@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -64,7 +64,7 @@ public class PivotTransform extends BaseTransform {
      * @param valueColumnName Name of the column that contains the value
      * @param defaultValue    The default value to use in expanded columns.
      */
-    public PivotTransform(String keyColumnName, String valueColumnName, Writable defaultValue){
+    public PivotTransform(String keyColumnName, String valueColumnName, Writable defaultValue) {
         this.keyColumn = keyColumnName;
         this.valueColumn = valueColumnName;
         this.defaultValue = defaultValue;
@@ -72,9 +72,9 @@ public class PivotTransform extends BaseTransform {
 
     @Override
     public Schema transform(Schema inputSchema) {
-        if(!inputSchema.hasColumn(keyColumn) || !inputSchema.hasColumn(valueColumn)){
+        if (!inputSchema.hasColumn(keyColumn) || !inputSchema.hasColumn(valueColumn)) {
             throw new UnsupportedOperationException("Key or value column not found: " + keyColumn + ", " + valueColumn
-                    + " in " + inputSchema.getColumnNames());
+                            + " in " + inputSchema.getColumnNames());
         }
 
         List<String> origNames = inputSchema.getColumnNames();
@@ -106,9 +106,9 @@ public class PivotTransform extends BaseTransform {
 
                     newMeta.add(newValueMeta);
                 }
-            } else if(i == idxValue){
+            } else if (i == idxValue) {
                 i++;
-                continue;   //Skip column
+                continue; //Skip column
             } else {
                 newMeta.add(t);
             }
@@ -116,8 +116,8 @@ public class PivotTransform extends BaseTransform {
         }
 
         //Infer the default value if necessary
-        if(defaultValue == null){
-            switch (valueMeta.getColumnType()){
+        if (defaultValue == null) {
+            switch (valueMeta.getColumnType()) {
                 case String:
                     defaultValue = new Text("");
                     break;
@@ -145,7 +145,8 @@ public class PivotTransform extends BaseTransform {
                     defaultValue = new Text("false");
                     break;
                 default:
-                    throw new UnsupportedOperationException("Cannot infer default value for " + valueMeta.getColumnType());
+                    throw new UnsupportedOperationException(
+                                    "Cannot infer default value for " + valueMeta.getColumnType());
             }
         }
 
@@ -160,13 +161,13 @@ public class PivotTransform extends BaseTransform {
 
     @Override
     public String[] outputColumnNames() {
-        List<String> l = ((CategoricalMetaData)inputSchema.getMetaData(keyColumn)).getStateNames();
+        List<String> l = ((CategoricalMetaData) inputSchema.getMetaData(keyColumn)).getStateNames();
         return l.toArray(new String[l.size()]);
     }
 
     @Override
     public String[] columnNames() {
-        return new String[]{keyColumn, valueColumn};
+        return new String[] {keyColumn, valueColumn};
     }
 
     @Override
@@ -178,13 +179,13 @@ public class PivotTransform extends BaseTransform {
     public List<Writable> map(List<Writable> writables) {
         if (writables.size() != inputSchema.numColumns()) {
             throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size()
-                    + ") does not " + "match expected number of elements (schema: " + inputSchema.numColumns()
-                    + "). Transform = " + toString());
+                            + ") does not " + "match expected number of elements (schema: " + inputSchema.numColumns()
+                            + "). Transform = " + toString());
         }
 
         int idxKey = inputSchema.getIndexOfColumn(keyColumn);
         int idxValue = inputSchema.getIndexOfColumn(valueColumn);
-        List<String> stateNames = ((CategoricalMetaData)inputSchema.getMetaData(idxKey)).getStateNames();
+        List<String> stateNames = ((CategoricalMetaData) inputSchema.getMetaData(idxKey)).getStateNames();
 
         int i = 0;
         List<Writable> out = new ArrayList<>();
@@ -198,13 +199,13 @@ public class PivotTransform extends BaseTransform {
                 if (stateIdx < 0)
                     throw new RuntimeException("Unknown state (index not found): " + str);
                 for (int j = 0; j < stateNames.size(); j++) {
-                    if(j == stateIdx){
+                    if (j == stateIdx) {
                         out.add(writables.get(idxValue));
                     } else {
                         out.add(defaultValue);
                     }
                 }
-            } else if( i == idxValue ){
+            } else if (i == idxValue) {
                 i++;
                 continue;
             } else {
@@ -218,19 +219,19 @@ public class PivotTransform extends BaseTransform {
 
     @Override
     public Object map(Object input) {
-        List<Writable> l = (List<Writable>)input;
+        List<Writable> l = (List<Writable>) input;
         Writable k = l.get(0);
         Writable v = l.get(1);
 
         int idxKey = inputSchema.getIndexOfColumn(keyColumn);
-        List<String> stateNames = ((CategoricalMetaData)inputSchema.getMetaData(idxKey)).getStateNames();
+        List<String> stateNames = ((CategoricalMetaData) inputSchema.getMetaData(idxKey)).getStateNames();
         int n = stateNames.size();
 
         int position = stateNames.indexOf(k.toString());
 
         List<Writable> out = new ArrayList<>();
-        for( int j=0; j<n; j++ ){
-            if(j == position){
+        for (int j = 0; j < n; j++) {
+            if (j == position) {
                 out.add(v);
             } else {
                 out.add(defaultValue);

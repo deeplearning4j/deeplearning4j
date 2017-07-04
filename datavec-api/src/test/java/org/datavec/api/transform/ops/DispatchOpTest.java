@@ -20,18 +20,21 @@ public class DispatchOpTest {
     private List<String> stringList = new ArrayList<>(Arrays.asList("arakoa", "abracadabra", "blast", "acceptance"));
 
     @Test
-    public void testDispatchSimple(){
+    public void testDispatchSimple() {
         AggregatorImpls.AggregableFirst<Integer> af = new AggregatorImpls.AggregableFirst<>();
         AggregatorImpls.AggregableSum<Integer> as = new AggregatorImpls.AggregableSum<>();
-        AggregableMultiOp<Integer> multiaf = new AggregableMultiOp<>(Collections.<IAggregableReduceOp<Integer, Writable>>singletonList(af));
-        AggregableMultiOp<Integer> multias = new AggregableMultiOp<>(Collections.<IAggregableReduceOp<Integer, Writable>>singletonList(as));
+        AggregableMultiOp<Integer> multiaf =
+                        new AggregableMultiOp<>(Collections.<IAggregableReduceOp<Integer, Writable>>singletonList(af));
+        AggregableMultiOp<Integer> multias =
+                        new AggregableMultiOp<>(Collections.<IAggregableReduceOp<Integer, Writable>>singletonList(as));
 
-        DispatchOp<Integer, Writable> parallel = new DispatchOp<>(Arrays.<IAggregableReduceOp<Integer, List<Writable>>>asList(multiaf, multias));
+        DispatchOp<Integer, Writable> parallel =
+                        new DispatchOp<>(Arrays.<IAggregableReduceOp<Integer, List<Writable>>>asList(multiaf, multias));
 
         assertTrue(multiaf.getOperations().size() == 1);
         assertTrue(multias.getOperations().size() == 1);
         assertTrue(parallel.getOperations().size() == 2);
-        for(int i = 0; i < intList.size(); i++){
+        for (int i = 0; i < intList.size(); i++) {
             parallel.accept(Arrays.asList(intList.get(i), intList.get(i)));
         }
 
@@ -42,7 +45,7 @@ public class DispatchOpTest {
     }
 
     @Test
-    public void testDispatchFlatMap(){
+    public void testDispatchFlatMap() {
         AggregatorImpls.AggregableFirst<Integer> af = new AggregatorImpls.AggregableFirst<>();
         AggregatorImpls.AggregableSum<Integer> as = new AggregatorImpls.AggregableSum<>();
         AggregableMultiOp<Integer> multi = new AggregableMultiOp<>(Arrays.asList(af, as));
@@ -52,12 +55,13 @@ public class DispatchOpTest {
         AggregableMultiOp<Integer> otherMulti = new AggregableMultiOp<>(Arrays.asList(al, amax));
 
 
-        DispatchOp<Integer, Writable> parallel = new DispatchOp<>(Arrays.<IAggregableReduceOp<Integer, List<Writable>>>asList(multi, otherMulti));
+        DispatchOp<Integer, Writable> parallel = new DispatchOp<>(
+                        Arrays.<IAggregableReduceOp<Integer, List<Writable>>>asList(multi, otherMulti));
 
         assertTrue(multi.getOperations().size() == 2);
         assertTrue(otherMulti.getOperations().size() == 2);
         assertTrue(parallel.getOperations().size() == 2);
-        for(int i = 0; i < intList.size(); i++){
+        for (int i = 0; i < intList.size(); i++) {
             parallel.accept(Arrays.asList(intList.get(i), intList.get(i)));
         }
 

@@ -70,7 +70,7 @@ public class TestMultiOpReduce {
             reducer.setInputSchema(schema);
             IAggregableReduceOp<List<Writable>, List<Writable>> accumulator = reducer.aggregableReducer();
 
-            for (int i = 0; i < inputs.size(); i++){
+            for (int i = 0; i < inputs.size(); i++) {
                 accumulator.accept(inputs.get(i));
             }
             List<Writable> out = accumulator.get();
@@ -114,7 +114,7 @@ public class TestMultiOpReduce {
             reducer.setInputSchema(schema);
             IAggregableReduceOp<List<Writable>, List<Writable>> accumulator = reducer.aggregableReducer();
 
-            for (int i = 0; i < inputs.size(); i++){
+            for (int i = 0; i < inputs.size(); i++) {
                 accumulator.accept(inputs.get(i));
             }
             List<Writable> out = accumulator.get();
@@ -151,7 +151,7 @@ public class TestMultiOpReduce {
             reducer.setInputSchema(schema);
             IAggregableReduceOp<List<Writable>, List<Writable>> accumulator = reducer.aggregableReducer();
 
-            for (int i = 0; i < inputs.size(); i++){
+            for (int i = 0; i < inputs.size(); i++) {
                 accumulator.accept(inputs.get(i));
             }
             List<Writable> out = accumulator.get();
@@ -198,7 +198,7 @@ public class TestMultiOpReduce {
 
             IAggregableReduceOp<List<Writable>, List<Writable>> accumulator = reducer.aggregableReducer();
 
-            for (int i = 0; i < inputs.size(); i++){
+            for (int i = 0; i < inputs.size(); i++) {
                 accumulator.accept(inputs.get(i));
             }
             List<Writable> out = accumulator.get();
@@ -222,7 +222,8 @@ public class TestMultiOpReduce {
             IAggregableReduceOp<List<Writable>, List<Writable>> accu = reducer.aggregableReducer();
 
             try {
-                for (List<Writable> i: inputs) accu.accept(i);
+                for (List<Writable> i : inputs)
+                    accu.accept(i);
                 fail("No exception thrown for invalid input: op=" + op);
             } catch (NumberFormatException e) {
                 //ok
@@ -260,7 +261,7 @@ public class TestMultiOpReduce {
 
         IAggregableReduceOp<List<Writable>, List<Writable>> accumulator = reducer.aggregableReducer();
 
-        for (int i = 0; i < inputs.size(); i++){
+        for (int i = 0; i < inputs.size(); i++) {
             accumulator.accept(inputs.get(i));
         }
         List<Writable> out = accumulator.get();
@@ -286,7 +287,8 @@ public class TestMultiOpReduce {
         @Override
         public IAggregableReduceOp<Writable, List<Writable>> reduceOp() {
             //For testing: let's take the second value
-            return new AggregableMultiOp<>(Collections.<IAggregableReduceOp<Writable, Writable>>singletonList(new AggregableSecond<Writable>()));
+            return new AggregableMultiOp<>(Collections
+                            .<IAggregableReduceOp<Writable, Writable>>singletonList(new AggregableSecond<Writable>()));
         }
 
         @Override
@@ -295,7 +297,8 @@ public class TestMultiOpReduce {
         }
 
         @Override
-        public List<ColumnMetaData> getColumnOutputMetaData(List<String> newColumnName, ColumnMetaData columnInputMeta) {
+        public List<ColumnMetaData> getColumnOutputMetaData(List<String> newColumnName,
+                        ColumnMetaData columnInputMeta) {
             ColumnMetaData thiscolumnMeta = new StringMetaData(newColumnName.get(0));
             return Collections.singletonList(thiscolumnMeta);
         }
@@ -309,25 +312,30 @@ public class TestMultiOpReduce {
 
             @Override
             public void accept(T element) {
-                if (firstMet == null) firstMet = element;
+                if (firstMet == null)
+                    firstMet = element;
                 else {
-                    if (elem == null) elem = element;
+                    if (elem == null)
+                        elem = element;
                 }
             }
 
             @Override
             public <W extends IAggregableReduceOp<T, Writable>> void combine(W accu) {
-                if (accu instanceof AggregableSecond && elem == null){
+                if (accu instanceof AggregableSecond && elem == null) {
                     if (firstMet == null) { // this accumulator is empty, import accu
                         AggregableSecond<T> accumulator = (AggregableSecond) accu;
                         T otherFirst = accumulator.getFirstMet();
                         T otherElement = accumulator.getElem();
-                        if (otherFirst != null) firstMet = otherFirst;
-                        if (otherElement != null) elem = otherElement;
+                        if (otherFirst != null)
+                            firstMet = otherFirst;
+                        if (otherElement != null)
+                            elem = otherElement;
                     } else { // we have the first element, they may have the rest
                         AggregableSecond<T> accumulator = (AggregableSecond) accu;
                         T otherFirst = accumulator.getFirstMet();
-                        if (otherFirst != null) elem = otherFirst;
+                        if (otherFirst != null)
+                            elem = otherFirst;
                     }
                 }
             }
@@ -439,11 +447,11 @@ public class TestMultiOpReduce {
 
         IAggregableReduceOp<List<Writable>, List<Writable>> accumulator = reducer.aggregableReducer();
 
-        for (int i = 0; i < inputs.size(); i++){
+        for (int i = 0; i < inputs.size(); i++) {
             accumulator.accept(inputs.get(i));
         }
         List<Writable> out = accumulator.get();
-        List<Writable> expected = Arrays.<Writable>asList(new Text("someKey"), new IntWritable(1+ 3 + 5),
+        List<Writable> expected = Arrays.<Writable>asList(new Text("someKey"), new IntWritable(1 + 3 + 5),
                         new LongWritable(2), new LongWritable(4));
 
         assertEquals(4, out.size());

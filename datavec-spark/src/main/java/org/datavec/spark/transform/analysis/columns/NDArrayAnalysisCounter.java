@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,23 +39,23 @@ public class NDArrayAnalysisCounter implements AnalysisCounter<NDArrayAnalysisCo
     private long minLength = Long.MAX_VALUE;
     private long maxLength = -1;
     private long totalNDArrayValues;
-    private Map<Integer,Long> countsByRank = new HashMap<>();
+    private Map<Integer, Long> countsByRank = new HashMap<>();
     private double minValue = Double.MAX_VALUE;
     private double maxValue = -Double.MAX_VALUE;
 
     @Override
     public NDArrayAnalysisCounter add(Writable writable) {
-        NDArrayWritable n = (NDArrayWritable)writable;
+        NDArrayWritable n = (NDArrayWritable) writable;
         INDArray arr = n.get();
         countTotal++;
-        if(arr == null){
+        if (arr == null) {
             countNull++;
         } else {
             minLength = Math.min(minLength, arr.length());
             maxLength = Math.max(maxLength, arr.length());
 
             int r = arr.rank();
-            if(countsByRank.containsKey(arr.rank())){
+            if (countsByRank.containsKey(arr.rank())) {
                 countsByRank.put(r, countsByRank.get(r) + 1);
             } else {
                 countsByRank.put(r, 1L);
@@ -78,12 +78,12 @@ public class NDArrayAnalysisCounter implements AnalysisCounter<NDArrayAnalysisCo
         this.totalNDArrayValues += other.totalNDArrayValues;
         Set<Integer> allKeys = new HashSet<>(countsByRank.keySet());
         allKeys.addAll(other.countsByRank.keySet());
-        for(Integer i : allKeys){
+        for (Integer i : allKeys) {
             long count = 0;
-            if(countsByRank.containsKey(i)){
+            if (countsByRank.containsKey(i)) {
                 count += countsByRank.get(i);
             }
-            if(other.countsByRank.containsKey(i)){
+            if (other.countsByRank.containsKey(i)) {
                 count += other.countsByRank.get(i);
             }
             countsByRank.put(i, count);
@@ -94,16 +94,9 @@ public class NDArrayAnalysisCounter implements AnalysisCounter<NDArrayAnalysisCo
         return this;
     }
 
-    public NDArrayAnalysis toAnalysisObject(){
-        return NDArrayAnalysis.Builder()
-                .countTotal(countTotal)
-                .countNull(countNull)
-                .minLength(minLength)
-                .maxLength(maxLength)
-                .totalNDArrayValues(totalNDArrayValues)
-                .countsByRank(countsByRank)
-                .minValue(minValue)
-                .maxValue(maxValue)
-                .build();
+    public NDArrayAnalysis toAnalysisObject() {
+        return NDArrayAnalysis.Builder().countTotal(countTotal).countNull(countNull).minLength(minLength)
+                        .maxLength(maxLength).totalNDArrayValues(totalNDArrayValues).countsByRank(countsByRank)
+                        .minValue(minValue).maxValue(maxValue).build();
     }
 }

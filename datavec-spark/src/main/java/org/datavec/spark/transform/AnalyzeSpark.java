@@ -232,7 +232,7 @@ public class AnalyzeSpark {
                     list.add(new BytesAnalysis.Builder().countTotal(bac.getCountTotal()).build());
                     break;
                 case NDArray:
-                    NDArrayAnalysisCounter nac = (NDArrayAnalysisCounter)counters.get(i);
+                    NDArrayAnalysisCounter nac = (NDArrayAnalysisCounter) counters.get(i);
                     NDArrayAnalysis nda = nac.toAnalysisObject();
                     list.add(nda);
 

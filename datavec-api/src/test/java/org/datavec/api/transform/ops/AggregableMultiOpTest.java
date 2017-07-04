@@ -27,7 +27,7 @@ public class AggregableMultiOpTest {
         AggregableMultiOp<Integer> multi = new AggregableMultiOp<>(Arrays.asList(af, as));
 
         assertTrue(multi.getOperations().size() == 2);
-        for(int i = 0; i < intList.size(); i++){
+        for (int i = 0; i < intList.size(); i++) {
             multi.accept(intList.get(i));
         }
 
@@ -43,7 +43,7 @@ public class AggregableMultiOpTest {
         AggregatorImpls.AggregableSum<Integer> rs = new AggregatorImpls.AggregableSum<>();
         AggregableMultiOp<Integer> reverse = new AggregableMultiOp<>(Arrays.asList(rf, rs));
 
-        for(int i = 0; i < intList.size(); i++){
+        for (int i = 0; i < intList.size(); i++) {
             reverse.accept(intList.get(intList.size() - i - 1));
         }
 
@@ -65,9 +65,10 @@ public class AggregableMultiOpTest {
         classLoadersList.add(ClasspathHelper.staticClassLoader());
 
         Reflections reflections = new Reflections(new ConfigurationBuilder()
-                .setScanners(new SubTypesScanner(false /* don't exclude Object.class */))
-                .setUrls(ClasspathHelper.forClassLoader(classLoadersList.toArray(new ClassLoader[0])))
-                .filterInputsBy(new FilterBuilder().include(FilterBuilder.prefix("org.datavec.api.transform.ops"))));
+                        .setScanners(new SubTypesScanner(false /* don't exclude Object.class */))
+                        .setUrls(ClasspathHelper.forClassLoader(classLoadersList.toArray(new ClassLoader[0])))
+                        .filterInputsBy(new FilterBuilder()
+                                        .include(FilterBuilder.prefix("org.datavec.api.transform.ops"))));
 
         Set<String> allTypes = reflections.getAllTypes();
         Set<String> ops = new HashSet<>();
@@ -91,8 +92,12 @@ public class AggregableMultiOpTest {
     }
 
     private boolean implementsSerializable(Class<?> cls) {
-        if (cls == null) { return false; }
-        if (cls == Serializable.class) { return true; }
+        if (cls == null) {
+            return false;
+        }
+        if (cls == Serializable.class) {
+            return true;
+        }
 
         Class<?>[] interfaces = cls.getInterfaces();
         Set<Class<?>> parents = new HashSet<>();

@@ -152,15 +152,12 @@ public class TestTransforms {
     }
 
     @Test
-    public void testPivotTransform(){
-        Schema schema = new Schema.Builder()
-                .addColumnString("otherCol")
-                .addColumnCategorical("key", Arrays.asList("first","second","third"))
-                .addColumnDouble("value")
-                .addColumnDouble("otherCol2")
-                .build();
+    public void testPivotTransform() {
+        Schema schema = new Schema.Builder().addColumnString("otherCol")
+                        .addColumnCategorical("key", Arrays.asList("first", "second", "third")).addColumnDouble("value")
+                        .addColumnDouble("otherCol2").build();
 
-        Transform t = new PivotTransform("key","value");
+        Transform t = new PivotTransform("key", "value");
         t.setInputSchema(schema);
         Schema out = t.transform(schema);
 
@@ -170,22 +167,22 @@ public class TestTransforms {
         assertEquals(expNames, actNames);
 
         List<ColumnType> columnTypesExp = Arrays.asList(ColumnType.String, ColumnType.Double, ColumnType.Double,
-                ColumnType.Double, ColumnType.Double);
+                        ColumnType.Double, ColumnType.Double);
         assertEquals(columnTypesExp, out.getColumnTypes());
 
         //Expand (second,100) into (0,100,0). Leave the remaining columns as is
-        List<Writable> e1 = Arrays.<Writable>asList(new DoubleWritable(1), new DoubleWritable(0), new DoubleWritable(100),
-                new DoubleWritable(0), new DoubleWritable(-1));
-        List<Writable> a1 = t.map(Arrays.<Writable>asList(new DoubleWritable(1), new Text("second"), new DoubleWritable(100),
-                new DoubleWritable(-1)));
-        assertEquals(e1,a1);
+        List<Writable> e1 = Arrays.<Writable>asList(new DoubleWritable(1), new DoubleWritable(0),
+                        new DoubleWritable(100), new DoubleWritable(0), new DoubleWritable(-1));
+        List<Writable> a1 = t.map(Arrays.<Writable>asList(new DoubleWritable(1), new Text("second"),
+                        new DoubleWritable(100), new DoubleWritable(-1)));
+        assertEquals(e1, a1);
 
         //Expand (third,200) into (0,0,200). Leave the remaining columns as is
         List<Writable> e2 = Arrays.<Writable>asList(new DoubleWritable(1), new DoubleWritable(0), new DoubleWritable(0),
-                new DoubleWritable(200), new DoubleWritable(-1));
-        List<Writable> a2 = t.map(Arrays.<Writable>asList(new DoubleWritable(1), new Text("third"), new DoubleWritable(200),
-                new DoubleWritable(-1)));
-        assertEquals(e2,a2);
+                        new DoubleWritable(200), new DoubleWritable(-1));
+        List<Writable> a2 = t.map(Arrays.<Writable>asList(new DoubleWritable(1), new Text("third"),
+                        new DoubleWritable(200), new DoubleWritable(-1)));
+        assertEquals(e2, a2);
     }
 
     @Test
@@ -225,11 +222,11 @@ public class TestTransforms {
         assertEquals(Arrays.asList("column[3]", "column[4]", "column[5]"), out.getColumnNames());
 
         assertEquals(Arrays.<Writable>asList(new IntWritable(1), new IntWritable(0), new IntWritable(0)),
-                transform.map(Collections.singletonList((Writable) new IntWritable(3))));
+                        transform.map(Collections.singletonList((Writable) new IntWritable(3))));
         assertEquals(Arrays.<Writable>asList(new IntWritable(0), new IntWritable(1), new IntWritable(0)),
-                transform.map(Collections.singletonList((Writable) new IntWritable(4))));
+                        transform.map(Collections.singletonList((Writable) new IntWritable(4))));
         assertEquals(Arrays.<Writable>asList(new IntWritable(0), new IntWritable(0), new IntWritable(1)),
-                transform.map(Collections.singletonList((Writable) new IntWritable(5))));
+                        transform.map(Collections.singletonList((Writable) new IntWritable(5))));
     }
 
     @Test
@@ -257,12 +254,12 @@ public class TestTransforms {
     public void testConcatenateStringColumnsTransform() throws Exception {
         final String DELIMITER = " ";
         final String NEW_COLUMN = "NewColumn";
-        final List<String> CONCAT_COLUMNS = Arrays.asList("ConcatenatedColumn1", "ConcatenatedColumn2", "ConcatenatedColumn3");
+        final List<String> CONCAT_COLUMNS =
+                        Arrays.asList("ConcatenatedColumn1", "ConcatenatedColumn2", "ConcatenatedColumn3");
         final List<String> ALL_COLUMNS = Arrays.asList("ConcatenatedColumn1", "OtherColumn4", "ConcatenatedColumn2",
-                "OtherColumn5", "ConcatenatedColumn3", "OtherColumn6");
-        final List<Text> COLUMN_VALUES = Arrays.asList(new Text("string1"), new Text("other4"),
-                new Text("string2"), new Text("other5"),
-                new Text("string3"), new Text("other6"));
+                        "OtherColumn5", "ConcatenatedColumn3", "OtherColumn6");
+        final List<Text> COLUMN_VALUES = Arrays.asList(new Text("string1"), new Text("other4"), new Text("string2"),
+                        new Text("other5"), new Text("string3"), new Text("other6"));
         final String NEW_COLUMN_VALUE = "string1 string2 string3";
 
         Transform transform = new ConcatenateStringColumns(NEW_COLUMN, DELIMITER, CONCAT_COLUMNS);
@@ -1151,7 +1148,7 @@ public class TestTransforms {
         TestCase.assertEquals(ColumnType.String, out.getMetaData(0).getColumnType());
 
         assertEquals(Collections.singletonList((Writable) new Text("BoneConeTone")),
-            transform.map(Collections.singletonList((Writable) new Text("B1midT3"))));
+                        transform.map(Collections.singletonList((Writable) new Text("B1midT3"))));
 
         // No link
         map = new HashMap<>();
@@ -1164,70 +1161,73 @@ public class TestTransforms {
         TestCase.assertEquals(ColumnType.String, out.getMetaData(0).getColumnType());
 
         assertEquals(Collections.singletonList((Writable) new Text("4.25")),
-            transform.map(Collections.singletonList((Writable) new Text("  4.25 "))));
+                        transform.map(Collections.singletonList((Writable) new Text("  4.25 "))));
     }
 
     @Test
-    public void testReduceSequenceTransform(){
+    public void testReduceSequenceTransform() {
 
-        Schema schema = new SequenceSchema.Builder()
-                .addColumnsDouble("col%d",0,2)
-                .build();
+        Schema schema = new SequenceSchema.Builder().addColumnsDouble("col%d", 0, 2).build();
 
-        IAssociativeReducer reducer = new Reducer.Builder(ReduceOp.Mean)
-                .countColumns("col1")
-                .maxColumn("col2")
-                .build();
+        IAssociativeReducer reducer = new Reducer.Builder(ReduceOp.Mean).countColumns("col1").maxColumn("col2").build();
 
         ReduceSequenceTransform t = new ReduceSequenceTransform(reducer);
         t.setInputSchema(schema);
 
         List<List<Writable>> seq = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
-                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)),
-                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)));
+                        Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
+                        Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)),
+                        Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)));
 
         List<List<Writable>> exp = Collections.singletonList(
-                Arrays.<Writable>asList(new DoubleWritable(3), new LongWritable(3L), new DoubleWritable(8)));
+                        Arrays.<Writable>asList(new DoubleWritable(3), new LongWritable(3L), new DoubleWritable(8)));
         List<List<Writable>> act = t.mapSequence(seq);
         assertEquals(exp, act);
 
-        Schema expOutSchema = new SequenceSchema.Builder()
-                .addColumnDouble("mean(col0)")
-                .addColumn(new LongMetaData("count(col1)",0L,null))
-                .addColumnDouble("max(col2)")
-                .build();
+        Schema expOutSchema = new SequenceSchema.Builder().addColumnDouble("mean(col0)")
+                        .addColumn(new LongMetaData("count(col1)", 0L, null)).addColumnDouble("max(col2)").build();
 
         assertEquals(expOutSchema, t.transform(schema));
     }
 
     @Test
-    public void testSequenceMovingWindowReduceTransform(){
+    public void testSequenceMovingWindowReduceTransform() {
         List<List<Writable>> seq = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
-                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)),
-                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)),
-                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11)));
+                        Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
+                        Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)),
+                        Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)),
+                        Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11)));
 
         List<List<Writable>> exp1 = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2), new DoubleWritable(2)),
-                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5), new DoubleWritable((2+5)/2.0)),
-                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8), new DoubleWritable((2+5+8)/3.0)),
-                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11), new DoubleWritable((5+8+11)/3.0)));
+                        Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2),
+                                        new DoubleWritable(2)),
+                        Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5),
+                                        new DoubleWritable((2 + 5) / 2.0)),
+                        Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8),
+                                        new DoubleWritable((2 + 5 + 8) / 3.0)),
+                        Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11),
+                                        new DoubleWritable((5 + 8 + 11) / 3.0)));
 
         List<List<Writable>> exp2 = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2), NullWritable.INSTANCE),
-                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5), NullWritable.INSTANCE),
-                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8), new DoubleWritable((2+5+8)/3.0)),
-                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11), new DoubleWritable((5+8+11)/3.0)));
+                        Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2),
+                                        NullWritable.INSTANCE),
+                        Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5),
+                                        NullWritable.INSTANCE),
+                        Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8),
+                                        new DoubleWritable((2 + 5 + 8) / 3.0)),
+                        Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11),
+                                        new DoubleWritable((5 + 8 + 11) / 3.0)));
 
-        Schema schema = new SequenceSchema.Builder().addColumnsDouble("col%d",0,2).build();
-        Schema expOutSchema1 = new SequenceSchema.Builder().addColumnsDouble("col%d",0,2).addColumnDouble("mean(3,col2)").build();
-        Schema expOutSchema2 = new SequenceSchema.Builder().addColumnsDouble("col%d",0,2).addColumnDouble("newCol").build();
+        Schema schema = new SequenceSchema.Builder().addColumnsDouble("col%d", 0, 2).build();
+        Schema expOutSchema1 = new SequenceSchema.Builder().addColumnsDouble("col%d", 0, 2)
+                        .addColumnDouble("mean(3,col2)").build();
+        Schema expOutSchema2 =
+                        new SequenceSchema.Builder().addColumnsDouble("col%d", 0, 2).addColumnDouble("newCol").build();
 
-        SequenceMovingWindowReduceTransform t1 = new SequenceMovingWindowReduceTransform("col2",3,ReduceOp.Mean);
-        SequenceMovingWindowReduceTransform t2 = new SequenceMovingWindowReduceTransform("col2","newCol",
-                3,ReduceOp.Mean, SequenceMovingWindowReduceTransform.EdgeCaseHandling.SpecifiedValue, NullWritable.INSTANCE);
+        SequenceMovingWindowReduceTransform t1 = new SequenceMovingWindowReduceTransform("col2", 3, ReduceOp.Mean);
+        SequenceMovingWindowReduceTransform t2 = new SequenceMovingWindowReduceTransform("col2", "newCol", 3,
+                        ReduceOp.Mean, SequenceMovingWindowReduceTransform.EdgeCaseHandling.SpecifiedValue,
+                        NullWritable.INSTANCE);
 
         t1.setInputSchema(schema);
         assertEquals(expOutSchema1, t1.transform(schema));
@@ -1243,25 +1243,25 @@ public class TestTransforms {
     }
 
     @Test
-    public void testTrimSequenceTransform(){
+    public void testTrimSequenceTransform() {
         List<List<Writable>> seq = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
-                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)),
-                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)),
-                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11)));
+                        Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
+                        Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)),
+                        Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)),
+                        Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11)));
 
         List<List<Writable>> expTrimFirst = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)),
-                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11)));
+                        Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)),
+                        Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11)));
 
         List<List<Writable>> expTrimLast = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
-                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)));
+                        Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
+                        Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)));
 
         SequenceTrimTransform tFirst = new SequenceTrimTransform(2, true);
         SequenceTrimTransform tLast = new SequenceTrimTransform(2, false);
 
-        Schema schema = new SequenceSchema.Builder().addColumnsDouble("col%d",0,2).build();
+        Schema schema = new SequenceSchema.Builder().addColumnsDouble("col%d", 0, 2).build();
         tFirst.setInputSchema(schema);
         tLast.setInputSchema(schema);
 
@@ -1271,30 +1271,32 @@ public class TestTransforms {
 
 
     @Test
-    public void testSequenceOffsetTransform(){
+    public void testSequenceOffsetTransform() {
 
         List<List<Writable>> seq = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
-                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)),
-                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)),
-                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11)));
+                        Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(2)),
+                        Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(5)),
+                        Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(8)),
+                        Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(11)));
 
-        Schema schema = new SequenceSchema.Builder().addColumnsDouble("col%d",0,2).build();
+        Schema schema = new SequenceSchema.Builder().addColumnsDouble("col%d", 0, 2).build();
 
         //First: test InPlace
         List<List<Writable>> exp1 = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(1), new DoubleWritable(8)),
-                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(4), new DoubleWritable(11)));
+                        Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(1), new DoubleWritable(8)),
+                        Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(4), new DoubleWritable(11)));
 
         List<List<Writable>> exp2 = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(7), new DoubleWritable(2)),
-                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(10), new DoubleWritable(5)));
+                        Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(7), new DoubleWritable(2)),
+                        Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(10), new DoubleWritable(5)));
 
         //In-place + trim
-        SequenceOffsetTransform t_inplace_trim_p2 = new SequenceOffsetTransform(Collections.singletonList("col1"),
-                2, SequenceOffsetTransform.OperationType.InPlace, SequenceOffsetTransform.EdgeHandling.TrimSequence, null);
-        SequenceOffsetTransform t_inplace_trim_m2 = new SequenceOffsetTransform(Collections.singletonList("col1"),
-                -2, SequenceOffsetTransform.OperationType.InPlace, SequenceOffsetTransform.EdgeHandling.TrimSequence, null);
+        SequenceOffsetTransform t_inplace_trim_p2 = new SequenceOffsetTransform(Collections.singletonList("col1"), 2,
+                        SequenceOffsetTransform.OperationType.InPlace,
+                        SequenceOffsetTransform.EdgeHandling.TrimSequence, null);
+        SequenceOffsetTransform t_inplace_trim_m2 = new SequenceOffsetTransform(Collections.singletonList("col1"), -2,
+                        SequenceOffsetTransform.OperationType.InPlace,
+                        SequenceOffsetTransform.EdgeHandling.TrimSequence, null);
         t_inplace_trim_p2.setInputSchema(schema);
         t_inplace_trim_m2.setInputSchema(schema);
 
@@ -1304,41 +1306,48 @@ public class TestTransforms {
 
         //In-place + specified
         SequenceOffsetTransform t_inplace_specified_p2 = new SequenceOffsetTransform(Collections.singletonList("col1"),
-                2, SequenceOffsetTransform.OperationType.InPlace, SequenceOffsetTransform.EdgeHandling.SpecifiedValue, NullWritable.INSTANCE);
+                        2, SequenceOffsetTransform.OperationType.InPlace,
+                        SequenceOffsetTransform.EdgeHandling.SpecifiedValue, NullWritable.INSTANCE);
         SequenceOffsetTransform t_inplace_specified_m2 = new SequenceOffsetTransform(Collections.singletonList("col1"),
-                -2, SequenceOffsetTransform.OperationType.InPlace, SequenceOffsetTransform.EdgeHandling.SpecifiedValue, NullWritable.INSTANCE);
+                        -2, SequenceOffsetTransform.OperationType.InPlace,
+                        SequenceOffsetTransform.EdgeHandling.SpecifiedValue, NullWritable.INSTANCE);
         t_inplace_specified_p2.setInputSchema(schema);
         t_inplace_specified_m2.setInputSchema(schema);
 
         List<List<Writable>> exp3 = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(0), NullWritable.INSTANCE, new DoubleWritable(2)),
-                Arrays.<Writable>asList(new DoubleWritable(3), NullWritable.INSTANCE, new DoubleWritable(5)),
-                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(1), new DoubleWritable(8)),
-                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(4), new DoubleWritable(11)));
+                        Arrays.<Writable>asList(new DoubleWritable(0), NullWritable.INSTANCE, new DoubleWritable(2)),
+                        Arrays.<Writable>asList(new DoubleWritable(3), NullWritable.INSTANCE, new DoubleWritable(5)),
+                        Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(1), new DoubleWritable(8)),
+                        Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(4), new DoubleWritable(11)));
         List<List<Writable>> exp4 = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(7), new DoubleWritable(2)),
-                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(10), new DoubleWritable(5)),
-                Arrays.<Writable>asList(new DoubleWritable(6), NullWritable.INSTANCE, new DoubleWritable(8)),
-                Arrays.<Writable>asList(new DoubleWritable(9), NullWritable.INSTANCE, new DoubleWritable(11)));
+                        Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(7), new DoubleWritable(2)),
+                        Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(10), new DoubleWritable(5)),
+                        Arrays.<Writable>asList(new DoubleWritable(6), NullWritable.INSTANCE, new DoubleWritable(8)),
+                        Arrays.<Writable>asList(new DoubleWritable(9), NullWritable.INSTANCE, new DoubleWritable(11)));
 
         assertEquals(exp3, t_inplace_specified_p2.mapSequence(seq));
         assertEquals(exp4, t_inplace_specified_m2.mapSequence(seq));
 
 
 
-
         //Second: test NewColumn
         List<List<Writable>> exp1a = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(1), new DoubleWritable(8)),
-                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(4), new DoubleWritable(11)));
+                        Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(1),
+                                        new DoubleWritable(8)),
+                        Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(4),
+                                        new DoubleWritable(11)));
 
         List<List<Writable>> exp2a = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(7), new DoubleWritable(2)),
-                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(10), new DoubleWritable(5)));
-        SequenceOffsetTransform t_newcol_trim_p2 = new SequenceOffsetTransform(Collections.singletonList("col1"),
-                2, SequenceOffsetTransform.OperationType.NewColumn, SequenceOffsetTransform.EdgeHandling.TrimSequence, null);
-        SequenceOffsetTransform t_newcol_trim_m2 = new SequenceOffsetTransform(Collections.singletonList("col1"),
-                -2, SequenceOffsetTransform.OperationType.NewColumn, SequenceOffsetTransform.EdgeHandling.TrimSequence, null);
+                        Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(7),
+                                        new DoubleWritable(2)),
+                        Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(10),
+                                        new DoubleWritable(5)));
+        SequenceOffsetTransform t_newcol_trim_p2 = new SequenceOffsetTransform(Collections.singletonList("col1"), 2,
+                        SequenceOffsetTransform.OperationType.NewColumn,
+                        SequenceOffsetTransform.EdgeHandling.TrimSequence, null);
+        SequenceOffsetTransform t_newcol_trim_m2 = new SequenceOffsetTransform(Collections.singletonList("col1"), -2,
+                        SequenceOffsetTransform.OperationType.NewColumn,
+                        SequenceOffsetTransform.EdgeHandling.TrimSequence, null);
         t_newcol_trim_p2.setInputSchema(schema);
         t_newcol_trim_m2.setInputSchema(schema);
 
@@ -1346,20 +1355,30 @@ public class TestTransforms {
         assertEquals(exp2a, t_newcol_trim_m2.mapSequence(seq));
 
         List<List<Writable>> exp3a = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), NullWritable.INSTANCE, new DoubleWritable(2)),
-                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), NullWritable.INSTANCE, new DoubleWritable(5)),
-                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(1), new DoubleWritable(8)),
-                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(4), new DoubleWritable(11)));
+                        Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), NullWritable.INSTANCE,
+                                        new DoubleWritable(2)),
+                        Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), NullWritable.INSTANCE,
+                                        new DoubleWritable(5)),
+                        Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), new DoubleWritable(1),
+                                        new DoubleWritable(8)),
+                        Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), new DoubleWritable(4),
+                                        new DoubleWritable(11)));
         List<List<Writable>> exp4a = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(7), new DoubleWritable(2)),
-                Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(10), new DoubleWritable(5)),
-                Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), NullWritable.INSTANCE, new DoubleWritable(8)),
-                Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), NullWritable.INSTANCE, new DoubleWritable(11)));
+                        Arrays.<Writable>asList(new DoubleWritable(0), new DoubleWritable(1), new DoubleWritable(7),
+                                        new DoubleWritable(2)),
+                        Arrays.<Writable>asList(new DoubleWritable(3), new DoubleWritable(4), new DoubleWritable(10),
+                                        new DoubleWritable(5)),
+                        Arrays.<Writable>asList(new DoubleWritable(6), new DoubleWritable(7), NullWritable.INSTANCE,
+                                        new DoubleWritable(8)),
+                        Arrays.<Writable>asList(new DoubleWritable(9), new DoubleWritable(10), NullWritable.INSTANCE,
+                                        new DoubleWritable(11)));
 
         SequenceOffsetTransform t_newcol_specified_p2 = new SequenceOffsetTransform(Collections.singletonList("col1"),
-                2, SequenceOffsetTransform.OperationType.NewColumn, SequenceOffsetTransform.EdgeHandling.SpecifiedValue, NullWritable.INSTANCE);
+                        2, SequenceOffsetTransform.OperationType.NewColumn,
+                        SequenceOffsetTransform.EdgeHandling.SpecifiedValue, NullWritable.INSTANCE);
         SequenceOffsetTransform t_newcol_specified_m2 = new SequenceOffsetTransform(Collections.singletonList("col1"),
-                -2, SequenceOffsetTransform.OperationType.NewColumn, SequenceOffsetTransform.EdgeHandling.SpecifiedValue, NullWritable.INSTANCE);
+                        -2, SequenceOffsetTransform.OperationType.NewColumn,
+                        SequenceOffsetTransform.EdgeHandling.SpecifiedValue, NullWritable.INSTANCE);
         t_newcol_specified_p2.setInputSchema(schema);
         t_newcol_specified_m2.setInputSchema(schema);
 
@@ -1377,8 +1396,8 @@ public class TestTransforms {
     @Test
     public void testStringListToCountsNDArrayTransform() throws Exception {
 
-        StringListToCountsNDArrayTransform t = new StringListToCountsNDArrayTransform(
-                "inCol", "outCol", Arrays.asList("cat","dog","horse"), ",", false, true);
+        StringListToCountsNDArrayTransform t = new StringListToCountsNDArrayTransform("inCol", "outCol",
+                        Arrays.asList("cat", "dog", "horse"), ",", false, true);
 
         Schema s = new Schema.Builder().addColumnString("inCol").build();
         t.setInputSchema(s);
@@ -1387,7 +1406,7 @@ public class TestTransforms {
 
         List<Writable> out = t.map(l);
 
-        assertEquals(Collections.singletonList(new NDArrayWritable(Nd4j.create(new double[]{2,3,0}))), out);
+        assertEquals(Collections.singletonList(new NDArrayWritable(Nd4j.create(new double[] {2, 3, 0}))), out);
 
         ObjectMapper om = TestUtil.initMapper(new JsonFactory());
         String json = om.writeValueAsString(t);
@@ -1399,8 +1418,8 @@ public class TestTransforms {
     @Test
     public void testStringListToIndicesNDArrayTransform() throws Exception {
 
-        StringListToIndicesNDArrayTransform t = new StringListToIndicesNDArrayTransform(
-                "inCol", "outCol", Arrays.asList("apple", "cat","dog","horse"), ",", false, true);
+        StringListToIndicesNDArrayTransform t = new StringListToIndicesNDArrayTransform("inCol", "outCol",
+                        Arrays.asList("apple", "cat", "dog", "horse"), ",", false, true);
 
         Schema s = new Schema.Builder().addColumnString("inCol").build();
         t.setInputSchema(s);
@@ -1409,7 +1428,7 @@ public class TestTransforms {
 
         List<Writable> out = t.map(l);
 
-        assertEquals(Collections.singletonList(new NDArrayWritable(Nd4j.create(new double[]{1,2,2,2}))), out);
+        assertEquals(Collections.singletonList(new NDArrayWritable(Nd4j.create(new double[] {1, 2, 2, 2}))), out);
 
         ObjectMapper om = TestUtil.initMapper(new JsonFactory());
         String json = om.writeValueAsString(t);

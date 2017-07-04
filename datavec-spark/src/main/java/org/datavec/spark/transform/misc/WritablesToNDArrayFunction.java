@@ -24,13 +24,13 @@ public class WritablesToNDArrayFunction implements Function<List<Writable>, INDA
         int length = 0;
         for (Writable w : c) {
             if (w instanceof NDArrayWritable) {
-                INDArray a = ((NDArrayWritable)w).get();
+                INDArray a = ((NDArrayWritable) w).get();
                 if (a.isRowVector()) {
                     length += a.columns();
                 } else {
                     throw new UnsupportedOperationException("NDArrayWritable is not a row vector."
-                            + " Can only concat row vectors with other writables. Shape: "
-                            + Arrays.toString(a.shape()));
+                                    + " Can only concat row vectors with other writables. Shape: "
+                                    + Arrays.toString(a.shape()));
                 }
             } else {
                 length = 1;
@@ -41,7 +41,7 @@ public class WritablesToNDArrayFunction implements Function<List<Writable>, INDA
         int idx = 0;
         for (Writable w : c) {
             if (w instanceof NDArrayWritable) {
-                INDArray subArr = ((NDArrayWritable)w).get();
+                INDArray subArr = ((NDArrayWritable) w).get();
                 int subLength = subArr.columns();
                 arr.get(NDArrayIndex.interval(idx, idx + subLength)).assign(subArr);
                 idx += subLength;

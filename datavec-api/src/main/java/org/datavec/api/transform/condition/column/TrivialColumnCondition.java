@@ -19,7 +19,7 @@ public class TrivialColumnCondition extends BaseColumnCondition {
 
     private Schema schema;
 
-    public TrivialColumnCondition(@JsonProperty("name") String name){
+    public TrivialColumnCondition(@JsonProperty("name") String name) {
         super(name, DEFAULT_SEQUENCE_CONDITION_MODE);
     }
 

@@ -57,10 +57,8 @@ public class FilterImageTransform extends BaseImageTransform {
      * @param height   of the input images
      * @param channels of the input images
      */
-    public FilterImageTransform(@JsonProperty("filters") String filters,
-                                @JsonProperty("width") int width,
-                                @JsonProperty("height") int height,
-                                @JsonProperty("channels") int channels) {
+    public FilterImageTransform(@JsonProperty("filters") String filters, @JsonProperty("width") int width,
+                    @JsonProperty("height") int height, @JsonProperty("channels") int channels) {
         super(null);
 
         this.filters = filters;

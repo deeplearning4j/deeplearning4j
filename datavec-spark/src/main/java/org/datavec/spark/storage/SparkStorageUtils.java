@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -60,8 +60,7 @@ public class SparkStorageUtils {
      */
     public static final int DEFAULT_MAP_FILE_INTERVAL = 1;
 
-    private SparkStorageUtils() {
-    }
+    private SparkStorageUtils() {}
 
     /**
      * Save a {@code JavaRDD<List<Writable>>} to a Hadoop {@link org.apache.hadoop.io.SequenceFile}. Each record is given
@@ -96,10 +95,12 @@ public class SparkStorageUtils {
         if (maxOutputFiles != null) {
             rdd = rdd.coalesce(maxOutputFiles);
         }
-        JavaPairRDD<List<Writable>, Long> dataIndexPairs = rdd.zipWithUniqueId();    //Note: Long values are unique + NOT contiguous; more efficient than zipWithIndex
-        JavaPairRDD<LongWritable, RecordWritable> keyedByIndex = dataIndexPairs.mapToPair(new RecordSavePrepPairFunction());
+        JavaPairRDD<List<Writable>, Long> dataIndexPairs = rdd.zipWithUniqueId(); //Note: Long values are unique + NOT contiguous; more efficient than zipWithIndex
+        JavaPairRDD<LongWritable, RecordWritable> keyedByIndex =
+                        dataIndexPairs.mapToPair(new RecordSavePrepPairFunction());
 
-        keyedByIndex.saveAsNewAPIHadoopFile(path, LongWritable.class, RecordWritable.class, SequenceFileOutputFormat.class);
+        keyedByIndex.saveAsNewAPIHadoopFile(path, LongWritable.class, RecordWritable.class,
+                        SequenceFileOutputFormat.class);
     }
 
     /**
@@ -141,15 +142,18 @@ public class SparkStorageUtils {
      * @see #saveSequenceFile(String, JavaRDD)
      * @see #saveMapFileSequences(String, JavaRDD)
      */
-    public static void saveSequenceFileSequences(String path, JavaRDD<List<List<Writable>>> rdd, @Nullable Integer maxOutputFiles) {
+    public static void saveSequenceFileSequences(String path, JavaRDD<List<List<Writable>>> rdd,
+                    @Nullable Integer maxOutputFiles) {
         path = FilenameUtils.normalize(path, true);
         if (maxOutputFiles != null) {
             rdd = rdd.coalesce(maxOutputFiles);
         }
-        JavaPairRDD<List<List<Writable>>, Long> dataIndexPairs = rdd.zipWithUniqueId();    //Note: Long values are unique + NOT contiguous; more efficient than zipWithIndex
-        JavaPairRDD<LongWritable, SequenceRecordWritable> keyedByIndex = dataIndexPairs.mapToPair(new SequenceRecordSavePrepPairFunction());
+        JavaPairRDD<List<List<Writable>>, Long> dataIndexPairs = rdd.zipWithUniqueId(); //Note: Long values are unique + NOT contiguous; more efficient than zipWithIndex
+        JavaPairRDD<LongWritable, SequenceRecordWritable> keyedByIndex =
+                        dataIndexPairs.mapToPair(new SequenceRecordSavePrepPairFunction());
 
-        keyedByIndex.saveAsNewAPIHadoopFile(path, LongWritable.class, SequenceRecordWritable.class, SequenceFileOutputFormat.class);
+        keyedByIndex.saveAsNewAPIHadoopFile(path, LongWritable.class, SequenceRecordWritable.class,
+                        SequenceFileOutputFormat.class);
     }
 
     /**
@@ -207,7 +211,8 @@ public class SparkStorageUtils {
      * @see #saveMapFileSequences(String, JavaRDD)
      * @see #saveSequenceFile(String, JavaRDD)
      */
-    public static void saveMapFile(String path, JavaRDD<List<Writable>> rdd, int interval, @Nullable Integer maxOutputFiles) {
+    public static void saveMapFile(String path, JavaRDD<List<Writable>> rdd, int interval,
+                    @Nullable Integer maxOutputFiles) {
         Configuration c = new Configuration();
         c.set(MAP_FILE_INDEX_INTERVAL_KEY, String.valueOf(interval));
         saveMapFile(path, rdd, c, maxOutputFiles);
@@ -231,15 +236,18 @@ public class SparkStorageUtils {
      * @see #saveMapFileSequences(String, JavaRDD)
      * @see #saveSequenceFile(String, JavaRDD)
      */
-    public static void saveMapFile(String path, JavaRDD<List<Writable>> rdd, Configuration c, @Nullable Integer maxOutputFiles) {
+    public static void saveMapFile(String path, JavaRDD<List<Writable>> rdd, Configuration c,
+                    @Nullable Integer maxOutputFiles) {
         path = FilenameUtils.normalize(path, true);
         if (maxOutputFiles != null) {
             rdd = rdd.coalesce(maxOutputFiles);
         }
-        JavaPairRDD<List<Writable>, Long> dataIndexPairs = rdd.zipWithIndex();   //Note: Long values are unique + contiguous, but requires a count
-        JavaPairRDD<LongWritable, RecordWritable> keyedByIndex = dataIndexPairs.mapToPair(new RecordSavePrepPairFunction());
+        JavaPairRDD<List<Writable>, Long> dataIndexPairs = rdd.zipWithIndex(); //Note: Long values are unique + contiguous, but requires a count
+        JavaPairRDD<LongWritable, RecordWritable> keyedByIndex =
+                        dataIndexPairs.mapToPair(new RecordSavePrepPairFunction());
 
-        keyedByIndex.saveAsNewAPIHadoopFile(path, LongWritable.class, RecordWritable.class, MapFileOutputFormat.class, c);
+        keyedByIndex.saveAsNewAPIHadoopFile(path, LongWritable.class, RecordWritable.class, MapFileOutputFormat.class,
+                        c);
     }
 
     /**
@@ -253,7 +261,8 @@ public class SparkStorageUtils {
     public static JavaPairRDD<Long, List<Writable>> restoreMapFile(String path, JavaSparkContext sc) {
         Configuration c = new Configuration();
         c.set(FileInputFormat.INPUT_DIR, FilenameUtils.normalize(path, true));
-        JavaPairRDD<LongWritable, RecordWritable> pairRDD = sc.newAPIHadoopRDD(c, SequenceFileInputFormat.class, LongWritable.class, RecordWritable.class);
+        JavaPairRDD<LongWritable, RecordWritable> pairRDD =
+                        sc.newAPIHadoopRDD(c, SequenceFileInputFormat.class, LongWritable.class, RecordWritable.class);
 
         return pairRDD.mapToPair(new RecordLoadPairFunction());
     }
@@ -299,7 +308,8 @@ public class SparkStorageUtils {
      * @see #saveMapFileSequences(String, JavaRDD)
      * @see #saveSequenceFile(String, JavaRDD)
      */
-    public static void saveMapFileSequences(String path, JavaRDD<List<List<Writable>>> rdd, int interval, @Nullable Integer maxOutputFiles) {
+    public static void saveMapFileSequences(String path, JavaRDD<List<List<Writable>>> rdd, int interval,
+                    @Nullable Integer maxOutputFiles) {
         Configuration c = new Configuration();
         c.set(MAP_FILE_INDEX_INTERVAL_KEY, String.valueOf(interval));
         saveMapFileSequences(path, rdd, c, maxOutputFiles);
@@ -321,15 +331,18 @@ public class SparkStorageUtils {
      * @see #saveMapFileSequences(String, JavaRDD)
      * @see #saveSequenceFile(String, JavaRDD)
      */
-    public static void saveMapFileSequences(String path, JavaRDD<List<List<Writable>>> rdd, Configuration c, @Nullable Integer maxOutputFiles) {
+    public static void saveMapFileSequences(String path, JavaRDD<List<List<Writable>>> rdd, Configuration c,
+                    @Nullable Integer maxOutputFiles) {
         path = FilenameUtils.normalize(path, true);
         if (maxOutputFiles != null) {
             rdd = rdd.coalesce(maxOutputFiles);
         }
         JavaPairRDD<List<List<Writable>>, Long> dataIndexPairs = rdd.zipWithIndex();
-        JavaPairRDD<LongWritable, SequenceRecordWritable> keyedByIndex = dataIndexPairs.mapToPair(new SequenceRecordSavePrepPairFunction());
+        JavaPairRDD<LongWritable, SequenceRecordWritable> keyedByIndex =
+                        dataIndexPairs.mapToPair(new SequenceRecordSavePrepPairFunction());
 
-        keyedByIndex.saveAsNewAPIHadoopFile(path, LongWritable.class, SequenceRecordWritable.class, MapFileOutputFormat.class, c);
+        keyedByIndex.saveAsNewAPIHadoopFile(path, LongWritable.class, SequenceRecordWritable.class,
+                        MapFileOutputFormat.class, c);
     }
 
     /**
@@ -343,7 +356,8 @@ public class SparkStorageUtils {
     public static JavaPairRDD<Long, List<List<Writable>>> restoreMapFileSequences(String path, JavaSparkContext sc) {
         Configuration c = new Configuration();
         c.set(FileInputFormat.INPUT_DIR, FilenameUtils.normalize(path, true));
-        JavaPairRDD<LongWritable, SequenceRecordWritable> pairRDD = sc.newAPIHadoopRDD(c, SequenceFileInputFormat.class, LongWritable.class, SequenceRecordWritable.class);
+        JavaPairRDD<LongWritable, SequenceRecordWritable> pairRDD = sc.newAPIHadoopRDD(c, SequenceFileInputFormat.class,
+                        LongWritable.class, SequenceRecordWritable.class);
 
         return pairRDD.mapToPair(new SequenceRecordLoadPairFunction());
     }

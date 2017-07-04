@@ -74,10 +74,8 @@ public class RotateImageTransform extends BaseImageTransform<Mat> {
      * @param angle   maximum rotation (degrees)
      * @param scale   maximum scaling (relative to 1)
      */
-    public RotateImageTransform(@JsonProperty("centerx") float centerx,
-                                @JsonProperty("centery") float centery,
-                                @JsonProperty("angle") float angle,
-                                @JsonProperty("scale") float scale) {
+    public RotateImageTransform(@JsonProperty("centerx") float centerx, @JsonProperty("centery") float centery,
+                    @JsonProperty("angle") float angle, @JsonProperty("scale") float scale) {
         this(null, centerx, centery, angle, scale);
     }
 

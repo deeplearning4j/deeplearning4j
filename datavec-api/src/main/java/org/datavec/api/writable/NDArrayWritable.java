@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,8 +39,7 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
     private INDArray array = null;
     private Integer hash = null;
 
-    public NDArrayWritable() {
-    }
+    public NDArrayWritable() {}
 
     public NDArrayWritable(INDArray array) {
         set(array);
@@ -186,13 +185,13 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
 
         //At this point: same rank, length, shape
         NdIndexIterator iter = new NdIndexIterator('c', array.shape());
-        while(iter.hasNext()){
+        while (iter.hasNext()) {
             int[] nextPos = iter.next();
             double d1 = array.getDouble(nextPos);
             double d2 = other.array.getDouble(nextPos);
 
-            if(Double.compare(d1,d2) != 0){
-                return Double.compare(d1,d2);
+            if (Double.compare(d1, d2) != 0) {
+                return Double.compare(d1, d2);
             }
         }
 

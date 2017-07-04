@@ -46,8 +46,8 @@ public class ConvertToSequence {
      * @param keyColumn The value to use as the key for inferring which examples belong to what sequence
      * @param comparator The comparator to use when deciding the order of each possible time step in the sequence
      */
-    public ConvertToSequence(String keyColumn, SequenceComparator comparator){
-        this(new String[]{keyColumn}, comparator);
+    public ConvertToSequence(String keyColumn, SequenceComparator comparator) {
+        this(new String[] {keyColumn}, comparator);
     }
 
     /**
@@ -83,10 +83,11 @@ public class ConvertToSequence {
 
     @Override
     public String toString() {
-        if(keyColumns.length == 1){
+        if (keyColumns.length == 1) {
             return "ConvertToSequence(keyColumn=\"" + keyColumns[0] + "\",comparator=" + comparator + ")";
         } else {
-            return "ConvertToSequence(keyColumns=\"" + Arrays.toString(keyColumns) + "\",comparator=" + comparator + ")";
+            return "ConvertToSequence(keyColumns=\"" + Arrays.toString(keyColumns) + "\",comparator=" + comparator
+                            + ")";
         }
     }
 

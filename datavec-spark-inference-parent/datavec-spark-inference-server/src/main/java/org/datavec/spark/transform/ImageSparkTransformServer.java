@@ -51,20 +51,19 @@ public class ImageSparkTransformServer extends SparkTransformServer {
 
         RoutingDsl routingDsl = new RoutingDsl();
 
-        if(jsonPath != null) {
+        if (jsonPath != null) {
             String json = FileUtils.readFileToString(new File(jsonPath));
             ImageTransformProcess transformProcess = ImageTransformProcess.fromJson(json);
             transform = new ImageSparkTransform(transformProcess);
-        }
-        else {
-            log.warn("Server started with no json for transform process. Please ensure you specify a transform process via sending a post request with raw json" +
-                    "to /transformprocess");
+        } else {
+            log.warn("Server started with no json for transform process. Please ensure you specify a transform process via sending a post request with raw json"
+                            + "to /transformprocess");
         }
 
         //return the host information for a given id
         routingDsl.GET("/transformprocess").routeTo(FunctionUtil.function0((() -> {
             try {
-                if(transform == null)
+                if (transform == null)
                     return badRequest();
                 log.info("Transform process initialized");
                 return ok(Json.toJson(transform.getImageTransformProcess()));
@@ -90,7 +89,7 @@ public class ImageSparkTransformServer extends SparkTransformServer {
         //return the host information for a given id
         routingDsl.POST("/transformincrementalarray").routeTo(FunctionUtil.function0((() -> {
             try {
-                SingleImageRecord record = objectMapper.readValue(getJsonText(),SingleImageRecord.class);
+                SingleImageRecord record = objectMapper.readValue(getJsonText(), SingleImageRecord.class);
                 if (record == null)
                     return badRequest();
                 return ok(Json.toJson(transformIncrementalArray(record)));
@@ -103,7 +102,7 @@ public class ImageSparkTransformServer extends SparkTransformServer {
         //return the host information for a given id
         routingDsl.POST("/transformarray").routeTo(FunctionUtil.function0((() -> {
             try {
-                BatchImageRecord batch = objectMapper.readValue(getJsonText(),BatchImageRecord.class);
+                BatchImageRecord batch = objectMapper.readValue(getJsonText(), BatchImageRecord.class);
                 if (batch == null)
                     return badRequest();
                 return ok(Json.toJson(transformArray(batch)));

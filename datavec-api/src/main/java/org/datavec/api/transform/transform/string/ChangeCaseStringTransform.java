@@ -22,7 +22,7 @@ public class ChangeCaseStringTransform extends BaseStringTransform {
     }
 
     public ChangeCaseStringTransform(@JsonProperty("column") String column,
-                                     @JsonProperty("caseType") CaseType caseType) {
+                    @JsonProperty("caseType") CaseType caseType) {
         super(column);
         this.caseType = caseType;
     }

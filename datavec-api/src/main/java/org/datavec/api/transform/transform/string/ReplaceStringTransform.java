@@ -22,7 +22,7 @@ public class ReplaceStringTransform extends BaseStringTransform {
      * @param map Key: regular expression; Value: replacement value
      */
     public ReplaceStringTransform(@JsonProperty("columnName") String columnName,
-                                  @JsonProperty("map") Map<String, String> map) {
+                    @JsonProperty("map") Map<String, String> map) {
         super(columnName);
         this.map = map;
     }

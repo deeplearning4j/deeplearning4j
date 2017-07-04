@@ -104,7 +104,8 @@ import java.util.List;
                 @JsonSubTypes.Type(value = AppendStringColumnTransform.class, name = "AppendStringColumnTransform"),
                 @JsonSubTypes.Type(value = SequenceDifferenceTransform.class, name = "SequenceDifferenceTransform"),
                 @JsonSubTypes.Type(value = ReduceSequenceTransform.class, name = "ReduceSequenceTransform"),
-                @JsonSubTypes.Type(value = SequenceMovingWindowReduceTransform.class, name = "SequenceMovingWindowReduceTransform"),
+                @JsonSubTypes.Type(value = SequenceMovingWindowReduceTransform.class,
+                                name = "SequenceMovingWindowReduceTransform"),
                 @JsonSubTypes.Type(value = IntegerToOneHotTransform.class, name = "IntegerToOneHotTransform"),
                 @JsonSubTypes.Type(value = SequenceTrimTransform.class, name = "SequenceTrimTransform"),
                 @JsonSubTypes.Type(value = SequenceOffsetTransform.class, name = "SequenceOffsetTransform"),
@@ -114,9 +115,10 @@ import java.util.List;
                 @JsonSubTypes.Type(value = NDArrayScalarOpTransform.class, name = "NDArrayScalarOpTransform"),
                 @JsonSubTypes.Type(value = ChangeCaseStringTransform.class, name = "ChangeCaseStringTransform"),
                 @JsonSubTypes.Type(value = ConcatenateStringColumns.class, name = "ConcatenateStringColumns"),
-                @JsonSubTypes.Type(value = StringListToCountsNDArrayTransform.class, name = "StringListToCountsNDArrayTransform"),
-                @JsonSubTypes.Type(value = StringListToIndicesNDArrayTransform.class, name = "StringListToIndicesNDArrayTransform"),
-})
+                @JsonSubTypes.Type(value = StringListToCountsNDArrayTransform.class,
+                                name = "StringListToCountsNDArrayTransform"),
+                @JsonSubTypes.Type(value = StringListToIndicesNDArrayTransform.class,
+                                name = "StringListToIndicesNDArrayTransform"),})
 public interface Transform extends Serializable, ColumnOp {
 
     /**

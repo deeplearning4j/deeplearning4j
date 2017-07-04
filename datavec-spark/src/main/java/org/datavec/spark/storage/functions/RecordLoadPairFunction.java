@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,8 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class RecordLoadPairFunction implements PairFunction<Tuple2<LongWritable, RecordWritable>, Long, List<Writable>> {
+public class RecordLoadPairFunction
+                implements PairFunction<Tuple2<LongWritable, RecordWritable>, Long, List<Writable>> {
     @Override
     public Tuple2<Long, List<Writable>> call(Tuple2<LongWritable, RecordWritable> t2) throws Exception {
         return new Tuple2<>(t2._1().get(), t2._2().getRecord());

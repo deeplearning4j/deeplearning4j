@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,8 +47,7 @@ public class IntegerToOneHotTransform extends BaseTransform {
     private int columnIdx = -1;
 
     public IntegerToOneHotTransform(@JsonProperty("columnName") String columnName,
-                                    @JsonProperty("minValue") int minValue,
-                                    @JsonProperty("maxValue") int maxValue) {
+                    @JsonProperty("minValue") int minValue, @JsonProperty("maxValue") int maxValue) {
         this.columnName = columnName;
         this.minValue = minValue;
         this.maxValue = maxValue;
@@ -62,8 +61,7 @@ public class IntegerToOneHotTransform extends BaseTransform {
         ColumnMetaData meta = inputSchema.getMetaData(columnName);
         if (!(meta instanceof IntegerMetaData))
             throw new IllegalStateException("Cannot convert column \"" + columnName
-                            + "\" from integer to one-hot: column is not integer (is: " + meta.getColumnType()
-                            + ")");
+                            + "\" from integer to one-hot: column is not integer (is: " + meta.getColumnType() + ")");
     }
 
     @Override
@@ -89,7 +87,7 @@ public class IntegerToOneHotTransform extends BaseTransform {
 
             if (i++ == columnIdx) {
                 //Convert this to one-hot:
-                for( int x=minValue; x<=maxValue; x++ ){
+                for (int x = minValue; x <= maxValue; x++) {
                     String newName = s + "[" + x + "]";
                     newMeta.add(new IntegerMetaData(newName, 0, 1));
                 }
@@ -110,7 +108,7 @@ public class IntegerToOneHotTransform extends BaseTransform {
         }
         int idx = getColumnIdx();
 
-        int n = maxValue-minValue + 1;
+        int n = maxValue - minValue + 1;
         List<Writable> out = new ArrayList<>(writables.size() + n);
 
         int i = 0;
@@ -118,9 +116,9 @@ public class IntegerToOneHotTransform extends BaseTransform {
 
             if (i++ == idx) {
                 int currValue = w.toInt();
-                if(currValue < minValue || currValue > maxValue){
+                if (currValue < minValue || currValue > maxValue) {
                     throw new IllegalStateException("Invalid value: integer value (" + currValue + ") is outside of "
-                            + "valid range: must be between " + minValue + " and " + maxValue + " inclusive");
+                                    + "valid range: must be between " + minValue + " and " + maxValue + " inclusive");
                 }
 
                 for (int j = minValue; j <= maxValue; j++) {
@@ -147,10 +145,10 @@ public class IntegerToOneHotTransform extends BaseTransform {
      */
     @Override
     public Object map(Object input) {
-        int currValue = ((Number)input).intValue();
-        if(currValue < minValue || currValue > maxValue){
+        int currValue = ((Number) input).intValue();
+        if (currValue < minValue || currValue > maxValue) {
             throw new IllegalStateException("Invalid value: integer value (" + currValue + ") is outside of "
-                    + "valid range: must be between " + minValue + " and " + maxValue + " inclusive");
+                            + "valid range: must be between " + minValue + " and " + maxValue + " inclusive");
         }
 
         List<Integer> oneHot = new ArrayList<>();

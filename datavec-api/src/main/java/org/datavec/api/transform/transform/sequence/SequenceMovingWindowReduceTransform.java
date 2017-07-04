@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -79,7 +79,8 @@ public class SequenceMovingWindowReduceTransform implements Transform {
      * @param op         Reduction operation to perform on each window
      */
     public SequenceMovingWindowReduceTransform(String columnName, int lookback, ReduceOp op) {
-        this(columnName, defaultOutputColumnName(columnName, lookback, op), lookback, op, EdgeCaseHandling.Default, null);
+        this(columnName, defaultOutputColumnName(columnName, lookback, op), lookback, op, EdgeCaseHandling.Default,
+                        null);
     }
 
     /**
@@ -91,11 +92,10 @@ public class SequenceMovingWindowReduceTransform implements Transform {
      * @param edgeCaseValue    Used only with EdgeCaseHandling.SpecifiedValue, maybe null otherwise
      */
     public SequenceMovingWindowReduceTransform(@JsonProperty("columnName") String columnName,
-                                               @JsonProperty("newColumnName") String newColumnName,
-                                               @JsonProperty("lookback") int lookback,
-                                               @JsonProperty("op") ReduceOp op,
-                                               @JsonProperty("edgeCaseHandling") EdgeCaseHandling edgeCaseHandling,
-                                               @JsonProperty("edgeCaseValue") Writable edgeCaseValue) {
+                    @JsonProperty("newColumnName") String newColumnName, @JsonProperty("lookback") int lookback,
+                    @JsonProperty("op") ReduceOp op,
+                    @JsonProperty("edgeCaseHandling") EdgeCaseHandling edgeCaseHandling,
+                    @JsonProperty("edgeCaseValue") Writable edgeCaseValue) {
         this.columnName = columnName;
         this.newColumnName = newColumnName;
         this.lookback = lookback;
@@ -104,7 +104,7 @@ public class SequenceMovingWindowReduceTransform implements Transform {
         this.edgeCaseValue = edgeCaseValue;
     }
 
-    public static String defaultOutputColumnName(String originalName, int lookback, ReduceOp op){
+    public static String defaultOutputColumnName(String originalName, int lookback, ReduceOp op) {
         return op.toString().toLowerCase() + "(" + lookback + "," + originalName + ")";
     }
 
@@ -117,7 +117,7 @@ public class SequenceMovingWindowReduceTransform implements Transform {
         List<ColumnMetaData> meta = new ArrayList<>(oldMeta);
 
         ColumnMetaData m;
-        switch (op){
+        switch (op) {
             case Min:
             case Max:
             case Range:
@@ -169,23 +169,24 @@ public class SequenceMovingWindowReduceTransform implements Transform {
         ColumnType columnType = inputSchema.getType(colIdx);
         List<List<Writable>> out = new ArrayList<>(sequence.size());
         LinkedList<Writable> window = new LinkedList<>();
-        for(int i=0; i<sequence.size(); i++ ){
+        for (int i = 0; i < sequence.size(); i++) {
             Writable current = sequence.get(i).get(colIdx);
             window.addLast(current);
-            if(window.size() > lookback){
+            if (window.size() > lookback) {
                 window.removeFirst();
             }
             Writable reduced;
-            if(window.size() < lookback && edgeCaseHandling == EdgeCaseHandling.SpecifiedValue){
+            if (window.size() < lookback && edgeCaseHandling == EdgeCaseHandling.SpecifiedValue) {
                 reduced = edgeCaseValue;
             } else {
-                IAggregableReduceOp<Writable, List<Writable>> reductionOp = AggregableReductionUtils.reduceColumn(Collections.singletonList(op), columnType, false, null);
-                for (Writable w : window){
+                IAggregableReduceOp<Writable, List<Writable>> reductionOp = AggregableReductionUtils
+                                .reduceColumn(Collections.singletonList(op), columnType, false, null);
+                for (Writable w : window) {
                     reductionOp.accept(w);
                 }
                 reduced = reductionOp.get().get(0);
             }
-            ArrayList<Writable> outThisStep = new ArrayList<>(sequence.get(i).size()+1);
+            ArrayList<Writable> outThisStep = new ArrayList<>(sequence.get(i).size() + 1);
             outThisStep.addAll(sequence.get(i));
             outThisStep.add(reduced);
             out.add(outThisStep);
@@ -219,8 +220,9 @@ public class SequenceMovingWindowReduceTransform implements Transform {
     @Override
     public String toString() {
         return "SequenceMovingWindowReduceTransform(columnName=\"" + columnName + "\",newColumnName=\"" + newColumnName
-                + "\",lookback=" + lookback + ",op=" + op + ",edgeCaseHandling=" + edgeCaseHandling
-                + (edgeCaseHandling == EdgeCaseHandling.SpecifiedValue ? ",edgeCaseValue=" + edgeCaseValue : "") + ")";
+                        + "\",lookback=" + lookback + ",op=" + op + ",edgeCaseHandling=" + edgeCaseHandling
+                        + (edgeCaseHandling == EdgeCaseHandling.SpecifiedValue ? ",edgeCaseValue=" + edgeCaseValue : "")
+                        + ")";
     }
 
     /**

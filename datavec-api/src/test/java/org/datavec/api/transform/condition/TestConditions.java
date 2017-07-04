@@ -273,20 +273,18 @@ public class TestConditions {
     }
 
     @Test
-    public void testSequenceLengthCondition(){
+    public void testSequenceLengthCondition() {
 
         Condition c = new SequenceLengthCondition(ConditionOp.LessThan, 2);
 
         List<List<Writable>> l1 = Arrays.asList(Collections.<Writable>singletonList(NullWritable.INSTANCE));
 
-        List<List<Writable>> l2 = Arrays.asList(
-                Collections.<Writable>singletonList(NullWritable.INSTANCE),
-                Collections.<Writable>singletonList(NullWritable.INSTANCE));
+        List<List<Writable>> l2 = Arrays.asList(Collections.<Writable>singletonList(NullWritable.INSTANCE),
+                        Collections.<Writable>singletonList(NullWritable.INSTANCE));
 
-        List<List<Writable>> l3 = Arrays.asList(
-                Collections.<Writable>singletonList(NullWritable.INSTANCE),
-                Collections.<Writable>singletonList(NullWritable.INSTANCE),
-                Collections.<Writable>singletonList(NullWritable.INSTANCE));
+        List<List<Writable>> l3 = Arrays.asList(Collections.<Writable>singletonList(NullWritable.INSTANCE),
+                        Collections.<Writable>singletonList(NullWritable.INSTANCE),
+                        Collections.<Writable>singletonList(NullWritable.INSTANCE));
 
         assertTrue(c.conditionSequence(l1));
         assertFalse(c.conditionSequence(l2));

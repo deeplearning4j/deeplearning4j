@@ -42,8 +42,8 @@ public class ConcatenateStringColumns extends BaseTransform implements ColumnOp 
      * @param columnsToConcatenate A partial or complete order of the columns in the output
      */
     public ConcatenateStringColumns(@JsonProperty("newColumnName") String newColumnName,
-                                    @JsonProperty("delimiter") String delimiter,
-                                    @JsonProperty("columnsToConcatenate") List<String> columnsToConcatenate) {
+                    @JsonProperty("delimiter") String delimiter,
+                    @JsonProperty("columnsToConcatenate") List<String> columnsToConcatenate) {
         this.newColumnName = newColumnName;
         this.delimiter = delimiter;
         this.columnsToConcatenate = columnsToConcatenate;
@@ -114,7 +114,7 @@ public class ConcatenateStringColumns extends BaseTransform implements ColumnOp 
     @Override
     public Object map(Object input) {
         throw new UnsupportedOperationException(
-                "Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
+                        "Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
 
     }
 
@@ -126,7 +126,7 @@ public class ConcatenateStringColumns extends BaseTransform implements ColumnOp 
     @Override
     public Object mapSequence(Object sequence) {
         throw new UnsupportedOperationException(
-                "Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
+                        "Unable to map. Please treat this as a special operation. This should be handled by your implementation.");
     }
 
     @Override
@@ -149,7 +149,8 @@ public class ConcatenateStringColumns extends BaseTransform implements ColumnOp 
 
     @Override
     public String toString() {
-        return "ConcatenateStringColumns(delimiters=" + delimiter + " columnsToConcatenate=" + columnsToConcatenate + ")";
+        return "ConcatenateStringColumns(delimiters=" + delimiter + " columnsToConcatenate=" + columnsToConcatenate
+                        + ")";
 
     }
 
@@ -172,7 +173,7 @@ public class ConcatenateStringColumns extends BaseTransform implements ColumnOp 
      */
     @Override
     public String[] outputColumnNames() {
-        return new String[]{ newColumnName };
+        return new String[] {newColumnName};
     }
 
     /**
@@ -195,4 +196,5 @@ public class ConcatenateStringColumns extends BaseTransform implements ColumnOp 
     @Override
     public String columnName() {
         return columnsToConcatenate.get(0);
-    }}
+    }
+}

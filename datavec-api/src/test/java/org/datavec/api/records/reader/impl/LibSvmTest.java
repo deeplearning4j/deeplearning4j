@@ -115,7 +115,8 @@ public class LibSvmTest {
         confZero.set(FileRecordReader.APPEND_LABEL, "true");
         confZero.setBoolean(LibSvmRecordReader.ZERO_BASED_INDEXING, true);
         RecordReader libSvmRecordReaderZero = new LibSvmRecordReader();
-        libSvmRecordReaderZero.initialize(conf, new FileSplit(new ClassPathResource("iris_zero_indexed.libsvm").getFile()));
+        libSvmRecordReaderZero.initialize(conf,
+                        new FileSplit(new ClassPathResource("iris_zero_indexed.libsvm").getFile()));
 
         Configuration confNoZero = new Configuration();
         confNoZero.set(FileRecordReader.APPEND_LABEL, "true");

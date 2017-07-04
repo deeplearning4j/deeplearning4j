@@ -20,7 +20,7 @@ public class URIUtil {
             return new URI("file", null, sp, null);
 
         } catch (URISyntaxException x) {
-            throw new Error(x);         // Can't happen
+            throw new Error(x); // Can't happen
         }
     }
 

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,8 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class SequenceRecordSavePrepPairFunction implements PairFunction<Tuple2<List<List<Writable>>, Long>, LongWritable, SequenceRecordWritable> {
+public class SequenceRecordSavePrepPairFunction
+                implements PairFunction<Tuple2<List<List<Writable>>, Long>, LongWritable, SequenceRecordWritable> {
     @Override
     public Tuple2<LongWritable, SequenceRecordWritable> call(Tuple2<List<List<Writable>>, Long> t2) throws Exception {
         return new Tuple2<>(new LongWritable(t2._2()), new SequenceRecordWritable(t2._1()));

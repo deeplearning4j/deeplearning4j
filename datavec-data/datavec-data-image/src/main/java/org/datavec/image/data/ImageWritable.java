@@ -42,7 +42,7 @@ public class ImageWritable implements Writable {
 
     protected Frame frame;
 
-    public ImageWritable(){
+    public ImageWritable() {
         //No-arg cosntructor for reflection-based creation of ImageWritable objects
     }
 

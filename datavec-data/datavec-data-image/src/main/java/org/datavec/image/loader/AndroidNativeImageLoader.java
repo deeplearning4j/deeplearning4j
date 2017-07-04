@@ -66,12 +66,12 @@ public class AndroidNativeImageLoader extends NativeImageLoader {
 
     @Override
     public INDArray asRowVector(Object image) throws IOException {
-        return image instanceof Bitmap ? asRowVector((Bitmap)image) : null;
+        return image instanceof Bitmap ? asRowVector((Bitmap) image) : null;
     }
 
     @Override
     public INDArray asMatrix(Object image) throws IOException {
-        return image instanceof Bitmap ? asMatrix((Bitmap)image) : null;
+        return image instanceof Bitmap ? asMatrix((Bitmap) image) : null;
     }
 
 }

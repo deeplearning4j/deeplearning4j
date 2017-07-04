@@ -111,7 +111,8 @@ public class SVMLightRecordReader extends LineRecordReader {
                     index--;
 
                 /* TODO: throw an exception here. */
-                if (index < 0) throw new IndexOutOfBoundsException("Invalid data : found negative index");
+                if (index < 0)
+                    throw new IndexOutOfBoundsException("Invalid data : found negative index");
 
                 if (index > numAttributesAdded) {
                     int totalDiff = Math.abs(numAttributesAdded - index);

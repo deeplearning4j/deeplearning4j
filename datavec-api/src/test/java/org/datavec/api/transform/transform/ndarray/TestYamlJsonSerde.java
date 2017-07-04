@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -44,11 +44,10 @@ public class TestYamlJsonSerde {
     public void testTransforms() {
 
 
-        Transform[] transforms = new Transform[] {
-                new NDArrayColumnsMathOpTransform("newCol", MathOp.Divide, "in1", "in2"),
-                new NDArrayMathFunctionTransform("inCol", MathFunction.SQRT),
-                new NDArrayScalarOpTransform("inCol", MathOp.ScalarMax, 3.0)
-        };
+        Transform[] transforms =
+                        new Transform[] {new NDArrayColumnsMathOpTransform("newCol", MathOp.Divide, "in1", "in2"),
+                                        new NDArrayMathFunctionTransform("inCol", MathFunction.SQRT),
+                                        new NDArrayScalarOpTransform("inCol", MathOp.ScalarMax, 3.0)};
 
         for (Transform t : transforms) {
             String yaml = y.serialize(t);
@@ -85,20 +84,14 @@ public class TestYamlJsonSerde {
     @Test
     public void testTransformProcessAndSchema() {
 
-        Schema schema = new Schema.Builder()
-                .addColumnInteger("firstCol")
-                .addColumnNDArray("nd1a",new int[]{1,10})
-                .addColumnNDArray("nd1b",new int[]{1,10})
-                .addColumnNDArray("nd2", new int[]{1,100})
-                .addColumnNDArray("nd3", new int[]{-1,-1})
-                .build();
+        Schema schema = new Schema.Builder().addColumnInteger("firstCol").addColumnNDArray("nd1a", new int[] {1, 10})
+                        .addColumnNDArray("nd1b", new int[] {1, 10}).addColumnNDArray("nd2", new int[] {1, 100})
+                        .addColumnNDArray("nd3", new int[] {-1, -1}).build();
 
-        TransformProcess tp = new TransformProcess.Builder(schema)
-                .integerMathOp("firstCol", MathOp.Add, 1)
-                .ndArrayColumnsMathOpTransform("added",MathOp.Add, "nd1a","nd1b")
-                .ndArrayMathFunctionTransform("nd2", MathFunction.SQRT)
-                .ndArrayScalarOpTransform("nd3", MathOp.Multiply, 2.0)
-                .build();
+        TransformProcess tp = new TransformProcess.Builder(schema).integerMathOp("firstCol", MathOp.Add, 1)
+                        .ndArrayColumnsMathOpTransform("added", MathOp.Add, "nd1a", "nd1b")
+                        .ndArrayMathFunctionTransform("nd2", MathFunction.SQRT)
+                        .ndArrayScalarOpTransform("nd3", MathOp.Multiply, 2.0).build();
 
         String asJson = tp.toJson();
         String asYaml = tp.toYaml();

@@ -33,8 +33,7 @@ import java.util.List;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class SparkGroupToSequenceFunction
-                implements Function<Iterable<List<Writable>>, List<List<Writable>>> {
+public class SparkGroupToSequenceFunction implements Function<Iterable<List<Writable>>, List<List<Writable>>> {
 
     private final SequenceComparator comparator;
 

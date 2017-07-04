@@ -22,7 +22,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *
  * Created by huitseeker on 5/14/17.
  */
-public class DispatchWithConditionOp<U> extends DispatchOp<Writable, U> implements IAggregableReduceOp<List<Writable>, List<U>> {
+public class DispatchWithConditionOp<U> extends DispatchOp<Writable, U>
+                implements IAggregableReduceOp<List<Writable>, List<U>> {
 
 
     @Getter
@@ -30,7 +31,7 @@ public class DispatchWithConditionOp<U> extends DispatchOp<Writable, U> implemen
     private List<Condition> conditions;
 
 
-    public DispatchWithConditionOp(List<IAggregableReduceOp<Writable, List<U>>> ops, List<Condition> conds){
+    public DispatchWithConditionOp(List<IAggregableReduceOp<Writable, List<U>>> ops, List<Condition> conds) {
         super(ops);
         checkNotNull(conds, "Empty condtions for a DispatchWitConditionsOp, use DispatchOp instead");
 
@@ -40,7 +41,7 @@ public class DispatchWithConditionOp<U> extends DispatchOp<Writable, U> implemen
 
     @Override
     public void accept(List<Writable> ts) {
-        for (int i = 0; i < Math.min(super.getOperations().size(), ts.size()); i++){
+        for (int i = 0; i < Math.min(super.getOperations().size(), ts.size()); i++) {
             Condition cond = conditions.get(i);
             if (cond.condition(ts))
                 super.getOperations().get(i).accept(ts.get(i));

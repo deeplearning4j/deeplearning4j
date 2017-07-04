@@ -72,7 +72,7 @@ public class CoordinatesReduction implements AggregableColumnReduction {
 
     public CoordinatesReduction(List<String> columnNamesPostReduce, List<ReduceOp> ops, String delimiter) {
         this.columnNamesPostReduce = columnNamesPostReduce;
-        this.reducer = new CoordinateAggregableReduceOp(ops.size(), multiOp(ops) , delimiter);
+        this.reducer = new CoordinateAggregableReduceOp(ops.size(), multiOp(ops), delimiter);
     }
 
     @Override
@@ -83,7 +83,8 @@ public class CoordinatesReduction implements AggregableColumnReduction {
     @Override
     public List<ColumnMetaData> getColumnOutputMetaData(List<String> newColumnName, ColumnMetaData columnInputMeta) {
         List<ColumnMetaData> res = new ArrayList<>(newColumnName.size());
-        for (String cn: newColumnName) res.add(new StringMetaData((cn)));
+        for (String cn : newColumnName)
+            res.add(new StringMetaData((cn)));
         return res;
     }
 
@@ -130,7 +131,7 @@ public class CoordinatesReduction implements AggregableColumnReduction {
     }
 
 
-    public static class CoordinateAggregableReduceOp implements IAggregableReduceOp<Writable, List<Writable>>{
+    public static class CoordinateAggregableReduceOp implements IAggregableReduceOp<Writable, List<Writable>> {
 
 
         private int nOps;
@@ -139,7 +140,8 @@ public class CoordinatesReduction implements AggregableColumnReduction {
         private ArrayList<IAggregableReduceOp<Writable, List<Writable>>> perCoordinateOps; // of size coords()
         private String delimiter;
 
-        public CoordinateAggregableReduceOp(int n, Supplier<IAggregableReduceOp<Writable, List<Writable>>> initialOp, String delim){
+        public CoordinateAggregableReduceOp(int n, Supplier<IAggregableReduceOp<Writable, List<Writable>>> initialOp,
+                        String delim) {
             this.nOps = n;
             this.perCoordinateOps = new ArrayList<>();
             this.initialOpValue = initialOp;
@@ -148,9 +150,9 @@ public class CoordinatesReduction implements AggregableColumnReduction {
 
         @Override
         public <W extends IAggregableReduceOp<Writable, List<Writable>>> void combine(W accu) {
-            if (accu instanceof CoordinateAggregableReduceOp){
+            if (accu instanceof CoordinateAggregableReduceOp) {
                 CoordinateAggregableReduceOp accumulator = (CoordinateAggregableReduceOp) accu;
-                for (int i = 0; i < Math.min(perCoordinateOps.size(), accumulator.getPerCoordinateOps().size()); i++){
+                for (int i = 0; i < Math.min(perCoordinateOps.size(), accumulator.getPerCoordinateOps().size()); i++) {
                     perCoordinateOps.get(i).combine(accumulator.getPerCoordinateOps().get(i));
                 } // the rest is assumed identical
             }
@@ -177,7 +179,7 @@ public class CoordinatesReduction implements AggregableColumnReduction {
 
             for (int i = 0; i < perCoordinateOps.size(); i++) {
                 List<Writable> resThisCoord = perCoordinateOps.get(i).get();
-                for (int j = 0; j < nOps; j++){
+                for (int j = 0; j < nOps; j++) {
                     res.get(j).append(resThisCoord.get(j).toString());
                     if (i < perCoordinateOps.size() - 1) {
                         res.get(j).append(delimiter);
@@ -186,7 +188,7 @@ public class CoordinatesReduction implements AggregableColumnReduction {
             }
 
             List<Writable> finalRes = new ArrayList<>(nOps);
-            for (StringBuilder sb : res){
+            for (StringBuilder sb : res) {
                 finalRes.add(new Text(sb.toString()));
             }
             return finalRes;

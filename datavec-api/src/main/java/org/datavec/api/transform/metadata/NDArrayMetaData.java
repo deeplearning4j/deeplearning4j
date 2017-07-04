@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -86,7 +86,7 @@ public class NDArrayMetaData extends BaseColumnMetaData {
 
     @Override
     public boolean isValid(Object input) {
-        if(input == null) {
+        if (input == null) {
             return false;
         } else if (input instanceof Writable) {
             return isValid((Writable) input);

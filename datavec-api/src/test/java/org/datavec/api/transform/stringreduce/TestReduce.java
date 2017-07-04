@@ -40,10 +40,10 @@ public class TestReduce {
         inputs.add(Arrays.asList((Writable) new Text("1"), new Text("2")));
 
         Map<StringReduceOp, String> exp = new LinkedHashMap<>();
-        exp.put(StringReduceOp.MERGE,"12");
+        exp.put(StringReduceOp.MERGE, "12");
         exp.put(StringReduceOp.APPEND, "12");
         exp.put(StringReduceOp.PREPEND, "21");
-        exp.put(StringReduceOp.REPLACE,"2");
+        exp.put(StringReduceOp.REPLACE, "2");
 
         for (StringReduceOp op : exp.keySet()) {
 
@@ -56,7 +56,7 @@ public class TestReduce {
             List<Writable> out = reducer.reduce(inputs);
 
             assertEquals(3, out.size());
-            assertEquals(exp.get(op),out.get(0).toString());
+            assertEquals(exp.get(op), out.get(0).toString());
         }
     }
 

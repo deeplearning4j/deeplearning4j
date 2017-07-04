@@ -45,8 +45,8 @@ public class StringListToCountsNDArrayTransform extends BaseTransform {
      * @param ignoreUnknown  Whether to ignore unknown tokens
      */
     public StringListToCountsNDArrayTransform(String columnName, List<String> vocabulary, String delimiter,
-                                              boolean binary, boolean ignoreUnknown) {
-        this(columnName, columnName+"[BOW]", vocabulary, delimiter, binary, ignoreUnknown);
+                    boolean binary, boolean ignoreUnknown) {
+        this(columnName, columnName + "[BOW]", vocabulary, delimiter, binary, ignoreUnknown);
     }
 
     /**
@@ -56,11 +56,9 @@ public class StringListToCountsNDArrayTransform extends BaseTransform {
      * @param ignoreUnknown  Whether to ignore unknown tokens
      */
     public StringListToCountsNDArrayTransform(@JsonProperty("columnName") String columnName,
-                                              @JsonProperty("newColumnName") String newColumnName,
-                                              @JsonProperty("vocabulary") List<String> vocabulary,
-                                              @JsonProperty("delimiter") String delimiter,
-                                              @JsonProperty("binary") boolean binary,
-                                              @JsonProperty("ignoreUnknown") boolean ignoreUnknown) {
+                    @JsonProperty("newColumnName") String newColumnName,
+                    @JsonProperty("vocabulary") List<String> vocabulary, @JsonProperty("delimiter") String delimiter,
+                    @JsonProperty("binary") boolean binary, @JsonProperty("ignoreUnknown") boolean ignoreUnknown) {
         this.columnName = columnName;
         this.newColumnName = newColumnName;
         this.vocabulary = vocabulary;
@@ -99,7 +97,7 @@ public class StringListToCountsNDArrayTransform extends BaseTransform {
                 if (t.getColumnType() != ColumnType.String)
                     throw new IllegalStateException("Cannot convert non-string type");
 
-                ColumnMetaData meta = new NDArrayMetaData(newColumnName, new int[]{vocabulary.size()});
+                ColumnMetaData meta = new NDArrayMetaData(newColumnName, new int[] {vocabulary.size()});
                 newMeta.add(meta);
             } else {
                 newMeta.add(t);
@@ -118,8 +116,8 @@ public class StringListToCountsNDArrayTransform extends BaseTransform {
 
     @Override
     public String toString() {
-        return "StringListToCountsTransform(columnName=" + columnName
-                + ",vocabularySize=" + vocabulary.size() + ",delimiter=\"" + delimiter + "\")";
+        return "StringListToCountsTransform(columnName=" + columnName + ",vocabularySize=" + vocabulary.size()
+                        + ",delimiter=\"" + delimiter + "\")";
     }
 
     protected Collection<Integer> getIndices(String text) {
@@ -153,8 +151,8 @@ public class StringListToCountsNDArrayTransform extends BaseTransform {
     public List<Writable> map(List<Writable> writables) {
         if (writables.size() != inputSchema.numColumns()) {
             throw new IllegalStateException("Cannot execute transform: input writables list length (" + writables.size()
-                    + ") does not " + "match expected number of elements (schema: " + inputSchema.numColumns()
-                    + "). Transform = " + toString());
+                            + ") does not " + "match expected number of elements (schema: " + inputSchema.numColumns()
+                            + "). Transform = " + toString());
         }
         int n = writables.size();
         List<Writable> out = new ArrayList<>(n);

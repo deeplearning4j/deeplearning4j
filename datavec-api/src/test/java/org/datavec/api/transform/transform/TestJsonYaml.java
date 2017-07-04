@@ -141,7 +141,8 @@ public class TestJsonYaml {
                                         .integerToOneHot("someIntColumn", 0, 3)
                                         .filter(new SequenceLengthCondition(ConditionOp.LessThan, 1))
                                         .addConstantColumn("testColSeq", ColumnType.Integer, new DoubleWritable(0))
-                                        .offsetSequence(Collections.singletonList("testColSeq"), 1, SequenceOffsetTransform.OperationType.InPlace)
+                                        .offsetSequence(Collections.singletonList("testColSeq"), 1,
+                                                        SequenceOffsetTransform.OperationType.InPlace)
                                         .build();
 
         String asJson = tp.toJson();

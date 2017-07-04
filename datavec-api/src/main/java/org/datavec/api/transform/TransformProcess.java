@@ -238,8 +238,7 @@ public class TransformProcess implements Serializable {
                 Transform t = d.getTransform();
                 currValues = t.map(currValues);
 
-            }
-            else if (d.getFilter() != null) {
+            } else if (d.getFilter() != null) {
                 Filter f = d.getFilter();
                 if (f.removeExample(currValues))
                     return null;
@@ -274,7 +273,7 @@ public class TransformProcess implements Serializable {
                 currValues = t.mapSequence(currValues);
 
             } else if (d.getFilter() != null) {
-                if(d.getFilter().removeSequence(currValues)){
+                if (d.getFilter().removeSequence(currValues)) {
                     return null;
                 }
             } else if (d.getConvertToSequence() != null) {
@@ -386,8 +385,8 @@ public class TransformProcess implements Serializable {
     }
 
     private static ObjectMapper reinitializeMapperWithSubtypes(ObjectMapper mapper) {
-        return reinitializeMapperWithSubtypes(mapper,
-                Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IAssociativeReducer.class));
+        return reinitializeMapperWithSubtypes(mapper, Arrays.<Class<?>>asList(Transform.class, Condition.class,
+                        Filter.class, IAssociativeReducer.class));
     }
 
     public static ObjectMapper reinitializeMapperWithSubtypes(ObjectMapper mapper, List<Class<?>> classes) {
@@ -400,8 +399,8 @@ public class TransformProcess implements Serializable {
         // First: scan the classpath and find all instances of the 'baseClasses' classes
 
         if (subtypesClassCache == null) {
-            List<Class<?>> interfaces =
-                            Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IAssociativeReducer.class);
+            List<Class<?>> interfaces = Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class,
+                            IAssociativeReducer.class);
             List<Class<?>> classesList = Arrays.<Class<?>>asList();
 
             Collection<URL> urls = ClasspathHelper.forClassLoader();
@@ -830,7 +829,7 @@ public class TransformProcess implements Serializable {
          * @param minValue   Minimum value possible for the integer column (inclusive)
          * @param maxValue   Maximum value possible for the integer column (inclusive)
          */
-        public Builder integerToOneHot(String columnName, int minValue, int maxValue){
+        public Builder integerToOneHot(String columnName, int minValue, int maxValue) {
             return transform(new IntegerToOneHotTransform(columnName, minValue, maxValue));
         }
 
@@ -989,7 +988,7 @@ public class TransformProcess implements Serializable {
          * @param numStepsToTrim Number of time steps to trim from the sequence
          * @param trimFromStart  If true: Trim values from the start of the sequence. If false: trim values from the end.
          */
-        public Builder trimSequence(int numStepsToTrim, boolean trimFromStart){
+        public Builder trimSequence(int numStepsToTrim, boolean trimFromStart) {
             actionList.add(new DataAction(new SequenceTrimTransform(numStepsToTrim, trimFromStart)));
             return this;
         }
@@ -1004,9 +1003,10 @@ public class TransformProcess implements Serializable {
          *                        moved to later time steps)
          * @param operationType   Whether the offset should be done in-place or by adding a new column
          */
-        public Builder offsetSequence(List<String> columnsToOffset, int offsetAmount, SequenceOffsetTransform.OperationType operationType){
+        public Builder offsetSequence(List<String> columnsToOffset, int offsetAmount,
+                        SequenceOffsetTransform.OperationType operationType) {
             return transform(new SequenceOffsetTransform(columnsToOffset, offsetAmount, operationType,
-                    SequenceOffsetTransform.EdgeHandling.TrimSequence, null));
+                            SequenceOffsetTransform.EdgeHandling.TrimSequence, null));
         }
 
 
@@ -1060,7 +1060,7 @@ public class TransformProcess implements Serializable {
          * @param lookback   Look back period for windowing
          * @param op         Reduction operation to perform on each window
          */
-        public Builder sequenceMovingWindowReduce(String columnName, int lookback, ReduceOp op){
+        public Builder sequenceMovingWindowReduce(String columnName, int lookback, ReduceOp op) {
             actionList.add(new DataAction(new SequenceMovingWindowReduceTransform(columnName, lookback, op)));
             return this;
         }
@@ -1232,7 +1232,7 @@ public class TransformProcess implements Serializable {
          * @param op         Operation to perform
          * @param value      Value for the operation
          */
-        public Builder ndArrayScalarOpTransform(String columnName, MathOp op, double value){
+        public Builder ndArrayScalarOpTransform(String columnName, MathOp op, double value) {
             return transform(new NDArrayScalarOpTransform(columnName, op, value));
         }
 
@@ -1244,7 +1244,7 @@ public class TransformProcess implements Serializable {
          * @param mathOp        Operation to perform
          * @param columnNames   Name of the columns used as input to the operation
          */
-        public Builder ndArrayColumnsMathOpTransform(String newColumnName, MathOp mathOp, String... columnNames){
+        public Builder ndArrayColumnsMathOpTransform(String newColumnName, MathOp mathOp, String... columnNames) {
             return transform(new NDArrayColumnsMathOpTransform(newColumnName, mathOp, columnNames));
         }
 
@@ -1255,7 +1255,7 @@ public class TransformProcess implements Serializable {
          * @param columnName   Name of the column to perform the operation on
          * @param mathFunction Mathematical function to apply
          */
-        public Builder ndArrayMathFunctionTransform(String columnName, MathFunction mathFunction){
+        public Builder ndArrayMathFunctionTransform(String columnName, MathFunction mathFunction) {
             return transform(new NDArrayMathFunctionTransform(columnName, mathFunction));
         }
 
@@ -1268,7 +1268,8 @@ public class TransformProcess implements Serializable {
          * @param firstCol      first column to use in the distance calculation
          * @param secondCol     second column to use in the distance calculation
          */
-        public Builder ndArrayDistanceTransform(String newColumnName, Distance distance, String firstCol, String secondCol) {
+        public Builder ndArrayDistanceTransform(String newColumnName, Distance distance, String firstCol,
+                        String secondCol) {
             return transform(new NDArrayDistanceTransform(newColumnName, distance, firstCol, secondCol));
         }
 

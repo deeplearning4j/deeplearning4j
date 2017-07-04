@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,14 +47,13 @@ public class TestWritablesToStringFunctions {
     }
 
     @Test
-    public void testSequenceWritablesToString() throws Exception{
+    public void testSequenceWritablesToString() throws Exception {
 
-        List<List<Writable>> l = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(1.5), new Text("someValue")),
-                Arrays.<Writable>asList(new DoubleWritable(2.5), new Text("otherValue")));
+        List<List<Writable>> l = Arrays.asList(Arrays.<Writable>asList(new DoubleWritable(1.5), new Text("someValue")),
+                        Arrays.<Writable>asList(new DoubleWritable(2.5), new Text("otherValue")));
 
         String expected = l.get(0).get(0).toString() + "," + l.get(0).get(1).toString() + "\n"
-                + l.get(1).get(0).toString() + "," + l.get(1).get(1).toString();
+                        + l.get(1).get(0).toString() + "," + l.get(1).get(1).toString();
 
         assertEquals(expected, new SequenceWritablesToStringFunction(",").call(l));
     }

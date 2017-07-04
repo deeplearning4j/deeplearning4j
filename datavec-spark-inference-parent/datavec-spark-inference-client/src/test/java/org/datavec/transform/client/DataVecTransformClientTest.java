@@ -30,12 +30,9 @@ public class DataVecTransformClientTest {
     private static CSVSparkTransformServer server;
     private static int port = getAvailablePort();
     private static DataVecTransformClient client;
-    private static Schema schema = new Schema.Builder().addColumnDouble("1.0")
-            .addColumnDouble("2.0").build();
+    private static Schema schema = new Schema.Builder().addColumnDouble("1.0").addColumnDouble("2.0").build();
     private static TransformProcess transformProcess =
-            new TransformProcess.Builder(schema)
-                    .convertToString("1.0")
-                    .convertToString("2.0").build();
+                    new TransformProcess.Builder(schema).convertToString("1.0").convertToString("2.0").build();
     private static File fileSave = new File(UUID.randomUUID().toString() + ".json");
 
     @BeforeClass
@@ -43,9 +40,7 @@ public class DataVecTransformClientTest {
         FileUtils.write(fileSave, transformProcess.toJson());
         fileSave.deleteOnExit();
         server = new CSVSparkTransformServer();
-        server.runMain(new String[]{
-                "-dp", String.valueOf(port)
-        });
+        server.runMain(new String[] {"-dp", String.valueOf(port)});
 
         client = new DataVecTransformClient("http://localhost:" + port);
         client.setCSVTransformProcess(transformProcess);
@@ -58,9 +53,9 @@ public class DataVecTransformClientTest {
 
     @Test
     public void testRecord() throws Exception {
-        SingleCSVRecord singleCsvRecord = new SingleCSVRecord(new String[]{"0","0"});
+        SingleCSVRecord singleCsvRecord = new SingleCSVRecord(new String[] {"0", "0"});
         SingleCSVRecord transformed = client.transformIncremental(singleCsvRecord);
-        assertEquals(singleCsvRecord.getValues().length,transformed.getValues().length);
+        assertEquals(singleCsvRecord.getValues().length, transformed.getValues().length);
         Base64NDArrayBody body = client.transformArrayIncremental(singleCsvRecord);
         INDArray arr = Nd4jBase64.fromBase64(body.getNdarray());
         assumeNotNull(arr);
@@ -68,7 +63,7 @@ public class DataVecTransformClientTest {
 
     @Test
     public void testBatchRecord() throws Exception {
-        SingleCSVRecord singleCsvRecord = new SingleCSVRecord(new String[]{"0","0"});
+        SingleCSVRecord singleCsvRecord = new SingleCSVRecord(new String[] {"0", "0"});
 
         BatchCSVRecord batchCSVRecord = new BatchCSVRecord(Arrays.asList(singleCsvRecord, singleCsvRecord));
         BatchCSVRecord batchCSVRecord1 = client.transform(batchCSVRecord);
@@ -78,8 +73,6 @@ public class DataVecTransformClientTest {
         INDArray arr = Nd4jBase64.fromBase64(body.getNdarray());
         assumeNotNull(arr);
     }
-
-
 
 
 

@@ -49,8 +49,7 @@ public class ScaleImageTransform extends BaseImageTransform<Mat> {
     }
 
     /** Calls {@code this(null, dx, dy)}. */
-    public ScaleImageTransform(@JsonProperty("dx") float dx,
-                               @JsonProperty("dy") float dy) {
+    public ScaleImageTransform(@JsonProperty("dx") float dx, @JsonProperty("dy") float dy) {
         this(null, dx, dy);
     }
 

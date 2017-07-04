@@ -49,10 +49,8 @@ public class CropImageTransform extends BaseImageTransform<Mat> {
     }
 
     /** Calls {@code this(random, cropTop, cropLeft, cropBottom, cropRight)}. */
-    public CropImageTransform(@JsonProperty("cropTop") int cropTop,
-                              @JsonProperty("cropLeft") int cropLeft,
-                              @JsonProperty("cropBottom")int cropBottom,
-                              @JsonProperty("cropRight")int cropRight) {
+    public CropImageTransform(@JsonProperty("cropTop") int cropTop, @JsonProperty("cropLeft") int cropLeft,
+                    @JsonProperty("cropBottom") int cropBottom, @JsonProperty("cropRight") int cropRight) {
         this(null, cropTop, cropLeft, cropBottom, cropRight);
     }
 

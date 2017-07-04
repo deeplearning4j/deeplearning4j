@@ -26,11 +26,8 @@ public class ImageSparkTransformTest {
 
         SingleImageRecord imgRecord = new SingleImageRecord(f1.toURI());
 
-        ImageTransformProcess imgTransformProcess = new ImageTransformProcess.Builder()
-                .seed(seed)
-                .scaleImageTransform(10)
-                .cropImageTransform(5)
-                .build();
+        ImageTransformProcess imgTransformProcess = new ImageTransformProcess.Builder().seed(seed)
+                        .scaleImageTransform(10).cropImageTransform(5).build();
 
         ImageSparkTransform imgSparkTransform = new ImageSparkTransform(imgTransformProcess);
         Base64NDArrayBody body = imgSparkTransform.toArray(imgRecord);
@@ -53,11 +50,8 @@ public class ImageSparkTransformTest {
         batch.add(f1.toURI());
         batch.add(f2.toURI());
 
-        ImageTransformProcess imgTransformProcess = new ImageTransformProcess.Builder()
-                .seed(seed)
-                .scaleImageTransform(10)
-                .cropImageTransform(5)
-                .build();
+        ImageTransformProcess imgTransformProcess = new ImageTransformProcess.Builder().seed(seed)
+                        .scaleImageTransform(10).cropImageTransform(5).build();
 
         ImageSparkTransform imgSparkTransform = new ImageSparkTransform(imgTransformProcess);
         Base64NDArrayBody body = imgSparkTransform.toArray(batch);

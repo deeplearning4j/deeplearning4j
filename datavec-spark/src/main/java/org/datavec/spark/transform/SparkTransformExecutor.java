@@ -255,35 +255,35 @@ public class SparkTransformExecutor {
                                 currentWritables.mapToPair(new MapToPairForReducerFunction(reducer));
 
 
-                currentWritables = pair.aggregateByKey(reducer.aggregableReducer(), new Function2<
-                        IAggregableReduceOp<List<Writable>, List<Writable>>,
-                        List<Writable>,
-                        IAggregableReduceOp<List<Writable>, List<Writable>>>() {
-                    @Override
-                    public IAggregableReduceOp<List<Writable>, List<Writable>> call(
-                            IAggregableReduceOp<List<Writable>, List<Writable>> iAggregableReduceOp,
-                            List<Writable> writables) throws Exception {
-                        iAggregableReduceOp.accept(writables);
-                        return iAggregableReduceOp;
-                    }
-                }, new Function2<
-                        IAggregableReduceOp<List<Writable>, List<Writable>>,
-                        IAggregableReduceOp<List<Writable>, List<Writable>>,
-                        IAggregableReduceOp<List<Writable>, List<Writable>>>() {
-                    @Override
-                    public IAggregableReduceOp<List<Writable>, List<Writable>> call(
-                            IAggregableReduceOp<List<Writable>, List<Writable>> iAggregableReduceOp,
-                            IAggregableReduceOp<List<Writable>, List<Writable>> iAggregableReduceOp2) throws Exception {
-                        iAggregableReduceOp.combine(iAggregableReduceOp2);
-                        return iAggregableReduceOp;
-                    }
-                }).mapValues(new Function<IAggregableReduceOp<List<Writable>, List<Writable>>, List<Writable>>(){
+                currentWritables = pair.aggregateByKey(reducer.aggregableReducer(),
+                                new Function2<IAggregableReduceOp<List<Writable>, List<Writable>>, List<Writable>, IAggregableReduceOp<List<Writable>, List<Writable>>>() {
+                                    @Override
+                                    public IAggregableReduceOp<List<Writable>, List<Writable>> call(
+                                                    IAggregableReduceOp<List<Writable>, List<Writable>> iAggregableReduceOp,
+                                                    List<Writable> writables) throws Exception {
+                                        iAggregableReduceOp.accept(writables);
+                                        return iAggregableReduceOp;
+                                    }
+                                },
+                                new Function2<IAggregableReduceOp<List<Writable>, List<Writable>>, IAggregableReduceOp<List<Writable>, List<Writable>>, IAggregableReduceOp<List<Writable>, List<Writable>>>() {
+                                    @Override
+                                    public IAggregableReduceOp<List<Writable>, List<Writable>> call(
+                                                    IAggregableReduceOp<List<Writable>, List<Writable>> iAggregableReduceOp,
+                                                    IAggregableReduceOp<List<Writable>, List<Writable>> iAggregableReduceOp2)
+                                                    throws Exception {
+                                        iAggregableReduceOp.combine(iAggregableReduceOp2);
+                                        return iAggregableReduceOp;
+                                    }
+                                })
+                                .mapValues(new Function<IAggregableReduceOp<List<Writable>, List<Writable>>, List<Writable>>() {
 
-                    @Override
-                    public List<Writable> call(IAggregableReduceOp<List<Writable>, List<Writable>> listIAggregableReduceOp) throws Exception {
-                        return listIAggregableReduceOp.get();
-                    }
-                }).values();
+                                    @Override
+                                    public List<Writable> call(
+                                                    IAggregableReduceOp<List<Writable>, List<Writable>> listIAggregableReduceOp)
+                                                    throws Exception {
+                                        return listIAggregableReduceOp.get();
+                                    }
+                                }).values();
 
             } else if (d.getCalculateSortedRank() != null) {
                 CalculateSortedRank csr = d.getCalculateSortedRank();

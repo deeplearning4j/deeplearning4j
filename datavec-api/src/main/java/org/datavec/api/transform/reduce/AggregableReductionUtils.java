@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -32,11 +32,11 @@ import java.util.*;
  */
 public class AggregableReductionUtils {
 
-    private AggregableReductionUtils(){ }
+    private AggregableReductionUtils() {}
 
 
     public static IAggregableReduceOp<Writable, List<Writable>> reduceColumn(List<ReduceOp> op, ColumnType type,
-                                                                             boolean ignoreInvalid, ColumnMetaData metaData) {
+                    boolean ignoreInvalid, ColumnMetaData metaData) {
         switch (type) {
             case Integer:
                 return reduceIntColumn(op, ignoreInvalid, metaData);
@@ -58,10 +58,11 @@ public class AggregableReductionUtils {
         }
     }
 
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceIntColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceIntColumn(List<ReduceOp> lop,
+                    boolean ignoreInvalid, ColumnMetaData metaData) {
 
         List<IAggregableReduceOp<Integer, Writable>> res = new ArrayList<>(lop.size());
-        for (int i = 0; i < lop.size(); i++){
+        for (int i = 0; i < lop.size(); i++) {
             switch (lop.get(i)) {
                 case Prod:
                     res.add(new AggregatorImpls.AggregableProd<Integer>());
@@ -116,10 +117,11 @@ public class AggregableReductionUtils {
             return thisOp;
     }
 
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceLongColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceLongColumn(List<ReduceOp> lop,
+                    boolean ignoreInvalid, ColumnMetaData metaData) {
 
         List<IAggregableReduceOp<Long, Writable>> res = new ArrayList<>(lop.size());
-        for (int i = 0; i < lop.size(); i++){
+        for (int i = 0; i < lop.size(); i++) {
             switch (lop.get(i)) {
                 case Prod:
                     res.add(new AggregatorImpls.AggregableProd<Long>());
@@ -174,10 +176,11 @@ public class AggregableReductionUtils {
             return thisOp;
     }
 
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceFloatColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceFloatColumn(List<ReduceOp> lop,
+                    boolean ignoreInvalid, ColumnMetaData metaData) {
 
         List<IAggregableReduceOp<Float, Writable>> res = new ArrayList<>(lop.size());
-        for (int i = 0; i < lop.size(); i++){
+        for (int i = 0; i < lop.size(); i++) {
             switch (lop.get(i)) {
                 case Prod:
                     res.add(new AggregatorImpls.AggregableProd<Float>());
@@ -232,10 +235,11 @@ public class AggregableReductionUtils {
             return thisOp;
     }
 
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceDoubleColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceDoubleColumn(List<ReduceOp> lop,
+                    boolean ignoreInvalid, ColumnMetaData metaData) {
 
         List<IAggregableReduceOp<Double, Writable>> res = new ArrayList<>(lop.size());
-        for (int i = 0; i < lop.size(); i++){
+        for (int i = 0; i < lop.size(); i++) {
             switch (lop.get(i)) {
                 case Prod:
                     res.add(new AggregatorImpls.AggregableProd<Double>());
@@ -290,10 +294,11 @@ public class AggregableReductionUtils {
             return thisOp;
     }
 
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceStringOrCategoricalColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceStringOrCategoricalColumn(List<ReduceOp> lop,
+                    boolean ignoreInvalid, ColumnMetaData metaData) {
 
         List<IAggregableReduceOp<String, Writable>> res = new ArrayList<>(lop.size());
-        for (int i = 0; i < lop.size(); i++){
+        for (int i = 0; i < lop.size(); i++) {
             switch (lop.get(i)) {
                 case Count:
                     res.add(new AggregatorImpls.AggregableCount<String>());
@@ -314,8 +319,9 @@ public class AggregableReductionUtils {
                     res.add(new StringAggregatorImpls.AggregableStringPrepend());
                     break;
                 default:
-                    throw new UnsupportedOperationException("Cannot execute op \"" + lop.get(i) + "\" on String/Categorical column "
-                            + "(can only perform Append, Prepend, Count, CountUnique, TakeFirst and TakeLast ops on categorical columns)");
+                    throw new UnsupportedOperationException("Cannot execute op \"" + lop.get(i)
+                                    + "\" on String/Categorical column "
+                                    + "(can only perform Append, Prepend, Count, CountUnique, TakeFirst and TakeLast ops on categorical columns)");
             }
         }
 
@@ -326,10 +332,11 @@ public class AggregableReductionUtils {
             return thisOp;
     }
 
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceTimeColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceTimeColumn(List<ReduceOp> lop,
+                    boolean ignoreInvalid, ColumnMetaData metaData) {
 
         List<IAggregableReduceOp<Long, Writable>> res = new ArrayList<>(lop.size());
-        for (int i = 0; i < lop.size(); i++){
+        for (int i = 0; i < lop.size(); i++) {
             switch (lop.get(i)) {
                 case Min:
                     res.add(new AggregatorImpls.AggregableMin<Long>());
@@ -359,7 +366,8 @@ public class AggregableReductionUtils {
                     res.add(new AggregatorImpls.AggregableLast<Long>());
                     break;
                 default:
-                    throw new UnsupportedOperationException("Reduction op \"" + lop.get(i) + "\" not supported on time columns");
+                    throw new UnsupportedOperationException(
+                                    "Reduction op \"" + lop.get(i) + "\" not supported on time columns");
             }
         }
         IAggregableReduceOp<Writable, List<Writable>> thisOp = new LongWritableOp<>(new AggregableMultiOp<>(res));
@@ -369,10 +377,11 @@ public class AggregableReductionUtils {
             return thisOp;
     }
 
-    public static IAggregableReduceOp<Writable, List<Writable>> reduceBytesColumn(List<ReduceOp> lop, boolean ignoreInvalid, ColumnMetaData metaData) {
+    public static IAggregableReduceOp<Writable, List<Writable>> reduceBytesColumn(List<ReduceOp> lop,
+                    boolean ignoreInvalid, ColumnMetaData metaData) {
 
         List<IAggregableReduceOp<Byte, Writable>> res = new ArrayList<>(lop.size());
-        for (int i = 0; i < lop.size(); i++){
+        for (int i = 0; i < lop.size(); i++) {
             switch (lop.get(i)) {
                 case TakeFirst:
                     res.add(new AggregatorImpls.AggregableFirst<Byte>());
@@ -382,7 +391,7 @@ public class AggregableReductionUtils {
                     break;
                 default:
                     throw new UnsupportedOperationException("Cannot execute op \"" + lop.get(i) + "\" on Bytes column "
-                            + "(can only perform TakeFirst and TakeLast ops on bytes columns)");
+                                    + "(can only perform TakeFirst and TakeLast ops on bytes columns)");
             }
         }
         IAggregableReduceOp<Writable, List<Writable>> thisOp = new ByteWritableOp<>(new AggregableMultiOp<>(res));

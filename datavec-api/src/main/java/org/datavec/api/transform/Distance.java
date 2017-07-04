@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,7 +20,5 @@ package org.datavec.api.transform;
  * Distance enumeration
  */
 public enum Distance {
-    COSINE,
-    EUCLIDEAN,
-    MANHATTAN
+    COSINE, EUCLIDEAN, MANHATTAN
 }

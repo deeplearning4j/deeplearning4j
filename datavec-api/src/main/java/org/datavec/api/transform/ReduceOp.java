@@ -42,8 +42,7 @@ import org.datavec.api.transform.reduce.Reducer;
 public enum ReduceOp {
     Prod, Min, Max, Range, //Max - Min
     Append, Prepend, // String operations : concatenate, concatenate with commuted arguments
-    Sum, Mean,
-    Stdev,  // with Bessel's correction
+    Sum, Mean, Stdev, // with Bessel's correction
     UncorrectedStdDev, //without
     Variance, // with Bessel's correction
     PopulationVariance, // without

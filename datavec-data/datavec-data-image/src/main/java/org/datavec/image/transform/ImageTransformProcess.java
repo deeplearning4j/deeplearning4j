@@ -192,8 +192,7 @@ public class ImageTransformProcess {
     private static ObjectMapper reinitializeMapperWithSubtypes(ObjectMapper mapper) {
         //Register concrete subtypes for JSON serialization
 
-        List<Class<?>> classes =
-                Arrays.<Class<?>>asList(ImageTransform.class);
+        List<Class<?>> classes = Arrays.<Class<?>>asList(ImageTransform.class);
         List<String> classNames = new ArrayList<>(6);
         for (Class<?> c : classes)
             classNames.add(c.getName());
@@ -201,8 +200,7 @@ public class ImageTransformProcess {
         // First: scan the classpath and find all instances of the 'baseClasses' classes
 
         if (subtypesClassCache == null) {
-            List<Class<?>> interfaces =
-                    Arrays.<Class<?>>asList(ImageTransform.class);
+            List<Class<?>> interfaces = Arrays.<Class<?>>asList(ImageTransform.class);
             List<Class<?>> classesList = Arrays.<Class<?>>asList();
 
             Collection<URL> urls = ClasspathHelper.forClassLoader();
@@ -215,16 +213,16 @@ public class ImageTransformProcess {
             }
 
             Reflections reflections = new Reflections(
-                    new ConfigurationBuilder().filterInputsBy(new FilterBuilder().exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
-                            //Exclude the following: the assumption here is that no custom functionality will ever be present
-                            // under these package name prefixes.
-                            .exclude("^org.nd4j.*").exclude("^org.bytedeco.*") //JavaCPP
-                            .exclude("^com.fasterxml.*")//Jackson
-                            .exclude("^org.apache.*") //Apache commons, Spark, log4j etc
-                            .exclude("^org.projectlombok.*").exclude("^com.twelvemonkeys.*")
-                            .exclude("^org.joda.*").exclude("^org.slf4j.*").exclude("^com.google.*")
-                            .exclude("^org.reflections.*").exclude("^ch.qos.*") //Logback
-                    ).addUrls(scanUrls).setScanners(new DataVecSubTypesScanner(interfaces, classesList)));
+                            new ConfigurationBuilder().filterInputsBy(new FilterBuilder().exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
+                                            //Exclude the following: the assumption here is that no custom functionality will ever be present
+                                            // under these package name prefixes.
+                                            .exclude("^org.nd4j.*").exclude("^org.bytedeco.*") //JavaCPP
+                                            .exclude("^com.fasterxml.*")//Jackson
+                                            .exclude("^org.apache.*") //Apache commons, Spark, log4j etc
+                                            .exclude("^org.projectlombok.*").exclude("^com.twelvemonkeys.*")
+                                            .exclude("^org.joda.*").exclude("^org.slf4j.*").exclude("^com.google.*")
+                                            .exclude("^org.reflections.*").exclude("^ch.qos.*") //Logback
+                            ).addUrls(scanUrls).setScanners(new DataVecSubTypesScanner(interfaces, classesList)));
             org.reflections.Store store = reflections.getStore();
 
             Iterable<String> subtypesByName = store.getAll(DataVecSubTypesScanner.class.getSimpleName(), classNames);
@@ -244,10 +242,10 @@ public class ImageTransformProcess {
         Set<Class<?>> registeredSubtypes = new HashSet<>();
         for (Class<?> c : classes) {
             AnnotatedClass ac = AnnotatedClass.construct(c, mapper.getSerializationConfig().getAnnotationIntrospector(),
-                    null);
+                            null);
             Collection<NamedType> types =
-                    mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(),
-                            mapper.getSerializationConfig().getAnnotationIntrospector());
+                            mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(),
+                                            mapper.getSerializationConfig().getAnnotationIntrospector());
             for (NamedType nt : types) {
                 registeredSubtypes.add(nt.getType());
             }
@@ -275,7 +273,7 @@ public class ImageTransformProcess {
                     for (Class<?> baseClass : classes) {
                         if (baseClass.isAssignableFrom(c)) {
                             log.debug("Registering class for JSON serialization: {} as subtype of {}", c.getName(),
-                                    baseClass.getName());
+                                            baseClass.getName());
                             break;
                         }
                     }
@@ -400,13 +398,16 @@ public class ImageTransformProcess {
             return this;
         }
 
-        public Builder warpImageTransform(float dx1, float dy1, float dx2, float dy2, float dx3, float dy3, float dx4, float dy4) {
+        public Builder warpImageTransform(float dx1, float dy1, float dx2, float dy2, float dx3, float dy3, float dx4,
+                        float dy4) {
             transformList.add(new WarpImageTransform(dx1, dy1, dx2, dy2, dx3, dy3, dx4, dy4));
             return this;
         }
 
 
-        public ImageTransformProcess build() { return new ImageTransformProcess(this);}
+        public ImageTransformProcess build() {
+            return new ImageTransformProcess(this);
+        }
 
     }
 }

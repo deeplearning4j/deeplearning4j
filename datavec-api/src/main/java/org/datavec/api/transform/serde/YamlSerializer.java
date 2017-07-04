@@ -47,9 +47,8 @@ public class YamlSerializer extends BaseSerializer {
 
     @Override
     protected ObjectMapper reinitializeMapperWithSubtypes() {
-        om = TransformProcess.reinitializeMapperWithSubtypes(
-                om, Arrays.<Class<?>>asList(Transform.class, Condition.class, Filter.class, IAssociativeReducer.class,
-                        SequenceComparator.class));
+        om = TransformProcess.reinitializeMapperWithSubtypes(om, Arrays.<Class<?>>asList(Transform.class,
+                        Condition.class, Filter.class, IAssociativeReducer.class, SequenceComparator.class));
         return om;
     }
 

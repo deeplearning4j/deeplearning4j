@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -30,7 +30,8 @@ import java.util.List;
  * @author Alex Black
  */
 @AllArgsConstructor
-public class SparkMapToPairByMultipleColumnsFunction implements PairFunction<List<Writable>, List<Writable>, List<Writable>> {
+public class SparkMapToPairByMultipleColumnsFunction
+                implements PairFunction<List<Writable>, List<Writable>, List<Writable>> {
 
     private final int[] keyColumnIdxs;
 

@@ -52,7 +52,8 @@ public class TestGeoReduction {
         reducer.setInputSchema(schema);
 
         IAggregableReduceOp<List<Writable>, List<Writable>> aggregableReduceOp = reducer.aggregableReducer();
-        for (List<Writable> l: inputs) aggregableReduceOp.accept(l);
+        for (List<Writable> l : inputs)
+            aggregableReduceOp.accept(l);
         List<Writable> out = aggregableReduceOp.get();
 
         assertEquals(2, out.size());

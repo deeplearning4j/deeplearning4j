@@ -46,7 +46,7 @@ public enum ColumnType {
                                 "Cannot create new categorical column using this method: categorical state names would be unknown");
             case NDArray:
                 throw new UnsupportedOperationException(
-                        "Cannot create new NDArray column using this method: shape information would be unknown");
+                                "Cannot create new NDArray column using this method: shape information would be unknown");
             default: //And Bytes
                 throw new UnsupportedOperationException("Unknown or not supported column type: " + this);
         }

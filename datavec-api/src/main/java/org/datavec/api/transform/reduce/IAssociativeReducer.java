@@ -60,7 +60,7 @@ public interface IAssociativeReducer extends Serializable {
      * @param examplesList
      * @return
      */
-     IAggregableReduceOp<List<Writable>, List<Writable>> aggregableReducer();
+    IAggregableReduceOp<List<Writable>, List<Writable>> aggregableReducer();
 
     /**
      *

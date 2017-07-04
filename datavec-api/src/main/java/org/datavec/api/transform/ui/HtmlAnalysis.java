@@ -45,7 +45,7 @@ import java.util.*;
  */
 public class HtmlAnalysis {
 
-    private HtmlAnalysis(){
+    private HtmlAnalysis() {
 
     }
 

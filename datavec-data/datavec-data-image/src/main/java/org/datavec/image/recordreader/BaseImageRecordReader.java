@@ -122,7 +122,7 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
                 }
             }
             iter = new FileFromPathIterator(inputSplit.locationsPathIterator()); //This handles randomization internally if necessary
-//            iter = new FileFromPathIterator(allPaths.iterator()); //This handles randomization internally if necessary
+            //            iter = new FileFromPathIterator(allPaths.iterator()); //This handles randomization internally if necessary
         } else
             throw new IllegalArgumentException("No path locations found in the split.");
 
@@ -248,13 +248,14 @@ public abstract class BaseImageRecordReader extends BaseRecordReader {
             cnt++;
         }
 
-        INDArray features = Nd4j.createUninitialized(new int[]{cnt, channels, height, width}, 'c');
+        INDArray features = Nd4j.createUninitialized(new int[] {cnt, channels, height, width}, 'c');
         Nd4j.getAffinityManager().tagLocation(features, AffinityManager.Location.HOST);
-        for(int i = 0; i < cnt; i++) {
+        for (int i = 0; i < cnt; i++) {
             try {
-                ((NativeImageLoader) imageLoader).asMatrixView(currBatch.get(i), features.tensorAlongDimension(i, 1, 2, 3));
+                ((NativeImageLoader) imageLoader).asMatrixView(currBatch.get(i),
+                                features.tensorAlongDimension(i, 1, 2, 3));
             } catch (Exception e) {
-                System.out.println("Image file failed during load: "+currBatch.get(i).getAbsolutePath());
+                System.out.println("Image file failed during load: " + currBatch.get(i).getAbsolutePath());
                 throw new RuntimeException(e);
             }
         }

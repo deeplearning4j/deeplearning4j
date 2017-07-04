@@ -86,20 +86,17 @@ public class TestUI {
 
     @Test
     @Ignore
-    public void testSequencePlot() throws Exception{
+    public void testSequencePlot() throws Exception {
 
-        Schema schema = new SequenceSchema.Builder()
-                .addColumnDouble("sinx")
-                .addColumnCategorical("cat", "s0", "s1", "s2")
-                .addColumnString("stringcol")
-                .build();
+        Schema schema = new SequenceSchema.Builder().addColumnDouble("sinx")
+                        .addColumnCategorical("cat", "s0", "s1", "s2").addColumnString("stringcol").build();
 
         int nSteps = 100;
         List<List<Writable>> sequence = new ArrayList<>(nSteps);
-        for( int i=0; i<nSteps; i++ ){
-            String c = "s" + i%3;
-            sequence.add(
-                    Arrays.<Writable>asList(new DoubleWritable(Math.sin(i/10.0)), new Text(c), new Text(String.valueOf(i))));
+        for (int i = 0; i < nSteps; i++) {
+            String c = "s" + i % 3;
+            sequence.add(Arrays.<Writable>asList(new DoubleWritable(Math.sin(i / 10.0)), new Text(c),
+                            new Text(String.valueOf(i))));
         }
 
         File f = new File("seqHtml.html");

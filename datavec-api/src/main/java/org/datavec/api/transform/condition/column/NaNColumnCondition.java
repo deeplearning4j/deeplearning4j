@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,7 @@ public class NaNColumnCondition extends BaseColumnCondition {
     /**
      * @param columnName Name of the column to check the condition for
      */
-    public NaNColumnCondition(String columnName){
+    public NaNColumnCondition(String columnName) {
         this(columnName, DEFAULT_SEQUENCE_CONDITION_MODE);
     }
 
@@ -48,7 +48,7 @@ public class NaNColumnCondition extends BaseColumnCondition {
 
     @Override
     public boolean condition(Object input) {
-        return Double.isNaN(((Number)input).doubleValue());
+        return Double.isNaN(((Number) input).doubleValue());
     }
 
     @Override

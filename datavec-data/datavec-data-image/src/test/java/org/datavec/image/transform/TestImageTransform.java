@@ -273,7 +273,8 @@ public class TestImageTransform {
         ImageTransform showOrig = new ShowImageTransform("Original Image", 50);
         showOrig.transform(writable);
 
-        ImageTransform transform = new LargestBlobCropTransform(null, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE, 3, 3, 100, 300, true);
+        ImageTransform transform =
+                        new LargestBlobCropTransform(null, CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE, 3, 3, 100, 300, true);
         ImageWritable w = transform.transform(writable);
 
         ImageTransform showTrans = new ShowImageTransform("Largest Blob", 50);

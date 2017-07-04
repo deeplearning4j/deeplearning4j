@@ -33,7 +33,7 @@ public abstract class SparkTransformServer implements DataVecTransformService {
 
     protected String getJsonText() {
         JsonNode tryJson = request().body().asJson();
-        if(tryJson != null)
+        if (tryJson != null)
             return tryJson.toString();
         else
             return request().body().asText();

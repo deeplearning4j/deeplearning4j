@@ -43,8 +43,8 @@ public class AddConstantColumnTransform implements Transform {
 
 
     public AddConstantColumnTransform(@JsonProperty("newColumnName") String newColumnName,
-                                      @JsonProperty("newColumnType") ColumnType newColumnType,
-                                      @JsonProperty("fixedValue") Writable fixedValue) {
+                    @JsonProperty("newColumnType") ColumnType newColumnType,
+                    @JsonProperty("fixedValue") Writable fixedValue) {
         this.newColumnName = newColumnName;
         this.newColumnType = newColumnType;
         this.fixedValue = fixedValue;

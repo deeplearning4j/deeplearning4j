@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -39,14 +39,14 @@ public class NDArrayHistogramCounter implements HistogramCounter {
 
     @Override
     public HistogramCounter add(Writable w) {
-        INDArray arr = ((NDArrayWritable)w).get();
-        if(arr == null){
+        INDArray arr = ((NDArrayWritable) w).get();
+        if (arr == null) {
             return this;
         }
 
         int length = arr.length();
         DoubleWritable dw = new DoubleWritable();
-        for( int i=0; i<length; i++ ){
+        for (int i = 0; i < length; i++) {
             dw.set(arr.getDouble(i));
             underlying.add(dw);
         }
@@ -63,10 +63,10 @@ public class NDArrayHistogramCounter implements HistogramCounter {
 
         NDArrayHistogramCounter o = (NDArrayHistogramCounter) other;
 
-        if(this.underlying == null){
+        if (this.underlying == null) {
             this.underlying = o.underlying;
         } else {
-            if(o.underlying == null){
+            if (o.underlying == null) {
                 return this;
             }
             this.underlying.merge(o.underlying);

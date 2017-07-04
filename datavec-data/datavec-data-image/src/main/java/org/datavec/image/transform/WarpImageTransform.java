@@ -64,14 +64,10 @@ public class WarpImageTransform extends BaseImageTransform<Mat> {
     }
 
     /** Calls {@code this(null, dx1, dy1, dx2, dy2, dx3, dy3, dx4, dy4)}. */
-    public WarpImageTransform(@JsonProperty("deltas[0]") float dx1,
-                              @JsonProperty("deltas[1]") float dy1,
-                              @JsonProperty("deltas[2]") float dx2,
-                              @JsonProperty("deltas[3]") float dy2,
-                              @JsonProperty("deltas[4]") float dx3,
-                              @JsonProperty("deltas[5]") float dy3,
-                              @JsonProperty("deltas[6]") float dx4,
-                              @JsonProperty("deltas[7]") float dy4) {
+    public WarpImageTransform(@JsonProperty("deltas[0]") float dx1, @JsonProperty("deltas[1]") float dy1,
+                    @JsonProperty("deltas[2]") float dx2, @JsonProperty("deltas[3]") float dy2,
+                    @JsonProperty("deltas[4]") float dx3, @JsonProperty("deltas[5]") float dy3,
+                    @JsonProperty("deltas[6]") float dx4, @JsonProperty("deltas[7]") float dy4) {
         this(null, dx1, dy1, dx2, dy2, dx3, dy3, dx4, dy4);
     }
 

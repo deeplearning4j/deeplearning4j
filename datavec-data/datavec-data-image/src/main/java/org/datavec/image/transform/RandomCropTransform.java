@@ -41,8 +41,7 @@ public class RandomCropTransform extends BaseImageTransform<Mat> {
     protected int outputWidth;
     protected org.nd4j.linalg.api.rng.Random rng;
 
-    public RandomCropTransform(@JsonProperty("outputHeight") int height,
-                               @JsonProperty("outputWidth") int width) {
+    public RandomCropTransform(@JsonProperty("outputHeight") int height, @JsonProperty("outputWidth") int width) {
         this(1234, height, width);
     }
 

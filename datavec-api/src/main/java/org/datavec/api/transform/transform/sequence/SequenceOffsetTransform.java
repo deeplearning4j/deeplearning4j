@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -56,9 +56,13 @@ import java.util.*;
 @EqualsAndHashCode(exclude = {"columnsToOffsetSet", "inputSchema"})
 public class SequenceOffsetTransform implements Transform {
 
-    public enum OperationType {InPlace, NewColumn}
+    public enum OperationType {
+        InPlace, NewColumn
+    }
 
-    public enum EdgeHandling {TrimSequence, SpecifiedValue}
+    public enum EdgeHandling {
+        TrimSequence, SpecifiedValue
+    }
 
     private List<String> columnsToOffset;
     private int offsetAmount;
@@ -71,13 +75,14 @@ public class SequenceOffsetTransform implements Transform {
     private Schema inputSchema;
 
     public SequenceOffsetTransform(@JsonProperty("columnsToOffset") List<String> columnsToOffset,
-                                   @JsonProperty("offsetAmount") int offsetAmount,
-                                   @JsonProperty("operationType") OperationType operationType,
-                                   @JsonProperty("edgeHandling") EdgeHandling edgeHandling,
-                                   @JsonProperty("edgeCaseValue") Writable edgeCaseValue) {
-        if(edgeCaseValue != null && edgeHandling != EdgeHandling.SpecifiedValue){
-            throw new UnsupportedOperationException("edgeCaseValue was non-null, but EdgeHandling was not set to SpecifiedValue. "
-                    + "edgeCaseValue can only be used with SpecifiedValue mode");
+                    @JsonProperty("offsetAmount") int offsetAmount,
+                    @JsonProperty("operationType") OperationType operationType,
+                    @JsonProperty("edgeHandling") EdgeHandling edgeHandling,
+                    @JsonProperty("edgeCaseValue") Writable edgeCaseValue) {
+        if (edgeCaseValue != null && edgeHandling != EdgeHandling.SpecifiedValue) {
+            throw new UnsupportedOperationException(
+                            "edgeCaseValue was non-null, but EdgeHandling was not set to SpecifiedValue. "
+                                            + "edgeCaseValue can only be used with SpecifiedValue mode");
         }
 
         this.columnsToOffset = columnsToOffset;
@@ -182,12 +187,12 @@ public class SequenceOffsetTransform implements Transform {
         } else {
             //Specified value -> same output size
             firstOutputStepInclusive = 0;
-            lastOutputStepInclusive = sequence.size()-1;
+            lastOutputStepInclusive = sequence.size() - 1;
         }
 
         List<List<Writable>> out = new ArrayList<>();
         for (int step = firstOutputStepInclusive; step <= lastOutputStepInclusive; step++) {
-            List<Writable> thisStepIn = sequence.get(step);     //Input for the *non-shifted* values
+            List<Writable> thisStepIn = sequence.get(step); //Input for the *non-shifted* values
             List<Writable> thisStepOut = new ArrayList<>(nOut);
 
 
@@ -195,15 +200,16 @@ public class SequenceOffsetTransform implements Transform {
             for (int j = 0; j < nIn; j++) {
                 if (columnsToOffsetSet.contains(colNames.get(j))) {
 
-                    if(edgeHandling == EdgeHandling.SpecifiedValue && step-offsetAmount < 0 || step-offsetAmount >= sequence.size()){
-                        if(operationType == OperationType.NewColumn){
+                    if (edgeHandling == EdgeHandling.SpecifiedValue && step - offsetAmount < 0
+                                    || step - offsetAmount >= sequence.size()) {
+                        if (operationType == OperationType.NewColumn) {
                             //Keep the original value
                             thisStepOut.add(thisStepIn.get(j));
                         }
                         thisStepOut.add(edgeCaseValue);
                     } else {
                         //Trim case, or specified but within range
-                        Writable shifted = sequence.get(step-offsetAmount).get(j);
+                        Writable shifted = sequence.get(step - offsetAmount).get(j);
                         if (operationType == OperationType.InPlace) {
                             //Shift by the specified amount and output
                             thisStepOut.add(shifted);

@@ -94,7 +94,8 @@ public class ReduceSequenceByWindowTransform implements Transform {
 
         for (List<List<Writable>> window : sequenceAsWindows) {
             IAggregableReduceOp<List<Writable>, List<Writable>> accu = reducer.aggregableReducer();
-            for (List<Writable> l: window) accu.accept(l);
+            for (List<Writable> l : window)
+                accu.accept(l);
             out.add(accu.get());
         }
 

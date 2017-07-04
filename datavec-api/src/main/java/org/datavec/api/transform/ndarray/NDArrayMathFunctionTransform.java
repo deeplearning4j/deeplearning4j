@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2017 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,7 +40,7 @@ public class NDArrayMathFunctionTransform extends BaseColumnTransform {
     private final MathFunction mathFunction;
 
     public NDArrayMathFunctionTransform(@JsonProperty("columnName") String columnName,
-                                        @JsonProperty("mathFunction") MathFunction mathFunction) {
+                    @JsonProperty("mathFunction") MathFunction mathFunction) {
         super(columnName);
         this.mathFunction = mathFunction;
     }
@@ -54,9 +54,9 @@ public class NDArrayMathFunctionTransform extends BaseColumnTransform {
 
     @Override
     public NDArrayWritable map(Writable w) {
-        NDArrayWritable n = (NDArrayWritable)w;
+        NDArrayWritable n = (NDArrayWritable) w;
         INDArray i = n.get();
-        if(i == null){
+        if (i == null) {
             return n;
         }
 
@@ -134,12 +134,13 @@ public class NDArrayMathFunctionTransform extends BaseColumnTransform {
 
     @Override
     public Object map(Object input) {
-        if(input instanceof NDArrayWritable){
-            return map((NDArrayWritable)input);
-        } else if( input instanceof INDArray ){
-            return map(new NDArrayWritable((INDArray)input)).get();
+        if (input instanceof NDArrayWritable) {
+            return map((NDArrayWritable) input);
+        } else if (input instanceof INDArray) {
+            return map(new NDArrayWritable((INDArray) input)).get();
         } else {
-            throw new UnsupportedOperationException("Unknown object type: " + (input == null ? null : input.getClass()));
+            throw new UnsupportedOperationException(
+                            "Unknown object type: " + (input == null ? null : input.getClass()));
         }
     }
 }

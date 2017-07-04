@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,16 +20,7 @@ package org.datavec.api.writable;
  * Created by Alex on 30/05/2017.
  */
 public enum WritableType {
-    Boolean,
-    Byte,
-    Double,
-    Float,
-    Int,
-    Long,
-    Null,
-    Text,
-    NDArray,
-    Image;
+    Boolean, Byte, Double, Float, Int, Long, Null, Text, NDArray, Image;
 
     //NOTE TO DEVELOPERS:
     //In the current implementation, the order (ordinal idx) for the WritableType values matters.
@@ -43,8 +34,8 @@ public enum WritableType {
      *
      * @return True if Writable is defined in datavec-api, false otherwise
      */
-    public boolean isCoreWritable(){
-        switch (this){
+    public boolean isCoreWritable() {
+        switch (this) {
             case Image:
                 return false;
             default:
@@ -57,8 +48,8 @@ public enum WritableType {
      *
      * @return Type index for the writable
      */
-    public short typeIdx(){
-        return (short)this.ordinal();
+    public short typeIdx() {
+        return (short) this.ordinal();
     }
 
     /**
@@ -67,8 +58,8 @@ public enum WritableType {
      *
      * @return Class for the given WritableType
      */
-    public Class<? extends Writable> getWritableClass(){
-        switch (this){
+    public Class<? extends Writable> getWritableClass() {
+        switch (this) {
             case Boolean:
                 return BooleanWritable.class;
             case Byte:

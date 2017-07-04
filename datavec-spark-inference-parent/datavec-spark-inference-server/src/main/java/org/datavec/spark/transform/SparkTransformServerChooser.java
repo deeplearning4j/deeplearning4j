@@ -26,8 +26,8 @@ public class SparkTransformServerChooser {
             log.error("no valid options");
             log.error("-dt, --dataType   Options: [CSV, IMAGE]");
             throw new Exception("no valid options");
-        }else {
-            transformDataType = TransformDataType.valueOf(args[pos+1]);
+        } else {
+            transformDataType = TransformDataType.valueOf(args[pos + 1]);
         }
 
         switch (transformDataType) {
@@ -44,7 +44,7 @@ public class SparkTransformServerChooser {
         sparkTransformServer.runMain(args);
     }
 
-    private int getMatchingPosition(String[] args, String...options){
+    private int getMatchingPosition(String[] args, String... options) {
         List optionList = Arrays.asList(options);
 
         for (int i = 0; i < args.length; i++) {

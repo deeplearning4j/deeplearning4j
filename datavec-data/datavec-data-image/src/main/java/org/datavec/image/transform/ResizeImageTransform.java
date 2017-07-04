@@ -46,8 +46,7 @@ public class ResizeImageTransform extends BaseImageTransform<opencv_core.Mat> {
      * @param newWidth new Width for the outcome images
      * @param newHeight new Height for outcome images
      */
-    public ResizeImageTransform(@JsonProperty("newWidth") int newWidth,
-                                @JsonProperty("newHeight") int newHeight) {
+    public ResizeImageTransform(@JsonProperty("newWidth") int newWidth, @JsonProperty("newHeight") int newHeight) {
         this(null, newWidth, newHeight);
     }
 

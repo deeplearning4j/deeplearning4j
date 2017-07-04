@@ -59,7 +59,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
 
     private static final int BYTEFILELEN = 3073;
     private static final String[] TRAINFILENAMES =
-            {"data_batch_1.bin", "data_batch_2.bin", "data_batch_3.bin", "data_batch_4.bin", "data_batch5.bin"};
+                    {"data_batch_1.bin", "data_batch_2.bin", "data_batch_3.bin", "data_batch_4.bin", "data_batch5.bin"};
     private static final String TESTFILENAME = "test_batch.bin";
     private static final String dataBinUrl = "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz";
     private static final String localDir = "cifar";
@@ -93,7 +93,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     protected DataSet loadDS = new DataSet();
     protected int fileNum = 0;
 
-    private static File getDefaultDirectory(){
+    private static File getDefaultDirectory() {
         return new File(BASE_DIR, FilenameUtils.concat(localDir, dataBinFile));
     }
 
@@ -106,7 +106,8 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
     }
 
     public CifarLoader(boolean train, File fullPath) {
-        this(HEIGHT, WIDTH, CHANNELS, null, train, DEFAULT_USE_SPECIAL_PREPROC, fullPath, System.currentTimeMillis(), DEFAULT_SHUFFLE);
+        this(HEIGHT, WIDTH, CHANNELS, null, train, DEFAULT_USE_SPECIAL_PREPROC, fullPath, System.currentTimeMillis(),
+                        DEFAULT_SHUFFLE);
     }
 
     public CifarLoader(int height, int width, int channels, boolean train, boolean useSpecialPreProcessCifar) {
@@ -120,7 +121,8 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
 
     public CifarLoader(int height, int width, int channels, ImageTransform imgTransform, boolean train,
                     boolean useSpecialPreProcessCifar, boolean shuffle) {
-        this(height, width, channels, imgTransform, train, useSpecialPreProcessCifar, null, System.currentTimeMillis(), shuffle);
+        this(height, width, channels, imgTransform, train, useSpecialPreProcessCifar, null, System.currentTimeMillis(),
+                        shuffle);
     }
 
     public CifarLoader(int height, int width, int channels, ImageTransform imgTransform, boolean train,
@@ -134,7 +136,7 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         this.seed = seed;
         this.shuffle = shuffle;
 
-        if(fullDir == null){
+        if (fullDir == null) {
             this.fullDir = getDefaultDirectory();
         } else {
             this.fullDir = fullDir;

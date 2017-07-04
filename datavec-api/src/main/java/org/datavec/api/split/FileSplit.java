@@ -140,20 +140,21 @@ public class FileSplit extends BaseInputSplit {
         return rootDir;
     }
 
-    private Collection<File> listFiles(Collection<File> fileNames, Path dir, String[] allowedFormats, boolean recursive) {
+    private Collection<File> listFiles(Collection<File> fileNames, Path dir, String[] allowedFormats,
+                    boolean recursive) {
         IOFileFilter filter;
-        if(allowedFormats==null) {
+        if (allowedFormats == null) {
             filter = new RegexFileFilter(".*");
         } else {
             filter = new SuffixFileFilter(allowedFormats);
         }
 
-        try(DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
             for (Path path : stream) {
-                if(Files.isDirectory(path) && recursive) {
+                if (Files.isDirectory(path) && recursive) {
                     listFiles(fileNames, path, allowedFormats, recursive);
                 } else {
-                    if(allowedFormats==null) {
+                    if (allowedFormats == null) {
                         fileNames.add(path.toFile());
                     } else {
                         if (filter.accept(path.toFile())) {
@@ -162,7 +163,7 @@ public class FileSplit extends BaseInputSplit {
                     }
                 }
             }
-        } catch(IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
         return fileNames;

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -54,10 +54,10 @@ public class SequenceLengthCondition implements Condition {
     }
 
     private SequenceLengthCondition(@JsonProperty("op") ConditionOp op, @JsonProperty("length") Integer length,
-                                    @JsonProperty("set") Set<Integer> set) {
+                    @JsonProperty("set") Set<Integer> set) {
         if (set != null & op != ConditionOp.InSet && op != ConditionOp.NotInSet) {
             throw new IllegalArgumentException(
-                    "Invalid condition op: can only use this constructor with InSet or NotInSet ops");
+                            "Invalid condition op: can only use this constructor with InSet or NotInSet ops");
         }
         this.op = op;
         this.length = length;

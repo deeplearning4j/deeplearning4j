@@ -47,7 +47,7 @@ public class WritablesToStringFunction implements Function<List<Writable>, Strin
         return sb.toString();
     }
 
-    public static void append(List<Writable> c, StringBuilder sb, String delim, String quote ){
+    public static void append(List<Writable> c, StringBuilder sb, String delim, String quote) {
         boolean first = true;
         for (Writable w : c) {
             if (!first)

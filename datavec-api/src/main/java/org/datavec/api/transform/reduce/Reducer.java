@@ -69,10 +69,10 @@ public class Reducer implements IAssociativeReducer {
     }
 
     public Reducer(@JsonProperty("keyColumns") List<String> keyColumns, @JsonProperty("defaultOp") ReduceOp defaultOp,
-                   @JsonProperty("opMap") Map<String, List<ReduceOp>> opMap,
-                   @JsonProperty("customReductions") Map<String, AggregableColumnReduction> customReductions,
-                   @JsonProperty("conditionalReductions") Map<String, ConditionalReduction> conditionalReductions,
-                   @JsonProperty("ignoreInvalidInColumns") Set<String> ignoreInvalidInColumns) {
+                    @JsonProperty("opMap") Map<String, List<ReduceOp>> opMap,
+                    @JsonProperty("customReductions") Map<String, AggregableColumnReduction> customReductions,
+                    @JsonProperty("conditionalReductions") Map<String, ConditionalReduction> conditionalReductions,
+                    @JsonProperty("ignoreInvalidInColumns") Set<String> ignoreInvalidInColumns) {
         this.keyColumns = keyColumns;
         this.keyColumnsSet = (keyColumns == null ? null : new HashSet<>(keyColumns));
         this.defaultOp = defaultOp;
@@ -137,7 +137,7 @@ public class Reducer implements IAssociativeReducer {
 
                 List<String> outNames = reduction.getOutputNames();
                 List<ReduceOp> reductions = reduction.getReductions();
-                for (int j = 0; j < reduction.getReductions().size(); j++){
+                for (int j = 0; j < reduction.getReductions().size(); j++) {
                     ReduceOp red = reductions.get(j);
                     String outName = outNames.get(j);
                     ColumnMetaData m = getMetaForColumn(red, name, inMeta);
@@ -160,7 +160,7 @@ public class Reducer implements IAssociativeReducer {
         return schema.newSchema(newMeta);
     }
 
-    private static String getOutNameForColumn(ReduceOp op, String name){
+    private static String getOutNameForColumn(ReduceOp op, String name) {
         return op.name().toLowerCase() + "(" + name + ")";
     }
 
@@ -229,7 +229,8 @@ public class Reducer implements IAssociativeReducer {
             if (keyColumnsSet != null && keyColumnsSet.contains(colName)) {
                 IAggregableReduceOp<Writable, Writable> first = new AggregatorImpls.AggregableFirst<>();
                 ops.add(new AggregableMultiOp<>(Collections.singletonList(first)));
-                if (conditionalActive) conditions.add(new TrivialColumnCondition(colName));
+                if (conditionalActive)
+                    conditions.add(new TrivialColumnCondition(colName));
                 continue;
             }
 
@@ -255,12 +256,14 @@ public class Reducer implements IAssociativeReducer {
 
             //What ops are we performing on this column?
             boolean conditionalOp = conditionalActive && conditionalReductions.containsKey(colName);
-            List<ReduceOp> lop = (conditionalOp ? conditionalReductions.get(colName).getReductions() : opMap.get(colName));
+            List<ReduceOp> lop =
+                            (conditionalOp ? conditionalReductions.get(colName).getReductions() : opMap.get(colName));
             if (lop == null || lop.isEmpty())
                 lop = Collections.singletonList(defaultOp);
 
             //Execute the reduction, store the result
-            ops.add(AggregableReductionUtils.reduceColumn(lop, type, ignoreInvalidInColumns.contains(colName), schema.getMetaData(i)));
+            ops.add(AggregableReductionUtils.reduceColumn(lop, type, ignoreInvalidInColumns.contains(colName),
+                            schema.getMetaData(i)));
         }
 
         if (conditionalActive) {
@@ -350,7 +353,10 @@ public class Reducer implements IAssociativeReducer {
             return this;
         }
 
-        public Builder multipleOpColmumns(List<ReduceOp> ops, String... columns){ return addAll(ops, columns); }
+        public Builder multipleOpColmumns(List<ReduceOp> ops, String... columns) {
+            return addAll(ops, columns);
+        }
+
         /**
          * Reduce the specified columns by taking the minimum value
          */
@@ -399,12 +405,14 @@ public class Reducer implements IAssociativeReducer {
         public Builder uncorrectedStdevColumns(String... columns) {
             return add(ReduceOp.Stdev, columns);
         }
+
         /**
          * Reduce the specified columns by taking the variance of the values
          */
         public Builder variance(String... columns) {
             return add(ReduceOp.Variance, columns);
         }
+
         /**
          * Reduce the specified columns by taking the population variance of the values
          */
@@ -451,13 +459,17 @@ public class Reducer implements IAssociativeReducer {
          * Reduce the specified columns by taking the concatenation of all content
          * Beware, the output will be huge!
          */
-        public Builder appendColumns(String... columns) { return add(ReduceOp.Append, columns); }
+        public Builder appendColumns(String... columns) {
+            return add(ReduceOp.Append, columns);
+        }
 
         /**
          * Reduce the specified columns by taking the concatenation of all content in the reverse order
          * Beware, the output will be huge!
          */
-        public Builder prependColumns(String... columns) { return add(ReduceOp.Prepend, columns); }
+        public Builder prependColumns(String... columns) {
+            return add(ReduceOp.Prepend, columns);
+        }
 
         /**
          * Reduce the specified column using a custom column reduction functionality.
@@ -480,9 +492,12 @@ public class Reducer implements IAssociativeReducer {
          * @param reductions  Reductions to execute
          * @param condition  Condition to use in the reductions
          */
-        public Builder conditionalReduction(String column, List<String> outputNames, List<ReduceOp> reductions, Condition condition) {
-            Preconditions.checkArgument(outputNames.size() == reductions.size(), "Conditional reductions should provide names for every column");
-            this.conditionalReductions.put(column, new ConditionalReduction(column, outputNames, reductions, condition));
+        public Builder conditionalReduction(String column, List<String> outputNames, List<ReduceOp> reductions,
+                        Condition condition) {
+            Preconditions.checkArgument(outputNames.size() == reductions.size(),
+                            "Conditional reductions should provide names for every column");
+            this.conditionalReductions.put(column,
+                            new ConditionalReduction(column, outputNames, reductions, condition));
             return this;
         }
 
@@ -497,7 +512,8 @@ public class Reducer implements IAssociativeReducer {
          * @param condition  Condition to use in the reductions
          */
         public Builder conditionalReduction(String column, String outputName, ReduceOp reduction, Condition condition) {
-            this.conditionalReductions.put(column, new ConditionalReduction(column, Collections.singletonList(outputName), Collections.singletonList(reduction), condition));
+            this.conditionalReductions.put(column, new ConditionalReduction(column,
+                            Collections.singletonList(outputName), Collections.singletonList(reduction), condition));
             return this;
         }
 

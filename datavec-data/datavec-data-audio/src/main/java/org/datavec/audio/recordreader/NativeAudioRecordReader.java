@@ -52,16 +52,15 @@ public class NativeAudioRecordReader extends BaseAudioRecordReader {
 
     protected List<Writable> loadData(File file, InputStream inputStream) throws IOException {
         List<Writable> ret = new ArrayList<>();
-        try (FFmpegFrameGrabber grabber = inputStream != null
-                ? new FFmpegFrameGrabber(inputStream)
-                : new FFmpegFrameGrabber(file.getAbsolutePath())) {
+        try (FFmpegFrameGrabber grabber = inputStream != null ? new FFmpegFrameGrabber(inputStream)
+                        : new FFmpegFrameGrabber(file.getAbsolutePath())) {
             grabber.setSampleFormat(AV_SAMPLE_FMT_FLT);
             grabber.start();
             Frame frame;
             while ((frame = grabber.grab()) != null) {
                 while (frame.samples != null && frame.samples[0].hasRemaining()) {
                     for (int i = 0; i < frame.samples.length; i++) {
-                        ret.add(new FloatWritable(((FloatBuffer)frame.samples[i]).get()));
+                        ret.add(new FloatWritable(((FloatBuffer) frame.samples[i]).get()));
                     }
                 }
             }

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -38,23 +38,21 @@ import static org.junit.Assert.assertEquals;
 public class TestConvertToSequence extends BaseSparkTest {
 
     @Test
-    public void testConvertToSequenceCompoundKey(){
+    public void testConvertToSequenceCompoundKey() {
 
-        Schema s = new Schema.Builder()
-                .addColumnsString("key1", "key2")
-                .addColumnLong("time")
-                .build();
+        Schema s = new Schema.Builder().addColumnsString("key1", "key2").addColumnLong("time").build();
 
-        List<List<Writable>> allExamples = Arrays.asList(
-                Arrays.<Writable>asList(new Text("k1a"), new Text("k2a"), new LongWritable(10)),
-                Arrays.<Writable>asList(new Text("k1b"), new Text("k2b"), new LongWritable(10)),
-                Arrays.<Writable>asList(new Text("k1a"), new Text("k2a"), new LongWritable(-10)),
-                Arrays.<Writable>asList(new Text("k1b"), new Text("k2b"), new LongWritable(5)),
-                Arrays.<Writable>asList(new Text("k1a"), new Text("k2a"), new LongWritable(0)));
+        List<List<Writable>> allExamples =
+                        Arrays.asList(Arrays.<Writable>asList(new Text("k1a"), new Text("k2a"), new LongWritable(10)),
+                                        Arrays.<Writable>asList(new Text("k1b"), new Text("k2b"), new LongWritable(10)),
+                                        Arrays.<Writable>asList(new Text("k1a"), new Text("k2a"),
+                                                        new LongWritable(-10)),
+                                        Arrays.<Writable>asList(new Text("k1b"), new Text("k2b"), new LongWritable(5)),
+                                        Arrays.<Writable>asList(new Text("k1a"), new Text("k2a"), new LongWritable(0)));
 
         TransformProcess tp = new TransformProcess.Builder(s)
-                .convertToSequence(Arrays.asList("key1","key2"), new NumericalColumnComparator("time"))
-                .build();
+                        .convertToSequence(Arrays.asList("key1", "key2"), new NumericalColumnComparator("time"))
+                        .build();
 
         JavaRDD<List<Writable>> rdd = sc.parallelize(allExamples);
 
@@ -63,7 +61,7 @@ public class TestConvertToSequence extends BaseSparkTest {
         assertEquals(2, out.size());
         List<List<Writable>> seq0;
         List<List<Writable>> seq1;
-        if(out.get(0).size() == 3){
+        if (out.get(0).size() == 3) {
             seq0 = out.get(0);
             seq1 = out.get(1);
         } else {
@@ -72,13 +70,13 @@ public class TestConvertToSequence extends BaseSparkTest {
         }
 
         List<List<Writable>> expSeq0 = Arrays.asList(
-                Arrays.<Writable>asList(new Text("k1a"), new Text("k2a"), new LongWritable(-10)),
-                Arrays.<Writable>asList(new Text("k1a"), new Text("k2a"), new LongWritable(0)),
-                Arrays.<Writable>asList(new Text("k1a"), new Text("k2a"), new LongWritable(10)));
+                        Arrays.<Writable>asList(new Text("k1a"), new Text("k2a"), new LongWritable(-10)),
+                        Arrays.<Writable>asList(new Text("k1a"), new Text("k2a"), new LongWritable(0)),
+                        Arrays.<Writable>asList(new Text("k1a"), new Text("k2a"), new LongWritable(10)));
 
         List<List<Writable>> expSeq1 = Arrays.asList(
-                Arrays.<Writable>asList(new Text("k1b"), new Text("k2b"), new LongWritable(5)),
-                Arrays.<Writable>asList(new Text("k1b"), new Text("k2b"), new LongWritable(10)));
+                        Arrays.<Writable>asList(new Text("k1b"), new Text("k2b"), new LongWritable(5)),
+                        Arrays.<Writable>asList(new Text("k1b"), new Text("k2b"), new LongWritable(10)));
 
         assertEquals(expSeq0, seq0);
         assertEquals(expSeq1, seq1);

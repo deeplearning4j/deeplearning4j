@@ -40,7 +40,7 @@ public class ImageSparkTransform {
         }
 
         int shape[] = records.get(0).shape();
-        INDArray array = Nd4j.create(records, new int[]{records.size(),shape[1], shape[2], shape[3]});
+        INDArray array = Nd4j.create(records, new int[] {records.size(), shape[1], shape[2], shape[3]});
 
         return new Base64NDArrayBody(Nd4jBase64.base64String(array));
     }

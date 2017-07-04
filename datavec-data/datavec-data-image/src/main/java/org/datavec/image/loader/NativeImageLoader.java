@@ -178,7 +178,8 @@ public class NativeImageLoader extends BaseImageLoader {
         Mat mat = new Mat(height, width, CV_8UC(channels), pix.data(), 4 * pix.wpl());
         Mat mat2 = new Mat(height, width, CV_8UC(channels));
         // swap bytes if needed
-        int[] swap = {0, channels - 1, 1, channels - 2, 2, channels - 3, 3, channels - 4}, copy = {0, 0, 1, 1, 2, 2, 3, 3},
+        int[] swap = {0, channels - 1, 1, channels - 2, 2, channels - 3, 3, channels - 4},
+                        copy = {0, 0, 1, 1, 2, 2, 3, 3},
                         fromTo = channels > 1 && ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN) ? swap : copy;
         mixChannels(mat, 1, mat2, 1, fromTo, Math.min(channels, fromTo.length / 2));
         if (tempPix != null) {
@@ -245,18 +246,20 @@ public class NativeImageLoader extends BaseImageLoader {
         int channels = image.channels();
 
         if (ret.lengthLong() != rows * cols * channels) {
-            throw new ND4JIllegalStateException("INDArray provided to store image not equal to image: {channels: "+ channels+", rows: "+rows+", columns: "+ cols+"}");
+            throw new ND4JIllegalStateException("INDArray provided to store image not equal to image: {channels: "
+                            + channels + ", rows: " + rows + ", columns: " + cols + "}");
         }
 
         Indexer idx = image.createIndexer();
         Pointer pointer = ret.data().pointer();
         int[] stride = ret.stride();
         boolean done = false;
-        PagedPointer pagedPointer = new PagedPointer(pointer, rows * cols * channels, ret.data().offset() * Nd4j.sizeOfDataType(ret.data().dataType()));
+        PagedPointer pagedPointer = new PagedPointer(pointer, rows * cols * channels,
+                        ret.data().offset() * Nd4j.sizeOfDataType(ret.data().dataType()));
 
         if (pointer instanceof FloatPointer) {
-            FloatIndexer retidx = FloatIndexer.create((FloatPointer) pagedPointer.asFloatPointer(), new long[] {channels, rows, cols},
-                    new long[] {stride[0], stride[1], stride[2]});
+            FloatIndexer retidx = FloatIndexer.create((FloatPointer) pagedPointer.asFloatPointer(),
+                            new long[] {channels, rows, cols}, new long[] {stride[0], stride[1], stride[2]});
             if (idx instanceof UByteIndexer) {
                 UByteIndexer ubyteidx = (UByteIndexer) idx;
                 for (int k = 0; k < channels; k++) {
@@ -299,8 +302,8 @@ public class NativeImageLoader extends BaseImageLoader {
                 done = true;
             }
         } else if (pointer instanceof DoublePointer) {
-            DoubleIndexer retidx = DoubleIndexer.create((DoublePointer) pagedPointer.asDoublePointer(), new long[] {channels, rows, cols},
-                    new long[] {stride[0], stride[1], stride[2]});
+            DoubleIndexer retidx = DoubleIndexer.create((DoublePointer) pagedPointer.asDoublePointer(),
+                            new long[] {channels, rows, cols}, new long[] {stride[0], stride[1], stride[2]});
             if (idx instanceof UByteIndexer) {
                 UByteIndexer ubyteidx = (UByteIndexer) idx;
                 for (int k = 0; k < channels; k++) {

@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,10 +37,10 @@ public class WritableFactory {
     private Map<Short, Class<? extends Writable>> map = new ConcurrentHashMap<>();
     private Map<Short, Constructor<? extends Writable>> constructorMap = new ConcurrentHashMap<>();
 
-    private WritableFactory(){
-        for(WritableType wt : WritableType.values()){
-            if(wt.isCoreWritable()){
-                registerWritableType((short)wt.ordinal(), wt.getWritableClass());
+    private WritableFactory() {
+        for (WritableType wt : WritableType.values()) {
+            if (wt.isCoreWritable()) {
+                registerWritableType((short) wt.ordinal(), wt.getWritableClass());
             }
         }
     }
@@ -48,7 +48,7 @@ public class WritableFactory {
     /**
      * @return Singleton WritableFactory instance
      */
-    public static WritableFactory getInstance(){
+    public static WritableFactory getInstance() {
         return INSTANCE;
     }
 
@@ -62,16 +62,16 @@ public class WritableFactory {
      * @param writableTypeKey Key for the Writable
      * @param writableClass   Class for the given key. Must have a no-arg constructor
      */
-    public void registerWritableType(short writableTypeKey, @NonNull Class<? extends Writable> writableClass){
+    public void registerWritableType(short writableTypeKey, @NonNull Class<? extends Writable> writableClass) {
         if (map.containsKey(writableTypeKey)) {
             throw new UnsupportedOperationException("Key " + writableTypeKey + " is already registered to type "
-                    + map.get(writableTypeKey) + " and cannot be registered to " + writableClass);
+                            + map.get(writableTypeKey) + " and cannot be registered to " + writableClass);
         }
 
         Constructor<? extends Writable> c;
-        try{
+        try {
             c = writableClass.getDeclaredConstructor();
-        } catch (NoSuchMethodException e){
+        } catch (NoSuchMethodException e) {
             throw new RuntimeException("Cannot find no-arg constructor for class " + writableClass);
         }
 
@@ -85,14 +85,14 @@ public class WritableFactory {
      * @param writableTypeKey Key to create a new writable instance for
      * @return A new (empty/default) Writable instance
      */
-    public Writable newWritable(short writableTypeKey){
+    public Writable newWritable(short writableTypeKey) {
         Constructor<? extends Writable> c = constructorMap.get(writableTypeKey);
-        if(c == null){
+        if (c == null) {
             throw new IllegalStateException("Unknown writable key: " + writableTypeKey);
         }
-        try{
+        try {
             return c.newInstance();
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new RuntimeException("Could not create new Writable instance");
         }
     }
@@ -120,7 +120,7 @@ public class WritableFactory {
     public Writable readWithType(DataInput dataInput) throws IOException {
         Writable w = newWritable(dataInput.readShort());
         w.readFields(dataInput);
-        return  w;
+        return w;
     }
 
 }

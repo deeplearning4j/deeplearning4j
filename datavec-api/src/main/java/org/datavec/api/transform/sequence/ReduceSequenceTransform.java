@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -83,7 +83,8 @@ public class ReduceSequenceTransform implements Transform {
     @Override
     public List<List<Writable>> mapSequence(List<List<Writable>> sequence) {
         IAggregableReduceOp<List<Writable>, List<Writable>> accu = reducer.aggregableReducer();
-        for (List<Writable> l : sequence) accu.accept(l);
+        for (List<Writable> l : sequence)
+            accu.accept(l);
         return Collections.singletonList(accu.get());
     }
 

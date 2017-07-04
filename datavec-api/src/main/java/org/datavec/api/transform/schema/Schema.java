@@ -244,7 +244,7 @@ public class Schema implements Serializable {
      * @param columnNames Name of the columns to get indices for
      * @return Column indexes
      */
-    public int[] getIndexOfColumns(Collection<String> columnNames){
+    public int[] getIndexOfColumns(Collection<String> columnNames) {
         return getIndexOfColumns(columnNames.toArray(new String[columnNames.size()]));
     }
 
@@ -254,9 +254,9 @@ public class Schema implements Serializable {
      * @param columnNames Name of the columns to get indices for
      * @return Column indexes
      */
-    public int[] getIndexOfColumns(String... columnNames){
+    public int[] getIndexOfColumns(String... columnNames) {
         int[] out = new int[columnNames.length];
-        for( int i=0; i<out.length; i++ ){
+        for (int i = 0; i < out.length; i++) {
             out[i] = getIndexOfColumn(columnNames[i]);
         }
         return out;
@@ -728,7 +728,7 @@ public class Schema implements Serializable {
          * @param columnName Name of the column
          * @param shape      shape of the NDArray column. Use -1 in entries to specify as "variable length" in that dimension
          */
-        public Builder addColumnNDArray(String columnName, int[] shape){
+        public Builder addColumnNDArray(String columnName, int[] shape) {
             return addColumn(new NDArrayMetaData(columnName, shape));
         }
 

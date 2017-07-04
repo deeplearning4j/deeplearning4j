@@ -1,4 +1,4 @@
-/*
+/*-
  *  * Copyright 2016 Skymind, Inc.
  *  *
  *  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -53,7 +53,7 @@ import java.util.*;
  */
 public class HtmlSequencePlotting {
 
-    private HtmlSequencePlotting(){
+    private HtmlSequencePlotting() {
 
     }
 
@@ -65,7 +65,8 @@ public class HtmlSequencePlotting {
      * @param sequence Sequence to plot
      * @return HTML file as a string
      */
-    public static String createHtmlSequencePlots(String title, Schema schema, List<List<Writable>> sequence) throws Exception {
+    public static String createHtmlSequencePlots(String title, Schema schema, List<List<Writable>> sequence)
+                    throws Exception {
         Configuration cfg = new Configuration(new Version(2, 3, 23));
 
         // Where do we load the templates from:
@@ -92,19 +93,19 @@ public class HtmlSequencePlotting {
 
         //First: create table for schema
         int n = schema.numColumns();
-        String[][] table = new String[n/2 + n%2][6];    //Number, name, type; 2 columns
+        String[][] table = new String[n / 2 + n % 2][6]; //Number, name, type; 2 columns
 
         List<ColumnMetaData> meta = schema.getColumnMetaData();
-        for( int i=0; i<meta.size(); i++ ){
-            int o = i%2;
-            table[i/2][o*3] = String.valueOf(i);
-            table[i/2][o*3+1] = meta.get(i).getName();
-            table[i/2][o*3+2] = meta.get(i).getColumnType().toString();
+        for (int i = 0; i < meta.size(); i++) {
+            int o = i % 2;
+            table[i / 2][o * 3] = String.valueOf(i);
+            table[i / 2][o * 3 + 1] = meta.get(i).getName();
+            table[i / 2][o * 3 + 2] = meta.get(i).getColumnType().toString();
         }
 
-        for( int i=0; i<table.length; i++ ){
-            for( int j=0; j<table[i].length; j++ ){
-                if(table[i][j] == null){
+        for (int i = 0; i < table.length; i++) {
+            for (int j = 0; j < table[i].length; j++) {
+                if (table[i][j] == null) {
                     table[i][j] = "";
                 }
             }
@@ -112,35 +113,35 @@ public class HtmlSequencePlotting {
 
 
         RenderableComponentTable rct = new RenderableComponentTable.Builder().table(table)
-                .header("#", "Name", "Type", "#", "Name", "Type").backgroundColor("#FFFFFF")
-                .headerColor("#CCCCCC").colWidthsPercent(8,30,12,8,30,12).border(1).padLeftPx(4).padRightPx(4)
-                .build();
+                        .header("#", "Name", "Type", "#", "Name", "Type").backgroundColor("#FFFFFF")
+                        .headerColor("#CCCCCC").colWidthsPercent(8, 30, 12, 8, 30, 12).border(1).padLeftPx(4)
+                        .padRightPx(4).build();
         divs.add(new DivObject("tablesource", ret.writeValueAsString(rct)));
 
         //Create the plots
         double[] x = new double[sequence.size()];
-        for( int i=0; i<x.length; i++ ){
+        for (int i = 0; i < x.length; i++) {
             x[i] = i;
         }
 
-        for(int i=0; i<n; i++ ){
+        for (int i = 0; i < n; i++) {
             double[] lineData;
-            switch (meta.get(i).getColumnType()){
+            switch (meta.get(i).getColumnType()) {
                 case Integer:
                 case Long:
                 case Double:
                 case Float:
                 case Time:
                     lineData = new double[sequence.size()];
-                    for( int j=0; j<lineData.length; j++ ){
+                    for (int j = 0; j < lineData.length; j++) {
                         lineData[j] = sequence.get(j).get(i).toDouble();
                     }
                     break;
                 case Categorical:
                     //This is a quick-and-dirty way to plot categorical variables as a line chart
-                    List<String> stateNames = ((CategoricalMetaData)meta.get(i)).getStateNames();
+                    List<String> stateNames = ((CategoricalMetaData) meta.get(i)).getStateNames();
                     lineData = new double[sequence.size()];
-                    for( int j=0; j<lineData.length; j++ ){
+                    for (int j = 0; j < lineData.length; j++) {
                         String state = sequence.get(j).get(i).toString();
                         int idx = stateNames.indexOf(state);
                         lineData[j] = idx;
@@ -157,11 +158,11 @@ public class HtmlSequencePlotting {
             String name = meta.get(i).getName();
 
             String chartTitle = "Column: \"" + name + "\" - Column Type: " + meta.get(i).getColumnType();
-            if(meta.get(i).getColumnType() == ColumnType.Categorical){
-                List<String> stateNames = ((CategoricalMetaData)meta.get(i)).getStateNames();
+            if (meta.get(i).getColumnType() == ColumnType.Categorical) {
+                List<String> stateNames = ((CategoricalMetaData) meta.get(i)).getStateNames();
                 StringBuilder sb = new StringBuilder(chartTitle);
                 sb.append(" - (");
-                for( int j=0; j<stateNames.size(); j++ ){
+                for (int j = 0; j < stateNames.size(); j++) {
                     if (j > 0) {
                         sb.append(", ");
                     }
@@ -171,10 +172,8 @@ public class HtmlSequencePlotting {
                 chartTitle = sb.toString();
             }
 
-            RenderableComponentLineChart lc = new RenderableComponentLineChart.Builder()
-                    .title(chartTitle)
-                    .addSeries(name, x, lineData)
-                    .build();
+            RenderableComponentLineChart lc = new RenderableComponentLineChart.Builder().title(chartTitle)
+                            .addSeries(name, x, lineData).build();
 
             String divname = "plot_" + i;
 
@@ -207,7 +206,8 @@ public class HtmlSequencePlotting {
      * @param schema   Schema for the data
      * @param sequence Sequence to plot
      */
-    public static void createHtmlSequencePlotFile(String title, Schema schema, List<List<Writable>> sequence, File output ) throws Exception {
+    public static void createHtmlSequencePlotFile(String title, Schema schema, List<List<Writable>> sequence,
+                    File output) throws Exception {
         String s = createHtmlSequencePlots(title, schema, sequence);
         FileUtils.writeStringToFile(output, s);
     }

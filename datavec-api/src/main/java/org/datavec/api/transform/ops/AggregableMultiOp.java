@@ -27,8 +27,8 @@ public class AggregableMultiOp<T> implements IAggregableReduceOp<T, List<Writabl
     @NonNull
     private List<IAggregableReduceOp<T, Writable>> operations;
 
-    public void accept(T t){
-        for (int i = 0; i < operations.size(); i++){
+    public void accept(T t) {
+        for (int i = 0; i < operations.size(); i++) {
             operations.get(i).accept(t);
         }
     }
@@ -39,18 +39,19 @@ public class AggregableMultiOp<T> implements IAggregableReduceOp<T, List<Writabl
             List<IAggregableReduceOp<T, Writable>> otherAccumulators = accumulator.getOperations();
             if (operations.size() != otherAccumulators.size())
                 throw new IllegalArgumentException("Tried to combine() incompatible " + this.getClass().getName()
-                        + " operators: received " + otherAccumulators.size() + " operations, expected " + operations.size());
+                                + " operators: received " + otherAccumulators.size() + " operations, expected "
+                                + operations.size());
             for (int i = 0; i < operations.size(); i++) {
                 operations.get(i).combine(otherAccumulators.get(i));
             }
         } else
-            throw new UnsupportedOperationException("Tried to combine() incompatible " + accu.getClass().getName() + " operator where "
-                    + this.getClass().getName() + " expected");
+            throw new UnsupportedOperationException("Tried to combine() incompatible " + accu.getClass().getName()
+                            + " operator where " + this.getClass().getName() + " expected");
     }
 
-    public List<Writable> get(){
+    public List<Writable> get() {
         List<Writable> res = new ArrayList<>(operations.size());
-        for (int i = 0; i < operations.size(); i++){
+        for (int i = 0; i < operations.size(); i++) {
             res.add(operations.get(i).get());
         }
         return res;

@@ -56,16 +56,13 @@ public class StringReducer implements IStringReducer {
     private Map<String, ColumnReduction> customReductions;
 
     private StringReducer(Builder builder) {
-        this(builder.inputColumns,
-                builder.defaultOp,
-                builder.customReductions,
-                builder.outputColumnName);
+        this(builder.inputColumns, builder.defaultOp, builder.customReductions, builder.outputColumnName);
     }
 
     public StringReducer(@JsonProperty("inputColumns") List<String> inputColumns,
-                         @JsonProperty("op") StringReduceOp stringReduceOp,
-                         @JsonProperty("customReductions") Map<String, ColumnReduction> customReductions,
-                         @JsonProperty("outputColumnName") String outputColumnName) {
+                    @JsonProperty("op") StringReduceOp stringReduceOp,
+                    @JsonProperty("customReductions") Map<String, ColumnReduction> customReductions,
+                    @JsonProperty("outputColumnName") String outputColumnName) {
         this.inputColumns = inputColumns;
         this.inputColumnsSet = (inputColumns == null ? null : new HashSet<>(inputColumns));
         this.stringReduceOp = stringReduceOp;
@@ -130,8 +127,8 @@ public class StringReducer implements IStringReducer {
 
 
         List<Writable> out = new ArrayList<>(examplesList.size());
-        for(int i = 0; i < examplesList.size(); i++) {
-            out.add(reduceStringOrCategoricalColumn(stringReduceOp,examplesList.get(i)));
+        for (int i = 0; i < examplesList.size(); i++) {
+            out.add(reduceStringOrCategoricalColumn(stringReduceOp, examplesList.get(i)));
         }
 
         return out;
@@ -139,8 +136,7 @@ public class StringReducer implements IStringReducer {
 
 
 
-    public static Writable reduceStringOrCategoricalColumn(StringReduceOp op,
-                                                           List<Writable> values) {
+    public static Writable reduceStringOrCategoricalColumn(StringReduceOp op, List<Writable> values) {
         switch (op) {
             case MERGE:
             case APPEND:
@@ -150,7 +146,7 @@ public class StringReducer implements IStringReducer {
                 }
                 return new Text(stringBuilder.toString());
             case REPLACE:
-                if(values.size() > 2) {
+                if (values.size() > 2) {
                     throw new IllegalArgumentException("Unable to run replace on columns > 2");
                 }
                 return new Text(values.get(1).toString());
@@ -165,7 +161,7 @@ public class StringReducer implements IStringReducer {
                 return new Text(stringBuilder2.toString());
             default:
                 throw new UnsupportedOperationException("Cannot execute op \"" + op + "\" on String/Categorical column "
-                        + "(can only perform Count, CountUnique, TakeFirst and TakeLast ops on categorical columns)");
+                                + "(can only perform Count, CountUnique, TakeFirst and TakeLast ops on categorical columns)");
         }
     }
 

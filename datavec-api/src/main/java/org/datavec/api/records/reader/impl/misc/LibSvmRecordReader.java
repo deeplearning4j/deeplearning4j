@@ -97,7 +97,8 @@ public class LibSvmRecordReader extends LineRecordReader {
             if (!zeroBasedIndexing)
                 j = j - 1;
 
-            if (j < 0) throw new IndexOutOfBoundsException("Invalid data, negative index.");
+            if (j < 0)
+                throw new IndexOutOfBoundsException("Invalid data, negative index.");
 
             while (j != read) {
                 record.add(new DoubleWritable(0.0));

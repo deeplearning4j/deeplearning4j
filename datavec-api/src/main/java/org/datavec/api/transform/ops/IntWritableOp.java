@@ -24,8 +24,8 @@ public class IntWritableOp<T> implements IAggregableReduceOp<Writable, T> {
         if (accu instanceof IntWritableOp)
             operation.combine(((IntWritableOp) accu).getOperation());
         else
-            throw new UnsupportedOperationException("Tried to combine() incompatible " + accu.getClass().getName() + " operator where "
-                    + this.getClass().getName() + " expected");
+            throw new UnsupportedOperationException("Tried to combine() incompatible " + accu.getClass().getName()
+                            + " operator where " + this.getClass().getName() + " expected");
     }
 
     @Override
