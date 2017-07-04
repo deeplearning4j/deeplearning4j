@@ -45,7 +45,6 @@ public class BinarySerde {
 
 
 
-
     /**
      * Create an ndarray and existing bytebuffer
      * @param buffer
@@ -53,11 +52,8 @@ public class BinarySerde {
      * @return
      */
     public static Pair<INDArray, ByteBuffer> toArrayAndByteBuffer(ByteBuffer buffer, int offset) {
-        ByteBuffer byteBuffer =
-                buffer == null
-                        ? ByteBuffer.allocateDirect(buffer.array().length).put(buffer.array())
-                        .order(ByteOrder.nativeOrder())
-                        : buffer.order(ByteOrder.nativeOrder());
+        ByteBuffer byteBuffer = buffer == null ? ByteBuffer.allocateDirect(buffer.array().length).put(buffer.array())
+                        .order(ByteOrder.nativeOrder()) : buffer.order(ByteOrder.nativeOrder());
         //bump the byte buffer to the proper position
         byteBuffer.position(offset);
         int rank = byteBuffer.getInt();
@@ -93,7 +89,7 @@ public class BinarySerde {
             BytePointer byteBufferPointer = new BytePointer(slice);
             //create a compressed array based on the rest of the data left in the buffer
             CompressedDataBuffer compressedDataBuffer =
-                    new CompressedDataBuffer(byteBufferPointer, compressionDescriptor);
+                            new CompressedDataBuffer(byteBufferPointer, compressionDescriptor);
             //TODO: see how to avoid dup()
             INDArray arr = Nd4j.createArrayFromShapeBuffer(compressedDataBuffer.dup(), shapeBuff.dup());
             //advance past the data
@@ -172,7 +168,6 @@ public class BinarySerde {
 
 
 
-
     /**
      * Setup the given byte buffer
      * for serialization (note that this is for uncompressed INDArrays)
@@ -238,8 +233,8 @@ public class BinarySerde {
      * @param toWrite the file tow rite to
      * @throws IOException
      */
-    public static void writeArrayToDisk(INDArray arr,File toWrite) throws IOException {
-        try(FileOutputStream os = new FileOutputStream(toWrite)) {
+    public static void writeArrayToDisk(INDArray arr, File toWrite) throws IOException {
+        try (FileOutputStream os = new FileOutputStream(toWrite)) {
             FileChannel channel = os.getChannel();
             ByteBuffer buffer = BinarySerde.toByteBuffer(arr);
             channel.write(buffer);
@@ -254,7 +249,7 @@ public class BinarySerde {
      * @throws IOException
      */
     public static INDArray readFromDisk(File readFrom) throws IOException {
-        try(FileInputStream os = new FileInputStream(readFrom)) {
+        try (FileInputStream os = new FileInputStream(readFrom)) {
             FileChannel channel = os.getChannel();
             ByteBuffer buffer = ByteBuffer.allocateDirect((int) readFrom.length());
             channel.read(buffer);

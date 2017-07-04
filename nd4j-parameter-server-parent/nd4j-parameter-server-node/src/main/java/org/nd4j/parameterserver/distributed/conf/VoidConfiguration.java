@@ -22,25 +22,36 @@ import java.util.List;
 @Slf4j
 @Data
 public class VoidConfiguration implements Serializable {
-    @Builder.Default private int streamId = 119;
-    @Builder.Default private int unicastPort = 49876;
-    @Builder.Default private int multicastPort = 59876;
-    @Builder.Default private int numberOfShards = 1;;
+    @Builder.Default
+    private int streamId = 119;
+    @Builder.Default
+    private int unicastPort = 49876;
+    @Builder.Default
+    private int multicastPort = 59876;
+    @Builder.Default
+    private int numberOfShards = 1;;
 
-    @Builder.Default private FaultToleranceStrategy faultToleranceStrategy = FaultToleranceStrategy.NONE;
-    @Builder.Default private ExecutionMode executionMode = ExecutionMode.SHARDED;
+    @Builder.Default
+    private FaultToleranceStrategy faultToleranceStrategy = FaultToleranceStrategy.NONE;
+    @Builder.Default
+    private ExecutionMode executionMode = ExecutionMode.SHARDED;
 
-    @Builder.Default private List<String> shardAddresses = new ArrayList<>();
-    @Builder.Default private List<String> backupAddresses = new ArrayList<>();
-    @Builder.Default private TransportType transportType = TransportType.ROUTED;
+    @Builder.Default
+    private List<String> shardAddresses = new ArrayList<>();
+    @Builder.Default
+    private List<String> backupAddresses = new ArrayList<>();
+    @Builder.Default
+    private TransportType transportType = TransportType.ROUTED;
 
     // this is very important parameter
     private String networkMask;
 
     // This two values are optional, and have effect only for MulticastTransport
-    @Builder.Default private String multicastNetwork = "224.0.1.1";
+    @Builder.Default
+    private String multicastNetwork = "224.0.1.1";
     private String multicastInterface;
-    @Builder.Default private int ttl = 4;
+    @Builder.Default
+    private int ttl = 4;
     protected NodeRole forcedRole;
 
     // FIXME: probably worth moving somewhere else
@@ -48,9 +59,12 @@ public class VoidConfiguration implements Serializable {
     private boolean useHS = true;
     private boolean useNS = false;
 
-    @Builder.Default private long retransmitTimeout = 1000;
-    @Builder.Default private long responseTimeframe = 500;
-    @Builder.Default private long responseTimeout = 30000;
+    @Builder.Default
+    private long retransmitTimeout = 1000;
+    @Builder.Default
+    private long responseTimeframe = 500;
+    @Builder.Default
+    private long responseTimeout = 30000;
 
     private String controllerAddress;
 

@@ -36,10 +36,9 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
 
     /** MultiDataSet constructor with single features/labels input, single mask arrays */
     public MultiDataSet(INDArray features, INDArray labels, INDArray featuresMask, INDArray labelsMask) {
-        this((features != null ? new INDArray[] {features} : null),
-                (labels != null ? new INDArray[] {labels} : null),
-                (featuresMask != null ? new INDArray[]{featuresMask} : null),
-                (labelsMask != null ? new INDArray[]{labelsMask} : null));
+        this((features != null ? new INDArray[] {features} : null), (labels != null ? new INDArray[] {labels} : null),
+                        (featuresMask != null ? new INDArray[] {featuresMask} : null),
+                        (labelsMask != null ? new INDArray[] {labelsMask} : null));
     }
 
     /** MultiDataSet constructor with no mask arrays */
@@ -414,7 +413,7 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
 
         boolean needFeaturesMasks = false;
         for (i = 0; i < nInArrays; i++) {
-            Pair<INDArray, INDArray> pair = DataSetUtil.mergeFeatures(features, featuresMasks, i);  //merge(features, featuresMasks, i);
+            Pair<INDArray, INDArray> pair = DataSetUtil.mergeFeatures(features, featuresMasks, i); //merge(features, featuresMasks, i);
             mergedFeatures[i] = pair.getFirst();
             mergedFeaturesMasks[i] = pair.getSecond();
             if (mergedFeaturesMasks[i] != null)
@@ -529,19 +528,19 @@ public class MultiDataSet implements org.nd4j.linalg.dataset.api.MultiDataSet {
     public long getMemoryFootprint() {
         long reqMem = 0;
 
-        for (INDArray f: features)
+        for (INDArray f : features)
             reqMem += f == null ? 0 : f.lengthLong() * Nd4j.sizeOfDataType();
 
         if (featuresMaskArrays != null)
-            for (INDArray f: featuresMaskArrays)
+            for (INDArray f : featuresMaskArrays)
                 reqMem += f == null ? 0 : f.lengthLong() * Nd4j.sizeOfDataType();
 
         if (labelsMaskArrays != null)
-            for (INDArray f: labelsMaskArrays)
+            for (INDArray f : labelsMaskArrays)
                 reqMem += f == null ? 0 : f.lengthLong() * Nd4j.sizeOfDataType();
 
         if (labels != null)
-            for (INDArray f: labels)
+            for (INDArray f : labels)
                 reqMem += f == null ? 0 : f.lengthLong() * Nd4j.sizeOfDataType();
 
         return reqMem;

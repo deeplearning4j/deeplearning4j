@@ -37,8 +37,9 @@ public class BalanceMinibatchesTest extends BaseNd4jTest {
 
         int miniBatchSize = 100;
         DataSetIterator iterator = new IrisDataSetIterator(miniBatchSize, 150);
-        BalanceMinibatches balanceMinibatches = BalanceMinibatches.builder().dataSetIterator(iterator).miniBatchSize(miniBatchSize)
-                .numLabels(iterator.totalOutcomes()).rootDir(new File("minibatches")).rootSaveDir(new File("minibatchessave")).build();
+        BalanceMinibatches balanceMinibatches = BalanceMinibatches.builder().dataSetIterator(iterator)
+                        .miniBatchSize(miniBatchSize).numLabels(iterator.totalOutcomes())
+                        .rootDir(new File("minibatches")).rootSaveDir(new File("minibatchessave")).build();
         balanceMinibatches.balance();
         DataSetIterator balanced = new ExistingMiniBatchDataSetIterator(balanceMinibatches.getRootSaveDir());
 
@@ -64,13 +65,14 @@ public class BalanceMinibatchesTest extends BaseNd4jTest {
         // this is the number of batches for which we can balance every class
         int fullyBalanceableBatches = Collections.min(fullBatches);
         // check the first few batches are actually balanced
-        for (int b = 0; b < fullyBalanceableBatches; b++){
+        for (int b = 0; b < fullyBalanceableBatches; b++) {
             Map<Integer, Double> balancedCounts = balanced.next().labelCounts();
             for (int i = 0; i < iterator.totalOutcomes(); i++) {
-                double bCounts = (balancedCounts.containsKey(i) ? balancedCounts.get(i): 0);
-                assertTrue(
-                        "key " + i + " totalOutcomes: " + iterator.totalOutcomes() + " balancedCounts : " + balancedCounts.containsKey(i) + " val : " + bCounts,
-                        balancedCounts.containsKey(i) && balancedCounts.get(i) >= (double) miniBatchSize / iterator.totalOutcomes());
+                double bCounts = (balancedCounts.containsKey(i) ? balancedCounts.get(i) : 0);
+                assertTrue("key " + i + " totalOutcomes: " + iterator.totalOutcomes() + " balancedCounts : "
+                                + balancedCounts.containsKey(i) + " val : " + bCounts,
+                                balancedCounts.containsKey(i) && balancedCounts.get(i) >= (double) miniBatchSize
+                                                / iterator.totalOutcomes());
             }
         }
 

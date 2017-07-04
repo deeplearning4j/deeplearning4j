@@ -145,7 +145,8 @@ public class DataSetUtil {
      * @param featureMasksToMerge Mask arrays to merge. May be null
      * @return Merged features and mask. Mask may be null
      */
-    public static Pair<INDArray,INDArray> mergeFeatures(@NonNull INDArray[] featuresToMerge, INDArray[] featureMasksToMerge){
+    public static Pair<INDArray, INDArray> mergeFeatures(@NonNull INDArray[] featuresToMerge,
+                    INDArray[] featureMasksToMerge) {
         int rankFeatures = featuresToMerge[0].rank();
 
         switch (rankFeatures) {
@@ -156,9 +157,9 @@ public class DataSetUtil {
             case 4:
                 return DataSetUtil.merge4d(featuresToMerge, featureMasksToMerge);
             default:
-                throw new IllegalStateException( "Cannot merge examples: features rank must be in range 2 to 4" +
-                        " inclusive. First example features shape: " +
-                        Arrays.toString(featureMasksToMerge[0].shape()));
+                throw new IllegalStateException("Cannot merge examples: features rank must be in range 2 to 4"
+                                + " inclusive. First example features shape: "
+                                + Arrays.toString(featureMasksToMerge[0].shape()));
         }
     }
 
@@ -169,8 +170,8 @@ public class DataSetUtil {
      * @param featureMasksToMerge Mask arrays to merge. May be null
      * @return Merged features and mask. Mask may be null
      */
-    public static Pair<INDArray,INDArray> mergeFeatures(INDArray[][] featuresToMerge,
-                                                        INDArray[][] featureMasksToMerge, int inOutIdx){
+    public static Pair<INDArray, INDArray> mergeFeatures(INDArray[][] featuresToMerge, INDArray[][] featureMasksToMerge,
+                    int inOutIdx) {
         Pair<INDArray[], INDArray[]> p = selectColumnFromMDSData(featuresToMerge, featureMasksToMerge, inOutIdx);
         return mergeFeatures(p.getFirst(), p.getSecond());
     }
@@ -182,7 +183,7 @@ public class DataSetUtil {
      * @param labelMasksToMerge Mask arrays to merge. May be null
      * @return Merged features and mask. Mask may be null
      */
-    public static Pair<INDArray,INDArray> mergeLabels(INDArray[] labelsToMerge, INDArray[] labelMasksToMerge){
+    public static Pair<INDArray, INDArray> mergeLabels(INDArray[] labelsToMerge, INDArray[] labelMasksToMerge) {
         int rankFeatures = labelsToMerge[0].rank();
 
         switch (rankFeatures) {
@@ -193,9 +194,9 @@ public class DataSetUtil {
             case 4:
                 return DataSetUtil.merge4d(labelsToMerge, labelMasksToMerge);
             default:
-                throw new IllegalStateException( "Cannot merge examples: labels rank must be in range 2 to 4" +
-                        " inclusive. First example features shape: " +
-                        Arrays.toString(labelMasksToMerge[0].shape()));
+                throw new IllegalStateException("Cannot merge examples: labels rank must be in range 2 to 4"
+                                + " inclusive. First example features shape: "
+                                + Arrays.toString(labelMasksToMerge[0].shape()));
         }
     }
 
@@ -207,23 +208,23 @@ public class DataSetUtil {
      * @param labelMasksToMerge Mask arrays to merge. May be null
      * @return Merged features and mask. Mask may be null
      */
-    public static Pair<INDArray,INDArray> mergeLabels(@NonNull INDArray[][] labelsToMerge,
-                                                        INDArray[][] labelMasksToMerge, int inOutIdx){
+    public static Pair<INDArray, INDArray> mergeLabels(@NonNull INDArray[][] labelsToMerge,
+                    INDArray[][] labelMasksToMerge, int inOutIdx) {
         Pair<INDArray[], INDArray[]> p = selectColumnFromMDSData(labelsToMerge, labelMasksToMerge, inOutIdx);
         return mergeLabels(p.getFirst(), p.getSecond());
     }
 
-    private static Pair<INDArray[], INDArray[]> selectColumnFromMDSData(@NonNull INDArray[][] arrays, INDArray[][] masks,
-                                                                        int inOutIdx){
+    private static Pair<INDArray[], INDArray[]> selectColumnFromMDSData(@NonNull INDArray[][] arrays,
+                    INDArray[][] masks, int inOutIdx) {
         INDArray[] a = new INDArray[arrays.length];
         INDArray[] m = new INDArray[a.length];
-        for( int i=0; i<a.length; i++ ){
+        for (int i = 0; i < a.length; i++) {
             a[i] = arrays[i][inOutIdx];
-            if(masks != null && masks[i] != null){
+            if (masks != null && masks[i] != null) {
                 m[i] = masks[i][inOutIdx];
             }
         }
-        return new Pair<>(a,m);
+        return new Pair<>(a, m);
     }
 
     /**
@@ -235,8 +236,8 @@ public class DataSetUtil {
      * @param inOutIdx Index to extract out before merging
      * @return Merged arrays and mask
      */
-    public static Pair<INDArray,INDArray> merge2d(@NonNull INDArray[][] arrays, INDArray[][] masks, int inOutIdx) {
-        Pair<INDArray[],INDArray[]> p = selectColumnFromMDSData(arrays, masks, inOutIdx);
+    public static Pair<INDArray, INDArray> merge2d(@NonNull INDArray[][] arrays, INDArray[][] masks, int inOutIdx) {
+        Pair<INDArray[], INDArray[]> p = selectColumnFromMDSData(arrays, masks, inOutIdx);
         return merge2d(p.getFirst(), p.getSecond());
     }
 
@@ -248,7 +249,7 @@ public class DataSetUtil {
      * @param masks    Mask arrays to merge
      * @return Merged arrays and mask
      */
-    public static Pair<INDArray,INDArray> merge2d(INDArray[] arrays, INDArray[] masks) {
+    public static Pair<INDArray, INDArray> merge2d(INDArray[] arrays, INDArray[] masks) {
         int cols = arrays[0].columns();
 
         INDArray[] temp = new INDArray[arrays.length];
@@ -256,19 +257,19 @@ public class DataSetUtil {
         for (int i = 0; i < arrays.length; i++) {
             if (arrays[i].columns() != cols) {
                 throw new IllegalStateException("Cannot merge 2d arrays with different numbers of columns (firstNCols="
-                        + cols + ", ithNCols=" + arrays[i].columns() + ")");
+                                + cols + ", ithNCols=" + arrays[i].columns() + ")");
             }
 
             temp[i] = arrays[i];
 
-            if(masks != null && masks[i] != null && masks[i] != null){
+            if (masks != null && masks[i] != null && masks[i] != null) {
                 hasMasks = true;
             }
         }
 
         INDArray out = Nd4j.specialConcat(0, temp);
         INDArray outMask = null;
-        if(hasMasks){
+        if (hasMasks) {
             outMask = DataSetUtil.mergePerOutputMasks2d(out.shape(), arrays, masks);
         }
 
@@ -276,28 +277,29 @@ public class DataSetUtil {
     }
 
 
-    public static INDArray mergePerOutputMasks2d(int[] outShape, INDArray[][] arrays, INDArray[][] masks, int inOutIdx) {
-        Pair<INDArray[],INDArray[]> p = selectColumnFromMDSData(arrays, masks, inOutIdx);
+    public static INDArray mergePerOutputMasks2d(int[] outShape, INDArray[][] arrays, INDArray[][] masks,
+                    int inOutIdx) {
+        Pair<INDArray[], INDArray[]> p = selectColumnFromMDSData(arrays, masks, inOutIdx);
         return mergePerOutputMasks2d(outShape, p.getFirst(), p.getSecond());
     }
 
-    public static INDArray mergePerOutputMasks2d(int[] outShape, INDArray[] arrays, INDArray[] masks){
+    public static INDArray mergePerOutputMasks2d(int[] outShape, INDArray[] arrays, INDArray[] masks) {
         int[] numExamplesPerArr = new int[arrays.length];
-        for( int i=0; i<numExamplesPerArr.length; i++ ){
+        for (int i = 0; i < numExamplesPerArr.length; i++) {
             numExamplesPerArr[i] = arrays[i].size(0);
         }
 
-        INDArray outMask = Nd4j.ones(outShape);   //Initialize to 'all present' (1s)
+        INDArray outMask = Nd4j.ones(outShape); //Initialize to 'all present' (1s)
 
         int rowsSoFar = 0;
         for (int i = 0; i < masks.length; i++) {
-            int thisRows = numExamplesPerArr[i];  //Mask itself may be null -> all present, but may include multiple examples
-            if(masks[i] == null){
+            int thisRows = numExamplesPerArr[i]; //Mask itself may be null -> all present, but may include multiple examples
+            if (masks[i] == null) {
                 continue;
             }
 
-            outMask.put(new INDArrayIndex[] {NDArrayIndex.interval(rowsSoFar, rowsSoFar + thisRows), NDArrayIndex.all()},
-                    masks[i]);
+            outMask.put(new INDArrayIndex[] {NDArrayIndex.interval(rowsSoFar, rowsSoFar + thisRows),
+                            NDArrayIndex.all()}, masks[i]);
             rowsSoFar += thisRows;
         }
         return outMask;
@@ -313,7 +315,7 @@ public class DataSetUtil {
      * @return Merged arrays and mask
      */
     public static Pair<INDArray, INDArray> mergeTimeSeries(INDArray[][] arrays, INDArray[][] masks, int inOutIdx) {
-        Pair<INDArray[],INDArray[]> p = selectColumnFromMDSData(arrays, masks, inOutIdx);
+        Pair<INDArray[], INDArray[]> p = selectColumnFromMDSData(arrays, masks, inOutIdx);
         return mergeTimeSeries(p.getFirst(), p.getSecond());
     }
 
@@ -355,9 +357,9 @@ public class DataSetUtil {
 
             if (arrays[i].size(1) != size) {
                 throw new IllegalStateException(
-                        "Cannot merge time series with different size for dimension 1 (first shape: "
-                                + Arrays.toString(arrays[0].shape()) + ", " + i + "th shape: "
-                                + Arrays.toString(arrays[i].shape()));
+                                "Cannot merge time series with different size for dimension 1 (first shape: "
+                                                + Arrays.toString(arrays[0].shape()) + ", " + i + "th shape: "
+                                                + Arrays.toString(arrays[i].shape()));
             }
         }
 
@@ -372,63 +374,65 @@ public class DataSetUtil {
             for (int i = 0; i < arrays.length; i++) {
                 int thisNExamples = arrays[i].size(0);
                 arr.put(new INDArrayIndex[] {NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
-                        NDArrayIndex.all(), NDArrayIndex.all()}, arrays[i]);
+                                NDArrayIndex.all(), NDArrayIndex.all()}, arrays[i]);
                 examplesSoFar += thisNExamples;
             }
             return new Pair<>(arr, null);
         } else {
             //Either different length, or have mask arrays (or, both)
-            if((lengthsDiffer && !hasMask) || maskRank == 2) {
+            if ((lengthsDiffer && !hasMask) || maskRank == 2) {
                 //Standard per-example masking required
                 for (int i = 0; i < arrays.length; i++) {
                     INDArray a = arrays[i];
                     int thisNExamples = a.size(0);
                     int thisLength = a.size(2);
-                    arr.put(new INDArrayIndex[]{NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
-                            NDArrayIndex.all(), NDArrayIndex.interval(0, thisLength)}, a);
+                    arr.put(new INDArrayIndex[] {NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
+                                    NDArrayIndex.all(), NDArrayIndex.interval(0, thisLength)}, a);
 
                     if (masks != null && masks[i] != null && masks[i] != null) {
                         INDArray origMask = masks[i];
                         int maskLength = origMask.size(1);
-                        mask.put(new INDArrayIndex[]{NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
-                                NDArrayIndex.interval(0, maskLength)}, origMask);
+                        mask.put(new INDArrayIndex[] {
+                                        NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
+                                        NDArrayIndex.interval(0, maskLength)}, origMask);
                         if (maskLength < maxLength) {
                             //Set end mask array to zero...
-                            mask.put(new INDArrayIndex[]{
+                            mask.put(new INDArrayIndex[] {
                                             NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
                                             NDArrayIndex.interval(maskLength, maxLength)},
-                                    Nd4j.zeros(thisNExamples, maxLength - maskLength));
+                                            Nd4j.zeros(thisNExamples, maxLength - maskLength));
                         }
                     } else {
                         if (thisLength < maxLength) {
                             //Mask the end
-                            mask.put(new INDArrayIndex[]{
+                            mask.put(new INDArrayIndex[] {
                                             NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
                                             NDArrayIndex.interval(thisLength, maxLength)},
-                                    Nd4j.zeros(thisNExamples, maxLength - thisLength));
+                                            Nd4j.zeros(thisNExamples, maxLength - thisLength));
                         }
                     }
 
                     examplesSoFar += thisNExamples;
                 }
-            } else if(maskRank == 3){
+            } else if (maskRank == 3) {
                 //Per output masking required. May also be variable length
                 mask = Nd4j.create(arr.shape());
-                for( int i=0; i<arrays.length; i++ ){
+                for (int i = 0; i < arrays.length; i++) {
                     INDArray m = masks[i];
                     INDArray a = arrays[i];
                     int thisNExamples = a.size(0);
                     int thisLength = a.size(2);
-                    arr.put(new INDArrayIndex[]{NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
-                            NDArrayIndex.all(), NDArrayIndex.interval(0, thisLength)}, a);
+                    arr.put(new INDArrayIndex[] {NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
+                                    NDArrayIndex.all(), NDArrayIndex.interval(0, thisLength)}, a);
 
-                    if(m == null){
+                    if (m == null) {
                         //This mask is null -> equivalent to "all present"
-                        mask.get(NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples), NDArrayIndex.all(),
-                                NDArrayIndex.interval(0,thisLength)).assign(1);
+                        mask.get(NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
+                                        NDArrayIndex.all(), NDArrayIndex.interval(0, thisLength)).assign(1);
                     } else {
-                        mask.put(new INDArrayIndex[]{NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
-                                NDArrayIndex.all(), NDArrayIndex.interval(0,thisLength)}, m);
+                        mask.put(new INDArrayIndex[] {
+                                        NDArrayIndex.interval(examplesSoFar, examplesSoFar + thisNExamples),
+                                        NDArrayIndex.all(), NDArrayIndex.interval(0, thisLength)}, m);
                     }
 
                     examplesSoFar += thisNExamples;
@@ -450,8 +454,8 @@ public class DataSetUtil {
      * @param inOutIdx Index to extract out before merging
      * @return Merged arrays and mask
      */
-    public static Pair<INDArray,INDArray> merge4d(INDArray[][] arrays, INDArray[][] masks, int inOutIdx) {
-        Pair<INDArray[],INDArray[]> p = selectColumnFromMDSData(arrays, masks, inOutIdx);
+    public static Pair<INDArray, INDArray> merge4d(INDArray[][] arrays, INDArray[][] masks, int inOutIdx) {
+        Pair<INDArray[], INDArray[]> p = selectColumnFromMDSData(arrays, masks, inOutIdx);
         return merge4d(p.getFirst(), p.getSecond());
     }
 
@@ -463,7 +467,7 @@ public class DataSetUtil {
      * @param masks    Mask arrays to merge
      * @return Merged arrays and mask
      */
-    public static Pair<INDArray,INDArray> merge4d(INDArray[] arrays, INDArray[] masks) {
+    public static Pair<INDArray, INDArray> merge4d(INDArray[] arrays, INDArray[] masks) {
         //4d -> images. In principle: could have 2d mask arrays (per-example masks)
 
         int nExamples = 0;
@@ -479,24 +483,24 @@ public class DataSetUtil {
             for (int j = 1; j < 4; j++) {
                 if (thisShape[j] != shape[j])
                     throw new IllegalStateException(
-                            "Cannot merge 4d arrays with different shape (other than # examples): "
-                                    + " data[0].shape = " + Arrays.toString(shape)
-                                    + ", data[" + i + "].shape = " + Arrays.toString(thisShape));
+                                    "Cannot merge 4d arrays with different shape (other than # examples): "
+                                                    + " data[0].shape = " + Arrays.toString(shape) + ", data[" + i
+                                                    + "].shape = " + Arrays.toString(thisShape));
             }
 
             temp[i] = arrays[i];
-            if(masks != null && masks[i] != null && masks[i] != null){
+            if (masks != null && masks[i] != null && masks[i] != null) {
                 hasMasks = true;
-                if(masks[i].rank() != 2){
+                if (masks[i].rank() != 2) {
                     throw new UnsupportedOperationException("Cannot merged 4d arrays with masks that are not rank 2."
-                            + " Got mask array with rank: " + masks[i].rank());
+                                    + " Got mask array with rank: " + masks[i].rank());
                 }
             }
         }
 
         INDArray out = Nd4j.specialConcat(0, temp);
         INDArray outMask = null;
-        if(hasMasks){
+        if (hasMasks) {
             outMask = DataSetUtil.mergePerOutputMasks2d(out.shape(), arrays, masks);
         }
 

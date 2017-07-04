@@ -73,7 +73,8 @@ public class Transforms {
      * @return
      */
     public static INDArray atan2(@NonNull INDArray x, @NonNull INDArray y) {
-        return Nd4j.getExecutioner().execAndReturn(new Atan2Op(x, y, Nd4j.createUninitialized(x.shape(), x.ordering())));
+        return Nd4j.getExecutioner()
+                        .execAndReturn(new Atan2Op(x, y, Nd4j.createUninitialized(x.shape(), x.ordering())));
     }
 
     /**

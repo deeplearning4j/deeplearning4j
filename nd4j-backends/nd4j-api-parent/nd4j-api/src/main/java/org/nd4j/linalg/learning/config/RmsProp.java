@@ -27,11 +27,11 @@ public class RmsProp implements IUpdater {
     private double rmsDecay = DEFAULT_RMSPROP_RMSDECAY;
     private double epsilon = DEFAULT_RMSPROP_EPSILON;
 
-    public RmsProp(){
+    public RmsProp() {
         this(DEFAULT_RMSPROP_LEARNING_RATE, DEFAULT_RMSPROP_RMSDECAY, DEFAULT_RMSPROP_EPSILON);
     }
 
-    public RmsProp(double rmsDecay){
+    public RmsProp(double rmsDecay) {
         this(DEFAULT_RMSPROP_LEARNING_RATE, rmsDecay, DEFAULT_RMSPROP_EPSILON);
     }
 
@@ -64,7 +64,6 @@ public class RmsProp implements IUpdater {
         private double rmsDecay = DEFAULT_RMSPROP_RMSDECAY;
         private double epsilon = DEFAULT_RMSPROP_EPSILON;
 
-        public Builder() {
-        }
+        public Builder() {}
     }
 }

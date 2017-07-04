@@ -71,14 +71,12 @@ public class Nd4jEnvironment implements Serializable {
      */
     public static Nd4jEnvironment getEnvironment() {
         Properties envInfo = Nd4j.getExecutioner().getEnvironmentInformation();
-        Nd4jEnvironment ret = Nd4jEnvironment.builder()
-                .numCores(getIntOrZero(CPU_CORES_KEY, envInfo))
-                .ram(getLongOrZero(HOST_TOTAL_MEMORY_KEY, envInfo))
-                .os(envInfo.get(OS_KEY).toString())
-                .blasVendor(envInfo.get(BLAS_VENDOR_KEY).toString())
-                .blasThreads(getLongOrZero(BLAS_THREADS_KEY,envInfo))
-                .ompThreads(getIntOrZero(OMP_THREADS_KEY, envInfo))
-                .numGpus(getIntOrZero(CUDA_NUM_GPUS_KEY, envInfo)).build();
+        Nd4jEnvironment ret = Nd4jEnvironment.builder().numCores(getIntOrZero(CPU_CORES_KEY, envInfo))
+                        .ram(getLongOrZero(HOST_TOTAL_MEMORY_KEY, envInfo)).os(envInfo.get(OS_KEY).toString())
+                        .blasVendor(envInfo.get(BLAS_VENDOR_KEY).toString())
+                        .blasThreads(getLongOrZero(BLAS_THREADS_KEY, envInfo))
+                        .ompThreads(getIntOrZero(OMP_THREADS_KEY, envInfo))
+                        .numGpus(getIntOrZero(CUDA_NUM_GPUS_KEY, envInfo)).build();
         if (envInfo.containsKey(CUDA_DEVICE_INFORMATION_KEY)) {
             List<Map<String, Object>> deviceInfo = (List<Map<String, Object>>) envInfo.get(CUDA_DEVICE_INFORMATION_KEY);
             List<Long> gpuRam = new ArrayList<>();
@@ -95,14 +93,14 @@ public class Nd4jEnvironment implements Serializable {
     }
 
 
-    private static long getLongOrZero(String key,Properties properties) {
-        if(properties.get(key) == null)
+    private static long getLongOrZero(String key, Properties properties) {
+        if (properties.get(key) == null)
             return 0;
         return Long.parseLong(properties.get(key).toString());
     }
 
-    private static int getIntOrZero(String key,Properties properties) {
-        if(properties.get(key) == null)
+    private static int getIntOrZero(String key, Properties properties) {
+        if (properties.get(key) == null)
             return 0;
         return Integer.parseInt(properties.get(key).toString());
     }

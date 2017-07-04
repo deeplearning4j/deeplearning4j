@@ -499,7 +499,7 @@ public class BooleanIndexingTest extends BaseNd4jTest {
 
     @Test
     public void testEpsEquals1() throws Exception {
-        INDArray array = Nd4j.create(new double[]{-1, -1, -1e-8, 1e-8, 1, 1});
+        INDArray array = Nd4j.create(new double[] {-1, -1, -1e-8, 1e-8, 1, 1});
         MatchCondition condition = new MatchCondition(array, Conditions.epsEquals(0.0));
         int numZeroes = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
 

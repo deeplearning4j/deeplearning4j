@@ -32,14 +32,15 @@ public class BernoulliDistribution extends BaseRandomOp {
      * This op fills Z with bernoulli trial results, so 0, or 1, each element will have it's own success probability defined in prob array
      * @param prob array with probabilities
      * @param z
-
+    
      */
     public BernoulliDistribution(@NonNull INDArray z, @NonNull INDArray prob) {
         if (prob.elementWiseStride() != 1)
             throw new ND4JIllegalStateException("Probabilities should have ElementWiseStride of 1");
 
         if (prob.lengthLong() != z.lengthLong())
-            throw new ND4JIllegalStateException("Length of probabilities array ["+prob.lengthLong()+"] doesn't match length of output array [" + z.lengthLong() + "]");
+            throw new ND4JIllegalStateException("Length of probabilities array [" + prob.lengthLong()
+                            + "] doesn't match length of output array [" + z.lengthLong() + "]");
 
         init(prob, null, z, z.lengthLong());
         this.prob = 0.0;

@@ -965,7 +965,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
         assertEquals(3, pile.rank());
         for (int i = 0; i < 10; i++) {
-            assertEquals((float) i, pile.tensorAlongDimension(i, 1,2).getDouble(0),0.01);
+            assertEquals((float) i, pile.tensorAlongDimension(i, 1, 2).getDouble(0), 0.01);
         }
     }
 
@@ -980,7 +980,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
         assertEquals(4, pile.rank());
         for (int i = 0; i < 10; i++) {
-            assertEquals((float) i, pile.tensorAlongDimension(i, 1, 2, 3).getDouble(0),0.01);
+            assertEquals((float) i, pile.tensorAlongDimension(i, 1, 2, 3).getDouble(0), 0.01);
         }
     }
 
@@ -1021,7 +1021,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
     @Test
     public void testNorm2_2() throws Exception {
-        INDArray array = Nd4j.rand(127,164, 100, 1, 1);
+        INDArray array = Nd4j.rand(127, 164, 100, 1, 1);
 
         double norm2 = array.norm2Number().doubleValue();
     }
@@ -1049,7 +1049,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
 
         INDArray pile = Nd4j.pile(arrays);
 
-        INDArray[] tears = Nd4j.tear(pile, 1,2);
+        INDArray[] tears = Nd4j.tear(pile, 1, 2);
 
         for (int i = 0; i < 10; i++) {
             assertEquals((float) i, tears[i].meanNumber().floatValue(), 0.01f);

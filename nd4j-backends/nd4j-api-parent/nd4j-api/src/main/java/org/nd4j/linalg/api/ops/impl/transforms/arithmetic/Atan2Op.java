@@ -1,4 +1,4 @@
-/*
+/*-
  *
  * * Copyright 2015 Skymind,Inc. * * Licensed under the Apache License, Version 2.0 (the "License"); * you may not use
  * this file except in compliance with the License. * You may obtain a copy of the License at * *
@@ -92,7 +92,8 @@ public class Atan2Op extends BaseTransformOp {
     public Op opForDimension(int index, int dimension) {
         INDArray xAlongDimension = x.vectorAlongDimension(index, dimension);
 
-        return new Atan2Op(xAlongDimension, y.vectorAlongDimension(index, dimension), z.vectorAlongDimension(index, dimension), xAlongDimension.length());
+        return new Atan2Op(xAlongDimension, y.vectorAlongDimension(index, dimension),
+                        z.vectorAlongDimension(index, dimension), xAlongDimension.length());
     }
 
     @Override
@@ -100,7 +101,8 @@ public class Atan2Op extends BaseTransformOp {
         INDArray xAlongDimension = x.tensorAlongDimension(index, dimension);
 
 
-        return new Atan2Op(xAlongDimension, y.tensorAlongDimension(index, dimension), z.tensorAlongDimension(index, dimension), xAlongDimension.length());
+        return new Atan2Op(xAlongDimension, y.tensorAlongDimension(index, dimension),
+                        z.tensorAlongDimension(index, dimension), xAlongDimension.length());
     }
 
 

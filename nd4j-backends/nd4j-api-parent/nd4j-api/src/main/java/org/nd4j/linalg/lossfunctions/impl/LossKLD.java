@@ -20,10 +20,10 @@ public class LossKLD implements ILossFunction {
 
     private INDArray scoreArray(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         if (labels.size(1) != preOutput.size(1)) {
-            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
-                            + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
-                            + ") ");
-            
+            throw new IllegalArgumentException(
+                            "Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer"
+                                            + " number of outputs (nOut = " + preOutput.size(1) + ") ");
+
         }
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
@@ -63,17 +63,17 @@ public class LossKLD implements ILossFunction {
     @Override
     public INDArray computeGradient(INDArray labels, INDArray preOutput, IActivation activationFn, INDArray mask) {
         if (labels.size(1) != preOutput.size(1)) {
-            throw new IllegalArgumentException("Labels array numColumns (size(1) = " + labels.size(1)
-                            + ") does not match output layer" + " number of outputs (nOut = " + preOutput.size(1)
-                            + ") ");
-            
+            throw new IllegalArgumentException(
+                            "Labels array numColumns (size(1) = " + labels.size(1) + ") does not match output layer"
+                                            + " number of outputs (nOut = " + preOutput.size(1) + ") ");
+
         }
         //INDArray output = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(activationFn, preOutput.dup()));
         INDArray output = activationFn.getActivation(preOutput.dup(), true);
 
         INDArray dLda = labels.div(output).negi();
 
-        if(mask != null && LossUtil.isPerOutputMasking(dLda, mask)){
+        if (mask != null && LossUtil.isPerOutputMasking(dLda, mask)) {
             //For *most* activation functions: we don't actually need to mask dL/da in addition to masking dL/dz later
             //but: some, like softmax, require both (due to dL/dz_i being a function of dL/da_j, for i != j)
             //We could add a special case for softmax (activationFn instanceof ActivationSoftmax) but that would be

@@ -252,7 +252,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public Op exec(Op op, int... dimension) {
         //do op along all dimensions
         if (dimension.length == op.x().rank()) {
-            dimension = new int[]{Integer.MAX_VALUE};
+            dimension = new int[] {Integer.MAX_VALUE};
         }
 
         if (op.isPassThrough()) {
@@ -263,7 +263,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         if (op instanceof Accumulation || op instanceof IndexAccumulation) {
             //Overloaded exec(Accumulation,int...) and exec(IndexAccumulation,int...) should always be called instead of this
             throw new IllegalStateException(
-                    "exec(Op,int...) should never be invoked for Accumulation/IndexAccumulation");
+                            "exec(Op,int...) should never be invoked for Accumulation/IndexAccumulation");
         }
         if (op instanceof ScalarOp) {
             //Scalar op along dimension should be same as on the entire NDArray
@@ -271,7 +271,7 @@ public class DefaultOpExecutioner implements OpExecutioner {
         }
         if (op instanceof TransformOp) {
             throw new UnsupportedOperationException(
-                    "Executing transform ops along a dimension should be done via exec special");
+                            "Executing transform ops along a dimension should be done via exec special");
         }
         throw new UnsupportedOperationException("Unknown op type");
     }

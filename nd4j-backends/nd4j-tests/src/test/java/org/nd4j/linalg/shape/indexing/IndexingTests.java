@@ -27,17 +27,17 @@ public class IndexingTests extends BaseNd4jTest {
 
     @Test
     public void testGet() {
-        System.out.println( "Testing sub-array put and get with a 3D array ..." );
+        System.out.println("Testing sub-array put and get with a 3D array ...");
 
-        INDArray arr = Nd4j.linspace( 0, 124, 125 ).reshape( 5, 5, 5 );
+        INDArray arr = Nd4j.linspace(0, 124, 125).reshape(5, 5, 5);
 
-      /*
-       * Extract elements with the following indices:
-       *
-       * (2,1,1) (2,1,2) (2,1,3)
-       * (2,2,1) (2,2,2) (2,2,3)
-       * (2,3,1) (2,3,2) (2,3,3)
-       */
+        /*
+         * Extract elements with the following indices:
+         *
+         * (2,1,1) (2,1,2) (2,1,3)
+         * (2,2,1) (2,2,2) (2,2,3)
+         * (2,3,1) (2,3,2) (2,3,3)
+         */
 
         int slice = 2;
 
@@ -49,37 +49,37 @@ public class IndexingTests extends BaseNd4jTest {
 
         // Method A: Element-wise.
 
-        INDArray subArr_A = Nd4j.create( new int[]{ 3, 3 } );
+        INDArray subArr_A = Nd4j.create(new int[] {3, 3});
 
-        for ( int i = iStart; i < iEnd; i++ ){
-            for ( int j = jStart; j < jEnd; j++ ){
+        for (int i = iStart; i < iEnd; i++) {
+            for (int j = jStart; j < jEnd; j++) {
 
-                double val = arr.getDouble( slice, i,j );
-                int[] sub = new int[]{ i - iStart ,j - jStart};
+                double val = arr.getDouble(slice, i, j);
+                int[] sub = new int[] {i - iStart, j - jStart};
 
-                subArr_A.putScalar( sub, val );
+                subArr_A.putScalar(sub, val);
             }
         }
 
         // Method B: Using NDArray get and put with index classes.
 
-        INDArray subArr_B = Nd4j.create( new int[]{ 3, 3 } );
+        INDArray subArr_B = Nd4j.create(new int[] {3, 3});
 
-        INDArrayIndex ndi_Slice = NDArrayIndex.point( slice );
-        INDArrayIndex ndi_J     = NDArrayIndex.interval( iStart, iEnd );
-        INDArrayIndex ndi_I     = NDArrayIndex.interval( iStart, iEnd );
+        INDArrayIndex ndi_Slice = NDArrayIndex.point(slice);
+        INDArrayIndex ndi_J = NDArrayIndex.interval(iStart, iEnd);
+        INDArrayIndex ndi_I = NDArrayIndex.interval(iStart, iEnd);
 
-        INDArrayIndex[] whereToGet = new INDArrayIndex[]{ ndi_Slice, ndi_J, ndi_I };
+        INDArrayIndex[] whereToGet = new INDArrayIndex[] {ndi_Slice, ndi_J, ndi_I};
 
-        INDArray whatToPut = arr.get( whereToGet );
+        INDArray whatToPut = arr.get(whereToGet);
         System.out.println(whatToPut);
-        INDArrayIndex[] whereToPut = new INDArrayIndex[]{ NDArrayIndex.all(), NDArrayIndex.all() };
+        INDArrayIndex[] whereToPut = new INDArrayIndex[] {NDArrayIndex.all(), NDArrayIndex.all()};
 
-        subArr_B.put( whereToPut, whatToPut );
+        subArr_B.put(whereToPut, whatToPut);
 
-        assertEquals( subArr_A, subArr_B );
+        assertEquals(subArr_A, subArr_B);
 
-        System.out.println( "... done" );
+        System.out.println("... done");
     }
 
 
@@ -125,11 +125,13 @@ public class IndexingTests extends BaseNd4jTest {
 
         INDArray fMerged = Nd4j.concat(0, first, second);
 
-        assertEquals(first, fMerged.get(NDArrayIndex.interval(0, nExamples1), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all()));
+        assertEquals(first, fMerged.get(NDArrayIndex.interval(0, nExamples1), NDArrayIndex.all(), NDArrayIndex.all(),
+                        NDArrayIndex.all()));
 
-        INDArray get = fMerged.get(NDArrayIndex.interval(nExamples1, nExamples1 + nExamples2, true), NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.all());
-        assertEquals(second, get.dup());    //Passes
-        assertEquals(second, get);             //Fails
+        INDArray get = fMerged.get(NDArrayIndex.interval(nExamples1, nExamples1 + nExamples2, true), NDArrayIndex.all(),
+                        NDArrayIndex.all(), NDArrayIndex.all());
+        assertEquals(second, get.dup()); //Passes
+        assertEquals(second, get); //Fails
     }
 
     @Test

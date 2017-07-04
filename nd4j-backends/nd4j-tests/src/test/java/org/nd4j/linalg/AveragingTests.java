@@ -71,7 +71,8 @@ public class AveragingTests extends BaseNd4jTest {
 
 
         long time1 = System.currentTimeMillis();
-        INDArray arrayMean = Nd4j.averageAndPropagate(new INDArray[] {array1, array2, array3, array4, array5, array6, array7, array8, array9, array10, array11, array12, array13, array14, array15, array16});
+        INDArray arrayMean = Nd4j.averageAndPropagate(new INDArray[] {array1, array2, array3, array4, array5, array6,
+                        array7, array8, array9, array10, array11, array12, array13, array14, array15, array16});
         long time2 = System.currentTimeMillis();
         System.out.println("Execution time: " + (time2 - time1));
 

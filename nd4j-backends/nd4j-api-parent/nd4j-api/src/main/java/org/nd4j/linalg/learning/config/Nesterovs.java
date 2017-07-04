@@ -26,17 +26,17 @@ public class Nesterovs implements IUpdater {
 
     private double learningRate;
     private double momentum;
-    private Map<Integer,Double> momentumSchedule;
+    private Map<Integer, Double> momentumSchedule;
 
-    public Nesterovs(){
+    public Nesterovs() {
         this(DEFAULT_NESTEROV_LEARNING_RATE, DEFAULT_NESTEROV_MOMENTUM, null);
     }
 
-    public Nesterovs(double momentum){
+    public Nesterovs(double momentum) {
         this(DEFAULT_NESTEROV_LEARNING_RATE, momentum);
     }
 
-    public Nesterovs(double learningRate, double momentum){
+    public Nesterovs(double learningRate, double momentum) {
         this(learningRate, momentum, null);
     }
 
@@ -48,7 +48,7 @@ public class Nesterovs implements IUpdater {
     @Override
     public void applySchedules(int iteration, double newLearningRate) {
         this.learningRate = newLearningRate;
-        if(momentumSchedule != null && momentumSchedule.containsKey(iteration)){
+        if (momentumSchedule != null && momentumSchedule.containsKey(iteration)) {
             momentum = momentumSchedule.get(iteration);
         }
     }
@@ -71,7 +71,6 @@ public class Nesterovs implements IUpdater {
         private double learningRate = DEFAULT_NESTEROV_LEARNING_RATE;
         private double momentum = DEFAULT_NESTEROV_LEARNING_RATE;
 
-        public Builder() {
-        }
+        public Builder() {}
     }
 }
