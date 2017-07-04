@@ -1099,6 +1099,63 @@ void   NativeOps::execReduce3Half(Nd4jPointer *extraPointers,int opNum,
     // no-op
 }
 
+void NativeOps::execReduce3AllDouble(Nd4jPointer *extraPointers,
+                          int opNum,
+                          double *x,
+                          int *xInfo,
+                          double *extraParamsVals,
+                          double *y,
+                          int *yInfo,
+                          double *result,
+                          int *resultShapeInfoBuffer,
+                          int *dimension,
+                          int dimensionLength,
+                          int *xTadShapeInfo,
+                          int *xOffsets,
+                          int *yTadShapeInfo,
+                          int *yOffsets) {
+
+    NativeOpExcutioner<double>::execReduce3All(opNum, x, xInfo, extraParamsVals, y, yInfo, result, resultShapeInfoBuffer, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
+}
+
+void NativeOps::execReduce3AllFloat(Nd4jPointer *extraPointers,
+                         int opNum,
+                         float *x,
+                         int *xInfo,
+                         float *extraParamsVals,
+                         float *y,
+                         int *yInfo,
+                         float *result,
+                         int *resultShapeInfoBuffer,
+                         int *dimension,
+                         int dimensionLength,
+                         int *xTadShapeInfo,
+                         int *xOffsets,
+                         int *yTadShapeInfo,
+                         int *yOffsets) {
+
+    NativeOpExcutioner<float>::execReduce3All(opNum, x, xInfo, extraParamsVals, y, yInfo, result, resultShapeInfoBuffer, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
+}
+
+void NativeOps::execReduce3AllHalf(Nd4jPointer *extraPointers,
+                        int opNum,
+                        float16 *x,
+                        int *xInfo,
+                        float16 *extraParamsVals,
+                        float16 *y,
+                        int *yInfo,
+                        float16 *result,
+                        int *resultShapeInfoBuffer,
+                        int *dimension,
+                        int dimensionLength,
+                        int *xTadShapeInfo,
+                        int *xOffsets,
+                        int *yTadShapeInfo,
+                        int *yOffsets) {
+
+    NativeOpExcutioner<float16>::execReduce3All(opNum, x, xInfo, extraParamsVals, y, yInfo, result, resultShapeInfoBuffer, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
+}
+
 
 /**
  *

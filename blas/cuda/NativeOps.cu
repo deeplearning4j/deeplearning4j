@@ -6254,3 +6254,157 @@ void NativeOps::decodeThresholdHalf(Nd4jPointer *extraPointers, void *dx, Nd4jIn
     decoderKernelHalf<<<numBlocks, blockSize , 1024, *stream>>>(dx, N, dz);
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
+
+
+void NativeOps::execReduce3AllDouble(Nd4jPointer *extraPointers,
+									 int opNum,
+									 double *x,
+									 int *xInfo,
+									 double *extraParamsVals,
+									 double *y,
+									 int *yInfo,
+									 double *result,
+									 int *resultShapeInfoBuffer,
+									 int *dimension,
+									 int dimensionLength,
+									 int *xTadShapeInfo,
+									 int *xOffsets,
+									 int *yTadShapeInfo,
+									 int *yOffsets) {
+
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+    int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
+
+
+    if (debug && verbose)
+        printf("D119 opNum:[%i]\n", opNum);
+
+    int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+    double *reductionPointer = reinterpret_cast<double *>(extraPointers[4]);
+
+    dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[7], dimensionLength, sizeof(double), 2);
+
+    if (verbose && launchDims.x == 1)
+        printf("AD119 opNum:[%i]\n", opNum);
+
+    reduce3AllDouble<<<launchDims.x, 512, (512 * 8 * 2 + 512), *stream>>>(
+            opNum,
+                    x,
+                    xInfo,
+                    y,
+                    yInfo,
+                    extraParamsVals,
+                    result,
+                    resultShapeInfoBuffer,
+                    dimension,
+                    dimensionLength,
+                    1, allocationPointer, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execReduce3AllFloat(Nd4jPointer *extraPointers,
+									int opNum,
+									float *x,
+									int *xInfo,
+									float *extraParamsVals,
+									float *y,
+									int *yInfo,
+									float *result,
+									int *resultShapeInfoBuffer,
+									int *dimension,
+									int dimensionLength,
+									int *xTadShapeInfo,
+									int *xOffsets,
+									int *yTadShapeInfo,
+									int *yOffsets) {
+
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+    int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
+
+
+    if (debug && verbose)
+        printf("F119 opNum:[%i]\n", opNum);
+
+    int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+    float *reductionPointer = reinterpret_cast<float *>(extraPointers[4]);
+
+    dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[7], dimensionLength, sizeof(float), 2);
+
+    if (verbose && launchDims.x == 1)
+        printf("AF119 opNum:[%i]\n", opNum);
+
+    reduce3AllFloat<<<launchDims.x, 512, (512 * 4 * 2 + 512), *stream>>>(
+                opNum,
+                        x,
+                        xInfo,
+                        y,
+                        yInfo,
+                        extraParamsVals,
+                        result,
+                        resultShapeInfoBuffer,
+                        dimension,
+                        dimensionLength,
+                        1, allocationPointer, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::execReduce3AllHalf(Nd4jPointer *extraPointers,
+								   int opNum,
+								   float16 *x,
+								   int *xInfo,
+								   float16 *extraParamsVals,
+								   float16 *y,
+								   int *yInfo,
+								   float16 *result,
+								   int *resultShapeInfoBuffer,
+								   int *dimension,
+								   int dimensionLength,
+								   int *xTadShapeInfo,
+								   int *xOffsets,
+								   int *yTadShapeInfo,
+								   int *yOffsets) {
+
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+    int *hostZShapeInfo = reinterpret_cast<int *>(extraPointers[8]);
+    int *hostTADShapeInfo = reinterpret_cast<int *>(extraPointers[9]);
+
+
+    if (debug && verbose)
+        printf("H119 opNum:[%i]\n", opNum);
+
+    int *allocationPointer = reinterpret_cast<int *>(extraPointers[3]);
+    float16 *reductionPointer = reinterpret_cast<float16 *>(extraPointers[4]);
+
+    dim3 launchDims = getReduceLaunchParams(getDeviceId(extraPointers[2]), hostXShapeInfo, hostTADShapeInfo, funcAttributes[7], dimensionLength, sizeof(float16), 2);
+
+    if (verbose && launchDims.x == 1)
+        printf("AH119 opNum:[%i]\n", opNum);
+
+    reduce3AllHalf<<<launchDims.x, 512, (512 * 2 * 2 + 512), *stream>>>(
+            opNum,
+                    x,
+                    xInfo,
+                    y,
+                    yInfo,
+                    extraParamsVals,
+                    result,
+                    resultShapeInfoBuffer,
+                    dimension,
+                    dimensionLength,
+                    1, allocationPointer, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
+
+    if (debug)
+        checkCudaErrors(cudaStreamSynchronize(*stream));
+}

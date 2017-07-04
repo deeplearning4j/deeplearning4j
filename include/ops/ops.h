@@ -1299,6 +1299,83 @@ namespace simdOps {
 		}
 	};
 
+
+
+
+    template<typename T>
+    class ShannonEntropy {
+    public:
+        op_def static T startingValue(const T *input) {
+            return (T) 0.0f;
+        }
+
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+            return opOutput + old;
+        }
+
+        op_def static T update(T old, T opOutput, T *extraParams) {
+            return opOutput + old;
+        }
+
+        op_def static T op(T d1, T *extraParams) {
+            return nd4j::math::nd4j_pow<T>(d1, (T) 2.0f) * nd4j::math::nd4j_log<T>(nd4j::math::nd4j_pow<T>(d1, (T) 2.0f));
+        }
+
+        op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+            return -reduction;
+        }
+    };
+
+
+    template<typename T>
+    class LogEntropy {
+    public:
+        op_def static T startingValue(const T *input) {
+            return (T) 0.0f;
+        }
+
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+            return opOutput + old;
+        }
+
+        op_def static T update(T old, T opOutput, T *extraParams) {
+            return opOutput + old;
+        }
+
+        op_def static T op(T d1, T *extraParams) {
+            return nd4j::math::nd4j_log<T>(nd4j::math::nd4j_pow<T>(d1, (T) 2.0f));
+        }
+
+        op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+            return reduction;
+        }
+    };
+
+    template<typename T>
+    class Entropy {
+    public:
+        op_def static T startingValue(const T *input) {
+            return (T) 0.0f;
+        }
+
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+            return opOutput + old;
+        }
+
+        op_def static T update(T old, T opOutput, T *extraParams) {
+            return opOutput + old;
+        }
+
+        op_def static T op(T d1, T *extraParams) {
+            return d1 * nd4j::math::nd4j_log<T>(d1);
+        }
+
+        op_def static T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+            return reduction;
+        }
+    };
+
+
     template<typename T>
     class ASum {
     public:
