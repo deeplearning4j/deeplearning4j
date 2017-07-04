@@ -1,10 +1,19 @@
 package org.deeplearning4j.nearestneighbor.server;
 
 import org.deeplearning4j.clustering.vptree.VPTree;
+import org.deeplearning4j.nearestneighbor.client.NearestNeighborsClient;
 import org.deeplearning4j.nearestneighbor.model.NearestNeighborRequest;
+import org.deeplearning4j.nearestneighbor.model.NearestNeighborsResult;
+import org.deeplearning4j.nearestneighbor.model.NearstNeighborsResults;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.serde.binary.BinarySerde;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 
@@ -29,5 +38,41 @@ public class NearestNeighborTest {
                 .points(arr).record(request).build();
         assertEquals(1,nearestNeighbor.search().get(0).getIndex());
     }
+
+
+
+    public static int getAvailablePort() {
+        try {
+            ServerSocket socket = new ServerSocket(0);
+            try {
+                return socket.getLocalPort();
+            } finally {
+                socket.close();
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("Cannot find available port: " + e.getMessage(), e);
+        }
+    }
+
+    @Test
+    public void testServer() throws Exception {
+        int localPort = getAvailablePort();
+        Nd4j.getRandom().setSeed(7);
+        INDArray rand = Nd4j.randn(10,5);
+        File writeToTmp = new File(System.getProperty("java.io.tmpdir"),"ndarray" + UUID.randomUUID().toString());
+        writeToTmp.deleteOnExit();
+        BinarySerde.writeArrayToDisk(rand,writeToTmp);
+        NearestNeighborsServer server = new NearestNeighborsServer();
+        server.runMain(
+                "--ndarrayPath",writeToTmp.getAbsolutePath(),
+                "--nearestNeighborsPort",String.valueOf(localPort)
+        );
+
+        NearestNeighborsClient client = new NearestNeighborsClient("http://localhost:"+ localPort);
+        NearstNeighborsResults result = client.knnNew(5,rand.getRow(0));
+        assertEquals(5,result.getResults().size());
+        server.stop();
+    }
+
 
 }

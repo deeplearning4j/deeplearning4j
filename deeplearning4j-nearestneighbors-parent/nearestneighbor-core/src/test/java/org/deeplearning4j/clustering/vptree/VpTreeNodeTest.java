@@ -44,6 +44,16 @@ public class VpTreeNodeTest {
     }
 
     @Test
+    public void testKnnK() {
+        INDArray arr = Nd4j.randn(10,5);
+        VPTree t = new VPTree(arr,false);
+        List<DataPoint> resultList = new ArrayList<>();
+        List<Double> distances = new ArrayList<>();
+        t.search(arr.getRow(0),5,resultList,distances);
+        assertEquals(5,resultList.size());
+    }
+
+    @Test
     public void knnManual() {
         INDArray arr = Nd4j.randn(3,5);
         VPTree t = new VPTree(arr,false);
