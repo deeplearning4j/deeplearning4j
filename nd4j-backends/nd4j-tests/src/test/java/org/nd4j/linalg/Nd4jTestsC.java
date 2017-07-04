@@ -4405,6 +4405,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray result = Transforms.allEuclideanDistances(initialX, initialY, 1);
 
+        Nd4j.getExecutioner().commit();
+
         assertEquals(5 * 7, result.length());
 
         for (int x = 0; x < initialX.rows(); x++) {
@@ -4450,8 +4452,128 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
             }
         }
+    }
 
-        MathUtils.entropy(new double[]{});
+    @Test
+    public void testAllDistances2_Large() throws Exception {
+        INDArray initialX = Nd4j.create(5, 2000);
+        INDArray initialY = Nd4j.create(7, 2000);
+        for (int i = 0; i < initialX.rows(); i++) {
+            initialX.getRow(i).assign(i+1);
+        }
+
+        for (int i = 0; i < initialY.rows(); i++) {
+            initialY.getRow(i).assign(i+101);
+        }
+
+        INDArray result = Transforms.allManhattanDistances(initialX, initialY, 1);
+
+        assertEquals(5 * 7, result.length());
+
+        for (int x = 0; x < initialX.rows(); x++) {
+
+            INDArray rowX = initialX.getRow(x).dup();
+
+            for (int y = 0; y < initialY.rows(); y++) {
+
+                double res = result.getDouble(x, y);
+                double exp = Transforms.manhattanDistance(rowX, initialY.getRow(y).dup());
+
+                assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
+            }
+        }
+    }
+
+
+    @Test
+    public void testAllDistances3_Large() throws Exception {
+        INDArray initialX = Nd4j.create(5, 2000);
+        INDArray initialY = Nd4j.create(7, 2000);
+        for (int i = 0; i < initialX.rows(); i++) {
+            initialX.getRow(i).assign(i+1);
+        }
+
+        for (int i = 0; i < initialY.rows(); i++) {
+            initialY.getRow(i).assign(i+101);
+        }
+
+        INDArray result = Transforms.allEuclideanDistances(initialX, initialY, 1);
+
+        assertEquals(5 * 7, result.length());
+
+        for (int x = 0; x < initialX.rows(); x++) {
+
+            INDArray rowX = initialX.getRow(x).dup();
+
+            for (int y = 0; y < initialY.rows(); y++) {
+
+                double res = result.getDouble(x, y);
+                double exp = Transforms.euclideanDistance(rowX, initialY.getRow(y).dup());
+
+                assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
+            }
+        }
+    }
+
+
+    @Test
+    public void testAllDistances3_Large_Columns() throws Exception {
+        INDArray initialX = Nd4j.create(2000, 5);
+        INDArray initialY = Nd4j.create(2000, 7);
+        for (int i = 0; i < initialX.columns(); i++) {
+            initialX.getColumn(i).assign(i+1);
+        }
+
+        for (int i = 0; i < initialY.columns(); i++) {
+            initialY.getColumn(i).assign(i+101);
+        }
+
+        INDArray result = Transforms.allEuclideanDistances(initialX, initialY, 0);
+
+        assertEquals(5 * 7, result.length());
+
+        for (int x = 0; x < initialX.columns(); x++) {
+
+            INDArray colX = initialX.getColumn(x).dup();
+
+            for (int y = 0; y < initialY.columns(); y++) {
+
+                double res = result.getDouble(x, y);
+                double exp = Transforms.euclideanDistance(colX, initialY.getColumn(y).dup());
+
+                assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
+            }
+        }
+    }
+
+
+    @Test
+    public void testAllDistances3_Small_Columns() throws Exception {
+        INDArray initialX = Nd4j.create(200, 5);
+        INDArray initialY = Nd4j.create(200, 7);
+        for (int i = 0; i < initialX.columns(); i++) {
+            initialX.getColumn(i).assign(i+1);
+        }
+
+        for (int i = 0; i < initialY.columns(); i++) {
+            initialY.getColumn(i).assign(i+101);
+        }
+
+        INDArray result = Transforms.allEuclideanDistances(initialX, initialY, 0);
+
+        assertEquals(5 * 7, result.length());
+
+        for (int x = 0; x < initialX.columns(); x++) {
+            INDArray colX = initialX.getColumn(x).dup();
+
+            for (int y = 0; y < initialY.columns(); y++) {
+
+                double res = result.getDouble(x, y);
+                double exp = Transforms.euclideanDistance(colX, initialY.getColumn(y).dup());
+
+                assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
+            }
+        }
     }
 
 
