@@ -43,8 +43,8 @@ import java.util.Iterator;
  */
 public class IEvaluateFlatMapFunction<T extends IEvaluation> extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, T> {
 
-    public IEvaluateFlatMapFunction(boolean isCompGraph, Broadcast<String> json, Broadcast<INDArray> params,
-                    int evalBatchSize, T evaluation) {
+    public IEvaluateFlatMapFunction(boolean isCompGraph, Broadcast<String> json, Broadcast<INDArray> params, int evalBatchSize,
+                    T evaluation) {
         super(new IEvaluateFlatMapFunctionAdapter<>(isCompGraph, json, params, evalBatchSize, evaluation));
     }
 }
@@ -73,8 +73,8 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
      *                              this. Used to avoid doing too many at once (and hence memory issues)
      * @param evaluation Initial evaulation instance (i.e., empty Evaluation or RegressionEvaluation instance)
      */
-    public IEvaluateFlatMapFunctionAdapter(boolean isCompGraph, Broadcast<String> json, Broadcast<INDArray> params,
-                    int evalBatchSize, T evaluation) {
+    public IEvaluateFlatMapFunctionAdapter(boolean isCompGraph, Broadcast<String> json, Broadcast<INDArray> params, int evalBatchSize,
+                    T evaluation) {
         this.isCompGraph = isCompGraph;
         this.json = json;
         this.params = params;
@@ -91,12 +91,12 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
         MultiLayerNetwork network = null;
         ComputationGraph graph = null;
         INDArray val = params.value().unsafeDuplication();
-        if (isCompGraph) {
+        if(isCompGraph){
             graph = new ComputationGraph(ComputationGraphConfiguration.fromJson(json.getValue()));
             graph.init();
             if (val.length() != graph.numParams(false))
                 throw new IllegalStateException(
-                                "Network did not have same number of parameters as the broadcast set parameters");
+                        "Network did not have same number of parameters as the broadcast set parameters");
             graph.setParams(val);
 
             T eval = graph.doEvaluation(new IteratorDataSetIterator(dataSetIterator, evalBatchSize), evaluation)[0];
@@ -107,7 +107,7 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
             network.init();
             if (val.length() != network.numParams(false))
                 throw new IllegalStateException(
-                                "Network did not have same number of parameters as the broadcast set parameters");
+                        "Network did not have same number of parameters as the broadcast set parameters");
             network.setParameters(val);
 
             T eval = network.doEvaluation(new IteratorDataSetIterator(dataSetIterator, evalBatchSize), evaluation)[0];
