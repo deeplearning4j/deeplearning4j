@@ -1206,6 +1206,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return sum(Integer.MAX_VALUE).getDouble(0);
     }
 
+    /**
+     * Returns entropy value for this INDArray
+     * @return
+     */
+    @Override
+    public Number entropyNumber() {
+        return entropy(Integer.MAX_VALUE).getDouble(0);
+    }
+
+
     @Override
     public IComplexNumber sumComplex() {
         throw new UnsupportedOperationException();
@@ -3820,6 +3830,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.getExecutioner().exec(new Sum(this), dimension);
     }
 
+
+    /**
+     * Returns entropy along dimension
+     * @param dimension
+     * @return
+     */
+    @Override
+    public INDArray entropy(int... dimension) {
+        return Nd4j.getExecutioner().exec(new Entropy(this), dimension);
+    }
 
     @Override
     public INDArray sum(INDArray result, int... dimension) {

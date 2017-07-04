@@ -1723,6 +1723,18 @@ public interface INDArray extends Serializable {
     Number sumNumber();
 
     /**
+     * Returns entropy value for this INDArray
+     * @return
+     */
+    Number entropyNumber();
+
+    /**
+     * Returns entropy value for this INDArray along specified dimension(s)
+     * @return
+     */
+    INDArray entropy(int... dimension);
+
+    /**
      * Sum the entire array
      * @return
      */

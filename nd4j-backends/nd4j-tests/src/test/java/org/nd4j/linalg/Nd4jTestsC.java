@@ -67,6 +67,7 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.MathUtils;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -4449,6 +4450,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
             }
         }
+
+        MathUtils.entropy(new double[]{});
     }
 
 
@@ -4475,6 +4478,34 @@ public class Nd4jTestsC extends BaseNd4jTest {
                 assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
             }
         }
+    }
+
+    @Test
+    public void testEntropy1() throws Exception {
+        INDArray x = Nd4j.rand(1, 100);
+
+        double exp = MathUtils.entropy(x.data().asDouble());
+        double res = x.entropyNumber().doubleValue();
+
+        assertEquals(exp, res, 1e-5);
+    }
+
+    @Test
+    public void testEntropy2() throws Exception {
+        INDArray x = Nd4j.rand(10, 100);
+
+        INDArray res = x.entropy(1);
+
+        assertEquals(10, res.lengthLong());
+
+        for (int t = 0; t < x.rows(); t++) {
+            double exp = MathUtils.entropy(x.getRow(t).dup().data().asDouble());
+
+            assertEquals(exp, res.getDouble(t), 1e-5);
+        }
+
+
+
     }
 
     @Override
