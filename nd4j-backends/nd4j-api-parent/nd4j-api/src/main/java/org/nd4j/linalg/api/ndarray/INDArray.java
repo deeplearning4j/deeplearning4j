@@ -1729,10 +1729,34 @@ public interface INDArray extends Serializable {
     Number entropyNumber();
 
     /**
+     * Returns non-normalized Shannon entropy value for this INDArray
+     * @return
+     */
+    Number shannonEntropyNumber();
+
+    /**
+     * Returns log entropy value for this INDArray
+     * @return
+     */
+    Number logEntropyNumber();
+
+    /**
      * Returns entropy value for this INDArray along specified dimension(s)
      * @return
      */
     INDArray entropy(int... dimension);
+
+    /**
+     * Returns entropy value for this INDArray along specified dimension(s)
+     * @return
+     */
+    INDArray shannonEntropy(int... dimension);
+
+    /**
+     * Returns entropy value for this INDArray along specified dimension(s)
+     * @return
+     */
+    INDArray logEntropy(int... dimension);
 
     /**
      * Sum the entire array

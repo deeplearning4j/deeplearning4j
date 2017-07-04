@@ -1215,6 +1215,25 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return entropy(Integer.MAX_VALUE).getDouble(0);
     }
 
+    /**
+     * Returns non-normalized Shannon entropy value for this INDArray
+     * @return
+     */
+    @Override
+    public Number shannonEntropyNumber() {
+        return shannonEntropy(Integer.MAX_VALUE).getDouble(0);
+    }
+
+
+    /**
+     * Returns log entropy value for this INDArray
+     * @return
+     */
+    @Override
+    public Number logEntropyNumber() {
+        return logEntropy(Integer.MAX_VALUE).getDouble(0);
+    }
+
 
     @Override
     public IComplexNumber sumComplex() {
@@ -3839,6 +3858,26 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray entropy(int... dimension) {
         return Nd4j.getExecutioner().exec(new Entropy(this), dimension);
+    }
+
+    /**
+     * Returns non-normalized Shannon entropy along dimension
+     * @param dimension
+     * @return
+     */
+    @Override
+    public INDArray shannonEntropy(int... dimension) {
+        return Nd4j.getExecutioner().exec(new ShannonEntropy(this), dimension);
+    }
+
+    /**
+     * Returns log entropy along dimension
+     * @param dimension
+     * @return
+     */
+    @Override
+    public INDArray logEntropy(int... dimension) {
+        return Nd4j.getExecutioner().exec(new LogEntropy(this), dimension);
     }
 
     @Override

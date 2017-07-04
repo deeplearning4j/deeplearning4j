@@ -22,6 +22,7 @@ package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.math3.util.FastMath;
 import org.apache.commons.math3.util.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -4625,9 +4626,47 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
             assertEquals(exp, res.getDouble(t), 1e-5);
         }
+    }
 
 
+    @Test
+    public void testEntropy3() throws Exception {
+        INDArray x = Nd4j.rand(1, 100);
 
+        double exp = getShannonEntropy(x.data().asDouble());
+        double res = x.shannonEntropyNumber().doubleValue();
+
+        assertEquals(exp, res, 1e-5);
+    }
+
+    @Test
+    public void testEntropy4() throws Exception {
+        INDArray x = Nd4j.rand(1, 100);
+
+        double exp = getLogEntropy(x.data().asDouble());
+        double res = x.logEntropyNumber().doubleValue();
+
+        assertEquals(exp, res, 1e-5);
+    }
+
+
+    protected double getShannonEntropy(double[] array) {
+        double ret = 0;
+        for (double x: array) {
+            ret += FastMath.pow(x, 2) * FastMath.log(FastMath.pow(x, 2));
+        }
+
+        return -ret;
+    }
+
+
+    protected double getLogEntropy(double[] array) {
+        double ret = 0;
+        for (double x: array) {
+            ret += FastMath.log(FastMath.pow(x, 2));
+        }
+
+        return ret;
     }
 
     @Override
