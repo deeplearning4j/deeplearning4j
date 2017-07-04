@@ -23,7 +23,6 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@NoArgsConstructor
 public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
     public static final int DEFAULT_STATS_PRECISION = 4;
 
@@ -32,6 +31,11 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
     @JsonSerialize(using = ROCArraySerializer.class)
     private ROC[] underlying;
     private List<String> labels;
+
+    public ROCMultiClass() {
+        //Default to exact
+        this(0);
+    }
 
     /**
      * @param thresholdSteps Number of threshold steps to use for the ROC calculation. Set to 0 for exact ROC calculation

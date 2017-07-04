@@ -45,7 +45,6 @@ import java.util.Map;
  */
 @EqualsAndHashCode(callSuper = true,
                 exclude = {"auc", "auprc", "probAndLabel", "exactAllocBlockSize", "rocCurve", "prCurve"})
-@NoArgsConstructor
 @Data
 @ToString(exclude = {"probAndLabel", "exactAllocBlockSize", "rocCurve", "prCurve"})
 @JsonIgnoreProperties({"probAndLabel", "exactAllocBlockSize"})
@@ -69,6 +68,11 @@ public class ROC extends BaseEvaluation<ROC> {
     private int exampleCount = 0;
     private boolean rocRemoveRedundantPts;
     private int exactAllocBlockSize;
+
+    public ROC() {
+        //Default to exact
+        this(0);
+    }
 
     /**
      * @param thresholdSteps Number of threshold steps to use for the ROC calculation. If set to 0: use exact calculation

@@ -26,7 +26,6 @@ import java.util.List;
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
-@NoArgsConstructor
 public class ROCBinary extends BaseEvaluation<ROCBinary> {
     public static final int DEFAULT_STATS_PRECISION = 4;
 
@@ -36,6 +35,10 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
     private int thresholdSteps;
     private boolean rocRemoveRedundantPts;
     private List<String> labels;
+
+    public ROCBinary() {
+        this(0);
+    }
 
     /**
      * @param thresholdSteps Number of threshold steps to use for the ROC calculation. Set to 0 for exact ROC calculation
