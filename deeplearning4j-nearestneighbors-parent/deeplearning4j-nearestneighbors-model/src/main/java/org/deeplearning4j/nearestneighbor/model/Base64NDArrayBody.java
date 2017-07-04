@@ -17,4 +17,5 @@ import java.io.Serializable;
 public class Base64NDArrayBody implements Serializable {
     private String ndarray;
     private int k;
+    private boolean forceFillK;
 }

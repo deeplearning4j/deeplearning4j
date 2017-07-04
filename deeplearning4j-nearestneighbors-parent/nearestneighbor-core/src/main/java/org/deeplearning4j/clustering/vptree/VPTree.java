@@ -18,6 +18,9 @@
 
 package org.deeplearning4j.clustering.vptree;
 
+import lombok.Data;
+import lombok.Getter;
+import org.deeplearning4j.clustering.berkeley.Counter;
 import org.deeplearning4j.clustering.berkeley.CounterMap;
 import org.deeplearning4j.clustering.berkeley.PriorityQueue;
 import org.deeplearning4j.clustering.sptree.DataPoint;
@@ -30,12 +33,11 @@ import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
+import java.util.concurrent.*;
 
 /**
  * Vantage point tree implementation
@@ -48,10 +50,11 @@ public class VPTree {
     private double tau;
     private INDArray items;
     private Node root;
-    private CounterMap<DataPoint, DataPoint> distances;
     private String similarityFunction;
-    private boolean invert = true;
+    @Getter
+    private boolean invert = false;
     private ExecutorService executorService;
+
     /**
      *
      * @param points
@@ -71,7 +74,6 @@ public class VPTree {
         this.similarityFunction = similarityFunction;
         this.invert = invert;
         this.items = items;
-        distances = new CounterMap<>();
         root = buildFromPoints(0, this.items.rows());
     }
 
@@ -94,7 +96,6 @@ public class VPTree {
             this.items.putRow(i,items.get(i).getPoint());
         }
 
-        this.distances = distances;
         this.invert = invert;
         this.similarityFunction = similarityFunction;
         root = buildFromPoints(0, items.size());
@@ -115,7 +116,6 @@ public class VPTree {
 
         this.invert = invert;
         this.similarityFunction = similarityFunction;
-        distances = new CounterMap<>();
         root = buildFromPoints(0, items.size());
     }
 
@@ -198,7 +198,7 @@ public class VPTree {
         this.items = items;
     }
 
-    private void calcDistancesRelativeTo(INDArray basePoint,INDArray distancesArr) {
+    public void calcDistancesRelativeTo(INDArray basePoint,INDArray distancesArr) {
         switch (similarityFunction) {
             case "euclidean":
                 Nd4j.getExecutioner().exec(new EuclideanDistance(items,
@@ -268,6 +268,7 @@ public class VPTree {
             executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
         final Node ret = new Node(lower, 0);
+
         if (upper - lower > 1) {
             int randomPoint = MathUtils.randomNumberBetween(lower, upper - 1);
 
@@ -369,6 +370,7 @@ public class VPTree {
     }
 
 
+
     /**
      *
      * @param target
@@ -376,9 +378,14 @@ public class VPTree {
      * @param results
      * @param distances
      */
-    public void search(INDArray target, int k, List<DataPoint> results, List<Double> distances) {
+    public void search(INDArray target,
+                       int k,
+                       List<DataPoint> results,
+                       List<Double> distances) {
+        k = Math.min(k,items.rows());
+
         PriorityQueue<HeapItem> pq = new PriorityQueue<>();
-        tau = Double.MAX_VALUE;
+        tau =  Double.MAX_VALUE;
         search(root, target, k, pq);
 
         results.clear();
@@ -390,6 +397,7 @@ public class VPTree {
             distances.add(pq.peek().getDistance());
             pq.next();
         }
+
 
         if (invert) {
             Collections.reverse(results);
@@ -404,9 +412,14 @@ public class VPTree {
      * @param k
      * @param pq
      */
-    public void search(Node node, INDArray target, int k, PriorityQueue<HeapItem> pq) {
+    public void search(Node node,
+                       INDArray target,
+                       int k,
+                       PriorityQueue<HeapItem> pq) {
+
         if (node == null)
             return;
+
         INDArray get = items.getRow(node.getIndex());
         double distance = distance(get, target);
         if (distance < tau) {
@@ -443,14 +456,8 @@ public class VPTree {
 
     }
 
-    public CounterMap<DataPoint, DataPoint> getDistances() {
-        return distances;
-    }
 
-    public void setDistances(CounterMap<DataPoint, DataPoint> distances) {
-        this.distances = distances;
-    }
-
+    @Data
     public static class Node {
         private int index;
         private float threshold;
@@ -461,68 +468,6 @@ public class VPTree {
             this.threshold = threshold;
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o)
-                return true;
-            if (o == null || getClass() != o.getClass())
-                return false;
-
-            Node node = (Node) o;
-
-            if (index != node.index)
-                return false;
-            if (Double.compare(node.threshold, threshold) != 0)
-                return false;
-            if (left != null ? !left.equals(node.left) : node.left != null)
-                return false;
-            return !(right != null ? !right.equals(node.right) : node.right != null);
-
-        }
-
-        @Override
-        public int hashCode() {
-            int result;
-            long temp;
-            result = index;
-            temp = Double.doubleToLongBits(threshold);
-            result = 31 * result + (int) (temp ^ (temp >>> 32));
-            result = 31 * result + (left != null ? left.hashCode() : 0);
-            result = 31 * result + (right != null ? right.hashCode() : 0);
-            return result;
-        }
-
-        public int getIndex() {
-            return index;
-        }
-
-        public void setIndex(int index) {
-            this.index = index;
-        }
-
-        public float getThreshold() {
-            return threshold;
-        }
-
-        public void setThreshold(float threshold) {
-            this.threshold = threshold;
-        }
-
-        public Node getLeft() {
-            return left;
-        }
-
-        public void setLeft(Node left) {
-            this.left = left;
-        }
-
-        public Node getRight() {
-            return right;
-        }
-
-        public void setRight(Node right) {
-            this.right = right;
-        }
     }
 
 }
