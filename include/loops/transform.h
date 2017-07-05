@@ -1150,6 +1150,7 @@ __device__ void concatKernelVStackGeneric(int dimension,
 
      if (threadIdx.x == 0) {
         inputLength = shape::length(inputShapes[0]);
+        inputEWS = shape::elementWiseStride(inputShapes[0]);
         resultEWS = shape::elementWiseStride(resultShapeInfo);
      }
      __syncthreads();
@@ -1159,15 +1160,9 @@ __device__ void concatKernelVStackGeneric(int dimension,
         int resultOffset = r * inputLength * resultEWS;
         T *inputData = (T *) input[r];
 
-        if (threadIdx.x == 0) {
-         inputEWS = shape::elementWiseStride(inputShapes[r]);
-        }
-        __syncthreads();
-
         for(int i = threadIdx.x; i < inputLength; i += blockDim.x) {
             result[resultOffset + i * resultEWS] = inputData[i * inputEWS];
         }
-        __syncthreads();
      }
 }
 

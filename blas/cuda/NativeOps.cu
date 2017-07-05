@@ -4953,13 +4953,26 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 
 	if (!isScalar && dimension == 0 && shape::rank(hostXShapeInfo) == 2 && shape::order(hostXShapeInfo) == 'c' ) {
 		isVstack = true;
-		for (int i = 0; i < numArrays; i++) {
-			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0 || shape::order(hostShapePointers[i]) != 'c') {
+        for (int i = 0; i < numArrays; i++) {
+			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0 ||
+				shape::order(hostShapePointers[i]) != 'c') {
 				isVstack = false;
 				break;
 			}
 		}
 	}
+
+    // let's try to fit N-dimensional vstack
+    if (!isVstack && !isScalar && dimension == 0 && shape::order(hostXShapeInfo) == 'c') {
+		Nd4jIndex length0 = shape::length(hostShapePointers[0]);
+        isVstack = true;
+        for (int i = 0; i < numArrays; i++) {
+            if (shape::elementWiseStride(hostShapePointers[i]) <= 0 || shape::order(hostShapePointers[i]) != 'c' || length0 != shape::length(hostShapePointers[i])) {
+                isVstack = false;
+                break;
+            }
+        }
+    }
 
 	if (!isScalar && !isVstack && dimension == 1 && shape::isVector(hostXShapeInfo)) {
 		isHstack = true;
@@ -4982,7 +4995,7 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 			printf("Going VStack concat\n");
 
 		smem = funcAttributes[40].sharedSizeBytes;
-		concatKernelVStackFloat<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+		concatKernelVStackFloat<<< 128, 512, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
 	} else if (isHstack) {
 		if (debug && verbose)
 			printf("Going HStack concat\n");
