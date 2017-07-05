@@ -184,7 +184,7 @@ public class LoneTest extends BaseNd4jTest {
 
     @Test
     public void testConcat3D_Vstack_C() throws Exception {
-        int[] shape = new int[]{1,100000,150};
+        int[] shape = new int[]{1,1000,150};
         //INDArray cOrder =  Nd4j.rand(shape,123);
 
 

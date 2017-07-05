@@ -8,8 +8,10 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -28,10 +30,9 @@ public class Nd4jTestsF extends BaseNd4jTest {
         this.initialType = Nd4j.dataType();
     }
 
-
     @Test
     public void testConcat3D_Vstack_F() throws Exception {
-        int[] shape = new int[]{1,10000,150};
+        int[] shape = new int[]{1,1000,150};
         //INDArray cOrder =  Nd4j.rand(shape,123);
 
 
@@ -56,7 +57,6 @@ public class Nd4jTestsF extends BaseNd4jTest {
             assertEquals((double) e, tad.meanNumber().doubleValue(), 1e-5);
         }
     }
-
 
     @Override
     public char ordering() {
