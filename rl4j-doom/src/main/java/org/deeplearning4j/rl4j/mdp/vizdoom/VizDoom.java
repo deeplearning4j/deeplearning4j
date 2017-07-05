@@ -153,7 +153,6 @@ abstract public class VizDoom implements MDP<VizDoom.GameScreen, Integer, Discre
 
         double r = game.makeAction(actions.get(action)) * scaleFactor;
         log.info(game.getEpisodeTime() + " " + r + " " + action + " ");
-        System.out.println(game.getState() + " " + game.isEpisodeFinished());
         return new StepReply(new GameScreen(game.isEpisodeFinished()
                 ? new byte[game.getScreenSize()]
                 : game.getState().screenBuffer), r, game.isEpisodeFinished(), null);

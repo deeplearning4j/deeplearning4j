@@ -10,6 +10,7 @@
         <module>rl4j-core</module>
         <module>rl4j-gym</module>
         <module>rl4j-doom</module>
+        <module>rl4j-ale</module>
     </modules>
     <packaging>pom</packaging>
 
@@ -166,6 +167,7 @@
                   <directory>rl4j-core</directory>
                   <directory>rl4j-gym</directory>
                   <directory>rl4j-doom</directory>
+                  <directory>rl4j-ale</directory>
                 </directories>
               </configuration>
             </plugin>
