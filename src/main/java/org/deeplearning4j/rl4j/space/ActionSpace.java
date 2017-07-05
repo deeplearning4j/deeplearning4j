@@ -14,10 +14,13 @@ public interface ActionSpace<A> {
      */
     A randomAction();
 
+    void setSeed(int seed);
+
     Object encode(A action);
 
     int getSize();
 
     A noOp();
+
 
 }

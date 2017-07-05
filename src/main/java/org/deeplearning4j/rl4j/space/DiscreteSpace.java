@@ -17,7 +17,7 @@ public class DiscreteSpace implements ActionSpace<Integer> {
     //size of the space also defined as the number of different actions
     @Getter
     final protected int size;
-    final protected Random rd;
+    protected Random rd;
 
     public DiscreteSpace(int size) {
         this.size = size;
@@ -26,6 +26,10 @@ public class DiscreteSpace implements ActionSpace<Integer> {
 
     public Integer randomAction() {
         return rd.nextInt(size);
+    }
+
+    public void setSeed(int seed) {
+        rd = new Random(seed);
     }
 
     public Object encode(Integer a) {
