@@ -19,7 +19,8 @@ public class EvalJsonTest {
         boolean print = false;
 
         IEvaluation[] arr = new IEvaluation[] {new Evaluation(), new EvaluationBinary(), new ROCBinary(10),
-                        new ROCMultiClass(10), new RegressionEvaluation(3), new RegressionEvaluation()};
+                        new ROCMultiClass(10), new RegressionEvaluation(3), new RegressionEvaluation(),
+                        new EvaluationCalibration()};
 
         for (IEvaluation e : arr) {
             String json = e.toJson();
@@ -44,6 +45,7 @@ public class EvalJsonTest {
         ROCBinary roc2 = new ROCBinary(2);
         ROCMultiClass roc3 = new ROCMultiClass(2);
         RegressionEvaluation regressionEvaluation = new RegressionEvaluation();
+        EvaluationCalibration ec = new EvaluationCalibration();
 
 
         IEvaluation[] arr = new IEvaluation[] {evaluation, evaluationBinary, roc, roc2, roc3, regressionEvaluation};
@@ -56,6 +58,7 @@ public class EvalJsonTest {
         evalProb.diviColumnVector(evalProb.sum(1));
         evaluation.eval(evalLabel, evalProb);
         roc3.eval(evalLabel, evalProb);
+        ec.eval(evalLabel, evalProb);
 
         evalLabel = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(10, 3), 0.5));
         evalProb = Nd4j.rand(10, 3);
@@ -67,6 +70,7 @@ public class EvalJsonTest {
         roc.eval(evalLabel, evalProb);
 
         regressionEvaluation.eval(Nd4j.rand(10, 3), Nd4j.rand(10, 3));
+
 
 
         for (IEvaluation e : arr) {
