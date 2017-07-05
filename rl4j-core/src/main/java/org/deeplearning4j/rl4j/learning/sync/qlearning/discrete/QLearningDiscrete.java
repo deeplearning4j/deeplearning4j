@@ -18,6 +18,8 @@ import org.deeplearning4j.rl4j.util.Constants;
 import org.deeplearning4j.rl4j.util.DataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
 
@@ -185,8 +187,24 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             Transition<Integer> trans = transitions.get(i);
             areTerminal[i] = trans.isTerminal();
             actions[i] = trans.getAction();
-            obs.putRow(i, Transition.concat(trans.getObservation()));
-            nextObs.putRow(i, Transition.concat(Transition.append(trans.getObservation(), trans.getNextObservation())));
+
+            INDArray[] obsArray = trans.getObservation();
+            if (obs.rank() == 2) {
+                obs.putRow(i, obsArray[0]);
+            } else {
+                for (int j = 0; j < obsArray.length; j++) {
+                    obs.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.point(j)}, obsArray[j]);
+                }
+            }
+
+            INDArray[] nextObsArray = Transition.append(trans.getObservation(), trans.getNextObservation());
+            if (nextObs.rank() == 2) {
+                nextObs.putRow(i, nextObsArray[0]);
+            } else {
+                for (int j = 0; j < nextObsArray.length; j++) {
+                    nextObs.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.point(j)}, nextObsArray[j]);
+                }
+            }
         }
 
         INDArray dqnOutputAr = dqnOutput(obs);
