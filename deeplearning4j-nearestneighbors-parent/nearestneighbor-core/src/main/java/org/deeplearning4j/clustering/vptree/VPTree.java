@@ -29,6 +29,7 @@ import org.deeplearning4j.clustering.sptree.HeapItem;
 import org.deeplearning4j.clustering.util.MathUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.Dot;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
@@ -208,6 +209,10 @@ public class VPTree {
 
             case "cosinesimilarity":
                 Nd4j.getExecutioner().exec(new CosineSimilarity(items,
+                        basePoint,distancesArr,items.length()),1);
+                break;
+            case "cosinedistance":
+                Nd4j.getExecutioner().exec(new CosineDistance(items,
                         basePoint,distancesArr,items.length()),1);
                 break;
             case "manhattan":
