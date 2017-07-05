@@ -1788,6 +1788,60 @@ namespace simdOps {
 	};
 
 
+    template<typename T>
+    class CosineDistance {
+    public:
+        static const int extraParamsLen = 2;
+
+        op_def static T *generateExtraParams() {
+            //T *extraParams = new T[2];
+            return nullptr;
+        }
+
+        op_def static void finalizeExtraParams(T *extraParams) {
+            //delete[] extraParams;
+        }
+
+        op_def static T startingValue(T *input) {
+            return (T) 0.0f;
+        }
+
+        op_def static  T postProcess(T reduction, Nd4jIndex n, T *extraParams) {
+            return ((T) 1.0f) - (reduction / (nd4j::math::nd4j_sqrt<T>(extraParams[0]) * nd4j::math::nd4j_sqrt<T>(extraParams[1])));
+        }
+
+        op_def static T op(T d1, T d2, T *extraParams) {
+            extraParams[0] += nd4j::math::nd4j_abs<T>(d1) * nd4j::math::nd4j_abs<T>(d1);
+            extraParams[1] += nd4j::math::nd4j_abs<T>(d2) * nd4j::math::nd4j_abs<T>(d2);
+            return (d1 * d2);
+        }
+
+        op_def static void aggregateExtraParams(T *extraParamsTotal, T *extraParamsLocal) {
+            extraParamsTotal[0] += extraParamsLocal[0];
+            extraParamsTotal[1] += extraParamsLocal[1];
+        }
+
+#ifdef __CUDACC__
+        __device__
+		static inline T opAtomic(T d1, T d2, T *extraParams) {
+			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[0],(T) nd4j::math::nd4j_abs<T>(d1) * nd4j::math::nd4j_abs<T>(d1));
+			nd4j::math::atomics::nd4j_atomicAdd(&extraParams[1],(T) nd4j::math::nd4j_abs<T>(d2) * nd4j::math::nd4j_abs<T>(d2));
+
+			return (d1 * d2);
+		}
+#endif
+
+        op_def static  T update(T old, T opOutput, T *extraParams) {
+            return old + opOutput;
+        }
+
+
+        op_def static T merge(T old, T opOutput, T *extraParams) {
+            return update(old, opOutput, extraParams);
+        }
+    };
+
+
 	/**
 	* Dot product between 2 arrays
 	*/
