@@ -33,7 +33,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
 
     public QLearning(QLConfiguration conf) {
         super(conf);
-        expReplay = new ExpReplay<>(conf.getExpRepMaxSize(), conf.getBatchSize());
+        expReplay = new ExpReplay<>(conf.getExpRepMaxSize(), conf.getBatchSize(), conf.getSeed());
     }
 
     protected abstract EpsGreedy<O, A, AS> getEgPolicy();

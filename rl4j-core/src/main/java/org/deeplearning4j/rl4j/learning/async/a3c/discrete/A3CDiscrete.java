@@ -50,6 +50,7 @@ public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, 
         this.dataManager = dataManager;
         policy = new ACPolicy<>(iActorCritic, getRandom());
         asyncGlobal = new AsyncGlobal<>(iActorCritic, conf);
+        mdp.getActionSpace().setSeed(conf.getSeed());
     }
 
 

@@ -41,6 +41,7 @@ public abstract class AsyncNStepQLearningDiscrete<O extends Encodable>
         this.dataManager = dataManager;
         this.configuration = conf;
         this.asyncGlobal = new AsyncGlobal<>(dqn, conf);
+        mdp.getActionSpace().setSeed(conf.getSeed());
     }
 
 

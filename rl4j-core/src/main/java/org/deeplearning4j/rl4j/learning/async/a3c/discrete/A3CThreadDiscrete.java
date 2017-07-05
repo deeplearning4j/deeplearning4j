@@ -47,6 +47,7 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
         this.threadNumber = threadNumber;
         this.mdp = mdp;
         this.dataManager = dataManager;
+        mdp.getActionSpace().setSeed(conf.getSeed());
     }
 
     @Override

@@ -46,6 +46,7 @@ public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends Asyn
         this.threadNumber = threadNumber;
         this.mdp = mdp;
         this.dataManager = dataManager;
+        mdp.getActionSpace().setSeed(conf.getSeed());
     }
 
     public Policy<O, Integer> getPolicy(IDQN nn) {

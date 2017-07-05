@@ -17,19 +17,20 @@ import java.util.*;
 public class ExpReplay<A> implements IExpReplay<A> {
 
     final private int batchSize;
+    final private Random random;
 
     //Implementing this as a circular buffer queue
     private CircularFifoQueue<Transition<A>> storage;
 
-    public ExpReplay(int maxSize, int batchSize) {
+    public ExpReplay(int maxSize, int batchSize, int seed) {
         this.batchSize = batchSize;
+        this.random = new Random(seed);
         storage = new CircularFifoQueue<>(maxSize);
     }
 
 
     public ArrayList<Transition<A>> getBatch(int size) {
 
-        Random random = new Random();
         Set<Integer> intSet = new HashSet<>();
         int storageSize = storage.size();
         while (intSet.size() < size) {
