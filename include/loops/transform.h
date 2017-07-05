@@ -834,16 +834,7 @@ __device__ void concatKernelGeneric(int dimension,
 									int *resultShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers, int *zTadShape, int *zOffsets) {
 	int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
-	__shared__ UnifiedSharedMemory *manager;
-
 	int zRank = shape::rank(resultShapeInfo);
-
-	if (threadIdx.x == 0) {
-		extern __shared__ unsigned char shmem[];
-		manager = new(shmem) UnifiedSharedMemory((int *) shmem);
-		manager->init(sizeof(UnifiedSharedMemory), 0, 0, sizeof(shape::TAD), zRank + 2);
-	}
-	__syncthreads();
 
 	T **dataT = (T **) data;
 	int **shapeInfoPointers = (int **) inputShapeInfos;
@@ -852,7 +843,7 @@ __device__ void concatKernelGeneric(int dimension,
 
 
     //__shared__ int tDim[1];
-    __shared__ int baseIdx;
+        __shared__ int baseIdx;
 
 		__shared__ int yLength;
 		__shared__ char yOrder;
@@ -903,7 +894,7 @@ __device__ void concatKernelGeneric(int dimension,
 
 
 		// TODO: to be pulled into separate kernel. matrix concatenation
-		for (int r = blockIdx.x; r < numArrays; r += gridDim.x) {
+		for (int r = 0; r < numArrays; r ++) {
 
 			int *currentShape = shapeInfoPointers[r];
 			T *currentData = dataT[r];
@@ -916,90 +907,117 @@ __device__ void concatKernelGeneric(int dimension,
 				yOrder = shape::order(currentTad);
 				yEWS = shape::elementWiseStride(currentTad);
                 numTads = shape::length(currentShape) / yLength;
-			}
-			__syncthreads();
 
-
-			if (threadIdx.x == 0) {
-				arrOffset = 0;
+                arrOffset = 0;
 				for (int f = 0; f < r; f++) {
 					arrOffset +=  shape::length(tadShapes[f]);
 				}
+
 			}
 			__syncthreads();
 
-			for (int j = 0; j < numTads; j++) {
-				int inputOffset = currentOffsets[j];
-				int resultOffset = zOffsets[j];
+            if (yLength < 32) {
+                // edge case, each thread will handle it's own tad then
+                for (int j = tid; j < numTads; j += blockDim.x * gridDim.x) {
+                    int inputOffset = currentOffsets[j];
+				    int resultOffset = zOffsets[j];
 
-				T *dataTAD = currentData + inputOffset;
-				T *resultTAD = result + resultOffset;
+				    T *dataTAD = currentData + inputOffset;
+				    T *resultTAD = result + resultOffset;
 
-                int sub[MAX_RANK];
+                    int sub[MAX_RANK];
 
-				shape::ind2subC(shape::rank(zTadShape),shape::shapeOf(zTadShape),arrOffset, sub);
-				Nd4jIndex baseOffset = shape::getOffset(0,shape::shapeOf(zTadShape),shape::stride(zTadShape), sub, shape::rank(zTadShape));
+				    shape::ind2subC(shape::rank(zTadShape),shape::shapeOf(zTadShape),arrOffset, sub);
+				    Nd4jIndex baseOffset = shape::getOffset(0,shape::shapeOf(zTadShape),shape::stride(zTadShape), sub, shape::rank(zTadShape));
 
-				resultTAD += baseOffset;
+				    resultTAD += baseOffset;
 
-				if (zOrder == yOrder && yEWS > 0  && tadEWS > 0) {
-					for (int i = threadIdx.x; i < yLength; i += blockDim.x) {
-						resultTAD[i * tadEWS] = dataTAD[i * yEWS];
-					}
-				} else {
-					if(tadEWS > 0 && shape::order(resultShapeInfo) == shape::order(currentTad)) {
-						if (threadIdx.x == 0) {
-							baseIdx = 0;
-							for (int f = 0; f < r; f++) {
-								baseIdx += shape::length(shapeInfoPointers[f]);
-							}
-						}
-						__syncthreads();
+				    int yIdx[MAX_RANK];
+					int yRank = shape::rank(currentTad);
+					int tadRank = shape::rank(zTadShape);
 
-						if (numTads == 1) {
-							for(int k = threadIdx.x; k < yLength; k+= blockDim.x) {
-								resultTAD[baseIdx + k * tadEWS] = dataTAD[k];
-							}
-						} else {
-							int yIdx[MAX_RANK];
-							int yRank = shape::rank(currentTad);
+					shape::ind2subC(yRank, shape::shapeOf(currentTad), 0,yIdx);
 
-							for (int i = threadIdx.x; i < yLength; i+= blockDim.x) {
-								shape::ind2subC(yRank, shape::shapeOf(currentTad), i, yIdx);
-								int yOffset = shape::getOffset(0, shape::shapeOf(currentTad), shape::stride(currentTad), yIdx, yRank);
+					int yOffset = shape::getOffset(0, shape::shapeOf(currentTad), shape::stride(currentTad), yIdx, yRank);
+					resultOffset = shape::getOffset(0, shape::shapeOf(zTadShape), shape::stride(zTadShape), yIdx, tadRank);
 
-								resultTAD[baseIdx + i * tadEWS] =  dataTAD[yOffset];
-							}
-						}
-						__syncthreads();
-					} else {
+					resultTAD[resultOffset] =  dataTAD[yOffset];
+                }
+            } else {
+			    for (int j = blockIdx.x; j < numTads; j += gridDim.x) {
+				    int inputOffset = currentOffsets[j];
+				    int resultOffset = zOffsets[j];
 
-						int yIdx[MAX_RANK];
-						int yRank = shape::rank(currentTad);
-						int tadRank = shape::rank(zTadShape);
+				    T *dataTAD = currentData + inputOffset;
+				    T *resultTAD = result + resultOffset;
 
-						for (int i = threadIdx.x; i < yLength; i+= blockDim.x) {
-							shape::ind2subC(yRank, shape::shapeOf(currentTad), i,yIdx);
+                    int sub[MAX_RANK];
 
-							int yOffset = shape::getOffset(0, shape::shapeOf(currentTad), shape::stride(currentTad), yIdx, yRank);
-							int resultOffset = shape::getOffset(0, shape::shapeOf(zTadShape), shape::stride(zTadShape), yIdx, tadRank);
+				    shape::ind2subC(shape::rank(zTadShape),shape::shapeOf(zTadShape),arrOffset, sub);
+				    Nd4jIndex baseOffset = shape::getOffset(0,shape::shapeOf(zTadShape),shape::stride(zTadShape), sub, shape::rank(zTadShape));
 
-							resultTAD[resultOffset] =  dataTAD[yOffset];
-						}
-					}
-				}
-				__syncthreads();
+				    resultTAD += baseOffset;
+
+				    if (zOrder == yOrder && yEWS > 0  && tadEWS > 0) {
+				        //if (threadIdx.x == 0)
+				        //    printf("Branch A\n");
+
+					    for (int i = threadIdx.x; i < yLength; i += blockDim.x) {
+						    resultTAD[i * tadEWS] = dataTAD[i * yEWS];
+					    }
+				    } else {
+					    if(tadEWS > 0 && shape::order(resultShapeInfo) == shape::order(currentTad)) {
+					        //if (threadIdx.x == 0)
+				              //  printf("Branch B\n");
+
+						    if (threadIdx.x == 0) {
+							    baseIdx = 0;
+							    for (int f = 0; f < r; f++) {
+							    	baseIdx += shape::length(shapeInfoPointers[f]);
+						    	}
+					    		//printf("R: %i; baseIdx: %i;\n", baseIdx);
+				    		}
+			    			__syncthreads();
+
+		    				if (numTads == 1) {
+	    						for(int k = threadIdx.x; k < yLength; k+= blockDim.x) {
+    								resultTAD[baseIdx + k * tadEWS] = dataTAD[k];
+							    }
+						    } else {
+							    int yIdx[MAX_RANK];
+							    int yRank = shape::rank(currentTad);
+
+							    for (int i = threadIdx.x; i < yLength; i+= blockDim.x) {
+								    shape::ind2subC(yRank, shape::shapeOf(currentTad), i, yIdx);
+								    int yOffset = shape::getOffset(0, shape::shapeOf(currentTad), shape::stride(currentTad), yIdx, yRank);
+
+								    resultTAD[baseIdx + i * tadEWS] =  dataTAD[yOffset];
+							    }
+						    }
+						    __syncthreads();
+					    } else {
+                            //if (threadIdx.x == 0)
+				            //    printf("Branch C; yLength: %i;\n", yLength);
+
+						    int yIdx[MAX_RANK];
+						    int yRank = shape::rank(currentTad);
+						    int tadRank = shape::rank(zTadShape);
+
+						    for (int i = threadIdx.x; i < yLength; i+= blockDim.x) {
+							    shape::ind2subC(yRank, shape::shapeOf(currentTad), i,yIdx);
+
+							    int yOffset = shape::getOffset(0, shape::shapeOf(currentTad), shape::stride(currentTad), yIdx, yRank);
+							    int resultOffset = shape::getOffset(0, shape::shapeOf(zTadShape), shape::stride(zTadShape), yIdx, tadRank);
+
+							    resultTAD[resultOffset] =  dataTAD[yOffset];
+						    }
+					    }
+				    }
+				    __syncthreads();
+			    }
 			}
 			__syncthreads();
-
-//			if (threadIdx.x == 0)
-//				delete inputTAD;
 		}
-
-		//__syncthreads();
-
-		//if (threadIdx.x == 0 && tad != NULL)
-		//	delete tad;
 }
 
 template <typename T>

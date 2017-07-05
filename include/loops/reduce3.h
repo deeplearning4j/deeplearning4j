@@ -402,7 +402,7 @@ template<typename OpType>
                                 int ri = (r * yTads) + g;
 
                                 sPartials[threadIdx.x] = startingVal;
-                                if (threadIdx.x < OpType::extraParamsLen) {
+                                if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen) {
 					                extraZ[threadIdx.x] = (T) startingVal;
 				                }
 				                __syncthreads();
@@ -556,7 +556,7 @@ template<typename OpType>
 					for(int i = blockIdx.x; i < resultLength; i+= gridDim.x) {
 					    int xOffsetForTad = tadOffsets[i];
 
-					    if (threadIdx.x < OpType::extraParamsLen) {
+					    if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen) {
 					            extraZ[threadIdx.x] = (T) startingVal;
 				        }
 				        __syncthreads();
@@ -587,7 +587,7 @@ template<typename OpType>
 							int xOffsetForTad = tadOffsets[i];
 							int yOffsetForTad = yTadOffsets[i];
 
-							if (threadIdx.x < OpType::extraParamsLen) {
+							if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen) {
 					            extraZ[threadIdx.x] = (T) startingVal;
 				            }
 				            __syncthreads();
@@ -659,7 +659,7 @@ template<typename OpType>
 							int xOffsetForTad = tadOffsets[i];
 							int yOffsetForTad = yTadOffsets[i];
 
-							if (threadIdx.x < OpType::extraParamsLen) {
+							if (OpType::extraParamsLen > 0 && threadIdx.x < OpType::extraParamsLen) {
 					            extraZ[threadIdx.x] = (T) startingVal;
 				            }
 				            __syncthreads();
