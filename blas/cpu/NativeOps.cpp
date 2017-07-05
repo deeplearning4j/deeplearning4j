@@ -1153,7 +1153,10 @@ void NativeOps::execReduce3AllHalf(Nd4jPointer *extraPointers,
                         int *yTadShapeInfo,
                         int *yOffsets) {
 
+#ifndef __ANDROID__
+    // TODO: make this work with android-x86 as well
     NativeOpExcutioner<float16>::execReduce3All(opNum, x, xInfo, extraParamsVals, y, yInfo, result, resultShapeInfoBuffer, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
+#endif
 }
 
 
