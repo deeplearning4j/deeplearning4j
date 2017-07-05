@@ -252,6 +252,11 @@ public class VPTree {
                         .getFinalResult().floatValue();
                 return invert ? -ret2 : ret2;
 
+            case "cosinedistance":
+                float ret5 = Nd4j.getExecutioner().execAndReturn(new CosineDistance(arr1,arr2))
+                        .getFinalResult().floatValue();
+                return invert ? -ret5 : ret5;
+
             case "manhattan":
                 float ret3 = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(arr1,arr2))
                         .getFinalResult().floatValue();
