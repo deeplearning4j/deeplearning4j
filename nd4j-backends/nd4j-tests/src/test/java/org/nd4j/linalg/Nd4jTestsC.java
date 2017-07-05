@@ -45,6 +45,7 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.accum.Norm1;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.api.ops.impl.accum.Sum;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
@@ -99,7 +100,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Before
     public void before() throws Exception {
         super.before();
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
         Nd4j.getRandom().setSeed(123);
 
     }
@@ -107,7 +108,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @After
     public void after() throws Exception {
         super.after();
-        DataTypeUtil.setDTypeForContext(initialType);
+        Nd4j.setDataType(initialType);
     }
 
 
@@ -4289,6 +4290,27 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testTadReduce3_0() throws Exception {
+        INDArray haystack = Nd4j.create(new double[]{-0.84443557262, -0.06822254508, 0.74266910552, 0.61765557527, -0.77555125951, -0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673, 0.62955373525, -0.31357592344, 1.03362500667, -0.59279078245, 1.1914824247}).reshape(3, 5);
+        INDArray needle = Nd4j.create(new double[]{-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673});
+
+        INDArray reduced = Nd4j.getExecutioner().exec(new CosineDistance(haystack, needle), 1);
+        log.info("Reduced: {}", reduced);
+
+
+        INDArray exp = Nd4j.create(new double[]{0.577452, 0.0, 1.80182});
+        assertEquals(exp, reduced);
+
+        for (int i = 0; i < haystack.rows(); i++) {
+            double res = Nd4j.getExecutioner().execAndReturn(new CosineDistance(haystack.getRow(i).dup(), needle)).getFinalResult().doubleValue();
+            assertEquals("Failed at " + i, reduced.getDouble(i), res, 0.001);
+        }
+        //cosinedistance([-0.84443557262, -0.06822254508, 0.74266910552, 0.61765557527, -0.77555125951], [-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673)
+        //cosinedistance([.62955373525, -0.31357592344, 1.03362500667, -0.59279078245, 1.1914824247], [-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673)
+
+    }
+
+    @Test
     public void testTadReduce3_1() throws Exception {
         INDArray initial = Nd4j.create(5, 10);
         for (int i = 0; i < initial.rows(); i++) {
@@ -4334,8 +4356,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
         log.warn("Reduced: {}", reduced);
 
         for (int i = 0; i < initial.rows(); i++) {
-            double res = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(initial.getRow(i).dup(), needle)).getFinalResult().doubleValue();
+            INDArray x = initial.getRow(i).dup();
+            double res = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(x, needle)).getFinalResult().doubleValue();
             assertEquals("Failed at " + i, reduced.getDouble(i), res, 0.001);
+
+            log.info("Euclidean: {} vs {} is {}", x, needle, res);
         }
     }
 
