@@ -20,6 +20,7 @@ package org.deeplearning4j.clustering.vptree;
 
 import lombok.Data;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.clustering.berkeley.Counter;
 import org.deeplearning4j.clustering.berkeley.CounterMap;
 import org.deeplearning4j.clustering.berkeley.PriorityQueue;
@@ -202,7 +203,7 @@ public class VPTree {
         switch (similarityFunction) {
             case "euclidean":
                 Nd4j.getExecutioner().exec(new EuclideanDistance(items,
-                        basePoint,items.length()),1);
+                        basePoint,distancesArr,items.length()),1);
                 break;
 
             case "cosinesimilarity":
@@ -221,12 +222,12 @@ public class VPTree {
                 Nd4j.getExecutioner().exec(new EuclideanDistance(items,
                         basePoint,distancesArr,items.length()),1);
                 break;
-
         }
+
+
 
         if(invert)
             distancesArr.negi();
-
     }
 
 
