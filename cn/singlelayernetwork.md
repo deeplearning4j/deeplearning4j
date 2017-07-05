@@ -1,40 +1,40 @@
 ---
-title: Single-layer neural network
+title: 单层神经网络
 layout: cn-default
 ---
 
-# Single-layer neural network
+# 单层神经网络
 
-A single-layer neural network in deep learning is a net composed of an input layer, which is  visible layer, and a hidden output layer. 
+深度学习中的单层神经网络是一种由一个可见的输入层和一个隐藏的输出层组成的网络。 
 
-The single-layer network's goal, or [objective function](./glossary.html#objectivefunction), is to learn features by minimizing [reconstruction entropy](./glossary.html#reconstructionentropy).
+单层网络的目的（亦即[目标函数](./glossary.html#objectivefunction)）是通过最小化[重构熵](./glossary.html#reconstructionentropy)来学习特征。
 
-This allows it to autolearn features of the input, which leads to finding good correlations and higher accuracy in identifying discriminatory features. From there, a multilayer network leverages this to accurately classify the data. This is the pretraining step.
+这让网络能自动学习输入的特征，进而能更好地找出关联，更加准确地识别判别性特征。在此基础之上，多层网络可以准确地对数据进行分类。单层网络的学习是预定型步骤。
 
-Each single-layer network has the following attributes:
+每个单层网络都具备下列属性：
 
-* Hidden bias: The bias for the output
-* Visible Bias: The bias for the input
-* Weight Matrix: The weights for the machine 
+* 隐藏偏差：输出的偏差
+* 可见偏差：输入的偏差
+* 权重矩阵：网络的权重 
 
-### Training a single-layer network
+### 单层网络的定型
 
-Train a network by joining the input vector to the input layer. Distort the input with some Gaussian noise. This noise function will vary depending on the network. Then minimize reconstruction entropy through pretraining until the network learns the best features for reconstructing the input data.
+要定型网络，首先将输入向量导入输入层。再为输入加入一些高斯噪声。噪声函数的类型取决于神经网络的具体情况。然后通过预定型使重构熵最小化，直至网络学会最适合用于重构输入数据的特征。
 
-### Learning rate
+### 学习速率
 
-A typical learning-rate value is between 0.001 and 0.1. The learning rate, or step rate, is the rate at which a function steps within a search space. Smaller learning rates mean higher training times, but may lead to more precise results.
+学习速率一般在0.001到0.1之间。学习速率又称步幅，是函数在搜索空间中移动的速率。学习速率越低，定型时间越长，但有可能带来更精确的结果。
 
-### Momentum
+### 动量
 
-Momentum is an extra factor in determining how fast an optimization algorithm converges.
+动量是另一项决定优化算法收敛速度的因素。
 
-### L2 regularization constant
+### L2正则化常数
 
-L2 is the lambda discussed in the equation [here](http://ufldl.stanford.edu/wiki/index.php/Backpropagation_Algorithm).
+L2是[这一等式](http://ufldl.stanford.edu/wiki/index.php/Backpropagation_Algorithm)中的λ。
 
-Here are the different kinds of single-layer networks:
+单层网络包括以下类型：
 
-* [Restricted Boltzmann Machines](./restrictedboltzmannmachine.html)
-* [Continuous Restricted Boltzmann Machine](./continuousrestrictedboltzmannmachine.html)
-* [Denoising AutoEncoder](./denoisingautoencoder.html)
+* [受限玻尔兹曼机](./restrictedboltzmannmachine.html)
+* [连续受限玻尔兹曼机](./continuousrestrictedboltzmannmachine.html)
+* [降噪自动编码器](./denoisingautoencoder.html)
