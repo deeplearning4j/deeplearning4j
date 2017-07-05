@@ -4953,13 +4953,26 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 
 	if (!isScalar && dimension == 0 && shape::rank(hostXShapeInfo) == 2 && shape::order(hostXShapeInfo) == 'c' ) {
 		isVstack = true;
-		for (int i = 0; i < numArrays; i++) {
-			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0 || shape::order(hostShapePointers[i]) != 'c') {
+        for (int i = 0; i < numArrays; i++) {
+			if (!shape::isVector(hostShapePointers[i]) || shape::elementWiseStride(hostShapePointers[i]) <= 0 ||
+				shape::order(hostShapePointers[i]) != 'c') {
 				isVstack = false;
 				break;
 			}
 		}
 	}
+
+    // let's try to fit N-dimensional vstack
+    if (!isVstack && !isScalar && dimension == 0 && shape::order(hostXShapeInfo) == 'c') {
+		Nd4jIndex length0 = shape::length(hostShapePointers[0]);
+        isVstack = true;
+        for (int i = 0; i < numArrays; i++) {
+            if (shape::elementWiseStride(hostShapePointers[i]) <= 0 || shape::order(hostShapePointers[i]) != 'c' || length0 != shape::length(hostShapePointers[i])) {
+                isVstack = false;
+                break;
+            }
+        }
+    }
 
 	if (!isScalar && !isVstack && dimension == 1 && shape::isVector(hostXShapeInfo)) {
 		isHstack = true;
@@ -4982,7 +4995,7 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 			printf("Going VStack concat\n");
 
 		smem = funcAttributes[40].sharedSizeBytes;
-		concatKernelVStackFloat<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
+		concatKernelVStackFloat<<< 128, 512, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0]);
 	} else if (isHstack) {
 		if (debug && verbose)
 			printf("Going HStack concat\n");
@@ -4993,12 +5006,12 @@ const char * NativeOps::getDeviceName(Nd4jPointer ptrToDeviceId) {
 		if (debug && verbose)
 			printf("Going generic concat\n");
 
-		smem = nd4j::math::nd4j_max<int>(funcAttributes[31].sharedSizeBytes + 768, 1280);
+		//smem = nd4j::math::nd4j_max<int>(funcAttributes[31].sharedSizeBytes + 768, 1280);
 
         int *devZTadShape = reinterpret_cast<int *>(extraPointers[10]);
         int *devZOffsets = reinterpret_cast<int *>(extraPointers[11]);
 
-		concatKernelFloat<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0], devZTadShape, devZOffsets);
+		concatKernelFloat<<< 2048, 128, funcAttributes[31].sharedSizeBytes , *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0], devZTadShape, devZOffsets);
 	}
 	if (debug && verbose)
 		printf("sharedMemory requested for concatFloat: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
@@ -5050,6 +5063,18 @@ void NativeOps::concatHalf(
 		}
 	}
 
+    // let's try to fit N-dimensional vstack
+    if (!isVstack && !isScalar && dimension == 0 && shape::order(hostXShapeInfo) == 'c') {
+        Nd4jIndex length0 = shape::length(hostShapePointers[0]);
+        isVstack = true;
+        for (int i = 0; i < numArrays; i++) {
+            if (shape::elementWiseStride(hostShapePointers[i]) <= 0 || shape::order(hostShapePointers[i]) != 'c' || length0 != shape::length(hostShapePointers[i])) {
+                isVstack = false;
+                break;
+            }
+        }
+    }
+
 	if (!isScalar && !isVstack && dimension == 1 && shape::isVector(hostXShapeInfo)) {
 		isHstack = true;
 		for (int i = 0; i < numArrays; i++) {
@@ -5082,12 +5107,12 @@ void NativeOps::concatHalf(
 		if (debug && verbose)
 			printf("Going generic concat\n");
 
-		smem = nd4j::math::nd4j_max<int>(funcAttributes[31].sharedSizeBytes + 768, 1280);
+		//smem = nd4j::math::nd4j_max<int>(funcAttributes[31].sharedSizeBytes + 768, 1280);
 
         int *devZTadShape = reinterpret_cast<int *>(extraPointers[10]);
         int *devZOffsets = reinterpret_cast<int *>(extraPointers[11]);
 
-		concatKernelHalf<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0], devZTadShape, devZOffsets);
+		concatKernelHalf<<< 2048, 128, funcAttributes[31].sharedSizeBytes, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0], devZTadShape, devZOffsets);
 	}
 	if (debug && verbose)
 		printf("sharedMemory requested for concatHalf: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
@@ -5200,6 +5225,18 @@ void NativeOps::concatDouble(
 		}
 	}
 
+    // let's try to fit N-dimensional vstack
+    if (!isVstack && !isScalar && dimension == 0 && shape::order(hostXShapeInfo) == 'c') {
+        Nd4jIndex length0 = shape::length(hostShapePointers[0]);
+        isVstack = true;
+        for (int i = 0; i < numArrays; i++) {
+            if (shape::elementWiseStride(hostShapePointers[i]) <= 0 || shape::order(hostShapePointers[i]) != 'c' || length0 != shape::length(hostShapePointers[i])) {
+                isVstack = false;
+                break;
+            }
+        }
+    }
+
 	if (!isScalar && !isVstack && dimension == 1 && shape::isVector(hostXShapeInfo)) {
 		isHstack = true;
 		for (int i = 0; i < numArrays; i++) {
@@ -5232,12 +5269,10 @@ void NativeOps::concatDouble(
 		if (debug && verbose)
 			printf("Going generic concat\n");
 
-		smem = nd4j::math::nd4j_max<int>(funcAttributes[35].sharedSizeBytes + 768, 1280);
-
         int *devZTadShape = reinterpret_cast<int *>(extraPointers[10]);
         int *devZOffsets = reinterpret_cast<int *>(extraPointers[11]);
 
-		concatKernelDouble<<< 128, 128, smem, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0], devZTadShape, devZOffsets);
+		concatKernelDouble<<< 2048, 128, funcAttributes[35].sharedSizeBytes, *stream>>> (dimension, numArrays, (Nd4jPointer *) data[0], (Nd4jPointer *) inputShapeInfo[0], result, resultShapeInfo, (Nd4jPointer *) tadPointers[0], (Nd4jPointer *) offsetPointers[0], devZTadShape, devZOffsets);
 	}
 	if (debug && verbose)
 		printf("sharedMemory requested for concatDouble: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);

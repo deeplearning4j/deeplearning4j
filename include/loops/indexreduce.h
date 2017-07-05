@@ -254,7 +254,7 @@ template<typename OpType>
 
 					sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
-                    for(unsigned int i = threadIdx.x;i < tadLength; i += blockDim.x) {
+                    for(int i = threadIdx.x;i < tadLength; i += blockDim.x) {
                        	shape::ind2subC(tadRank,tadShape, i, xCoord);
 
                         Nd4jIndex xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
@@ -279,7 +279,7 @@ template<typename OpType>
 
 					sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 #pragma unroll
-					for (unsigned int x = threadIdx.x; x < tadLength; x+= blockDim.x) {
+					for (int x = threadIdx.x; x < tadLength; x+= blockDim.x) {
 						IndexValue<T> comp {dx[tadOffsetForBlock + x * tadEWS], x};
 						sPartials[threadIdx.x] =  OpType::update(sPartials[threadIdx.x], comp, extraParams);
 					}

@@ -839,7 +839,7 @@ namespace aggregateOps {
 
             T *syn0 = arguments[0];
             T *syn1 = arguments[1];
-            T *expTable = arguments[2];
+            //T *expTable = arguments[2];
             T *syn1Neg = arguments[3];
             T *negTable = arguments[4];
             T *inferenceVector = arguments[5];
