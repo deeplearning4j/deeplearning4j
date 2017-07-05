@@ -916,7 +916,7 @@ __device__ void concatKernelGeneric(int dimension,
 			}
 			__syncthreads();
 
-            if (yLength < 32) {
+            if (yLength == 1) {
                 // edge case, each thread will handle it's own tad then
                 for (int j = tid; j < numTads; j += blockDim.x * gridDim.x) {
                     int inputOffset = currentOffsets[j];
@@ -927,19 +927,22 @@ __device__ void concatKernelGeneric(int dimension,
 
                     int sub[MAX_RANK];
 
-				    shape::ind2subC(shape::rank(zTadShape),shape::shapeOf(zTadShape),arrOffset, sub);
+                    if (shape::order(zTadShape) == 'f') {
+				        shape::ind2sub(shape::rank(zTadShape),shape::shapeOf(zTadShape),arrOffset, sub);
+				    } else {
+				        shape::ind2subC(shape::rank(zTadShape),shape::shapeOf(zTadShape),arrOffset, sub);
+				    }
 				    Nd4jIndex baseOffset = shape::getOffset(0,shape::shapeOf(zTadShape),shape::stride(zTadShape), sub, shape::rank(zTadShape));
 
 				    resultTAD += baseOffset;
 
-				    int yIdx[MAX_RANK];
 					int yRank = shape::rank(currentTad);
 					int tadRank = shape::rank(zTadShape);
 
-					shape::ind2subC(yRank, shape::shapeOf(currentTad), 0,yIdx);
+					shape::ind2subC(yRank, shape::shapeOf(currentTad), 0,sub);
 
-					int yOffset = shape::getOffset(0, shape::shapeOf(currentTad), shape::stride(currentTad), yIdx, yRank);
-					resultOffset = shape::getOffset(0, shape::shapeOf(zTadShape), shape::stride(zTadShape), yIdx, tadRank);
+					int yOffset = shape::getOffset(0, shape::shapeOf(currentTad), shape::stride(currentTad), sub, yRank);
+					resultOffset = shape::getOffset(0, shape::shapeOf(zTadShape), shape::stride(zTadShape), sub, tadRank);
 
 					resultTAD[resultOffset] =  dataTAD[yOffset];
                 }
