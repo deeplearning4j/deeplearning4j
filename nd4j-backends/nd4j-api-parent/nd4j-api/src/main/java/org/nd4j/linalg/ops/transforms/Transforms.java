@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
@@ -57,8 +58,17 @@ public class Transforms {
                         .doubleValue();
     }
 
+    public static double cosineDistance(@NonNull INDArray d1, @NonNull INDArray d2) {
+        return Nd4j.getExecutioner().execAndReturn(new CosineDistance(d1, d2, d1.length())).getFinalResult()
+                .doubleValue();
+    }
+
     public static INDArray allCosineSimilarities(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
         return Nd4j.getExecutioner().exec(new CosineSimilarity(d1, d2, true), dimensions);
+    }
+
+    public static INDArray allCosineDistances(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
+        return Nd4j.getExecutioner().exec(new CosineDistance(d1, d2, true), dimensions);
     }
 
     public static INDArray allEuclideanDistances(@NonNull INDArray d1, @NonNull INDArray d2, int... dimensions) {
