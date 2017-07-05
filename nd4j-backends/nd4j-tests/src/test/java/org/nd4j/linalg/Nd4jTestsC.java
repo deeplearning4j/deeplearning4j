@@ -4603,6 +4603,34 @@ public class Nd4jTestsC extends BaseNd4jTest {
         }
     }
 
+
+    @Test
+    public void testStridedTransforms1() throws Exception{
+        //output: Rank: 2,Offset: 0
+        //Order: c Shape: [5,2],  stride: [2,1]
+        //output: [0.5086864, 0.49131358, 0.50720876, 0.4927912, 0.46074104, 0.53925896, 0.49314, 0.50686, 0.5217741, 0.4782259]
+
+        double[] d = {0.5086864, 0.49131358, 0.50720876, 0.4927912, 0.46074104, 0.53925896, 0.49314, 0.50686, 0.5217741, 0.4782259};
+
+        INDArray in = Nd4j.create(d, new int[]{5,2}, 'c');
+
+        INDArray col0 = in.getColumn(0);
+        INDArray col1 = in.getColumn(1);
+
+        float[] exp0 = new float[d.length/2];
+        float[] exp1 = new float[d.length/2];
+        for( int i=0; i<col0.length(); i++ ){
+            exp0[i] = (float)Math.log(col0.getDouble(i));
+            exp1[i] = (float)Math.log(col1.getDouble(i));
+        }
+
+        INDArray out0 = Transforms.log(col0, true);
+        INDArray out1 = Transforms.log(col1, true);
+
+        assertArrayEquals(exp0, out0.data().asFloat(), 1e-4f);
+        assertArrayEquals(exp1, out1.data().asFloat(), 1e-4f);
+    }
+
     @Test
     public void testEntropy1() throws Exception {
         INDArray x = Nd4j.rand(1, 100);
