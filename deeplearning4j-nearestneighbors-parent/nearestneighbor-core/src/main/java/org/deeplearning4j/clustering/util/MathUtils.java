@@ -1316,6 +1316,24 @@ public class MathUtils {
         return (int) begin + (int) (rng.nextDouble() * ((end - begin) + 1));
     }
 
+    /**
+     * Generates a random integer between the specified numbers
+     * @param begin the begin of the interval
+     * @param end the end of the interval
+     * @return an int between begin and end
+     */
+    public static int randomNumberBetween(double begin, double end, org.nd4j.linalg.api.rng.Random rng) {
+        if (begin > end)
+            throw new IllegalArgumentException("Begin must not be less than end");
+        return (int) begin + (int) (rng.nextDouble() * ((end - begin) + 1));
+    }
+
+    /**
+     *
+     * @param begin
+     * @param end
+     * @return
+     */
     public static float randomFloatBetween(float begin, float end) {
         float rand = (float) Math.random();
         return begin + (rand * ((end - begin)));

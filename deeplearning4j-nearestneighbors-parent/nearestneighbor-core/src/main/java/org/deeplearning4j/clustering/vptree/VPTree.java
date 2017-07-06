@@ -18,10 +18,7 @@
 
 package org.deeplearning4j.clustering.vptree;
 
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.deeplearning4j.clustering.berkeley.Counter;
 import org.deeplearning4j.clustering.berkeley.CounterMap;
 import org.deeplearning4j.clustering.berkeley.PriorityQueue;
@@ -40,6 +37,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Vantage point tree implementation
@@ -47,6 +45,7 @@ import java.util.concurrent.*;
  * @author Adam Gibson
  */
 @Builder
+@AllArgsConstructor
 public class VPTree {
 
     public static final String EUCLIDEAN = "euclidean";
@@ -61,7 +60,7 @@ public class VPTree {
     private ExecutorService executorService;
     @Getter
     private boolean parallel = true;
-
+    private AtomicInteger size = new AtomicInteger(0);
 
     /**
      *
@@ -265,9 +264,10 @@ public class VPTree {
             executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
         final Node ret = new Node(lower, 0);
+        size.incrementAndGet();
 
         if (upper - lower > 1) {
-            int randomPoint = MathUtils.randomNumberBetween(lower, upper - 1);
+            int randomPoint = MathUtils.randomNumberBetween(lower, upper - 1,Nd4j.getRandom());
 
             // Partition around the median distance
             final int median = (upper + lower) / 2;
@@ -303,7 +303,8 @@ public class VPTree {
 
             int leftPointsIndex = 0;
             int rightPointsIndex = 0;
-            for (int i = 0; i < distancesArr.length(); i++) {
+            synchronized (items) {
+                for (int i = 0; i < distancesArr.length(); i++) {
                 if (distancesArr.getDouble(i) < medianDistance) {
                     leftPoints.putRow(leftPointsIndex++, items.getRow(i));
                 } else {
@@ -311,18 +312,20 @@ public class VPTree {
                 }
             }
 
-            for (int i = 0; i < leftPointsIndex; i++) {
-                items.putRow(i, leftPoints.getRow(i));
+                for (int i = 0; i < leftPointsIndex; i++) {
+                    items.putRow(i, leftPoints.getRow(i));
+                }
+
+                for (int i = 0; i < rightPointsIndex; i++) {
+                    items.putRow(i + leftPointsIndex, rightPoints.getRow(i));
+                }
+
+                ret.setThreshold(distance(items.getRow(lower), items.getRow(median)));
+                ret.setIndex(lower);
+
             }
 
-            for (int i = 0; i < rightPointsIndex; i++) {
-                items.putRow(i + leftPointsIndex, rightPoints.getRow(i));
-            }
-
-            ret.setThreshold(distance(items.getRow(lower), items.getRow(median)));
-            ret.setIndex(lower);
-
-            if(parallel) {
+            if(parallel && size.get() >= Runtime.getRuntime().availableProcessors()) {
                 Future<?> left = null;
                 Future<?> right = null;
                 if(lower + 1 !=  median) {
