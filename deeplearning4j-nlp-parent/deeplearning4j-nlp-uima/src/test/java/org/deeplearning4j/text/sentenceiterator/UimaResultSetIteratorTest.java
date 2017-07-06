@@ -2,7 +2,8 @@ package org.deeplearning4j.text.sentenceiterator;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.sql.ResultSet;
 
@@ -22,11 +23,11 @@ public class UimaResultSetIteratorTest {
     public void testSingleSentenceRow() throws Exception {
 
         // Setup a mock ResultSet object
-        ResultSet resultSetMock = Mockito.mock(ResultSet.class);
+        ResultSet resultSetMock = mock(ResultSet.class);
 
         // when .next() is called, first time true, then false
-        Mockito.when(resultSetMock.next()).thenReturn(true).thenReturn(false);
-        Mockito.when(resultSetMock.getString("line")).thenReturn("The quick brown fox.");
+        when(resultSetMock.next()).thenReturn(true).thenReturn(false);
+        when(resultSetMock.getString("line")).thenReturn("The quick brown fox.");
 
         UimaResultSetIterator iterator = new UimaResultSetIterator(resultSetMock, "line");
 
@@ -44,11 +45,11 @@ public class UimaResultSetIteratorTest {
     public void testMultipleSentenceRow() throws Exception {
 
         // Setup a mock ResultSet object
-        ResultSet resultSetMock = Mockito.mock(ResultSet.class);
+        ResultSet resultSetMock = mock(ResultSet.class);
 
         // when .next() is called, first time true, then false
-        Mockito.when(resultSetMock.next()).thenReturn(true).thenReturn(false);
-        Mockito.when(resultSetMock.getString("line"))
+        when(resultSetMock.next()).thenReturn(true).thenReturn(false);
+        when(resultSetMock.getString("line"))
                 .thenReturn("The quick brown fox. The lazy dog. Over a fence.");
 
         UimaResultSetIterator iterator = new UimaResultSetIterator(resultSetMock, "line");
@@ -67,11 +68,11 @@ public class UimaResultSetIteratorTest {
     public void testMultipleSentencesAndMultipleRows() throws Exception {
 
         // Setup a mock ResultSet object
-        ResultSet resultSetMock = Mockito.mock(ResultSet.class);
+        ResultSet resultSetMock = mock(ResultSet.class);
 
         // when .next() is called, first time true, then false
-        Mockito.when(resultSetMock.next()).thenReturn(true).thenReturn(true).thenReturn(false);
-        Mockito.when(resultSetMock.getString("line")).thenReturn("The quick brown fox.")
+        when(resultSetMock.next()).thenReturn(true).thenReturn(true).thenReturn(false);
+        when(resultSetMock.getString("line")).thenReturn("The quick brown fox.")
                 .thenReturn("The lazy dog. Over a fence.");
 
         UimaResultSetIterator iterator = new UimaResultSetIterator(resultSetMock, "line");
@@ -90,12 +91,12 @@ public class UimaResultSetIteratorTest {
     public void testMultipleSentencesAndMultipleRowsAndReset() throws Exception {
 
         // Setup a mock ResultSet object
-        ResultSet resultSetMock = Mockito.mock(ResultSet.class);
+        ResultSet resultSetMock = mock(ResultSet.class);
 
         // when .next() is called, first time true, then false
-        Mockito.when(resultSetMock.next()).thenReturn(true).thenReturn(true).thenReturn(false)
+        when(resultSetMock.next()).thenReturn(true).thenReturn(true).thenReturn(false)
                 .thenReturn(true).thenReturn(true).thenReturn(false);
-        Mockito.when(resultSetMock.getString("line")).thenReturn("The quick brown fox.")
+        when(resultSetMock.getString("line")).thenReturn("The quick brown fox.")
                 .thenReturn("The lazy dog. Over a fence.")
                 .thenReturn("The quick brown fox.")
                 .thenReturn("The lazy dog. Over a fence.");
