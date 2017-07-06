@@ -1,12 +1,16 @@
 package org.deeplearning4j.evaluation;
 
 import org.apache.commons.io.FileUtils;
+import org.deeplearning4j.eval.EvaluationCalibration;
 import org.deeplearning4j.eval.ROC;
 import org.deeplearning4j.eval.ROCMultiClass;
+import org.deeplearning4j.eval.curves.Histogram;
 import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
+import org.deeplearning4j.eval.curves.ReliabilityDiagram;
 import org.deeplearning4j.eval.curves.RocCurve;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.LengthUnit;
+import org.deeplearning4j.ui.components.chart.ChartHistogram;
 import org.deeplearning4j.ui.components.chart.ChartLine;
 import org.deeplearning4j.ui.components.chart.style.StyleChart;
 import org.deeplearning4j.ui.components.component.ComponentDiv;
@@ -53,6 +57,9 @@ public class EvaluationTools {
     private static final StyleDiv OUTER_DIV_STYLE = new StyleDiv.Builder().width(2 * CHART_WIDTH_PX, LengthUnit.Px)
                     .height(CHART_HEIGHT_PX, LengthUnit.Px).build();
 
+    private static final StyleDiv OUTER_DIV_STYLE_WIDTH_ONLY = new StyleDiv.Builder().width(2 * CHART_WIDTH_PX, LengthUnit.Px)
+            .build();
+
     private static final StyleDiv INNER_DIV_STYLE = new StyleDiv.Builder().width(CHART_WIDTH_PX, LengthUnit.Px)
                     .floatValue(StyleDiv.FloatValue.left).build();
 
@@ -68,6 +75,11 @@ public class EvaluationTools {
                     new StyleDiv.Builder().width(2 * CHART_WIDTH_PX - 150, LengthUnit.Px).height(30, LengthUnit.Px)
                                     .backgroundColor(Color.LIGHT_GRAY).margin(LengthUnit.Px, 5, 5, 200, 10)
                                     .floatValue(StyleDiv.FloatValue.left).build();
+
+    private static final StyleDiv HEADER_DIV_STYLE_1400 =
+            new StyleDiv.Builder().width(1400 - 150, LengthUnit.Px).height(30, LengthUnit.Px)
+                    .backgroundColor(Color.LIGHT_GRAY).margin(LengthUnit.Px, 5, 5, 200, 10)
+                    .floatValue(StyleDiv.FloatValue.left).build();
 
     private static final StyleDiv HEADER_DIV_PAD_STYLE = new StyleDiv.Builder().width(2 * CHART_WIDTH_PX, LengthUnit.Px)
                     .height(150, LengthUnit.Px).backgroundColor(Color.WHITE).build();
@@ -166,6 +178,85 @@ public class EvaluationTools {
         return StaticPageUtil.renderHTML(components);
     }
 
+
+    public static String evaluationCalibrationToHtml(EvaluationCalibration ec){
+
+        List<Component> components = new ArrayList<>();
+        int nClasses = ec.numClasses();
+
+        //Distribution of class labels + distribution of predicted classes
+        Component headerDiv = new ComponentDiv(HEADER_DIV_STYLE_1400,
+                new ComponentText("Labels and Network Prediction Class Distributions (X: Class Index. Y: Count)", HEADER_TEXT_STYLE));
+        components.add(headerDiv);
+        int[] labelCounts = ec.getLabelCountsEachClass();
+        int[] predictedCounts = ec.getPredictionCountsEachClass();
+        ChartHistogram.Builder chbLabels = new ChartHistogram.Builder("Label Class Distribution", CHART_STYLE);
+        ChartHistogram.Builder chbPredictions = new ChartHistogram.Builder("Predicted Class Distribution", CHART_STYLE);
+        for( int i=0; i<nClasses; i++ ){
+            double lower = i - 0.5;
+            double upper = i + 0.5;
+            chbLabels.addBin(lower, upper, labelCounts[i]);
+            chbPredictions.addBin(lower, upper, predictedCounts[i]);
+        }
+
+        ChartHistogram chL = chbLabels.build();
+        ChartHistogram chP = chbPredictions.build();
+        components.add(new ComponentDiv(OUTER_DIV_STYLE_WIDTH_ONLY, chL, chP));
+
+        //Reliability diagram, for each class
+        headerDiv = new ComponentDiv(HEADER_DIV_STYLE_1400,
+                new ComponentText("Reliability Diagrams (X: Mean Predicted Value. Y: Fraction Positives)", HEADER_TEXT_STYLE));
+        components.add(headerDiv);
+        List<Component> sectionDiv = new ArrayList<>();
+        double[] zeroOne = new double[]{0.0, 1.0};
+        for( int i=0; i<nClasses; i++ ){
+            ReliabilityDiagram rd = ec.getReliabilityDiagram(i);
+
+            double[] x = rd.getMeanPredictedValueX();
+            double[] y = rd.getFractionPositivesY();
+            String title = rd.getTitle();
+
+            ChartLine cl = new ChartLine.Builder(title, CHART_STYLE)
+                    .addSeries("Classifier", x, y)
+                    .addSeries("Ideal Classifier", zeroOne, zeroOne)
+                    .build();
+
+            sectionDiv.add(cl);
+        }
+        components.add(new ComponentDiv(OUTER_DIV_STYLE_WIDTH_ONLY, sectionDiv));
+
+        //Residual plots
+        headerDiv = new ComponentDiv(HEADER_DIV_STYLE_1400,
+                new ComponentText("Network Predictions - Residual Plots - |Label(i) - P(class(i))|", HEADER_TEXT_STYLE));
+        components.add(headerDiv);
+
+        sectionDiv = new ArrayList<>();
+        Histogram resPlotAll = ec.getResidualPlotAllClasses();
+        sectionDiv.add(getHistogram(resPlotAll));
+        for( int i=0; i<nClasses; i++ ){
+            Histogram resPlotCurrent = ec.getResidualPlot(i);
+            sectionDiv.add(getHistogram(resPlotCurrent));
+        }
+        components.add(new ComponentDiv(OUTER_DIV_STYLE_WIDTH_ONLY, sectionDiv));
+
+
+        //Histogram of probabilities, overall and for each class
+        headerDiv = new ComponentDiv(HEADER_DIV_STYLE_1400,
+                new ComponentText("Network Prediction Probabilities (X: P(class). Y: Count)", HEADER_TEXT_STYLE));
+        components.add(headerDiv);
+        sectionDiv = new ArrayList<>();
+        Histogram allProbs = ec.getProbabilityHistogramAllClasses();
+        sectionDiv.add(getHistogram(allProbs));
+
+        for( int i=0; i<nClasses; i++ ){
+            Histogram classProbs = ec.getProbabilityHistogram(i);
+            sectionDiv.add(getHistogram(classProbs));
+        }
+        components.add(new ComponentDiv(OUTER_DIV_STYLE_WIDTH_ONLY, sectionDiv));
+
+        return StaticPageUtil.renderHTML(components);
+    }
+
     private static Component getRocFromPoints(String title, RocCurve roc, long positiveCount, long negativeCount,
                     double auc, double aucpr) {
         double[] zeroOne = new double[] {0.0, 1.0};
@@ -214,5 +305,17 @@ public class EvaluationTools {
         return new ChartLine.Builder(title, CHART_STYLE_PRECISION_RECALL).setXMin(0.0).setXMax(1.0).setYMin(0.0)
                         .setYMax(1.0).addSeries("Precision", thresholdX, precisionY)
                         .addSeries("Recall", thresholdX, recallY).showLegend(true).build();
+    }
+
+    private static Component getHistogram(Histogram histogram){
+        ChartHistogram.Builder chb = new ChartHistogram.Builder(histogram.getTitle(), CHART_STYLE);
+        double[] lower = histogram.getBinLowerBounds();
+        double[] upper = histogram.getBinUpperBounds();
+        int[] counts = histogram.getBinCounts();
+        for( int i=0; i<counts.length; i++ ){
+            chb.addBin(lower[i], upper[i], counts[i]);
+        }
+
+        return chb.build();
     }
 }

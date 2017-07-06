@@ -111,6 +111,7 @@ public class NearestNeighborsServer {
 
                 if(record.isForceFillK()) {
                     VPTreeFillSearch vpTreeFillSearch = new VPTreeFillSearch(tree,record.getK(),arr);
+                    vpTreeFillSearch.search();
                     results = vpTreeFillSearch.getResults();
                     distances = vpTreeFillSearch.getDistances();
                 }

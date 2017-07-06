@@ -18,7 +18,9 @@
 
 package org.deeplearning4j.clustering.vptree;
 
-import lombok.*;
+import lombok.Data;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.clustering.berkeley.Counter;
 import org.deeplearning4j.clustering.berkeley.CounterMap;
 import org.deeplearning4j.clustering.berkeley.PriorityQueue;
@@ -27,6 +29,7 @@ import org.deeplearning4j.clustering.sptree.HeapItem;
 import org.deeplearning4j.clustering.util.MathUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.Dot;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
@@ -202,6 +205,10 @@ public class VPTree {
                 Nd4j.getExecutioner().exec(new CosineSimilarity(items,
                         basePoint,distancesArr,items.length()),1);
                 break;
+            case "cosinedistance":
+                Nd4j.getExecutioner().exec(new CosineDistance(items,
+                        basePoint,distancesArr,items.length()),1);
+                break;
             case "manhattan":
                 Nd4j.getExecutioner().exec(new ManhattanDistance(items,
                         basePoint,distancesArr,items.length()),1);
@@ -214,12 +221,12 @@ public class VPTree {
                 Nd4j.getExecutioner().exec(new EuclideanDistance(items,
                         basePoint,distancesArr,items.length()),1);
                 break;
-
         }
+
+
 
         if(invert)
             distancesArr.negi();
-
     }
 
 
@@ -238,6 +245,11 @@ public class VPTree {
                 float ret2 = Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(arr1,arr2))
                         .getFinalResult().floatValue();
                 return invert ? -ret2 : ret2;
+
+            case "cosinedistance":
+                float ret5 = Nd4j.getExecutioner().execAndReturn(new CosineDistance(arr1,arr2))
+                        .getFinalResult().floatValue();
+                return invert ? -ret5 : ret5;
 
             case "manhattan":
                 float ret3 = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(arr1,arr2))
