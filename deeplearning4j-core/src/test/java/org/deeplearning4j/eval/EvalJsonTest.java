@@ -49,7 +49,7 @@ public class EvalJsonTest {
         EvaluationCalibration ec = new EvaluationCalibration();
 
 
-        IEvaluation[] arr = new IEvaluation[] {evaluation, evaluationBinary, roc, roc2, roc3, regressionEvaluation};
+        IEvaluation[] arr = new IEvaluation[] {evaluation, evaluationBinary, roc, roc2, roc3, regressionEvaluation, ec};
 
         INDArray evalLabel = Nd4j.create(10, 3);
         for (int i = 0; i < 10; i++) {

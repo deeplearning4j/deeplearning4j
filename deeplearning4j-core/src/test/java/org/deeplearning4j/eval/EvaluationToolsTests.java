@@ -122,8 +122,7 @@ public class EvaluationToolsTests {
         ec.eval(labels, arr);
 
         String str = EvaluationTools.evaluationCalibrationToHtml(ec);
-
-        System.out.println(str);
+//        System.out.println(str);
     }
 
 }

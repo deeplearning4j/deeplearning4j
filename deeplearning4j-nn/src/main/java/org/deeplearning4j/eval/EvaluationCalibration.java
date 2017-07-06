@@ -1,5 +1,6 @@
 package org.deeplearning4j.eval;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.deeplearning4j.eval.curves.Histogram;
 import org.deeplearning4j.eval.curves.ReliabilityDiagram;
@@ -9,8 +10,14 @@ import org.nd4j.linalg.api.ops.impl.transforms.IsMax;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.lossfunctions.LossUtil;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
+import org.nd4j.shade.serde.jackson.shaded.NDArrayDeSerializer;
+import org.nd4j.shade.serde.jackson.shaded.NDArraySerializer;
 
 /**
  * EvaluationCalibration is an evaluation class designed to analyze the calibration of a classifier.<br>
@@ -30,6 +37,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
  * @author Alex Black
  */
 @Getter
+@EqualsAndHashCode
 public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration> {
 
     public static final int DEFAULT_RELIABILITY_DIAG_NUM_BINS = 10;
@@ -39,17 +47,26 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
     private final int histogramNumBins;
     private final boolean excludeEmptyBins;
 
+    @JsonSerialize(using = NDArraySerializer.class) @JsonDeserialize(using = NDArrayDeSerializer.class)
     private INDArray rDiagBinPosCount;
+    @JsonSerialize(using = NDArraySerializer.class) @JsonDeserialize(using = NDArrayDeSerializer.class)
     private INDArray rDiagBinTotalCount;
+    @JsonSerialize(using = NDArraySerializer.class) @JsonDeserialize(using = NDArrayDeSerializer.class)
     private INDArray rDiagBinSumPredictions;
 
+    @JsonSerialize(using = RowVectorSerializer.class) @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray labelCountsEachClass;
+    @JsonSerialize(using = RowVectorSerializer.class) @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray predictionCountsEachClass;
 
+    @JsonSerialize(using = RowVectorSerializer.class) @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray residualPlotOverall;
+    @JsonSerialize(using = NDArraySerializer.class) @JsonDeserialize(using = NDArrayDeSerializer.class)
     private INDArray residualPlotByLabelClass;
 
+    @JsonSerialize(using = RowVectorSerializer.class) @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray probHistogramOverall;              //Simple histogram over all probabilities
+    @JsonSerialize(using = NDArraySerializer.class) @JsonDeserialize(using = NDArrayDeSerializer.class)
     private INDArray probHistogramByLabelClass;         //Histogram - for each label class separately
 
     /**
@@ -315,7 +332,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
      * out[i] being the number of labels of class i
      */
     public int[] getLabelCountsEachClass(){
-        return labelCountsEachClass.data().asInt();
+        return labelCountsEachClass == null ? null : labelCountsEachClass.data().asInt();
     }
 
     /**
@@ -323,7 +340,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
      * out[i] being the number of predicted values (max probability) for class i
      */
     public int[] getPredictionCountsEachClass(){
-        return predictionCountsEachClass.data().asInt();
+        return predictionCountsEachClass == null ? null : predictionCountsEachClass.data().asInt();
     }
 
     /**
