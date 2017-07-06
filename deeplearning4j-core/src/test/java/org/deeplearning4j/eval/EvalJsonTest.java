@@ -1,6 +1,7 @@
 package org.deeplearning4j.eval;
 
 import org.deeplearning4j.eval.curves.BaseCurve;
+import org.deeplearning4j.eval.curves.Histogram;
 import org.deeplearning4j.eval.curves.PrecisionRecallCurve;
 import org.deeplearning4j.eval.curves.RocCurve;
 import org.junit.Test;
@@ -185,6 +186,38 @@ public class EvalJsonTest {
         assertEquals(prc, prc2);
 
         //        System.out.println(json1);
+
+        //Also test: histograms
+
+        EvaluationCalibration ec = new EvaluationCalibration();
+
+        evalLabel = Nd4j.create(10, 3);
+        for (int i = 0; i < 10; i++) {
+            evalLabel.putScalar(i, i % 3, 1.0);
+        }
+        evalProb = Nd4j.rand(10, 3);
+        evalProb.diviColumnVector(evalProb.sum(1));
+        ec.eval(evalLabel, evalProb);
+
+        Histogram[] histograms = new Histogram[]{
+                ec.getResidualPlotAllClasses(),
+                ec.getResidualPlot(0),
+                ec.getResidualPlot(1),
+                ec.getProbabilityHistogramAllClasses(),
+                ec.getProbabilityHistogram(0),
+                ec.getProbabilityHistogram(1)};
+
+        for(Histogram h : histograms){
+            String json = h.toJson();
+            String yaml = h.toYaml();
+
+            Histogram h2 = Histogram.fromJson(json);
+            Histogram h3 = Histogram.fromYaml(yaml);
+
+            assertEquals(h, h2);
+            assertEquals(h2, h3);
+        }
+
     }
 
     @Test

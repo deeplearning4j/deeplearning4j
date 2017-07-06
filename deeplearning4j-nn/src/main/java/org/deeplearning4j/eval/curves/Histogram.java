@@ -4,12 +4,12 @@ import lombok.Data;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * Created by Alex on 06/07/2017.
+ * A simple histogram used in evaluation classes, such as {@link org.deeplearning4j.eval.EvaluationCalibration}
+ *
+ * @author Alex Black
  */
 @Data
 public class Histogram extends BaseHistogram {
-
-
     private final String title;
     private final double lower;
     private final double upper;
@@ -59,5 +59,22 @@ public class Histogram extends BaseHistogram {
             out[i] = (i + 0.5) * step;
         }
         return out;
+    }
+
+    /**
+     * @param json       JSON representation
+     * @return           Instance of the histogram
+     */
+    public static Histogram fromJson(String json) {
+        return BaseHistogram.fromJson(json, Histogram.class);
+    }
+
+    /**
+     *
+     * @param yaml       YAML representation
+     * @return           Instance of the histogram
+     */
+    public static Histogram fromYaml(String yaml) {
+        return BaseHistogram.fromYaml(yaml, Histogram.class);
     }
 }

@@ -13,9 +13,19 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
- * Tools for classifier calibration analysis:
- * - Residual plot
- * - Reliability diagram
+ * EvaluationCalibration is an evaluation class designed to analyze the calibration of a classifier.<br>
+ * It provides a number of tools for this purpose:
+ * - Counts of the number of labels and predictions for each class<br>
+ * - Reliability diagram (or reliability curve)<br>
+ * - Residual plot (histogram)<br>
+ * - Histograms of probabilities, including probabilities for each class separately<br>
+ *<br>
+ * References:<br>
+ * - Reliability diagram: see for example Niculescu-Mizil and Caruana 2005, Predicting Good Probabilities With
+ * Supervised Learning<br>
+ * - Residual plot: see Wallace and Dahabreh 2012, Class Probability Estimates are Unreliable for Imbalanced Data
+ * (and How to Fix Them)<br>
+ *
  *
  * @author Alex Black
  */
@@ -42,14 +52,30 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
     private INDArray probHistogramOverall;              //Simple histogram over all probabilities
     private INDArray probHistogramByLabelClass;         //Histogram - for each label class separately
 
+    /**
+     * Create an EvaluationCalibration instance with the default number of bins
+     */
     public EvaluationCalibration(){
         this(DEFAULT_RELIABILITY_DIAG_NUM_BINS, DEFAULT_HISTOGRAM_NUM_BINS, true);
     }
 
+    /**
+     * Create an EvaluationCalibration instance with the specified number of bins
+     *
+     * @param reliabilityDiagNumBins Number of bins for the reliability diagram (usually 10)
+     * @param histogramNumBins       Number of bins for the histograms
+     */
     public EvaluationCalibration(int reliabilityDiagNumBins, int histogramNumBins){
         this(reliabilityDiagNumBins, histogramNumBins, true);
     }
 
+    /**
+     * Create an EvaluationCalibration instance with the specified number of bins
+     *
+     * @param reliabilityDiagNumBins Number of bins for the reliability diagram (usually 10)
+     * @param histogramNumBins       Number of bins for the histograms
+     * @param excludeEmptyBins       For the reliability diagram,  whether empty bins should be excluded
+     */
     public EvaluationCalibration(@JsonProperty("reliabilityDiagNumBins") int reliabilityDiagNumBins,
                                  @JsonProperty("histogramNumBins") int histogramNumBins,
                                  @JsonProperty("excludeEmptyBins") boolean excludeEmptyBins){
@@ -238,12 +264,17 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         return "EvaluationCalibration(nBins=" + reliabilityDiagNumBins + ")";
     }
 
-    public ReliabilityDiagram getReliabilityDiagram(int classNum){
+    /**
+     * Get the reliability diagram for the specified class
+     *
+     * @param classIdx Index of the class to get the reliability diagram for
+     */
+    public ReliabilityDiagram getReliabilityDiagram(int classIdx){
 
-        INDArray totalCountBins = rDiagBinTotalCount.getColumn(classNum);
-        INDArray countPositiveBins = rDiagBinPosCount.getColumn(classNum);
+        INDArray totalCountBins = rDiagBinTotalCount.getColumn(classIdx);
+        INDArray countPositiveBins = rDiagBinPosCount.getColumn(classIdx);
 
-        double[] meanPredictionBins = rDiagBinSumPredictions.getColumn(classNum)
+        double[] meanPredictionBins = rDiagBinSumPredictions.getColumn(classIdx)
                 .div(totalCountBins).data().asDouble();
 
         double[] fracPositives = countPositiveBins.div(totalCountBins).data().asDouble();
@@ -271,32 +302,68 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         return new ReliabilityDiagram(meanPredictionBins, fracPositives);
     }
 
+    /**
+     * @return The number of observed labels for each class. For N classes, be returned array is of length N, with
+     * out[i] being the number of labels of class i
+     */
     public int[] getLabelCountsEachClass(){
         return labelCountsEachClass.data().asInt();
     }
 
+    /**
+     * @return The number of network predictions for each class. For N classes, be returned array is of length N, with
+     * out[i] being the number of predicted values (max probability) for class i
+     */
     public int[] getPredictionCountsEachClass(){
         return predictionCountsEachClass.data().asInt();
     }
 
+    /**
+     * Get the residual plot for all classes combined. The residual plot is defined as a histogram of<br>
+     * |label_i - prob(class_i | input)| for all classes i and examples.<br>
+     * In general, small residuals indicate a superior classifier to large residuals.
+     *
+     * @return Residual plot (histogram) - all predictions/classes
+     */
     public Histogram getResidualPlotAllClasses(){
         String title = "EvaluationCalibration Residual Plot - All Predictions, All Classes";
         int[] counts = residualPlotOverall.data().asInt();
         return new Histogram(title, 0.0, 1.0, counts);
     }
 
+    /**
+     * Get the residual plot, only for examples of the specified class.. The residual plot is defined as a histogram of<br>
+     * |label_i - prob(class_i | input)| for all and examples; for this particular method, only predictions where
+     * i == labelClassIdx are included.<br>
+     * In general, small residuals indicate a superior classifier to large residuals.
+     *
+     * @param labelClassIdx Index of the class to get the residual plot for
+     * @return Residual plot (histogram) - all predictions/classes
+     */
     public Histogram getResidualPlot(int labelClassIdx){
         String title = "EvaluationCalibration Residual Plot - All Predictions, Class " + labelClassIdx;
         int[] counts = residualPlotByLabelClass.getColumn(labelClassIdx).dup().data().asInt();
         return new Histogram(title, 0.0, 1.0, counts);
     }
 
+    /**
+     * Return a probability histogram for all predictions/classes.
+     *
+     * @return Probability histogram
+     */
     public Histogram getProbabilityHistogramAllClasses(){
         String title = "EvaluationCalibration Probability Plot - All Predictions, All Classes";
         int[] counts = probHistogramOverall.data().asInt();
         return new Histogram(title, 0.0, 1.0, counts);
     }
 
+    /**
+     * Return a probability histogram of the specified label class index. That is, for label class index i,
+     * a histogram of P(class_i | input) is returned, only for those examples that are labelled as class i.
+     *
+     * @param labelClassIdx Index of the label class to get the histogram for
+     * @return Probability histogram
+     */
     public Histogram getProbabilityHistogram(int labelClassIdx){
         String title = "EvaluationCalibration Probability Plot - P(class_" + labelClassIdx + ") - Data Labelled Class "
                 + labelClassIdx + " Only";
