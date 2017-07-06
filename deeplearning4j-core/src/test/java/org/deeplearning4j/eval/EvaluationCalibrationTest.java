@@ -1,9 +1,14 @@
 package org.deeplearning4j.eval;
 
+import org.deeplearning4j.eval.curves.Histogram;
 import org.deeplearning4j.eval.curves.ReliabilityDiagram;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
+
+import java.util.Arrays;
+import java.util.Random;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -76,4 +81,103 @@ public class EvaluationCalibrationTest {
         }
     }
 
+    @Test
+    public void testLabelAndPredictionCounts(){
+
+        int minibatch = 50;
+        int nClasses = 3;
+
+        INDArray arr = Nd4j.rand(minibatch, nClasses);
+        arr.diviColumnVector(arr.sum(1));
+        INDArray labels = Nd4j.zeros(minibatch, nClasses);
+        Random r = new Random(12345);
+        for( int i=0; i<minibatch; i++ ){
+            labels.putScalar(i, r.nextInt(nClasses), 1.0);
+        }
+
+        EvaluationCalibration ec = new EvaluationCalibration(5, 5);
+        ec.eval(labels, arr);
+
+        int[] expLabelCounts = labels.sum(0).data().asInt();
+        int[] expPredictionCount = new int[labels.size(1)];
+        INDArray argmax = Nd4j.argMax(arr, 1);
+        for( int i=0; i<argmax.length(); i++ ){
+            expPredictionCount[argmax.getInt(i,0)]++;
+        }
+
+        assertArrayEquals(expLabelCounts, ec.getLabelCountsEachClass());
+        assertArrayEquals(expPredictionCount, ec.getPredictionCountsEachClass());
+    }
+
+    @Test
+    public void testResidualPlots(){
+
+        int minibatch = 50;
+        int nClasses = 3;
+
+        INDArray arr = Nd4j.rand(minibatch, nClasses);
+        arr.diviColumnVector(arr.sum(1));
+        INDArray labels = Nd4j.zeros(minibatch, nClasses);
+        Random r = new Random(12345);
+        for( int i=0; i<minibatch; i++ ){
+            labels.putScalar(i, r.nextInt(nClasses), 1.0);
+        }
+
+        int numBins = 5;
+        EvaluationCalibration ec = new EvaluationCalibration(numBins, numBins);
+        ec.eval(labels, arr);
+
+        INDArray absLabelSubProb = Transforms.abs(labels.sub(arr));
+
+        INDArray argmaxPredicted = Nd4j.argMax(arr,1);
+        INDArray argmaxLabels = Nd4j.argMax(labels,1);
+
+        int[] countsAllClasses = new int[numBins];
+        int[][] countsByClass = new int[nClasses][numBins];         //Histogram count of |label[x] - p(x)|; rows x are over classes
+        int[][] countsByClassPosOnly = new int[nClasses][numBins];
+        int[][] countsByClassNegOnly = new int[nClasses][numBins];
+
+        double binSize = 1.0 / numBins;
+
+        for( int i=0; i<minibatch; i++ ){
+            int actualClassIdx = argmaxLabels.getInt(i,0);
+            int predictedClassIdx = argmaxPredicted.getInt(i,0);
+            for( int j=0; j<nClasses; j++ ){
+                double labelSubProb = absLabelSubProb.getDouble(i,j);
+                for( int k=0; k<numBins; k++ ){
+                    double binLower = k * binSize;
+                    double binUpper = (k+1)*binSize;
+                    if(k == numBins-1) binUpper = 1.0;
+
+                    if(labelSubProb >= binLower && labelSubProb < binUpper){
+                        countsAllClasses[k]++;
+                        if(j == actualClassIdx){
+                            countsByClass[j][k]++;
+                        }
+                    }
+                }
+            }
+        }
+
+        //Check residual plot - all classes/predictions
+        Histogram rpAllClasses = ec.getResidualPlotAllClasses();
+        int[] rpAllClassesBinCounts = rpAllClasses.getBinCounts();
+        assertArrayEquals(countsAllClasses, rpAllClassesBinCounts);
+
+        //Check residual plot - split by labels for each class
+        // i.e., histogram of |label[x] - p(x)| only for those examples where label[x] == 1
+        for( int i=0; i<nClasses; i++ ){
+            Histogram rpCurrClass = ec.getResidualPlot(i);
+            int[] rpCurrClassCounts = rpCurrClass.getBinCounts();
+
+//            System.out.println(Arrays.toString(countsByClass[i]));
+//            System.out.println(Arrays.toString(rpCurrClassCounts));
+
+            assertArrayEquals("Class: " + i, countsByClass[i], rpCurrClassCounts);
+        }
+
+
+
+
+    }
 }

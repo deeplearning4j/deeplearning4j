@@ -1,6 +1,7 @@
 package org.deeplearning4j.eval;
 
 import lombok.Getter;
+import org.deeplearning4j.eval.curves.Histogram;
 import org.deeplearning4j.eval.curves.ReliabilityDiagram;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
@@ -36,7 +37,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
     private INDArray predictionCountsEachClass;
 
     private INDArray residualPlotOverall;
-    private INDArray residualPlotOverallEachClass;
+    private INDArray residualPlotByClass;
     private INDArray residualPlotPositiveEachClass;
     private INDArray residualPlotNegativeEachClass;
 
@@ -82,8 +83,8 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
             labelCountsEachClass = Nd4j.create(1, nClasses);
             predictionCountsEachClass = Nd4j.create(1, nClasses);
 
-            residualPlotOverall = Nd4j.create(1, nClasses);
-            residualPlotOverallEachClass = Nd4j.create(histogramNumBins, nClasses);
+            residualPlotOverall = Nd4j.create(1, histogramNumBins);
+            residualPlotByClass = Nd4j.create(histogramNumBins, nClasses);
             residualPlotPositiveEachClass = Nd4j.create(histogramNumBins, nClasses);
             residualPlotNegativeEachClass = Nd4j.create(histogramNumBins, nClasses);
 
@@ -189,16 +190,13 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
             INDArray currBinBitMask = geqBinLower.muli(ltBinUpper);
             INDArray currBinBitMaskProbs = geqBinLowerProbs.muli(ltBinUpperProbs);
 
-            INDArray countsOverall = currBinBitMask.sum(0);
-            residualPlotOverall.addi(countsOverall);
+            int newTotalCount = residualPlotOverall.getInt(0,j) + currBinBitMask.sumNumber().intValue();
+            residualPlotOverall.putScalar(0,j,newTotalCount);
 
             //Counts for positive class only: values are in the current bin AND it's a positive label
             INDArray isPosLabelForBin = l.mul(currBinBitMask);
-            INDArray isNegLabelForBin = notLabels.muli(currBinBitMask);
 
-            residualPlotPositiveEachClass.getRow(j).addi(isPosLabelForBin.sum(0));
-            residualPlotNegativeEachClass.getRow(j).addi(isNegLabelForBin.sum(0));
-
+            residualPlotByClass.getRow(j).addi(isPosLabelForBin.sum(0));
 
             INDArray countsOverallProbs = currBinBitMaskProbs.sum(0);
             probHistogramOverall.addi(countsOverallProbs);
@@ -284,5 +282,25 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         }
 
         return new ReliabilityDiagram(meanPredictionBins, fracPositives);
+    }
+
+    public int[] getLabelCountsEachClass(){
+        return labelCountsEachClass.data().asInt();
+    }
+
+    public int[] getPredictionCountsEachClass(){
+        return predictionCountsEachClass.data().asInt();
+    }
+
+    public Histogram getResidualPlotAllClasses(){
+        String title = "EvaluationCalibration Residual Plot - All Predictions, All Classes";
+        int[] counts = residualPlotOverall.data().asInt();
+        return new Histogram(title, 0.0, 1.0, counts);
+    }
+
+    public Histogram getResidualPlot(int labelClassIdx){
+        String title = "EvaluationCalibration Residual Plot - All Predictions, Class " + labelClassIdx;
+        int[] counts = residualPlotByClass.getColumn(labelClassIdx).dup().data().asInt();
+        return new Histogram(title, 0.0, 1.0, counts);
     }
 }
