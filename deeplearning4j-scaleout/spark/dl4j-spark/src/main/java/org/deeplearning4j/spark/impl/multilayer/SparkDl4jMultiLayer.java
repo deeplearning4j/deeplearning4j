@@ -36,6 +36,7 @@ import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.SparkListenable;
 import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
+import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateAggregateFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateFlatMapFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluationReduceFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.FeedForwardWithKeyFunction;
@@ -574,6 +575,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @param <T>             Type of evaluation instance to return
      * @return                IEvaluation instance
      */
+    @SuppressWarnings("unchecked")
     public <T extends IEvaluation> T doEvaluation(JavaRDD<DataSet> data, T emptyEvaluation, int evalBatchSize) {
         return doEvaluation(data, evalBatchSize, emptyEvaluation)[0];
     }
@@ -588,10 +590,11 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @param <T>              Type of evaluation instance to return
      * @return IEvaluation instances
      */
+    @SuppressWarnings("unchecked")
     public <T extends IEvaluation> T[] doEvaluation(JavaRDD<DataSet> data, int evalBatchSize, T... emptyEvaluations) {
         IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(false, sc.broadcast(conf.toJson()),
                 sc.broadcast(network.params()), evalBatchSize, emptyEvaluations);
         JavaRDD<T[]> evaluations = data.mapPartitions(evalFn);
-        return evaluations.reduce(new IEvaluationReduceFunction<T>());
+        return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<T>(), new IEvaluationReduceFunction<T>());
     }
 }

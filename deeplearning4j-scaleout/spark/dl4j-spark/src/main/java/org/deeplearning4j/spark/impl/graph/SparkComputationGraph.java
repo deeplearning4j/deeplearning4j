@@ -38,8 +38,8 @@ import org.deeplearning4j.spark.impl.graph.dataset.DataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.graph.dataset.PairDataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.graph.evaluation.IEvaluateMDSFlatMapFunction;
 import org.deeplearning4j.spark.impl.graph.scoring.*;
+import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateAggregateFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateFlatMapFunction;
-import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluationReduceFunction;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -56,7 +56,6 @@ import scala.Tuple2;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.Array;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -716,7 +715,7 @@ public class SparkComputationGraph extends SparkListenable {
         IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(true, sc.broadcast(conf.toJson()),
                         sc.broadcast(network.params()), evalBatchSize, emptyEvaluations);
         JavaRDD<T[]> evaluations = data.mapPartitions(evalFn);
-        return evaluations.reduce(new IEvaluationReduceFunction<T>());
+        return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<T>(), new IEvaluateAggregateFunction<T>());
     }
 
     /**
@@ -729,10 +728,11 @@ public class SparkComputationGraph extends SparkListenable {
      * @param emptyEvaluations Evaluations to perform
      * @return                 Evaluations
      */
+    @SuppressWarnings("unchecked")
     public <T extends IEvaluation> T[] doEvaluationMDS(JavaRDD<MultiDataSet> data, int evalBatchSize, T... emptyEvaluations ) {
         IEvaluateMDSFlatMapFunction<T> evalFn = new IEvaluateMDSFlatMapFunction<>(sc.broadcast(conf.toJson()),
                 sc.broadcast(network.params()), evalBatchSize, emptyEvaluations);
         JavaRDD<T[]> evaluations = data.mapPartitions(evalFn);
-        return evaluations.reduce(new IEvaluationReduceFunction<T>());
+        return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<T>(), new IEvaluateAggregateFunction<T>());
     }
 }
