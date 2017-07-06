@@ -18,11 +18,7 @@
 
 package org.deeplearning4j.clustering.vptree;
 
-import lombok.Data;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.clustering.berkeley.Counter;
-import org.deeplearning4j.clustering.berkeley.CounterMap;
+import lombok.*;
 import org.deeplearning4j.clustering.berkeley.PriorityQueue;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.HeapItem;
@@ -35,11 +31,11 @@ import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -200,13 +196,12 @@ public class VPTree {
                 Nd4j.getExecutioner().exec(new EuclideanDistance(items,
                         basePoint,distancesArr,items.length()),1);
                 break;
-
-            case "cosinesimilarity":
-                Nd4j.getExecutioner().exec(new CosineSimilarity(items,
+            case "coinedistance":
+                Nd4j.getExecutioner().exec(new CosineDistance(items,
                         basePoint,distancesArr,items.length()),1);
                 break;
-            case "cosinedistance":
-                Nd4j.getExecutioner().exec(new CosineDistance(items,
+            case "cosinesimilarity":
+                Nd4j.getExecutioner().exec(new CosineSimilarity(items,
                         basePoint,distancesArr,items.length()),1);
                 break;
             case "manhattan":
@@ -221,12 +216,12 @@ public class VPTree {
                 Nd4j.getExecutioner().exec(new EuclideanDistance(items,
                         basePoint,distancesArr,items.length()),1);
                 break;
+
         }
-
-
 
         if(invert)
             distancesArr.negi();
+
     }
 
 
@@ -245,11 +240,10 @@ public class VPTree {
                 float ret2 = Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(arr1,arr2))
                         .getFinalResult().floatValue();
                 return invert ? -ret2 : ret2;
-
             case "cosinedistance":
-                float ret5 = Nd4j.getExecutioner().execAndReturn(new CosineDistance(arr1,arr2))
+                float ret6 = Nd4j.getExecutioner().execAndReturn(new CosineDistance(arr1,arr2))
                         .getFinalResult().floatValue();
-                return invert ? -ret5 : ret5;
+                return invert ? -ret6 : ret6;
 
             case "manhattan":
                 float ret3 = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(arr1,arr2))
