@@ -264,6 +264,14 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         return "EvaluationCalibration(nBins=" + reliabilityDiagNumBins + ")";
     }
 
+    public int numClasses(){
+        if(rDiagBinTotalCount == null){
+            return -1;
+        }
+
+        return rDiagBinTotalCount.size(1);
+    }
+
     /**
      * Get the reliability diagram for the specified class
      *
@@ -298,8 +306,8 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
                 }
             }
         }
-
-        return new ReliabilityDiagram(meanPredictionBins, fracPositives);
+        String title = "Reliability Diagram: Class " + classIdx;
+        return new ReliabilityDiagram(title, meanPredictionBins, fracPositives);
     }
 
     /**
@@ -326,7 +334,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
      * @return Residual plot (histogram) - all predictions/classes
      */
     public Histogram getResidualPlotAllClasses(){
-        String title = "EvaluationCalibration Residual Plot - All Predictions, All Classes";
+        String title = "Residual Plot - All Predictions and Classes";
         int[] counts = residualPlotOverall.data().asInt();
         return new Histogram(title, 0.0, 1.0, counts);
     }
@@ -341,7 +349,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
      * @return Residual plot (histogram) - all predictions/classes
      */
     public Histogram getResidualPlot(int labelClassIdx){
-        String title = "EvaluationCalibration Residual Plot - All Predictions, Class " + labelClassIdx;
+        String title = "Residual Plot - Predictions for Label Class " + labelClassIdx;
         int[] counts = residualPlotByLabelClass.getColumn(labelClassIdx).dup().data().asInt();
         return new Histogram(title, 0.0, 1.0, counts);
     }
@@ -352,7 +360,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
      * @return Probability histogram
      */
     public Histogram getProbabilityHistogramAllClasses(){
-        String title = "EvaluationCalibration Probability Plot - All Predictions, All Classes";
+        String title = "Network Probabilities Histogram - All Predictions and Classes";
         int[] counts = probHistogramOverall.data().asInt();
         return new Histogram(title, 0.0, 1.0, counts);
     }
@@ -365,7 +373,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
      * @return Probability histogram
      */
     public Histogram getProbabilityHistogram(int labelClassIdx){
-        String title = "EvaluationCalibration Probability Plot - P(class_" + labelClassIdx + ") - Data Labelled Class "
+        String title = "Network Probabilities Histogram - P(class " + labelClassIdx + ") - Data Labelled Class "
                 + labelClassIdx + " Only";
         int[] counts = probHistogramByLabelClass.getColumn(labelClassIdx).dup().data().asInt();
         return new Histogram(title, 0.0, 1.0, counts);

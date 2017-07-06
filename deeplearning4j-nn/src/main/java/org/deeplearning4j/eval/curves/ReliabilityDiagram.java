@@ -10,12 +10,15 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 @Getter
 public class ReliabilityDiagram extends BaseCurve {
 
+    private final String title;
     private final double[] meanPredictedValueX;
     private final double[] fractionPositivesY;
 
 
-    public ReliabilityDiagram(@NonNull @JsonProperty("meanPredictedValueX") double[] meanPredictedValueX,
+    public ReliabilityDiagram(@JsonProperty("title") String title,
+                              @NonNull @JsonProperty("meanPredictedValueX") double[] meanPredictedValueX,
                               @NonNull @JsonProperty("fractionPositivesY") double[] fractionPositivesY ){
+        this.title = title;
         this.meanPredictedValueX = meanPredictedValueX;
         this.fractionPositivesY = fractionPositivesY;
     }
@@ -37,6 +40,9 @@ public class ReliabilityDiagram extends BaseCurve {
 
     @Override
     public String getTitle() {
-        return "Reliability Diagram";
+        if(title == null){
+            return "Reliability Diagram";
+        }
+        return title;
     }
 }
