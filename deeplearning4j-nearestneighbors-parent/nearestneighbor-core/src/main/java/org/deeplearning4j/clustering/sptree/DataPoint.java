@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.clustering.sptree;
 
+import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
@@ -31,6 +32,7 @@ import java.io.Serializable;
  * A vector with an index and function for distance
  * @author Adam Gibson
  */
+@Data
 public class DataPoint implements Serializable {
     private int index;
     private INDArray point;

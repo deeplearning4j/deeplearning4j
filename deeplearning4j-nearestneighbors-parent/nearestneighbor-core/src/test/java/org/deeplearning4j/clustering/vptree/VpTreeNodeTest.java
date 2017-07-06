@@ -56,6 +56,26 @@ public class VpTreeNodeTest {
         assertEquals(5, resultList.size());
     }
 
+
+    @Test
+    public void testParallel() {
+        Nd4j.getRandom().setSeed(7);
+        INDArray randn  = Nd4j.rand(1000,100);
+        VPTree vpTree = new VPTree(randn,false,true);
+        Nd4j.getRandom().setSeed(7);
+        VPTree vpTreeNoParallel = new VPTree(randn,false,false);
+        List<DataPoint> results = new ArrayList<>();
+        List<Double> distances = new ArrayList<>();
+        List<DataPoint> noParallelResults = new ArrayList<>();
+        List<Double> noDistances = new ArrayList<>();
+        vpTree.search(randn.getRow(0),10,results,distances);
+        vpTreeNoParallel.search(randn.getRow(0),10,noParallelResults,noDistances);
+        assertEquals(noParallelResults.size(),results.size());
+        assertEquals(noParallelResults,results);
+        assertEquals(noDistances,distances);
+
+    }
+
     @Test
     public void knnManual() {
         INDArray arr = Nd4j.randn(3, 5);
@@ -98,11 +118,11 @@ public class VpTreeNodeTest {
             // check
             for (int r : resultSet) {
                 assertTrue(String.format("VPTree result %d is not in the closest %d " + " from the exhaustive search.",
-                                r, k), s.contains(r));
+                        r, k), s.contains(r));
             }
             for (int r : s) {
                 assertTrue(String.format("VPTree result %d is not in the closest %d " + " from the exhaustive search.",
-                                r, k), s.contains(r));
+                        r, k), s.contains(r));
             }
         }
     }
@@ -120,6 +140,10 @@ public class VpTreeNodeTest {
         tree.search(Nd4j.create(new double[] {50, 50}), 1, add, distances);
         DataPoint assertion = add.get(0);
         assertEquals(new DataPoint(0, Nd4j.create(new double[] {55, 55})), assertion);
+
+        tree.search(Nd4j.create(new double[]{60,60}),1,add,distances);
+        assertion = add.get(0);
+        assertEquals(Nd4j.create(new double[] {60, 60}), assertion.getPoint());
 
 
     }
