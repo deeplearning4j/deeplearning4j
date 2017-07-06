@@ -45,11 +45,11 @@ import java.util.concurrent.LinkedBlockingDeque;
  *
  * @author Alex Black
  */
-public class IEvaluateFlatMapFunction<T extends IEvaluation> extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, T> {
+public class IEvaluateFlatMapFunction<T extends IEvaluation> extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, T[]> {
 
     public IEvaluateFlatMapFunction(boolean isCompGraph, Broadcast<String> json, Broadcast<INDArray> params,
-                    int evalBatchSize, T evaluation) {
-        super(new IEvaluateFlatMapFunctionAdapter<>(isCompGraph, json, params, evalBatchSize, evaluation));
+                    int evalBatchSize, T... evaluations) {
+        super(new IEvaluateFlatMapFunctionAdapter<>(isCompGraph, json, params, evalBatchSize, evaluations));
     }
 }
 
@@ -62,32 +62,32 @@ public class IEvaluateFlatMapFunction<T extends IEvaluation> extends BaseFlatMap
  * @author Alex Black
  */
 @Slf4j
-class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapFunctionAdapter<Iterator<DataSet>, T> {
+class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapFunctionAdapter<Iterator<DataSet>, T[]> {
 
     protected boolean isCompGraph;
     protected Broadcast<String> json;
     protected Broadcast<INDArray> params;
     protected int evalBatchSize;
-    protected T evaluation;
+    protected T[] evaluations;
 
     /**
      * @param json Network configuration (json format)
      * @param params Network parameters
      * @param evalBatchSize Max examples per evaluation. Do multiple separate forward passes if data exceeds
      *                              this. Used to avoid doing too many at once (and hence memory issues)
-     * @param evaluation Initial evaulation instance (i.e., empty Evaluation or RegressionEvaluation instance)
+     * @param evaluations Initial evaulation instance (i.e., empty Evaluation or RegressionEvaluation instance)
      */
     public IEvaluateFlatMapFunctionAdapter(boolean isCompGraph, Broadcast<String> json, Broadcast<INDArray> params,
-                    int evalBatchSize, T evaluation) {
+                    int evalBatchSize, T[] evaluations) {
         this.isCompGraph = isCompGraph;
         this.json = json;
         this.params = params;
         this.evalBatchSize = evalBatchSize;
-        this.evaluation = evaluation;
+        this.evaluations = evaluations;
     }
 
     @Override
-    public Iterable<T> call(Iterator<DataSet> dataSetIterator) throws Exception {
+    public Iterable<T[]> call(Iterator<DataSet> dataSetIterator) throws Exception {
         if (!dataSetIterator.hasNext()) {
             return Collections.emptyList();
         }
@@ -103,9 +103,9 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
                                 "Network did not have same number of parameters as the broadcast set parameters");
             graph.setParams(val);
 
-            T eval = graph.doEvaluation(
+            T[] eval = graph.doEvaluation(
                             new SparkADSI(new IteratorDataSetIterator(dataSetIterator, evalBatchSize), 2, true),
-                            evaluation)[0];
+                            evaluations);
             return Collections.singletonList(eval);
 
         } else {
@@ -116,9 +116,9 @@ class IEvaluateFlatMapFunctionAdapter<T extends IEvaluation> implements FlatMapF
                                 "Network did not have same number of parameters as the broadcast set parameters");
             network.setParameters(val);
 
-            T eval = network.doEvaluation(
+            T[] eval = network.doEvaluation(
                             new SparkADSI(new IteratorDataSetIterator(dataSetIterator, evalBatchSize), 2, true),
-                            evaluation)[0];
+                            evaluations);
             return Collections.singletonList(eval);
         }
     }

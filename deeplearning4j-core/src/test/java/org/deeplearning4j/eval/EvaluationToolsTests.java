@@ -18,6 +18,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * Created by Alex on 07/01/2017.
@@ -101,6 +102,27 @@ public class EvaluationToolsTests {
             String str = EvaluationTools.rocChartToHtml(roc, Arrays.asList("setosa", "versicolor", "virginica"));
             System.out.println(str);
         }
+    }
+
+    @Test
+    public void testEvaluationCalibrationToHtml() throws Exception {
+        int minibatch = 1000;
+        int nClasses = 3;
+
+        INDArray arr = Nd4j.rand(minibatch, nClasses);
+        arr.diviColumnVector(arr.sum(1));
+        INDArray labels = Nd4j.zeros(minibatch, nClasses);
+        Random r = new Random(12345);
+        for( int i=0; i<minibatch; i++ ){
+            labels.putScalar(i, r.nextInt(nClasses), 1.0);
+        }
+
+        int numBins = 10;
+        EvaluationCalibration ec = new EvaluationCalibration(numBins, numBins);
+        ec.eval(labels, arr);
+
+        String str = EvaluationTools.evaluationCalibrationToHtml(ec);
+//        System.out.println(str);
     }
 
 }

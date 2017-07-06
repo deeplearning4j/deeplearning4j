@@ -2953,7 +2953,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Perform evaluation on the given data (MultiDataSetIterator) with the given {@link IEvaluation} instance
      *
      * @param iterator   Test data to evaluate on
-     * @param evaluation IEvaluation insntance
+     * @param evaluations IEvaluation insntance
      * @param <T>        Type of the IEvaluation instance
      * @return           The input IEvaluation instance, after performing evaluation on the test data
      */

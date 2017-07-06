@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThan;
@@ -136,30 +137,8 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         //This gives us 3 binary arrays: labels, predictions, masks
         INDArray classPredictions;
         if (decisionThreshold != null) {
-            //Need to do a broadcast greater-than op...
-            //TODO replace the (rather inelegant) implementation below with proper broadcast comparison ops once implemented
-            // https://github.com/deeplearning4j/nd4j/issues/1884
-
             classPredictions = Nd4j.createUninitialized(networkPredictions.shape());
-            if (networkPredictions.rows() <= networkPredictions.columns()) {
-                //Do fewer ops by looping over rows
-                int nRows = networkPredictions.rows();
-                for (int i = 0; i < nRows; i++) {
-                    INDArray inRow = networkPredictions.getRow(i);
-                    INDArray outRow = classPredictions.getRow(i);
-                    Nd4j.getExecutioner().exec(new GreaterThan(inRow, decisionThreshold, outRow, inRow.length()));
-                }
-            } else {
-                //Do fewer ops by looping over columns
-                int nCol = networkPredictions.size(1);
-                for (int i = 0; i < nCol; i++) {
-                    INDArray inCol = networkPredictions.getColumn(i);
-                    INDArray outCol = classPredictions.getColumn(i);
-                    double currThreshold = decisionThreshold.getDouble(i);
-                    Nd4j.getExecutioner()
-                                    .exec(new ScalarGreaterThan(inCol, null, outCol, inCol.length(), currThreshold));
-                }
-            }
+            Nd4j.getExecutioner().exec(new BroadcastGreaterThan(networkPredictions, decisionThreshold, classPredictions, 1));
         } else {
             classPredictions = networkPredictions.gt(0.5);
         }

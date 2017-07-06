@@ -18,28 +18,25 @@
 
 package org.deeplearning4j.clustering.vptree;
 
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
-import org.deeplearning4j.clustering.berkeley.Counter;
-import org.deeplearning4j.clustering.berkeley.CounterMap;
+import lombok.*;
 import org.deeplearning4j.clustering.berkeley.PriorityQueue;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.sptree.HeapItem;
 import org.deeplearning4j.clustering.util.MathUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.Dot;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Vantage point tree implementation
@@ -47,6 +44,7 @@ import java.util.concurrent.*;
  * @author Adam Gibson
  */
 @Builder
+@AllArgsConstructor
 public class VPTree {
 
     public static final String EUCLIDEAN = "euclidean";
@@ -61,7 +59,7 @@ public class VPTree {
     private ExecutorService executorService;
     @Getter
     private boolean parallel = true;
-
+    private AtomicInteger size = new AtomicInteger(0);
 
     /**
      *
@@ -198,7 +196,10 @@ public class VPTree {
                 Nd4j.getExecutioner().exec(new EuclideanDistance(items,
                         basePoint,distancesArr,items.length()),1);
                 break;
-
+            case "coinedistance":
+                Nd4j.getExecutioner().exec(new CosineDistance(items,
+                        basePoint,distancesArr,items.length()),1);
+                break;
             case "cosinesimilarity":
                 Nd4j.getExecutioner().exec(new CosineSimilarity(items,
                         basePoint,distancesArr,items.length()),1);
@@ -239,6 +240,10 @@ public class VPTree {
                 float ret2 = Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(arr1,arr2))
                         .getFinalResult().floatValue();
                 return invert ? -ret2 : ret2;
+            case "cosinedistance":
+                float ret6 = Nd4j.getExecutioner().execAndReturn(new CosineDistance(arr1,arr2))
+                        .getFinalResult().floatValue();
+                return invert ? -ret6 : ret6;
 
             case "manhattan":
                 float ret3 = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(arr1,arr2))
@@ -265,9 +270,10 @@ public class VPTree {
             executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
         final Node ret = new Node(lower, 0);
+        size.incrementAndGet();
 
         if (upper - lower > 1) {
-            int randomPoint = MathUtils.randomNumberBetween(lower, upper - 1);
+            int randomPoint = MathUtils.randomNumberBetween(lower, upper - 1,Nd4j.getRandom());
 
             // Partition around the median distance
             final int median = (upper + lower) / 2;
@@ -303,7 +309,8 @@ public class VPTree {
 
             int leftPointsIndex = 0;
             int rightPointsIndex = 0;
-            for (int i = 0; i < distancesArr.length(); i++) {
+            synchronized (items) {
+                for (int i = 0; i < distancesArr.length(); i++) {
                 if (distancesArr.getDouble(i) < medianDistance) {
                     leftPoints.putRow(leftPointsIndex++, items.getRow(i));
                 } else {
@@ -311,18 +318,20 @@ public class VPTree {
                 }
             }
 
-            for (int i = 0; i < leftPointsIndex; i++) {
-                items.putRow(i, leftPoints.getRow(i));
+                for (int i = 0; i < leftPointsIndex; i++) {
+                    items.putRow(i, leftPoints.getRow(i));
+                }
+
+                for (int i = 0; i < rightPointsIndex; i++) {
+                    items.putRow(i + leftPointsIndex, rightPoints.getRow(i));
+                }
+
+                ret.setThreshold(distance(items.getRow(lower), items.getRow(median)));
+                ret.setIndex(lower);
+
             }
 
-            for (int i = 0; i < rightPointsIndex; i++) {
-                items.putRow(i + leftPointsIndex, rightPoints.getRow(i));
-            }
-
-            ret.setThreshold(distance(items.getRow(lower), items.getRow(median)));
-            ret.setIndex(lower);
-
-            if(parallel) {
+            if(parallel && size.get() >= Runtime.getRuntime().availableProcessors()) {
                 Future<?> left = null;
                 Future<?> right = null;
                 if(lower + 1 !=  median) {
