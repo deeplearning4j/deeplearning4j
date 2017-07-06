@@ -37,13 +37,10 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
     private INDArray predictionCountsEachClass;
 
     private INDArray residualPlotOverall;
-    private INDArray residualPlotByClass;
-    private INDArray residualPlotPositiveEachClass;
-    private INDArray residualPlotNegativeEachClass;
+    private INDArray residualPlotByLabelClass;
 
     private INDArray probHistogramOverall;              //Simple histogram over all probabilities
-    private INDArray probHistogramClassX;               //Histogram - for each class separately
-    private INDArray probHistogramClassXAndLabelX;      //Histogram - for each class separately, only where label is same class
+    private INDArray probHistogramByLabelClass;         //Histogram - for each label class separately
 
     public EvaluationCalibration(){
         this(DEFAULT_RELIABILITY_DIAG_NUM_BINS, DEFAULT_HISTOGRAM_NUM_BINS, true);
@@ -84,13 +81,10 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
             predictionCountsEachClass = Nd4j.create(1, nClasses);
 
             residualPlotOverall = Nd4j.create(1, histogramNumBins);
-            residualPlotByClass = Nd4j.create(histogramNumBins, nClasses);
-            residualPlotPositiveEachClass = Nd4j.create(histogramNumBins, nClasses);
-            residualPlotNegativeEachClass = Nd4j.create(histogramNumBins, nClasses);
+            residualPlotByLabelClass = Nd4j.create(histogramNumBins, nClasses);
 
-            probHistogramOverall = Nd4j.create(1, nClasses);
-            probHistogramClassX = Nd4j.create(histogramNumBins, nClasses);
-            probHistogramClassXAndLabelX = Nd4j.create(histogramNumBins, nClasses);
+            probHistogramOverall = Nd4j.create(1, histogramNumBins);
+            probHistogramByLabelClass = Nd4j.create(histogramNumBins, nClasses);
         }
 
 
@@ -196,21 +190,14 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
             //Counts for positive class only: values are in the current bin AND it's a positive label
             INDArray isPosLabelForBin = l.mul(currBinBitMask);
 
-            residualPlotByClass.getRow(j).addi(isPosLabelForBin.sum(0));
+            residualPlotByLabelClass.getRow(j).addi(isPosLabelForBin.sum(0));
 
-            INDArray countsOverallProbs = currBinBitMaskProbs.sum(0);
-            probHistogramOverall.addi(countsOverallProbs);
+            int probNewTotalCount = probHistogramOverall.getInt(0,j) + currBinBitMaskProbs.sumNumber().intValue();
+            probHistogramOverall.putScalar(0,j,probNewTotalCount);
 
             INDArray isPosLabelForBinProbs = l.mul(currBinBitMaskProbs);
-            INDArray isNegLabelForBinProbs = notLabels.muli(currBinBitMaskProbs);
-            probHistogramClassX.getRow(j).addi(isPosLabelForBinProbs.sum(0));
-            probHistogramClassXAndLabelX.getRow(j).addi(isNegLabelForBinProbs.sum(0));
+            probHistogramByLabelClass.getRow(j).addi(isPosLabelForBinProbs.sum(0));
         }
-
-
-
-
-
     }
 
     @Override
@@ -300,7 +287,20 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
 
     public Histogram getResidualPlot(int labelClassIdx){
         String title = "EvaluationCalibration Residual Plot - All Predictions, Class " + labelClassIdx;
-        int[] counts = residualPlotByClass.getColumn(labelClassIdx).dup().data().asInt();
+        int[] counts = residualPlotByLabelClass.getColumn(labelClassIdx).dup().data().asInt();
+        return new Histogram(title, 0.0, 1.0, counts);
+    }
+
+    public Histogram getProbabilityHistogramAllClasses(){
+        String title = "EvaluationCalibration Probability Plot - All Predictions, All Classes";
+        int[] counts = probHistogramOverall.data().asInt();
+        return new Histogram(title, 0.0, 1.0, counts);
+    }
+
+    public Histogram getProbabilityHistogram(int labelClassIdx){
+        String title = "EvaluationCalibration Probability Plot - P(class_" + labelClassIdx + ") - Data Labelled Class "
+                + labelClassIdx + " Only";
+        int[] counts = probHistogramByLabelClass.getColumn(labelClassIdx).dup().data().asInt();
         return new Histogram(title, 0.0, 1.0, counts);
     }
 }

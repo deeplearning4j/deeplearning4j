@@ -128,20 +128,14 @@ public class EvaluationCalibrationTest {
         ec.eval(labels, arr);
 
         INDArray absLabelSubProb = Transforms.abs(labels.sub(arr));
-
-        INDArray argmaxPredicted = Nd4j.argMax(arr,1);
         INDArray argmaxLabels = Nd4j.argMax(labels,1);
 
         int[] countsAllClasses = new int[numBins];
         int[][] countsByClass = new int[nClasses][numBins];         //Histogram count of |label[x] - p(x)|; rows x are over classes
-        int[][] countsByClassPosOnly = new int[nClasses][numBins];
-        int[][] countsByClassNegOnly = new int[nClasses][numBins];
-
         double binSize = 1.0 / numBins;
 
         for( int i=0; i<minibatch; i++ ){
             int actualClassIdx = argmaxLabels.getInt(i,0);
-            int predictedClassIdx = argmaxPredicted.getInt(i,0);
             for( int j=0; j<nClasses; j++ ){
                 double labelSubProb = absLabelSubProb.getDouble(i,j);
                 for( int k=0; k<numBins; k++ ){
@@ -178,6 +172,39 @@ public class EvaluationCalibrationTest {
 
 
 
+        //Check overall probability distribution
+        int[] probCountsAllClasses = new int[numBins];
+        int[][] probCountsByClass = new int[nClasses][numBins];         //Histogram count of |label[x] - p(x)|; rows x are over classes
+        for( int i=0; i<minibatch; i++ ){
+            int actualClassIdx = argmaxLabels.getInt(i,0);
+            for( int j=0; j<nClasses; j++ ){
+                double prob = arr.getDouble(i,j);
+                for( int k=0; k<numBins; k++ ){
+                    double binLower = k * binSize;
+                    double binUpper = (k+1)*binSize;
+                    if(k == numBins-1) binUpper = 1.0;
 
+                    if(prob >= binLower && prob < binUpper){
+                        probCountsAllClasses[k]++;
+                        if(j == actualClassIdx){
+                            probCountsByClass[j][k]++;
+                        }
+                    }
+                }
+            }
+        }
+
+        Histogram allProb = ec.getProbabilityHistogramAllClasses();
+        int[] actProbCountsAllClasses = allProb.getBinCounts();
+
+        assertArrayEquals(probCountsAllClasses, actProbCountsAllClasses);
+
+        //Check probability distribution - for each label class
+        for( int i=0; i<nClasses; i++ ){
+            Histogram probCurrClass = ec.getProbabilityHistogram(i);
+            int[] actProbCurrClass = probCurrClass.getBinCounts();
+
+            assertArrayEquals(probCountsByClass[i], actProbCurrClass);
+        }
     }
 }
