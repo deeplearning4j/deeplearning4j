@@ -42,7 +42,7 @@ public class EvaluationCalibrationTest {
         INDArray probs = Nd4j.vstack(bin0Probs, bin1Probs, bin2Probs, bin4Probs);
         INDArray labels = Nd4j.vstack(bin0Labels, bin1Labels, bin2Labels, bin4Labels);
 
-        EvaluationCalibration ec = new EvaluationCalibration(5);
+        EvaluationCalibration ec = new EvaluationCalibration(5, 5);
         ec.eval(labels, probs);
 
         for (int i = 0; i < 1; i++) {
