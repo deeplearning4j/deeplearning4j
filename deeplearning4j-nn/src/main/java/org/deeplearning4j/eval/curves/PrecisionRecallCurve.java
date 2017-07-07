@@ -20,14 +20,27 @@ public class PrecisionRecallCurve extends BaseCurve {
     private double[] threshold;
     private double[] precision;
     private double[] recall;
+    private int[] tpCount;
+    private int[] fpCount;
+    private int[] fnCount;
+    private int totalCount;
 
     private Double area;
 
     public PrecisionRecallCurve(@JsonProperty("threshold") double[] threshold,
-                    @JsonProperty("precision") double[] precision, @JsonProperty("recall") double[] recall) {
+                                @JsonProperty("precision") double[] precision,
+                                @JsonProperty("recall") double[] recall,
+                                @JsonProperty("tpCount") int[] tpCount,
+                                @JsonProperty("fpCount") int[] fpCount,
+                                @JsonProperty("fnCount") int[] fnCount,
+                                @JsonProperty("totalCount") int totalCount) {
         this.threshold = threshold;
         this.precision = precision;
         this.recall = recall;
+        this.tpCount = tpCount;
+        this.fpCount = fpCount;
+        this.fnCount = fnCount;
+        this.totalCount = totalCount;
     }
 
     @Override
@@ -167,6 +180,13 @@ public class PrecisionRecallCurve extends BaseCurve {
         return new Point(0, threshold[0], precision[0], this.recall[0]);
     }
 
+    public Confusion getConfusionMatrixAtThreshold(double threshold){
+        Point p = getPointAtThreshold(threshold);
+        int idx = p.idx;
+        int tn = totalCount - (tpCount[idx] + fpCount[idx] + fnCount[idx]);
+        return new Confusion(p, tpCount[idx], fpCount[idx], fnCount[idx], tn );
+    }
+
     public static PrecisionRecallCurve fromJson(String json) {
         return fromJson(json, PrecisionRecallCurve.class);
     }
@@ -182,5 +202,15 @@ public class PrecisionRecallCurve extends BaseCurve {
         private final double threshold;
         private final double precision;
         private final double recall;
+    }
+
+    @AllArgsConstructor
+    @Data
+    public static class Confusion {
+        private final Point point;
+        private final int tpCount;
+        private final int fpCount;
+        private final int fnCount;
+        private final int tnCount;
     }
 }
