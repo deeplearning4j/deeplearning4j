@@ -23,6 +23,8 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.*;
 
@@ -146,41 +148,54 @@ public class VpTreeNodeTest {
     }
 
     @Test
-    public void testVPSearchOverNaturals() throws Exception {
+    public void testVPSearchOverNaturals1D() throws Exception {
+        testVPSearchOverNaturalsPD(1);
+    }
+
+    @Test
+    public void testVPSearchOverNaturals2D() throws Exception {
+        testVPSearchOverNaturalsPD(2);
+    }
+
+    public static void testVPSearchOverNaturalsPD(int P) throws Exception {
         final int firstPoint = 0;
         final int lastPoint = 20;
         final int queryPoint = 12;
-        final int k = 5;
+        final int K = 5;
 
         INDArray points = Nd4j.arange(firstPoint, lastPoint).transpose();
-        INDArray query = Nd4j.zeros(1);
-        query.putScalar(0, queryPoint);
+        points = Nd4j.concat(1, points, points);
+        INDArray query = Nd4j.zeros(1, P);
+        for (int i = 0; i < P; i++)
+            query.putScalar(0, i, queryPoint);
 
-        INDArray trueResults = Nd4j.zeros(k);
-        for (int i = 0; i < k; i++) {
-            int pt = queryPoint - k / 2 + i;
-            trueResults.putScalar(i, pt);
+        INDArray trueResults = Nd4j.zeros(K, P);
+        for (int j = 0; j < K; j++) {
+            int pt = queryPoint - K / 2 + j ;
+            for (int i = 0; i < P; i++)
+                trueResults.putScalar(j, i, pt);
         }
         VPTree tree = new VPTree(points);
         List<DataPoint> results = new ArrayList<>();
         List<Double> distances = new ArrayList<>();
-        tree.search(query, k, results, distances);
-        INDArray sortedResults = Nd4j.zeros(k);
+        tree.search(query, K, results, distances);
+        INDArray sortedResults = Nd4j.zeros(K, P);
         int i = 0;
-        for (DataPoint p : results)
-            sortedResults.put(new int[] {0, i++}, p.getPoint());
-        Nd4j.sort(sortedResults, 1, true);
+        for (DataPoint p : results) {
+            sortedResults.put(new INDArrayIndex[]{NDArrayIndex.point(i++), NDArrayIndex.all()}, p.getPoint());
+        }
+        Nd4j.sort(sortedResults, 0, true);
         if (!trueResults.equalsWithEps(sortedResults, 1E-12))
             throw new Exception("VPTree search results do not match true results");
 
-        VPTreeFillSearch fillSearch = new VPTreeFillSearch(tree, k, query);
+        VPTreeFillSearch fillSearch = new VPTreeFillSearch(tree, K, query);
         fillSearch.search();
         results = fillSearch.getResults();
-        sortedResults = Nd4j.zeros(k);
+        sortedResults = Nd4j.zeros(K, P);
         i = 0;
         for (DataPoint p : results)
-            sortedResults.put(new int[] {0, i++}, p.getPoint());
-        Nd4j.sort(sortedResults, 1, true);
+            sortedResults.put(new INDArrayIndex[]{NDArrayIndex.point(i++), NDArrayIndex.all()}, p.getPoint());
+        Nd4j.sort(sortedResults, 0, true);
         if (!trueResults.equalsWithEps(sortedResults, 1E-12))
             throw new Exception("VPTreeFillSearch results do not match true results");
     }
