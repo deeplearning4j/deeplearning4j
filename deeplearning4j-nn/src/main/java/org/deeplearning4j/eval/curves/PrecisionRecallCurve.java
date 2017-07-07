@@ -103,7 +103,7 @@ public class PrecisionRecallCurve extends BaseCurve {
     }
 
     /**
-     * Get the point (index, threshold, precision, recall) at the given threshold.
+     * Get the point (index, threshold, precision, recall) at the given threshold.<br>
      * Note that if the threshold is not found exactly, the next highest threshold exceeding the requested threshold
      * is returned
      *
@@ -118,15 +118,15 @@ public class PrecisionRecallCurve extends BaseCurve {
 
         int idx = Arrays.binarySearch(this.threshold, threshold);
         if (idx < 0) {
-            //Not found (usual case)
+            //Not found (usual case). binarySearch javadoc:
             /*
             index of the search key, if it is contained in the array;
-     *         otherwise, <tt>(-(<i>insertion point</i>) - 1)</tt>.  The
-     *         <i>insertion point</i> is defined as the point at which the
-     *         key would be inserted into the array: the index of the first
-     *         element greater than the key, or <tt>a.length</tt> if all
-     *         elements in the array are less than the specified key.
-             */
+            otherwise, (-(insertion point) - 1).  The
+            insertion point is defined as the point at which the
+            key would be inserted into the array: the index of the first
+            element greater than the key, or a.length if all
+            elements in the array are less than the specified key.
+            */
             idx = -idx - 1;
         }
 
@@ -180,11 +180,29 @@ public class PrecisionRecallCurve extends BaseCurve {
         return new Point(0, threshold[0], precision[0], this.recall[0]);
     }
 
-    public Confusion getConfusionMatrixAtThreshold(double threshold){
+    /**
+     * Get the binary confusion matrix for the given threshold. As per {@link #getPointAtThreshold(double)},
+     * if the threshold is not found exactly, the next highest threshold exceeding the requested threshold
+     * is returned
+     *
+     * @param threshold Threshold at which to get the confusion matrix
+     * @return Binary confusion matrix
+     */
+    public Confusion getConfusionMatrixAtThreshold(double threshold) {
         Point p = getPointAtThreshold(threshold);
         int idx = p.idx;
         int tn = totalCount - (tpCount[idx] + fpCount[idx] + fnCount[idx]);
         return new Confusion(p, tpCount[idx], fpCount[idx], fnCount[idx], tn );
+    }
+
+    /**
+     * Get the binary confusion matrix for the given position. As per {@link #getPointAtThreshold(double)}.
+     *
+     * @param point Position at which to get the binary confusion matrix
+     * @return Binary confusion matrix
+     */
+    public Confusion getConfusionMatrixAtPoint(int point){
+        return getConfusionMatrixAtThreshold(threshold[point]);
     }
 
     public static PrecisionRecallCurve fromJson(String json) {
