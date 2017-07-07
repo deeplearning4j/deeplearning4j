@@ -110,4 +110,6 @@ public interface Writable extends Serializable {
     /** Convert Writable to long. Whether this is supported depends on the specific writable. */
     long toLong();
 
+    WritableType getType();
+
 }

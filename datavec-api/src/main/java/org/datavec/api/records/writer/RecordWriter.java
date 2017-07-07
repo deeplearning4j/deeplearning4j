@@ -24,6 +24,7 @@ import org.datavec.api.writable.Writable;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 
 /**
  *  Record writer
@@ -36,7 +37,7 @@ public interface RecordWriter extends Closeable, Configurable {
      * Write a record
      * @param record the record to write
      */
-    void write(Collection<Writable> record) throws IOException;
+    void write(List<Writable> record) throws IOException;
 
 
     /**
