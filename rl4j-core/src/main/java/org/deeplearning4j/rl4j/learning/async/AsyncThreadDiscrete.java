@@ -4,6 +4,7 @@ import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.network.NeuralNet;
@@ -44,10 +45,8 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
 
         Integer action;
         Integer lastAction = null;
-        INDArray history[] = null;
-        boolean isHistoryProcessor = getHistoryProcessor() != null;
-
-        int skipFrame = isHistoryProcessor ? getHistoryProcessor().getConf().getSkipFrame() : 1;
+        IHistoryProcessor hp = getHistoryProcessor();
+        int skipFrame = hp != null ? hp.getConf().getSkipFrame() : 1;
 
         double reward = 0;
         double accuReward = 0;
@@ -55,67 +54,58 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
         while (!getMdp().isDone() && i < nstep * skipFrame) {
 
             INDArray input = Learning.getInput(getMdp(), obs);
+            INDArray hstack = null;
 
-            //if step of training, just repeat lastAction
-            if (getStepCounter() % skipFrame != 0) {
-                action = lastAction;
-            } else {
-                if (history == null) {
-                    if (isHistoryProcessor) {
-                        getHistoryProcessor().add(input);
-                        history = getHistoryProcessor().getHistory();
-                    } else
-                        history = new INDArray[] {input};
-                }
-                //concat the history into a single INDArray input
-                INDArray hstack = Transition.concat(history);
-
-                //if input is not 2d, you have to append that the batch is 1 length high
-                if (hstack.shape().length > 2)
-                    hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
-
-                action = policy.nextAction(hstack);
+            if (hp != null) {
+                hp.record(input);
             }
 
-            lastAction = action;
+            //if step of training, just repeat lastAction
+            if (getStepCounter() % skipFrame != 0 && lastAction != null) {
+                action = lastAction;
+            } else {
+                hstack = processHistory(input);
+                action = policy.nextAction(hstack);
+            }
 
             StepReply<O> stepReply = getMdp().step(action);
             accuReward += stepReply.getReward() * getConf().getRewardFactor();
 
             //if it's not a skipped frame, you can do a step of training
-            if (getStepCounter() % skipFrame == 0 || stepReply.isDone()) {
+            if (getStepCounter() % skipFrame == 0 || lastAction == null || stepReply.isDone()) {
                 obs = stepReply.getObservation();
 
-                if (input.shape().length > 2)
-                    input = input.reshape(Learning.makeShape(1, input.shape()));
-
-                INDArray[] output = current.outputAll(input);
-                rewards.add(new MiniTrans(Transition.concat(history), action, output, accuReward));
+                if (hstack == null) {
+                    hstack = processHistory(input);
+                }
+                INDArray[] output = current.outputAll(hstack);
+                rewards.add(new MiniTrans(hstack, action, output, accuReward));
 
                 reward += stepReply.getReward();
-
-                if (isHistoryProcessor)
-                    getHistoryProcessor().add(Learning.getInput(getMdp(), stepReply.getObservation()));
-
-                history = isHistoryProcessor ? getHistoryProcessor().getHistory()
-                                : new INDArray[] {Learning.getInput(getMdp(), stepReply.getObservation())};
                 accuReward = 0;
             }
             i++;
+            lastAction = action;
         }
 
         //a bit of a trick usable because of how the stack is treated to init R
         INDArray input = Learning.getInput(getMdp(), obs);
+        INDArray hstack = processHistory(input);
+
+        if (hp != null) {
+            hp.record(input);
+        }
+
         if (getMdp().isDone())
-            rewards.add(new MiniTrans(input, null, null, 0));
+            rewards.add(new MiniTrans(hstack, null, null, 0));
         else {
             INDArray[] output = null;
             if (getConf().getTargetDqnUpdateFreq() == -1)
-                output = current.outputAll(input);
+                output = current.outputAll(hstack);
             else
-                output = getAsyncGlobal().cloneTarget().outputAll(input);
+                output = getAsyncGlobal().cloneTarget().outputAll(hstack);
             double maxQ = Nd4j.max(output[0]).getDouble(0);
-            rewards.add(new MiniTrans(input, null, output, maxQ));
+            rewards.add(new MiniTrans(hstack, null, output, maxQ));
         }
 
         getAsyncGlobal().enqueue(calcGradient(current, rewards), i);
@@ -123,7 +113,23 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
         return new SubEpochReturn<O>(i, obs, reward, current.getLatestScore());
     }
 
-    ;
+    protected INDArray processHistory(INDArray input) {
+        IHistoryProcessor hp = getHistoryProcessor();
+        INDArray[] history;
+        if (hp != null) {
+            hp.add(input);
+            history = hp.getHistory();
+        } else
+            history = new INDArray[] {input};
+        //concat the history into a single INDArray input
+        INDArray hstack = Transition.concat(history);
+
+        //if input is not 2d, you have to append that the batch is 1 length high
+        if (hstack.shape().length > 2)
+            hstack = hstack.reshape(Learning.makeShape(1, hstack.shape()));
+
+        return hstack;
+    }
 
     public abstract Gradient[] calcGradient(NN nn, Stack<MiniTrans<Integer>> rewards);
 }

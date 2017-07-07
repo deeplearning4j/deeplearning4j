@@ -13,10 +13,8 @@ import org.deeplearning4j.rl4j.learning.StepCountable;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.policy.Policy;
-
 import org.deeplearning4j.rl4j.util.DataManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.deeplearning4j.rl4j.util.Constants;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
@@ -39,6 +37,8 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
     private int epochCounter = 0;
     @Getter
     private IHistoryProcessor historyProcessor;
+    @Getter
+    private int lastMonitor = -Constants.MONITOR_FREQ;
 
     public AsyncThread(AsyncGlobal<NN> asyncGlobal, int threadNumber) {
         this.threadNumber = threadNumber;
@@ -46,6 +46,22 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
     public void setHistoryProcessor(IHistoryProcessor.Configuration conf) {
         historyProcessor = new HistoryProcessor(conf);
+    }
+
+    protected void postEpoch() {
+        if (getHistoryProcessor() != null)
+            getHistoryProcessor().stopMonitor();
+
+    }
+
+    protected void preEpoch() {
+        if (getStepCounter() - lastMonitor >= Constants.MONITOR_FREQ && getHistoryProcessor() != null
+                        && getDataManager().isSaveData()) {
+            lastMonitor = getStepCounter();
+            int[] shape = getMdp().getObservationSpace().getShape();
+            getHistoryProcessor().startMonitor(getDataManager().getVideoDir() + "/video-" + threadNumber + "-"
+                            + getEpochCounter() + "-" + getStepCounter() + ".mp4", shape);
+        }
     }
 
     @Override
@@ -59,6 +75,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
             double rewards = initMdp.getReward();
             int length = initMdp.getSteps();
 
+            preEpoch();
             while (!getAsyncGlobal().isTrainingComplete() && getAsyncGlobal().isRunning()) {
                 SubEpochReturn<O> subEpochReturn = trainSubEpoch(obs, getConf().getNstep());
                 obs = subEpochReturn.getLastObs();
@@ -67,6 +84,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
                 rewards += subEpochReturn.getReward();
                 double score = subEpochReturn.getScore();
                 if (getMdp().isDone()) {
+                    postEpoch();
 
                     DataManager.StatEntry statEntry = new AsyncStatEntry(getStepCounter(), epochCounter, rewards, length, score);
                     log.info("ThreadNum-" + threadNumber + " Epoch: " + getEpochCounter());
@@ -78,12 +96,16 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
                     rewards = initMdp.getReward();
                     length = initMdp.getSteps();
                     epochCounter++;
+
+                    preEpoch();
                 }
             }
         } catch (Exception e) {
             log.error("Thread crashed: " + e.getCause());
             getAsyncGlobal().setRunning(false);
             e.printStackTrace();
+        } finally {
+            postEpoch();
         }
     }
 

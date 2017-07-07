@@ -42,12 +42,12 @@ public class HistoryProcessor implements IHistoryProcessor {
         history.add(processed);
     }
 
-    public void startMonitor(String filename) {
+    public void startMonitor(String filename, int[] shape) {
         stopMonitor();
-        fmpegFrameRecorder = new FFmpegFrameRecorder(filename, 800, 600, 0);
+        fmpegFrameRecorder = new FFmpegFrameRecorder(filename, shape[1], shape[0]);
         fmpegFrameRecorder.setVideoCodec(AV_CODEC_ID_H264);
-        fmpegFrameRecorder.setFrameRate(35.0);
-        fmpegFrameRecorder.setVideoBitrate(1000000);
+        fmpegFrameRecorder.setFrameRate(30.0);
+        fmpegFrameRecorder.setVideoQuality(30);
         try {
             log.info("Started monitoring: " + filename);
             fmpegFrameRecorder.start();

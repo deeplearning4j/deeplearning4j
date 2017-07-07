@@ -22,7 +22,7 @@ public interface IHistoryProcessor {
 
     void add(INDArray image);
 
-    void startMonitor(String filename);
+    void startMonitor(String filename, int[] shape);
 
     void stopMonitor();
 
