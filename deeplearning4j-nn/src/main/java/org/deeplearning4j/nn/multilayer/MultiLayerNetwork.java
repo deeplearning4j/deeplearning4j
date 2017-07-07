@@ -564,30 +564,34 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * As a general rule, this shouldn't ever need to be called manually when doing training via fit(DataSet) or fit(DataSetIterator)
      */
     public void initGradientsView() {
-        if (layers == null)
-            init();
+        if (flattenedGradients == null) {
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                if (layers == null)
+                    init();
 
-        int nLayers = layers.length;
+                int nLayers = layers.length;
 
-        //First: Work out total length of (backprop) params
-        int backpropParamLength = 0;
-        int[] nParamsPerLayer = new int[nLayers];
-        for (int i = 0; i < nLayers; i++) {
-            NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
-            nParamsPerLayer[i] = layers[i].conf().getLayer().initializer().numParams(conf);
-            backpropParamLength += nParamsPerLayer[i];
-        }
+                //First: Work out total length of (backprop) params
+                int backpropParamLength = 0;
+                int[] nParamsPerLayer = new int[nLayers];
+                for (int i = 0; i < nLayers; i++) {
+                    NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
+                    nParamsPerLayer[i] = layers[i].conf().getLayer().initializer().numParams(conf);
+                    backpropParamLength += nParamsPerLayer[i];
+                }
 
-        flattenedGradients = Nd4j.zeros(new int[] {1, backpropParamLength}, 'f'); //No need to initialize, as each layer will do it each iteration anyway
+                flattenedGradients = Nd4j.zeros(new int[] {1, backpropParamLength}, 'f'); //No need to initialize, as each layer will do it each iteration anyway
 
-        int backpropParamsSoFar = 0;
-        for (int i = 0; i < layers.length; i++) {
-            if (nParamsPerLayer[i] == 0)
-                continue; //This layer doesn't have any parameters...
-            INDArray thisLayerGradView = flattenedGradients.get(NDArrayIndex.point(0),
+                int backpropParamsSoFar = 0;
+                for (int i = 0; i < layers.length; i++) {
+                    if (nParamsPerLayer[i] == 0)
+                        continue; //This layer doesn't have any parameters...
+                    INDArray thisLayerGradView = flattenedGradients.get(NDArrayIndex.point(0),
                             NDArrayIndex.interval(backpropParamsSoFar, backpropParamsSoFar + nParamsPerLayer[i]));
-            layers[i].setBackpropGradientsViewArray(thisLayerGradView);
-            backpropParamsSoFar += nParamsPerLayer[i];
+                    layers[i].setBackpropGradientsViewArray(thisLayerGradView);
+                    backpropParamsSoFar += nParamsPerLayer[i];
+                }
+            }
         }
     }
 
@@ -1177,9 +1181,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     protected Pair<Gradient, INDArray> calcBackpropGradients(INDArray epsilon, boolean withOutputLayer) {
         if (flattenedGradients == null) {
-            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                initGradientsView();
-            }
+            initGradientsView();
         }
         String multiGradientKey;
         Gradient gradient = new DefaultGradient(flattenedGradients);
@@ -1392,7 +1394,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (flattenedGradients == null)
             initGradientsView();
         String multiGradientKey;
-        gradient = new DefaultGradient();
+        gradient = new DefaultGradient(flattenedGradients);
         Layer currLayer;
 
         if (!(getOutputLayer() instanceof IOutputLayer)) {

@@ -565,40 +565,42 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * or fit(MultiDataSet) methods
      */
     public void initGradientsView() {
-        if (!initCalled)
-            init();
+        if (flattenedGradients == null) {
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                if (!initCalled)
+                    init();
 
-        //Go through layers, and work out total number of parameters. Then allocate full parameters array
-        int numParams = 0;
-        int[] numParamsForVertex = new int[topologicalOrder.length];
-        int i = 0;
-        for (; i < configuration.getNetworkInputs().size(); i++) {
-            numParamsForVertex[i] = 0; //No parameters for input vertices
-        }
-        Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
-        for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()) {
-            org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
-            numParamsForVertex[i] = n.numParams(true);
-            numParams += numParamsForVertex[i];
-            i++;
-        }
-        flattenedGradients = Nd4j.create(1, numParams);
+                //Go through layers, and work out total number of parameters. Then allocate full parameters array
+                int numParams = 0;
+                int[] numParamsForVertex = new int[topologicalOrder.length];
+                int i = 0;
+                for (; i < configuration.getNetworkInputs().size(); i++) {
+                    numParamsForVertex[i] = 0; //No parameters for input vertices
+                }
+                Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
+                for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()) {
+                    org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
+                    numParamsForVertex[i] = n.numParams(true);
+                    numParams += numParamsForVertex[i];
+                    i++;
+                }
+                flattenedGradients = Nd4j.create(1, numParams);
 
-        //Given the topological ordering: work out the subset of the gradient array used for each layer, and set it
-        int paramOffsetSoFar = 0;
-        i = 0;
-        for (int vertexIdx : topologicalOrder) {
-            int nParamsThisVertex = numParamsForVertex[vertexIdx];
-            if (nParamsThisVertex != 0) {
-                INDArray gradientView = flattenedGradients.get(NDArrayIndex.point(0),
+                //Given the topological ordering: work out the subset of the gradient array used for each layer, and set it
+                int paramOffsetSoFar = 0;
+                i = 0;
+                for (int vertexIdx : topologicalOrder) {
+                    int nParamsThisVertex = numParamsForVertex[vertexIdx];
+                    if (nParamsThisVertex != 0) {
+                        INDArray gradientView = flattenedGradients.get(NDArrayIndex.point(0),
                                 NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
-                vertices[vertexIdx].setBackpropGradientsViewArray(gradientView);
+                        vertices[vertexIdx].setBackpropGradientsViewArray(gradientView);
+                    }
+                    i++;
+                    paramOffsetSoFar += nParamsThisVertex;
+                }
             }
-            i++;
-            paramOffsetSoFar += nParamsThisVertex;
         }
-
-
     }
 
     /**
@@ -1532,9 +1534,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     protected void calcBackpropGradients(boolean truncatedBPTT, INDArray... externalEpsilons) {
         if (flattenedGradients == null) {
-            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                initGradientsView();
-            }
+            initGradientsView();
         }
 
 
