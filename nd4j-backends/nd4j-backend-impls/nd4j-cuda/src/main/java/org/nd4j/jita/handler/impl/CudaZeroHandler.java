@@ -153,6 +153,10 @@ public class CudaZeroHandler implements MemoryHandler {
         for (int i = 0; i < numDevices; i++) {
             deviceAllocations.add(new ConcurrentHashMap<Long, Long>());
         }
+
+        if (NativeOpsHolder.getInstance().getDeviceNativeOps().getDeviceMajor(new CudaPointer(0)) < 3) {
+            throw new ND4JIllegalStateException("CUDA backend requires compute capatibility of 3.0 and above to run.");
+        }
     }
 
     /**
