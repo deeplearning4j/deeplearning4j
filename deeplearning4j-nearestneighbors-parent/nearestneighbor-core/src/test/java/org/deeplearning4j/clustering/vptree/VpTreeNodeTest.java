@@ -77,8 +77,16 @@ public class VpTreeNodeTest {
     }
 
     @Test
-    public void knnManual() {
-        INDArray arr = Nd4j.randn(3, 5);
+    public void knnManualRandom() {
+        knnManual(Nd4j.randn(3, 5));
+    }
+
+    @Test
+    public void knnManualNaturals() {
+        knnManual(generateNaturalsMatrix(20, 2));
+    }
+
+    public static void knnManual(INDArray arr) {
         VPTree t = new VPTree(arr, false);
         int k = 1;
         int m = arr.rows();
@@ -147,39 +155,43 @@ public class VpTreeNodeTest {
 
     }
 
+    public static INDArray generateNaturalsMatrix(int nrows, int ncols) {
+        INDArray col = Nd4j.arange(0, nrows).transpose();
+        INDArray points = Nd4j.zeros(nrows, ncols);
+        for (int i = 0; i < ncols; i++)
+            points.putColumn(i, col);
+        return points;
+    }
+
     @Test
     public void testVPSearchOverNaturals1D() throws Exception {
-        testVPSearchOverNaturalsPD(1);
+        testVPSearchOverNaturalsPD(20, 1,5);
     }
 
     @Test
     public void testVPSearchOverNaturals2D() throws Exception {
-        testVPSearchOverNaturalsPD(2);
+        testVPSearchOverNaturalsPD(20, 2,5);
     }
 
-    public static void testVPSearchOverNaturalsPD(int P) throws Exception {
-        final int firstPoint = 0;
-        final int lastPoint = 20;
+    public static void testVPSearchOverNaturalsPD(int nrows, int ncols, int K) throws Exception {
         final int queryPoint = 12;
-        final int K = 5;
 
-        INDArray points = Nd4j.arange(firstPoint, lastPoint).transpose();
-        points = Nd4j.concat(1, points, points);
-        INDArray query = Nd4j.zeros(1, P);
-        for (int i = 0; i < P; i++)
+        INDArray points = generateNaturalsMatrix(nrows, ncols);
+        INDArray query = Nd4j.zeros(1, ncols);
+        for (int i = 0; i < ncols; i++)
             query.putScalar(0, i, queryPoint);
 
-        INDArray trueResults = Nd4j.zeros(K, P);
+        INDArray trueResults = Nd4j.zeros(K, ncols);
         for (int j = 0; j < K; j++) {
             int pt = queryPoint - K / 2 + j ;
-            for (int i = 0; i < P; i++)
+            for (int i = 0; i < ncols; i++)
                 trueResults.putScalar(j, i, pt);
         }
-        VPTree tree = new VPTree(points);
+        VPTree tree = new VPTree(points, "euclidean", false, true);
         List<DataPoint> results = new ArrayList<>();
         List<Double> distances = new ArrayList<>();
         tree.search(query, K, results, distances);
-        INDArray sortedResults = Nd4j.zeros(K, P);
+        INDArray sortedResults = Nd4j.zeros(K, ncols);
         int i = 0;
         for (DataPoint p : results) {
             sortedResults.put(new INDArrayIndex[]{NDArrayIndex.point(i++), NDArrayIndex.all()}, p.getPoint());
@@ -191,7 +203,7 @@ public class VpTreeNodeTest {
         VPTreeFillSearch fillSearch = new VPTreeFillSearch(tree, K, query);
         fillSearch.search();
         results = fillSearch.getResults();
-        sortedResults = Nd4j.zeros(K, P);
+        sortedResults = Nd4j.zeros(K, ncols);
         i = 0;
         for (DataPoint p : results)
             sortedResults.put(new INDArrayIndex[]{NDArrayIndex.point(i++), NDArrayIndex.all()}, p.getPoint());
