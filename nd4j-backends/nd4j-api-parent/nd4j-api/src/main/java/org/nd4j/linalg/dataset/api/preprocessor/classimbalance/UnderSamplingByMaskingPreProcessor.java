@@ -5,17 +5,16 @@ import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 
 /**
- * For use in time series with unbalanced BINARY classes trained with truncated back prop through time
+ * For use in time series with unbalanced binary classes trained with truncated back prop through time
  * Undersamples the majority class by randomly masking time steps belonging to it
- * Arguments are the target distribution for the minority class and the window size (usually the value used with tbptt)
- *
- * //FIXME blah blah
- * approximate the given target distribution for every window of given size for every sample of the minibatch
+ * Given a target distribution for the minority class and the window size (usually the value used with tbptt)
+ * the preprocessor will approximate the given target distribution for every window of given size for every sample of the minibatch
  * By default '0' is considered the majority class and '1' the minorityLabel class
  * Default can be overriden with .overrideMinorityDefault()
  * <p>
- * If there are no minority classes in the given window all time steps are masked
  * ONLY masks belonging to the majority class are modified
+ * If a tbptt segment contains only majority class labels all time steps in that segment are masked. Can be overriden with
+ * donotMaskMinorityWindows() in which case 1 - target distribution % of time steps are masked
  * @author susaneraly
  */
 public class UnderSamplingByMaskingPreProcessor extends BaseUnderSamplingPreProcessor implements DataSetPreProcessor {
@@ -27,9 +26,8 @@ public class UnderSamplingByMaskingPreProcessor extends BaseUnderSamplingPreProc
      * The target distribution to approximate. Valid values are between (0,0.5].
      * Eg. For a targetDist = 0.25 and tbpttWindowSize = 100:
      * Every 100 time steps (starting from the last time step) will randomly mask majority time steps to approximate a 25:75 ratio of minorityLabel to majority classes
-     * FIXME//Note that the masking is done from a bernoulli sample with a p calculated to satisy this ratio taking into account the
      * @param targetDist
-     * @param windowSize
+     * @param windowSize Usually set to the size of the tbptt
      */
     public UnderSamplingByMaskingPreProcessor(double targetDist, int windowSize) {
         if (targetDist > 0.5 || targetDist <= 0) {

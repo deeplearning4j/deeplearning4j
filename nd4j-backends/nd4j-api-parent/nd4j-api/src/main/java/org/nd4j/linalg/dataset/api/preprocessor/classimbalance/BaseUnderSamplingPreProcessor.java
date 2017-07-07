@@ -1,6 +1,5 @@
 package org.nd4j.linalg.dataset.api.preprocessor.classimbalance;
 
-import lombok.Getter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -9,19 +8,23 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
-/**
- * @author susaneraly
- */
 public abstract class BaseUnderSamplingPreProcessor {
 
     protected int tbpttWindowSize;
     private boolean maskAllMajorityWindows = true;
     private boolean donotMaskMinorityWindows = false;
 
+    /**
+     * If a tbptt segment is all majority class labels default behaviour is to mask all time steps in the segment.
+     * donotMaskAllMajorityWindows() will override the default and mask (1-targetDist)% of the time steps
+     */
     public void donotMaskAllMajorityWindows(){
         this.maskAllMajorityWindows = false;
     }
 
+    /**
+     * If set will not mask timesteps if they fall in a tbptt segment with at least one minority class label
+     */
     public void donotMaskMinorityWindows(){
 		this.donotMaskMinorityWindows = true;
 	}

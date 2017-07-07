@@ -9,14 +9,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * For use in time series with unbalanced BINARY classes trained with truncated back prop through time
- * Undersamples the majority class by randomly masking time steps belonging to it
- * Arguments are the target distribution for the minority class and the window size (usually the value used with tbptt)
- * The target distribution is given as a map:
- * Keys are the indices of the labels to apply preprocessing to
- * //FIXME blah blah
- * Values are the target distribution for the minority class
- *
+ * The multidataset version of the UnderSamplingByMaskingPreProcessor
+ * Constructor takes a map - keys are indices of the multidataset to apply preprocessor to, values are the target distributions
  * @author susaneraly
  */
 public class UnderSamplingByMaskingMultiDataSetPreProcessor extends BaseUnderSamplingPreProcessor implements MultiDataSetPreProcessor {
@@ -26,12 +20,9 @@ public class UnderSamplingByMaskingMultiDataSetPreProcessor extends BaseUnderSam
 
     /**
      * The target distribution to approximate. Valid values are between (0,0.5].
-     * Eg. For a targetDist = 0.25 and tbpttWindowSize = 100:
-     * Every 100 time steps (starting from the last time step) will randomly mask majority time steps to approximate a 25:75 ratio of minorityLabelMap to majority classes
-     * FIXME//Note that the masking is done from a bernoulli sample with a p calculated to satisy this ratio taking into account the
      *
-     * @param targetDist
-     * @param windowSize
+     * @param targetDist Key is index of label in multidataset to apply preprocessor. Value is the target dist for that index.
+     * @param windowSize Usually set to the size of the tbptt
      */
     public UnderSamplingByMaskingMultiDataSetPreProcessor(Map<Integer, Double> targetDist, int windowSize) {
 
