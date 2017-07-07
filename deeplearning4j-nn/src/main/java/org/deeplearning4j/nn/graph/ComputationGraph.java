@@ -623,8 +623,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     public void pretrain(MultiDataSetIterator iter) {
         if (!configuration.isPretrain())
             return;
-        if (flattenedGradients == null)
-            initGradientsView();
+        if (flattenedGradients == null) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                initGradientsView();
+            }
+        }
 
         //Assume here that all layers are pretrainable layers
         for (int i = 0; i < topologicalOrder.length; i++) {
@@ -663,8 +666,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     public void pretrainLayer(String layerName, MultiDataSetIterator iter) {
         if (!configuration.isPretrain())
             return;
-        if (flattenedGradients == null)
-            initGradientsView();
+        if (flattenedGradients == null) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                initGradientsView();
+            }
+        }
 
         if (!verticesMap.containsKey(layerName)) {
             throw new IllegalStateException("Invalid vertex name: " + layerName);
@@ -785,8 +791,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Note that this method can only be used with ComputationGraphs with 1 input and 1 output
      */
     public void fit(DataSetIterator iterator) {
-        if (flattenedGradients == null)
-            initGradientsView();
+        if (flattenedGradients == null) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                initGradientsView();
+            }
+        }
         if (numInputArrays != 1 || numOutputArrays != 1)
             throw new UnsupportedOperationException("Cannot train ComputationGraph network with "
                             + " multiple inputs or outputs using a DataSetIterator");
@@ -904,8 +913,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * Fit the ComputationGraph using a MultiDataSetIterator
      */
     public void fit(MultiDataSetIterator multi) {
-        if (flattenedGradients == null)
-            initGradientsView();
+        if (flattenedGradients == null) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                initGradientsView();
+            }
+        }
 
         boolean destructable = false;
 
@@ -1043,8 +1055,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param labelMaskArrays   Mas arrays for the labels/outputs. Typically used for RNN training. May be null.
      */
     public void fit(INDArray[] inputs, INDArray[] labels, INDArray[] featureMaskArrays, INDArray[] labelMaskArrays) {
-        if (flattenedGradients == null)
-            initGradientsView();
+        if (flattenedGradients == null) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                initGradientsView();
+            }
+        }
 
         setInputs(inputs);
         setLabels(labels);
@@ -1534,7 +1549,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     protected void calcBackpropGradients(boolean truncatedBPTT, INDArray... externalEpsilons) {
         if (flattenedGradients == null) {
-            initGradientsView();
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                initGradientsView();
+            }
         }
 
 
@@ -2439,8 +2456,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      */
     protected void doTruncatedBPTT(INDArray[] inputs, INDArray[] labels, INDArray[] featureMasks,
                     INDArray[] labelMasks) {
-        if (flattenedGradients == null)
-            initGradientsView();
+        if (flattenedGradients == null) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                initGradientsView();
+            }
+        }
 
         //Approach used here to implement truncated BPTT: if input is 3d, split it. Otherwise: input is unmodified
 

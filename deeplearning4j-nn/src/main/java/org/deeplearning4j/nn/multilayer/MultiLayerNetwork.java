@@ -202,8 +202,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param iter Training data
      */
     public void pretrain(DataSetIterator iter) {
-        if (flattenedGradients == null)
-            initGradientsView();
+        if (flattenedGradients == null) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                initGradientsView();
+            }
+        }
         if (!layerWiseConfigurations.isPretrain())
             return;
 
@@ -220,8 +223,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param iter Training data
      */
     public void pretrainLayer(int layerIdx, DataSetIterator iter) {
-        if (flattenedGradients == null)
-            initGradientsView();
+        if (flattenedGradients == null) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                initGradientsView();
+            }
+        }
         if (!layerWiseConfigurations.isPretrain())
             return;
         if (layerIdx >= layers.length) {
@@ -253,8 +259,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      * @param features Training data array
      */
     public void pretrainLayer(int layerIdx, INDArray features) {
-        if (flattenedGradients == null)
-            initGradientsView();
+        if (flattenedGradients == null) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                initGradientsView();
+            }
+        }
         if (!layerWiseConfigurations.isPretrain())
             return;
         if (layerIdx >= layers.length) {
@@ -291,8 +300,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public void pretrain(INDArray input) {
         if (!layerWiseConfigurations.isPretrain())
             return;
-        if (flattenedGradients == null)
-            initGradientsView();
+        if (flattenedGradients == null) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                initGradientsView();
+            }
+        }
 
         /* During pretrain, feed forward expected activations of network, use activation cooccurrences during pretrain  */
 
@@ -1181,7 +1193,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     protected Pair<Gradient, INDArray> calcBackpropGradients(INDArray epsilon, boolean withOutputLayer) {
         if (flattenedGradients == null) {
-            initGradientsView();
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                initGradientsView();
+            }
         }
         String multiGradientKey;
         Gradient gradient = new DefaultGradient(flattenedGradients);
@@ -1391,8 +1405,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     /** Equivalent to backprop(), but calculates gradient for truncated BPTT instead. */
     protected void truncatedBPTTGradient() {
-        if (flattenedGradients == null)
-            initGradientsView();
+        if (flattenedGradients == null) {
+            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                initGradientsView();
+            }
+        }
         String multiGradientKey;
         gradient = new DefaultGradient(flattenedGradients);
         Layer currLayer;
@@ -1542,8 +1559,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             log.warn("Output layer not instance of output layer returning.");
             return;
         }
-        if (flattenedGradients == null)
-            initGradientsView();
+        if (flattenedGradients == null) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                initGradientsView();
+            }
+        }
 
         if (labels == null)
             throw new IllegalStateException("No labels found");
