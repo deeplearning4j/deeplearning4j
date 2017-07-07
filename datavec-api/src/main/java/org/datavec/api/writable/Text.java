@@ -618,6 +618,6 @@ public class Text extends BinaryComparable implements WritableComparable<BinaryC
 
     @Override
     public WritableType getType() {
-        throw new UnsupportedOperationException();
+        return WritableType.Text;
     }
 }
