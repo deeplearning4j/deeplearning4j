@@ -87,6 +87,7 @@ public abstract class BaseUnderSamplingPreProcessor {
         //all majority class and set to not mask all majority windows sample majority class by 1-targetMinorityDist
         if (minorityClass.sumNumber().intValue() == 0 && !maskAllMajorityWindows) return labelMask.muli(1-targetMinorityDist);
 
+        //Probabilities to be used for bernoulli sampling
         INDArray minoritymajorityRatio = minorityClass.sum(1).div(majorityClass.sum(1));
         INDArray majorityBernoulliP = minoritymajorityRatio.muli(1 - targetMinorityDist).divi(targetMinorityDist);
         BooleanIndexing.replaceWhere(majorityBernoulliP,1.0, Conditions.greaterThan(1.0)); //if minority ratio is already met round down to 1.0
