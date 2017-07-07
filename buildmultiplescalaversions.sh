@@ -22,7 +22,7 @@ set -eu
 ./change-scala-versions.sh 2.11 # should be idempotent, this is the default
 mvn "$@"
 ./change-scala-versions.sh 2.10
-if [ -z $(whatchanged)]; then
+if [ -z $(whatchanged) ]; then
     scalaError;
 else
     mvn -Dmaven.clean.skip=true -pl $(whatchanged| tr '\n' ',') -amd "$@"
