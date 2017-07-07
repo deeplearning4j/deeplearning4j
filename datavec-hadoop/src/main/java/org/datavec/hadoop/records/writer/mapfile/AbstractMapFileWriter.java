@@ -23,7 +23,6 @@ import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.WritableComparable;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.writable.*;
-import org.datavec.hadoop.records.reader.mapfile.record.RecordWritable;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,7 +51,7 @@ public abstract class AbstractMapFileWriter<T> {
     protected List<File> outputFiles = new ArrayList<>();
     protected List<MapFile.Writer> writers = new ArrayList<>();
 
-    org.apache.hadoop.conf.Configuration c = new org.apache.hadoop.conf.Configuration();
+    protected org.apache.hadoop.conf.Configuration hadoopConfiguration;
 
     protected SequenceFile.Writer.Option[] opts;
 
@@ -70,6 +69,11 @@ public abstract class AbstractMapFileWriter<T> {
     }
 
     public AbstractMapFileWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo) {
+        this(outputDir, mapFileSplitSize, convertTextTo,  new org.apache.hadoop.conf.Configuration());
+    }
+
+    public AbstractMapFileWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo,
+                                 org.apache.hadoop.conf.Configuration hadoopConfiguration) {
         this.outputDir = outputDir;
         this.mapFileSplitSize = mapFileSplitSize;
         if (convertTextTo == WritableType.Text) {
@@ -77,13 +81,14 @@ public abstract class AbstractMapFileWriter<T> {
         }
         this.convertTextTo = convertTextTo;
 
+        this.hadoopConfiguration = hadoopConfiguration;
+
         opts = new SequenceFile.Writer.Option[]{MapFile.Writer.keyClass(KEY_CLASS),
                 SequenceFile.Writer.valueClass(getValueClass())};
 
     }
 
     protected abstract Class<? extends org.apache.hadoop.io.Writable> getValueClass();
-
 
 
     public void setConf(Configuration conf) {
@@ -144,7 +149,7 @@ public abstract class AbstractMapFileWriter<T> {
             //Initialize first writer
             String filename = String.format(DEFAULT_FILENAME_PATTERN, 0);
             outputFiles.add(new File(outputDir, filename));
-            writers.add(new MapFile.Writer(c, new Path(outputFiles.get(0).getAbsolutePath()), opts));
+            writers.add(new MapFile.Writer(hadoopConfiguration, new Path(outputFiles.get(0).getAbsolutePath()), opts));
         }
 
         long key = counter.getAndIncrement();
@@ -157,13 +162,10 @@ public abstract class AbstractMapFileWriter<T> {
                 //Initialize new writer - next split
                 String filename = String.format(DEFAULT_FILENAME_PATTERN, splitIdx);
                 outputFiles.add(new File(outputDir, filename));
-                writers.add(new MapFile.Writer(c, new Path(outputFiles.get(splitIdx).getAbsolutePath()), opts));
+                writers.add(new MapFile.Writer(hadoopConfiguration, new Path(outputFiles.get(splitIdx).getAbsolutePath()), opts));
             }
             w = writers.get(splitIdx);
         }
-
-
-//        RecordWritable rw = new RecordWritable(newList);
 
         org.apache.hadoop.io.Writable hadoopWritable = getHadoopWritable(record);
 

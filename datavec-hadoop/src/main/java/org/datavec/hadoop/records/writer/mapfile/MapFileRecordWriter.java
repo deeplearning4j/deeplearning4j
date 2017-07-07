@@ -47,6 +47,11 @@ public class MapFileRecordWriter extends AbstractMapFileWriter<List<Writable>> i
         super(outputDir, mapFileSplitSize, convertTextTo);
     }
 
+    public MapFileRecordWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo,
+                                       org.apache.hadoop.conf.Configuration hadoopConfiguration) {
+        super(outputDir, mapFileSplitSize, convertTextTo, hadoopConfiguration);
+    }
+
     @Override
     protected Class<? extends org.apache.hadoop.io.Writable> getValueClass() {
         return RecordWritable.class;
