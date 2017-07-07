@@ -41,8 +41,7 @@ public class JcublasLevel2 extends BaseLevel2 {
         if (Nd4j.dataType() != DataBuffer.Type.FLOAT)
             logger.warn("FLOAT gemv called");
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+        Nd4j.getExecutioner().push();
 
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, A, X);
 
@@ -116,8 +115,7 @@ public class JcublasLevel2 extends BaseLevel2 {
         if (Nd4j.dataType() != DataBuffer.Type.DOUBLE)
             logger.warn("DOUBLE gemv called");
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+        Nd4j.getExecutioner().push();
 
         CudaContext ctx = allocator.getFlowController().prepareAction(Y, A, X);
 

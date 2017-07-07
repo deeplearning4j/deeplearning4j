@@ -365,6 +365,9 @@ public class NDArray extends BaseNDArray {
      */
     @Override
     public INDArray unsafeDuplication() {
+        if (isView())
+            return this.dup(this.ordering());
+
         DataBuffer rb = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createSame(this.data, false) : Nd4j.getDataBufferFactory().createSame(this.data, false, Nd4j.getMemoryManager().getCurrentWorkspace());
 
         INDArray ret = Nd4j.createArrayFromShapeBuffer(rb, this.shapeInfoDataBuffer());
