@@ -58,7 +58,7 @@ public class LibSvmRecordWriter extends LineRecordWriter {
     public LibSvmRecordWriter() {}
 
     @Override
-    public void write(Collection<Writable> record) throws IOException {
+    public void write(List<Writable> record) throws IOException {
         List<Writable> asList = record instanceof List ? (List<Writable>) record : new ArrayList<>(record);
         double response = Double.valueOf(asList.get(asList.size() - 1).toString());
         StringBuilder write = new StringBuilder();

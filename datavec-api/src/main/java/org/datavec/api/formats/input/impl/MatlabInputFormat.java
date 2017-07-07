@@ -21,6 +21,7 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.misc.MatlabRecordReader;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.writable.WritableType;
 
 import java.io.IOException;
 
@@ -41,5 +42,4 @@ public class MatlabInputFormat extends BaseInputFormat {
         reader.initialize(split);
         return reader;
     }
-
 }

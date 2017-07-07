@@ -56,6 +56,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.datavec.api.writable.WritableType;
 import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.core.JsonGenerator;
 
@@ -1434,6 +1435,11 @@ public class Configuration implements Iterable<Map.Entry<String, String>>, Writa
 
     @Override
     public long toLong() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public WritableType getType() {
         throw new UnsupportedOperationException();
     }
 

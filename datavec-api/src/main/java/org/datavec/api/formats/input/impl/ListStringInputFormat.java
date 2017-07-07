@@ -21,6 +21,7 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.formats.input.InputFormat;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.collection.ListStringRecordReader;
+import org.datavec.api.writable.WritableType;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -113,6 +114,11 @@ public class ListStringInputFormat implements InputFormat {
     @Override
     public long toLong() {
         return 0;
+    }
+
+    @Override
+    public WritableType getType() {
+        throw new UnsupportedOperationException();
     }
 
     @Override

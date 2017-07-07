@@ -117,4 +117,9 @@ public class FloatWritable implements WritableComparable {
     public long toLong() {
         return (long) value;
     }
+
+    @Override
+    public WritableType getType() {
+        return WritableType.Float;
+    }
 }

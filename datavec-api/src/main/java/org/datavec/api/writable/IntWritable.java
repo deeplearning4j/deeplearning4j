@@ -116,4 +116,9 @@ public class IntWritable implements WritableComparable {
     public long toLong() {
         return value;
     }
+
+    @Override
+    public WritableType getType() {
+        return WritableType.Int;
+    }
 }

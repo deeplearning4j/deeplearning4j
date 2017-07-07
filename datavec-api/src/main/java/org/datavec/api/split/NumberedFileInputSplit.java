@@ -17,6 +17,7 @@
 package org.datavec.api.split;
 
 import org.datavec.api.util.files.UriFromPathIterator;
+import org.datavec.api.writable.WritableType;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -110,6 +111,11 @@ public class NumberedFileInputSplit implements InputSplit {
 
     @Override
     public long toLong() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public WritableType getType() {
         throw new UnsupportedOperationException();
     }
 

@@ -117,4 +117,9 @@ public class ByteWritable implements WritableComparable {
     public long toLong() {
         return value;
     }
+
+    @Override
+    public WritableType getType() {
+        return WritableType.Byte;
+    }
 }

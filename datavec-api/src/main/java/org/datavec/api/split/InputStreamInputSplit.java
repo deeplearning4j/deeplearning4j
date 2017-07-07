@@ -16,6 +16,8 @@
 
 package org.datavec.api.split;
 
+import org.datavec.api.writable.WritableType;
+
 import java.io.*;
 import java.net.URI;
 import java.util.Collections;
@@ -132,6 +134,11 @@ public class InputStreamInputSplit implements InputSplit {
 
     @Override
     public long toLong() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public WritableType getType() {
         throw new UnsupportedOperationException();
     }
 

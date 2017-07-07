@@ -615,4 +615,9 @@ public class Text extends BinaryComparable implements WritableComparable<BinaryC
     public long toLong() {
         return Long.parseLong(toString());
     }
+
+    @Override
+    public WritableType getType() {
+        throw new UnsupportedOperationException();
+    }
 }

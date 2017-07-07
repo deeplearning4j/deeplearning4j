@@ -94,6 +94,11 @@ public class ImageWritable implements Writable {
     }
 
     @Override
+    public WritableType getType() {
+        return WritableType.Image;
+    }
+
+    @Override
     public boolean equals(Object obj) {
         if (obj instanceof ImageWritable) {
             Frame f2 = ((ImageWritable) obj).getFrame();

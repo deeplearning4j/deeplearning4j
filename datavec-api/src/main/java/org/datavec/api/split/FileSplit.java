@@ -20,6 +20,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.*;
 import org.datavec.api.util.RandomUtils;
 import org.datavec.api.util.files.URIUtil;
+import org.datavec.api.writable.WritableType;
 import org.nd4j.linalg.collection.CompactHeapStringList;
 
 import java.io.*;
@@ -134,6 +135,11 @@ public class FileSplit extends BaseInputSplit {
     @Override
     public void readFields(DataInput in) throws IOException {
 
+    }
+
+    @Override
+    public WritableType getType() {
+        throw new UnsupportedOperationException();
     }
 
     public File getRootDir() {

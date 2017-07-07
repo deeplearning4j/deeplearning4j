@@ -21,9 +21,11 @@ import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.writer.impl.FileRecordWriter;
 import org.datavec.api.writable.Writable;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Collection;
+import java.util.List;
 
 /**
  * Csv record writer
@@ -59,7 +61,7 @@ public class CSVRecordWriter extends FileRecordWriter {
     }
 
     @Override
-    public void write(Collection<Writable> record) throws IOException {
+    public void write(List<Writable> record) throws IOException {
         if (!record.isEmpty()) {
             //Add new line before appending lines rather than after (avoids newline after last line)
             if (!firstLine) {

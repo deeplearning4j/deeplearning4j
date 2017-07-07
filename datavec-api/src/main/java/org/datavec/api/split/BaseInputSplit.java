@@ -28,6 +28,7 @@ import java.util.List;
 import org.datavec.api.io.filters.PathFilter;
 import org.datavec.api.util.files.ShuffledListIterator;
 import org.datavec.api.util.files.UriFromPathIterator;
+import org.datavec.api.writable.WritableType;
 
 /**
  * Base input split
@@ -135,5 +136,10 @@ public abstract class BaseInputSplit implements InputSplit {
         } else {
             return new InputSplit[] {new CollectionInputSplit(Arrays.asList(paths))};
         }
+    }
+
+    @Override
+    public WritableType getType() {
+        throw new UnsupportedOperationException();
     }
 }

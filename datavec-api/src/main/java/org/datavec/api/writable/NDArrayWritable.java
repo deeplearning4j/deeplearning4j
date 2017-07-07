@@ -69,6 +69,11 @@ public class NDArrayWritable extends ArrayWritable implements WritableComparable
         out.writeShort(WritableType.NDArray.typeIdx());
     }
 
+    @Override
+    public WritableType getType() {
+        return WritableType.NDArray;
+    }
+
     /**
      * Serialize array data linearly.
      */

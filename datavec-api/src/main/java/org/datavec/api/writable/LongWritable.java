@@ -127,4 +127,9 @@ public class LongWritable implements WritableComparable {
     public long toLong() {
         return value;
     }
+
+    @Override
+    public WritableType getType() {
+        return WritableType.Long;
+    }
 }

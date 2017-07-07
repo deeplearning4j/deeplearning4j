@@ -22,6 +22,7 @@ import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.WritableType;
 import org.junit.Test;
 
 import java.io.DataInput;
@@ -204,6 +205,11 @@ public class CSVSequenceRecordReaderTest {
 
         @Override
         public long toLong() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public WritableType getType() {
             throw new UnsupportedOperationException();
         }
     }

@@ -137,4 +137,9 @@ public class BooleanWritable implements WritableComparable {
     public long toLong() {
         return (value ? 1L : 0L);
     }
+
+    @Override
+    public WritableType getType() {
+        return WritableType.Boolean;
+    }
 }
