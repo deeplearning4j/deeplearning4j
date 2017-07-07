@@ -17,42 +17,44 @@
 package org.datavec.hadoop.records.writer.mapfile;
 
 import lombok.NonNull;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.*;
+import org.apache.hadoop.io.LongWritable;
+import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.writer.RecordWriter;
+import org.datavec.api.records.writer.SequenceRecordWriter;
+import org.datavec.api.writable.*;
 import org.datavec.api.writable.Writable;
-import org.datavec.api.writable.WritableType;
 import org.datavec.hadoop.records.reader.mapfile.record.RecordWritable;
+import org.datavec.hadoop.records.reader.mapfile.record.SequenceRecordWritable;
 
 import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by Alex on 07/07/2017.
  */
-public class MapFileRecordWriter extends AbstractMapFileWriter<List<Writable>> implements RecordWriter {
+public class MapFileSequenceRecordWriter extends AbstractMapFileWriter<List<List<Writable>>> implements SequenceRecordWriter {
 
 
-    public MapFileRecordWriter(File outputDir) {
+    public MapFileSequenceRecordWriter(File outputDir) {
         super(outputDir);
     }
 
-    public MapFileRecordWriter(@NonNull File outputDir, int mapFileSplitSize){
-        this(outputDir, mapFileSplitSize, null);
-    }
-
-    public MapFileRecordWriter(@NonNull File outputDir, WritableType convertTextTo) {
-        this(outputDir, DEFAULT_MAP_FILE_SPLIT_SIZE, convertTextTo);
-    }
-
-    public MapFileRecordWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo) {
-        super(outputDir, mapFileSplitSize, convertTextTo);
-    }
-
     @Override
-    protected org.apache.hadoop.io.Writable getHadoopWritable(List<Writable> input) {
+    protected org.apache.hadoop.io.Writable getHadoopWritable(List<List<Writable>> input) {
         if(convertTextTo != null){
-            input = convertTextWritables(input);
+            List<List<Writable>> newSeq = new ArrayList<>(input.size());
+            for(List<Writable> l : input){
+                newSeq.add(convertTextWritables(l));
+            }
+            input = newSeq;
         }
 
-        return new RecordWritable(input);
+        return new SequenceRecordWritable(input);
     }
 }
