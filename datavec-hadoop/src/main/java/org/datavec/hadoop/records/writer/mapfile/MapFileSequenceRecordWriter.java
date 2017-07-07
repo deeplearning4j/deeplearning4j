@@ -45,6 +45,23 @@ public class MapFileSequenceRecordWriter extends AbstractMapFileWriter<List<List
         super(outputDir);
     }
 
+    public MapFileSequenceRecordWriter(@NonNull File outputDir, int mapFileSplitSize){
+        this(outputDir, mapFileSplitSize, null);
+    }
+
+    public MapFileSequenceRecordWriter(@NonNull File outputDir, WritableType convertTextTo) {
+        this(outputDir, DEFAULT_MAP_FILE_SPLIT_SIZE, convertTextTo);
+    }
+
+    public MapFileSequenceRecordWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo) {
+        super(outputDir, mapFileSplitSize, convertTextTo);
+    }
+
+    @Override
+    protected Class<? extends org.apache.hadoop.io.Writable> getValueClass() {
+        return SequenceRecordWritable.class;
+    }
+
     @Override
     protected org.apache.hadoop.io.Writable getHadoopWritable(List<List<Writable>> input) {
         if(convertTextTo != null){

@@ -19,15 +19,20 @@ package org.datavec.hadoop.records.writer;
 import com.google.common.io.Files;
 import org.datavec.api.records.converter.RecordReaderConverter;
 import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.records.reader.impl.csv.CSVNLinesSequenceRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.writer.RecordWriter;
+import org.datavec.api.records.writer.SequenceRecordWriter;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.FloatWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.WritableType;
 import org.datavec.hadoop.records.reader.mapfile.MapFileRecordReader;
+import org.datavec.hadoop.records.reader.mapfile.MapFileSequenceRecordReader;
 import org.datavec.hadoop.records.writer.mapfile.MapFileRecordWriter;
+import org.datavec.hadoop.records.writer.mapfile.MapFileSequenceRecordWriter;
 import org.junit.Test;
 
 import java.io.File;
@@ -126,5 +131,91 @@ public class TestMapFileRecordWriter {
     }
 
 
-    
+    @Test
+    public void testSequenceWriter() throws Exception {
+
+        for(boolean convertWritables : new boolean[]{false, true}) {
+
+            File tempDirSingle = Files.createTempDir();
+            File tempDirMultiple = Files.createTempDir();
+
+            tempDirSingle.deleteOnExit();
+            tempDirMultiple.deleteOnExit();
+
+            WritableType textWritablesTo = convertWritables ? WritableType.Float : null;
+
+            SequenceRecordWriter singlePartWriter = new MapFileSequenceRecordWriter(tempDirSingle, -1, textWritablesTo);
+            SequenceRecordWriter multiPartWriter = new MapFileSequenceRecordWriter(tempDirMultiple, 10, textWritablesTo);
+
+            SequenceRecordReader rr = new CSVNLinesSequenceRecordReader(5);
+            ClassPathResource cpr = new ClassPathResource("iris.dat");
+            rr.initialize(new FileSplit(cpr.getFile()));
+
+            RecordReaderConverter.convert(rr, singlePartWriter);
+            rr.reset();
+            RecordReaderConverter.convert(rr, multiPartWriter);
+
+            singlePartWriter.close();
+            multiPartWriter.close();
+
+            SequenceRecordReader rr1 = new MapFileSequenceRecordReader();
+            SequenceRecordReader rr2 = new MapFileSequenceRecordReader();
+            rr1.initialize(new FileSplit(tempDirSingle));
+            rr2.initialize(new FileSplit(tempDirMultiple));
+
+            List<List<List<Writable>>> exp = new ArrayList<>();
+            List<List<List<Writable>>> s1 = new ArrayList<>();
+            List<List<List<Writable>>> s2 = new ArrayList<>();
+
+            rr.reset();
+            while (rr.hasNext()) {
+                exp.add(rr.sequenceRecord());
+            }
+
+            while (rr1.hasNext()) {
+                s1.add(rr1.sequenceRecord());
+            }
+
+            while (rr2.hasNext()) {
+                s2.add(rr2.sequenceRecord());
+            }
+
+            assertEquals(150/5, exp.size());
+
+            if(convertWritables){
+                List<List<List<Writable>>> asFloat = new ArrayList<>();
+                for(List<List<Writable>> sequence : exp ){
+                    List<List<Writable>> newSeq = new ArrayList<>();
+                    for(List<Writable> step : sequence ){
+                        List<Writable> newStep = new ArrayList<>();
+                        for(Writable w : step){
+                            newStep.add(new FloatWritable(w.toFloat()));
+                        }
+                        newSeq.add(newStep);
+                    }
+                    asFloat.add(newSeq);
+                }
+                exp = asFloat;
+            }
+
+            assertEquals(exp, s1);
+            assertEquals(exp, s2);
+
+
+            //By default: we won't be doing any conversion of text types. CsvRecordReader outputs Text writables
+            for(List<List<Writable>> seq : s1) {
+                for (List<Writable> l : seq) {
+                    for (Writable w : l) {
+                        if (convertWritables) {
+                            assertEquals(WritableType.Float, w.getType());
+                        } else {
+                            assertEquals(WritableType.Text, w.getType());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+
 }

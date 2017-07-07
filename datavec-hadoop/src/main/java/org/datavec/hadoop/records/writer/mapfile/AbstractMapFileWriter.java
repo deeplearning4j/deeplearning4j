@@ -39,7 +39,6 @@ public abstract class AbstractMapFileWriter<T> {
 
     public static final String DEFAULT_FILENAME_PATTERN = "part-r-%1$05d";
     public static final Class<? extends WritableComparable> KEY_CLASS = org.apache.hadoop.io.LongWritable.class;
-    public static final Class<? extends org.apache.hadoop.io.Writable> VALUE_CLASS = RecordWritable.class;
 
     public static final int DEFAULT_MAP_FILE_SPLIT_SIZE = -1;
 
@@ -54,8 +53,6 @@ public abstract class AbstractMapFileWriter<T> {
     protected List<MapFile.Writer> writers = new ArrayList<>();
 
     org.apache.hadoop.conf.Configuration c = new org.apache.hadoop.conf.Configuration();
-
-    protected List<Writable> tempList;
 
     protected SequenceFile.Writer.Option[] opts;
 
@@ -81,9 +78,12 @@ public abstract class AbstractMapFileWriter<T> {
         this.convertTextTo = convertTextTo;
 
         opts = new SequenceFile.Writer.Option[]{MapFile.Writer.keyClass(KEY_CLASS),
-                SequenceFile.Writer.valueClass(VALUE_CLASS)};
+                SequenceFile.Writer.valueClass(getValueClass())};
 
     }
+
+    protected abstract Class<? extends org.apache.hadoop.io.Writable> getValueClass();
+
 
 
     public void setConf(Configuration conf) {
@@ -100,10 +100,7 @@ public abstract class AbstractMapFileWriter<T> {
     protected List<Writable> convertTextWritables(List<Writable> record) {
         List<Writable> newList;
         if (convertTextTo != null) {
-            if (tempList == null) {
-                tempList = new ArrayList<>(record.size());
-            }
-            newList = tempList;
+            newList = new ArrayList<>(record.size());
             for (Writable writable : record) {
                 Writable newWritable;
                 if (writable.getType() == WritableType.Text) {
@@ -171,10 +168,6 @@ public abstract class AbstractMapFileWriter<T> {
         org.apache.hadoop.io.Writable hadoopWritable = getHadoopWritable(record);
 
         w.append(new org.apache.hadoop.io.LongWritable(key), hadoopWritable);
-
-        if (tempList != null) {
-            tempList.clear();
-        }
     }
 
 

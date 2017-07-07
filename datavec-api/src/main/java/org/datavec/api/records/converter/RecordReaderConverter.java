@@ -17,7 +17,9 @@
 package org.datavec.api.records.converter;
 
 import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.writer.RecordWriter;
+import org.datavec.api.records.writer.SequenceRecordWriter;
 
 import java.io.IOException;
 
@@ -40,6 +42,25 @@ public class RecordReaderConverter {
 
         while(reader.hasNext()){
             writer.write(reader.next());
+        }
+
+        if(closeOnCompletion){
+            writer.close();
+        }
+    }
+
+    public static void convert(SequenceRecordReader reader, SequenceRecordWriter writer) throws IOException {
+        convert(reader, writer, true);
+    }
+
+    public static void convert(SequenceRecordReader reader, SequenceRecordWriter writer, boolean closeOnCompletion) throws IOException {
+
+        if(!reader.hasNext()){
+            throw new UnsupportedOperationException("Cannot convert SequenceRecordReader: reader has no next element");
+        }
+
+        while(reader.hasNext()){
+            writer.write(reader.sequenceRecord());
         }
 
         if(closeOnCompletion){

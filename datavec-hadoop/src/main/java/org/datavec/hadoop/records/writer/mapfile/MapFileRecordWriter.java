@@ -48,6 +48,11 @@ public class MapFileRecordWriter extends AbstractMapFileWriter<List<Writable>> i
     }
 
     @Override
+    protected Class<? extends org.apache.hadoop.io.Writable> getValueClass() {
+        return RecordWritable.class;
+    }
+
+    @Override
     protected org.apache.hadoop.io.Writable getHadoopWritable(List<Writable> input) {
         if(convertTextTo != null){
             input = convertTextWritables(input);
