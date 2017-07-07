@@ -633,11 +633,11 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
                 throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
 
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
-                //op.z().assign(op.zeroDouble());
+                op.z().assign(op.zeroDouble());
             } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
-                //op.z().assign(op.zeroFloat());
+                op.z().assign(op.zeroFloat());
             } else if (op.x().data().dataType() == DataBuffer.Type.HALF) {
-                //op.z().assign(op.zeroHalf());
+                op.z().assign(op.zeroHalf());
             }
 
             ret = op.z();
