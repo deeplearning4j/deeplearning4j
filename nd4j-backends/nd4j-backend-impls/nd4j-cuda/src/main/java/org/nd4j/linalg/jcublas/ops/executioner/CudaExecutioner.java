@@ -288,13 +288,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if (op instanceof Variance) {
                 if (ret.isScalar()) {
-                    AtomicAllocator.getInstance().tickHostWrite(ret);
-
-                    ret.putScalar(0, nativeOps.execSummaryStatsScalarDouble(xShapeInfoHostPointer, op.opNum(),
+                    double res = nativeOps.execSummaryStatsScalarDouble(xShapeInfoHostPointer, op.opNum(),
                                     (DoublePointer) x, (IntPointer) xShapeInfo, (DoublePointer) extraArgs,
-                                    ((Variance) op).isBiasCorrected()));
+                                    ((Variance) op).isBiasCorrected());
 
-                    op.setFinalResult(ret.getDouble(0));
+                    AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+
+                    ret.assign(res);
+                    op.setFinalResult(res);
                 } else {
                     nativeOps.execSummaryStatsDouble(xShapeInfoHostPointer, op.opNum(), (DoublePointer) x,
                                     (IntPointer) xShapeInfo, (DoublePointer) extraArgs,
@@ -321,15 +322,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 } else if (ret.isScalar()) {
-                    AtomicAllocator.getInstance().tickHostWrite(ret);
-
-                    ret.putScalar(0, nativeOps.execReduce3ScalarDouble(xShapeInfoHostPointer, op.opNum(),
+                    double res = nativeOps.execReduce3ScalarDouble(xShapeInfoHostPointer, op.opNum(),
                                     (DoublePointer) x, (IntPointer) xShapeInfo, (DoublePointer) extraArgs,
                                     (DoublePointer) AtomicAllocator.getInstance().getPointer(op.y(), context),
                                     (IntPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(),
-                                                    context)));
+                                                    context));
+                    AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
-                    op.setFinalResult(ret.getDouble(0));
+                    ret.assign(res);
+                    op.setFinalResult(res);
                 } else {
                     nativeOps.execReduce3Double(xShapeInfoHostPointer, op.opNum(), (DoublePointer) x,
                                     (IntPointer) xShapeInfo, (DoublePointer) extraArgs,
@@ -345,12 +346,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 }
             } else {
                 if (ret.isScalar()) {
-                    AtomicAllocator.getInstance().tickHostWrite(ret);
+                    double res = nativeOps.execReduceScalarDouble(xShapeInfoHostPointer, op.opNum(),
+                                    (DoublePointer) x, (IntPointer) xShapeInfo, (DoublePointer) extraArgs);
 
-                    ret.putScalar(0, nativeOps.execReduceScalarDouble(xShapeInfoHostPointer, op.opNum(),
-                                    (DoublePointer) x, (IntPointer) xShapeInfo, (DoublePointer) extraArgs));
+                    AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
-                    op.setFinalResult(ret.getDouble(0));
+                    ret.assign(res);
+                    op.setFinalResult(res);
                 } else {
                     nativeOps.execReduceDouble(xShapeInfoHostPointer, op.opNum(), (DoublePointer) x,
                                     (IntPointer) xShapeInfo, (DoublePointer) extraArgs,
@@ -365,13 +367,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
             if (op instanceof Variance) {
                 if (ret.isScalar()) {
-                    AtomicAllocator.getInstance().tickHostWrite(ret);
-
-                    ret.putScalar(0, nativeOps.execSummaryStatsScalarFloat(xShapeInfoHostPointer, op.opNum(),
+                    float res = nativeOps.execSummaryStatsScalarFloat(xShapeInfoHostPointer, op.opNum(),
                                     (FloatPointer) x, (IntPointer) xShapeInfo, (FloatPointer) extraArgs,
-                                    ((Variance) op).isBiasCorrected()));
+                                    ((Variance) op).isBiasCorrected());
 
-                    op.setFinalResult(ret.getFloat(0));
+                    AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+
+                    ret.assign(res);
+                    op.setFinalResult(res);
                 } else {
                     nativeOps.execSummaryStatsFloat(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x,
                                     (IntPointer) xShapeInfo, (FloatPointer) extraArgs,
@@ -398,15 +401,16 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 } else if (ret.isScalar()) {
-                    AtomicAllocator.getInstance().tickHostWrite(ret);
-
-                    ret.putScalar(0, nativeOps.execReduce3ScalarFloat(xShapeInfoHostPointer, op.opNum(),
+                    float res = nativeOps.execReduce3ScalarFloat(xShapeInfoHostPointer, op.opNum(),
                                     (FloatPointer) x, (IntPointer) xShapeInfo, (FloatPointer) extraArgs,
                                     (FloatPointer) AtomicAllocator.getInstance().getPointer(op.y(), context),
                                     (IntPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(),
-                                                    context)));
+                                                    context));
 
-                    op.setFinalResult(ret.getFloat(0));
+                    ret.assign(res);
+                    op.setFinalResult(res);
+
+                    AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 } else {
                     nativeOps.execReduce3Float(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x,
                                     (IntPointer) xShapeInfo, (FloatPointer) extraArgs,
@@ -422,14 +426,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 }
             } else {
                 if (ret.isScalar()) {
-                    AtomicAllocator.getInstance().tickHostWrite(ret);
-
-                    float resx = nativeOps.execReduceScalarFloat(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x,
+                    float res = nativeOps.execReduceScalarFloat(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x,
                                     (IntPointer) xShapeInfo, (FloatPointer) extraArgs);
 
-                    ret.putScalar(0, resx);
-
-                    op.setFinalResult(ret.getFloat(0));
+                    AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+                    ret.assign(res);
+                    op.setFinalResult(res);
                 } else {
                     nativeOps.execReduceFloat(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x,
                                     (IntPointer) xShapeInfo, (FloatPointer) extraArgs,
@@ -444,13 +446,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         } else {
             if (op instanceof Variance) {
                 if (ret.isScalar()) {
-                    AtomicAllocator.getInstance().tickHostWrite(ret);
-
-                    ret.putScalar(0, nativeOps.execSummaryStatsScalarHalf(xShapeInfoHostPointer, op.opNum(),
+                    float res = nativeOps.execSummaryStatsScalarHalf(xShapeInfoHostPointer, op.opNum(),
                                     (ShortPointer) x, (IntPointer) xShapeInfo, (ShortPointer) extraArgs,
-                                    ((Variance) op).isBiasCorrected()));
+                                    ((Variance) op).isBiasCorrected());
 
-                    op.setFinalResult(ret.getFloat(0));
+                    AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+
+                    ret.assign(res);
+                    op.setFinalResult(res);
                 } else {
                     nativeOps.execSummaryStatsHalf(xShapeInfoHostPointer, op.opNum(), (ShortPointer) x,
                                     (IntPointer) xShapeInfo, (ShortPointer) extraArgs,
@@ -477,15 +480,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 } else if (ret.isScalar()) {
-                    AtomicAllocator.getInstance().tickHostWrite(ret);
-
-                    ret.putScalar(0, nativeOps.execReduce3ScalarHalf(xShapeInfoHostPointer, op.opNum(),
+                    float res = nativeOps.execReduce3ScalarHalf(xShapeInfoHostPointer, op.opNum(),
                                     (ShortPointer) x, (IntPointer) xShapeInfo, (ShortPointer) extraArgs,
                                     (ShortPointer) AtomicAllocator.getInstance().getPointer(op.y(), context),
                                     (IntPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(),
-                                                    context)));
+                                                    context));
+                    AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+                    ret.assign(res);
 
-                    op.setFinalResult(ret.getFloat(0));
+                    op.setFinalResult(res);
                 } else {
                     nativeOps.execReduce3Half(xShapeInfoHostPointer, op.opNum(), (ShortPointer) x,
                                     (IntPointer) xShapeInfo, (ShortPointer) extraArgs,
@@ -501,12 +504,12 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 }
             } else {
                 if (ret.isScalar()) {
-                    AtomicAllocator.getInstance().tickHostWrite(ret);
+                    float res = nativeOps.execReduceScalarHalf(xShapeInfoHostPointer, op.opNum(), (ShortPointer) x,
+                                    (IntPointer) xShapeInfo, (ShortPointer) extraArgs);
 
-                    ret.putScalar(0, nativeOps.execReduceScalarHalf(xShapeInfoHostPointer, op.opNum(), (ShortPointer) x,
-                                    (IntPointer) xShapeInfo, (ShortPointer) extraArgs));
-
-                    op.setFinalResult(ret.getFloat(0));
+                    AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
+                    ret.assign(res);
+                    op.setFinalResult(res);
                 } else {
                     nativeOps.execReduceHalf(xShapeInfoHostPointer, op.opNum(), (ShortPointer) x,
                                     (IntPointer) xShapeInfo, (ShortPointer) extraArgs,
@@ -921,20 +924,18 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 double result = nativeOps.execIndexReduceScalarDouble(xShapeInfoHostPointer, op.opNum(),
                                 (DoublePointer) x, (IntPointer) xShapeInfo, (DoublePointer) extraArgs);
                 op.setFinalResult((int) result);
-                AtomicAllocator.getInstance().tickHostWrite(op.z());
-                op.z().putScalar(0, result);
+                op.z().assign(result);
+
             } else if (op.x().data().dataType() == DataBuffer.Type.FLOAT) {
                 float result = nativeOps.execIndexReduceScalarFloat(xShapeInfoHostPointer, op.opNum(), (FloatPointer) x,
                                 (IntPointer) xShapeInfo, (FloatPointer) extraArgs);
                 op.setFinalResult((int) result);
-                AtomicAllocator.getInstance().tickHostWrite(op.z());
-                op.z().putScalar(0, (float) result);
+                op.z().assign(result);
             } else {
                 float result = nativeOps.execIndexReduceScalarHalf(xShapeInfoHostPointer, op.opNum(), (ShortPointer) x,
                                 (IntPointer) xShapeInfo, (ShortPointer) extraArgs);
                 op.setFinalResult((int) result);
-                AtomicAllocator.getInstance().tickHostWrite(op.z());
-                op.z().putScalar(0, (float) result);
+                op.z().assign(result);
             }
 
             AtomicAllocator.getInstance().registerAction(context, null, op.x(), op.y());
