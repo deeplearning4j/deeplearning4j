@@ -731,4 +731,45 @@ public class ROCTest {
         roc.eval(Nd4j.rand(100, 1), Nd4j.ones(100, 1));
 
     }
+
+
+    @Test
+    public void testPrecisionRecallCurveGetPointMethods(){
+        double[] threshold = new double[101];
+        double[] precision = threshold;
+        double[] recall = new double[101];
+        int i = 0;
+        for( double d = 0; d<=1; d += 0.01){
+            threshold[i] = d;
+            recall[i] = 1.0 - d;
+            i++;
+        }
+
+
+        PrecisionRecallCurve prc = new PrecisionRecallCurve(threshold, precision, recall);
+
+        PrecisionRecallCurve.Point[] points = new PrecisionRecallCurve.Point[]{
+                //Test exact:
+                prc.getPointAtThreshold(0.05),
+                prc.getPointAtPrecision(0.05),
+                prc.getPointAtRecall(1-0.05),
+
+                //Test approximate (point doesn't exist exactly). When it doesn't exist:
+                //Threshold: lowest threshold equal to or exceeding the specified threshold value
+                //Precision: lowest threshold equal to or exceeding the specified precision value
+                //Recall: highest threshold equal to or exceeding the specified recall value
+                prc.getPointAtThreshold(0.0495),
+                prc.getPointAtPrecision(0.0495),
+                prc.getPointAtRecall(1-0.0505)
+        };
+
+
+
+        for(PrecisionRecallCurve.Point p : points){
+            assertEquals(5, p.getIdx());
+            assertEquals(0.05, p.getThreshold(), 1e-6);
+            assertEquals(0.05, p.getPrecision(), 1e-6);
+            assertEquals(1-0.05, p.getRecall(), 1e-6);
+        }
+    }
 }
