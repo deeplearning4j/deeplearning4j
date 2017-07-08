@@ -916,7 +916,7 @@ template<typename OpType>
                     }
                 }
 
-                return startingVal;
+                return OpType::postProcess(startingVal, length, extraParamsVals);;
 
 
             }
