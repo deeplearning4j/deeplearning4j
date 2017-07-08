@@ -274,9 +274,11 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         timeSpent.set(System.currentTimeMillis());
         if (this.stopWords == null)
             this.stopWords = new ArrayList<>();
+
+        final AtomicLong wordsCounter = new AtomicLong(0);
         for (int currentEpoch = 1; currentEpoch <= numEpochs; currentEpoch++) {
             final AtomicLong linesCounter = new AtomicLong(0);
-            final AtomicLong wordsCounter = new AtomicLong(0);
+
 
             AsyncSequencer sequencer = new AsyncSequencer(this.iterator, this.stopWords);
             sequencer.start();
@@ -287,7 +289,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
             final List<VectorCalculationsThread> threads = new ArrayList<>();
             for (int x = 0; x < workers; x++) {
                 threads.add(x, new VectorCalculationsThread(x, currentEpoch, wordsCounter, vocab.totalWordOccurrences(),
-                                linesCounter, sequencer, timer));
+                                linesCounter, sequencer, timer, numEpochs));
                 threads.get(x).start();
             }
 
@@ -317,9 +319,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             && sequenceLearningAlgorithm.isEarlyTerminationHit()) {
                 break;
             }
-            log.info("Epoch: [" + currentEpoch + "]; Words vectorized so far: [" + wordsCounter.get()
-                            + "];  Lines vectorized so far: [" + linesCounter.get() + "]; learningRate: ["
-                            + minLearningRate + "]");
+            log.info("Epoch [" + currentEpoch + "] finished; Elements processed so far: [" + wordsCounter.get() + "];  Sequences processed: [" + linesCounter.get() + "]");
 
             if (eventListeners != null && !eventListeners.isEmpty()) {
                 for (VectorsListener listener : eventListeners) {
@@ -1109,13 +1109,15 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
         private final AtomicLong nextRandom;
         private final AtomicLong timer;
         private final long startTime;
+        private final int totalEpochs;
 
         /*
                 Long constructors suck, so this should be reduced to something reasonable later
          */
         public VectorCalculationsThread(int threadId, int epoch, AtomicLong wordsCounter, long totalWordsCount,
-                        AtomicLong linesCounter, AsyncSequencer digitizer, AtomicLong timer) {
+                        AtomicLong linesCounter, AsyncSequencer digitizer, AtomicLong timer, int totalEpochs) {
             this.threadId = threadId;
+            this.totalEpochs = totalEpochs;
             this.epochNumber = epoch;
             this.wordsCounter = wordsCounter;
             this.totalWordsCount = totalWordsCount;
@@ -1142,10 +1144,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             }
                         }
                     }
-                    /*
-                            TODO: investigate, if fix needed here to become iteration-dependent, not line-position
-                      */
-                    double alpha = 0.025;
+                   double alpha = 0.025;
 
                     if (sequences.isEmpty()) {
                         continue;
@@ -1160,7 +1159,7 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
 
                             //log.info("LR before: {}; wordsCounter: {}; totalWordsCount: {}", learningRate.get(), this.wordsCounter.get(), this.totalWordsCount);
                             alpha = Math.max(minLearningRate, learningRate.get() * (1 - (1.0 * this.wordsCounter.get()
-                                            / ((double) this.totalWordsCount) / numIterations)));
+                                            / ((double) this.totalWordsCount) / (numIterations * totalEpochs))));
 
                             trainSequence(sequence, nextRandom, alpha);
 
