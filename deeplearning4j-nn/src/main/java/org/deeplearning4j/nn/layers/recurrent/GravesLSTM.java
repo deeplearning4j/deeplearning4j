@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.layers.recurrent;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -43,6 +44,8 @@ import java.util.Map;
 public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GravesLSTM> {
     public static final String STATE_KEY_PREV_ACTIVATION = "prevAct";
     public static final String STATE_KEY_PREV_MEMCELL = "prevMem";
+
+    protected FwdPassReturn cachedFwdPass;
 
     public GravesLSTM(NeuralNetConfiguration conf) {
         super(conf);
@@ -138,13 +141,26 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
     private FwdPassReturn activateHelper(final boolean training, final INDArray prevOutputActivations,
                     final INDArray prevMemCellState, boolean forBackprop) {
 
+        if (forBackprop && cachedFwdPass != null) {
+            FwdPassReturn ret = cachedFwdPass;
+            cachedFwdPass = null;
+            return ret;
+        }
+
         final INDArray recurrentWeights = getParam(GravesLSTMParamInitializer.RECURRENT_WEIGHT_KEY); //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
         final INDArray inputWeights = getParam(GravesLSTMParamInitializer.INPUT_WEIGHT_KEY); //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
         final INDArray biases = getParam(GravesLSTMParamInitializer.BIAS_KEY); //by row: IFOG			//Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
 
-        return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
-                        recurrentWeights, inputWeights, biases, training, prevOutputActivations, prevMemCellState,
-                        forBackprop, true, GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, null, true);
+        FwdPassReturn fwd = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
+                recurrentWeights, inputWeights, biases, training, prevOutputActivations, prevMemCellState,
+                forBackprop || ( cacheMode != CacheMode.NONE && training), true, GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, null, true, cacheMode);
+
+
+        if (training && cacheMode != CacheMode.NONE) {
+            cachedFwdPass = fwd;
+        }
+
+        return fwd;
     }
 
     @Override

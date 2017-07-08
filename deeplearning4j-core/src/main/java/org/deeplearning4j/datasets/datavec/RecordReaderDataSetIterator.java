@@ -358,6 +358,8 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
         if (underlying != null) {
             underlying.reset();
         }
+
+        last = null;
     }
 
     @Override

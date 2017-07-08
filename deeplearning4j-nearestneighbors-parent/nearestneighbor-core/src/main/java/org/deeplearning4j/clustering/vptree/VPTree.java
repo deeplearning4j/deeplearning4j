@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -267,7 +268,19 @@ public class VPTree {
                 &&
                 lower == 0 &&
                 upper == items.size(0) && parallel)
-            executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+            executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable r) {
+                    Thread t = Executors.defaultThreadFactory().newThread(r);
+
+                    t.setName("VPTree thread");
+
+                    // we don't want threads to be working on different devices
+                    Nd4j.getAffinityManager().attachThreadToDevice(t, Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
+                    return t;
+                }
+            });
 
         final Node ret = new Node(lower, 0);
         size.incrementAndGet();

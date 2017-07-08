@@ -2,7 +2,7 @@
 BASEDIR=$(dirname $(readlink -f "$0"))
 
 function echoError() {
-    (>&2 echo $1)
+    (>&2 echo "$1")
 }
 
 function sparkError() {
@@ -16,10 +16,10 @@ function scalaError() {
 }
 
 function whatchanged() {
-    cd $BASEDIR
+    cd "$BASEDIR"
     for i in $(git status -s --porcelain -- $(find ./ -mindepth 2 -name pom.xml)|awk '{print $2}'); do
-        echo $(dirname $i)
-        cd $BASEDIR
+        echo "$(dirname $i)"
+        cd "$BASEDIR"
     done
 }
 function beep(){ echo -e '\a';}
@@ -29,14 +29,21 @@ set -eu
 ./change-spark-versions.sh 1 # should be idempotent, this is the default
 mvn "$@"
 ./change-spark-versions.sh 2
-if [ -z $(whatchanged)]; then
+if [ -z "$(whatchanged)" ]; then
     sparkError;
 else
-    mvn -Dmaven.clean.skip=true -pl $(whatchanged| tr '\n' ',') -amd "$@"
+    if [[ "${@#-pl}" = "$@" ]]; then
+        mvn -Dmaven.clean.skip=true -pl $(whatchanged| tr '\n' ',') -amd "$@"
+    else
+        # the arguments already tweak the project list ! don't tweak them more
+        # as this can lead to conflicts (excluding a project that's not part of
+        # the reactor)
+        mvn "$@"
+    fi
 fi
 ./change-scala-versions.sh 2.10
 ./change-spark-versions.sh 1
-if [ -z $(whatchanged)]; then
+if [ -z "$(whatchanged)" ]; then
     scalaError;
 else
     mvn -Dmaven.clean.skip=true -pl $(whatchanged| tr '\n' ',') -amd "$@"

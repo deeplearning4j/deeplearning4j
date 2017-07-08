@@ -99,6 +99,7 @@
         <maven-play2-plugin.version>1.0.0-beta5</maven-play2-plugin.version>
         <maven-surefire.version>2.19.1</maven-surefire.version>
         <dl4j-test-resources.version>0.8.1-SNAPSHOT</dl4j-test-resources.version>
+        <mockito.version>2.2.6</mockito.version>
     </properties>
 
     <profiles>
