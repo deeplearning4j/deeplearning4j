@@ -2,6 +2,7 @@ package org.nd4j.linalg.api;
 
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -19,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by Alex on 30/04/2016.
  */
+@Ignore
 public class TestNDArrayCreation extends BaseNd4jTest {
 
 

@@ -217,9 +217,9 @@ public class LoneTest extends BaseNd4jTest {
     public void testGetRow1() throws Exception {
         INDArray array = Nd4j.create(10000, 10000);
 
-        Thread.sleep(10000);
+        //Thread.sleep(10000);
 
-        int numTries = 100000000;
+        int numTries = 1000;
         List<Long> times = new ArrayList<>();
         long time = 0;
         for (int i = 0; i < numTries; i++) {
