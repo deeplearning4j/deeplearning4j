@@ -256,7 +256,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
         DataBuffer newDataBuffer = replicateToDevice(deviceId, array.data());
         DataBuffer newShapeBuffer = Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride, 0,
-                        elementWiseStride, ordering);
+                        elementWiseStride, ordering).getFirst();
         INDArray result = Nd4j.createArrayFromShapeBuffer(newDataBuffer, newShapeBuffer);
 
         attachThreadToDevice(Thread.currentThread().getId(), currentDeviceId);

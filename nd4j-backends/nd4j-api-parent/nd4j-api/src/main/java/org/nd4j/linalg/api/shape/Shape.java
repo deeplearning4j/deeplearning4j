@@ -333,6 +333,24 @@ public class Shape {
         return offset;
     }
 
+
+    public static long getOffset(int[] shapeInformation, int... indices) {
+        int rank = rank(shapeInformation);
+        if (indices.length != rank)
+            throw new IllegalArgumentException("Indexes must be same length as array rank");
+        long offset = 0;
+        for (int i = 0; i < rank; i++) {
+            int size_dimi = size(shapeInformation, i);
+            if (indices[i] > size_dimi)
+                throw new IllegalArgumentException(
+                        String.format("Index [%d] must not be >= shape[%d]=%d.", i, i, size_dimi));
+            if (size_dimi != 1) {
+                offset += indices[i] * stride(shapeInformation, i);
+            }
+        }
+        return offset;
+    }
+
     /** Get the offset of the specified [row,col] for the 2d array
      *
      * @param shapeInformation    Shape information
@@ -358,6 +376,23 @@ public class Shape {
         if (row >= size_0 || col >= size_1)
             throw new IllegalArgumentException("Invalid indices: cannot get [" + row + "," + col + "] from a "
                             + Arrays.toString(shape(shapeInformation)) + " NDArray");
+
+        if (size_0 != 1)
+            offset += row * strideUnsafe(shapeInformation, 0, 2);
+        if (size_1 != 1)
+            offset += col * strideUnsafe(shapeInformation, 1, 2);
+
+        return offset;
+    }
+
+
+    public static long getOffsetUnsafe(int[] shapeInformation, int row, int col) {
+        long offset = 0;
+        int size_0 = sizeUnsafe(shapeInformation, 0);
+        int size_1 = sizeUnsafe(shapeInformation, 1);
+        if (row >= size_0 || col >= size_1)
+            throw new IllegalArgumentException("Invalid indices: cannot get [" + row + "," + col + "] from a "
+                    + Arrays.toString(shape(shapeInformation)) + " NDArray");
 
         if (size_0 != 1)
             offset += row * strideUnsafe(shapeInformation, 0, 2);
@@ -556,6 +591,28 @@ public class Shape {
         return offset;
     }
 
+
+    public static long getOffsetUnsafe(int[] shapeInformation, int dim0, int dim1, int dim2, int dim3) {
+        long offset = 0;
+        int size_0 = sizeUnsafe(shapeInformation, 0);
+        int size_1 = sizeUnsafe(shapeInformation, 1);
+        int size_2 = sizeUnsafe(shapeInformation, 2);
+        int size_3 = sizeUnsafe(shapeInformation, 3);
+        if (dim0 >= size_0 || dim1 >= size_1 || dim2 >= size_2 || dim3 >= size_3)
+            throw new IllegalArgumentException("Invalid indices: cannot get [" + dim0 + "," + dim1 + "," + dim2 + ","
+                    + dim3 + "] from a " + Arrays.toString(shape(shapeInformation)) + " NDArray");
+
+        if (size_0 != 1)
+            offset += dim0 * strideUnsafe(shapeInformation, 0, 4);
+        if (size_1 != 1)
+            offset += dim1 * strideUnsafe(shapeInformation, 1, 4);
+        if (size_2 != 1)
+            offset += dim2 * strideUnsafe(shapeInformation, 2, 4);
+        if (size_3 != 1)
+            offset += dim3 * strideUnsafe(shapeInformation, 3, 4);
+
+        return offset;
+    }
 
     /**
      * Output an int array for a particular dimension
@@ -1447,6 +1504,10 @@ public class Shape {
         return ret.get(0);
     }
 
+    public static int rank(int[] buffer) {
+        return buffer[0];
+    }
+
     /**
      * Get the size of the specified dimension. Equivalent to shape()[dimension]
      * @param buffer       The buffer to get the
@@ -1471,6 +1532,13 @@ public class Shape {
         if (dimension >= rank)
             throw new IllegalArgumentException("Invalid dimension " + dimension + " for rank " + rank + " array");
         return buffer.getInt(1 + dimension);
+    }
+
+    public static int size(int[] buffer, int dimension) {
+        int rank = rank(buffer);
+        if (dimension >= rank)
+            throw new IllegalArgumentException("Invalid dimension " + dimension + " for rank " + rank + " array");
+        return buffer[1 + dimension];
     }
 
     /**
@@ -1512,6 +1580,18 @@ public class Shape {
     }
 
     /**
+     * Get array shape from an int[]
+     * @param buffer    Buffer to get the shape from
+     * @return          Shape array
+     */
+    public static int[] shape(int[] buffer) {
+        int[] ret = new int[rank(buffer)];
+        for (int i = 0; i < ret.length; i++)
+            ret[i] = buffer[1 + i];
+        return ret;
+    }
+
+    /**
      * Get the stride of the specified dimension
      * @param buffer       The buffer to get the stride from
      * @param dimension    The dimension to get.
@@ -1535,6 +1615,13 @@ public class Shape {
         if (dimension >= rank)
             throw new IllegalArgumentException("Invalid dimension " + dimension + " for rank " + rank + " array");
         return buffer.getInt(1 + rank + dimension);
+    }
+
+    public static int stride(int[] buffer, int dimension) {
+        int rank = rank(buffer);
+        if (dimension >= rank)
+            throw new IllegalArgumentException("Invalid dimension " + dimension + " for rank " + rank + " array");
+        return buffer[1 + rank + dimension];
     }
 
     /**
@@ -1598,6 +1685,14 @@ public class Shape {
         return Nd4j.createBuffer(buffer, 1 + rank, rank);
     }
 
+    public static int[] stride(int[] buffer) {
+        int rank = rank(buffer);
+        int[] ret = new int[rank];
+        for (int i = 0; i < rank; i++)
+            ret[i] = buffer[1+ rank + i];
+
+        return ret;
+    }
 
 
     /**
@@ -1667,12 +1762,29 @@ public class Shape {
 
     /**
      * Get the offset for the buffer
+     *
+     * PLEASE NOTE: Legacy method. Will return 0 ALWAYS
      * @param buffer the shape info buffer to get the offset for
      * @return
      */
+    @Deprecated
     public static int offset(DataBuffer buffer) {
         int length = shapeInfoLength(rank(buffer));
         int ret = buffer.getInt(length - 3);
+        return ret;
+    }
+
+    /**
+     * Get the offset for the buffer
+     *
+     * PLEASE NOTE: Legacy method. Will return 0 ALWAYS
+     * @param buffer
+     * @return
+     */
+    @Deprecated
+    public static int offset(int[] buffer) {
+        int length = shapeInfoLength(rank(buffer));
+        int ret = buffer[length - 3];
         return ret;
     }
 
@@ -1778,6 +1890,11 @@ public class Shape {
     public static char order(DataBuffer buffer) {
         int length = Shape.shapeInfoLength(Shape.rank(buffer));
         return (char) buffer.getInt(length - 1);
+    }
+
+    public static char order(int[] buffer) {
+        int length = Shape.shapeInfoLength(Shape.rank(buffer));
+        return (char) buffer[length - 1];
     }
 
 

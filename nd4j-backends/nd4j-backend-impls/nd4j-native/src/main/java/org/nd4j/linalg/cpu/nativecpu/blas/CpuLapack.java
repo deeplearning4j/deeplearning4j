@@ -214,7 +214,7 @@ public class CpuLapack extends BaseLapack {
 	if( status == 0 ) {
 		int lwork = (int)fp.get() ;
 		INDArray work = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createFloat(lwork),
-		                Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, lwork}));
+		                Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, lwork}).getFirst());
 
 		status = LAPACKE_ssyev( getColumnOrder(A), (byte)jobz, (byte)uplo, N, 
 		            (FloatPointer)A.data().addressPointer(), getLda(A),
@@ -236,7 +236,7 @@ public class CpuLapack extends BaseLapack {
 	if( status == 0 ) {
 		int lwork = (int)dp.get() ;
 		INDArray work = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createDouble(lwork),
-		                Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, lwork}));
+		                Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, lwork}).getFirst());
 
 		status = LAPACKE_dsyev( getColumnOrder(A), (byte)jobz, (byte)uplo, N, 
 		            (DoublePointer)A.data().addressPointer(), getLda(A),
