@@ -24,7 +24,7 @@
         </dependency>
         <dependency>
             <groupId>org.bytedeco.javacpp-presets</groupId>
-            <artifactId>ale-platform</artifactId>
+            <artifactId>ale</artifactId>
             <version>20170702-5c7dfa5-1.3.3-SNAPSHOT</version>
         </dependency>
     </dependencies>
