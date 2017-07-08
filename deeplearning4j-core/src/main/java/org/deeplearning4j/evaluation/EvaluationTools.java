@@ -178,6 +178,15 @@ public class EvaluationTools {
         return StaticPageUtil.renderHTML(components);
     }
 
+    /**
+     * Given a {@link EvaluationCalibration} instance, export the charts to a stand-alone HTML file
+     * @param roc  ROC to export
+     * @param file File to export to
+     */
+    public static void exportevaluationCalibrationToHtmlFile(EvaluationCalibration ec, File file) throws IOException {
+        String asHtml = evaluationCalibrationToHtml(ec);
+        FileUtils.writeStringToFile(file, asHtml);
+    }
 
     public static String evaluationCalibrationToHtml(EvaluationCalibration ec){
 
