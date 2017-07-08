@@ -145,6 +145,13 @@ public class LSTMHelpers {
                 toReturn.oz = new INDArray[timeSeriesLength];
                 toReturn.gz = new INDArray[timeSeriesLength];
             }
+
+            if (cacheMode != CacheMode.NONE) {
+                try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
+                    outputActivations = Nd4j.create(new int[]{miniBatchSize, hiddenLayerSize, timeSeriesLength}, 'f'); //F order to keep time steps together
+                    toReturn.fwdPassOutput = outputActivations;
+                }
+            }
         } else {
             outputActivations = Nd4j.create(new int[] {miniBatchSize, hiddenLayerSize, timeSeriesLength}, 'f'); //F order to keep time steps together
             toReturn.fwdPassOutput = outputActivations;
@@ -331,6 +338,10 @@ public class LSTMHelpers {
                 toReturn.fwdPassOutputAsArrays[time] = currHiddenUnitActivations;
                 toReturn.memCellState[time] = currentMemoryCellState;
                 toReturn.memCellActivations[time] = currMemoryCellActivation;
+
+                if (cacheMode != CacheMode.NONE) {
+                    outputActivations.tensorAlongDimension(time, 1, 0).assign(currHiddenUnitActivations);
+                }
             } else {
                 outputActivations.tensorAlongDimension(time, 1, 0).assign(currHiddenUnitActivations);
             }

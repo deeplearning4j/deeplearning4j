@@ -153,7 +153,7 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
         FwdPassReturn fwd = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
                 recurrentWeights, inputWeights, biases, training, prevOutputActivations, prevMemCellState,
-                forBackprop, true, GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, null, true, cacheMode);
+                forBackprop || ( cacheMode != CacheMode.NONE && training), true, GravesLSTMParamInitializer.INPUT_WEIGHT_KEY, null, true, cacheMode);
 
 
         if (training && cacheMode != CacheMode.NONE) {
