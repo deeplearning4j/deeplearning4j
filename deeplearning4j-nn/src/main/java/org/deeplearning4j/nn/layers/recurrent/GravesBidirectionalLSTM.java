@@ -18,9 +18,11 @@
 
 package org.deeplearning4j.nn.layers.recurrent;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -49,8 +51,12 @@ import java.util.Map;
  * @author Alex Black
  * @author Benjamin Joseph
  */
+@Slf4j
 public class GravesBidirectionalLSTM
                 extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM> {
+
+    protected FwdPassReturn cachedPassForward;
+    protected FwdPassReturn cachedPassBackward;
 
     public GravesBidirectionalLSTM(NeuralNetConfiguration conf) {
         super(conf);
@@ -180,29 +186,44 @@ public class GravesBidirectionalLSTM
     }
 
     private INDArray activateOutput(final boolean training, boolean forBackprop) {
+        final FwdPassReturn forwardsEval;
+        final FwdPassReturn backwardsEval;
 
+        if (cacheMode != CacheMode.NONE && cachedPassForward != null && cachedPassBackward != null) {
+            // restore from cache. but this coll will probably never happen
+            forwardsEval = cachedPassForward;
+            backwardsEval = cachedPassBackward;
 
-        final FwdPassReturn forwardsEval = LSTMHelpers.activateHelper(this, this.conf,
-                        this.layerConf().getGateActivationFn(), this.input,
-                        getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
-                        getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
-                        getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), training, null, null,
-                        forBackprop, true, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray,
-                        true);
+            cachedPassBackward = null;
+            cachedPassForward = null;
+        } else {
 
-        final FwdPassReturn backwardsEval = LSTMHelpers.activateHelper(this, this.conf,
-                        this.layerConf().getGateActivationFn(), this.input,
-                        getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
-                        getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
-                        getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS), training, null, null,
-                        forBackprop, false, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
-                        maskArray, true);
+            forwardsEval = LSTMHelpers.activateHelper(this, this.conf,
+                    this.layerConf().getGateActivationFn(), this.input,
+                    getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
+                    getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
+                    getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), training, null, null,
+                    forBackprop || ( cacheMode != CacheMode.NONE && training), true, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray,
+                    true, cacheMode);
 
+            backwardsEval = LSTMHelpers.activateHelper(this, this.conf,
+                    this.layerConf().getGateActivationFn(), this.input,
+                    getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
+                    getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
+                    getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS), training, null, null,
+                    forBackprop || ( cacheMode != CacheMode.NONE && training), false, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
+                    maskArray, true, cacheMode);
+
+            cachedPassForward = forwardsEval;
+            cachedPassBackward = backwardsEval;
+        }
 
         //sum outputs
         final INDArray fwdOutput = forwardsEval.fwdPassOutput;
         final INDArray backOutput = backwardsEval.fwdPassOutput;
-        final INDArray totalOutput = fwdOutput.addi(backOutput);
+
+        // if we're on ff pass & cache enabled - we should not modify fwdOutput, and for backprop pass - we don't care
+        final INDArray totalOutput = training && cacheMode != CacheMode.NONE && !forBackprop ? fwdOutput.add(backOutput) : fwdOutput.addi(backOutput);
 
         return totalOutput;
     }
@@ -210,19 +231,30 @@ public class GravesBidirectionalLSTM
     private FwdPassReturn activateHelperDirectional(final boolean training, final INDArray prevOutputActivations,
                     final INDArray prevMemCellState, boolean forBackprop, boolean forwards) {
 
-        String recurrentKey = GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS;
-        String inputKey = GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS;
-        String biasKey = GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS;
+        if (cacheMode != CacheMode.NONE && forwards && forBackprop && cachedPassForward != null) {
+            FwdPassReturn ret = cachedPassForward;
+            cachedPassForward = null;
+            return ret;
+        } else if (cacheMode != CacheMode.NONE && !forwards && forBackprop) {
+            FwdPassReturn ret = cachedPassBackward;
+            cachedPassBackward = null;
+            return ret;
+        }else {
 
-        if (!forwards) {
-            recurrentKey = GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS;
-            inputKey = GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS;
-            biasKey = GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS;
+            String recurrentKey = GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS;
+            String inputKey = GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS;
+            String biasKey = GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS;
+
+            if (!forwards) {
+                recurrentKey = GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS;
+                inputKey = GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS;
+                biasKey = GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS;
+            }
+
+            return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
+                    getParam(recurrentKey), getParam(inputKey), getParam(biasKey), training, prevOutputActivations,
+                    prevMemCellState, forBackprop, forwards, inputKey, maskArray, true, cacheMode);
         }
-
-        return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
-                        getParam(recurrentKey), getParam(inputKey), getParam(biasKey), training, prevOutputActivations,
-                        prevMemCellState, forBackprop, forwards, inputKey, maskArray, true);
 
     }
 
