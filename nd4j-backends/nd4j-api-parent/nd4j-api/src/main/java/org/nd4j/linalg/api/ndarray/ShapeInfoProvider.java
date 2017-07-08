@@ -1,5 +1,6 @@
 package org.nd4j.linalg.api.ndarray;
 
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
 /**
@@ -11,21 +12,21 @@ public interface ShapeInfoProvider {
      * @param shape
      * @return
      */
-    DataBuffer createShapeInformation(int[] shape);
+    Pair<DataBuffer, int[]> createShapeInformation(int[] shape);
 
     /**
      * This method creates shapeInformation buffer, based on shape & order being passed in
      * @param shape
      * @return
      */
-    DataBuffer createShapeInformation(int[] shape, char order);
+    Pair<DataBuffer, int[]> createShapeInformation(int[] shape, char order);
 
     /**
      * This method creates shapeInformation buffer, based on detailed shape information being passed in
      * @param shape
      * @return
      */
-    DataBuffer createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride, char order);
+    Pair<DataBuffer, int[]> createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride, char order);
 
     /**
      * This method forces cache purge, if cache is available for specific implementation

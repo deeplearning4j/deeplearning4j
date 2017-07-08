@@ -26,6 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
@@ -2417,6 +2418,24 @@ public class Nd4j {
 
         return result;
     }
+
+    /**
+     *
+     * @param data
+     * @param shapeInfo
+     * @return
+     */
+    public static INDArray createArrayFromShapeBuffer(DataBuffer data, Pair<DataBuffer, int[]> shapeInfo) {
+        int rank = Shape.rank(shapeInfo.getFirst());
+        int offset = Shape.offset(shapeInfo.getFirst());
+        INDArray result = Nd4j.create(data, toIntArray(rank, Shape.shapeOf(shapeInfo.getFirst())),
+                toIntArray(rank, Shape.stride(shapeInfo.getFirst())), offset, Shape.order(shapeInfo.getFirst()));
+        if (data instanceof CompressedDataBuffer)
+            result.markAsCompressed(true);
+
+        return result;
+    }
+
 
 
     /**

@@ -1,6 +1,7 @@
 package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -14,6 +15,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -211,5 +213,30 @@ public class LoneTest extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testGetRow1() throws Exception {
+        INDArray array = Nd4j.create(10000, 10000);
 
+        //Thread.sleep(10000);
+
+        int numTries = 1000;
+        List<Long> times = new ArrayList<>();
+        long time = 0;
+        for (int i = 0; i < numTries; i++) {
+
+            int idx = RandomUtils.nextInt(0, 10000);
+            long time1 = System.nanoTime();
+            array.getRow(idx);
+            long time2 = System.nanoTime() - time1;
+
+            times.add(time2);
+            time += time2;
+        }
+
+        time /= numTries;
+
+        Collections.sort(times);
+
+        log.info("p50: {}; avg: {};", times.get(times.size() / 2), time);
+    }
 }

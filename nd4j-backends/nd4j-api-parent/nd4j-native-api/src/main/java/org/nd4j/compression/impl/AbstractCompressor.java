@@ -137,7 +137,7 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
     public INDArray compress(float[] data, int[] shape, char order) {
         FloatPointer pointer = new FloatPointer(data);
 
-        DataBuffer shapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order);
+        DataBuffer shapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order).getFirst();
         DataBuffer buffer = compressPointer(DataBuffer.TypeEx.FLOAT, pointer, data.length, 4);
 
         return Nd4j.createArrayFromShapeBuffer(buffer, shapeInfo);
@@ -155,7 +155,7 @@ public abstract class AbstractCompressor implements NDArrayCompressor {
     public INDArray compress(double[] data, int[] shape, char order) {
         DoublePointer pointer = new DoublePointer(data);
 
-        DataBuffer shapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order);
+        DataBuffer shapeInfo = Nd4j.getShapeInfoProvider().createShapeInformation(shape, order).getFirst();
         DataBuffer buffer = compressPointer(DataBuffer.TypeEx.DOUBLE, pointer, data.length, 8);
 
         return Nd4j.createArrayFromShapeBuffer(buffer, shapeInfo);
