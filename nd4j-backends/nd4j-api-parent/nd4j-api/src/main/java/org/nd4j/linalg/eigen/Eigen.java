@@ -46,9 +46,9 @@ public class Eigen {
 
     /**
      * Compute generalized eigenvalues of the problem A x = L x.
-     * Matrix A is modified in the process, holding eigenvectors at the end.
+     * Matrix A is modified in the process, holding eigenvectors after execution.
      *
-     * @param A symmetric Matrix A. After completion, A will contain the eigenvectors as rows
+     * @param A symmetric Matrix A. After execution, A will contain the eigenvectors as rows
      * @return a vector of eigenvalues L.
      */
     public static INDArray symmetricGeneralizedEigenvalues(INDArray A) {
@@ -109,7 +109,7 @@ public class Eigen {
         assert A.rows() == A.columns();
         assert B.rows() == B.columns();
         INDArray W = Nd4j.create(A.rows());
-	A = InverseMatrix.invert(B, false).mmul(A);
+	A = InverseMatrix.invert(B, false).mmuli(A);
         Nd4j.getBlasWrapper().syev( 'V', 'L', A, W);
         return W;
     }
