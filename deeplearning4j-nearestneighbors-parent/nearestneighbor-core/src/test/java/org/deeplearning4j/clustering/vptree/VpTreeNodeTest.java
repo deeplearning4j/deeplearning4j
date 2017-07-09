@@ -21,12 +21,12 @@ package org.deeplearning4j.clustering.vptree;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.PriorityQueue;
-import java.util.TreeSet;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -77,8 +77,16 @@ public class VpTreeNodeTest {
     }
 
     @Test
-    public void knnManual() {
-        INDArray arr = Nd4j.randn(3, 5);
+    public void knnManualRandom() {
+        knnManual(Nd4j.randn(3, 5));
+    }
+
+    @Test
+    public void knnManualNaturals() {
+        knnManual(generateNaturalsMatrix(20, 2));
+    }
+
+    public static void knnManual(INDArray arr) {
         VPTree t = new VPTree(arr, false);
         int k = 1;
         int m = arr.rows();
@@ -127,14 +135,13 @@ public class VpTreeNodeTest {
         }
     }
 
-
     @Test
     public void vpTreeTest() {
         List<DataPoint> points = new ArrayList<>();
         points.add(new DataPoint(0, Nd4j.create(new double[] {55, 55})));
         points.add(new DataPoint(1, Nd4j.create(new double[] {60, 60})));
         points.add(new DataPoint(2, Nd4j.create(new double[] {65, 65})));
-        VPTree tree = new VPTree(points);
+        VPTree tree = new VPTree(points, "euclidean");
         List<DataPoint> add = new ArrayList<>();
         List<Double> distances = new ArrayList<>();
         tree.search(Nd4j.create(new double[] {50, 50}), 1, add, distances);
@@ -146,6 +153,63 @@ public class VpTreeNodeTest {
         assertEquals(Nd4j.create(new double[] {60, 60}), assertion.getPoint());
 
 
+    }
+
+    public static INDArray generateNaturalsMatrix(int nrows, int ncols) {
+        INDArray col = Nd4j.arange(0, nrows).transpose();
+        INDArray points = Nd4j.zeros(nrows, ncols);
+        for (int i = 0; i < ncols; i++)
+            points.putColumn(i, col);
+        return points;
+    }
+
+    @Test
+    public void testVPSearchOverNaturals1D() throws Exception {
+        testVPSearchOverNaturalsPD(20, 1,5);
+    }
+
+    @Test
+    public void testVPSearchOverNaturals2D() throws Exception {
+        testVPSearchOverNaturalsPD(20, 2,5);
+    }
+
+    public static void testVPSearchOverNaturalsPD(int nrows, int ncols, int K) throws Exception {
+        final int queryPoint = 12;
+
+        INDArray points = generateNaturalsMatrix(nrows, ncols);
+        INDArray query = Nd4j.zeros(1, ncols);
+        for (int i = 0; i < ncols; i++)
+            query.putScalar(0, i, queryPoint);
+
+        INDArray trueResults = Nd4j.zeros(K, ncols);
+        for (int j = 0; j < K; j++) {
+            int pt = queryPoint - K / 2 + j ;
+            for (int i = 0; i < ncols; i++)
+                trueResults.putScalar(j, i, pt);
+        }
+        VPTree tree = new VPTree(points, "euclidean", false, true);
+        List<DataPoint> results = new ArrayList<>();
+        List<Double> distances = new ArrayList<>();
+        tree.search(query, K, results, distances);
+        INDArray sortedResults = Nd4j.zeros(K, ncols);
+        int i = 0;
+        for (DataPoint p : results) {
+            sortedResults.put(new INDArrayIndex[]{NDArrayIndex.point(i++), NDArrayIndex.all()}, p.getPoint());
+        }
+        Nd4j.sort(sortedResults, 0, true);
+        if (!trueResults.equalsWithEps(sortedResults, 1E-12))
+            throw new Exception("VPTree search results do not match true results");
+
+        VPTreeFillSearch fillSearch = new VPTreeFillSearch(tree, K, query);
+        fillSearch.search();
+        results = fillSearch.getResults();
+        sortedResults = Nd4j.zeros(K, ncols);
+        i = 0;
+        for (DataPoint p : results)
+            sortedResults.put(new INDArrayIndex[]{NDArrayIndex.point(i++), NDArrayIndex.all()}, p.getPoint());
+        Nd4j.sort(sortedResults, 0, true);
+        if (!trueResults.equalsWithEps(sortedResults, 1E-12))
+            throw new Exception("VPTreeFillSearch results do not match true results");
     }
 
 }
