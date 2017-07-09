@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.clustering.vptree;
 
+import org.deeplearning4j.clustering.berkeley.*;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -87,32 +88,36 @@ public class VpTreeNodeTest {
     }
 
     public static void knnManual(INDArray arr) {
+        Nd4j.getRandom().setSeed(7);
         VPTree t = new VPTree(arr, false);
         int k = 1;
         int m = arr.rows();
         for (int targetIndex = 0; targetIndex < m; targetIndex++) {
             // Do an exhaustive search
             TreeSet<Integer> s = new TreeSet<>();
-            PriorityQueue<DistIndex> pq = new PriorityQueue<>();
+            INDArray query = arr.getRow(targetIndex);
+
+            Counter<Integer> counter = new Counter<>();
             for (int j = 0; j < m; j++) {
-                double d = arr.getRow(targetIndex).distance2(arr.getRow(j));
-                DistIndex di = new DistIndex();
-                di.dist = d;
-                di.index = j;
-                pq.add(di);
+                double d = t.distance(query,(arr.getRow(j)));
+                counter.setCount(j, (float) d);
+
             }
 
+            org.deeplearning4j.clustering.berkeley.PriorityQueue<Integer> pq = counter.asMinPriorityQueue();
             // keep closest k
             for (int i = 0; i < k; i++) {
-                DistIndex di = pq.poll();
-                System.out.println("exhaustive d=" + di.dist);
-                s.add(di.index);
+                Integer di = pq.next();
+                System.out.println("exhaustive d=" + di);
+                s.add(di);
             }
 
             // Check what VPTree gives for results
             List<DataPoint> results = new ArrayList<>();
-            List<Double> distances = new ArrayList<>();
-            t.search(arr.getRow(targetIndex), k, results, distances);
+            VPTreeFillSearch fillSearch = new VPTreeFillSearch(t, k, query);
+            fillSearch.search();
+            results = fillSearch.getResults();
+
             //List<DataPoint> items = t.getItems();
             TreeSet<Integer> resultSet = new TreeSet<>();
 
@@ -123,15 +128,26 @@ public class VpTreeNodeTest {
                 resultSet.add(r);
             }
 
+
+
             // check
             for (int r : resultSet) {
-                assertTrue(String.format("VPTree result %d is not in the closest %d " + " from the exhaustive search.",
-                        r, k), s.contains(r));
+                INDArray expectedResult = arr.getRow(r);
+                if(!s.contains(r)) {
+                    fillSearch = new VPTreeFillSearch(t, k, query);
+                    fillSearch.search();
+                    results = fillSearch.getResults();
+                }
+                assertTrue(String.format("VPTree result" +
+                                " %d is not in the " +
+                                "closest %d " + " " +
+                                "from the exhaustive" +
+                                " search with query point %s and " +
+                                "result %s and target not found %s",
+                        r, k,query.toString(),results.toString(),
+                        expectedResult.toString()), s.contains(r));
             }
-            for (int r : s) {
-                assertTrue(String.format("VPTree result %d is not in the closest %d " + " from the exhaustive search.",
-                        r, k), s.contains(r));
-            }
+
         }
     }
 
