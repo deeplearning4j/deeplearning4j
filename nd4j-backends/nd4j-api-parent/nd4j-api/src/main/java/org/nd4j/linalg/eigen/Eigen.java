@@ -109,7 +109,7 @@ public class Eigen {
         assert A.rows() == A.columns();
         assert B.rows() == B.columns();
         INDArray W = Nd4j.create(A.rows());
-	A = InverseMatrix.inverse(B, false).mmul(A);
+	A = InverseMatrix.invert(B, false).mmul(A);
         Nd4j.getBlasWrapper().syev( 'V', 'L', A, W);
         return W;
     }
