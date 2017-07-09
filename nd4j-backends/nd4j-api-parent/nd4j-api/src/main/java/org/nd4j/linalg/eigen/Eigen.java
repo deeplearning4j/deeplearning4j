@@ -22,6 +22,7 @@ package org.nd4j.linalg.eigen;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.inverse.InvertMatrix;
 
 /**
  * Compute eigen values
@@ -46,14 +47,15 @@ public class Eigen {
 
     /**
      * Compute generalized eigenvalues of the problem A x = L x.
-     * Matrix A is modified in the process, holding eigenvectors at the end.
+     * Matrix A is modified in the process, holding eigenvectors at the end, unless calculateVectors is set false.
      *
-     * @param A symmetric Matrix A. After completion, A will contain the eigenvectors as columns
+     * @param A symmetric Matrix A.
+     * @param calculateVectors whether to calculate the eigenvectors (true) or not (false)
      * @return a vector of eigenvalues L.
      */
-    public static INDArray symmetricGeneralizedEigenvalues(INDArray A) {
+    public static INDArray symmetricGeneralizedEigenvalues(INDArray A, boolean calculateVectors) {
         INDArray eigenvalues = Nd4j.create(A.rows());
-        Nd4j.getBlasWrapper().syev( 'V', 'L', A, eigenvalues );
+        Nd4j.getBlasWrapper().syev( 'V', 'L', (calculateVectors ? A : A.dup()), eigenvalues );
         return eigenvalues;
     }
 
@@ -99,17 +101,19 @@ public class Eigen {
 
     /**
      * Compute generalized eigenvalues of the problem A x = L B x.
-     * The data will be unchanged, no eigenvectors returned.
+     * The data will be unchanged, no eigenvectors returned, unless calculateVectors = true
      *
      * @param A symmetric Matrix A.
      * @param B symmetric Matrix B.
+     * @param calculateVectors whether to calculate the eigenvectors
      * @return a vector of eigenvalues L.
      */
-    public static INDArray symmetricGeneralizedEigenvalues(INDArray A, INDArray B) {
+    public static INDArray symmetricGeneralizedEigenvalues(INDArray A, INDArray B, boolean calculateVectors) {
         assert A.rows() == A.columns();
         assert B.rows() == B.columns();
         INDArray W = Nd4j.create(A.rows());
-	A = InvertMatrix.invert(B, false).mmul(A);
+	if (calculateVectors) A.assign(InvertMatrix.invert(B, false).mmuli(A));
+	    else A = InvertMatrix.invert(B, false).mmuli(A);
         Nd4j.getBlasWrapper().syev( 'V', 'L', A, W);
         return W;
     }
