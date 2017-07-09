@@ -48,7 +48,7 @@ public class Eigen {
      * Compute generalized eigenvalues of the problem A x = L x.
      * Matrix A is modified in the process, holding eigenvectors at the end.
      *
-     * @param A symmetric Matrix A. After completion, A will contain the eigenvectors as rows
+     * @param A symmetric Matrix A. After completion, A will contain the eigenvectors as columns
      * @return a vector of eigenvalues L.
      */
     public static INDArray symmetricGeneralizedEigenvalues(INDArray A) {
