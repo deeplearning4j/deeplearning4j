@@ -1,4 +1,3 @@
-
 package org.nd4j.linalg.eigen;
 
 import org.junit.Test;
@@ -9,7 +8,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.eigen.Eigen ;
-
+import org.nd4j.linalg.inverse.InvertMatrix;
+import org.nd4j.linalg.util.ArrayUtil;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -21,6 +21,23 @@ public class TestEigen extends BaseNd4jTest {
 
     public TestEigen(Nd4jBackend backend) {
         super(backend);
+    }
+
+    // test of functions added by Luke Czapla
+    // Compares solution of A x = L x  to solution to A x = L B x when it is simple
+    @Test
+    public void test2Syev() {
+    	double[][] matrix = new double[][] {{0.0427, -0.04, 0, 0, 0, 0}, {-0.04, 0.0427, 0, 0, 0, 0}, {0, 0.00, 0.0597, 0, 0, 0}, {0, 0, 0, 50, 0, 0}, {0, 0, 0, 0, 50, 0}, {0, 0, 0, 0, 0, 50}};
+	INDArray m = Nd4j.create(ArrayUtil.flattenDoubleArray(matrix), new int[] {6,6});
+	INDArray res = Eigen.symmetricGeneralizedEigenvalues(m, true);
+	
+	INDArray n = Nd4j.create(ArrayUtil.flattenDoubleArray(matrix), new int[] {6,6});
+	INDArray res2 = Eigen.symmetricGeneralizedEigenvalues(n, Nd4j.eye(6).mul(2.0), true);
+
+	for (int i = 0; i < 6; i++) {
+		assertEquals(res.getDouble(i), 2*res2.getDouble(i), 0.000001);
+	}
+	
     }
 
     @Test
@@ -52,4 +69,3 @@ public class TestEigen extends BaseNd4jTest {
         return 'f';
     }
 }
-
