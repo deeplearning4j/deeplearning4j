@@ -44,13 +44,26 @@ public class Eigen {
         return Nd4j.createComplex(WR, WI);
     }
 
+    /**
+     * Compute generalized eigenvalues of the problem A x = L x.
+     * Matrix A is modified in the process, holding eigenvectors after execution.
+     *
+     * @param A symmetric Matrix A. After execution, A will contain the eigenvectors as columns
+     * @return a vector of eigenvalues L.
+     */
+    public static INDArray symmetricGeneralizedEigenvalues(INDArray A) {
+        INDArray eigenvalues = Nd4j.create(A.rows());
+        Nd4j.getBlasWrapper().syev( 'V', 'L', A, eigenvalues );
+        return eigenvalues;
+    }
+
 
     /**
      * Compute generalized eigenvalues of the problem A x = L x.
-     * Matrix A is modified in the process, holding eigenvectors at the end, unless calculateVectors is set false.
+     * Matrix A is modified in the process, holding eigenvectors as columns after execution.
      *
-     * @param A symmetric Matrix A.
-     * @param calculateVectors whether to calculate the eigenvectors (true) or not (false)
+     * @param A symmetric Matrix A. After execution, A will contain the eigenvectors as columns
+     * @param calculateVectors if false, it will not modify A and calculate eigenvectors
      * @return a vector of eigenvalues L.
      */
     public static INDArray symmetricGeneralizedEigenvalues(INDArray A, boolean calculateVectors) {
@@ -101,11 +114,29 @@ public class Eigen {
 
     /**
      * Compute generalized eigenvalues of the problem A x = L B x.
-     * The data will be unchanged, no eigenvectors returned, unless calculateVectors = true
+     * The data will be unchanged, no eigenvectors returned.
      *
      * @param A symmetric Matrix A.
      * @param B symmetric Matrix B.
-     * @param calculateVectors whether to calculate the eigenvectors
+     * @return a vector of eigenvalues L.
+     */
+    public static INDArray symmetricGeneralizedEigenvalues(INDArray A, INDArray B) {
+        assert A.rows() == A.columns();
+        assert B.rows() == B.columns();
+        INDArray W = Nd4j.create(A.rows());
+
+        A = InvertMatrix.invert(B, false).mmuli(A);
+        Nd4j.getBlasWrapper().syev( 'V', 'L', A, W);
+        return W;
+    }
+
+    /**
+     * Compute generalized eigenvalues of the problem A x = L B x.
+     * The data will be unchanged, no eigenvectors returned unless calculateVectors is true.
+     * If calculateVectors == true, A will contain a matrix with the eigenvectors as columns.
+     *
+     * @param A symmetric Matrix A.
+     * @param B symmetric Matrix B.
      * @return a vector of eigenvalues L.
      */
     public static INDArray symmetricGeneralizedEigenvalues(INDArray A, INDArray B, boolean calculateVectors) {
@@ -113,7 +144,8 @@ public class Eigen {
         assert B.rows() == B.columns();
         INDArray W = Nd4j.create(A.rows());
 	if (calculateVectors) A.assign(InvertMatrix.invert(B, false).mmuli(A));
-	    else A = InvertMatrix.invert(B, false).mmuli(A);
+        else A = InvertMatrix.invert(B, false).mmuli(A);
+
         Nd4j.getBlasWrapper().syev( 'V', 'L', A, W);
         return W;
     }
