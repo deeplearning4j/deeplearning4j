@@ -7,7 +7,8 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.eigen.Eigen ;
+import org.nd4j.linalg.eigen.Eigen;
+import org.nd4j.linalg.eigen.Covariance;
 import org.nd4j.linalg.inverse.InvertMatrix;
 import org.nd4j.linalg.util.ArrayUtil;
 import static org.junit.Assert.assertEquals;
@@ -25,6 +26,25 @@ public class TestEigen extends BaseNd4jTest {
 
     // test of functions added by Luke Czapla
     // Compares solution of A x = L x  to solution to A x = L B x when it is simple
+
+    @Test
+    public void testCovarianceSyev() {
+	INDArray m = Nd4j.randn(10000, 6);
+        m.getColumn(0).muli(4.84);
+        m.getColumn(1).muli(4.84);
+        m.getColumn(2).muli(4.01);
+        m.getColumn(1).addi(m.getColumn(2).div(2.0));
+        m.getColumn(2).addi(34.286);
+        m.getColumn(3).muli(1.0/7.07);
+        m.getColumn(4).muli(1.0/7.07);
+        m.getColumn(5).muli(1.0/7.07);
+        m.getColumn(4).subi(m.getColumn(5).div(2.0));
+        m.getColumn(5).addi(3.4);
+        INDArray[] result = Covariance.principalComponents(Covariance.covarianceMatrix(m));
+	assert result[0].columns() == 6 && result[0].rows() == 6 && result[1].columns() == 6;
+
+    }
+
     @Test
     public void test2Syev() {
     	double[][] matrix = new double[][] {{0.0427, -0.04, 0, 0, 0, 0}, {-0.04, 0.0427, 0, 0, 0, 0}, {0, 0.00, 0.0597, 0, 0, 0}, {0, 0, 0, 50, 0, 0}, {0, 0, 0, 0, 50, 0}, {0, 0, 0, 0, 0, 50}};
