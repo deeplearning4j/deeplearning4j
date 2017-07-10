@@ -2759,6 +2759,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         DataSetIterator iter = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 2, true) : iterator;
 
+        WorkspaceMode cMode = layerWiseConfigurations.getTrainingWorkspaceMode();
+        layerWiseConfigurations.setTrainingWorkspaceMode(layerWiseConfigurations.getInferenceWorkspaceMode());
+
         MemoryWorkspace workspace =
                         layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
@@ -2795,6 +2798,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         if (iterator.asyncSupported())
             ((AsyncDataSetIterator) iter).shutdown();
+
+        layerWiseConfigurations.setTrainingWorkspaceMode(cMode);
 
         return evaluations;
     }
@@ -2845,8 +2850,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     @Override
     public <T extends IEvaluation> T[] doEvaluation(MultiDataSetIterator iterator, T[] evaluations) {
-        throw new DL4JInvalidInputException(
-                        "MultiLayerNetwork can't handle MultiDataSet. Please consider use of ComputationGraph");
+        return doEvaluation(new MultiDataSetWrapperIterator(iterator), evaluations);
     }
 
     /**

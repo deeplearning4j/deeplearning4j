@@ -2917,6 +2917,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         DataSetIterator iter = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 2, true) : iterator;
 
+        WorkspaceMode cMode = configuration.getTrainingWorkspaceMode();
+        configuration.setTrainingWorkspaceMode(configuration.getInferenceWorkspaceMode());
+
         MemoryWorkspace workspace =
                         configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
@@ -2950,6 +2953,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (iterator.asyncSupported())
             ((AsyncDataSetIterator) iter).shutdown();
 
+        configuration.setTrainingWorkspaceMode(cMode);
+
         return evaluations;
     }
 
@@ -2975,6 +2980,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         MultiDataSetIterator iter =
                         iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 2, true) : iterator;
+
+        WorkspaceMode cMode = configuration.getTrainingWorkspaceMode();
+        configuration.setTrainingWorkspaceMode(configuration.getInferenceWorkspaceMode());
 
         MemoryWorkspace workspace =
                         configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
@@ -3011,6 +3019,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         if (iterator.asyncSupported())
             ((AsyncMultiDataSetIterator) iter).shutdown();
+
+        configuration.setTrainingWorkspaceMode(cMode);
 
         return evaluations;
     }
