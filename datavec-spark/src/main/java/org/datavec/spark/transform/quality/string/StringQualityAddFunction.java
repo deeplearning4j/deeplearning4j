@@ -19,10 +19,10 @@ package org.datavec.spark.transform.quality.string;
 import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus;
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.Function2;
+import org.datavec.api.transform.metadata.StringMetaData;
+import org.datavec.api.transform.quality.columns.StringQuality;
 import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Writable;
-import org.datavec.api.transform.quality.columns.StringQuality;
-import org.datavec.api.transform.metadata.StringMetaData;
 
 /**
  * Created by Alex on 5/03/2016.

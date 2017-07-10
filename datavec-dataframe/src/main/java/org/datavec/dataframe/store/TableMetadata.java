@@ -1,8 +1,8 @@
 package org.datavec.dataframe.store;
 
-import org.datavec.dataframe.table.Relation;
-import org.datavec.dataframe.columns.Column;
 import com.google.gson.Gson;
+import org.datavec.dataframe.columns.Column;
+import org.datavec.dataframe.table.Relation;
 
 import java.util.ArrayList;
 import java.util.List;

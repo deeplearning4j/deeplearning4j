@@ -2,13 +2,10 @@ package org.datavec.spark.transform.quality.integer;
 
 import lombok.Getter;
 import org.datavec.api.transform.metadata.IntegerMetaData;
-import org.datavec.api.transform.metadata.StringMetaData;
 import org.datavec.api.transform.quality.columns.ColumnQuality;
 import org.datavec.api.transform.quality.columns.IntegerQuality;
 import org.datavec.api.writable.Writable;
 import org.datavec.spark.transform.quality.QualityAnalysisState;
-import org.datavec.spark.transform.quality.integer.IntegerQualityAddFunction;
-import org.datavec.spark.transform.quality.integer.IntegerQualityMergeFunction;
 
 /**
  * Created by huitseeker on 3/6/17.

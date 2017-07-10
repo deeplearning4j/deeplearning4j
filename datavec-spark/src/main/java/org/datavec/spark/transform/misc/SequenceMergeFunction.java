@@ -17,8 +17,8 @@
 package org.datavec.spark.transform.misc;
 
 import org.apache.spark.api.java.function.Function;
-import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.sequence.merge.SequenceMerge;
+import org.datavec.api.writable.Writable;
 import scala.Tuple2;
 
 import java.util.ArrayList;

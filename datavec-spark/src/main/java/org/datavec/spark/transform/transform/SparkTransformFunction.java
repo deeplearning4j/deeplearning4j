@@ -19,8 +19,8 @@ package org.datavec.spark.transform.transform;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.function.Function;
-import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.Transform;
+import org.datavec.api.writable.Writable;
 import org.datavec.spark.transform.SparkTransformExecutor;
 
 import java.util.ArrayList;

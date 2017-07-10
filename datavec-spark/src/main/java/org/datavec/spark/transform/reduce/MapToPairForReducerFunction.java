@@ -19,8 +19,8 @@ package org.datavec.spark.transform.reduce;
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.PairFunction;
 import org.datavec.api.transform.reduce.IAssociativeReducer;
-import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.writable.Writable;
 import scala.Tuple2;
 
 import java.util.List;

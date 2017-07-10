@@ -3,8 +3,8 @@ package org.datavec.dataframe.filtering;
 import org.datavec.dataframe.api.FloatColumn;
 import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.columns.ColumnReference;
-import org.datavec.dataframe.util.Selection;
 import org.datavec.dataframe.columns.FloatColumnUtils;
+import org.datavec.dataframe.util.Selection;
 
 /**
  */

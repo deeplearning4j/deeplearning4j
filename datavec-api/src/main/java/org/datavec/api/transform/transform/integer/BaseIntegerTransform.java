@@ -16,11 +16,11 @@
 
 package org.datavec.api.transform.transform.integer;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;
 import org.datavec.api.writable.Writable;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 /**
  * Abstract integer transformation (single column)

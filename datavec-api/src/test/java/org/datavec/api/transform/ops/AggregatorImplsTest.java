@@ -1,8 +1,5 @@
 package org.datavec.api.transform.ops;
 
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.Text;
-import org.datavec.api.writable.Writable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -11,7 +8,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by huitseeker on 5/14/17.

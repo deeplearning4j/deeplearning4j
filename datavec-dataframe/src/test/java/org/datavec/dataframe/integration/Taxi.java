@@ -1,11 +1,11 @@
 package org.datavec.dataframe.integration;
 
+import com.google.common.base.Stopwatch;
 import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.columns.Column;
+import org.datavec.dataframe.reducing.NumericReduceUtils;
 import org.datavec.dataframe.store.StorageManager;
 import org.datavec.dataframe.table.ViewGroup;
-import com.google.common.base.Stopwatch;
-import org.datavec.dataframe.reducing.NumericReduceUtils;
 
 import java.util.concurrent.TimeUnit;
 

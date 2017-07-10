@@ -17,7 +17,6 @@
 package org.datavec.api.records.writer.impl;
 
 
-
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
@@ -25,7 +24,7 @@ import org.datavec.api.writable.Writable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Collection;
+import java.util.List;
 
 /**
  * Line record writer
@@ -47,7 +46,7 @@ public class LineRecordWriter extends FileRecordWriter {
     }
 
     @Override
-    public void write(Collection<Writable> record) throws IOException {
+    public void write(List<Writable> record) throws IOException {
         if (!record.isEmpty()) {
             Text t = (Text) record.iterator().next();
             t.write(out);

@@ -17,9 +17,9 @@
 package org.datavec.api.transform.analysis.columns;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.datavec.api.transform.ColumnType;
-import lombok.Data;
 
 /**
  * Analysis for String columns

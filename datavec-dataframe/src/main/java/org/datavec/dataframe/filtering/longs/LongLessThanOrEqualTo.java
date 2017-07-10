@@ -1,6 +1,5 @@
 package org.datavec.dataframe.filtering.longs;
 
-import org.datavec.dataframe.api.FloatColumn;
 import org.datavec.dataframe.api.LongColumn;
 import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.columns.ColumnReference;

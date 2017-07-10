@@ -16,13 +16,13 @@
 
 package org.datavec.api.transform.transform;
 
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.datavec.api.transform.ColumnOp;
-import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
-import lombok.Data;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.ArrayList;
 import java.util.Iterator;

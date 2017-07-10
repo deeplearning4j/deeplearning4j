@@ -16,19 +16,14 @@
 
 package org.datavec.api.transform.transform.time;
 
-import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
-import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
-import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
-import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 import lombok.EqualsAndHashCode;
-import org.datavec.api.transform.metadata.IntegerMetaData;
-import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
+import org.datavec.api.transform.metadata.IntegerMetaData;
 import org.datavec.api.transform.metadata.StringMetaData;
 import org.datavec.api.transform.metadata.TimeMetaData;
+import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.util.jackson.DateTimeFieldTypeDeserializer;
 import org.datavec.api.util.jackson.DateTimeFieldTypeSerializer;
 import org.datavec.api.writable.IntWritable;
@@ -39,6 +34,11 @@ import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

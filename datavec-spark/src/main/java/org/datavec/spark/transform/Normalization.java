@@ -4,7 +4,6 @@ import org.apache.commons.collections.map.ListOrderedMap;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.Column;
 import org.apache.spark.sql.Row;
-
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 

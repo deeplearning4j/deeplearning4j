@@ -16,14 +16,14 @@
 
 package org.datavec.api.transform.transform.doubletransform;
 
-import org.datavec.api.transform.schema.Schema;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
+import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.BaseColumnsMathOpTransform;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
 import java.util.Arrays;

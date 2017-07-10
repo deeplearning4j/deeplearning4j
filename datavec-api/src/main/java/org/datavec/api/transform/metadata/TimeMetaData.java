@@ -16,13 +16,13 @@
 
 package org.datavec.api.transform.metadata;
 
-import org.nd4j.shade.jackson.annotation.JsonProperty;
-import lombok.EqualsAndHashCode;
-import org.datavec.api.writable.LongWritable;
-import org.datavec.api.transform.ColumnType;
-import org.datavec.api.writable.Writable;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.datavec.api.transform.ColumnType;
+import org.datavec.api.writable.LongWritable;
+import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.TimeZone;
 

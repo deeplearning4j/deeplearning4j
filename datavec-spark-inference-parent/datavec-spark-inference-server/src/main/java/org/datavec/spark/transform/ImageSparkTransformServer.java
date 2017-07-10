@@ -1,16 +1,13 @@
 package org.datavec.spark.transform;
 
 import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
-import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.image.transform.ImageTransformProcess;
 import org.datavec.spark.transform.model.*;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
 import play.Mode;
 import play.libs.Json;
 import play.routing.RoutingDsl;
@@ -19,10 +16,7 @@ import play.server.Server;
 import java.io.File;
 import java.io.IOException;
 
-import static play.mvc.Controller.request;
-import static play.mvc.Results.badRequest;
-import static play.mvc.Results.internalServerError;
-import static play.mvc.Results.ok;
+import static play.mvc.Results.*;
 
 /**
  * Created by kepricon on 17. 6. 19.

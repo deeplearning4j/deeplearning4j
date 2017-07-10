@@ -3,13 +3,9 @@ package org.datavec.api.transform.ops;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.tuple.Pair;
-import org.datavec.api.writable.ByteWritable;
 import org.datavec.api.writable.Writable;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**

@@ -26,7 +26,9 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.dataset.DataSet;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Random;
 

@@ -1,9 +1,9 @@
 package org.datavec.dataframe;
 
 import org.datavec.dataframe.api.ColumnType;
-import org.datavec.dataframe.api.Table;
-import org.datavec.dataframe.api.IntColumn;
 import org.datavec.dataframe.api.DateColumn;
+import org.datavec.dataframe.api.IntColumn;
+import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.columns.packeddata.PackedLocalDate;
 import org.datavec.dataframe.io.csv.CsvReader;
 import org.junit.Before;
@@ -11,9 +11,7 @@ import org.junit.Test;
 
 import java.time.LocalDate;
 
-import static org.datavec.dataframe.api.QueryHelper.and;
-import static org.datavec.dataframe.api.QueryHelper.both;
-import static org.datavec.dataframe.api.QueryHelper.column;
+import static org.datavec.dataframe.api.QueryHelper.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 

@@ -39,9 +39,9 @@ import org.apache.uima.resource.ResourceAccessException;
 import org.apache.uima.resource.ResourceInitializationException;
 import org.apache.uima.util.Level;
 import org.apache.uima.util.Logger;
-import org.datavec.nlp.movingwindow.Util;
 import org.cleartk.token.type.Sentence;
 import org.cleartk.token.type.Token;
+import org.datavec.nlp.movingwindow.Util;
 
 import java.util.Iterator;
 import java.util.LinkedList;

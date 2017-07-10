@@ -1,12 +1,12 @@
 package org.datavec.dataframe.filtering.text;
 
+import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
+import it.unimi.dsi.fastutil.objects.Object2IntMap;
+import org.apache.commons.lang3.StringUtils;
 import org.datavec.dataframe.columns.CategoryColumnUtils;
 import org.datavec.dataframe.util.BitmapBackedSelection;
 import org.datavec.dataframe.util.DictionaryMap;
 import org.datavec.dataframe.util.Selection;
-import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

@@ -22,9 +22,10 @@ import org.datavec.api.records.writer.impl.FileRecordWriter;
 import org.datavec.api.writable.ArrayWritable;
 import org.datavec.api.writable.Writable;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -51,7 +52,7 @@ public class SVMLightRecordWriter extends FileRecordWriter {
     }
 
     @Override
-    public void write(Collection<Writable> record) throws IOException {
+    public void write(List<Writable> record) throws IOException {
         if (!record.isEmpty()) {
             List<Writable> recordList = record instanceof List ? (List<Writable>) record : new ArrayList<>(record);
             StringBuilder result = new StringBuilder();

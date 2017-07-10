@@ -17,7 +17,6 @@
 package org.datavec.spark.transform.misc.comparator;
 
 import lombok.AllArgsConstructor;
-import org.datavec.api.writable.Writable;
 import scala.Tuple2;
 
 import java.io.Serializable;

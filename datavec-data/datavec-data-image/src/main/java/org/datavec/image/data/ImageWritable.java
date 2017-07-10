@@ -15,16 +15,16 @@
  */
 package org.datavec.image.data;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
-import java.nio.Buffer;
-
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.FrameConverter;
 import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.WritableFactory;
 import org.datavec.api.writable.WritableType;
+
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+import java.nio.Buffer;
 
 /**
  * Wraps a {@link Frame} to allow serialization within this framework.
@@ -91,6 +91,11 @@ public class ImageWritable implements Writable {
     @Override
     public long toLong() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public WritableType getType() {
+        return WritableType.Image;
     }
 
     @Override

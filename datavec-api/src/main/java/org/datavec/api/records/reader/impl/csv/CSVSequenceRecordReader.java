@@ -21,9 +21,9 @@ import org.apache.commons.io.LineIterator;
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataURI;
+import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.FileRecordReader;
 import org.datavec.api.writable.Text;
-import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.writable.Writable;
 
 import java.io.*;

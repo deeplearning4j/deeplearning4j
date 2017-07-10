@@ -1,13 +1,12 @@
 package org.datavec.dataframe.index;
 
-import org.datavec.dataframe.api.LongColumn;
-import org.datavec.dataframe.util.BitmapBackedSelection;
-import org.datavec.dataframe.util.Selection;
-
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectSortedMap;
+import org.datavec.dataframe.api.LongColumn;
+import org.datavec.dataframe.util.BitmapBackedSelection;
+import org.datavec.dataframe.util.Selection;
 
 /**
  * An index for eight-byte long and long backed columns (datetime)

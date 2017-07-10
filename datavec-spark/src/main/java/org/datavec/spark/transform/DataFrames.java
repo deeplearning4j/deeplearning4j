@@ -19,15 +19,14 @@ import org.datavec.api.writable.*;
 import org.datavec.spark.transform.sparkfunction.SequenceToRows;
 import org.datavec.spark.transform.sparkfunction.ToRecord;
 import org.datavec.spark.transform.sparkfunction.ToRow;
-
-import java.util.ArrayList;
-import java.util.List;
-
 import org.datavec.spark.transform.sparkfunction.sequence.DataFrameToSequenceCreateCombiner;
 import org.datavec.spark.transform.sparkfunction.sequence.DataFrameToSequenceMergeCombiner;
 import org.datavec.spark.transform.sparkfunction.sequence.DataFrameToSequenceMergeValue;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.apache.spark.sql.functions.avg;
 import static org.apache.spark.sql.functions.col;

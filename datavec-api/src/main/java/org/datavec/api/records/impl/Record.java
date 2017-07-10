@@ -21,7 +21,6 @@ import lombok.Data;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.writable.Writable;
 
-import java.io.Serializable;
 import java.util.List;
 
 /**

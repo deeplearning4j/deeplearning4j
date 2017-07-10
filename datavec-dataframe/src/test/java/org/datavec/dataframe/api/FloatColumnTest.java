@@ -1,14 +1,14 @@
 package org.datavec.dataframe.api;
 
-import org.datavec.dataframe.columns.Column;
-import org.datavec.dataframe.table.Relation;
-import org.datavec.dataframe.util.Selection;
 import com.google.common.base.Stopwatch;
 import io.codearte.jfairy.Fairy;
 import it.unimi.dsi.fastutil.floats.FloatArrayList;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.math3.random.RandomDataGenerator;
 import org.apache.commons.math3.stat.StatUtils;
+import org.datavec.dataframe.columns.Column;
+import org.datavec.dataframe.table.Relation;
+import org.datavec.dataframe.util.Selection;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;

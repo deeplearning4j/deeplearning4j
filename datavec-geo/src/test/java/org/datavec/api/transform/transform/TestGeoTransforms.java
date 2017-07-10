@@ -16,21 +16,25 @@
 
 package org.datavec.api.transform.transform;
 
-import org.datavec.api.writable.*;
 import org.datavec.api.transform.ColumnType;
-import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.geo.LocationType;
+import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.geo.CoordinatesDistanceTransform;
 import org.datavec.api.transform.transform.geo.IPAddressToCoordinatesTransform;
 import org.datavec.api.transform.transform.geo.IPAddressToLocationTransform;
+import org.datavec.api.writable.DoubleWritable;
+import org.datavec.api.writable.Text;
+import org.datavec.api.writable.Writable;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 

@@ -18,6 +18,7 @@ package org.datavec.api.formats.input;
 
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.writable.WritableType;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -65,6 +66,11 @@ public abstract class BaseInputFormat implements InputFormat {
 
     @Override
     public void writeType(DataOutput out) throws IOException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public WritableType getType(){
         throw new UnsupportedOperationException();
     }
 }

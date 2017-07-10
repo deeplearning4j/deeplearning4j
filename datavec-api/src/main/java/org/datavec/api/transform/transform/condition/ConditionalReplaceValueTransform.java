@@ -16,14 +16,14 @@
 
 package org.datavec.api.transform.transform.condition;
 
-import org.datavec.api.transform.ColumnOp;
-import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
+import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
 import java.util.List;

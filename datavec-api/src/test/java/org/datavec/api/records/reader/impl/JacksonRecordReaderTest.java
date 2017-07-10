@@ -16,23 +16,23 @@
 
 package org.datavec.api.records.reader.impl;
 
+import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
+import org.datavec.api.records.reader.RecordReader;
+import org.datavec.api.records.reader.impl.jackson.FieldSelection;
+import org.datavec.api.records.reader.impl.jackson.JacksonRecordReader;
+import org.datavec.api.split.InputSplit;
+import org.datavec.api.split.NumberedFileInputSplit;
+import org.datavec.api.util.ClassPathResource;
+import org.datavec.api.writable.IntWritable;
+import org.datavec.api.writable.Text;
+import org.datavec.api.writable.Writable;
+import org.junit.Test;
 import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.dataformat.xml.XmlFactory;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
-import org.datavec.api.writable.Text;
-import org.datavec.api.records.reader.impl.jackson.FieldSelection;
-import org.datavec.api.records.reader.impl.jackson.JacksonRecordReader;
-import org.datavec.api.split.InputSplit;
-import org.datavec.api.util.ClassPathResource;
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.io.labels.PathLabelGenerator;
-import org.datavec.api.records.reader.RecordReader;
-import org.datavec.api.split.NumberedFileInputSplit;
-import org.datavec.api.writable.Writable;
-import org.junit.Test;
 
 import java.net.URI;
 import java.util.ArrayList;

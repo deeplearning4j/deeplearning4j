@@ -16,38 +16,38 @@
 
 package org.datavec.api.transform.transform;
 
+import junit.framework.TestCase;
 import org.datavec.api.transform.*;
+import org.datavec.api.transform.condition.Condition;
+import org.datavec.api.transform.condition.ConditionOp;
+import org.datavec.api.transform.condition.column.IntegerColumnCondition;
+import org.datavec.api.transform.condition.column.StringColumnCondition;
+import org.datavec.api.transform.metadata.CategoricalMetaData;
+import org.datavec.api.transform.metadata.DoubleMetaData;
+import org.datavec.api.transform.metadata.IntegerMetaData;
+import org.datavec.api.transform.metadata.LongMetaData;
 import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.reduce.Reducer;
+import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.sequence.ReduceSequenceTransform;
 import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
 import org.datavec.api.transform.transform.categorical.*;
 import org.datavec.api.transform.transform.column.*;
+import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
+import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
+import org.datavec.api.transform.transform.doubletransform.*;
 import org.datavec.api.transform.transform.integer.*;
+import org.datavec.api.transform.transform.longtransform.LongColumnsMathOpTransform;
+import org.datavec.api.transform.transform.longtransform.LongMathOpTransform;
 import org.datavec.api.transform.transform.sequence.SequenceDifferenceTransform;
 import org.datavec.api.transform.transform.sequence.SequenceMovingWindowReduceTransform;
 import org.datavec.api.transform.transform.sequence.SequenceOffsetTransform;
-import org.datavec.api.writable.*;
-import org.datavec.api.transform.condition.column.IntegerColumnCondition;
-import org.datavec.api.transform.metadata.CategoricalMetaData;
-import org.datavec.api.transform.metadata.DoubleMetaData;
-import org.datavec.api.transform.metadata.IntegerMetaData;
-import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.transform.transform.condition.ConditionalReplaceValueTransform;
-import org.datavec.api.transform.transform.longtransform.LongColumnsMathOpTransform;
-import org.datavec.api.transform.transform.longtransform.LongMathOpTransform;
-import org.datavec.api.transform.transform.doubletransform.*;
 import org.datavec.api.transform.transform.string.*;
 import org.datavec.api.transform.transform.time.DeriveColumnsFromTimeTransform;
 import org.datavec.api.transform.transform.time.StringToTimeTransform;
 import org.datavec.api.transform.transform.time.TimeMathOpTransform;
-import org.datavec.api.transform.condition.Condition;
-import org.datavec.api.transform.condition.ConditionOp;
-import org.datavec.api.transform.condition.column.StringColumnCondition;
-import org.datavec.api.transform.metadata.LongMetaData;
-import org.datavec.api.transform.transform.condition.ConditionalCopyValueTransform;
-import junit.framework.TestCase;
+import org.datavec.api.writable.*;
 import org.joda.time.DateTimeFieldType;
 import org.joda.time.DateTimeZone;
 import org.junit.Assert;
@@ -64,9 +64,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by Alex on 21/03/2016.

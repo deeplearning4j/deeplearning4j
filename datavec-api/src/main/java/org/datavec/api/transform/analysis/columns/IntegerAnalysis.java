@@ -16,10 +16,10 @@
 
 package org.datavec.api.transform.analysis.columns;
 
-import lombok.NoArgsConstructor;
-import org.datavec.api.transform.ColumnType;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import org.datavec.api.transform.ColumnType;
 
 /**
  * Analysis for Integer columns

@@ -1,8 +1,8 @@
 package org.datavec.dataframe.columns;
 
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.datavec.dataframe.api.DateTimeColumn;
 import org.datavec.dataframe.filtering.LongPredicate;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 /**
  *

@@ -16,19 +16,19 @@
 
 package org.datavec.api.records.reader.impl.jackson;
 
+import org.apache.commons.io.FileUtils;
+import org.datavec.api.conf.Configuration;
+import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataURI;
-import org.nd4j.shade.jackson.core.type.TypeReference;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.apache.commons.io.FileUtils;
-import org.datavec.api.conf.Configuration;
-import org.datavec.api.writable.Text;
-import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.core.type.TypeReference;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.*;
 import java.net.URI;

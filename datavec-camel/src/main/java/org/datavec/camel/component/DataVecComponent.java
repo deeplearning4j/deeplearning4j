@@ -16,12 +16,11 @@
 
 package org.datavec.camel.component;
 
-import java.util.Map;
-
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
-
 import org.apache.camel.impl.UriEndpointComponent;
+
+import java.util.Map;
 
 /**
  * Represents the component that manages {@link DataVecEndpoint}.

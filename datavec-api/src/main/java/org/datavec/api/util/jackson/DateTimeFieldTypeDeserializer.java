@@ -16,12 +16,12 @@
 
 package org.datavec.api.util.jackson;
 
+import org.joda.time.DateTimeFieldType;
 import org.nd4j.shade.jackson.core.JsonParser;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationContext;
 import org.nd4j.shade.jackson.databind.JsonDeserializer;
 import org.nd4j.shade.jackson.databind.JsonNode;
-import org.joda.time.DateTimeFieldType;
 
 import java.io.IOException;
 import java.util.HashMap;

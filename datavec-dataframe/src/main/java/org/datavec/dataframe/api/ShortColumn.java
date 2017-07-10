@@ -1,5 +1,10 @@
 package org.datavec.dataframe.api;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import it.unimi.dsi.fastutil.floats.FloatArrayList;
+import it.unimi.dsi.fastutil.ints.IntComparator;
+import it.unimi.dsi.fastutil.shorts.*;
 import org.datavec.dataframe.columns.AbstractColumn;
 import org.datavec.dataframe.columns.Column;
 import org.datavec.dataframe.columns.ShortColumnUtils;
@@ -14,15 +19,6 @@ import org.datavec.dataframe.util.BitmapBackedSelection;
 import org.datavec.dataframe.util.ReverseShortComparator;
 import org.datavec.dataframe.util.Selection;
 import org.datavec.dataframe.util.Stats;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
-import it.unimi.dsi.fastutil.floats.FloatArrayList;
-import it.unimi.dsi.fastutil.ints.IntComparator;
-import it.unimi.dsi.fastutil.shorts.ShortArrayList;
-import it.unimi.dsi.fastutil.shorts.ShortArrays;
-import it.unimi.dsi.fastutil.shorts.ShortIterator;
-import it.unimi.dsi.fastutil.shorts.ShortOpenHashSet;
-import it.unimi.dsi.fastutil.shorts.ShortSet;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;

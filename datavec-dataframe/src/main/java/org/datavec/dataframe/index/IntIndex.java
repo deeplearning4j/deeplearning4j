@@ -1,12 +1,12 @@
 package org.datavec.dataframe.index;
 
-import org.datavec.dataframe.api.IntColumn;
-import org.datavec.dataframe.util.BitmapBackedSelection;
-import org.datavec.dataframe.util.Selection;
 import it.unimi.dsi.fastutil.ints.Int2ObjectAVLTreeMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectSortedMap;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
+import org.datavec.dataframe.api.IntColumn;
+import org.datavec.dataframe.util.BitmapBackedSelection;
+import org.datavec.dataframe.util.Selection;
 
 import java.util.Comparator;
 

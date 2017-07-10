@@ -18,13 +18,13 @@ package org.datavec.api.records.writer.impl;
 
 
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.writable.Text;
 import org.datavec.api.records.writer.RecordWriter;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
 import java.io.*;
 import java.nio.charset.Charset;
-import java.util.Collection;
+import java.util.List;
 
 /**
  * Write to files.
@@ -82,7 +82,7 @@ public class FileRecordWriter implements RecordWriter {
     }
 
     @Override
-    public void write(Collection<Writable> record) throws IOException {
+    public void write(List<Writable> record) throws IOException {
         if (!record.isEmpty()) {
             Text t = (Text) record.iterator().next();
             t.write(out);

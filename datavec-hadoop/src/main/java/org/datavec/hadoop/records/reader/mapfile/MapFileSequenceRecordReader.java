@@ -53,6 +53,9 @@ import java.util.*;
  *  }
  * </pre>
  *
+ * Alternatively, use {@link org.datavec.hadoop.records.writer.mapfile.MapFileSequenceRecordWriter}.<br>
+ * Note that this sequence record reader supports optional randomisation of order.
+ *
  * @author Alex Black
  */
 public class MapFileSequenceRecordReader implements SequenceRecordReader {

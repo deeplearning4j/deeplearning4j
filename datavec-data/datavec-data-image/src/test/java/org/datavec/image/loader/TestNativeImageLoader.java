@@ -15,10 +15,6 @@
  */
 package org.datavec.image.loader;
 
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.util.Random;
-
 import org.bytedeco.javacpp.indexer.UByteIndexer;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import org.bytedeco.javacv.OpenCVFrameConverter;
@@ -26,11 +22,14 @@ import org.datavec.api.util.ClassPathResource;
 import org.datavec.image.data.ImageWritable;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.assertEquals;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.util.Random;
+
 import static org.bytedeco.javacpp.lept.*;
 import static org.bytedeco.javacpp.opencv_core.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  *

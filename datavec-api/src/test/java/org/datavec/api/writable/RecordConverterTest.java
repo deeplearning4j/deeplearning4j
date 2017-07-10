@@ -18,10 +18,6 @@ package org.datavec.api.writable;
 
 import com.google.common.collect.Lists;
 import org.datavec.api.util.ndarray.RecordConverter;
-import org.datavec.api.writable.DoubleWritable;
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.Writable;
-import org.datavec.api.writable.NDArrayWritable;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;

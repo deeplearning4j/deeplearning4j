@@ -17,25 +17,17 @@
 package org.datavec.api.writable;
 
 
-import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.io.BinaryComparable;
 import org.datavec.api.io.WritableComparable;
 import org.datavec.api.io.WritableComparator;
 import org.datavec.api.io.WritableUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.io.DataInput;
 import java.io.DataOutput;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.CharsetEncoder;
-import java.nio.charset.CodingErrorAction;
-import java.nio.charset.MalformedInputException;
+import java.nio.charset.*;
 import java.text.CharacterIterator;
 import java.text.StringCharacterIterator;
 
@@ -614,5 +606,10 @@ public class Text extends BinaryComparable implements WritableComparable<BinaryC
     @Override
     public long toLong() {
         return Long.parseLong(toString());
+    }
+
+    @Override
+    public WritableType getType() {
+        return WritableType.Text;
     }
 }

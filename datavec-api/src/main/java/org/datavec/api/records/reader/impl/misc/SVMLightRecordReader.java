@@ -17,12 +17,12 @@
 package org.datavec.api.records.reader.impl.misc;
 
 
+import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.impl.LineRecordReader;
+import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Text;
-import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
-import org.datavec.api.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

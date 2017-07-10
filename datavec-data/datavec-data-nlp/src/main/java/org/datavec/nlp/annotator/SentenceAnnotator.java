@@ -21,8 +21,8 @@ import org.apache.uima.analysis_engine.AnalysisEngineProcessException;
 import org.apache.uima.fit.factory.AnalysisEngineFactory;
 import org.apache.uima.jcas.JCas;
 import org.apache.uima.resource.ResourceInitializationException;
-import org.datavec.nlp.movingwindow.Util;
 import org.cleartk.util.ParamUtil;
+import org.datavec.nlp.movingwindow.Util;
 
 public class SentenceAnnotator extends org.cleartk.opennlp.tools.SentenceAnnotator {
 

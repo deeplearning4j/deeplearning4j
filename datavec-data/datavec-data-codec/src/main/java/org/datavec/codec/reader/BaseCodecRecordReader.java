@@ -24,7 +24,6 @@ import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.FileRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
-import org.datavec.image.loader.ImageLoader;
 
 import java.io.DataInputStream;
 import java.io.File;

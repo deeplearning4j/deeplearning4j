@@ -1,5 +1,9 @@
 package org.datavec.dataframe.api;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import it.unimi.dsi.fastutil.floats.*;
+import it.unimi.dsi.fastutil.ints.IntComparator;
 import org.datavec.dataframe.columns.AbstractColumn;
 import org.datavec.dataframe.columns.Column;
 import org.datavec.dataframe.filtering.FloatBiPredicate;
@@ -10,51 +14,14 @@ import org.datavec.dataframe.store.ColumnMetadata;
 import org.datavec.dataframe.util.BitmapBackedSelection;
 import org.datavec.dataframe.util.Selection;
 import org.datavec.dataframe.util.Stats;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
-import it.unimi.dsi.fastutil.floats.FloatArrayList;
-import it.unimi.dsi.fastutil.floats.FloatArrays;
-import it.unimi.dsi.fastutil.floats.FloatComparator;
-import it.unimi.dsi.fastutil.floats.FloatIterable;
-import it.unimi.dsi.fastutil.floats.FloatIterator;
-import it.unimi.dsi.fastutil.floats.FloatOpenHashSet;
-import it.unimi.dsi.fastutil.floats.FloatSet;
-import it.unimi.dsi.fastutil.ints.IntComparator;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.datavec.dataframe.columns.FloatColumnUtils.notIsEqualTo;
-import static org.datavec.dataframe.columns.FloatColumnUtils.isEqualTo;
-import static org.datavec.dataframe.columns.FloatColumnUtils.isGreaterThan;
-import static org.datavec.dataframe.columns.FloatColumnUtils.isGreaterThanOrEqualTo;
-import static org.datavec.dataframe.columns.FloatColumnUtils.isLessThan;
-import static org.datavec.dataframe.columns.FloatColumnUtils.isLessThanOrEqualTo;
-import static org.datavec.dataframe.columns.FloatColumnUtils.isMissing;
-import static org.datavec.dataframe.columns.FloatColumnUtils.isNegative;
-import static org.datavec.dataframe.columns.FloatColumnUtils.isNonNegative;
-import static org.datavec.dataframe.columns.FloatColumnUtils.isNotMissing;
-import static org.datavec.dataframe.columns.FloatColumnUtils.isPositive;
-import static org.datavec.dataframe.reducing.NumericReduceUtils.geometricMean;
-import static org.datavec.dataframe.reducing.NumericReduceUtils.kurtosis;
-import static org.datavec.dataframe.reducing.NumericReduceUtils.max;
-import static org.datavec.dataframe.reducing.NumericReduceUtils.mean;
-import static org.datavec.dataframe.reducing.NumericReduceUtils.median;
-import static org.datavec.dataframe.reducing.NumericReduceUtils.min;
-import static org.datavec.dataframe.reducing.NumericReduceUtils.populationVariance;
-import static org.datavec.dataframe.reducing.NumericReduceUtils.product;
-import static org.datavec.dataframe.reducing.NumericReduceUtils.quadraticMean;
-import static org.datavec.dataframe.reducing.NumericReduceUtils.quartile1;
-import static org.datavec.dataframe.reducing.NumericReduceUtils.quartile3;
-import static org.datavec.dataframe.reducing.NumericReduceUtils.range;
-import static org.datavec.dataframe.reducing.NumericReduceUtils.skewness;
-import static org.datavec.dataframe.reducing.NumericReduceUtils.stdDev;
-import static org.datavec.dataframe.reducing.NumericReduceUtils.sum;
-import static org.datavec.dataframe.reducing.NumericReduceUtils.sumOfLogs;
-import static org.datavec.dataframe.reducing.NumericReduceUtils.sumOfSquares;
-import static org.datavec.dataframe.reducing.NumericReduceUtils.variance;
+import static org.datavec.dataframe.columns.FloatColumnUtils.*;
+import static org.datavec.dataframe.reducing.NumericReduceUtils.*;
 
 /**
  * A column in a base table that contains float values

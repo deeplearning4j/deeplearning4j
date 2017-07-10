@@ -16,10 +16,10 @@
 
 package org.datavec.api.transform.condition.column;
 
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * Condition that applies to the values in any column. Specifically, condition is true

@@ -15,12 +15,12 @@
  */
 package org.datavec.api.io.labels;
 
-import java.io.File;
-import java.net.URI;
-
 import org.apache.commons.io.FilenameUtils;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+
+import java.io.File;
+import java.net.URI;
 
 /**
  * Returns a label derived from the base name of the path. Splits the base name

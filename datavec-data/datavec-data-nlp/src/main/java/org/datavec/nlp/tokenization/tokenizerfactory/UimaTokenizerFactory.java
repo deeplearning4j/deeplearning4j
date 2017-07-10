@@ -22,9 +22,9 @@ import org.apache.uima.resource.ResourceInitializationException;
 import org.datavec.nlp.annotator.SentenceAnnotator;
 import org.datavec.nlp.annotator.TokenizerAnnotator;
 import org.datavec.nlp.tokenization.tokenizer.TokenPreProcess;
-import org.datavec.nlp.uima.UimaResource;
 import org.datavec.nlp.tokenization.tokenizer.Tokenizer;
 import org.datavec.nlp.tokenization.tokenizer.UimaTokenizer;
+import org.datavec.nlp.uima.UimaResource;
 
 import java.io.InputStream;
 

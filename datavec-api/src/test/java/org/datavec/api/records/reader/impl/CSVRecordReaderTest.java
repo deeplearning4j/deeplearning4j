@@ -21,13 +21,13 @@ import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRegexRecordReader;
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.Text;
-import org.datavec.api.records.writer.impl.csv.CSVRecordWriter;
 import org.datavec.api.records.writer.impl.FileRecordWriter;
+import org.datavec.api.records.writer.impl.csv.CSVRecordWriter;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.StringSplit;
 import org.datavec.api.util.ClassPathResource;
+import org.datavec.api.writable.IntWritable;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
 

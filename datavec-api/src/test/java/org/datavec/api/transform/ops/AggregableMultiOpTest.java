@@ -11,7 +11,7 @@ import org.reflections.util.FilterBuilder;
 import java.io.Serializable;
 import java.util.*;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by huitseeker on 5/14/17.

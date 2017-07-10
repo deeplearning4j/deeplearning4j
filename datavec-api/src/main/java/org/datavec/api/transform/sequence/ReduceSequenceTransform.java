@@ -23,12 +23,10 @@ import org.datavec.api.transform.ops.IAggregableReduceOp;
 import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
-import org.datavec.api.transform.sequence.window.WindowFunction;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 

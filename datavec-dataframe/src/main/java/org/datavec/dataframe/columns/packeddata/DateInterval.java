@@ -1,7 +1,7 @@
 package org.datavec.dataframe.columns.packeddata;
 
-import org.datavec.dataframe.columns.DateIntervalColumn;
 import com.google.common.annotations.Beta;
+import org.datavec.dataframe.columns.DateIntervalColumn;
 
 /**
  * EXPERIMENTAL

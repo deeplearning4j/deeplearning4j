@@ -24,7 +24,7 @@ import org.datavec.api.writable.Writable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Collection;
+import java.util.List;
 
 /**
  * Write matlab records
@@ -47,7 +47,7 @@ public class MatlabRecordWriter extends FileRecordWriter {
     }
 
     @Override
-    public void write(Collection<Writable> record) throws IOException {
+    public void write(List<Writable> record) throws IOException {
         StringBuilder result = new StringBuilder();
 
         int count = 0;

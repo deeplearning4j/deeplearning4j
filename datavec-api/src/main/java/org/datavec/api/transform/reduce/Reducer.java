@@ -22,12 +22,12 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.ReduceOp;
-import org.datavec.api.transform.condition.column.TrivialColumnCondition;
 import org.datavec.api.transform.condition.Condition;
+import org.datavec.api.transform.condition.column.TrivialColumnCondition;
 import org.datavec.api.transform.metadata.*;
 import org.datavec.api.transform.ops.*;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.writable.*;
+import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 

@@ -17,12 +17,13 @@
 package org.datavec.api.util;
 
 
+import org.apache.commons.math3.random.RandomGenerator;
+import org.datavec.api.berkeley.Counter;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import org.apache.commons.math3.random.RandomGenerator;
-import org.datavec.api.berkeley.Counter;
 
 /**
  * This is a math utils class.

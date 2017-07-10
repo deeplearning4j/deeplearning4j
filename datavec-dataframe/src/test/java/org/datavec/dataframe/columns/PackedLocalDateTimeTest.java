@@ -10,7 +10,8 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoField;
 
 import static org.datavec.dataframe.columns.packeddata.PackedLocalDateTime.*;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  *

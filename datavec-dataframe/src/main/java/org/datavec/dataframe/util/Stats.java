@@ -1,7 +1,7 @@
 package org.datavec.dataframe.util;
 
-import org.datavec.dataframe.api.*;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
+import org.datavec.dataframe.api.*;
 
 /**
  *

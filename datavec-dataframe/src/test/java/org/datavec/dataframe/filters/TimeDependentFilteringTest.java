@@ -1,14 +1,5 @@
 package org.datavec.dataframe.filters;
 
-import org.datavec.dataframe.api.Table;
-import org.datavec.dataframe.api.CategoryColumn;
-import org.datavec.dataframe.columns.ColumnReference;
-import org.datavec.dataframe.api.DateColumn;
-import org.datavec.dataframe.api.FloatColumn;
-import org.datavec.dataframe.api.IntColumn;
-import org.datavec.dataframe.columns.packeddata.PackedLocalDate;
-import org.datavec.dataframe.table.TemporaryView;
-import org.datavec.dataframe.table.ViewGroup;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
@@ -16,6 +7,11 @@ import com.google.common.collect.TreeRangeSet;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.datavec.dataframe.api.*;
+import org.datavec.dataframe.columns.ColumnReference;
+import org.datavec.dataframe.columns.packeddata.PackedLocalDate;
+import org.datavec.dataframe.table.TemporaryView;
+import org.datavec.dataframe.table.ViewGroup;
 
 import java.io.IOException;
 import java.time.LocalDate;

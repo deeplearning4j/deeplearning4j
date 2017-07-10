@@ -1,8 +1,8 @@
 package org.datavec.dataframe.columns;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.datavec.dataframe.api.TimeColumn;
 import org.datavec.dataframe.filtering.IntPredicate;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 
 import java.time.LocalTime;
 

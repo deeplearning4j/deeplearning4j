@@ -1,15 +1,13 @@
 package org.datavec.dataframe.examples;
 
-import org.datavec.dataframe.columns.Column;
 import org.datavec.dataframe.api.ColumnType;
 import org.datavec.dataframe.api.Table;
+import org.datavec.dataframe.columns.Column;
 import org.datavec.dataframe.io.csv.CsvReader;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.datavec.dataframe.api.ColumnType.CATEGORY;
-import static org.datavec.dataframe.api.ColumnType.INTEGER;
-import static org.datavec.dataframe.api.ColumnType.LOCAL_DATE;
+import static org.datavec.dataframe.api.ColumnType.*;
 
 /**
  * Basic example code

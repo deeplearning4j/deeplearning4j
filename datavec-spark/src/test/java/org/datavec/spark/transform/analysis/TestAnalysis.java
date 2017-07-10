@@ -16,16 +16,15 @@
 
 package org.datavec.spark.transform.analysis;
 
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.util.StatCounter;
 import org.datavec.api.transform.analysis.DataAnalysis;
 import org.datavec.api.transform.analysis.columns.*;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.ui.HtmlAnalysis;
 import org.datavec.api.writable.*;
-import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.spark.BaseSparkTest;
 import org.datavec.spark.transform.AnalyzeSpark;
-import org.apache.spark.api.java.JavaRDD;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 import org.nd4j.linalg.factory.Nd4j;
@@ -34,9 +33,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by Alex on 23/06/2016.

@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ClassUtils;
-import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.api.util.reflections.DataVecSubTypesScanner;
 import org.datavec.api.writable.Writable;
 import org.datavec.image.data.ImageWritable;

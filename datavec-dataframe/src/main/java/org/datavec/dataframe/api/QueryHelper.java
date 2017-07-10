@@ -1,11 +1,7 @@
 package org.datavec.dataframe.api;
 
 import org.datavec.dataframe.columns.ColumnReference;
-import org.datavec.dataframe.filtering.AllOf;
-import org.datavec.dataframe.filtering.AnyOf;
-import org.datavec.dataframe.filtering.Filter;
-import org.datavec.dataframe.filtering.IsFalse;
-import org.datavec.dataframe.filtering.IsTrue;
+import org.datavec.dataframe.filtering.*;
 
 import java.util.ArrayList;
 import java.util.Collection;

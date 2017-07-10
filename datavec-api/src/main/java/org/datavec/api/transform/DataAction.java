@@ -16,16 +16,15 @@
 
 package org.datavec.api.transform;
 
-import org.datavec.api.transform.reduce.IAssociativeReducer;
-import org.nd4j.shade.jackson.annotation.JsonInclude;
 import lombok.Data;
 import org.datavec.api.transform.filter.Filter;
 import org.datavec.api.transform.rank.CalculateSortedRank;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.sequence.ConvertFromSequence;
 import org.datavec.api.transform.sequence.ConvertToSequence;
 import org.datavec.api.transform.sequence.SequenceSplit;
-import org.datavec.api.transform.reduce.IAssociativeReducer;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 import java.io.Serializable;
 

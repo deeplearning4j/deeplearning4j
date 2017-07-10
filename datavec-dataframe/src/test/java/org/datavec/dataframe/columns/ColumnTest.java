@@ -1,9 +1,6 @@
 package org.datavec.dataframe.columns;
 
-import org.datavec.dataframe.api.CategoryColumn;
-import org.datavec.dataframe.api.DateColumn;
-import org.datavec.dataframe.api.IntColumn;
-import org.datavec.dataframe.api.Table;
+import org.datavec.dataframe.api.*;
 import org.datavec.dataframe.api.ColumnType;
 import org.datavec.dataframe.io.csv.CsvReader;
 import org.junit.Before;
@@ -11,9 +8,7 @@ import org.junit.Test;
 
 import java.time.LocalDate;
 
-import static org.datavec.dataframe.api.ColumnType.CATEGORY;
-import static org.datavec.dataframe.api.ColumnType.INTEGER;
-import static org.datavec.dataframe.api.ColumnType.LOCAL_DATE;
+import static org.datavec.dataframe.api.ColumnType.*;
 import static org.junit.Assert.assertEquals;
 
 /**

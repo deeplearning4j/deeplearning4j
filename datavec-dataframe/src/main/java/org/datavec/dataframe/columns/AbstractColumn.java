@@ -1,7 +1,7 @@
 package org.datavec.dataframe.columns;
 
-import org.datavec.dataframe.store.ColumnMetadata;
 import org.apache.commons.lang3.StringUtils;
+import org.datavec.dataframe.store.ColumnMetadata;
 
 import java.util.UUID;
 

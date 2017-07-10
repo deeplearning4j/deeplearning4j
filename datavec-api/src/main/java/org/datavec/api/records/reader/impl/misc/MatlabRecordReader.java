@@ -21,9 +21,13 @@ import org.datavec.api.records.reader.impl.FileRecordReader;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.StringReader;
 import java.net.URI;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Matlab record reader

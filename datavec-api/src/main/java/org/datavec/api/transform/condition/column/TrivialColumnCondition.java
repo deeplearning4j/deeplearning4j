@@ -1,14 +1,10 @@
 package org.datavec.api.transform.condition.column;
 
-import org.datavec.api.transform.condition.column.BaseColumnCondition;
-import org.datavec.api.transform.condition.column.ColumnCondition;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.io.Serializable;
-import java.util.Arrays;
 import java.util.List;
 
 /**

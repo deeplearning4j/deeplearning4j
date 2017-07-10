@@ -1,15 +1,11 @@
 package org.datavec.dataframe.filtering.columnbased;
 
-import org.datavec.dataframe.api.ColumnType;
-import org.datavec.dataframe.api.IntColumn;
-import org.datavec.dataframe.api.LongColumn;
-import org.datavec.dataframe.api.ShortColumn;
-import org.datavec.dataframe.api.Table;
+import com.google.common.base.Preconditions;
+import org.datavec.dataframe.api.*;
 import org.datavec.dataframe.columns.Column;
 import org.datavec.dataframe.columns.ColumnReference;
 import org.datavec.dataframe.filtering.ColumnFilter;
 import org.datavec.dataframe.util.Selection;
-import com.google.common.base.Preconditions;
 
 /**
  *

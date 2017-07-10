@@ -1,8 +1,8 @@
 package org.datavec.dataframe;
 
+import org.datavec.dataframe.api.CategoryColumn;
 import org.datavec.dataframe.api.ColumnType;
 import org.datavec.dataframe.api.Table;
-import org.datavec.dataframe.api.CategoryColumn;
 import org.datavec.dataframe.io.csv.CsvReader;
 import org.datavec.dataframe.table.SubTable;
 import org.datavec.dataframe.table.TableGroup;

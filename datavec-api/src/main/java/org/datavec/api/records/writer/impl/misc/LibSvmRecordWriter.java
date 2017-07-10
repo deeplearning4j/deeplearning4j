@@ -18,14 +18,13 @@ package org.datavec.api.records.writer.impl.misc;
 
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.writer.impl.LineRecordWriter;
-import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.ArrayWritable;
+import org.datavec.api.writable.Writable;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -58,7 +57,7 @@ public class LibSvmRecordWriter extends LineRecordWriter {
     public LibSvmRecordWriter() {}
 
     @Override
-    public void write(Collection<Writable> record) throws IOException {
+    public void write(List<Writable> record) throws IOException {
         List<Writable> asList = record instanceof List ? (List<Writable>) record : new ArrayList<>(record);
         double response = Double.valueOf(asList.get(asList.size() - 1).toString());
         StringBuilder write = new StringBuilder();

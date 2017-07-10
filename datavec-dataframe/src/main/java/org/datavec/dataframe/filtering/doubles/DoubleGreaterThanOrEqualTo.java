@@ -1,7 +1,6 @@
 package org.datavec.dataframe.filtering.doubles;
 
 import org.datavec.dataframe.api.DoubleColumn;
-import org.datavec.dataframe.api.LongColumn;
 import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.columns.ColumnReference;
 import org.datavec.dataframe.filtering.ColumnFilter;

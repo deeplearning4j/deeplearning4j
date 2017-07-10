@@ -1,13 +1,8 @@
 package org.datavec.dataframe.reducing;
 
-import org.datavec.dataframe.api.CategoryColumn;
-import org.datavec.dataframe.api.ColumnType;
-import org.datavec.dataframe.api.DateColumn;
-import org.datavec.dataframe.api.FloatColumn;
-import org.datavec.dataframe.api.IntColumn;
-import org.datavec.dataframe.api.Table;
-import org.datavec.dataframe.columns.Column;
 import com.google.common.collect.TreeBasedTable;
+import org.datavec.dataframe.api.*;
+import org.datavec.dataframe.columns.Column;
 
 import java.time.LocalDate;
 

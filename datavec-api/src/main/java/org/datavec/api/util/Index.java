@@ -17,7 +17,7 @@
 package org.datavec.api.util;
 
 
-import java.io.*;
+import java.io.Serializable;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 

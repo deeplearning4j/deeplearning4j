@@ -16,7 +16,6 @@
 
 package org.datavec.api.transform.serde;
 
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import org.datavec.api.transform.DataAction;
 import org.datavec.api.transform.Transform;
@@ -24,6 +23,7 @@ import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.filter.Filter;
 import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.sequence.SequenceComparator;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.List;
 

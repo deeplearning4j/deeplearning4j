@@ -16,13 +16,13 @@
 
 package org.datavec.api.transform.ui;
 
-import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
-import org.datavec.api.transform.analysis.columns.TimeAnalysis;
-import org.datavec.api.transform.schema.Schema;
+import org.apache.commons.io.FilenameUtils;
 import org.datavec.api.transform.analysis.DataAnalysis;
+import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
 import org.datavec.api.transform.analysis.columns.IntegerAnalysis;
 import org.datavec.api.transform.analysis.columns.StringAnalysis;
-import org.apache.commons.io.FilenameUtils;
+import org.datavec.api.transform.analysis.columns.TimeAnalysis;
+import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Text;

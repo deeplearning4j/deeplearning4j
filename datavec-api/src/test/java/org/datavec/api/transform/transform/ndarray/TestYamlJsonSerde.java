@@ -28,7 +28,8 @@ import org.datavec.api.transform.serde.JsonSerializer;
 import org.datavec.api.transform.serde.YamlSerializer;
 import org.junit.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 

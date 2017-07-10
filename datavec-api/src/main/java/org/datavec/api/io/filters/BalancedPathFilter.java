@@ -15,16 +15,12 @@
  */
 package org.datavec.api.io.filters;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.io.labels.PathLabelGenerator;
 import org.datavec.api.writable.Writable;
+
+import java.net.URI;
+import java.util.*;
 
 /**
  * Randomizes the order of paths in an array and removes paths randomly

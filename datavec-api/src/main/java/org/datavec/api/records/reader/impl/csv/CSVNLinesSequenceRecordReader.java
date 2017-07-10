@@ -27,7 +27,8 @@ import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 

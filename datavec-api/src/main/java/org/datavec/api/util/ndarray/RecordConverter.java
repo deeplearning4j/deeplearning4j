@@ -18,8 +18,8 @@ package org.datavec.api.util.ndarray;
 
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.NDArrayWritable;
+import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;

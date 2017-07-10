@@ -1,10 +1,10 @@
 package org.datavec.dataframe.columns;
 
+import it.unimi.dsi.fastutil.ints.IntComparator;
 import org.datavec.dataframe.api.ColumnType;
 import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.store.ColumnMetadata;
 import org.datavec.dataframe.util.Selection;
-import it.unimi.dsi.fastutil.ints.IntComparator;
 
 /**
  * The general interface for columns.

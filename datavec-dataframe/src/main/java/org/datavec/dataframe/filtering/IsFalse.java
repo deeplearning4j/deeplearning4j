@@ -1,10 +1,9 @@
 package org.datavec.dataframe.filtering;
 
+import net.jcip.annotations.Immutable;
 import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.util.BitmapBackedSelection;
 import org.datavec.dataframe.util.Selection;
-
-import net.jcip.annotations.Immutable;
 
 /**
  * A boolean filtering, returns true if the filtering it wraps returns false, and vice-versa.

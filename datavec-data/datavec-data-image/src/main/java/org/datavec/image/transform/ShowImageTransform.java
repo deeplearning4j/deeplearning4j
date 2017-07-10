@@ -15,12 +15,12 @@
  */
 package org.datavec.image.transform;
 
-import java.util.Random;
-import javax.swing.JFrame;
-
 import org.bytedeco.javacv.CanvasFrame;
 import org.bytedeco.javacv.Frame;
 import org.datavec.image.data.ImageWritable;
+
+import javax.swing.*;
+import java.util.Random;
 
 /**
  * Shows images on the screen, does not actually transform them.

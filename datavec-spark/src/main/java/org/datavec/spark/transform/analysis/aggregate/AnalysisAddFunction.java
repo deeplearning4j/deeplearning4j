@@ -16,14 +16,14 @@
 
 package org.datavec.spark.transform.analysis.aggregate;
 
+import lombok.AllArgsConstructor;
+import org.apache.spark.api.java.function.Function2;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.writable.Writable;
 import org.datavec.spark.transform.analysis.AnalysisCounter;
 import org.datavec.spark.transform.analysis.columns.*;
 import org.datavec.spark.transform.analysis.string.StringAnalysisCounter;
-import lombok.AllArgsConstructor;
-import org.apache.spark.api.java.function.Function2;
-import org.datavec.api.writable.Writable;
 
 import java.util.ArrayList;
 import java.util.List;

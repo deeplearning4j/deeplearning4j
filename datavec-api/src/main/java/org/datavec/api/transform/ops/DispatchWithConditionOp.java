@@ -1,13 +1,10 @@
 package org.datavec.api.transform.ops;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.writable.Writable;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;

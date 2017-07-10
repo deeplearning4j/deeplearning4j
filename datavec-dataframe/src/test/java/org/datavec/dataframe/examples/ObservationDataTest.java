@@ -1,21 +1,16 @@
 package org.datavec.dataframe.examples;
 
-import org.datavec.dataframe.api.CategoryColumn;
-import org.datavec.dataframe.api.ColumnType;
-import org.datavec.dataframe.api.DateColumn;
-import org.datavec.dataframe.api.FloatColumn;
-import org.datavec.dataframe.api.IntColumn;
-import org.datavec.dataframe.api.Table;
-import org.datavec.dataframe.columns.packeddata.PackedLocalDate;
-import org.datavec.dataframe.index.IntIndex;
-import org.datavec.dataframe.io.csv.CsvReader;
-import org.datavec.dataframe.store.StorageManager;
-import org.datavec.dataframe.util.Selection;
 import com.google.common.base.Stopwatch;
 import com.opencsv.CSVWriter;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.datavec.dataframe.api.*;
+import org.datavec.dataframe.columns.packeddata.PackedLocalDate;
+import org.datavec.dataframe.index.IntIndex;
+import org.datavec.dataframe.io.csv.CsvReader;
+import org.datavec.dataframe.store.StorageManager;
+import org.datavec.dataframe.util.Selection;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -25,8 +20,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import static org.datavec.dataframe.api.QueryHelper.column;
 import static java.lang.System.out;
+import static org.datavec.dataframe.api.QueryHelper.column;
 
 /**
  * Tests manipulation of large (but not big) data sets

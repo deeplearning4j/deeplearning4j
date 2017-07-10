@@ -5,13 +5,10 @@ import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.columns.LongColumnUtils;
 import org.datavec.dataframe.io.csv.CsvReader;
 import org.datavec.dataframe.util.Selection;
-
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.datavec.dataframe.api.ColumnType.CATEGORY;
-import static org.datavec.dataframe.api.ColumnType.LOCAL_DATE;
-import static org.datavec.dataframe.api.ColumnType.LONG_INT;
+import static org.datavec.dataframe.api.ColumnType.*;
 import static org.junit.Assert.assertEquals;
 
 /**

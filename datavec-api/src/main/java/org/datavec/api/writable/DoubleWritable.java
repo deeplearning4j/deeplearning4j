@@ -17,9 +17,9 @@
 package org.datavec.api.writable;
 
 
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.datavec.api.io.WritableComparable;
 import org.datavec.api.io.WritableComparator;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -120,5 +120,10 @@ public class DoubleWritable implements WritableComparable {
     @Override
     public long toLong() {
         return (long) value;
+    }
+
+    @Override
+    public WritableType getType() {
+        return WritableType.Double;
     }
 }

@@ -17,12 +17,13 @@
 package org.datavec.api.writable;
 
 
-
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.datavec.api.io.WritableComparable;
 import org.datavec.api.io.WritableComparator;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 
 /**
  * A WritableComparable for booleans. 
@@ -136,5 +137,10 @@ public class BooleanWritable implements WritableComparable {
     @Override
     public long toLong() {
         return (value ? 1L : 0L);
+    }
+
+    @Override
+    public WritableType getType() {
+        return WritableType.Boolean;
     }
 }

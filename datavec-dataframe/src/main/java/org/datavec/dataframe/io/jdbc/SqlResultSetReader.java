@@ -1,11 +1,11 @@
 package org.datavec.dataframe.io.jdbc;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import org.datavec.dataframe.api.ColumnType;
 import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.columns.Column;
 import org.datavec.dataframe.io.TypeUtils;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;

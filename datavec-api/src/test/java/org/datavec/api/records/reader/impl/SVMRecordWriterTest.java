@@ -16,11 +16,8 @@
 
 package org.datavec.api.records.reader.impl;
 
-import static org.junit.Assume.*;
-import static org.junit.Assert.*;
-
 import org.apache.commons.io.IOUtils;
-
+import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
@@ -30,7 +27,6 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.util.ClassPathResource;
 import org.datavec.api.writable.Writable;
-import org.datavec.api.conf.Configuration;
 import org.junit.Test;
 
 import java.io.BufferedOutputStream;
@@ -39,6 +35,10 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeNotNull;
 
 /**
  * Created by agibsonccc on 1/11/15.

@@ -16,18 +16,19 @@
 
 package org.datavec.codec.reader;
 
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.datavec.api.conf.Configuration;
+import org.datavec.api.util.ndarray.RecordConverter;
+import org.datavec.api.writable.Writable;
+import org.datavec.image.loader.NativeImageLoader;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import org.bytedeco.javacv.FFmpegFrameGrabber;
-import org.bytedeco.javacv.Frame;
-import org.bytedeco.javacv.OpenCVFrameConverter;
-import org.datavec.api.conf.Configuration;
-import org.datavec.api.writable.Writable;
-import org.datavec.api.util.ndarray.RecordConverter;
-import org.datavec.image.loader.NativeImageLoader;
 
 /**
  * An implementation of the CodecRecordReader that uses JavaCV and FFmpeg.

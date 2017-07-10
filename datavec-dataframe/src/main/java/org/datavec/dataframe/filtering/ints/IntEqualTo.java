@@ -1,7 +1,6 @@
 package org.datavec.dataframe.filtering.ints;
 
 import org.datavec.dataframe.api.IntColumn;
-import org.datavec.dataframe.api.LongColumn;
 import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.columns.ColumnReference;
 import org.datavec.dataframe.filtering.ColumnFilter;

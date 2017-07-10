@@ -81,6 +81,11 @@ public class NullWritable implements WritableComparable {
     }
 
     @Override
+    public WritableType getType() {
+        return WritableType.Null;
+    }
+
+    @Override
     public String toString() {
         return "NullWritable";
     }

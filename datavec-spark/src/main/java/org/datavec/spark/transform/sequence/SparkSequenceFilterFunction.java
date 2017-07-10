@@ -18,8 +18,8 @@ package org.datavec.spark.transform.sequence;
 
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.Function;
-import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.filter.Filter;
+import org.datavec.api.writable.Writable;
 
 import java.util.List;
 

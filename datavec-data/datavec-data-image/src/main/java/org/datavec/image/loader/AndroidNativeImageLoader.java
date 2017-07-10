@@ -16,11 +16,12 @@
 package org.datavec.image.loader;
 
 import android.graphics.Bitmap;
-import java.io.IOException;
 import org.bytedeco.javacv.AndroidFrameConverter;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.datavec.image.transform.ImageTransform;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.io.IOException;
 
 /**
  * Segregates functionality specific to Android that is not available on Java SE.

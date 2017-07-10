@@ -1,9 +1,9 @@
 package org.datavec.dataframe.mapping;
 
-import org.datavec.dataframe.api.IntColumn;
-import org.datavec.dataframe.columns.IntColumnUtils;
-import org.datavec.dataframe.columns.Column;
 import org.datavec.dataframe.api.FloatColumn;
+import org.datavec.dataframe.api.IntColumn;
+import org.datavec.dataframe.columns.Column;
+import org.datavec.dataframe.columns.IntColumnUtils;
 
 /**
  *

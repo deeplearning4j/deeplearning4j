@@ -20,11 +20,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
-import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.transform.BaseColumnTransform;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.datavec.api.writable.Writable;
 
 /**
  *

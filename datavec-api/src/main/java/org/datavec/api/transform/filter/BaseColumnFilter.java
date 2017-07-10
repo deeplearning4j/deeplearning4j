@@ -16,8 +16,8 @@
 
 package org.datavec.api.transform.filter;
 
-import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.writable.Writable;
 
 import java.util.List;
 

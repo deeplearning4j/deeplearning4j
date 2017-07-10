@@ -1,8 +1,8 @@
 package org.datavec.dataframe.mapping;
 
-import org.datavec.dataframe.columns.Column;
 import org.datavec.dataframe.api.FloatColumn;
 import org.datavec.dataframe.api.LongColumn;
+import org.datavec.dataframe.columns.Column;
 import org.datavec.dataframe.columns.LongColumnUtils;
 
 /**

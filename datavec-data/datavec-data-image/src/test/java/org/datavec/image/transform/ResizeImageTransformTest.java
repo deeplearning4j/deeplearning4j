@@ -5,7 +5,7 @@ import org.datavec.image.data.ImageWritable;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Tests for ResizeImage

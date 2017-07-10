@@ -1,9 +1,9 @@
 package org.datavec.spark.transform;
 
-import java.util.Iterator;
-
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.datavec.spark.functions.FlatMapFunctionAdapter;
+
+import java.util.Iterator;
 
 /**
  * FlatMapFunction adapter to hide incompatibilities between Spark 1.x and Spark 2.x

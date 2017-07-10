@@ -16,6 +16,11 @@
 
 package org.datavec.api.split;
 
+import org.datavec.api.io.filters.PathFilter;
+import org.datavec.api.util.files.ShuffledListIterator;
+import org.datavec.api.util.files.UriFromPathIterator;
+import org.datavec.api.writable.WritableType;
+
 import java.io.DataOutput;
 import java.io.IOException;
 import java.net.URI;
@@ -24,10 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-
-import org.datavec.api.io.filters.PathFilter;
-import org.datavec.api.util.files.ShuffledListIterator;
-import org.datavec.api.util.files.UriFromPathIterator;
 
 /**
  * Base input split
@@ -135,5 +136,10 @@ public abstract class BaseInputSplit implements InputSplit {
         } else {
             return new InputSplit[] {new CollectionInputSplit(Arrays.asList(paths))};
         }
+    }
+
+    @Override
+    public WritableType getType() {
+        throw new UnsupportedOperationException();
     }
 }

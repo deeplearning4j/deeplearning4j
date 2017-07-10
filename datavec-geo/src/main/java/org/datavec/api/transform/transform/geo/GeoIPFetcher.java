@@ -16,13 +16,14 @@
 
 package org.datavec.api.transform.transform.geo;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.util.ArchiveUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 
 /**
  * Downloads and caches the GeoLite2 City database created by MaxMind, available from

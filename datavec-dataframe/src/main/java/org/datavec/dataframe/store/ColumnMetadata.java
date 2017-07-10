@@ -1,8 +1,8 @@
 package org.datavec.dataframe.store;
 
-import org.datavec.dataframe.columns.Column;
-import org.datavec.dataframe.api.ColumnType;
 import com.google.gson.Gson;
+import org.datavec.dataframe.api.ColumnType;
+import org.datavec.dataframe.columns.Column;
 
 /**
  * Data about a specific column used in it's persistence

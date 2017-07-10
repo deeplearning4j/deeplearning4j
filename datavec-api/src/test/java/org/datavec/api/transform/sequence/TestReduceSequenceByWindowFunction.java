@@ -16,15 +16,18 @@
 
 package org.datavec.api.transform.sequence;
 
-import org.datavec.api.transform.reduce.Reducer;
-import org.datavec.api.writable.*;
 import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.Transform;
+import org.datavec.api.transform.reduce.Reducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.sequence.window.ReduceSequenceByWindowTransform;
 import org.datavec.api.transform.sequence.window.TimeWindowFunction;
 import org.datavec.api.transform.sequence.window.WindowFunction;
+import org.datavec.api.writable.IntWritable;
+import org.datavec.api.writable.LongWritable;
+import org.datavec.api.writable.NullWritable;
+import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 

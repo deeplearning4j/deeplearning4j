@@ -1,17 +1,18 @@
 package org.datavec.dataframe.table;
 
+import org.apache.commons.math3.stat.StatUtils;
 import org.datavec.dataframe.api.CategoryColumn;
 import org.datavec.dataframe.api.ColumnType;
 import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.io.csv.CsvReader;
 import org.datavec.dataframe.reducing.NumericReduceFunction;
-import org.apache.commons.math3.stat.StatUtils;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
