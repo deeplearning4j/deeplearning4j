@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
@@ -353,6 +354,11 @@ public class TestOptimizers {
         }
 
         @Override
+        public void setCacheMode(CacheMode mode) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public void setListeners(IterationListener... listeners) {
 
         }
@@ -536,6 +542,11 @@ public class TestOptimizers {
 
         }
 
+
+        @Override
+        public void setCacheMode(CacheMode mode) {
+            throw new UnsupportedOperationException();
+        }
 
         @Override
         public void setListeners(IterationListener... listeners) {
@@ -728,6 +739,11 @@ public class TestOptimizers {
 
         }
 
+
+        @Override
+        public void setCacheMode(CacheMode mode) {
+            throw new UnsupportedOperationException();
+        }
 
         @Override
         public void setListeners(IterationListener... listeners) {
