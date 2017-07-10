@@ -22,9 +22,10 @@ import org.datavec.api.records.writer.impl.FileRecordWriter;
 import org.datavec.api.writable.ArrayWritable;
 import org.datavec.api.writable.Writable;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 /**

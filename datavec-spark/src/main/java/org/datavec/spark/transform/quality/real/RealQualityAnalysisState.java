@@ -6,8 +6,6 @@ import org.datavec.api.transform.quality.columns.ColumnQuality;
 import org.datavec.api.transform.quality.columns.DoubleQuality;
 import org.datavec.api.writable.Writable;
 import org.datavec.spark.transform.quality.QualityAnalysisState;
-import org.datavec.spark.transform.quality.real.RealQualityAddFunction;
-import org.datavec.spark.transform.quality.real.RealQualityMergeFunction;
 
 /**
  * Created by huitseeker on 3/6/17.

@@ -18,11 +18,11 @@ package org.datavec.spark.transform.quality.integer;
 
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.Function2;
+import org.datavec.api.transform.metadata.IntegerMetaData;
+import org.datavec.api.transform.quality.columns.IntegerQuality;
 import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.datavec.api.transform.metadata.IntegerMetaData;
-import org.datavec.api.transform.quality.columns.IntegerQuality;
 
 /**
  * Created by Alex on 5/03/2016.

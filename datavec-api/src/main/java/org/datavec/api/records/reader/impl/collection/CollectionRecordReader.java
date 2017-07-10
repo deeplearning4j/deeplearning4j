@@ -17,12 +17,12 @@
 package org.datavec.api.records.reader.impl.collection;
 
 
+import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataIndex;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.InputSplit;
-import org.datavec.api.conf.Configuration;
 import org.datavec.api.writable.Writable;
 
 import java.io.DataInputStream;

@@ -18,11 +18,11 @@ package org.datavec.spark.transform.quality.time;
 
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.Function2;
+import org.datavec.api.transform.metadata.TimeMetaData;
+import org.datavec.api.transform.quality.columns.TimeQuality;
 import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.datavec.api.transform.quality.columns.TimeQuality;
-import org.datavec.api.transform.metadata.TimeMetaData;
 
 @AllArgsConstructor
 public class TimeQualityAddFunction implements Function2<TimeQuality, Writable, TimeQuality> {

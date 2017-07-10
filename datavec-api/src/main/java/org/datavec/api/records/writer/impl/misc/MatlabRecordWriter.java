@@ -24,7 +24,6 @@ import org.datavec.api.writable.Writable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 
 /**

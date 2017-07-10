@@ -16,14 +16,14 @@
 
 package org.datavec.api.records.reader.impl.collection;
 
+import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
-import org.datavec.api.writable.Text;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.ListStringSplit;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.datavec.api.conf.Configuration;
 
 import java.io.DataInputStream;
 import java.io.IOException;

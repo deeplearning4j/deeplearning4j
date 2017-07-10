@@ -19,7 +19,8 @@ package org.datavec.api.records.reader.impl.csv;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

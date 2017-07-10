@@ -16,7 +16,6 @@
 
 package org.datavec.api.transform.serde.testClasses;
 
-import lombok.NoArgsConstructor;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;

@@ -17,8 +17,8 @@
 package org.datavec.spark.transform.analysis.histogram;
 
 import org.datavec.api.writable.DoubleWritable;
-import org.datavec.api.writable.Writable;
 import org.datavec.api.writable.NDArrayWritable;
+import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**

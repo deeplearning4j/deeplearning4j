@@ -18,12 +18,11 @@ package org.datavec.api.records.reader.impl.misc;
 
 import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.exceptions.DataVecException;
 import org.datavec.api.records.reader.impl.LineRecordReader;
+import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Text;
-import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.Writable;
 
 import java.io.DataInputStream;

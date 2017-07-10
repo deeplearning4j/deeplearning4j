@@ -20,12 +20,12 @@ import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.fit.factory.AnalysisEngineFactory;
 import org.apache.uima.fit.util.JCasUtil;
+import org.cleartk.token.type.Sentence;
+import org.cleartk.token.type.Token;
 import org.datavec.nlp.annotator.PoStagger;
 import org.datavec.nlp.annotator.SentenceAnnotator;
 import org.datavec.nlp.annotator.StemmerAnnotator;
 import org.datavec.nlp.annotator.TokenizerAnnotator;
-import org.cleartk.token.type.Sentence;
-import org.cleartk.token.type.Token;
 
 import java.util.ArrayList;
 import java.util.Collection;

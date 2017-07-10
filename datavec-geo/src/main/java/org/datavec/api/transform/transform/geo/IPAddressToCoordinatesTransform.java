@@ -16,9 +16,10 @@
 
 package org.datavec.api.transform.transform.geo;
 
-import java.io.IOException;
 import org.datavec.api.transform.geo.LocationType;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
+
+import java.io.IOException;
 
 /**
  * Uses GeoIP2 from from <a href="http://www.maxmind.com">http://www.maxmind.com</a>

@@ -6,8 +6,6 @@ import org.datavec.api.transform.quality.columns.ColumnQuality;
 import org.datavec.api.transform.quality.columns.LongQuality;
 import org.datavec.api.writable.Writable;
 import org.datavec.spark.transform.quality.QualityAnalysisState;
-import org.datavec.spark.transform.quality.longq.LongQualityAddFunction;
-import org.datavec.spark.transform.quality.longq.LongQualityMergeFunction;
 
 /**
  * Created by huitseeker on 3/6/17.

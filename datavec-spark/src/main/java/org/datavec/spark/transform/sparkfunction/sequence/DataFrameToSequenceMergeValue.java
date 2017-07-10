@@ -21,7 +21,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.sql.Row;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.writable.*;
+import org.datavec.api.writable.Writable;
 import org.datavec.spark.transform.DataFrames;
 
 import java.util.ArrayList;

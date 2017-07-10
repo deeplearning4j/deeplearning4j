@@ -16,11 +16,11 @@
 
 package org.datavec.spark.transform.analysis.histogram;
 
+import lombok.AllArgsConstructor;
+import org.apache.spark.api.java.function.Function2;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.schema.Schema;
-import lombok.AllArgsConstructor;
-import org.apache.spark.api.java.function.Function2;
 import org.datavec.api.writable.Writable;
 
 import java.util.ArrayList;

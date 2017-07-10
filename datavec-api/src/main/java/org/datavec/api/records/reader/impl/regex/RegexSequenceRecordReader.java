@@ -18,19 +18,22 @@ package org.datavec.api.records.reader.impl.regex;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataURI;
-import org.datavec.api.writable.Text;
-import org.datavec.api.split.InputSplit;
-import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.reader.SequenceRecordReader;
 import org.datavec.api.records.reader.impl.FileRecordReader;
+import org.datavec.api.split.InputSplit;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
