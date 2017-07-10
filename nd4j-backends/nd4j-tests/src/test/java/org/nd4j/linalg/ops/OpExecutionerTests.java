@@ -736,6 +736,21 @@ public class OpExecutionerTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testPile3() throws Exception {
+        List<INDArray> arrays = new ArrayList<>();
+        for (int i = 0; i < 10; i++) {
+            arrays.add(Nd4j.create(1, 10, 10).assign(i));
+        }
+
+        INDArray pile = Nd4j.pile(arrays);
+
+        assertEquals(3, pile.rank());
+        for (int i = 0; i < 10; i++) {
+            assertEquals((float) i, pile.tensorAlongDimension(i, 1, 2).getDouble(0), 0.01);
+        }
+    }
+
+    @Test
     public void testTear1() {
         List<INDArray> arrays = new ArrayList<>();
         for (int i = 0; i < 10; i++) {

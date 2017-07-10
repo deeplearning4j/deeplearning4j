@@ -6284,9 +6284,16 @@ public class Nd4j {
         int[] shape = arrays[0].shape();
         int[] newShape = ArrayUtils.add(shape, 0, 1);
 
+        boolean shouldReshape = true;
+        if (arrays[0].size(0) == 1)
+            shouldReshape = false;
+
         List<INDArray> reshaped = new ArrayList<>();
         for(INDArray array: arrays) {
-            reshaped.add(array.reshape(array.ordering(), newShape));
+            if (!shouldReshape)
+                reshaped.add(array);
+            else
+                reshaped.add(array.reshape(array.ordering(), newShape));
         }
 
         return Nd4j.vstack(reshaped);
