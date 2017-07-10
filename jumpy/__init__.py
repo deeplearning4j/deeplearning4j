@@ -4,7 +4,7 @@ import os
 try:
     jnius_classpath = os.environ['JUMPY_CLASS_PATH']
 except KeyError:
-    raise 'Please specify a jar or directory for JUMP_CLASS_PATH'
+    raise 'Please specify a jar or directory for JUMPY_CLASS_PATH'
 jnius_config.set_classpath(jnius_classpath)
 
 from jnius import autoclass
