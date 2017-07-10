@@ -33,7 +33,7 @@ public class WritablesToNDArrayFunction implements Function<List<Writable>, INDA
                                     + Arrays.toString(a.shape()));
                 }
             } else {
-                length = 1;
+                length++;
             }
         }
 
