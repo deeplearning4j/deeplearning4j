@@ -124,9 +124,6 @@ public class Eigen {
         assert A.rows() == A.columns();
         assert B.rows() == B.columns();
         INDArray W = Nd4j.create(A.rows());
-<<<<<<< HEAD
-	A = InverseMatrix.invert(B, false).mmuli(A);
-=======
 
         A = InvertMatrix.invert(B, false).mmuli(A);
         Nd4j.getBlasWrapper().syev( 'V', 'L', A, W);
@@ -149,7 +146,6 @@ public class Eigen {
 	if (calculateVectors) A.assign(InvertMatrix.invert(B, false).mmuli(A));
         else A = InvertMatrix.invert(B, false).mmuli(A);
 
->>>>>>> ee06dd6c54674567ca695834ec7914f197ac1eb2
         Nd4j.getBlasWrapper().syev( 'V', 'L', A, W);
         return W;
     }
