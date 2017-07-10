@@ -70,8 +70,8 @@ public class PCA {
         INDArray dx = data.sub(mean);
         INDArray v = eigenvectors.transpose().mmul(dx.reshape(dx.columns(), 1));
         INDArray t2 = Transforms.pow(v, 2);
-        double fraction = Math.sqrt(t2.get(NDArrayIndex.interval(0,ndims)).sumNumber().doubleValue());
-        double total = Math.sqrt(t2.sumNumber().doubleValue());
+        double fraction = t2.get(NDArrayIndex.interval(0,ndims)).sumNumber().doubleValue();
+        double total = t2.sumNumber().doubleValue();
         return fraction/total;
     }
 
