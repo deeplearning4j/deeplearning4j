@@ -3016,8 +3016,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                                                         workspaceConfigurationExternal, workspaceExternal);
 
-        AtomicInteger cnt = new AtomicInteger(0);
-
         while (iter.hasNext()) {
             MultiDataSet next = iter.next();
 
@@ -3043,13 +3041,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
 
             clearLayerMaskArrays();
-
-//            if (cnt.incrementAndGet() % 5 == 0)
-//                Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
-            //else
-
-            log.info("Iteration {} passed\n", cnt.get());
-            Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
         }
 
         if (iterator.asyncSupported())
