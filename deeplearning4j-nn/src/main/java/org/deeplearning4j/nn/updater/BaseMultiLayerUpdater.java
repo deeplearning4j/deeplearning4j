@@ -313,7 +313,7 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      */
     public void preApply(Layer layer, Gradient gradient, int iteration) {
 
-        GradientNormalization normalization = layer.conf().getLayer().getGradientNormalization();
+        GradientNormalization normalization = layer.getLayer().getGradientNormalization();
         if (normalization == null || normalization == GradientNormalization.None || layer.conf().isPretrain())
             return; //no op
 

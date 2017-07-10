@@ -24,7 +24,12 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
+import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
+import org.deeplearning4j.nn.conf.layers.BasePretrainNetwork;
+import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
+import org.deeplearning4j.nn.layers.*;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -226,7 +231,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
             //Also, pre 0.7.2: activation functions were Strings ("activationFunction" field), not classes ("activationFn")
             //Try to load the old format if necessary, and create the appropriate IActivation instance
-            if (l.getActivationFn() == null) {
+            if ( (l instanceof BaseLayer) && ((BaseLayer)l).getActivationFn() == null) {
                 try {
                     JsonNode jsonNode = mapper.readTree(json);
                     if (confs == null) {
@@ -248,7 +253,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
                         if (activationFunction != null) {
                             IActivation ia = Activation.fromString(activationFunction.asText()).getActivationFunction();
-                            l.setActivationFn(ia);
+                            ((BaseLayer)l).setActivationFn(ia);
                         }
                     }
 

@@ -27,10 +27,7 @@ import org.apache.commons.lang3.ClassUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.LayerValidation;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.serde.ComputationGraphConfigurationDeserializer;
 import org.deeplearning4j.nn.conf.serde.MultiLayerConfigurationDeserializer;
@@ -1149,45 +1146,46 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 layerName = layer.getLayerName();
             learningRateValidation(layerName);
 
-            if (layer != null) {
-                if (Double.isNaN(layer.getLearningRate()))
-                    layer.setLearningRate(learningRate);
-                if (Double.isNaN(layer.getBiasLearningRate())) {
+            if (layer != null && layer instanceof BaseLayer) {
+                BaseLayer bLayer = (BaseLayer)layer;
+                if (Double.isNaN(bLayer.getLearningRate()))
+                    bLayer.setLearningRate(learningRate);
+                if (Double.isNaN(bLayer.getBiasLearningRate())) {
                     //Two possibilities when bias LR isn't set for layer:
                     // (a) If global bias LR *is* set -> set it to that
                     // (b) Otherwise, set to layer LR (and, by extension, the global LR)
                     if (!Double.isNaN(biasLearningRate)) {
                         //Global bias LR is set
-                        layer.setBiasLearningRate(biasLearningRate);
+                        bLayer.setBiasLearningRate(biasLearningRate);
                     } else {
-                        layer.setBiasLearningRate(layer.getLearningRate());
+                        bLayer.setBiasLearningRate(bLayer.getLearningRate());
                     }
                 }
-                if (layer.getLearningRateSchedule() == null)
-                    layer.setLearningRateSchedule(learningRateSchedule);
-                if (Double.isNaN(layer.getL1()))
-                    layer.setL1(l1);
-                if (Double.isNaN(layer.getL2()))
-                    layer.setL2(l2);
-                if (layer.getActivationFn() == null)
-                    layer.setActivationFn(activationFn);
-                if (layer.getWeightInit() == null)
-                    layer.setWeightInit(weightInit);
-                if (Double.isNaN(layer.getBiasInit()))
-                    layer.setBiasInit(biasInit);
-                if (Double.isNaN(layer.getDropOut()))
-                    layer.setDropOut(dropOut);
-                if (layer.getUpdater() == null)
-                    layer.setUpdater(updater);
-                if (layer.getIUpdater() == null) {
-                    layer.setIUpdater(iUpdater.clone());
+                if (bLayer.getLearningRateSchedule() == null)
+                    bLayer.setLearningRateSchedule(learningRateSchedule);
+                if (Double.isNaN(bLayer.getL1()))
+                    bLayer.setL1(l1);
+                if (Double.isNaN(bLayer.getL2()))
+                    bLayer.setL2(l2);
+                if (bLayer.getActivationFn() == null)
+                    bLayer.setActivationFn(activationFn);
+                if (bLayer.getWeightInit() == null)
+                    bLayer.setWeightInit(weightInit);
+                if (Double.isNaN(bLayer.getBiasInit()))
+                    bLayer.setBiasInit(biasInit);
+                if (Double.isNaN(bLayer.getDropOut()))
+                    bLayer.setDropOut(dropOut);
+                if (bLayer.getUpdater() == null)
+                    bLayer.setUpdater(updater);
+                if (bLayer.getIUpdater() == null) {
+                    bLayer.setIUpdater(iUpdater.clone());
                 }
                 LayerValidation.updaterValidation(layerName, layer, learningRate, momentum, momentumSchedule,
                                 adamMeanDecay, adamVarDecay, rho, rmsDecay, epsilon);
-                if (layer.getGradientNormalization() == null)
-                    layer.setGradientNormalization(gradientNormalization);
-                if (Double.isNaN(layer.getGradientNormalizationThreshold()))
-                    layer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
+                if (bLayer.getGradientNormalization() == null)
+                    bLayer.setGradientNormalization(gradientNormalization);
+                if (Double.isNaN(bLayer.getGradientNormalizationThreshold()))
+                    bLayer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
                 if (layer instanceof ConvolutionLayer) {
                     ConvolutionLayer cl = (ConvolutionLayer) layer;
                     if (cl.getConvolutionMode() == null) {

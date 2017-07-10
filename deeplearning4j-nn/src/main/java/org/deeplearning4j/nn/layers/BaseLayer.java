@@ -35,6 +35,7 @@ import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.Dropout;
+import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -48,7 +49,7 @@ import java.util.*;
  * and activation function
  * @author Adam Gibson
  */
-public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.Layer> implements Layer {
+public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseLayer> implements Layer {
 
     protected INDArray input, preOutput;
     protected INDArray paramsFlattened;
@@ -190,7 +191,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         //INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), z).derivative());
         //        INDArray activationDerivative = conf().getLayer().getActivationFn().getGradient(z);
         //        INDArray delta = epsilon.muli(activationDerivative);
-        INDArray delta = conf().getLayer().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
+        INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
 
         if (maskArray != null) {
             applyMask(delta);
@@ -421,7 +422,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
                                             + W.size(0) + ") " + layerId());
         }
 
-        if (conf.isUseDropConnect() && training && conf.getLayer().getDropOut() > 0) {
+        if (conf.isUseDropConnect() && training && layerConf().getDropOut() > 0) {
             W = Dropout.applyDropConnect(this, DefaultParamInitializer.WEIGHT_KEY);
         }
 
@@ -443,7 +444,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         INDArray z = preOutput(training);
         //INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(
         //        conf.getLayer().getActivationFunction(), z, conf.getExtraArgs() ));
-        INDArray ret = conf().getLayer().getActivationFn().getActivation(z, training);
+        INDArray ret = layerConf().getActivationFn().getActivation(z, training);
 
         if (maskArray != null) {
             applyMask(ret);
@@ -547,7 +548,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     protected void applyDropOutIfNecessary(boolean training) {
-        if (conf.getLayer().getDropOut() > 0 && !conf.isUseDropConnect() && training && !dropoutApplied) {
+        if (layerConf().getDropOut() > 0 && !conf.isUseDropConnect() && training && !dropoutApplied) {
             if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
                 try (MemoryWorkspace ws = Nd4j.getWorkspaceManager()
                                 .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)
@@ -557,7 +558,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             } else
                 input = input.isView() ? input.dup() : input.unsafeDuplication();
 
-            Dropout.applyDropout(input, conf.getLayer().getDropOut());
+            Dropout.applyDropout(input, layerConf().getDropOut());
             dropoutApplied = true;
         }
     }
@@ -625,7 +626,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();
             //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
             Updater updater = solver.getOptimizer().getUpdater();
-            int updaterStateSize = (int) conf().getLayer().getIUpdater().stateSize(numParams());
+            int updaterStateSize = (int) layerConf().getIUpdater().stateSize(numParams());
             if (updaterStateSize > 0)
                 updater.setStateViewArray(this, Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order()),
                                 true);
