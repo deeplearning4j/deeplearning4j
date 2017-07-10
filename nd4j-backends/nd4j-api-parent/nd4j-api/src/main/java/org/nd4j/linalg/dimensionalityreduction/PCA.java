@@ -20,17 +20,50 @@
 package org.nd4j.linalg.dimensionalityreduction;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.eigen.Eigen;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
- * PCA class for dimensionality reduction
+ * PCA class for dimensionality reduction and general analysis
  *
  * @author Adam Gibson
+ * @author Luke Czapla - added methods used in non-static usage of PCA
  */
 public class PCA {
 
+    private INDArray covarianceMatrix, mean, eigenvectors, eigenvalues;
+
     private PCA() {}
 
+    /**
+     *
+     * @param dataset The set of data of features, each row is a data point and each
+     *                column is a feature, every data point has the same number of features.
+     */
+    public PCA(INDArray dataset) {
+        INDArray[] covmean = covarianceMatrix(dataset);
+        this.covarianceMatrix = covmean[0];
+        this.mean = covmean[1];
+        INDArray[] pce = principalComponents(covmean[0]);
+        this.eigenvectors = pce[0];
+        this.eigenvalues = pce[1];
+    }
+
+    public INDArray reducedBasis(double variance) {
+        INDArray vars = Transforms.pow(Transforms.sqrt(eigenvalues, false), -1, false);
+        double res = vars.sumNumber().doubleValue();
+        double total = 0.0;
+        int ndims = 0;
+        for (int i = 0; i < vars.columns(); i++) {
+            ndims++;
+            total += vars.getDouble(i);
+            if (total/res > variance) break;
+        }
+        INDArray result = Nd4j.create(eigenvectors.rows(), ndims);
+        for (int i = 0; i < ndims; i++) result.putColumn(i, eigenvectors.getColumn(i));
+        return result;
+    }
 
     /**
      * Calculates pca vectors of a matrix, for a fixed number of reduced features
@@ -191,6 +224,95 @@ public class PCA {
         }
 
         return factor;
+    }
+
+    /**
+     * This method performs a dimensionality reduction, including principal components
+     * that cover a fraction of the total variance of the system.  It does all calculations
+     * about the mean.
+     * @param in A matrix of datapoints as rows, where column are features with fixed number N
+     * @param variance The desired fraction of the total variance required
+     * @return An array of INDArray of useful data: 0) the reduced basis set 1) the full basis set
+     *  2) the eigenvalues 3) the covariance matrix and 4) the mean
+     */
+    public static INDArray pca(INDArray in, double variance) {
+        // lets calculate the covariance and the mean
+        INDArray[] covmean = covarianceMatrix(in);
+        // use the covariance matrix to find "force constants" and then break into orthonormal
+        // unit vector components
+        INDArray[] pce = principalComponents(covmean[0]);
+        // calculate the variance of each component
+        INDArray vars = Transforms.pow(Transforms.sqrt(pce[1], false), -1, false);
+        double res = vars.sumNumber().doubleValue();
+        double total = 0.0;
+        int ndims = 0;
+        for (int i = 0; i < vars.columns(); i++) {
+            ndims++;
+            total += vars.getDouble(i);
+            if (total/res > variance) break;
+        }
+        INDArray result = Nd4j.create(in.columns(), ndims);
+        for (int i = 0; i < ndims; i++) result.putColumn(i, pce[0].getColumn(i));
+        return result;
+    }
+
+    /**
+     * Returns the covariance matrix of a data set of many records, each with N features.
+     * It also returns the average values, which are usually going to be important since
+     * all modes are centered around the mean.
+     *
+     * @param in A matrix of vectors of fixed length N (N features) on each row
+     * @return an N x N covariance matrix is element 0, and the average values is element 1.
+     */
+    public static INDArray[] covarianceMatrix(INDArray in) {
+        int dlength = in.rows();
+        int vlength = in.columns();
+
+        INDArray sum = Nd4j.create(vlength);
+        INDArray product = Nd4j.create(vlength, vlength);
+
+        for (int i = 0; i < vlength; i++)
+            sum.getColumn(i).assign(in.getColumn(i).sumNumber().doubleValue()/dlength);
+
+        for (int i = 0; i < dlength; i++) {
+            INDArray dx1 = in.getRow(i).sub(sum);
+            product.addi(dx1.reshape(vlength,1).mmul(dx1.reshape(1,vlength)));
+        }
+        product.divi(dlength);
+        return new INDArray[] {product, sum};
+    }
+
+    /**
+     * Calculates the principal component vectors and their eigenvalues (lambda) for the covariance matrix.
+     * The result includes two things: the eigenvectors (modes) at [0] and the eigenvalues (lambda) at [1].
+     * The variance of each mode is 1/sqrt(lambda).
+     * @param cov The covariance matrix (calculated with the covarianceMatrix(in) method)
+     * @return An array of INDArray.  The principal component vectors in decreasing flexibility is element 0
+     *      and the eigenvalues is element 1  (1/sqrt(eigenvalue) is its variance)
+     */
+    public static INDArray[] principalComponents(INDArray cov) {
+        assert cov.rows() == cov.columns();
+        INDArray[] result = new INDArray[2];
+        result[0] = Nd4j.eye(cov.rows());
+        result[1] = Eigen.symmetricGeneralizedEigenvalues(result[0], cov, true);
+        return result;
+    }
+
+
+    public INDArray getCovarianceMatrix() {
+        return covarianceMatrix;
+    }
+
+    public INDArray getMean() {
+        return mean;
+    }
+
+    public INDArray getEigenvectors() {
+        return eigenvectors;
+    }
+
+    public INDArray getEigenvalues() {
+        return eigenvalues;
     }
 
 }
