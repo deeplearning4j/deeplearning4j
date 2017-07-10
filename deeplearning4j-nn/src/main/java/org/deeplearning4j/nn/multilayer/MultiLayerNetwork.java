@@ -145,6 +145,20 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         this.defaultConfiguration = conf.getConf(0).clone();
     }
 
+    /**
+     * This method sets specified CacheMode for all layers within network
+     *
+     * @param mode
+     */
+    public void setCacheMode(CacheMode mode) {
+        if (mode == null)
+            mode = CacheMode.NONE;
+
+        for (Layer layer: layers) {
+            layer.setCacheMode(mode);
+        }
+    }
+
     public void setLastEtlTime(long time) {
         lastEtlTime.set(time);
     }

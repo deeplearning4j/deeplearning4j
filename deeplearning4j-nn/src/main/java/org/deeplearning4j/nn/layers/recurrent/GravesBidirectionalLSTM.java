@@ -231,6 +231,9 @@ public class GravesBidirectionalLSTM
     private FwdPassReturn activateHelperDirectional(final boolean training, final INDArray prevOutputActivations,
                     final INDArray prevMemCellState, boolean forBackprop, boolean forwards) {
 
+        if (cacheMode == null)
+            cacheMode = CacheMode.NONE;
+
         if (cacheMode != CacheMode.NONE && forwards && forBackprop && cachedPassForward != null) {
             FwdPassReturn ret = cachedPassForward;
             cachedPassForward = null;

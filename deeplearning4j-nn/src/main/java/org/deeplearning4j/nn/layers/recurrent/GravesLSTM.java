@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.layers.recurrent;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
@@ -41,6 +42,7 @@ import java.util.Map;
  * @author Alex Black
  * @see LSTM LSTM class, for the version without peephole connections
  */
+@Slf4j
 public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.GravesLSTM> {
     public static final String STATE_KEY_PREV_ACTIVATION = "prevAct";
     public static final String STATE_KEY_PREV_MEMCELL = "prevMem";
@@ -140,6 +142,9 @@ public class GravesLSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.la
 
     private FwdPassReturn activateHelper(final boolean training, final INDArray prevOutputActivations,
                     final INDArray prevMemCellState, boolean forBackprop) {
+
+        if (cacheMode == null)
+            cacheMode = CacheMode.NONE;
 
         if (forBackprop && cachedFwdPass != null) {
             FwdPassReturn ret = cachedFwdPass;

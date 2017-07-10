@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -44,6 +45,11 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
             //save memory??
             zeroGradient.setGradientFor(paramType, null);
         }
+    }
+
+    @Override
+    public void setCacheMode(CacheMode mode) {
+        // no-op
     }
 
     protected String layerId() {
