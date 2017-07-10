@@ -1,4 +1,3 @@
-
 package org.nd4j.linalg.eigen;
 
 import org.junit.Test;
@@ -70,4 +69,3 @@ public class TestEigen extends BaseNd4jTest {
         return 'f';
     }
 }
-
