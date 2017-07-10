@@ -155,7 +155,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
 
         FwdPassReturn fwd = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
                 recurrentWeights, inputWeights, biases, training, prevOutputActivations, prevMemCellState,
-                (training && cacheMode != CacheMode.NONE) || forBackprop, true, LSTMParamInitializer.INPUT_WEIGHT_KEY, null, false, cacheMode);
+                (training && cacheMode != CacheMode.NONE) || forBackprop, true, LSTMParamInitializer.INPUT_WEIGHT_KEY, null, false, forBackprop ? cacheMode : CacheMode.NONE);
 
         if (training && cacheMode != CacheMode.NONE) {
             cachedFwdPass = fwd;

@@ -204,7 +204,7 @@ public class GravesBidirectionalLSTM
                     getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS),
                     getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), training, null, null,
                     forBackprop || ( cacheMode != CacheMode.NONE && training), true, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray,
-                    true, cacheMode);
+                    true, forBackprop ? cacheMode : CacheMode.NONE);
 
             backwardsEval = LSTMHelpers.activateHelper(this, this.conf,
                     this.layerConf().getGateActivationFn(), this.input,
@@ -212,7 +212,7 @@ public class GravesBidirectionalLSTM
                     getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS),
                     getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS), training, null, null,
                     forBackprop || ( cacheMode != CacheMode.NONE && training), false, GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
-                    maskArray, true, cacheMode);
+                    maskArray, true, forBackprop ? cacheMode : CacheMode.NONE);
 
             cachedPassForward = forwardsEval;
             cachedPassBackward = backwardsEval;
@@ -256,7 +256,7 @@ public class GravesBidirectionalLSTM
 
             return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
                     getParam(recurrentKey), getParam(inputKey), getParam(biasKey), training, prevOutputActivations,
-                    prevMemCellState, forBackprop, forwards, inputKey, maskArray, true, cacheMode);
+                    prevMemCellState, forBackprop, forwards, inputKey, maskArray, true, forBackprop ? cacheMode : CacheMode.NONE);
         }
 
     }
