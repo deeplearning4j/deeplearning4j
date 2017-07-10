@@ -22,6 +22,7 @@ package org.nd4j.linalg.dimensionalityreduction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.eigen.Eigen;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
@@ -37,8 +38,8 @@ public class PCA {
     private PCA() {}
 
     /**
-     *
-     * @param dataset The set of data of features, each row is a data point and each
+     * Create a PCA instance with calculated data: covariance, mean, eigenvectors, and eigenvalues.
+     * @param dataset The set of data result of features, each row is a data result and each
      *                column is a feature, every data point has the same number of features.
      */
     public PCA(INDArray dataset) {
@@ -51,7 +52,7 @@ public class PCA {
     }
 
     public INDArray reducedBasis(double variance) {
-        INDArray vars = Transforms.pow(Transforms.sqrt(eigenvalues, false), -1, false);
+        INDArray vars = Transforms.pow(Transforms.sqrt(eigenvalues, true), -1, true);
         double res = vars.sumNumber().doubleValue();
         double total = 0.0;
         int ndims = 0;
@@ -63,6 +64,15 @@ public class PCA {
         INDArray result = Nd4j.create(eigenvectors.rows(), ndims);
         for (int i = 0; i < ndims; i++) result.putColumn(i, eigenvectors.getColumn(i));
         return result;
+    }
+
+    public double estimateVariance(INDArray data, int ndims) {
+        INDArray dx = data.sub(mean);
+        INDArray v = eigenvectors.transpose().mmul(dx.reshape(dx.columns(), 1));
+        INDArray t2 = Transforms.pow(v, 2);
+        double fraction = Math.sqrt(t2.get(NDArrayIndex.interval(0,ndims)).sumNumber().doubleValue());
+        double total = Math.sqrt(t2.sumNumber().doubleValue());
+        return fraction/total;
     }
 
     /**
@@ -242,7 +252,7 @@ public class PCA {
         // unit vector components
         INDArray[] pce = principalComponents(covmean[0]);
         // calculate the variance of each component
-        INDArray vars = Transforms.pow(Transforms.sqrt(pce[1], false), -1, false);
+        INDArray vars = Transforms.pow(Transforms.sqrt(pce[1], true), -1, true);
         double res = vars.sumNumber().doubleValue();
         double total = 0.0;
         int ndims = 0;
@@ -288,7 +298,7 @@ public class PCA {
      * The variance of each mode is 1/sqrt(lambda).
      * @param cov The covariance matrix (calculated with the covarianceMatrix(in) method)
      * @return An array of INDArray.  The principal component vectors in decreasing flexibility is element 0
-     *      and the eigenvalues is element 1  (1/sqrt(eigenvalue) is its variance)
+     *      and the eigenvalues are element 1  (1/sqrt(eigenvalue) is the variance of each mode)
      */
     public static INDArray[] principalComponents(INDArray cov) {
         assert cov.rows() == cov.columns();
