@@ -180,15 +180,28 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         this.defaultConfiguration = configuration.getDefaultConfiguration();
     }
 
+    /**
+     * This method allows to set ETL field time, useful for performance tracking
+     * @param time
+     */
     public void setLastEtlTime(long time) {
         lastEtlTime.set(time);
     }
 
+    /**
+     * This method returns ETL time field value
+     * @return
+     */
     public long getLastEtlTime() {
         Long time = lastEtlTime.get();
         return time == null ? 0L : time;
     }
 
+    /**
+     * This method sets specified CacheMode for all layers within network
+     *
+     * @param mode
+     */
     public void setCacheMode(CacheMode mode) {
         if (mode == null)
             mode = CacheMode.NONE;
@@ -198,6 +211,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
     }
 
+    /**
+     * This method returns configuration of this ComputationGraph
+     * @return
+     */
     public ComputationGraphConfiguration getConfiguration() {
         return configuration;
     }
