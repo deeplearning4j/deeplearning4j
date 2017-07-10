@@ -1,13 +1,13 @@
 package org.datavec.dataframe;
 
+import org.datavec.dataframe.api.FloatColumn;
 import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.columns.Column;
-import org.datavec.dataframe.api.FloatColumn;
 import org.datavec.dataframe.store.TableMetadata;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  *

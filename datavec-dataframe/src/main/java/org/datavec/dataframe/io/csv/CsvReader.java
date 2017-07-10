@@ -1,23 +1,18 @@
 package org.datavec.dataframe.io.csv;
 
-import org.datavec.dataframe.api.ColumnType;
-import org.datavec.dataframe.api.Table;
-import org.datavec.dataframe.columns.Column;
-import org.datavec.dataframe.io.TypeUtils;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.opencsv.CSVReader;
-import org.apache.commons.lang3.StringUtils;
-
 import edu.umd.cs.findbugs.annotations.Nullable;
 import net.jcip.annotations.Immutable;
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import org.apache.commons.lang3.StringUtils;
+import org.datavec.dataframe.api.ColumnType;
+import org.datavec.dataframe.api.Table;
+import org.datavec.dataframe.columns.Column;
+import org.datavec.dataframe.io.TypeUtils;
+
+import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;

@@ -16,18 +16,19 @@
 
 package org.datavec.audio.recordreader;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.FloatBuffer;
-import java.util.*;
-
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.datavec.api.writable.FloatWritable;
 import org.datavec.api.writable.Writable;
 
-import static org.bytedeco.javacpp.avutil.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.FloatBuffer;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.bytedeco.javacpp.avutil.AV_SAMPLE_FMT_FLT;
 
 /**
  * Native audio file loader using FFmpeg.

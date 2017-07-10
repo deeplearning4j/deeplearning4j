@@ -16,18 +16,18 @@
 
 package org.datavec.api.transform.rank;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnOp;
+import org.datavec.api.transform.metadata.ColumnMetaData;
+import org.datavec.api.transform.metadata.LongMetaData;
+import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.schema.SequenceSchema;
+import org.datavec.api.writable.comparator.WritableComparator;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
-import lombok.EqualsAndHashCode;
-import org.datavec.api.transform.metadata.ColumnMetaData;
-import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.transform.metadata.LongMetaData;
-import lombok.Data;
-import org.datavec.api.transform.schema.SequenceSchema;
-import org.datavec.api.writable.comparator.WritableComparator;
 
 import java.io.Serializable;
 import java.util.ArrayList;

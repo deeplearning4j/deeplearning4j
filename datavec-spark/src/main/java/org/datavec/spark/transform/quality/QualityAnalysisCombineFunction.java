@@ -17,7 +17,6 @@
 package org.datavec.spark.transform.quality;
 
 import org.apache.spark.api.java.function.Function2;
-import org.datavec.spark.transform.quality.QualityAnalysisState;
 
 import java.util.ArrayList;
 import java.util.List;

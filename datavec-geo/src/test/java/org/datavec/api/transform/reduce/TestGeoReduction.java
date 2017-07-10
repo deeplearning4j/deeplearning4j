@@ -16,15 +16,18 @@
 
 package org.datavec.api.transform.reduce;
 
-import org.datavec.api.transform.ops.IAggregableReduceOp;
-import org.datavec.api.writable.*;
 import org.datavec.api.transform.ColumnType;
+import org.datavec.api.transform.ReduceOp;
+import org.datavec.api.transform.ops.IAggregableReduceOp;
+import org.datavec.api.transform.reduce.geo.CoordinatesReduction;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.writable.Text;
+import org.datavec.api.writable.Writable;
 import org.junit.Test;
 
-import java.util.*;
-import org.datavec.api.transform.ReduceOp;
-import org.datavec.api.transform.reduce.geo.CoordinatesReduction;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 

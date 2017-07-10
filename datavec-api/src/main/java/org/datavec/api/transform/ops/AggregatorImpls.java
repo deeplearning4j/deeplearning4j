@@ -4,7 +4,10 @@ import com.clearspring.analytics.stream.cardinality.CardinalityMergeException;
 import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.datavec.api.writable.*;
+import org.datavec.api.writable.DoubleWritable;
+import org.datavec.api.writable.LongWritable;
+import org.datavec.api.writable.UnsafeWritableInjector;
+import org.datavec.api.writable.Writable;
 
 /**
  * Created by huitseeker on 4/28/17.

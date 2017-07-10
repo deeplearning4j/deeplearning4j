@@ -1,12 +1,12 @@
 package org.datavec.dataframe.table;
 
-import org.datavec.dataframe.reducing.NumericReduceFunction;
-import org.datavec.dataframe.api.Table;
-import org.datavec.dataframe.api.CategoryColumn;
-import org.datavec.dataframe.columns.Column;
-import org.datavec.dataframe.api.FloatColumn;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
+import org.datavec.dataframe.api.CategoryColumn;
+import org.datavec.dataframe.api.FloatColumn;
+import org.datavec.dataframe.api.Table;
+import org.datavec.dataframe.columns.Column;
+import org.datavec.dataframe.reducing.NumericReduceFunction;
 
 import java.util.ArrayList;
 import java.util.Iterator;

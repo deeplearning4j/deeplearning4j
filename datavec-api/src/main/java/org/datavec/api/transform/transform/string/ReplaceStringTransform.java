@@ -1,11 +1,12 @@
 package org.datavec.api.transform.transform.string;
 
-import java.util.Map;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
+
+import java.util.Map;
 
 /**
  * Replaces String values that match regular expressions.

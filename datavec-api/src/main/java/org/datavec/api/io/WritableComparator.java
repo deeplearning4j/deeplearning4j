@@ -18,10 +18,11 @@ package org.datavec.api.io;
 
 
 import org.datavec.api.util.ReflectionUtils;
-
-import java.io.*;
-import java.util.*;
 import org.datavec.api.writable.Writable;
+
+import java.io.DataInput;
+import java.io.IOException;
+import java.util.HashMap;
 
 
 /** A Comparator for {@link WritableComparable}s.

@@ -26,37 +26,114 @@ import java.io.File;
 import java.util.List;
 
 /**
- * Created by Alex on 07/07/2017.
+ * MapFileRecordWriter is used to write values to a Hadoop MapFile, that can then be read by:
+ * {@link org.datavec.hadoop.records.reader.mapfile.MapFileRecordReader}
+ *
+ * @author Alex Black
+ * @see org.datavec.hadoop.records.reader.mapfile.MapFileRecordReader
  */
 public class MapFileRecordWriter extends AbstractMapFileWriter<List<Writable>> implements RecordWriter {
 
-
+    /**
+     * Constructor for all default values. Single output MapFile, no text writable conversion, default index
+     * interval (1), default naming pattern.
+     *
+     * @param outputDir           Output directory for the map file(s)
+     */
     public MapFileRecordWriter(File outputDir) {
         super(outputDir);
     }
 
+    /**
+     *
+     * Constructor for most default values. Specified number of output MapFile s, no text writable conversion, default
+     * index interval (1), default naming pattern.
+     *
+     * @param outputDir           Output directory for the map file(s)
+     * @param mapFileSplitSize    Split size for the map file: if 0, use a single map file for all output. If > 0,
+     *                            multiple map files will be used: each will contain a maximum of mapFileSplitSize
+     *                            examples. This can be used to avoid having a single multi gigabyte map file, which may
+     *                            be undesirable in some cases (transfer across the network, for example).
+     */
     public MapFileRecordWriter(@NonNull File outputDir, int mapFileSplitSize){
         this(outputDir, mapFileSplitSize, null);
     }
 
+    /**
+     *
+     * @param outputDir           Output directory for the map file(s)
+     * @param convertTextTo       If null: Make no changes to Text writable objects. If non-null, Text writable instances
+     *                            will be converted to this type. This is useful, when would rather store numerical values
+     *                            even if the original record reader produces strings/text.
+     */
     public MapFileRecordWriter(@NonNull File outputDir, WritableType convertTextTo) {
         this(outputDir, DEFAULT_MAP_FILE_SPLIT_SIZE, convertTextTo);
     }
 
+    /**
+     *
+     * @param outputDir           Output directory for the map file(s)
+     * @param mapFileSplitSize    Split size for the map file: if 0, use a single map file for all output. If > 0,
+     *                            multiple map files will be used: each will contain a maximum of mapFileSplitSize
+     *                            examples. This can be used to avoid having a single multi gigabyte map file, which may
+     *                            be undesirable in some cases (transfer across the network, for example).
+     * @param convertTextTo       If null: Make no changes to Text writable objects. If non-null, Text writable instances
+     *                            will be converted to this type. This is useful, when would rather store numerical values
+     *                            even if the original record reader produces strings/text.
+     */
     public MapFileRecordWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo) {
         super(outputDir, mapFileSplitSize, convertTextTo);
     }
 
+    /**
+     *
+     * @param outputDir           Output directory for the map file(s)
+     * @param mapFileSplitSize    Split size for the map file: if 0, use a single map file for all output. If > 0,
+     *                            multiple map files will be used: each will contain a maximum of mapFileSplitSize
+     *                            examples. This can be used to avoid having a single multi gigabyte map file, which may
+     *                            be undesirable in some cases (transfer across the network, for example).
+     * @param convertTextTo       If null: Make no changes to Text writable objects. If non-null, Text writable instances
+     *                            will be converted to this type. This is useful, when would rather store numerical values
+     *                            even if the original record reader produces strings/text.
+     * @param hadoopConfiguration Hadoop configuration.
+     */
     public MapFileRecordWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo,
                                        org.apache.hadoop.conf.Configuration hadoopConfiguration) {
         super(outputDir, mapFileSplitSize, convertTextTo, DEFAULT_INDEX_INTERVAL, hadoopConfiguration);
     }
 
+    /**
+     *
+     * @param outputDir           Output directory for the map file(s)
+     * @param mapFileSplitSize    Split size for the map file: if 0, use a single map file for all output. If > 0,
+     *                            multiple map files will be used: each will contain a maximum of mapFileSplitSize
+     *                            examples. This can be used to avoid having a single multi gigabyte map file, which may
+     *                            be undesirable in some cases (transfer across the network, for example).
+     * @param convertTextTo       If null: Make no changes to Text writable objects. If non-null, Text writable instances
+     *                            will be converted to this type. This is useful, when would rather store numerical values
+     *                            even if the original record reader produces strings/text.
+     * @param indexInterval       Index interval for the Map file. Defaults to 1, which is suitable for most cases
+     * @param hadoopConfiguration Hadoop configuration.
+     */
     public MapFileRecordWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo,
-                               int indexInterval, org.apache.hadoop.conf.Configuration hadoopConfiguration) {
+                                       int indexInterval, org.apache.hadoop.conf.Configuration hadoopConfiguration) {
         super(outputDir, mapFileSplitSize, convertTextTo, indexInterval, hadoopConfiguration);
     }
 
+    /**
+     *
+     * @param outputDir           Output directory for the map file(s)
+     * @param mapFileSplitSize    Split size for the map file: if 0, use a single map file for all output. If > 0,
+     *                            multiple map files will be used: each will contain a maximum of mapFileSplitSize
+     *                            examples. This can be used to avoid having a single multi gigabyte map file, which may
+     *                            be undesirable in some cases (transfer across the network, for example).
+     * @param convertTextTo       If null: Make no changes to Text writable objects. If non-null, Text writable instances
+     *                            will be converted to this type. This is useful, when would rather store numerical values
+     *                            even if the original record reader produces strings/text.
+     * @param indexInterval       Index interval for the Map file. Defaults to 1, which is suitable for most cases
+     * @param filenamePattern     The naming pattern for the map files. Used with String.format(pattern, int)
+     * @param hadoopConfiguration Hadoop configuration.
+     */
     public MapFileRecordWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo,
                                        int indexInterval, String filenamePattern,
                                        org.apache.hadoop.conf.Configuration hadoopConfiguration) {

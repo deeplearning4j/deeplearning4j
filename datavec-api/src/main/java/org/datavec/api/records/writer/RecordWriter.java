@@ -17,13 +17,11 @@
 package org.datavec.api.records.writer;
 
 
-
 import org.datavec.api.conf.Configurable;
 import org.datavec.api.writable.Writable;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 
 /**

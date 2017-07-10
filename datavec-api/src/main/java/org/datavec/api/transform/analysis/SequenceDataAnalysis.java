@@ -16,11 +16,11 @@
 
 package org.datavec.api.transform.analysis;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
 import org.datavec.api.transform.analysis.sequence.SequenceLengthAnalysis;
 import org.datavec.api.transform.schema.Schema;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 import java.util.List;
 

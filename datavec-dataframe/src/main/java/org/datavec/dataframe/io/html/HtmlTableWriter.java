@@ -1,9 +1,9 @@
 package org.datavec.dataframe.io.html;
 
-import org.datavec.dataframe.api.Table;
-import org.datavec.dataframe.columns.Column;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.lang3.StringUtils;
+import org.datavec.dataframe.api.Table;
+import org.datavec.dataframe.columns.Column;
 
 import java.util.List;
 

@@ -1,9 +1,9 @@
 package org.datavec.dataframe.columns;
 
+import it.unimi.dsi.fastutil.ints.IntIterable;
 import org.datavec.dataframe.api.IntColumn;
 import org.datavec.dataframe.filtering.IntBiPredicate;
 import org.datavec.dataframe.filtering.IntPredicate;
-import it.unimi.dsi.fastutil.ints.IntIterable;
 
 /**
  *

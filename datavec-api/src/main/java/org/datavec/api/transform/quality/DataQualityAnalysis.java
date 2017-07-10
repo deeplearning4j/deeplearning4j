@@ -16,11 +16,11 @@
 
 package org.datavec.api.transform.quality;
 
-import org.datavec.api.transform.ColumnType;
-import org.datavec.api.transform.schema.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.quality.columns.ColumnQuality;
+import org.datavec.api.transform.schema.Schema;
 
 import java.util.List;
 

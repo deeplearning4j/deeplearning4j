@@ -1,8 +1,8 @@
 package org.datavec.dataframe.columns;
 
+import it.unimi.dsi.fastutil.ints.IntIterable;
 import org.datavec.dataframe.filtering.FloatBiPredicate;
 import org.datavec.dataframe.filtering.FloatPredicate;
-import it.unimi.dsi.fastutil.ints.IntIterable;
 
 /**
  *

@@ -1,6 +1,9 @@
 package org.datavec.dataframe.util;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 /**
  * Test database using JavaDB (aka Derby) to createFromCsv result sets to convert to tables

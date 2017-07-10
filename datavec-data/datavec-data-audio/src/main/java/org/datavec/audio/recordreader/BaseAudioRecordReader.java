@@ -20,11 +20,11 @@ import org.apache.commons.io.FileUtils;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
-import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.records.reader.BaseRecordReader;
 import org.datavec.api.split.BaseInputSplit;
 import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.InputStreamInputSplit;
+import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 
 import java.io.DataInputStream;
@@ -34,7 +34,10 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Base audio file loader

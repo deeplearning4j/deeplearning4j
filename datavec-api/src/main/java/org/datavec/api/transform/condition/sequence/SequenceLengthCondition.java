@@ -17,7 +17,6 @@
 package org.datavec.api.transform.condition.sequence;
 
 import lombok.EqualsAndHashCode;
-import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.condition.ConditionOp;
 import org.datavec.api.transform.schema.Schema;

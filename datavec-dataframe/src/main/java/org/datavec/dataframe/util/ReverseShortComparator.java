@@ -1,7 +1,6 @@
 package org.datavec.dataframe.util;
 
 import it.unimi.dsi.fastutil.shorts.ShortComparator;
-
 import net.jcip.annotations.Immutable;
 
 /**

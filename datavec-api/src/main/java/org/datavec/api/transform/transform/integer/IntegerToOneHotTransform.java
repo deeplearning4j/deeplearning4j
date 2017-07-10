@@ -18,7 +18,6 @@ package org.datavec.api.transform.transform.integer;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.IntegerMetaData;
 import org.datavec.api.transform.schema.Schema;
@@ -28,7 +27,9 @@ import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Convert an integer column to a  set of one-hot columns.

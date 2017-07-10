@@ -4,20 +4,15 @@ import org.datavec.dataframe.api.DateColumn;
 import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.columns.ColumnReference;
 import org.datavec.dataframe.filtering.LocalDatePredicate;
-import org.datavec.dataframe.filtering.datetimes.IsFirstDayOfTheMonth;
-import org.datavec.dataframe.filtering.datetimes.IsInFebruary;
-import org.datavec.dataframe.filtering.datetimes.IsInMarch;
-import org.datavec.dataframe.filtering.datetimes.IsInYear;
-import org.datavec.dataframe.filtering.datetimes.IsLastDayOfTheMonth;
-import org.datavec.dataframe.filtering.datetimes.IsMonday;
-import org.datavec.dataframe.filtering.datetimes.IsSunday;
+import org.datavec.dataframe.filtering.datetimes.*;
 import org.datavec.dataframe.util.Selection;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.time.LocalDate;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  *

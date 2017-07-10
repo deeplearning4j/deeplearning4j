@@ -1,9 +1,9 @@
 package org.datavec.dataframe.util;
 
+import com.google.common.base.Preconditions;
 import org.datavec.dataframe.api.NumericColumn;
 import org.datavec.dataframe.table.TemporaryView;
 import org.datavec.dataframe.table.ViewGroup;
-import com.google.common.base.Preconditions;
 
 /**
  *  Utility functions for creating 2D double arrays from columns and other arrays

@@ -1,9 +1,9 @@
 package org.datavec.dataframe.io.csv;
 
 import org.datavec.dataframe.api.ColumnType;
+import org.datavec.dataframe.api.QueryHelper;
 import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.columns.Column;
-import org.datavec.dataframe.api.QueryHelper;
 import org.junit.Ignore;
 import org.junit.Test;
 

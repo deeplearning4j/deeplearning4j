@@ -1,9 +1,9 @@
 package org.datavec.dataframe.columns;
 
+import it.unimi.dsi.fastutil.longs.LongIterable;
 import org.datavec.dataframe.api.LongColumn;
 import org.datavec.dataframe.filtering.LongBiPredicate;
 import org.datavec.dataframe.filtering.LongPredicate;
-import it.unimi.dsi.fastutil.longs.LongIterable;
 
 /**
  * Pre-made predicates for common

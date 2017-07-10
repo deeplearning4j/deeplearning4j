@@ -16,12 +16,12 @@
 
 package org.datavec.api.transform.transform.doubletransform;
 
-import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.DoubleMetaData;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * Normalizer to map (min to max) -> (newMin-to newMax) linearly. <br>

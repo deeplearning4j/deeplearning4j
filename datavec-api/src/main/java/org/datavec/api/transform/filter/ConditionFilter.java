@@ -17,11 +17,11 @@
 package org.datavec.api.transform.filter;
 
 import lombok.Data;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.List;
 

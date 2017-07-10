@@ -17,12 +17,12 @@
 package org.datavec.api.transform.sequence;
 
 
-import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.ArrayList;
 import java.util.List;

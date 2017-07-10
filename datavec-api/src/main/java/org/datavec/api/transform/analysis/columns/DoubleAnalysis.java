@@ -20,7 +20,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.datavec.api.transform.ColumnType;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * Analysis for Double columns

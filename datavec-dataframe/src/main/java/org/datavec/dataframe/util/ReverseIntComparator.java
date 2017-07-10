@@ -1,8 +1,6 @@
 package org.datavec.dataframe.util;
 
 import it.unimi.dsi.fastutil.ints.IntComparator;
-import it.unimi.dsi.fastutil.longs.LongComparator;
-
 import net.jcip.annotations.Immutable;
 
 /**

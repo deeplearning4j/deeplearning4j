@@ -4,7 +4,7 @@ import org.datavec.image.data.ImageWritable;
 
 import java.util.Random;
 
-import static org.bytedeco.javacpp.opencv_core.*;
+import static org.bytedeco.javacpp.opencv_core.Mat;
 
 /**
  * Transforms images deterministically or randomly with the help of an array of ImageTransform

@@ -3,15 +3,14 @@ package org.datavec.spark.transform.sparkfunction;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema;
-import org.apache.spark.sql.types.*;
+import org.apache.spark.sql.types.StructType;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.spark.transform.DataFrames;
+import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.List;
-
-import org.datavec.api.writable.NDArrayWritable;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 
 /**

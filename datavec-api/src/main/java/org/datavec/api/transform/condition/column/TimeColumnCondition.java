@@ -17,11 +17,11 @@
 package org.datavec.api.transform.condition.column;
 
 import lombok.Data;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.condition.ConditionOp;
 import org.datavec.api.transform.condition.SequenceConditionMode;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Set;
 

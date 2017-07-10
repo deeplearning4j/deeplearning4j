@@ -1,17 +1,7 @@
 package org.datavec.dataframe.table;
 
-import org.datavec.dataframe.api.Table;
-import org.datavec.dataframe.api.BooleanColumn;
-import org.datavec.dataframe.api.CategoryColumn;
+import org.datavec.dataframe.api.*;
 import org.datavec.dataframe.columns.Column;
-import org.datavec.dataframe.api.FloatColumn;
-import org.datavec.dataframe.api.IntColumn;
-import org.datavec.dataframe.api.DateColumn;
-import org.datavec.dataframe.api.DateTimeColumn;
-import org.datavec.dataframe.api.TimeColumn;
-import org.datavec.dataframe.api.LongColumn;
-import org.datavec.dataframe.api.ColumnType;
-import org.datavec.dataframe.api.ShortColumn;
 
 import java.util.List;
 

@@ -16,13 +16,13 @@
 
 package org.datavec.api.transform.transform.categorical;
 
-import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
-import org.datavec.api.writable.Text;
-import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;
+import org.datavec.api.writable.Text;
+import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.*;
 

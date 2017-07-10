@@ -1,10 +1,10 @@
 package org.datavec.dataframe.columns;
 
+import com.google.common.annotations.Beta;
 import org.datavec.dataframe.api.DateColumn;
 import org.datavec.dataframe.columns.packeddata.DateInterval;
 import org.datavec.dataframe.columns.packeddata.PackedLocalDate;
 import org.datavec.dataframe.util.Selection;
-import com.google.common.annotations.Beta;
 
 import java.util.List;
 

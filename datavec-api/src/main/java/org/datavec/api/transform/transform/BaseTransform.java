@@ -16,10 +16,10 @@
 
 package org.datavec.api.transform.transform;
 
-import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
-import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -16,12 +16,12 @@
 
 package org.datavec.api.transform.sequence;
 
-import org.datavec.api.writable.LongWritable;
-import org.datavec.api.writable.Text;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
-import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.sequence.split.SequenceSplitTimeSeparation;
+import org.datavec.api.writable.LongWritable;
+import org.datavec.api.writable.Text;
+import org.datavec.api.writable.Writable;
 import org.joda.time.DateTimeZone;
 import org.junit.Test;
 

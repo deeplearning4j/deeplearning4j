@@ -1,10 +1,10 @@
 package org.datavec.dataframe.mapping;
 
-import org.datavec.dataframe.columns.DateTImeColumnUtils;
 import org.datavec.dataframe.api.DateTimeColumn;
 import org.datavec.dataframe.api.IntColumn;
 import org.datavec.dataframe.api.LongColumn;
 import org.datavec.dataframe.api.ShortColumn;
+import org.datavec.dataframe.columns.DateTImeColumnUtils;
 import org.datavec.dataframe.columns.packeddata.PackedLocalDateTime;
 
 import java.time.LocalDateTime;

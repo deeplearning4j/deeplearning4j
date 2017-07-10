@@ -16,8 +16,8 @@
 
 package org.datavec.spark.transform.transform;
 
-import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.sequence.SequenceSplit;
+import org.datavec.api.writable.Writable;
 import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 
 import java.util.List;

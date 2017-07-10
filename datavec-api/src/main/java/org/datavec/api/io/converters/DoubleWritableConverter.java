@@ -17,11 +17,7 @@
 package org.datavec.api.io.converters;
 
 import org.datavec.api.io.WritableConverter;
-import org.datavec.api.writable.DoubleWritable;
-import org.datavec.api.writable.FloatWritable;
-import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.Text;
-import org.datavec.api.writable.Writable;
+import org.datavec.api.writable.*;
 
 /**
  * Convert a writable to a

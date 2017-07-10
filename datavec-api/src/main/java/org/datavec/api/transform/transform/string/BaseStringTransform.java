@@ -16,14 +16,14 @@
 
 package org.datavec.api.transform.transform.string;
 
-import lombok.NoArgsConstructor;
-import org.datavec.api.writable.Text;
-import org.datavec.api.transform.metadata.ColumnMetaData;
-import org.datavec.api.transform.metadata.StringMetaData;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.datavec.api.writable.Writable;
+import lombok.NoArgsConstructor;
+import org.datavec.api.transform.metadata.ColumnMetaData;
+import org.datavec.api.transform.metadata.StringMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;
+import org.datavec.api.writable.Text;
+import org.datavec.api.writable.Writable;
 
 
 /**

@@ -16,12 +16,12 @@
 
 package org.datavec.api.transform.condition.string;
 
-import org.nd4j.shade.jackson.annotation.JsonProperty;
-import org.datavec.api.transform.condition.SequenceConditionMode;
-import org.datavec.api.transform.condition.column.BaseColumnCondition;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.datavec.api.transform.condition.SequenceConditionMode;
+import org.datavec.api.transform.condition.column.BaseColumnCondition;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * Condition that applies to the values in a String column, using a provided regex.

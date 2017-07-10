@@ -1,11 +1,11 @@
 package org.datavec.dataframe.reducing;
 
-import org.datavec.dataframe.api.FloatColumn;
 import org.apache.commons.math3.stat.StatUtils;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.apache.commons.math3.stat.descriptive.moment.Kurtosis;
 import org.apache.commons.math3.stat.descriptive.moment.Skewness;
 import org.apache.commons.math3.util.FastMath;
+import org.datavec.dataframe.api.FloatColumn;
 
 /**
  * Contains common utilities for double and long types

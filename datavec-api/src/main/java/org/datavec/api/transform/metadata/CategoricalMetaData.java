@@ -16,11 +16,11 @@
 
 package org.datavec.api.transform.metadata;
 
-import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 import java.util.HashSet;

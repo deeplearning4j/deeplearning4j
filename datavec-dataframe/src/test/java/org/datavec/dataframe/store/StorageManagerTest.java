@@ -1,14 +1,10 @@
 package org.datavec.dataframe.store;
 
-import org.datavec.dataframe.api.CategoryColumn;
-import org.datavec.dataframe.api.FloatColumn;
-import org.datavec.dataframe.api.DateColumn;
-import org.datavec.dataframe.api.LongColumn;
-import org.datavec.dataframe.api.Table;
-import org.datavec.dataframe.table.Relation;
+import com.google.common.base.Stopwatch;
+import org.datavec.dataframe.api.*;
 import org.datavec.dataframe.api.ColumnType;
 import org.datavec.dataframe.io.csv.CsvReader;
-import com.google.common.base.Stopwatch;
+import org.datavec.dataframe.table.Relation;
 import org.junit.Before;
 import org.junit.Test;
 

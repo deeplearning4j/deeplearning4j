@@ -17,8 +17,8 @@
 package org.datavec.api.formats.output;
 
 
-import org.datavec.api.exceptions.DataVecException;
 import org.datavec.api.conf.Configuration;
+import org.datavec.api.exceptions.DataVecException;
 import org.datavec.api.records.writer.RecordWriter;
 
 /**

@@ -1,11 +1,11 @@
 package org.datavec.dataframe.columns;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.datavec.dataframe.api.CategoryColumn;
 import org.datavec.dataframe.filtering.StringPredicate;
 import org.datavec.dataframe.mapping.StringMapUtils;
 import org.datavec.dataframe.reducing.CategoryReduceUtils;
 import org.datavec.dataframe.util.DictionaryMap;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 
 /**
  *

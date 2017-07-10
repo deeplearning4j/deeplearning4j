@@ -3,13 +3,12 @@ package org.datavec.api.transform.ops;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
 
-import javax.xml.ws.Dispatch;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by huitseeker on 5/14/17.

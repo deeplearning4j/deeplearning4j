@@ -1,7 +1,13 @@
 package org.datavec.dataframe.api;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import it.unimi.dsi.fastutil.floats.FloatArrayList;
+import it.unimi.dsi.fastutil.ints.IntComparator;
+import it.unimi.dsi.fastutil.longs.*;
 import org.datavec.dataframe.columns.AbstractColumn;
 import org.datavec.dataframe.columns.Column;
+import org.datavec.dataframe.columns.LongColumnUtils;
 import org.datavec.dataframe.filtering.LongBiPredicate;
 import org.datavec.dataframe.filtering.LongPredicate;
 import org.datavec.dataframe.io.TypeUtils;
@@ -13,17 +19,6 @@ import org.datavec.dataframe.util.BitmapBackedSelection;
 import org.datavec.dataframe.util.ReverseLongComparator;
 import org.datavec.dataframe.util.Selection;
 import org.datavec.dataframe.util.Stats;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
-import it.unimi.dsi.fastutil.floats.FloatArrayList;
-import it.unimi.dsi.fastutil.ints.IntComparator;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
-import it.unimi.dsi.fastutil.longs.LongArraySet;
-import it.unimi.dsi.fastutil.longs.LongArrays;
-import it.unimi.dsi.fastutil.longs.LongIterator;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongSet;
-import org.datavec.dataframe.columns.LongColumnUtils;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;

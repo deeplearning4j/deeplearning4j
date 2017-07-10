@@ -1,13 +1,12 @@
 package org.datavec.dataframe.filtering.dates;
 
 
+import net.jcip.annotations.Immutable;
 import org.datavec.dataframe.api.DateColumn;
 import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.columns.ColumnReference;
 import org.datavec.dataframe.filtering.ColumnFilter;
 import org.datavec.dataframe.util.Selection;
-
-import net.jcip.annotations.Immutable;
 
 /**
  *

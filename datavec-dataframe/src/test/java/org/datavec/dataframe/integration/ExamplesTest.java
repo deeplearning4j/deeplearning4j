@@ -1,14 +1,12 @@
 package org.datavec.dataframe.integration;
 
-import org.datavec.dataframe.api.Table;
-import org.datavec.dataframe.api.QueryHelper;
-import org.datavec.dataframe.io.csv.CsvWriter;
 import org.datavec.dataframe.api.ColumnType;
+import org.datavec.dataframe.api.QueryHelper;
+import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.io.csv.CsvReader;
+import org.datavec.dataframe.io.csv.CsvWriter;
 
-import static org.datavec.dataframe.api.ColumnType.CATEGORY;
-import static org.datavec.dataframe.api.ColumnType.FLOAT;
-import static org.datavec.dataframe.api.ColumnType.INTEGER;
+import static org.datavec.dataframe.api.ColumnType.*;
 
 /**
  * Some example code using the API

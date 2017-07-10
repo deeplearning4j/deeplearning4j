@@ -1,9 +1,9 @@
 package org.datavec.dataframe.util.collections;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
+
 import java.util.NoSuchElementException;
 import java.util.Set;
-
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * A set comprising zero or more {@linkplain IntRange#isEmpty nonempty},

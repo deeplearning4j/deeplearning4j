@@ -15,10 +15,13 @@
  */
 package org.datavec.api.records.reader;
 
-import java.util.*;
-
 import org.datavec.api.records.listener.RecordListener;
 import org.datavec.api.writable.Writable;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Manages record listeners.

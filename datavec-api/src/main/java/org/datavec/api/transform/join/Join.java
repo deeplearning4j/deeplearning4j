@@ -16,11 +16,11 @@
 
 package org.datavec.api.transform.join;
 
-import org.datavec.api.writable.NullWritable;
-import org.datavec.api.transform.metadata.ColumnMetaData;
-import org.datavec.api.transform.schema.Schema;
 import lombok.Data;
 import org.apache.commons.lang3.ArrayUtils;
+import org.datavec.api.transform.metadata.ColumnMetaData;
+import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.writable.NullWritable;
 import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;

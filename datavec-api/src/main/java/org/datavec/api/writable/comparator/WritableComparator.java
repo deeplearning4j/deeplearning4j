@@ -16,9 +16,9 @@
 
 package org.datavec.api.writable.comparator;
 
+import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
-import org.datavec.api.writable.Writable;
 
 import java.io.Serializable;
 import java.util.Comparator;

@@ -16,11 +16,11 @@
 
 package org.datavec.api.transform.transform.integer;
 
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.IntWritable;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * Replace an empty/missing integer with a certain value.

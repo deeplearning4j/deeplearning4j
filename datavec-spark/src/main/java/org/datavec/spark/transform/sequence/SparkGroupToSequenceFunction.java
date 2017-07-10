@@ -18,9 +18,8 @@ package org.datavec.spark.transform.sequence;
 
 import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.function.Function;
-import org.datavec.api.writable.Writable;
 import org.datavec.api.transform.sequence.SequenceComparator;
-import scala.Tuple2;
+import org.datavec.api.writable.Writable;
 
 import java.util.ArrayList;
 import java.util.Collections;

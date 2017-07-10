@@ -18,7 +18,6 @@ package org.datavec.api.transform.reduce;
 
 import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
-import org.datavec.api.transform.ops.AggregableMultiOp;
 import org.datavec.api.transform.ops.IAggregableReduceOp;
 import org.datavec.api.writable.Writable;
 

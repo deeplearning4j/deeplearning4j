@@ -70,27 +70,89 @@ public abstract class AbstractMapFileWriter<T> {
     protected SequenceFile.Writer.Option[] opts;
 
 
+    /**
+     * Constructor for all default values. Single output MapFile, no text writable conversion, default index
+     * interval (1), default naming pattern.
+     *
+     * @param outputDir           Output directory for the map file(s)
+     */
     public AbstractMapFileWriter(File outputDir) {
         this(outputDir, DEFAULT_MAP_FILE_SPLIT_SIZE);
     }
 
+    /**
+     *
+     * Constructor for most default values. Specified number of output MapFile s, no text writable conversion, default
+     * index interval (1), default naming pattern.
+     *
+     * @param outputDir           Output directory for the map file(s)
+     * @param mapFileSplitSize    Split size for the map file: if 0, use a single map file for all output. If > 0,
+     *                            multiple map files will be used: each will contain a maximum of mapFileSplitSize.
+     *                            This can be used to avoid having a single multi gigabyte map file, which may be
+     *                            undesirable in some cases (transfer across the network, for example)
+     */
     public AbstractMapFileWriter(@NonNull File outputDir, int mapFileSplitSize) {
         this(outputDir, mapFileSplitSize, null);
     }
 
+    /**
+     *
+     * @param outputDir           Output directory for the map file(s)
+     * @param convertTextTo       If null: Make no changes to Text writable objects. If non-null, Text writable instances
+     *                            will be converted to this type. This is useful, when would rather store numerical values
+     *                            even if the original record reader produces strings/text.
+     */
     public AbstractMapFileWriter(@NonNull File outputDir, WritableType convertTextTo) {
         this(outputDir, DEFAULT_MAP_FILE_SPLIT_SIZE, convertTextTo);
     }
 
+    /**
+     *
+     * @param outputDir           Output directory for the map file(s)
+     * @param mapFileSplitSize    Split size for the map file: if 0, use a single map file for all output. If > 0,
+     *                            multiple map files will be used: each will contain a maximum of mapFileSplitSize.
+     *                            This can be used to avoid having a single multi gigabyte map file, which may be
+     *                            undesirable in some cases (transfer across the network, for example)
+     * @param convertTextTo       If null: Make no changes to Text writable objects. If non-null, Text writable instances
+     *                            will be converted to this type. This is useful, when would rather store numerical values
+     *                            even if the original record reader produces strings/text.
+     */
     public AbstractMapFileWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo) {
         this(outputDir, mapFileSplitSize, convertTextTo, DEFAULT_INDEX_INTERVAL, new org.apache.hadoop.conf.Configuration());
     }
 
+    /**
+     *
+     * @param outputDir           Output directory for the map file(s)
+     * @param mapFileSplitSize    Split size for the map file: if 0, use a single map file for all output. If > 0,
+     *                            multiple map files will be used: each will contain a maximum of mapFileSplitSize.
+     *                            This can be used to avoid having a single multi gigabyte map file, which may be
+     *                            undesirable in some cases (transfer across the network, for example)
+     * @param convertTextTo       If null: Make no changes to Text writable objects. If non-null, Text writable instances
+     *                            will be converted to this type. This is useful, when would rather store numerical values
+     *                            even if the original record reader produces strings/text.
+     * @param indexInterval       Index interval for the Map file. Defaults to 1, which is suitable for most cases
+     * @param hadoopConfiguration Hadoop configuration.
+     */
     public AbstractMapFileWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo,
                                  int indexInterval, org.apache.hadoop.conf.Configuration hadoopConfiguration) {
         this(outputDir, mapFileSplitSize, convertTextTo, indexInterval, DEFAULT_FILENAME_PATTERN, hadoopConfiguration);
     }
 
+    /**
+     *
+     * @param outputDir           Output directory for the map file(s)
+     * @param mapFileSplitSize    Split size for the map file: if 0, use a single map file for all output. If > 0,
+     *                            multiple map files will be used: each will contain a maximum of mapFileSplitSize.
+     *                            This can be used to avoid having a single multi gigabyte map file, which may be
+     *                            undesirable in some cases (transfer across the network, for example)
+     * @param convertTextTo       If null: Make no changes to Text writable objects. If non-null, Text writable instances
+     *                            will be converted to this type. This is useful, when would rather store numerical values
+     *                            even if the original record reader produces strings/text.
+     * @param indexInterval       Index interval for the Map file. Defaults to 1, which is suitable for most cases
+     * @param filenamePattern     The naming pattern for the map files. Used with String.format(pattern, int)
+     * @param hadoopConfiguration Hadoop configuration.
+     */
     public AbstractMapFileWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo,
                                  int indexInterval, String filenamePattern,
                                  org.apache.hadoop.conf.Configuration hadoopConfiguration) {

@@ -1,11 +1,11 @@
 package org.datavec.dataframe.store;
 
-import org.datavec.dataframe.api.Table;
+import org.apache.commons.math3.random.RandomDataGenerator;
+import org.datavec.dataframe.api.FloatColumn;
 import org.datavec.dataframe.api.IntColumn;
+import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.testutil.DirectoryUtils;
 import org.datavec.dataframe.testutil.NanoBench;
-import org.datavec.dataframe.api.FloatColumn;
-import org.apache.commons.math3.random.RandomDataGenerator;
 import org.junit.Test;
 
 import java.io.File;

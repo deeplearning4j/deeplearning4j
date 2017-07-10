@@ -1,11 +1,8 @@
 package org.datavec.api.transform.ops;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-
-import java.util.Collections;
 
 /**
  * Groups useful {@link IAggregableReduceOp} utilities on Strings

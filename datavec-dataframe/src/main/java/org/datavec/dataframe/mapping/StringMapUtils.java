@@ -1,10 +1,10 @@
 package org.datavec.dataframe.mapping;
 
+import com.google.common.base.Strings;
+import org.apache.commons.lang3.StringUtils;
 import org.datavec.dataframe.api.CategoryColumn;
 import org.datavec.dataframe.api.FloatColumn;
 import org.datavec.dataframe.columns.Column;
-import com.google.common.base.Strings;
-import org.apache.commons.lang3.StringUtils;
 
 /**
  *

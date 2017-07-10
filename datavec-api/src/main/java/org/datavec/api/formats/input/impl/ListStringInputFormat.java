@@ -16,11 +16,11 @@
 
 package org.datavec.api.formats.input.impl;
 
-import org.datavec.api.split.InputSplit;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.formats.input.InputFormat;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.impl.collection.ListStringRecordReader;
+import org.datavec.api.split.InputSplit;
 import org.datavec.api.writable.WritableType;
 
 import java.io.DataInput;

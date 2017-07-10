@@ -1,10 +1,10 @@
 package org.datavec.dataframe.io.csv;
 
+import com.opencsv.CSVWriter;
+import net.jcip.annotations.Immutable;
 import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.columns.Column;
-import com.opencsv.CSVWriter;
 
-import net.jcip.annotations.Immutable;
 import java.io.FileWriter;
 import java.io.IOException;
 

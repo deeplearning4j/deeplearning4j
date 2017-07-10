@@ -1,11 +1,6 @@
 package org.datavec.dataframe.filtering;
 
-import org.datavec.dataframe.api.ColumnType;
-import org.datavec.dataframe.api.FloatColumn;
-import org.datavec.dataframe.api.IntColumn;
-import org.datavec.dataframe.api.LongColumn;
-import org.datavec.dataframe.api.ShortColumn;
-import org.datavec.dataframe.api.Table;
+import org.datavec.dataframe.api.*;
 import org.datavec.dataframe.columns.Column;
 import org.datavec.dataframe.columns.ColumnReference;
 import org.datavec.dataframe.util.Selection;

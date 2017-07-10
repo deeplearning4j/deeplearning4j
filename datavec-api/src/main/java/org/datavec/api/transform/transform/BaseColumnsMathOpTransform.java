@@ -17,18 +17,18 @@
 package org.datavec.api.transform.transform;
 
 import lombok.Data;
-import org.datavec.api.transform.ColumnOp;
-import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
-import org.nd4j.shade.jackson.annotation.JsonInclude;
 import lombok.EqualsAndHashCode;
+import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.transform.doubletransform.DoubleMathOpTransform;
 import org.datavec.api.transform.transform.integer.IntegerMathOpTransform;
 import org.datavec.api.transform.transform.longtransform.LongMathOpTransform;
-import org.datavec.api.transform.transform.doubletransform.DoubleMathOpTransform;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
 
 import java.util.ArrayList;
 import java.util.Arrays;

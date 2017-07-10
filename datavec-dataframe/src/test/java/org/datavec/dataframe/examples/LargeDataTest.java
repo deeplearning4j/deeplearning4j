@@ -1,19 +1,14 @@
 package org.datavec.dataframe.examples;
 
-import org.datavec.dataframe.api.Table;
+import com.google.common.base.Stopwatch;
+import io.codearte.jfairy.Fairy;
+import io.codearte.jfairy.producer.person.Person;
 import org.datavec.dataframe.TestDataUtil;
-import org.datavec.dataframe.api.ColumnType;
-import org.datavec.dataframe.api.CategoryColumn;
-import org.datavec.dataframe.api.DateColumn;
+import org.datavec.dataframe.api.*;
 import org.datavec.dataframe.columns.packeddata.PackedLocalDate;
 import org.datavec.dataframe.io.csv.CsvReader;
 import org.datavec.dataframe.io.csv.CsvWriter;
 import org.datavec.dataframe.store.StorageManager;
-import org.datavec.dataframe.api.BooleanColumn;
-import org.datavec.dataframe.api.ShortColumn;
-import com.google.common.base.Stopwatch;
-import io.codearte.jfairy.Fairy;
-import io.codearte.jfairy.producer.person.Person;
 
 import java.time.LocalDate;
 import java.util.concurrent.TimeUnit;

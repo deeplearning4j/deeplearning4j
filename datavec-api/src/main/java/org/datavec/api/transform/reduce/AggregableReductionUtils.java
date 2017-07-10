@@ -16,14 +16,14 @@
 
 package org.datavec.api.transform.reduce;
 
-import org.apache.commons.math3.stat.descriptive.moment.StandardDeviation;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.ReduceOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.ops.*;
-import org.datavec.api.writable.*;
+import org.datavec.api.writable.Writable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Various utilities for performing reductions

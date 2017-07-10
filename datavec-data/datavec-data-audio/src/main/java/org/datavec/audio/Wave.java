@@ -17,14 +17,16 @@
 package org.datavec.audio;
 
 
-
+import org.datavec.audio.extension.NormalizedSampleAmplitudes;
 import org.datavec.audio.extension.Spectrogram;
 import org.datavec.audio.fingerprint.FingerprintManager;
 import org.datavec.audio.fingerprint.FingerprintSimilarity;
 import org.datavec.audio.fingerprint.FingerprintSimilarityComputer;
-import org.datavec.audio.extension.NormalizedSampleAmplitudes;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Serializable;
 
 /**
  * Read WAVE headers and data from wave input stream

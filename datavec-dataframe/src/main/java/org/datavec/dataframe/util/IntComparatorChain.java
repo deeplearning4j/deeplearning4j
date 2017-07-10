@@ -7,11 +7,7 @@ package org.datavec.dataframe.util;
 import it.unimi.dsi.fastutil.ints.IntComparator;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class IntComparatorChain implements IntComparator, Serializable {
 

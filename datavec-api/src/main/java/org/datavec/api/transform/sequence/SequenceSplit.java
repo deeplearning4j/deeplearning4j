@@ -16,13 +16,13 @@
 
 package org.datavec.api.transform.sequence;
 
-import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
-import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.sequence.split.SequenceSplitTimeSeparation;
 import org.datavec.api.transform.sequence.split.SplitMaxLengthSequence;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 import java.util.List;

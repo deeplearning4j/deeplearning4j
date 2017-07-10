@@ -16,8 +16,6 @@
 
 package org.datavec.api.split;
 
-import org.nd4j.linalg.collection.CompactHeapStringList;
-
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;

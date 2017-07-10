@@ -16,8 +16,6 @@
 
 package org.datavec.codec.reader;
 
-import static org.junit.Assert.*;
-
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.SequenceRecord;
 import org.datavec.api.records.metadata.RecordMetaData;
@@ -32,9 +30,11 @@ import org.junit.Test;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Adam Gibson

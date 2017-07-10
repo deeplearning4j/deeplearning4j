@@ -1,5 +1,9 @@
 package org.datavec.dataframe.api;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import it.unimi.dsi.fastutil.ints.*;
+import org.apache.commons.lang3.RandomUtils;
 import org.datavec.dataframe.columns.Column;
 import org.datavec.dataframe.filtering.Filter;
 import org.datavec.dataframe.io.csv.CsvReader;
@@ -7,15 +11,7 @@ import org.datavec.dataframe.io.csv.CsvWriter;
 import org.datavec.dataframe.io.html.HtmlTableWriter;
 import org.datavec.dataframe.io.jdbc.SqlResultSetReader;
 import org.datavec.dataframe.reducing.NumericReduceFunction;
-import org.datavec.dataframe.reducing.functions.Count;
-import org.datavec.dataframe.reducing.functions.Maximum;
-import org.datavec.dataframe.reducing.functions.Mean;
-import org.datavec.dataframe.reducing.functions.Median;
-import org.datavec.dataframe.reducing.functions.Minimum;
-import org.datavec.dataframe.reducing.functions.StandardDeviation;
-import org.datavec.dataframe.reducing.functions.Sum;
-import org.datavec.dataframe.reducing.functions.SummaryFunction;
-import org.datavec.dataframe.reducing.functions.Variance;
+import org.datavec.dataframe.reducing.functions.*;
 import org.datavec.dataframe.sorting.Sort;
 import org.datavec.dataframe.store.StorageManager;
 import org.datavec.dataframe.store.TableMetadata;
@@ -27,25 +23,12 @@ import org.datavec.dataframe.util.BitmapBackedSelection;
 import org.datavec.dataframe.util.IntComparatorChain;
 import org.datavec.dataframe.util.ReversingIntComparator;
 import org.datavec.dataframe.util.Selection;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntArrays;
-import it.unimi.dsi.fastutil.ints.IntComparator;
-import it.unimi.dsi.fastutil.ints.IntIterable;
-import it.unimi.dsi.fastutil.ints.IntIterator;
-import org.apache.commons.lang3.RandomUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**

@@ -16,16 +16,16 @@
 
 package org.datavec.api.transform.transform.string;
 
-import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
+import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.transform.BaseTransform;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
-import org.datavec.api.transform.metadata.ColumnMetaData;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.*;
 

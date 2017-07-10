@@ -1,29 +1,14 @@
 package org.datavec.dataframe.util.collections;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.collect.*;
+import edu.umd.cs.findbugs.annotations.Nullable;
+
+import java.util.*;
+import java.util.Map.Entry;
+
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-
-import com.google.common.base.MoreObjects;
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.BoundType;
-import com.google.common.collect.ForwardingCollection;
-import com.google.common.collect.ImmutableSortedMap;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.PeekingIterator;
-
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NavigableMap;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.TreeMap;
-
-import edu.umd.cs.findbugs.annotations.Nullable;
 
 /**
  * An implementation of {@link IntRangeSet} backed by a {@link TreeMap}.

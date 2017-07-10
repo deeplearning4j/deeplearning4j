@@ -1,13 +1,14 @@
 package org.datavec.dataframe.api;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.datavec.dataframe.filtering.Filter;
 import org.datavec.dataframe.filtering.IntPredicate;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.datavec.dataframe.api.QueryHelper.column;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  *  Tests for int columns

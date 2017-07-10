@@ -16,20 +16,21 @@
 
 package org.datavec.hadoop.records.reader;
 
+import org.datavec.api.conf.Configuration;
+import org.datavec.api.records.reader.impl.LineRecordReader;
+import org.datavec.api.split.InputSplit;
+import org.datavec.api.writable.DoubleWritable;
+import org.datavec.api.writable.Text;
+import org.datavec.api.writable.Writable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
 
-import org.datavec.api.conf.Configuration;
-import org.datavec.api.writable.DoubleWritable;
-import org.datavec.api.writable.Text;
-import org.datavec.api.records.reader.impl.LineRecordReader;
-import org.datavec.api.split.InputSplit;
 // import org.datavec.api.records.reader.impl.misc.SVMLightRecordReader;
-import org.datavec.api.writable.Writable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SVMLightRecordReader extends LineRecordReader {
 

@@ -17,15 +17,12 @@
 package org.datavec.hadoop.formats.input;
 
 
-
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.formats.input.BaseInputFormat;
 import org.datavec.api.records.reader.RecordReader;
-
 import org.datavec.api.split.InputSplit;
 import org.datavec.hadoop.records.reader.SVMLightRecordReader;
 
-import java.io.DataOutput;
 import java.io.IOException;
 
 /**

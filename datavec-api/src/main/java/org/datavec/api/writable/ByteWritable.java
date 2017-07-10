@@ -17,11 +17,13 @@
 package org.datavec.api.writable;
 
 
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.datavec.api.io.WritableComparable;
 import org.datavec.api.io.WritableComparator;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 
 /** A WritableComparable for a single byte. */
 public class ByteWritable implements WritableComparable {

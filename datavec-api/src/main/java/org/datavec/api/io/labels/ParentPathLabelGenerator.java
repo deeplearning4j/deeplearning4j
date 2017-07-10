@@ -15,11 +15,12 @@
  */
 package org.datavec.api.io.labels;
 
-import java.io.File;
-import java.net.URI;
 import org.apache.commons.io.FilenameUtils;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+
+import java.io.File;
+import java.net.URI;
 
 /**
  * Returns as label the base name of the parent file of the path (the directory).

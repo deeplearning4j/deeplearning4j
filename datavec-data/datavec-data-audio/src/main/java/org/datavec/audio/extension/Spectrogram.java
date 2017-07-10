@@ -17,9 +17,9 @@
 package org.datavec.audio.extension;
 
 
+import org.datavec.audio.Wave;
 import org.datavec.audio.dsp.FastFourierTransform;
 import org.datavec.audio.dsp.WindowFunction;
-import org.datavec.audio.Wave;
 
 /**
  * Handles the wave data in frequency-time domain.

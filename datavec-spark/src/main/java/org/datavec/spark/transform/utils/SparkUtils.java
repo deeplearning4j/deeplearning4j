@@ -16,24 +16,27 @@
 
 package org.datavec.spark.transform.utils;
 
-import org.apache.hadoop.conf.Configuration;
-import org.datavec.api.transform.analysis.DataAnalysis;
-import org.datavec.api.transform.schema.Schema;
 import org.apache.commons.io.IOUtils;
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.compress.CompressionCodec;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.datavec.api.transform.analysis.DataAnalysis;
+import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.split.RandomSplit;
 import org.datavec.api.transform.split.SplitStrategy;
-import org.apache.spark.api.java.JavaSparkContext;
 import org.datavec.api.transform.ui.HtmlAnalysis;
 import org.datavec.api.writable.*;
 
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Created by Alex on 7/03/2016.

@@ -16,7 +16,6 @@
 
 package org.datavec.api.transform.sequence.trim;
 
-import com.google.common.collect.Lists;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.schema.Schema;

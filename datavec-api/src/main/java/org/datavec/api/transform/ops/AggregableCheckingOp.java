@@ -2,12 +2,8 @@ package org.datavec.api.transform.ops;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NonNull;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.writable.Writable;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * A variant of {@link IAggregableReduceOp} exercised on a {@link Writable} that takes schema metadata

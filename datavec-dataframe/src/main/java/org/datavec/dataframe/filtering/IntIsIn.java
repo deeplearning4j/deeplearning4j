@@ -1,11 +1,11 @@
 package org.datavec.dataframe.filtering;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import org.datavec.dataframe.api.IntColumn;
 import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.columns.ColumnReference;
 import org.datavec.dataframe.util.Selection;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntSet;
 
 /**
  */

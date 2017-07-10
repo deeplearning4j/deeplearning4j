@@ -16,26 +16,28 @@
 
 package org.datavec.api.transform.ui;
 
-import org.nd4j.shade.jackson.databind.DeserializationFeature;
-import org.nd4j.shade.jackson.databind.MapperFeature;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
-import org.nd4j.shade.jackson.databind.SerializationFeature;
 import freemarker.template.Configuration;
 import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
 import freemarker.template.Version;
-import org.datavec.api.transform.analysis.columns.*;
-import org.datavec.api.transform.schema.Schema;
 import org.apache.commons.io.FileUtils;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.analysis.DataAnalysis;
+import org.datavec.api.transform.analysis.columns.*;
+import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.ui.components.RenderableComponentHistogram;
 import org.datavec.api.transform.ui.components.RenderableComponentTable;
 import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.nd4j.shade.jackson.databind.DeserializationFeature;
+import org.nd4j.shade.jackson.databind.MapperFeature;
+import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.SerializationFeature;
 
-import java.io.*;
+import java.io.File;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.util.*;
 
 /**

@@ -1,9 +1,8 @@
 package org.datavec.dataframe.util.collections;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.common.base.Equivalence;
 import com.google.common.collect.BoundType;
+import edu.umd.cs.findbugs.annotations.Nullable;
 import it.unimi.dsi.fastutil.ints.IntCollection;
 import it.unimi.dsi.fastutil.ints.IntIterator;
 import it.unimi.dsi.fastutil.ints.IntSortedSet;
@@ -11,7 +10,7 @@ import it.unimi.dsi.fastutil.ints.IntSortedSet;
 import java.util.NoSuchElementException;
 import java.util.SortedSet;
 
-import edu.umd.cs.findbugs.annotations.Nullable;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public final class IntRange {
 

@@ -1,9 +1,9 @@
 package org.datavec.dataframe.integration;
 
+import com.google.common.base.Stopwatch;
 import org.datavec.dataframe.api.ColumnType;
 import org.datavec.dataframe.api.Table;
 import org.datavec.dataframe.store.StorageManager;
-import com.google.common.base.Stopwatch;
 
 import java.util.concurrent.TimeUnit;
 

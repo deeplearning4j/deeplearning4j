@@ -1,7 +1,12 @@
 package org.datavec.dataframe.api;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import it.unimi.dsi.fastutil.floats.FloatArrayList;
+import it.unimi.dsi.fastutil.ints.*;
 import org.datavec.dataframe.columns.AbstractColumn;
 import org.datavec.dataframe.columns.Column;
+import org.datavec.dataframe.columns.IntColumnUtils;
 import org.datavec.dataframe.filtering.IntBiPredicate;
 import org.datavec.dataframe.filtering.IntPredicate;
 import org.datavec.dataframe.io.TypeUtils;
@@ -13,15 +18,6 @@ import org.datavec.dataframe.util.BitmapBackedSelection;
 import org.datavec.dataframe.util.ReverseIntComparator;
 import org.datavec.dataframe.util.Selection;
 import org.datavec.dataframe.util.Stats;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
-import it.unimi.dsi.fastutil.floats.FloatArrayList;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntArrays;
-import it.unimi.dsi.fastutil.ints.IntIterator;
-import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
-import it.unimi.dsi.fastutil.ints.IntSet;
-import org.datavec.dataframe.columns.IntColumnUtils;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;

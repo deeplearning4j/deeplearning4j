@@ -17,15 +17,17 @@
 package org.datavec.audio.fingerprint;
 
 
-
-import org.datavec.audio.processor.TopManyPointsProcessorChain;
-import org.datavec.audio.extension.Spectrogram;
-import org.datavec.audio.properties.FingerprintProperties;
 import org.datavec.audio.Wave;
 import org.datavec.audio.WaveHeader;
 import org.datavec.audio.dsp.Resampler;
+import org.datavec.audio.extension.Spectrogram;
+import org.datavec.audio.processor.TopManyPointsProcessorChain;
+import org.datavec.audio.properties.FingerprintProperties;
 
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;

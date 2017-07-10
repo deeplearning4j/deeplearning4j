@@ -16,20 +16,25 @@
 
 package org.datavec.api.split;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.filefilter.*;
+import org.apache.commons.io.filefilter.IOFileFilter;
+import org.apache.commons.io.filefilter.RegexFileFilter;
+import org.apache.commons.io.filefilter.SuffixFileFilter;
 import org.datavec.api.util.RandomUtils;
 import org.datavec.api.util.files.URIUtil;
 import org.datavec.api.writable.WritableType;
 import org.nd4j.linalg.collection.CompactHeapStringList;
 
-import java.io.*;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.Random;
 
 /**
  * File input split. Splits up a root directory in to files.

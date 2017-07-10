@@ -1,6 +1,11 @@
 package org.datavec.dataframe.api;
 
-import org.antlr.stringtemplate.language.Cat;
+import com.google.common.base.CharMatcher;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
+import it.unimi.dsi.fastutil.ints.*;
 import org.datavec.dataframe.columns.AbstractColumn;
 import org.datavec.dataframe.columns.CategoryColumnUtils;
 import org.datavec.dataframe.columns.Column;
@@ -12,18 +17,6 @@ import org.datavec.dataframe.store.ColumnMetadata;
 import org.datavec.dataframe.util.BitmapBackedSelection;
 import org.datavec.dataframe.util.DictionaryMap;
 import org.datavec.dataframe.util.Selection;
-import com.google.common.base.CharMatcher;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
-import it.unimi.dsi.fastutil.ints.Int2IntMap;
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.ints.IntArrays;
-import it.unimi.dsi.fastutil.ints.IntComparator;
-import it.unimi.dsi.fastutil.ints.IntListIterator;
 
 import java.nio.ByteBuffer;
 import java.util.*;

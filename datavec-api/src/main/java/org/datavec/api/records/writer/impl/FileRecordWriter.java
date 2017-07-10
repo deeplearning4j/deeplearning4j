@@ -18,13 +18,12 @@ package org.datavec.api.records.writer.impl;
 
 
 import org.datavec.api.conf.Configuration;
-import org.datavec.api.writable.Text;
 import org.datavec.api.records.writer.RecordWriter;
+import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
 import java.io.*;
 import java.nio.charset.Charset;
-import java.util.Collection;
 import java.util.List;
 
 /**

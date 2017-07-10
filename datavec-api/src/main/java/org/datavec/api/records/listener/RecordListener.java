@@ -15,9 +15,10 @@
  */
 package org.datavec.api.records.listener;
 
-import java.io.Serializable;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.writer.RecordWriter;
+
+import java.io.Serializable;
 
 /**
  * Each time a record is read or written, mainly used for debugging or visualization.

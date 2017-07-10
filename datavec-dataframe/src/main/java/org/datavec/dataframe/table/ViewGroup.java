@@ -1,5 +1,8 @@
 package org.datavec.dataframe.table;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
 import org.datavec.dataframe.api.CategoryColumn;
 import org.datavec.dataframe.api.FloatColumn;
 import org.datavec.dataframe.api.Table;
@@ -8,9 +11,6 @@ import org.datavec.dataframe.reducing.NumericReduceFunction;
 import org.datavec.dataframe.reducing.NumericSummaryTable;
 import org.datavec.dataframe.util.BitmapBackedSelection;
 import org.datavec.dataframe.util.Selection;
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Splitter;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;

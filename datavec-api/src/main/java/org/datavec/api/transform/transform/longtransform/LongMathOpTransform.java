@@ -16,13 +16,13 @@
 
 package org.datavec.api.transform.transform.longtransform;
 
-import org.nd4j.shade.jackson.annotation.JsonProperty;
-import org.datavec.api.writable.LongWritable;
 import org.datavec.api.transform.MathOp;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.metadata.LongMetaData;
 import org.datavec.api.transform.transform.BaseColumnTransform;
+import org.datavec.api.writable.LongWritable;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * Long mathematical operation.<br>

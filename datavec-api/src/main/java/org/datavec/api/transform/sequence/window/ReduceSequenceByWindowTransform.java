@@ -16,16 +16,16 @@
 
 package org.datavec.api.transform.sequence.window;
 
+import lombok.EqualsAndHashCode;
+import org.datavec.api.transform.Transform;
+import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.ops.IAggregableReduceOp;
+import org.datavec.api.transform.reduce.IAssociativeReducer;
+import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.schema.SequenceSchema;
+import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
-import lombok.EqualsAndHashCode;
-import org.datavec.api.transform.metadata.ColumnMetaData;
-import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.writable.Writable;
-import org.datavec.api.transform.Transform;
-import org.datavec.api.transform.reduce.IAssociativeReducer;
-import org.datavec.api.transform.schema.SequenceSchema;
 
 import java.util.ArrayList;
 import java.util.List;

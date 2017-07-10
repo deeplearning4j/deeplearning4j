@@ -16,7 +16,9 @@
 
 package org.datavec.api.io;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.DataInput;
+import java.io.DataInputStream;
 
 /** A reusable {@link DataInput} implementation that reads from an in-memory
  * buffer.

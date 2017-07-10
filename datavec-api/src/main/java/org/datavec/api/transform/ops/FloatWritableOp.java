@@ -4,8 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.datavec.api.writable.Writable;
 
-import java.util.List;
-
 /**
  * This class converts an {@link IAggregableReduceOp} operating on a Float to one operating
  * on {@link Writable} instances. It's expected this will only work if that {@link Writable}

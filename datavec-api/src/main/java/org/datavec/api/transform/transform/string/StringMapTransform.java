@@ -16,11 +16,11 @@
 
 package org.datavec.api.transform.transform.string;
 
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Map;
 

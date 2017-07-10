@@ -1,46 +1,17 @@
 package org.datavec.dataframe.store;
 
-import org.datavec.dataframe.api.BooleanColumn;
-import org.datavec.dataframe.api.CategoryColumn;
-import org.datavec.dataframe.api.DateColumn;
-import org.datavec.dataframe.api.DateTimeColumn;
-import org.datavec.dataframe.api.FloatColumn;
-import org.datavec.dataframe.api.IntColumn;
-import org.datavec.dataframe.api.LongColumn;
-import org.datavec.dataframe.api.ShortColumn;
-import org.datavec.dataframe.api.Table;
-import org.datavec.dataframe.api.TimeColumn;
+import org.datavec.dataframe.api.*;
 import org.datavec.dataframe.columns.Column;
 import org.datavec.dataframe.table.Relation;
 import org.iq80.snappy.SnappyFramedInputStream;
 import org.iq80.snappy.SnappyFramedOutputStream;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.EOFException;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.concurrent.CompletionService;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.nio.file.*;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.regex.Pattern;
 
 /**

@@ -1,23 +1,13 @@
 package org.datavec.dataframe.table;
 
-import org.datavec.dataframe.api.BooleanColumn;
-import org.datavec.dataframe.api.CategoryColumn;
-import org.datavec.dataframe.api.DateColumn;
-import org.datavec.dataframe.api.DateTimeColumn;
-import org.datavec.dataframe.api.FloatColumn;
-import org.datavec.dataframe.api.IntColumn;
-import org.datavec.dataframe.api.LongColumn;
-import org.datavec.dataframe.api.NumericColumn;
-import org.datavec.dataframe.api.ShortColumn;
-import org.datavec.dataframe.api.Table;
-import org.datavec.dataframe.api.TimeColumn;
+import it.unimi.dsi.fastutil.ints.IntIterable;
+import it.unimi.dsi.fastutil.ints.IntIterator;
+import org.apache.commons.lang3.StringUtils;
+import org.datavec.dataframe.api.*;
 import org.datavec.dataframe.columns.Column;
 import org.datavec.dataframe.reducing.NumericReduceFunction;
 import org.datavec.dataframe.util.BitmapBackedSelection;
 import org.datavec.dataframe.util.Selection;
-import it.unimi.dsi.fastutil.ints.IntIterable;
-import it.unimi.dsi.fastutil.ints.IntIterator;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;

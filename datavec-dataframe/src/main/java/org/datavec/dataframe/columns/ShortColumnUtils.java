@@ -1,9 +1,9 @@
 package org.datavec.dataframe.columns;
 
+import it.unimi.dsi.fastutil.shorts.ShortIterable;
 import org.datavec.dataframe.api.ShortColumn;
 import org.datavec.dataframe.filtering.ShortBiPredicate;
 import org.datavec.dataframe.filtering.ShortPredicate;
-import it.unimi.dsi.fastutil.shorts.ShortIterable;
 
 /**
  *

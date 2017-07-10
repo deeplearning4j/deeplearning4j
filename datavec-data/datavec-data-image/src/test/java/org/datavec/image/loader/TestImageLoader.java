@@ -16,11 +16,12 @@
 
 package org.datavec.image.loader;
 
+import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.awt.image.BufferedImage;
 import java.util.Random;
-import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 
 

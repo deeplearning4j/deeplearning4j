@@ -16,12 +16,12 @@
 
 package org.datavec.api.transform.sequence.comparator;
 
-import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
-import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.writable.Writable;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * Sequence comparator: compare elements in a sequence using the values in a single column
