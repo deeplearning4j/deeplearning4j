@@ -75,6 +75,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A ComputationGraph network is a neural network with arbitrary (directed acyclic graph) connection structure.
@@ -186,6 +187,15 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     public long getLastEtlTime() {
         Long time = lastEtlTime.get();
         return time == null ? 0L : time;
+    }
+
+    public void setCacheMode(CacheMode mode) {
+        if (mode == null)
+            mode = CacheMode.NONE;
+
+        for (Layer layer: layers) {
+            layer.setCacheMode(mode);
+        }
     }
 
     public ComputationGraphConfiguration getConfiguration() {
@@ -2989,6 +2999,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                                                         workspaceConfigurationExternal, workspaceExternal);
 
+        AtomicInteger cnt = new AtomicInteger(0);
 
         while (iter.hasNext()) {
             MultiDataSet next = iter.next();
@@ -3015,6 +3026,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
 
             clearLayerMaskArrays();
+
+//            if (cnt.incrementAndGet() % 5 == 0)
+//                Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
+            //else
+
+            log.info("Iteration {} passed\n", cnt.get());
+            Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
         }
 
         if (iterator.asyncSupported())

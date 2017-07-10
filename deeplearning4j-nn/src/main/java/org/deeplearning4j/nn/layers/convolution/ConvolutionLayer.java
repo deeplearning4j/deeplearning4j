@@ -387,6 +387,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if (input == null) {
             throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
         }
+
+        if (cacheMode == null)
+            cacheMode = CacheMode.NONE;
+
         applyDropOutIfNecessary(training);
 
         INDArray z = preOutput(training);

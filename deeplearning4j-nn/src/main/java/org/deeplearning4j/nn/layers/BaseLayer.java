@@ -79,6 +79,14 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         this.input = input;
     }
 
+    @Override
+    public void setCacheMode(CacheMode mode) {
+        if (mode == null)
+            mode = CacheMode.NONE;
+
+        this.cacheMode = mode;
+    }
+
     protected LayerConfT layerConf() {
         return (LayerConfT) this.conf.getLayer();
     }
