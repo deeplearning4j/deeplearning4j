@@ -49,7 +49,18 @@ public class MapFileRecordWriter extends AbstractMapFileWriter<List<Writable>> i
 
     public MapFileRecordWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo,
                                        org.apache.hadoop.conf.Configuration hadoopConfiguration) {
-        super(outputDir, mapFileSplitSize, convertTextTo, hadoopConfiguration);
+        super(outputDir, mapFileSplitSize, convertTextTo, DEFAULT_INDEX_INTERVAL, hadoopConfiguration);
+    }
+
+    public MapFileRecordWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo,
+                               int indexInterval, org.apache.hadoop.conf.Configuration hadoopConfiguration) {
+        super(outputDir, mapFileSplitSize, convertTextTo, indexInterval, hadoopConfiguration);
+    }
+
+    public MapFileRecordWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo,
+                                       int indexInterval, String filenamePattern,
+                                       org.apache.hadoop.conf.Configuration hadoopConfiguration) {
+        super(outputDir, mapFileSplitSize, convertTextTo, indexInterval, filenamePattern, hadoopConfiguration);
     }
 
     @Override

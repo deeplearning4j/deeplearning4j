@@ -32,18 +32,32 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Created by Alex on 07/07/2017.
+ * An abstract class For creating Hadoop map files, that underlies {@link MapFileRecordWriter} and
+ * {@link MapFileSequenceRecordWriter}.
+ *
+ * @author Alex Black
  */
 public abstract class AbstractMapFileWriter<T> {
 
     public static final String DEFAULT_FILENAME_PATTERN = "part-r-%1$05d";
     public static final Class<? extends WritableComparable> KEY_CLASS = org.apache.hadoop.io.LongWritable.class;
 
+    /**
+     * Configuration key for the map file interval.
+     * This is defined in MapFile.Writer.INDEX_INTERVAL but unfortunately that field is private, hence cannot be
+     * referenced here.
+     */
+    public static final String MAP_FILE_INDEX_INTERVAL_KEY = "io.map.index.interval";
+
     public static final int DEFAULT_MAP_FILE_SPLIT_SIZE = -1;
+    public static final int DEFAULT_INDEX_INTERVAL = 1;
 
     protected final File outputDir;
     protected final int mapFileSplitSize;
     protected final WritableType convertTextTo;
+    protected final int indexInterval;
+    protected final String filenamePattern;
+    protected org.apache.hadoop.conf.Configuration hadoopConfiguration;
 
     protected final AtomicLong counter = new AtomicLong();
     protected final AtomicBoolean isClosed = new AtomicBoolean();
@@ -51,7 +65,7 @@ public abstract class AbstractMapFileWriter<T> {
     protected List<File> outputFiles = new ArrayList<>();
     protected List<MapFile.Writer> writers = new ArrayList<>();
 
-    protected org.apache.hadoop.conf.Configuration hadoopConfiguration;
+
 
     protected SequenceFile.Writer.Option[] opts;
 
@@ -69,19 +83,33 @@ public abstract class AbstractMapFileWriter<T> {
     }
 
     public AbstractMapFileWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo) {
-        this(outputDir, mapFileSplitSize, convertTextTo,  new org.apache.hadoop.conf.Configuration());
+        this(outputDir, mapFileSplitSize, convertTextTo, DEFAULT_INDEX_INTERVAL, new org.apache.hadoop.conf.Configuration());
     }
 
     public AbstractMapFileWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo,
+                                 int indexInterval, org.apache.hadoop.conf.Configuration hadoopConfiguration) {
+        this(outputDir, mapFileSplitSize, convertTextTo, indexInterval, DEFAULT_FILENAME_PATTERN, hadoopConfiguration);
+    }
+
+    public AbstractMapFileWriter(@NonNull File outputDir, int mapFileSplitSize, WritableType convertTextTo,
+                                 int indexInterval, String filenamePattern,
                                  org.apache.hadoop.conf.Configuration hadoopConfiguration) {
+        if(indexInterval <= 0){
+            throw new UnsupportedOperationException("Index interval: must be >= 0 (got: " + indexInterval + ")");
+        }
         this.outputDir = outputDir;
         this.mapFileSplitSize = mapFileSplitSize;
         if (convertTextTo == WritableType.Text) {
             convertTextTo = null;
         }
         this.convertTextTo = convertTextTo;
+        this.indexInterval = indexInterval;
+        this.filenamePattern = filenamePattern;
 
         this.hadoopConfiguration = hadoopConfiguration;
+        if(this.hadoopConfiguration.get(MAP_FILE_INDEX_INTERVAL_KEY) != null){
+            this.hadoopConfiguration.set(MAP_FILE_INDEX_INTERVAL_KEY, String.valueOf(indexInterval));
+        }
 
         opts = new SequenceFile.Writer.Option[]{MapFile.Writer.keyClass(KEY_CLASS),
                 SequenceFile.Writer.valueClass(getValueClass())};
