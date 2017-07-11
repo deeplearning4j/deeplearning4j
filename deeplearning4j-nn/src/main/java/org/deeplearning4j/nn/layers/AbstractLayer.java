@@ -250,7 +250,9 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public void setParamsViewArray(INDArray params) {
-        throw new UnsupportedOperationException("Not supported");
+        if(params != null){
+            throw new UnsupportedOperationException("Not supported");
+        }
     }
 
     @Override
@@ -267,7 +269,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
-        if(paramTable != null){
+        if(paramTable != null && !paramTable.isEmpty()){
             throw new UnsupportedOperationException("Not supported");
         }
     }
@@ -284,7 +286,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public Map<String, INDArray> paramTable(boolean backpropParamsOnly) {
-        throw new UnsupportedOperationException("Not supported");
+        return null;
     }
 
     @Override

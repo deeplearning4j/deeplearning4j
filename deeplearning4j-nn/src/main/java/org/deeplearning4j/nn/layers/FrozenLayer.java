@@ -41,9 +41,11 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
         }
         this.insideLayer = insideLayer;
         this.zeroGradient = new DefaultGradient(insideLayer.params());
-        for (String paramType : insideLayer.paramTable().keySet()) {
-            //save memory??
-            zeroGradient.setGradientFor(paramType, null);
+        if(insideLayer.paramTable() != null) {
+            for (String paramType : insideLayer.paramTable().keySet()) {
+                //save memory??
+                zeroGradient.setGradientFor(paramType, null);
+            }
         }
     }
 

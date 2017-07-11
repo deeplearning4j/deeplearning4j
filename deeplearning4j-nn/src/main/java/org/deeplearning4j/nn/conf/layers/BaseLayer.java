@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.*;
@@ -46,6 +47,7 @@ import java.util.Map;
  * A neural network layer.
  */
 @Data
+@EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 public abstract class BaseLayer extends Layer implements Serializable, Cloneable {
     protected IActivation activationFn;
