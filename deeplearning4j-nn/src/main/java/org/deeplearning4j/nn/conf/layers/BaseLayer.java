@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.activations.Activation;
@@ -64,7 +65,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
     protected double l2;
     protected double l1Bias;
     protected double l2Bias;
-    protected double dropOut;
     @Deprecated
     protected Updater updater;
     protected IUpdater iUpdater;
@@ -100,7 +100,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.l2 = builder.l2;
         this.l1Bias = builder.l1Bias;
         this.l2Bias = builder.l2Bias;
-        this.dropOut = builder.dropOut;
         this.updater = builder.updater;
         this.iUpdater = builder.iupdater;
         this.rho = builder.rho;
@@ -131,7 +130,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         this.setMomentumSchedule(null);
         this.setL1(Double.NaN);
         this.setL2(Double.NaN);
-        this.setDropOut(Double.NaN);
         this.setRho(Double.NaN);
         this.setEpsilon(Double.NaN);
         this.setRmsDecay(Double.NaN);
@@ -196,7 +194,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
         protected double l2 = Double.NaN;
         protected double l1Bias = Double.NaN;
         protected double l2Bias = Double.NaN;
-        protected double dropOut = Double.NaN;
         @Deprecated
         protected Updater updater = null;
         protected IUpdater iupdater = null;
@@ -315,15 +312,6 @@ public abstract class BaseLayer extends Layer implements Serializable, Cloneable
          */
         public T l2Bias(double l2Bias) {
             this.l2Bias = l2Bias;
-            return (T) this;
-        }
-
-        /**
-         * Dropout. Value is probability of retaining an activation - thus 1.0 is equivalent to no dropout.
-         * Note that 0.0 (the default) disables dropout.
-         */
-        public T dropOut(double dropOut) {
-            this.dropOut = dropOut;
             return (T) this;
         }
 

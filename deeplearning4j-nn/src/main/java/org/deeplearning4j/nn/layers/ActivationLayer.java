@@ -66,7 +66,7 @@ public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        INDArray delta = conf().getLayer().getActivationFn().backprop(input.dup(), epsilon).getFirst(); //TODO handle activation function params
+        INDArray delta = layerConf().getActivationFn().backprop(input.dup(), epsilon).getFirst(); //TODO handle activation function params
 
         if (maskArray != null) {
             delta.muliColumnVector(maskArray);
@@ -91,7 +91,7 @@ public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
             in = input;
         }
         //return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), in));
-        return conf().getLayer().getActivationFn().getActivation(in, training);
+        return layerConf().getActivationFn().getActivation(in, training);
 
     }
 

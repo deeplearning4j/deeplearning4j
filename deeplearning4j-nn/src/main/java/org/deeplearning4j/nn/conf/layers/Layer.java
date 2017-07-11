@@ -70,10 +70,12 @@ import java.util.Map;
 @NoArgsConstructor
 public abstract class Layer implements Serializable, Cloneable {
     protected String layerName;
+    protected double dropOut;
 
 
     public Layer(Builder builder) {
         this.layerName = builder.layerName;
+        this.dropOut = builder.dropOut;
     }
 
     /**
@@ -83,7 +85,7 @@ public abstract class Layer implements Serializable, Cloneable {
      */
     public void resetLayerDefaultConfig() {
         //clear the learning related params for all layers in the origConf and set to defaults
-        //Currently no-op: don't change layer name
+        this.setDropOut(Double.NaN);
     }
 
     @Override
@@ -201,6 +203,7 @@ public abstract class Layer implements Serializable, Cloneable {
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> {
         protected String layerName = null;
+        protected double dropOut = Double.NaN;
 
         /**
          * Layer name assigns layer string name.
@@ -211,6 +214,14 @@ public abstract class Layer implements Serializable, Cloneable {
             return (T) this;
         }
 
+        /**
+         * Dropout. Value is probability of retaining an activation - thus 1.0 is equivalent to no dropout.
+         * Note that 0.0 (the default) disables dropout.
+         */
+        public T dropOut(double dropOut) {
+            this.dropOut = dropOut;
+            return (T) this;
+        }
 
         public abstract <E extends Layer> E build();
     }

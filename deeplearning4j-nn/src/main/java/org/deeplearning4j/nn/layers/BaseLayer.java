@@ -45,34 +45,22 @@ import java.lang.reflect.Constructor;
 import java.util.*;
 
 /**
- * A layer with a bias
- * and activation function
+ * A layer with parameters
  * @author Adam Gibson
  */
-public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseLayer> implements Layer {
+public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseLayer> extends AbstractLayer<LayerConfT> {
 
-    protected INDArray input, preOutput;
     protected INDArray paramsFlattened;
     protected INDArray gradientsFlattened;
     protected Map<String, INDArray> params;
     protected transient Map<String, INDArray> gradientViews;
-    protected NeuralNetConfiguration conf;
-    protected INDArray dropoutMask;
-    protected boolean dropoutApplied = false;
     protected double score = 0.0;
     protected ConvexOptimizer optimizer;
     protected Gradient gradient;
-    protected Collection<IterationListener> iterationListeners = new ArrayList<>();
-    protected int index = 0;
-    protected INDArray maskArray;
-    protected MaskState maskState;
     protected Solver solver;
 
-    protected CacheMode cacheMode = CacheMode.NONE;
-
     public BaseLayer(NeuralNetConfiguration conf) {
-        this.conf = conf;
-        cacheMode = conf.getCacheMode();
+        super(conf);
     }
 
     public BaseLayer(NeuralNetConfiguration conf, INDArray input) {
@@ -80,81 +68,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         this.input = input;
     }
 
-    @Override
-    public void setCacheMode(CacheMode mode) {
-        if (mode == null)
-            mode = CacheMode.NONE;
-
-        this.cacheMode = mode;
-    }
-
     protected LayerConfT layerConf() {
         return (LayerConfT) this.conf.getLayer();
-    }
-
-    protected String layerId() {
-        String name = this.conf().getLayer().getLayerName();
-        return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + index + ")";
-    }
-
-    public INDArray getInput() {
-        return input;
-    }
-
-    /**
-     * Init the model
-     */
-    @Override
-    public void init() {
-
-    }
-
-    @Override
-    public void setInput(INDArray input) {
-        this.input = input;
-        dropoutApplied = false;
-    }
-
-    @Override
-    public int getIndex() {
-        return index;
-    }
-
-    @Override
-    public void setIndex(int index) {
-        this.index = index;
-    }
-
-
-    @Override
-    public Collection<IterationListener> getListeners() {
-        return iterationListeners;
-    }
-
-    @Override
-    public void setListeners(Collection<IterationListener> listeners) {
-        this.iterationListeners = listeners != null ? listeners : new ArrayList<IterationListener>();
-    }
-
-    /**
-     * This method ADDS additional IterationListener to existing listeners
-     *
-     * @param listeners
-     */
-    @Override
-    public void addListeners(IterationListener... listeners) {
-        if (this.iterationListeners == null) {
-            setListeners(listeners);
-            return;
-        }
-
-        for (IterationListener listener : listeners)
-            iterationListeners.add(listener);
-    }
-
-    @Override
-    public void setListeners(IterationListener... listeners) {
-        setListeners(Arrays.asList(listeners));
     }
 
     @Override
@@ -164,12 +79,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         INDArray wErrorSignal = errorSignal.mmul(W.transpose());
         nextLayerGradient.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, wErrorSignal);
         return nextLayerGradient;
-    }
-
-    @Override
-    @Deprecated
-    public INDArray derivativeActivation(INDArray input) {
-        throw new UnsupportedOperationException("Deprecated - " + layerId());
     }
 
     @Override

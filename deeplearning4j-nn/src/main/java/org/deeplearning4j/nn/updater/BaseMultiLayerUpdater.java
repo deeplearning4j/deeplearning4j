@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -313,11 +314,17 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      */
     public void preApply(Layer layer, Gradient gradient, int iteration) {
 
-        GradientNormalization normalization = layer.getLayer().getGradientNormalization();
+        if(!(layer.conf().getLayer() instanceof BaseLayer)){
+            //Layer does not have parameters -> no gradient
+            return;
+        }
+        BaseLayer bLayer = (BaseLayer)layer.conf().getLayer();
+
+        GradientNormalization normalization = bLayer.getGradientNormalization();
         if (normalization == null || normalization == GradientNormalization.None || layer.conf().isPretrain())
             return; //no op
 
-        final double threshold = layer.conf().getLayer().getGradientNormalizationThreshold();
+        final double threshold = bLayer.getGradientNormalizationThreshold();
         INDArray layerGradientView = layer.getGradientsViewArray();
 
         switch (normalization) {

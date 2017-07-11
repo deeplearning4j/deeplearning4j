@@ -35,6 +35,7 @@ import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
 import org.deeplearning4j.nn.conf.*;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -1422,7 +1423,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         IOutputLayer outputLayer = (IOutputLayer) getOutputLayer();
         if (labels == null)
             throw new IllegalStateException("No labels found");
-        if (outputLayer.conf().getLayer().getWeightInit() == WeightInit.ZERO) {
+        if (outputLayer instanceof BaseLayer && ((BaseLayer)outputLayer.conf().getLayer()).getWeightInit() == WeightInit.ZERO) {
             throw new IllegalStateException("Output layer weights cannot be initialized to zero when using backprop.");
         }
 
