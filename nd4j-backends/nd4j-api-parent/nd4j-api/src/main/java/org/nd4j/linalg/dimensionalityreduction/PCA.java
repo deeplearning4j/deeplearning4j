@@ -39,7 +39,7 @@ public class PCA {
 
     /**
      * Create a PCA instance with calculated data: covariance, mean, eigenvectors, and eigenvalues.
-     * @param dataset The set of data result of features, each row is a data result and each
+     * @param dataset The set of data result (records) of features, each row is a data result and each
      *                column is a feature, every data point has the same number of features.
      */
     public PCA(INDArray dataset) {
@@ -51,6 +51,11 @@ public class PCA {
         this.eigenvalues = pce[1];
     }
 
+    /**
+     * Return a reduced basis set that covers a certain fraction of the variance of the data
+     * @param variance The desired fractional variance (0 to 1)
+     * @return The basis vectors as columns, size <i>N</i> rows by <i>ndims</i> columns, where <i>ndims</i> is <= <i>N</i>
+     */
     public INDArray reducedBasis(double variance) {
         INDArray vars = Transforms.pow(Transforms.sqrt(eigenvalues, true), -1, true);
         double res = vars.sumNumber().doubleValue();
@@ -66,6 +71,12 @@ public class PCA {
         return result;
     }
 
+    /**
+     * Estimate the variance of a single record with reduced # of dimensions.
+     * @param data A single record with the same <i>N</i> features as the constructing data set
+     * @param ndims The number of dimensions to include in calculation
+     * @return The fraction (0 to 1) of the total variance covered by the <i>ndim</i> basis set.
+     */
     public double estimateVariance(INDArray data, int ndims) {
         INDArray dx = data.sub(mean);
         INDArray v = eigenvectors.transpose().mmul(dx.reshape(dx.columns(), 1));
@@ -73,6 +84,19 @@ public class PCA {
         double fraction = t2.get(NDArrayIndex.interval(0,ndims)).sumNumber().doubleValue();
         double total = t2.sumNumber().doubleValue();
         return fraction/total;
+    }
+
+    /**
+     * Generates a set of <i>count</i> random samples with the same variance and mean and eigenvector/values
+     * as the data set used to initialize the PCA object, with same number of features <i>N</i>.
+     * @param count The number of samples to generate
+     * @return A matrix of size <i>count</i> rows by <i>N</i> columns
+     */
+    public INDArray generateGaussianSamples(int count) {
+        INDArray samples = Nd4j.randn(count, eigenvalues.columns());
+        INDArray factors = Transforms.pow(eigenvalues, -0.5, true);
+        samples.muliRowVector(factors);
+        return Nd4j.tensorMmul(eigenvectors, samples, new int[][] {{1}, {1}}).transposei().addiRowVector(mean);
     }
 
     /**
@@ -252,7 +276,7 @@ public class PCA {
         // unit vector components
         INDArray[] pce = principalComponents(covmean[0]);
         // calculate the variance of each component
-        INDArray vars = Transforms.pow(Transforms.sqrt(pce[1], true), -1, true);
+        INDArray vars = Transforms.pow(pce[1], -0.5, true);
         double res = vars.sumNumber().doubleValue();
         double total = 0.0;
         int ndims = 0;
