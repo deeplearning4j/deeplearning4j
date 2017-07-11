@@ -297,8 +297,8 @@ public class RBM extends BasePretrainNetwork<org.deeplearning4j.nn.conf.layers.R
                 break;
             }
             default: {
-                throw new IllegalStateException("Visible type must be one of Binary, Gaussian, SoftMax or Linear "
-                        + layerId());
+                throw new IllegalStateException(
+                                "Visible type must be one of Binary, Gaussian, SoftMax or Linear " + layerId());
             }
         }
 

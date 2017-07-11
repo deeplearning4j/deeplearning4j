@@ -189,7 +189,7 @@ public class BarnesHutTsne implements Model {
             double betaMin = -Double.MAX_VALUE;
             double betaMax = Double.MAX_VALUE;
             List<DataPoint> results = new ArrayList<>();
-            tree.search(new DataPoint(i, d.slice(i)), k + 1, results, new ArrayList<Double>());
+            tree.search(d.slice(i), k + 1, results, new ArrayList<Double>());
             double betas = beta.getDouble(i);
 
             INDArray cArr = VPTree.buildFromData(results);
@@ -272,7 +272,7 @@ public class BarnesHutTsne implements Model {
     }
 
     @Override
-    public void addListener(IterationListener listener) {
+    public void addListeners(IterationListener... listener) {
         // no-op
     }
 

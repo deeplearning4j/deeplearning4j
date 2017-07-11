@@ -50,7 +50,8 @@ public class TransferLearningMLNTest {
         MultiLayerNetwork modelNow =
                         new TransferLearning.Builder(modelToFineTune)
                                         .fineTuneConfiguration(new FineTuneConfiguration.Builder().seed(rng)
-                                                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                                                        .optimizationAlgo(
+                                                                        OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                                                         .updater(Updater.RMSPROP).learningRate(0.5) //Intent: override both weight and bias LR, unless bias LR is manually set also
                                                         .l2(0.4).regularization(true).build())
                                         .build();
@@ -314,7 +315,7 @@ public class TransferLearningMLNTest {
                                                         .iterations(1).learningRate(0.4).build())
                         .removeLayersFromOutput(5)
                         .addLayer(new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX).kernelSize(3, 3)
-                                .stride(2, 2).build())
+                                        .stride(2, 2).build())
                         .addLayer(new ConvolutionLayer.Builder(3, 3).nIn(30).nOut(10).stride(2, 2)
                                         .activation(Activation.RELU).weightInit(WeightInit.RELU)
                                         .updater(Updater.ADAGRAD).build())

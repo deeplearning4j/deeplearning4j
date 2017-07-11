@@ -75,21 +75,17 @@ public class TextGenerationLSTM extends ZooModel {
 
     public MultiLayerConfiguration conf() {
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
-                .learningRate(0.01)
-                .seed(12345)
-                .regularization(true)
-                .l2(0.001)
-                .weightInit(WeightInit.XAVIER)
-                .updater(new RmsProp())
-                .list()
-                .layer(0, new GravesLSTM.Builder().nIn(inputShape[1]).nOut(256).activation(Activation.TANH).build())
-                .layer(1, new GravesLSTM.Builder().nOut(256).activation(Activation.TANH).build())
-                .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX)        //MCXENT + softmax for classification
-                        .nOut(totalUniqueCharacters).build())
-                .backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(50).tBPTTBackwardLength(50)
-                .pretrain(false).backprop(true)
-                .build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).iterations(1)
+                        .learningRate(0.01).seed(12345).regularization(true).l2(0.001).weightInit(WeightInit.XAVIER)
+                        .updater(new RmsProp()).list()
+                        .layer(0, new GravesLSTM.Builder().nIn(inputShape[1]).nOut(256).activation(Activation.TANH)
+                                        .build())
+                        .layer(1, new GravesLSTM.Builder().nOut(256).activation(Activation.TANH).build())
+                        .layer(2, new RnnOutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
+                                        .activation(Activation.SOFTMAX) //MCXENT + softmax for classification
+                                        .nOut(totalUniqueCharacters).build())
+                        .backpropType(BackpropType.TruncatedBPTT).tBPTTForwardLength(50).tBPTTBackwardLength(50)
+                        .pretrain(false).backprop(true).build();
 
         return conf;
     }

@@ -25,6 +25,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Counter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.eval.meta.Prediction;
+import org.deeplearning4j.eval.serde.ConfusionMatrixDeserializer;
+import org.deeplearning4j.eval.serde.ConfusionMatrixSerializer;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -33,21 +35,43 @@ import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
-import org.nd4j.shade.jackson.annotation.JsonIgnore;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
+import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.io.Serializable;
 import java.text.DecimalFormat;
 import java.util.*;
 
 /**
- * Evaluation metrics:
- * precision, recall, f1
+ * Evaluation metrics:<br>
+ * - precision, recall, f1, fBeta, accuracy, Matthews correlation coefficient, gMeasure<br>
+ * - Top N accuracy (if using constructor {@link #Evaluation(List, int)})<br>
+ * - Custom binary evaluation decision threshold (use constructor {@link #Evaluation(double)} (default if not set is
+ *   argmax / 0.5)<br>
+ * - Custom cost array, using {@link #Evaluation(INDArray)} or {@link #Evaluation(List, INDArray)} for multi-class <br>
+ * <br>
+ * Note that setting a custom binary decision threshold is only possible for the binary case (1 or 2 outputs) and cannot
+ * be used if the number of classes exceeds 2. Predictions with probablity > threshold are considered to be class 1,
+ * and are considered class 0 otherwise.<br>
+ * <br>
+ * Cost arrays (a row vector, of size equal to the number of outputs) modify the evaluation process: instead of simply
+ * doing predictedClass = argMax(probabilities), we do predictedClass = argMax(cost * probabilities). Consequently, an
+ * array of all 1s (or, indeed any array of equal values) will result in the same performance as no cost array; non-
+ * equal values will bias the predictions for or against certain classes.
  *
  * @author Adam Gibson
  */
 @Slf4j
 @EqualsAndHashCode(callSuper = true)
+@Getter
+@Setter
+@JsonIgnoreProperties({"confusionMatrixMetaData"})
 public class Evaluation extends BaseEvaluation<Evaluation> {
+    //What to output from the precision/recall function when we encounter an edge case
+    protected static final double DEFAULT_EDGE_VALUE = 0.0;
 
     protected final int topN;
     protected int topNCorrectCount = 0;
@@ -56,13 +80,18 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     protected Counter<Integer> falsePositives = new Counter<>();
     protected Counter<Integer> trueNegatives = new Counter<>();
     protected Counter<Integer> falseNegatives = new Counter<>();
+    @JsonSerialize(using = ConfusionMatrixSerializer.class)
+    @JsonDeserialize(using = ConfusionMatrixDeserializer.class)
     protected ConfusionMatrix<Integer> confusion;
     protected int numRowCounter = 0;
     @Getter
     @Setter
     protected List<String> labelsList = new ArrayList<>();
-    //What to output from the precision/recall function when we encounter an edge case
-    protected static final double DEFAULT_EDGE_VALUE = 0.0;
+
+    protected Double binaryDecisionThreshold;
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
+    protected INDArray costArray;
 
     protected Map<Pair<Integer, Integer>, List<Object>> confusionMatrixMetaData; //Pair: (Actual,Predicted)
 
@@ -70,8 +99,6 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     public Evaluation() {
         this.topN = 1;
     }
-
-    // Constructor that takes number of output classes
 
     /**
      * The number of classes to account
@@ -120,6 +147,49 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         this.topN = topN;
     }
 
+    /**
+     * Create an evaluation instance with a custom binary decision threshold. Note that binary decision thresholds can
+     * only be used with binary classifiers.
+     *
+     * @param binaryDecisionThreshold Decision threshold to use for binary predictions
+     */
+    public Evaluation(double binaryDecisionThreshold) {
+        this.binaryDecisionThreshold = binaryDecisionThreshold;
+        this.topN = 1;
+    }
+
+    /**
+     *  Created evaluation instance with the specified cost array. A cost array can be used to bias the multi class
+     *  predictions towards or away from certain classes. The predicted class is determined using argMax(cost * probability)
+     *  instead of argMax(probability) when no cost array is present.
+     *
+     * @param costArray Row vector cost array. May be null
+     */
+    public Evaluation(INDArray costArray) {
+        this(null, costArray);
+    }
+
+    /**
+     *  Created evaluation instance with the specified cost array. A cost array can be used to bias the multi class
+     *  predictions towards or away from certain classes. The predicted class is determined using argMax(cost * probability)
+     *  instead of argMax(probability) when no cost array is present.
+     *
+     * @param labels Labels for the output classes. May be null
+     * @param costArray Row vector cost array. May be null
+     */
+    public Evaluation(List<String> labels, INDArray costArray) {
+        if (costArray != null && !costArray.isRowVector()) {
+            throw new IllegalArgumentException("Invalid cost array: must be a row vector (got shape: "
+                            + Arrays.toString(costArray.shape()) + ")");
+        }
+        if (costArray != null && costArray.minNumber().doubleValue() < 0.0) {
+            throw new IllegalArgumentException("Invalid cost array: Cost array values must be positive");
+        }
+        this.labelsList = labels;
+        this.costArray = costArray;
+        this.topN = 1;
+    }
+
     @Override
     public void reset() {
         confusion = null;
@@ -134,12 +204,12 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     }
 
     private ConfusionMatrix<Integer> confusion() {
-        if(confusion != null)
+        if (confusion != null)
             return confusion;
         confusion = new ConfusionMatrix<>();
         return confusion;
     }
-    
+
     private static List<String> createLabels(int numClasses) {
         if (numClasses == 1)
             numClasses = 2; //Binary (single output variable) case...
@@ -228,7 +298,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *
      */
     @Override
-    public void eval(final INDArray realOutcomes, final INDArray guesses, final List<? extends Serializable> recordMetaData) {
+    public void eval(final INDArray realOutcomes, final INDArray guesses,
+                    final List<? extends Serializable> recordMetaData) {
         // Add the number of rows to numRowCounter
         numRowCounter += realOutcomes.shape()[0];
 
@@ -254,7 +325,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         final int nRows = realOutcomes.rows();
 
         if (nCols == 1) {
-            INDArray binaryGuesses = guesses.gt(0.5);
+            INDArray binaryGuesses = guesses.gt(binaryDecisionThreshold == null ? 0.5 : binaryDecisionThreshold);
+
             INDArray notLabel = Nd4j.getExecutioner().execAndReturn(new Not(realOutcomes.dup()));
             INDArray notGuess = Nd4j.getExecutioner().execAndReturn(new Not(binaryGuesses.dup()));
             //tp: predicted = 1, actual = 1
@@ -291,8 +363,24 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             }
 
         } else {
-            final INDArray guessIndex = Nd4j.argMax(guesses, 1);
-            final INDArray realOutcomeIndex = Nd4j.argMax(realOutcomes, 1);
+            INDArray guessIndex;
+            if (binaryDecisionThreshold != null) {
+                if (nCols != 2) {
+                    throw new IllegalStateException("Binary decision threshold is set, but number of columns for "
+                                    + "predictions is " + nCols
+                                    + ". Binary decision threshold can only be used for binary " + "prediction cases");
+                }
+
+                INDArray pClass1 = guesses.getColumn(1);
+                guessIndex = pClass1.gt(binaryDecisionThreshold);
+            } else if (costArray != null) {
+                //With a cost array: do argmax(cost * probability) instead of just argmax(probability)
+                guessIndex = Nd4j.argMax(guesses.mulRowVector(costArray), 1);
+            } else {
+                //Standard case: argmax
+                guessIndex = Nd4j.argMax(guesses, 1);
+            }
+            INDArray realOutcomeIndex = Nd4j.argMax(realOutcomes, 1);
             int nExamples = guessIndex.length();
 
             for (int i = 0; i < nExamples; i++) {
@@ -310,10 +398,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 // then just add across matrix
 
                 // if actual == predicted, then it's a true positive, assign true negative to every other label
-                if(actual == predicted) {
+                if (actual == predicted) {
                     truePositives.incrementCount(actual, 1);
                     for (int col = 0; col < nCols; col++) {
-                        if(col == actual){
+                        if (col == actual) {
                             continue;
                         }
                         trueNegatives.incrementCount(col, 1); // all cols prior
@@ -333,13 +421,13 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                     }
 
                     // now loop through intervals
-                    for (int col = 0; col < lesserIndex; col++){
+                    for (int col = 0; col < lesserIndex; col++) {
                         trueNegatives.incrementCount(col, 1); // all cols prior
                     }
-                    for (int col = lesserIndex+1; col < greaterIndex; col++){
+                    for (int col = lesserIndex + 1; col < greaterIndex; col++) {
                         trueNegatives.incrementCount(col, 1); // all cols after
                     }
-                    for (int col = greaterIndex+1; col < nCols; col++){
+                    for (int col = greaterIndex + 1; col < nCols; col++) {
                         trueNegatives.incrementCount(col, 1); // all cols after
                     }
                 }
@@ -395,7 +483,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             //(For a particular label)
             for (Integer clazz : confusion().getClasses()) {
                 if (clazz != predictedIdx)
-                    trueNegatives.incrementCount(clazz, 1.0);
+                    trueNegatives.incrementCount(clazz, 1.0f);
             }
         } else {
             // Otherwise the real label is predicted as negative (False Negative)
@@ -405,7 +493,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             // Otherwise true negatives
             for (Integer clazz : confusion().getClasses()) {
                 if (clazz != predictedIdx && clazz != actualIdx)
-                    trueNegatives.incrementCount(clazz, 1.0);
+                    trueNegatives.incrementCount(clazz, 1.0f);
 
             }
         }
@@ -422,7 +510,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @return A (multi-line) String with accuracy, precision, recall, f1 score etc
      */
     public String stats(boolean suppressWarnings) {
-        String actual, expected;
+        String actual, predicted;
         StringBuilder builder = new StringBuilder().append("\n");
         StringBuilder warnings = new StringBuilder();
         List<Integer> classes = confusion().getClasses();
@@ -435,9 +523,9 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             for (Integer clazz2 : classes) {
                 int count = confusion().getCount(clazz, clazz2);
                 if (count != 0) {
-                    expected = resolveLabelForClass(clazz2);
+                    predicted = resolveLabelForClass(clazz2);
                     builder.append(String.format("Examples labeled as %s classified by model as %s: %d times%n", actual,
-                                    expected, count));
+                                    predicted, count));
                 }
             }
 
@@ -451,10 +539,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
                 }
             }
         }
-        if(falsePositivesWarningClasses.size() > 0){
+        if (falsePositivesWarningClasses.size() > 0) {
             warningHelper(warnings, falsePositivesWarningClasses, "precision");
         }
-        if(falseNegativesWarningClasses.size() > 0){
+        if (falseNegativesWarningClasses.size() > 0) {
             warningHelper(warnings, falseNegativesWarningClasses, "recall");
         }
 
@@ -475,28 +563,38 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             builder.append("\n Top ").append(topN).append(" Accuracy:  ").append(format(df, topNAcc));
         }
         builder.append("\n Precision:       ").append(format(df, precisionMacro));
-        if(nClasses > 2 && averagePrecisionNumClassesExcluded() > 0){
+        if (nClasses > 2 && averagePrecisionNumClassesExcluded() > 0) {
             int ex = averagePrecisionNumClassesExcluded();
             builder.append("\t(").append(ex).append(" class");
-            if(ex > 1) builder.append("es");
+            if (ex > 1)
+                builder.append("es");
             builder.append(" excluded from average)");
         }
         builder.append("\n Recall:          ").append(format(df, recallMacro));
-        if(nClasses > 2 && averageRecallNumClassesExcluded() > 0){
+        if (nClasses > 2 && averageRecallNumClassesExcluded() > 0) {
             int ex = averageRecallNumClassesExcluded();
             builder.append("\t(").append(ex).append(" class");
-            if(ex > 1) builder.append("es");
+            if (ex > 1)
+                builder.append("es");
             builder.append(" excluded from average)");
         }
         builder.append("\n F1 Score:        ").append(format(df, f1Macro));
-        if(nClasses > 2 && averageF1NumClassesExcluded() > 0){
+        if (nClasses > 2 && averageF1NumClassesExcluded() > 0) {
             int ex = averageF1NumClassesExcluded();
             builder.append("\t(").append(ex).append(" class");
-            if(ex > 1) builder.append("es");
+            if (ex > 1)
+                builder.append("es");
             builder.append(" excluded from average)");
         }
-        if(nClasses > 2){
-            builder.append("\nPrecision, recall & F1: macro-averaged (equally weighted avg. of ").append(nClasses).append(" classes)");
+        if (nClasses > 2) {
+            builder.append("\nPrecision, recall & F1: macro-averaged (equally weighted avg. of ").append(nClasses)
+                            .append(" classes)");
+        }
+        if (binaryDecisionThreshold != null) {
+            builder.append("\nBinary decision threshold: ").append(binaryDecisionThreshold);
+        }
+        if (costArray != null) {
+            builder.append("\nCost array: ").append(Arrays.toString(costArray.dup().data().asFloat()));
         }
         //Note that we could report micro-averaged too - but these are the same as accuracy
         //"Note that for “micro”-averaging in a multiclass setting with all labels included will produce equal precision, recall and F,"
@@ -517,10 +615,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         return clazz.toString();
     }
 
-    private void warningHelper(StringBuilder warnings, List<Integer> list, String metric ){
+    private void warningHelper(StringBuilder warnings, List<Integer> list, String metric) {
         warnings.append("Warning: ").append(list.size()).append(" class");
         String wasWere;
-        if(list.size() == 1) {
+        if (list.size() == 1) {
             wasWere = "was";
         } else {
             wasWere = "were";
@@ -528,9 +626,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         }
         warnings.append(" ").append(wasWere);
         warnings.append(" never predicted by the model and ").append(wasWere).append(" excluded from average ")
-        .append(metric).append("\nClasses excluded from average ").append(metric).append(": ")
-                .append(list)
-                .append("\n");
+                        .append(metric).append("\nClasses excluded from average ").append(metric).append(": ")
+                        .append(list).append("\n");
     }
 
     /**
@@ -553,7 +650,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
     public double precision(Integer classLabel, double edgeCase) {
         double tpCount = truePositives.getCount(classLabel);
         double fpCount = falsePositives.getCount(classLabel);
-        return EvaluationUtils.precision((long)tpCount, (long)fpCount, edgeCase);
+        return EvaluationUtils.precision((long) tpCount, (long) fpCount, edgeCase);
     }
 
     /**
@@ -574,24 +671,24 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param averaging Averaging method - macro or micro
      * @return Average precision
      */
-    public double precision(EvaluationAveraging averaging){
+    public double precision(EvaluationAveraging averaging) {
         int nClasses = confusion().getClasses().size();
-        if(averaging == EvaluationAveraging.Macro){
+        if (averaging == EvaluationAveraging.Macro) {
             double macroPrecision = 0.0;
             int count = 0;
-            for( int i=0; i<nClasses; i++ ){
+            for (int i = 0; i < nClasses; i++) {
                 double thisClassPrec = precision(i, -1);
-                if(thisClassPrec != -1){
+                if (thisClassPrec != -1) {
                     macroPrecision += thisClassPrec;
                     count++;
                 }
             }
             macroPrecision /= count;
             return macroPrecision;
-        } else if(averaging == EvaluationAveraging.Micro){
+        } else if (averaging == EvaluationAveraging.Micro) {
             long tpCount = 0;
             long fpCount = 0;
-            for( int i=0; i<nClasses; i++ ){
+            for (int i = 0; i < nClasses; i++) {
                 tpCount += truePositives.getCount(i);
                 fpCount += falsePositives.getCount(i);
             }
@@ -617,7 +714,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *
      * @return Number of classes excluded from the average recall
      */
-    public int averageRecallNumClassesExcluded(){
+    public int averageRecallNumClassesExcluded() {
         return numClassesExcluded("recall");
     }
 
@@ -627,7 +724,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *
      * @return Number of classes excluded from the average F1
      */
-    public int averageF1NumClassesExcluded(){
+    public int averageF1NumClassesExcluded() {
         return numClassesExcluded("f1");
     }
 
@@ -637,7 +734,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *
      * @return Number of classes excluded from the average FBeta
      */
-    public int averageFBetaNumClassesExcluded(){
+    public int averageFBetaNumClassesExcluded() {
         return numClassesExcluded("fbeta");
     }
 
@@ -690,7 +787,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         double tpCount = truePositives.getCount(classLabel);
         double fnCount = falseNegatives.getCount(classLabel);
 
-        return EvaluationUtils.recall((long)tpCount, (long)fnCount, edgeCase);
+        return EvaluationUtils.recall((long) tpCount, (long) fnCount, edgeCase);
     }
 
     /**
@@ -710,24 +807,24 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param averaging Averaging method - macro or micro
      * @return Average recall
      */
-    public double recall(EvaluationAveraging averaging){
+    public double recall(EvaluationAveraging averaging) {
         int nClasses = confusion().getClasses().size();
-        if(averaging == EvaluationAveraging.Macro){
+        if (averaging == EvaluationAveraging.Macro) {
             double macroRecall = 0.0;
             int count = 0;
-            for( int i=0; i<nClasses; i++ ){
-                double thisClassRecall = recall(i,-1);
-                if(thisClassRecall != -1){
+            for (int i = 0; i < nClasses; i++) {
+                double thisClassRecall = recall(i, -1);
+                if (thisClassRecall != -1) {
                     macroRecall += thisClassRecall;
                     count++;
                 }
             }
             macroRecall /= count;
             return macroRecall;
-        } else if(averaging == EvaluationAveraging.Micro){
+        } else if (averaging == EvaluationAveraging.Micro) {
             long tpCount = 0;
             long fnCount = 0;
-            for( int i=0; i<nClasses; i++ ){
+            for (int i = 0; i < nClasses; i++) {
                 tpCount += truePositives.getCount(i);
                 fnCount += falseNegatives.getCount(i);
             }
@@ -759,7 +856,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         double fpCount = falsePositives.getCount(classLabel);
         double tnCount = trueNegatives.getCount(classLabel);
 
-        return EvaluationUtils.falsePositiveRate((long)fpCount, (long)tnCount, edgeCase);
+        return EvaluationUtils.falsePositiveRate((long) fpCount, (long) tnCount, edgeCase);
     }
 
     /**
@@ -778,19 +875,19 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param averaging Averaging method - macro or micro
      * @return Average false positive rate
      */
-    public double falsePositiveRate(EvaluationAveraging averaging){
+    public double falsePositiveRate(EvaluationAveraging averaging) {
         int nClasses = confusion().getClasses().size();
-        if(averaging == EvaluationAveraging.Macro){
+        if (averaging == EvaluationAveraging.Macro) {
             double macroFPR = 0.0;
-            for( int i=0; i<nClasses; i++ ){
+            for (int i = 0; i < nClasses; i++) {
                 macroFPR += falsePositiveRate(i);
             }
             macroFPR /= nClasses;
             return macroFPR;
-        } else if(averaging == EvaluationAveraging.Micro){
+        } else if (averaging == EvaluationAveraging.Micro) {
             long fpCount = 0;
             long tnCount = 0;
-            for( int i=0; i<nClasses; i++ ){
+            for (int i = 0; i < nClasses; i++) {
                 fpCount += falsePositives.getCount(i);
                 tnCount += trueNegatives.getCount(i);
             }
@@ -821,7 +918,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         double fnCount = falseNegatives.getCount(classLabel);
         double tpCount = truePositives.getCount(classLabel);
 
-        return EvaluationUtils.falseNegativeRate((long)fnCount, (long)tpCount, edgeCase);
+        return EvaluationUtils.falseNegativeRate((long) fnCount, (long) tpCount, edgeCase);
     }
 
     /**
@@ -840,19 +937,19 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param averaging Averaging method - macro or micro
      * @return Average false negative rate
      */
-    public double falseNegativeRate(EvaluationAveraging averaging){
+    public double falseNegativeRate(EvaluationAveraging averaging) {
         int nClasses = confusion().getClasses().size();
-        if(averaging == EvaluationAveraging.Macro){
+        if (averaging == EvaluationAveraging.Macro) {
             double macroFNR = 0.0;
-            for( int i=0; i<nClasses; i++ ){
+            for (int i = 0; i < nClasses; i++) {
                 macroFNR += falseNegativeRate(i);
             }
             macroFNR /= nClasses;
             return macroFNR;
-        } else if(averaging == EvaluationAveraging.Micro){
+        } else if (averaging == EvaluationAveraging.Micro) {
             long fnCount = 0;
             long tnCount = 0;
-            for( int i=0; i<nClasses; i++ ){
+            for (int i = 0; i < nClasses; i++) {
                 fnCount += falseNegatives.getCount(i);
                 tnCount += trueNegatives.getCount(i);
             }
@@ -905,10 +1002,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param defaultValue Default value to use when precision or recall is undefined (0/0 for prec. or recall)
      * @return F_beta
      */
-    public double fBeta(double beta, int classLabel, double defaultValue){
+    public double fBeta(double beta, int classLabel, double defaultValue) {
         double precision = precision(classLabel, -1);
         double recall = recall(classLabel, -1);
-        if(precision == -1 || recall == -1){
+        if (precision == -1 || recall == -1) {
             return defaultValue;
         }
         return EvaluationUtils.fBeta(beta, precision, recall);
@@ -933,7 +1030,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *
      * @param averaging Averaging method to use
      */
-    public double f1(EvaluationAveraging averaging){
+    public double f1(EvaluationAveraging averaging) {
         return fBeta(1.0, averaging);
     }
 
@@ -943,31 +1040,31 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param beta Beta value to use
      * @param averaging Averaging method to use
      */
-    public double fBeta(double beta, EvaluationAveraging averaging){
+    public double fBeta(double beta, EvaluationAveraging averaging) {
         int nClasses = confusion().getClasses().size();
 
-        if(nClasses == 2){
-            return EvaluationUtils.fBeta(beta, (long)truePositives.getCount(1),
-                    (long)falsePositives.getCount(1), (long)falseNegatives.getCount(1));
+        if (nClasses == 2) {
+            return EvaluationUtils.fBeta(beta, (long) truePositives.getCount(1), (long) falsePositives.getCount(1),
+                            (long) falseNegatives.getCount(1));
         }
 
-        if(averaging == EvaluationAveraging.Macro){
+        if (averaging == EvaluationAveraging.Macro) {
             double macroFBeta = 0.0;
             int count = 0;
-            for( int i=0; i<nClasses; i++ ){
-                double thisFBeta = fBeta(beta,i, -1);
-                if(thisFBeta != -1){
+            for (int i = 0; i < nClasses; i++) {
+                double thisFBeta = fBeta(beta, i, -1);
+                if (thisFBeta != -1) {
                     macroFBeta += thisFBeta;
                     count++;
                 }
             }
             macroFBeta /= count;
             return macroFBeta;
-        } else if(averaging == EvaluationAveraging.Micro){
+        } else if (averaging == EvaluationAveraging.Micro) {
             long tpCount = 0;
             long fpCount = 0;
             long fnCount = 0;
-            for( int i=0; i<nClasses; i++ ){
+            for (int i = 0; i < nClasses; i++) {
                 tpCount += truePositives.getCount(i);
                 fpCount += falsePositives.getCount(i);
                 fnCount += falseNegatives.getCount(i);
@@ -984,7 +1081,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param output The specified output
      * @return The G-measure for the specified output
      */
-    public double gMeasure(int output){
+    public double gMeasure(int output) {
         double precision = precision(output);
         double recall = recall(output);
         return EvaluationUtils.gMeasure(precision, recall);
@@ -996,20 +1093,20 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param averaging Averaging method to use
      * @return Average G measure
      */
-    public double gMeasure(EvaluationAveraging averaging){
+    public double gMeasure(EvaluationAveraging averaging) {
         int nClasses = confusion().getClasses().size();
-        if(averaging == EvaluationAveraging.Macro){
+        if (averaging == EvaluationAveraging.Macro) {
             double macroGMeasure = 0.0;
-            for( int i=0; i<nClasses; i++ ){
+            for (int i = 0; i < nClasses; i++) {
                 macroGMeasure += gMeasure(i);
             }
             macroGMeasure /= nClasses;
             return macroGMeasure;
-        } else if(averaging == EvaluationAveraging.Micro){
+        } else if (averaging == EvaluationAveraging.Micro) {
             long tpCount = 0;
             long fpCount = 0;
             long fnCount = 0;
-            for( int i=0; i<nClasses; i++ ){
+            for (int i = 0; i < nClasses; i++) {
                 tpCount += truePositives.getCount(i);
                 fpCount += falsePositives.getCount(i);
                 fnCount += falseNegatives.getCount(i);
@@ -1057,12 +1154,10 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *
      * @param classIdx Class index to calculate Matthews correlation coefficient for
      */
-    public double matthewsCorrelation(int classIdx){
-        return EvaluationUtils.matthewsCorrelation(
-                (long)truePositives.getCount(classIdx),
-                (long)falsePositives.getCount(classIdx),
-                (long)falseNegatives.getCount(classIdx),
-                (long)trueNegatives.getCount(classIdx));
+    public double matthewsCorrelation(int classIdx) {
+        return EvaluationUtils.matthewsCorrelation((long) truePositives.getCount(classIdx),
+                        (long) falsePositives.getCount(classIdx), (long) falseNegatives.getCount(classIdx),
+                        (long) trueNegatives.getCount(classIdx));
     }
 
     /**
@@ -1073,21 +1168,21 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * @param averaging Averaging approach
      * @return Average
      */
-    public double matthewsCorrelation(EvaluationAveraging averaging){
+    public double matthewsCorrelation(EvaluationAveraging averaging) {
         int nClasses = confusion().getClasses().size();
-        if(averaging == EvaluationAveraging.Macro){
+        if (averaging == EvaluationAveraging.Macro) {
             double macroMatthewsCorrelation = 0.0;
-            for( int i=0; i<nClasses; i++ ){
+            for (int i = 0; i < nClasses; i++) {
                 macroMatthewsCorrelation += matthewsCorrelation(i);
             }
             macroMatthewsCorrelation /= nClasses;
             return macroMatthewsCorrelation;
-        } else if(averaging == EvaluationAveraging.Micro){
+        } else if (averaging == EvaluationAveraging.Micro) {
             long tpCount = 0;
             long fpCount = 0;
             long fnCount = 0;
             long tnCount = 0;
-            for( int i=0; i<nClasses; i++ ){
+            for (int i = 0; i < nClasses; i++) {
                 tpCount += truePositives.getCount(i);
                 fpCount += falsePositives.getCount(i);
                 fnCount += falseNegatives.getCount(i);
@@ -1185,19 +1280,19 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     // Incrementing counters
     public void incrementTruePositives(Integer classLabel) {
-        truePositives.incrementCount(classLabel, 1.0);
+        truePositives.incrementCount(classLabel, 1.0f);
     }
 
     public void incrementTrueNegatives(Integer classLabel) {
-        trueNegatives.incrementCount(classLabel, 1.0);
+        trueNegatives.incrementCount(classLabel, 1.0f);
     }
 
     public void incrementFalseNegatives(Integer classLabel) {
-        falseNegatives.incrementCount(classLabel, 1.0);
+        falseNegatives.incrementCount(classLabel, 1.0f);
     }
 
     public void incrementFalsePositives(Integer classLabel) {
-        falsePositives.incrementCount(classLabel, 1.0);
+        falsePositives.incrementCount(classLabel, 1.0f);
     }
 
 
@@ -1234,9 +1329,8 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * the number of correct predictions
      * @return Number of correct top N predictions
      */
-    @JsonIgnore
     public int getTopNCorrectCount() {
-        if(confusion == null)
+        if (confusion == null)
             confusion = new ConfusionMatrix<>();
         if (topN <= 1) {
             int nClasses = confusion().getClasses().size();
@@ -1255,7 +1349,6 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      * (i.e., requires the full probability distribution, not just predicted/actual indices)
      * @return Total number of top N predictions
      */
-    @JsonIgnore
     public int getTopNTotalCount() {
         if (topN <= 1) {
             return getNumRowCounter();
@@ -1272,7 +1365,6 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *
      * @return confusion matrix variable for this evaluation
      */
-    @JsonIgnore
     public ConfusionMatrix<Integer> getConfusionMatrix() {
         return confusion;
     }
@@ -1395,7 +1487,6 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      *
      * @return A list of prediction errors, or null if no metadata has been recorded
      */
-    @JsonIgnore
     public List<Prediction> getPredictionErrors() {
         if (this.confusionMatrixMetaData == null)
             return null;
@@ -1510,5 +1601,14 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             out.add(new Prediction(actualClass, predictedClass, meta));
         }
         return out;
+    }
+
+
+    public static Evaluation fromJson(String json) {
+        return fromJson(json, Evaluation.class);
+    }
+
+    public static Evaluation fromYaml(String yaml) {
+        return fromYaml(yaml, Evaluation.class);
     }
 }

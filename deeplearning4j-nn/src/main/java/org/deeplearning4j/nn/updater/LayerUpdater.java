@@ -42,6 +42,11 @@ public class LayerUpdater extends BaseMultiLayerUpdater<Layer> {
     }
 
     @Override
+    protected INDArray getParams() {
+        return network.params();
+    }
+
+    @Override
     protected boolean isMiniBatch() {
         return network.conf().isMiniBatch();
     }

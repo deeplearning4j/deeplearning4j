@@ -1033,7 +1033,7 @@ public final class SloppyMath {
     public static <T> double logAdd(Counter<T> counts) {
         double[] arr = new double[counts.size()];
         int index = 0;
-        for (Map.Entry<T, Double> entry : counts.entrySet()) {
+        for (Map.Entry<T, Float> entry : counts.entrySet()) {
             arr[index++] = entry.getValue();
         }
         return SloppyMath.logAdd(arr);

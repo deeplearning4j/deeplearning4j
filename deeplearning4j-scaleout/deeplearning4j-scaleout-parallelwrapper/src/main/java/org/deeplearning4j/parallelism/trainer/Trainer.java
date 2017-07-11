@@ -16,7 +16,7 @@ public interface Trainer extends Runnable {
      * Train on a {@link MultiDataSet}
      * @param dataSet the data set to train on
      */
-     void feedMultiDataSet(@NonNull MultiDataSet dataSet, long etlTime);
+    void feedMultiDataSet(@NonNull MultiDataSet dataSet, long etlTime);
 
 
     /**
@@ -30,14 +30,14 @@ public interface Trainer extends Runnable {
      * @return the current  {@link Model}
      * for the worker
      */
-     Model getModel();
+    Model getModel();
 
     /**
      * Update the current {@link Model}
      * for the worker
      * @param model the new model for this worker
      */
-     void updateModel(@NonNull Model model);
+    void updateModel(@NonNull Model model);
 
     boolean isRunning();
 

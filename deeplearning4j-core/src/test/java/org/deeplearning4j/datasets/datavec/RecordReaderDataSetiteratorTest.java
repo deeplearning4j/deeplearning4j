@@ -32,8 +32,8 @@ import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.NumberedFileInputSplit;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
+import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
-import org.datavec.common.data.NDArrayWritable;
 import org.deeplearning4j.datasets.datavec.exception.ZeroLengthSequenceException;
 import org.deeplearning4j.datasets.datavec.tools.SpecialImageRecordReader;
 import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
@@ -44,7 +44,6 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.*;
 import java.util.*;
@@ -65,16 +64,6 @@ public class RecordReaderDataSetiteratorTest {
         DataSetIterator iter = new RecordReaderDataSetIterator(recordReader, 34);
         DataSet next = iter.next();
         assertEquals(34, next.numExamples());
-
-        recordReader = new CSVSequenceRecordReader();
-        recordReader.initialize(csv);
-        iter = new RecordReaderDataSetIterator(recordReader, 1);
-        int count = 0;
-        while (iter.hasNext() && count < 34) {
-            iter.next();
-            count++;
-        }
-        assertEquals(34, count);
     }
 
 
@@ -508,7 +497,7 @@ public class RecordReaderDataSetiteratorTest {
         assertEquals(expF2, dsListAlignEnd.get(2).getFeatureMatrix());
 
         //Check features mask array:
-        INDArray featuresMaskExpected = Nd4j.ones(1, 4); //1 example, 4 values: same for both start/end align here
+        INDArray featuresMaskExpected = null; //null: equivalent to all 1s (i.e., present for all time steps)
         for (int i = 0; i < 3; i++) {
             INDArray featuresMaskStart = dsListAlignStart.get(i).getFeaturesMaskArray();
             INDArray featuresMaskEnd = dsListAlignEnd.get(i).getFeaturesMaskArray();
@@ -580,6 +569,8 @@ public class RecordReaderDataSetiteratorTest {
         reader.initialize(new NumberedFileInputSplit(path, 0, 2));
         SequenceRecordReaderDataSetIterator iteratorClassification =
                         new SequenceRecordReaderDataSetIterator(reader, 1, 3, 0, false);
+
+        assertTrue(iteratorClassification.hasNext());
 
         SequenceRecordReader reader2 = new CSVSequenceRecordReader(1, ",");
         reader2.initialize(new NumberedFileInputSplit(path, 0, 2));
@@ -936,7 +927,7 @@ public class RecordReaderDataSetiteratorTest {
     }
 
     @Test
-    public void testRRDSIwithAsync() throws Exception{
+    public void testRRDSIwithAsync() throws Exception {
         RecordReader csv = new CSVRecordReader();
         csv.initialize(new FileSplit(new ClassPathResource("iris.txt").getTempFileFromArchive()));
 
@@ -991,20 +982,22 @@ public class RecordReaderDataSetiteratorTest {
                         new NDArrayWritable(Nd4j.create(new double[] {4.1, 5.1, 6.1}))));
         data.add(Arrays.<Writable>asList(new NDArrayWritable(Nd4j.create(new double[] {4, 5})),
                         new NDArrayWritable(Nd4j.create(new double[] {7.1, 8.1, 9.1}))));
+        labelIndexFrom = 1;
+        labelIndexTo = 1;
 
         rr = new CollectionRecordReader(data);
         rrdsi = new RecordReaderDataSetIterator(rr, batchSize, labelIndexFrom, labelIndexTo, regression);
 
-        ds = rrdsi.next();
-        assertEquals(expFeatures, ds.getFeatures());
-        assertEquals(expLabels, ds.getLabels());
+        DataSet ds2 = rrdsi.next();
+        assertEquals(expFeatures, ds2.getFeatures());
+        assertEquals(expLabels, ds2.getLabels());
     }
 
 
     @Test
     @Ignore
     public void specialRRTest4() throws Exception {
-        RecordReader rr = new SpecialImageRecordReader(25000, 10,3, 224, 224);
+        RecordReader rr = new SpecialImageRecordReader(25000, 10, 3, 224, 224);
         RecordReaderDataSetIterator rrdsi = new RecordReaderDataSetIterator(rr, 128);
 
         int cnt = 0;
@@ -1014,9 +1007,9 @@ public class RecordReaderDataSetiteratorTest {
             assertEquals(128, ds.numExamples());
             for (int i = 0; i < ds.numExamples(); i++) {
                 INDArray example = ds.getFeatureMatrix().tensorAlongDimension(i, 1, 2, 3).dup();
-//                assertEquals("Failed on DataSet [" + cnt + "], example [" + i + "]", (double) examples, example.meanNumber().doubleValue(), 0.01);
+                //                assertEquals("Failed on DataSet [" + cnt + "], example [" + i + "]", (double) examples, example.meanNumber().doubleValue(), 0.01);
 
-//                assertEquals("Failed on DataSet [" + cnt + "], example [" + i + "]", (double) examples, ds.getLabels().getRow(i).meanNumber().doubleValue(), 0.01);
+                //                assertEquals("Failed on DataSet [" + cnt + "], example [" + i + "]", (double) examples, ds.getLabels().getRow(i).meanNumber().doubleValue(), 0.01);
                 examples++;
             }
             cnt++;
@@ -1032,7 +1025,7 @@ public class RecordReaderDataSetiteratorTest {
                 .setBatchSize(10)
                 .numberOfWorkers(1)
                 .build();
-
+    
         int cnt = 0;
         int examples = 0;
         while (rrdsi.hasNext()) {
@@ -1045,11 +1038,11 @@ public class RecordReaderDataSetiteratorTest {
             cnt++;
             log.info("DataSet {} passed...", cnt);
         }
-
+    
         assertEquals(25, cnt);
     }
-
-
+    
+    
     @Test
     public void specialRRTest2() throws Exception {
         RecordReader rr = new SpecialImageRecordReader(250, 10,3, 224, 224);
@@ -1058,9 +1051,9 @@ public class RecordReaderDataSetiteratorTest {
                 .numberOfWorkers(1)
                 .prefetchBufferSize(4)
                 .build();
-
+    
         rrdsi = new AsyncDataSetIterator(rrdsi);
-
+    
         int cnt = 0;
         int examples = 0;
         while (rrdsi.hasNext()) {
@@ -1072,11 +1065,11 @@ public class RecordReaderDataSetiteratorTest {
             }
             cnt++;
         }
-
+    
         assertEquals(25, cnt);
     }
-
-
+    
+    
     @Test
     public void specialRRTest3() throws Exception {
         RecordReader rr = new SpecialImageRecordReader(400, 10,3, 224, 224);
@@ -1085,11 +1078,11 @@ public class RecordReaderDataSetiteratorTest {
                 .numberOfWorkers(2)
                 .prefetchBufferSize(2)
                 .build();
-
+    
         log.info("DataType: {}", Nd4j.dataType() );
-
+    
        // rrdsi = new AsyncDataSetIterator(rrdsi);
-
+    
         int cnt = 0;
         int examples = 0;
         while (rrdsi.hasNext()) {
@@ -1101,7 +1094,51 @@ public class RecordReaderDataSetiteratorTest {
             }
             cnt++;
         }
-
+    
     }
     */
+
+
+    @Test
+    public void testRecordReaderDataSetIteratorConcat() {
+
+        //[DoubleWritable, DoubleWritable, NDArrayWritable([1,10]), IntWritable] -> concatenate to a [1,13] feature vector automatically.
+
+        List<Writable> l = Arrays.<Writable>asList(new DoubleWritable(1),
+                        new NDArrayWritable(Nd4j.create(new double[] {2, 3, 4})), new DoubleWritable(5),
+                        new NDArrayWritable(Nd4j.create(new double[] {6, 7, 8})), new IntWritable(9),
+                        new IntWritable(1));
+
+        RecordReader rr = new CollectionRecordReader(Collections.singletonList(l));
+
+        DataSetIterator iter = new RecordReaderDataSetIterator(rr, 1, 5, 3);
+
+        DataSet ds = iter.next();
+        INDArray expF = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6, 7, 8, 9});
+        INDArray expL = Nd4j.create(new double[] {0, 1, 0});
+
+        assertEquals(expF, ds.getFeatures());
+        assertEquals(expL, ds.getLabels());
+    }
+
+    @Test
+    public void testRecordReaderDataSetIteratorDisjointFeatures() {
+
+        //Idea: input vector is like [f,f,f,f,l,l,f,f] or similar - i.e., label writables aren't start/end
+
+        List<Writable> l = Arrays.<Writable>asList(new DoubleWritable(1),
+                        new NDArrayWritable(Nd4j.create(new double[] {2, 3, 4})), new DoubleWritable(5),
+                        new NDArrayWritable(Nd4j.create(new double[] {6, 7, 8})));
+
+        INDArray expF = Nd4j.create(new double[] {1, 6, 7, 8});
+        INDArray expL = Nd4j.create(new double[] {2, 3, 4, 5});
+
+        RecordReader rr = new CollectionRecordReader(Collections.singletonList(l));
+
+        DataSetIterator iter = new RecordReaderDataSetIterator(rr, 1, 1, 2, true);
+
+        DataSet ds = iter.next();
+        assertEquals(expF, ds.getFeatures());
+        assertEquals(expL, ds.getLabels());
+    }
 }

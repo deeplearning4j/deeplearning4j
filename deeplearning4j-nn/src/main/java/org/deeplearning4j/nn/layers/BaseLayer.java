@@ -23,6 +23,7 @@ import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -66,20 +67,23 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     protected MaskState maskState;
     protected Solver solver;
 
+    protected CacheMode cacheMode = CacheMode.NONE;
+
     public BaseLayer(NeuralNetConfiguration conf) {
         this.conf = conf;
+        cacheMode = conf.getCacheMode();
     }
 
     public BaseLayer(NeuralNetConfiguration conf, INDArray input) {
+        this(conf);
         this.input = input;
-        this.conf = conf;
     }
 
     protected LayerConfT layerConf() {
         return (LayerConfT) this.conf.getLayer();
     }
 
-    protected String layerId(){
+    protected String layerId() {
         String name = this.conf().getLayer().getLayerName();
         return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + index + ")";
     }
@@ -126,16 +130,17 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     /**
      * This method ADDS additional IterationListener to existing listeners
      *
-     * @param listener
+     * @param listeners
      */
     @Override
-    public void addListener(IterationListener listener) {
+    public void addListeners(IterationListener... listeners) {
         if (this.iterationListeners == null) {
-            setListeners(listener);
+            setListeners(listeners);
             return;
         }
 
-        iterationListeners.add(listener);
+        for (IterationListener listener : listeners)
+            iterationListeners.add(listener);
     }
 
     @Override
@@ -152,7 +157,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         return nextLayerGradient;
     }
 
-    @Override @Deprecated
+    @Override
+    @Deprecated
     public INDArray derivativeActivation(INDArray input) {
         throw new UnsupportedOperationException("Deprecated - " + layerId());
     }
@@ -322,7 +328,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             length += getParam(s).length();
         if (params.length() != length)
             throw new IllegalArgumentException("Unable to set parameters: must be of length " + length
-                    + ", got params of length " + params.length() + " - " + layerId());
+                            + ", got params of length " + params.length() + " - " + layerId());
         int idx = 0;
         Set<String> paramKeySet = this.params.keySet();
         for (String s : paramKeySet) {
@@ -399,12 +405,12 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             if (input.rank() != 2) {
                 throw new DL4JInvalidInputException("Input that is not a matrix; expected matrix (rank 2), got rank "
                                 + input.rank() + " array with shape " + Arrays.toString(input.shape())
-                        + ". Missing preprocessor or wrong input type? " + layerId());
+                                + ". Missing preprocessor or wrong input type? " + layerId());
             }
-            throw new DL4JInvalidInputException("Input size (" + input.columns() + " columns; shape = "
-                            + Arrays.toString(input.shape())
-                            + ") is invalid: does not match layer input size (layer # inputs = " + W.size(0)
-                    + ") " + layerId());
+            throw new DL4JInvalidInputException(
+                            "Input size (" + input.columns() + " columns; shape = " + Arrays.toString(input.shape())
+                                            + ") is invalid: does not match layer input size (layer # inputs = "
+                                            + W.size(0) + ") " + layerId());
         }
 
         if (conf.isUseDropConnect() && training && conf.getLayer().getDropOut() > 0) {
@@ -611,7 +617,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();
             //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
             Updater updater = solver.getOptimizer().getUpdater();
-            int updaterStateSize = (int)conf().getLayer().getIUpdater().stateSize(numParams());
+            int updaterStateSize = (int) conf().getLayer().getIUpdater().stateSize(numParams());
             if (updaterStateSize > 0)
                 updater.setStateViewArray(this, Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order()),
                                 true);
@@ -645,8 +651,8 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     @Override
     public Layer transpose() {
         if (!(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.FeedForwardLayer))
-            throw new UnsupportedOperationException("Unsupported layer type: " + conf.getLayer().getClass().getName()
-                    + " - " + layerId());
+            throw new UnsupportedOperationException(
+                            "Unsupported layer type: " + conf.getLayer().getClass().getName() + " - " + layerId());
 
         INDArray w = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);

@@ -595,7 +595,7 @@ public class VocabConstructor<T extends SequenceElement> {
                         if (index != null) {
                             if (document.getSequenceLabel() != null) {
                                 index.addWordsToDoc(index.numDocuments(), document.getElements(),
-                                        document.getSequenceLabel());
+                                                document.getSequenceLabel());
                             } else {
                                 index.addWordsToDoc(index.numDocuments(), document.getElements());
                             }

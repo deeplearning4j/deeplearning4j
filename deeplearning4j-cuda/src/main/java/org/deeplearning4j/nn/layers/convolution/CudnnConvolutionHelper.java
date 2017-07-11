@@ -119,7 +119,8 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray weights, INDArray delta, int[] kernel,
                     int[] strides, int[] pad, INDArray biasGradView, INDArray weightGradView, IActivation afn,
-                    AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo, ConvolutionMode convolutionMode) {
+                    AlgoMode mode, BwdFilterAlgo bwdFilterAlgo, BwdDataAlgo bwdDataAlgo,
+                    ConvolutionMode convolutionMode) {
         int miniBatch = input.size(0);
         int inH = input.size(2);
         int inW = input.size(3);
@@ -164,26 +165,58 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                         kW));
         if (mode == AlgoMode.USER_SPECIFIED && bwdFilterAlgo != null && bwdDataAlgo != null) {
             switch (bwdFilterAlgo) {
-                case ALGO_0:            algo1[0] = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_0; break;
-                case ALGO_1:            algo1[0] = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1; break;
-                case FFT:               algo1[0] = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT; break;
-                case ALGO_3:            algo1[0] = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_3; break;
-                case WINOGRAD:          algo1[0] = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD; break;
-                case WINOGRAD_NONFUSED: algo1[0] = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED; break;
-                case FFT_TILING:        algo1[0] = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT_TILING; break;
-                case COUNT:             algo1[0] = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_COUNT; break;
-                default: throw new IllegalArgumentException("Unknown BwdFilterAlgo: " + bwdFilterAlgo);
+                case ALGO_0:
+                    algo1[0] = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_0;
+                    break;
+                case ALGO_1:
+                    algo1[0] = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_1;
+                    break;
+                case FFT:
+                    algo1[0] = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT;
+                    break;
+                case ALGO_3:
+                    algo1[0] = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_3;
+                    break;
+                case WINOGRAD:
+                    algo1[0] = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD;
+                    break;
+                case WINOGRAD_NONFUSED:
+                    algo1[0] = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_WINOGRAD_NONFUSED;
+                    break;
+                case FFT_TILING:
+                    algo1[0] = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_FFT_TILING;
+                    break;
+                case COUNT:
+                    algo1[0] = CUDNN_CONVOLUTION_BWD_FILTER_ALGO_COUNT;
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown BwdFilterAlgo: " + bwdFilterAlgo);
             }
 
             switch (bwdDataAlgo) {
-                case ALGO_0:            algo2[0] = CUDNN_CONVOLUTION_BWD_DATA_ALGO_0; break;
-                case ALGO_1:            algo2[0] = CUDNN_CONVOLUTION_BWD_DATA_ALGO_1; break;
-                case FFT:               algo2[0] = CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT; break;
-                case FFT_TILING:        algo2[0] = CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT_TILING; break;
-                case WINOGRAD:          algo2[0] = CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD; break;
-                case WINOGRAD_NONFUSED: algo2[0] = CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED; break;
-                case COUNT:             algo2[0] = CUDNN_CONVOLUTION_BWD_DATA_ALGO_COUNT; break;
-                default: throw new IllegalArgumentException("Unknown BwdDataAlgo: " + bwdDataAlgo);
+                case ALGO_0:
+                    algo2[0] = CUDNN_CONVOLUTION_BWD_DATA_ALGO_0;
+                    break;
+                case ALGO_1:
+                    algo2[0] = CUDNN_CONVOLUTION_BWD_DATA_ALGO_1;
+                    break;
+                case FFT:
+                    algo2[0] = CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT;
+                    break;
+                case FFT_TILING:
+                    algo2[0] = CUDNN_CONVOLUTION_BWD_DATA_ALGO_FFT_TILING;
+                    break;
+                case WINOGRAD:
+                    algo2[0] = CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD;
+                    break;
+                case WINOGRAD_NONFUSED:
+                    algo2[0] = CUDNN_CONVOLUTION_BWD_DATA_ALGO_WINOGRAD_NONFUSED;
+                    break;
+                case COUNT:
+                    algo2[0] = CUDNN_CONVOLUTION_BWD_DATA_ALGO_COUNT;
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown BwdDataAlgo: " + bwdDataAlgo);
             }
         } else {
             checkCudnn(cudnnGetConvolutionBackwardFilterAlgorithm(cudnnContext, cudnnContext.srcTensorDesc,
@@ -200,10 +233,12 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
 
         INDArray epsNext;
         if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
-            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
+            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
+                            .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
                 epsNext = Nd4j.create(new int[] {miniBatch, inDepth, inH, inW}, 'c');
             }
-        } else epsNext = Nd4j.create(new int[] {miniBatch, inDepth, inH, inW}, 'c');
+        } else
+            epsNext = Nd4j.create(new int[] {miniBatch, inDepth, inH, inW}, 'c');
 
         int[] dstStride = epsNext.stride();
 
@@ -285,10 +320,12 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         INDArray z;
 
         if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
-            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
-                z = Nd4j.createUninitialized(new int[]{miniBatch, outDepth, outSize[0], outSize[1]});
+            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
+                            .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
+                z = Nd4j.createUninitialized(new int[] {miniBatch, outDepth, outSize[0], outSize[1]});
             }
-        } else z = Nd4j.createUninitialized(new int[]{miniBatch, outDepth, outSize[0], outSize[1]});
+        } else
+            z = Nd4j.createUninitialized(new int[] {miniBatch, outDepth, outSize[0], outSize[1]});
 
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.srcTensorDesc, dataType, miniBatch, inDepth, inH, inW,
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
@@ -308,21 +345,40 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
                         outSize[1], dstStride[0], dstStride[1], dstStride[2], dstStride[3]));
         if (mode == AlgoMode.USER_SPECIFIED && fwdAlgo != null) {
             switch (fwdAlgo) {
-                case IMPLICIT_GEMM:         algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM; break;
-                case IMPLICIT_PRECOMP_GEMM: algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM; break;
-                case GEMM:                  algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_GEMM; break;
-                case DIRECT:                algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_DIRECT; break;
-                case FFT:                   algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_FFT; break;
-                case FFT_TILING:            algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_FFT_TILING; break;
-                case WINOGRAD:              algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD; break;
-                case WINOGRAD_NONFUSED:     algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED; break;
-                case COUNT:                 algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_COUNT; break;
-                default: throw new IllegalArgumentException("Unknown FwdAlgo: " + fwdAlgo);
+                case IMPLICIT_GEMM:
+                    algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_GEMM;
+                    break;
+                case IMPLICIT_PRECOMP_GEMM:
+                    algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_IMPLICIT_PRECOMP_GEMM;
+                    break;
+                case GEMM:
+                    algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_GEMM;
+                    break;
+                case DIRECT:
+                    algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_DIRECT;
+                    break;
+                case FFT:
+                    algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_FFT;
+                    break;
+                case FFT_TILING:
+                    algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_FFT_TILING;
+                    break;
+                case WINOGRAD:
+                    algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD;
+                    break;
+                case WINOGRAD_NONFUSED:
+                    algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_WINOGRAD_NONFUSED;
+                    break;
+                case COUNT:
+                    algo[0] = CUDNN_CONVOLUTION_FWD_ALGO_COUNT;
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown FwdAlgo: " + fwdAlgo);
             }
         } else {
             checkCudnn(cudnnGetConvolutionForwardAlgorithm(cudnnContext, cudnnContext.srcTensorDesc,
-                            cudnnContext.filterDesc,
-                            cudnnContext.convDesc, cudnnContext.dstTensorDesc, mode == AlgoMode.NO_WORKSPACE
+                            cudnnContext.filterDesc, cudnnContext.convDesc,
+                            cudnnContext.dstTensorDesc, mode == AlgoMode.NO_WORKSPACE
                                             ? CUDNN_CONVOLUTION_FWD_NO_WORKSPACE : CUDNN_CONVOLUTION_FWD_PREFER_FASTEST,
                             0, algo));
         }

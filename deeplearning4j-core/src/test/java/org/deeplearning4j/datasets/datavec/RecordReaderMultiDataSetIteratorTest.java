@@ -4,7 +4,6 @@ package org.deeplearning4j.datasets.datavec;
 import com.google.common.io.Files;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.datavec.api.io.filters.BalancedPathFilter;
 import org.datavec.api.io.labels.ParentPathLabelGenerator;
 import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.reader.RecordReader;
@@ -13,7 +12,6 @@ import org.datavec.api.records.reader.impl.collection.CollectionSequenceRecordRe
 import org.datavec.api.records.reader.impl.csv.CSVRecordReader;
 import org.datavec.api.records.reader.impl.csv.CSVSequenceRecordReader;
 import org.datavec.api.split.FileSplit;
-import org.datavec.api.split.InputSplit;
 import org.datavec.api.split.NumberedFileInputSplit;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
@@ -600,6 +598,12 @@ public class RecordReaderMultiDataSetIteratorTest {
         assertEquals(d1.getFeatureMatrix(), mds.getFeatures(0));
         assertEquals(d2.getFeatureMatrix(), mds.getFeatures(1));
         assertEquals(d1.getLabels(), mds.getLabels(0));
+
+        //Check label assignment:
+        INDArray expLabels = Nd4j.create(new double[][] {{1, 0}, {0, 1}});
+
+        assertEquals(expLabels, d1.getLabels());
+        assertEquals(expLabels, d2.getLabels());
     }
 
 

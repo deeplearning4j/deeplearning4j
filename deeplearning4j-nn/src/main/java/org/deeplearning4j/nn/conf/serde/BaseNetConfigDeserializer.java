@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.conf.serde;
 
-import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.nd4j.linalg.learning.config.*;
@@ -29,22 +28,23 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
 
     protected final JsonDeserializer<?> defaultDeserializer;
 
-    public BaseNetConfigDeserializer(JsonDeserializer<?> defaultDeserializer, Class<T> deserializedType){
+    public BaseNetConfigDeserializer(JsonDeserializer<?> defaultDeserializer, Class<T> deserializedType) {
         super(deserializedType);
         this.defaultDeserializer = defaultDeserializer;
     }
 
     @Override
-    public abstract T deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException;
+    public abstract T deserialize(JsonParser jp, DeserializationContext ctxt)
+                    throws IOException, JsonProcessingException;
 
 
-    protected void handleUpdaterBackwardCompatibility(Layer[] layers){
+    protected void handleUpdaterBackwardCompatibility(Layer[] layers) {
         //Updater configuration changed after 0.8.0 release
         //Previously: enumerations and a bunch of fields. Now: classes
         //Here, we manually create the appropriate Updater instances, if the iupdater field is empty
-        for( int i=0; i<layers.length; i++ ){
+        for (int i = 0; i < layers.length; i++) {
             Layer l = layers[i];
-            if(l == null || l.getIUpdater() != null){
+            if (l == null || l.getIUpdater() != null) {
                 //OK - no need to manually handle IUpdater instances for this layer
                 continue;
             }
@@ -53,21 +53,21 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
             double eps = l.getEpsilon();
             double rho = l.getRho();
 
-            switch (u){
+            switch (u) {
                 case SGD:
                     l.setIUpdater(new Sgd(lr));
                     break;
                 case ADAM:
                     double meanDecay = l.getAdamMeanDecay();
                     double varDecay = l.getAdamVarDecay();
-                    l.setIUpdater(Adam.builder().learningRate(lr)
-                            .beta1(meanDecay).beta2(varDecay).epsilon(eps).build());
+                    l.setIUpdater(Adam.builder().learningRate(lr).beta1(meanDecay).beta2(varDecay).epsilon(eps)
+                                    .build());
                     break;
                 case ADADELTA:
                     l.setIUpdater(new AdaDelta(rho, eps));
                     break;
                 case NESTEROVS:
-                    Map<Integer,Double> momentumSchedule = l.getMomentumSchedule();
+                    Map<Integer, Double> momentumSchedule = l.getMomentumSchedule();
                     double momentum = l.getMomentum();
                     l.setIUpdater(new Nesterovs(lr, momentum, momentumSchedule));
                     break;

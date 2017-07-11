@@ -3,6 +3,7 @@ package org.deeplearning4j.datasets.iterator;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.datasets.iterator.callbacks.DataSetCallback;
+import org.deeplearning4j.datasets.iterator.callbacks.DefaultCallback;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -31,20 +32,24 @@ import java.util.concurrent.locks.LockSupport;
  */
 @Slf4j
 public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
-    private MultiDataSetIterator backedIterator;
+    protected MultiDataSetIterator backedIterator;
 
-    private MultiDataSet terminator = new org.nd4j.linalg.dataset.MultiDataSet();
-    private MultiDataSet nextElement = null;
-    private BlockingQueue<MultiDataSet> buffer;
-    private AsyncPrefetchThread thread;
-    private AtomicBoolean shouldWork = new AtomicBoolean(true);
-    private volatile RuntimeException throwable = null;
-    private boolean useWorkspaces;
-    private int prefetchSize;
-    private String workspaceId;
-    private DataSetCallback callback;
-    private Integer deviceId;
-    private AtomicBoolean hasDepleted = new AtomicBoolean(false);
+    protected MultiDataSet terminator = new org.nd4j.linalg.dataset.MultiDataSet();
+    protected MultiDataSet nextElement = null;
+    protected BlockingQueue<MultiDataSet> buffer;
+    protected AsyncPrefetchThread thread;
+    protected AtomicBoolean shouldWork = new AtomicBoolean(true);
+    protected volatile RuntimeException throwable = null;
+    protected boolean useWorkspaces;
+    protected int prefetchSize;
+    protected String workspaceId;
+    protected DataSetCallback callback;
+    protected Integer deviceId;
+    protected AtomicBoolean hasDepleted = new AtomicBoolean(false);
+
+    protected AsyncMultiDataSetIterator() {
+        //
+    }
 
 
     public AsyncMultiDataSetIterator(MultiDataSetIterator baseIterator) {
@@ -63,19 +68,23 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         this(baseIterator, queueSize, new LinkedBlockingQueue<MultiDataSet>(queueSize), useWorkspace);
     }
 
-    public AsyncMultiDataSetIterator(MultiDataSetIterator baseIterator, int queueSize, boolean useWorkspace, Integer deviceId) {
+    public AsyncMultiDataSetIterator(MultiDataSetIterator baseIterator, int queueSize, boolean useWorkspace,
+                    Integer deviceId) {
         this(baseIterator, queueSize, new LinkedBlockingQueue<MultiDataSet>(queueSize), useWorkspace, null, deviceId);
     }
 
-    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue, boolean useWorkspace) {
-        this(iterator, queueSize, new LinkedBlockingQueue<MultiDataSet>(queueSize), useWorkspace, null);
+    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue,
+                    boolean useWorkspace) {
+        this(iterator, queueSize, queue, useWorkspace, new DefaultCallback());
     }
 
-    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue, boolean useWorkspace, DataSetCallback callback) {
+    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue,
+                    boolean useWorkspace, DataSetCallback callback) {
         this(iterator, queueSize, queue, useWorkspace, callback, Nd4j.getAffinityManager().getDeviceForCurrentThread());
     }
 
-    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue, boolean useWorkspace, DataSetCallback callback, Integer deviceId) {
+    public AsyncMultiDataSetIterator(MultiDataSetIterator iterator, int queueSize, BlockingQueue<MultiDataSet> queue,
+                    boolean useWorkspace, DataSetCallback callback, Integer deviceId) {
 
         if (queueSize < 2)
             queueSize = 2;
@@ -202,7 +211,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
      *
      * PLEASE NOTE: After shutdown() call, this instance can't be used anymore
      */
-    public void shutdown(){
+    public void shutdown() {
         buffer.clear();
 
 
@@ -239,7 +248,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
             if (nextElement != null && nextElement != terminator) {
                 return true;
-            } else if(nextElement == terminator)
+            } else if (nextElement == terminator)
                 return false;
 
 
@@ -297,25 +306,26 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
     }
 
+    protected void externalCall() {
+        //
+    }
+
     protected class AsyncPrefetchThread extends Thread implements Runnable {
         private BlockingQueue<MultiDataSet> queue;
         private MultiDataSetIterator iterator;
         private MultiDataSet terminator;
         private AtomicBoolean isShutdown = new AtomicBoolean(false);
         private AtomicLong internalCounter = new AtomicLong(0);
-        private WorkspaceConfiguration configuration = WorkspaceConfiguration.builder()
-                .minSize(10 * 1024L * 1024L)
-                .overallocationLimit(prefetchSize + 1)
-                .policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                .policySpill(SpillPolicy.REALLOCATE)
-                .build();
+        private WorkspaceConfiguration configuration = WorkspaceConfiguration.builder().minSize(10 * 1024L * 1024L)
+                        .overallocationLimit(prefetchSize + 1).policyReset(ResetPolicy.ENDOFBUFFER_REACHED)
+                        .policyLearning(LearningPolicy.FIRST_LOOP).policyAllocation(AllocationPolicy.OVERALLOCATE)
+                        .policySpill(SpillPolicy.REALLOCATE).build();
 
         private MemoryWorkspace workspace;
 
 
-        protected AsyncPrefetchThread(@NonNull BlockingQueue<MultiDataSet> queue, @NonNull MultiDataSetIterator iterator, @NonNull MultiDataSet terminator) {
+        protected AsyncPrefetchThread(@NonNull BlockingQueue<MultiDataSet> queue,
+                        @NonNull MultiDataSetIterator iterator, @NonNull MultiDataSet terminator) {
             this.queue = queue;
             this.iterator = iterator;
             this.terminator = terminator;
@@ -327,6 +337,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
         @Override
         public void run() {
+            externalCall();
             try {
                 if (useWorkspaces) {
                     workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(configuration, workspaceId);
@@ -353,8 +364,8 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
                     if (smth != null)
                         queue.put(smth);
 
-//                    if (internalCounter.incrementAndGet() % 100 == 0)
-//                        Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
+                    //                    if (internalCounter.incrementAndGet() % 100 == 0)
+                    //                        Nd4j.getWorkspaceManager().printAllocationStatisticsForCurrentThread();
                 }
                 queue.put(terminator);
             } catch (InterruptedException e) {
@@ -369,7 +380,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
             } finally {
                 //log.info("Trying destroy...");
                 //if (useWorkspaces)
-                    //Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).destroyWorkspace();
+                //Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceId).destroyWorkspace();
                 isShutdown.set(true);
             }
         }

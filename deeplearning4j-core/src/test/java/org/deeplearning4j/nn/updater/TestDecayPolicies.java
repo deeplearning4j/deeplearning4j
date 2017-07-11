@@ -55,8 +55,8 @@ public class TestDecayPolicies {
     INDArray gradient;
     INDArray weightGradient; // = Nd4j.ones(nIn, nOut);
     INDArray biasGradient; // = Nd4j.ones(1, nOut);
-    Gradient gradientSingle = new DefaultGradient();
-    Gradient gradientMLN = new DefaultGradient();
+    DefaultGradient gradientSingle = new DefaultGradient();
+    DefaultGradient gradientMLN = new DefaultGradient();
     INDArray val, gradExpected, vPrev;
     String key;
     Map<String, INDArray> tmpStorage, tmpStorage2, tmpStorage3, tmpStorage4 = new HashMap<>();
@@ -77,6 +77,7 @@ public class TestDecayPolicies {
 
         gradientSingle.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
         gradientSingle.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
+        gradientSingle.setFlattenedGradient(gradient);
 
         for (int j = 0; j < nLayers; j++) {
             wKey = String.valueOf(j) + "_" + DefaultParamInitializer.WEIGHT_KEY;
@@ -317,11 +318,11 @@ public class TestDecayPolicies {
             Layer layer = conf.getLayer().instantiate(conf, null, 0, params, true);
             layer.setBackpropGradientsViewArray(gradient);
             Updater updater = UpdaterCreator.getUpdater(layer);
-            int stateSize = (int)layer.conf().getLayer().getIUpdater().stateSize(numParams);
+            int stateSize = (int) layer.conf().getLayer().getIUpdater().stateSize(numParams);
             if (stateSize > 0)
                 updater.setStateViewArray(layer, Nd4j.create(1, stateSize), true);
 
-            Gradient gradientActual = new DefaultGradient();
+            Gradient gradientActual = new DefaultGradient(gradient);
             gradientActual.setGradientFor(DefaultParamInitializer.WEIGHT_KEY, weightGradient);
             gradientActual.setGradientFor(DefaultParamInitializer.BIAS_KEY, biasGradient);
 
@@ -494,9 +495,9 @@ public class TestDecayPolicies {
         int iterations = 2;
 
         NeuralNetConfiguration conf = new NeuralNetConfiguration.Builder().learningRate(lr).momentum(mu)
-                .momentumAfter(momentumAfter).iterations(iterations).layer(new DenseLayer.Builder().nIn(nIn)
-                        .nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
-                .build();
+                        .momentumAfter(momentumAfter).iterations(iterations).layer(new DenseLayer.Builder().nIn(nIn)
+                                        .nOut(nOut).updater(org.deeplearning4j.nn.conf.Updater.NESTEROVS).build())
+                        .build();
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
@@ -537,7 +538,7 @@ public class TestDecayPolicies {
         net.init();
 
         Updater updater = UpdaterCreator.getUpdater(net);
-        int stateSize = (int)new Nesterovs().stateSize(net.numParams());
+        int stateSize = (int) new Nesterovs().stateSize(net.numParams());
         updater.setStateViewArray(net, Nd4j.create(1, stateSize), true);
 
         String wKey, bKey;
@@ -751,7 +752,7 @@ public class TestDecayPolicies {
     }
 
     public double testAdaMaxComputation(Gradient gradientActual, Gradient gradientExpected, double lr,
-                                        Map<Integer, Double> learningRateAfter, int i) {
+                    Map<Integer, Double> learningRateAfter, int i) {
 
         double beta1 = 0.9;
         double beta2 = 0.999;

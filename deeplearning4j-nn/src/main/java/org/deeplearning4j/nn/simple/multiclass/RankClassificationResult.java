@@ -30,7 +30,7 @@ public class RankClassificationResult implements Serializable {
      *                or sigmoid output)
      */
     public RankClassificationResult(INDArray outcome) {
-        this(outcome,null);
+        this(outcome, null);
     }
 
     /**
@@ -41,29 +41,28 @@ public class RankClassificationResult implements Serializable {
      */
     public RankClassificationResult(INDArray outcome, List<String> labels) {
 
-        if(outcome.rank() > 2) {
+        if (outcome.rank() > 2) {
             throw new ND4JIllegalStateException("Only works with vectors and matrices right now");
         }
 
-        INDArray[] maxWithIndices = Nd4j.sortWithIndices(outcome,-1,false);
+        INDArray[] maxWithIndices = Nd4j.sortWithIndices(outcome, -1, false);
         INDArray indexes = maxWithIndices[0];
         //default to integers for labels
-        if(labels == null) {
+        if (labels == null) {
             this.labels = new ArrayList<>(outcome.columns());
-            for(int i = 0; i < outcome.columns(); i++) {
+            for (int i = 0; i < outcome.columns(); i++) {
                 this.labels.add(String.valueOf(i));
             }
-        }
-        else {
+        } else {
             this.labels = new ArrayList<>(labels);
         }
 
         rankedIndices = new int[indexes.rows()][indexes.columns()];
         probabilities = new float[outcome.rows()][outcome.columns()];
-        for(int i = 0; i < indexes.rows(); i++) {
-            for(int j = 0; j  < indexes.columns(); j++) {
-                rankedIndices[i][j] = indexes.getInt(i,j);
-                probabilities[i][j] = outcome.getFloat(new int[]{i,j});
+        for (int i = 0; i < indexes.rows(); i++) {
+            for (int j = 0; j < indexes.columns(); j++) {
+                rankedIndices[i][j] = indexes.getInt(i, j);
+                probabilities[i][j] = outcome.getFloat(new int[] {i, j});
             }
         }
 
@@ -83,9 +82,9 @@ public class RankClassificationResult implements Serializable {
     }
 
     public List<String> maxOutcomes() {
-        if(maxLabels == null) {
+        if (maxLabels == null) {
             maxLabels = new ArrayList<>(rankedIndices.length);
-            for(int i = 0; i < rankedIndices.length; i++) {
+            for (int i = 0; i < rankedIndices.length; i++) {
                 maxLabels.add(maxOutcomeForRow(i));
             }
 

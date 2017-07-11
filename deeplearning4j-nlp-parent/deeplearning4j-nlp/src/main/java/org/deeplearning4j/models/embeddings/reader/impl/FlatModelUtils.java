@@ -51,7 +51,7 @@ public class FlatModelUtils<T extends SequenceElement> extends BasicModelUtils<T
         for (String s : vocabCache.words()) {
             INDArray otherVec = lookupTable.vector(s);
             double sim = Transforms.cosineSim(Transforms.unitVec(words.dup()), Transforms.unitVec(otherVec.dup()));
-            distances.incrementCount(s, sim);
+            distances.incrementCount(s, (float) sim);
         }
 
         distances.keepTopNKeys(top);

@@ -36,6 +36,7 @@ import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.SparkListenable;
 import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
+import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateAggregateFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateFlatMapFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluationReduceFunction;
 import org.deeplearning4j.spark.impl.multilayer.scoring.FeedForwardWithKeyFunction;
@@ -48,6 +49,7 @@ import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.GridExecutioner;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.nd4j.linalg.heartbeat.reports.Environment;
@@ -83,7 +85,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @param network      the network to use
      */
     public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerNetwork network,
-                               TrainingMaster<?, ?> trainingMaster) {
+                    TrainingMaster<?, ?> trainingMaster) {
         this(new JavaSparkContext(sparkContext), network, trainingMaster);
     }
 
@@ -94,7 +96,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @param conf         the configuration of the network
      */
     public SparkDl4jMultiLayer(SparkContext sparkContext, MultiLayerConfiguration conf,
-                               TrainingMaster<?, ?> trainingMaster) {
+                    TrainingMaster<?, ?> trainingMaster) {
         this(new JavaSparkContext(sparkContext), initNetwork(conf), trainingMaster);
     }
 
@@ -104,15 +106,12 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @param sc   the spark context to use
      * @param conf the configuration of the network
      */
-    public SparkDl4jMultiLayer(JavaSparkContext sc,
-                               MultiLayerConfiguration conf,
-                               TrainingMaster<?, ?> trainingMaster) {
+    public SparkDl4jMultiLayer(JavaSparkContext sc, MultiLayerConfiguration conf, TrainingMaster<?, ?> trainingMaster) {
         this(sc.sc(), conf, trainingMaster);
     }
 
-    public SparkDl4jMultiLayer(JavaSparkContext javaSparkContext,
-                               MultiLayerNetwork network,
-                               TrainingMaster<?, ?> trainingMaster) {
+    public SparkDl4jMultiLayer(JavaSparkContext javaSparkContext, MultiLayerNetwork network,
+                    TrainingMaster<?, ?> trainingMaster) {
         sc = javaSparkContext;
         this.conf = network.getLayerWiseConfigurations().clone();
         this.network = network;
@@ -330,7 +329,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      */
     public double calculateScore(JavaRDD<DataSet> data, boolean average, int minibatchSize) {
         JavaRDD<Tuple2<Integer, Double>> rdd = data.mapPartitions(
-                new ScoreFlatMapFunction(conf.toJson(), sc.broadcast(network.params(false)), minibatchSize));
+                        new ScoreFlatMapFunction(conf.toJson(), sc.broadcast(network.params(false)), minibatchSize));
 
         //Reduce to a single tuple, with example count + sum of scores
         Tuple2<Integer, Double> countAndSumScores = rdd.reduce(new IntDoubleReduceFunction());
@@ -385,7 +384,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      */
     public JavaDoubleRDD scoreExamples(JavaRDD<DataSet> data, boolean includeRegularizationTerms, int batchSize) {
         return data.mapPartitionsToDouble(new ScoreExamplesFunction(sc.broadcast(network.params()),
-                sc.broadcast(conf.toJson()), includeRegularizationTerms, batchSize));
+                        sc.broadcast(conf.toJson()), includeRegularizationTerms, batchSize));
     }
 
     /**
@@ -419,9 +418,9 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @see MultiLayerNetwork#scoreExamples(DataSet, boolean)
      */
     public <K> JavaPairRDD<K, Double> scoreExamples(JavaPairRDD<K, DataSet> data, boolean includeRegularizationTerms,
-                                                    int batchSize) {
+                    int batchSize) {
         return data.mapPartitionsToPair(new ScoreExamplesWithKeyFunction<K>(sc.broadcast(network.params()),
-                sc.broadcast(conf.toJson()), includeRegularizationTerms, batchSize));
+                        sc.broadcast(conf.toJson()), includeRegularizationTerms, batchSize));
     }
 
     /**
@@ -434,7 +433,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      */
     public <K> JavaPairRDD<K, INDArray> feedForwardWithKey(JavaPairRDD<K, INDArray> featuresData, int batchSize) {
         return featuresData.mapPartitionsToPair(new FeedForwardWithKeyFunction<K>(sc.broadcast(network.params()),
-                sc.broadcast(conf.toJson()), batchSize));
+                        sc.broadcast(conf.toJson()), batchSize));
     }
 
     /**
@@ -576,10 +575,26 @@ public class SparkDl4jMultiLayer extends SparkListenable {
      * @param <T>             Type of evaluation instance to return
      * @return                IEvaluation instance
      */
+    @SuppressWarnings("unchecked")
     public <T extends IEvaluation> T doEvaluation(JavaRDD<DataSet> data, T emptyEvaluation, int evalBatchSize) {
+        return doEvaluation(data, evalBatchSize, emptyEvaluation)[0];
+    }
+
+    /**
+     * Perform distributed evaluation of any type of {@link IEvaluation} - or multiple IEvaluation instances.
+     * Distributed equivalent of {@link MultiLayerNetwork#doEvaluation(DataSetIterator, IEvaluation[])}
+     *
+     * @param data             Data to evaluate on
+     * @param emptyEvaluations Empty evaluation instances. Starting point (serialized/duplicated, then merged)
+     * @param evalBatchSize    Evaluation batch size
+     * @param <T>              Type of evaluation instance to return
+     * @return IEvaluation instances
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends IEvaluation> T[] doEvaluation(JavaRDD<DataSet> data, int evalBatchSize, T... emptyEvaluations) {
         IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(false, sc.broadcast(conf.toJson()),
-                sc.broadcast(network.params()), evalBatchSize, emptyEvaluation);
-        JavaRDD<T> evaluations = data.mapPartitions(evalFn);
-        return evaluations.reduce(new IEvaluationReduceFunction<T>());
+                sc.broadcast(network.params()), evalBatchSize, emptyEvaluations);
+        JavaRDD<T[]> evaluations = data.mapPartitions(evalFn);
+        return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<T>(), new IEvaluationReduceFunction<T>());
     }
 }

@@ -62,6 +62,16 @@ public abstract class GraphVertex implements Cloneable, Serializable {
     public abstract int numParams(boolean backprop);
 
     /**
+     * @return The Smallest valid number of inputs to this vertex
+     */
+    public abstract int minVertexInputs();
+
+    /**
+     * @return The largest valid number of inputs to this vertex
+     */
+    public abstract int maxVertexInputs();
+
+    /**
      * Create a {@link org.deeplearning4j.nn.graph.vertex.GraphVertex} instance, for the given computation graph,
      * given the configuration instance.
      *

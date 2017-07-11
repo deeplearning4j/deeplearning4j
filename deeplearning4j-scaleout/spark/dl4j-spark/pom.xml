@@ -43,9 +43,7 @@
     </pluginRepositories>
 
     <dependencies>
-
         <!-- ND4J Shaded Jackson Dependency -->
-
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-core</artifactId>
@@ -83,6 +81,14 @@
             <version>${deeplearning4j.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.nd4j</groupId>
+            <artifactId>nd4j-kryo_2.11</artifactId>
+            <version>${nd4j.version}</version>
+            <scope>test</scope>
+        </dependency>
+
 
     </dependencies>
 

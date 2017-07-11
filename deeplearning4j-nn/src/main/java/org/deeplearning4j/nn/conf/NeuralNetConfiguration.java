@@ -116,6 +116,9 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
     protected double lrPolicyPower;
     protected boolean pretrain;
 
+    // this field defines preOutput cache
+    protected CacheMode cacheMode;
+
     //Counter for the number of parameter updates so far for this layer.
     //Note that this is only used for pretrain layers (RBM, VAE) - MultiLayerConfiguration and ComputationGraphConfiguration
     //contain counters for standard backprop training.
@@ -275,6 +278,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                             .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
                             .tBPTTBackwardLength(tbpttBackLength).cnnInputSize(this.cnnInputSize)
                             .setInputType(this.inputType).trainingWorkspaceMode(globalConfig.trainingWorkspaceMode)
+                            .cacheMode(globalConfig.cacheMode)
                             .inferenceWorkspaceMode(globalConfig.inferenceWorkspaceMode).confs(list).build();
         }
 
@@ -390,11 +394,12 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         SimpleModule customDeserializerModule = new SimpleModule();
         customDeserializerModule.setDeserializerModifier(new BeanDeserializerModifier() {
             @Override
-            public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc, JsonDeserializer<?> deserializer){
+            public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc,
+                            JsonDeserializer<?> deserializer) {
                 //Use our custom deserializers to handle backward compatibility for updaters -> IUpdater
                 if (beanDesc.getBeanClass() == MultiLayerConfiguration.class) {
                     return new MultiLayerConfigurationDeserializer(deserializer);
-                } else if(beanDesc.getBeanClass() == ComputationGraphConfiguration.class){
+                } else if (beanDesc.getBeanClass() == ComputationGraphConfiguration.class) {
                     return new ComputationGraphConfigurationDeserializer(deserializer);
                 }
                 return deserializer;
@@ -564,7 +569,8 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         protected boolean pretrain = false;
 
         protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
-        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SINGLE;
+        protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
+        protected CacheMode cacheMode = CacheMode.NONE;
 
         protected ConvolutionMode convolutionMode = ConvolutionMode.Truncate;
 
@@ -624,6 +630,20 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          */
         public Builder inferenceWorkspaceMode(@NonNull WorkspaceMode workspaceMode) {
             this.inferenceWorkspaceMode = workspaceMode;
+            return this;
+        }
+
+        /**
+         * This method defines how/if preOutput cache is handled:
+         * NONE: cache disabled (default value)
+         * HOST: Host memory will be used
+         * DEVICE: GPU memory will be used (on CPU backends effect will be the same as for HOST)
+         *
+         * @param cacheMode
+         * @return
+         */
+        public Builder cacheMode(@NonNull CacheMode cacheMode) {
+            this.cacheMode = cacheMode;
             return this;
         }
 
@@ -939,7 +959,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
          *
          * @param updater Updater to use
          */
-        public Builder updater(IUpdater updater){
+        public Builder updater(IUpdater updater) {
             this.iUpdater = updater;
             return this;
         }
@@ -1121,6 +1141,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             conf.lrPolicySteps = lrPolicySteps;
             conf.lrPolicyPower = lrPolicyPower;
             conf.pretrain = pretrain;
+            conf.cacheMode = this.cacheMode;
             String layerName;
             if (layer == null || layer.getLayerName() == null)
                 layerName = "Layer not named";
@@ -1158,11 +1179,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     layer.setDropOut(dropOut);
                 if (layer.getUpdater() == null)
                     layer.setUpdater(updater);
-                if (layer.getIUpdater() == null){
+                if (layer.getIUpdater() == null) {
                     layer.setIUpdater(iUpdater.clone());
                 }
-                LayerValidation.updaterValidation(layerName, layer, learningRate, momentum, momentumSchedule, adamMeanDecay,
-                                adamVarDecay, rho, rmsDecay, epsilon);
+                LayerValidation.updaterValidation(layerName, layer, learningRate, momentum, momentumSchedule,
+                                adamMeanDecay, adamVarDecay, rho, rmsDecay, epsilon);
                 if (layer.getGradientNormalization() == null)
                     layer.setGradientNormalization(gradientNormalization);
                 if (Double.isNaN(layer.getGradientNormalizationThreshold()))

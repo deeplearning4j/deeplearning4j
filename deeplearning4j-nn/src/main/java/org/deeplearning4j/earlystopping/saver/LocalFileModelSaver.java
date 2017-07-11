@@ -5,6 +5,7 @@ import org.deeplearning4j.earlystopping.EarlyStoppingModelSaver;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 
@@ -43,6 +44,11 @@ public class LocalFileModelSaver implements EarlyStoppingModelSaver<MultiLayerNe
     public LocalFileModelSaver(String directory, Charset encoding) {
         this.directory = directory;
         this.encoding = encoding;
+
+        File dir = new File(directory);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
     }
 
     @Override

@@ -67,6 +67,10 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
     @Setter
     protected WorkspaceMode inferenceWorkspaceMode;
 
+    @Getter
+    @Setter
+    protected CacheMode cacheMode;
+
     /**
      * List of inputs to the network, by name
      */
@@ -239,6 +243,8 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         conf.defaultConfiguration = defaultConfiguration.clone();
         conf.trainingWorkspaceMode = trainingWorkspaceMode;
         conf.inferenceWorkspaceMode = inferenceWorkspaceMode;
+        conf.cacheMode = this.cacheMode;
+        conf.defaultConfiguration.cacheMode = this.cacheMode;
 
         return conf;
     }
@@ -575,17 +581,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                         String... layerInputs) {
             NeuralNetConfiguration.Builder builder = globalConfiguration.clone();
             builder.layer(layer);
-            vertices.put(layerName, new LayerVertex(builder.build(), preProcessor));
-
-            //Automatically insert a MergeNode if layerInputs.length > 1
-            //Layers can only have 1 input
-            if (layerInputs != null && layerInputs.length > 1) {
-                String mergeName = layerName + "-merge";
-                addVertex(mergeName, new MergeVertex(), layerInputs);
-                this.vertexInputs.put(layerName, Collections.singletonList(mergeName));
-            } else if (layerInputs != null) {
-                this.vertexInputs.put(layerName, Arrays.asList(layerInputs));
-            }
+            addVertex(layerName, new LayerVertex(builder.build(), preProcessor), layerInputs);
             layer.setLayerName(layerName);
             return this;
         }
@@ -667,6 +663,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          * @param outputNames The names of the output layers. This also defines their order.
          */
         public GraphBuilder setOutputs(String... outputNames) {
+            networkOutputs.clear();
             Collections.addAll(networkOutputs, outputNames);
             return this;
         }
@@ -684,7 +681,15 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
          */
         public GraphBuilder addVertex(String vertexName, GraphVertex vertex, String... vertexInputs) {
             vertices.put(vertexName, vertex);
-            this.vertexInputs.put(vertexName, Arrays.asList(vertexInputs));
+
+            //Automatically insert a MergeNode if this vertex can only take 1 input (layer vertices, etc)
+            if (vertex.maxVertexInputs() == 1 && vertexInputs != null && vertexInputs.length > 1) {
+                String mergeName = vertexName + "-merge";
+                addVertex(mergeName, new MergeVertex(), vertexInputs);
+                this.vertexInputs.put(vertexName, Collections.singletonList(mergeName));
+            } else if (vertexInputs != null) {
+                this.vertexInputs.put(vertexName, Arrays.asList(vertexInputs));
+            }
             return this;
         }
 
@@ -707,6 +712,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             conf.vertexInputs = this.vertexInputs;
             conf.trainingWorkspaceMode = globalConfiguration.trainingWorkspaceMode;
             conf.inferenceWorkspaceMode = globalConfiguration.inferenceWorkspaceMode;
+            conf.cacheMode = globalConfiguration.cacheMode;
 
             conf.defaultConfiguration = globalConfiguration.build();
             conf.getDefaultConfiguration().setPretrain(pretrain);

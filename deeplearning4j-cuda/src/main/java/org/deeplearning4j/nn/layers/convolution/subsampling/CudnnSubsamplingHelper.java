@@ -162,10 +162,12 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
 
         INDArray outEpsilon;
         if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
-            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
+            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
+                            .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
                 outEpsilon = Nd4j.create(new int[] {miniBatch, depth, inH, inW}, 'c');
             }
-        } else outEpsilon = Nd4j.create(new int[] {miniBatch, depth, inH, inW}, 'c');
+        } else
+            outEpsilon = Nd4j.create(new int[] {miniBatch, depth, inH, inW}, 'c');
 
 
         int[] dstStride = outEpsilon.stride();
@@ -237,10 +239,12 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
                         srcStride[0], srcStride[1], srcStride[2], srcStride[3]));
 
         if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
-            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
-                reduced = Nd4j.createUninitialized(new int[]{miniBatch, inDepth, outH, outW}, 'c');
+            try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
+                            .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal).notifyScopeBorrowed()) {
+                reduced = Nd4j.createUninitialized(new int[] {miniBatch, inDepth, outH, outW}, 'c');
             }
-        } else reduced = Nd4j.createUninitialized(new int[]{miniBatch, inDepth, outH, outW}, 'c');
+        } else
+            reduced = Nd4j.createUninitialized(new int[] {miniBatch, inDepth, outH, outW}, 'c');
 
         int[] dstStride = reduced.stride();
         checkCudnn(cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, miniBatch, inDepth, outH, outW,

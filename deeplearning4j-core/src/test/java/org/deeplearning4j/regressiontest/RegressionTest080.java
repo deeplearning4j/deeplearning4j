@@ -55,7 +55,7 @@ public class RegressionTest080 {
         assertEquals(4, l0.getNOut());
         assertEquals(WeightInit.XAVIER, l0.getWeightInit());
         assertTrue(l0.getIUpdater() instanceof Nesterovs);
-        Nesterovs n = (Nesterovs)l0.getIUpdater();
+        Nesterovs n = (Nesterovs) l0.getIUpdater();
         assertEquals(0.9, n.getMomentum(), 1e-6);
         assertEquals(0.15, l0.getLearningRate(), 1e-6);
         assertEquals(0.15, n.getLearningRate(), 1e-6);
@@ -75,7 +75,7 @@ public class RegressionTest080 {
 
         int numParams = net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
-        int updaterSize = (int)new Nesterovs().stateSize(numParams);
+        int updaterSize = (int) new Nesterovs().stateSize(numParams);
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
     }
 
@@ -100,7 +100,7 @@ public class RegressionTest080 {
         assertEquals(WeightInit.DISTRIBUTION, l0.getWeightInit());
         assertEquals(new NormalDistribution(0.1, 1.2), l0.getDist());
         assertTrue(l0.getIUpdater() instanceof RmsProp);
-        RmsProp r = (RmsProp)l0.getIUpdater();
+        RmsProp r = (RmsProp) l0.getIUpdater();
         assertEquals(0.96, r.getRmsDecay(), 1e-6);
         assertEquals(0.15, r.getLearningRate(), 1e-6);
         assertEquals(0.15, l0.getLearningRate(), 1e-6);
@@ -118,7 +118,7 @@ public class RegressionTest080 {
         assertEquals(WeightInit.DISTRIBUTION, l1.getWeightInit());
         assertEquals(new NormalDistribution(0.1, 1.2), l1.getDist());
         assertTrue(l1.getIUpdater() instanceof RmsProp);
-        r = (RmsProp)l1.getIUpdater();
+        r = (RmsProp) l1.getIUpdater();
         assertEquals(0.96, r.getRmsDecay(), 1e-6);
         assertEquals(0.15, r.getLearningRate(), 1e-6);
         assertEquals(0.15, l1.getLearningRate(), 1e-6);
@@ -130,7 +130,7 @@ public class RegressionTest080 {
 
         int numParams = net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
-        int updaterSize = (int)new RmsProp().stateSize(numParams);
+        int updaterSize = (int) new RmsProp().stateSize(numParams);
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
     }
 
@@ -177,7 +177,7 @@ public class RegressionTest080 {
         assertEquals(5, l2.getNOut());
         assertEquals(WeightInit.RELU, l2.getWeightInit());
         assertTrue(l2.getIUpdater() instanceof RmsProp);
-        r = (RmsProp)l2.getIUpdater();
+        r = (RmsProp) l2.getIUpdater();
         assertEquals(0.96, r.getRmsDecay(), 1e-6);
         assertEquals(0.15, r.getLearningRate(), 1e-6);
 
@@ -185,7 +185,7 @@ public class RegressionTest080 {
 
         int numParams = net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
-        int updaterSize = (int)new RmsProp().stateSize(numParams);
+        int updaterSize = (int) new RmsProp().stateSize(numParams);
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
     }
 

@@ -2,22 +2,16 @@ package org.deeplearning4j.datasets.datavec.tools;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
-import org.bytedeco.javacpp.DoublePointer;
-import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Pointer;
-import org.bytedeco.javacpp.indexer.DoubleIndexer;
-import org.bytedeco.javacpp.indexer.FloatIndexer;
-import org.bytedeco.javacpp.indexer.Indexer;
+import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.api.writable.IntWritable;
+import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
-import org.datavec.common.RecordConverter;
-import org.datavec.common.data.NDArrayWritable;
 import org.datavec.image.recordreader.ImageRecordReader;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -46,7 +40,7 @@ public class SpecialImageRecordReader extends ImageRecordReader {
             labels.add("" + i);
         }
 
-        zFeatures =  Nd4j.create(128, channels, height, width);
+        zFeatures = Nd4j.create(128, channels, height, width);
     }
 
     @Override
@@ -91,7 +85,7 @@ public class SpecialImageRecordReader extends ImageRecordReader {
         }
 
         INDArray labels = Nd4j.create(numExamples, numClasses);
-        for (int i = 0; i < numExamples; i++){
+        for (int i = 0; i < numExamples; i++) {
             labels.getRow(i).assign(labelsCounter.getAndIncrement());
         }
 
@@ -105,7 +99,7 @@ public class SpecialImageRecordReader extends ImageRecordReader {
     protected void fillNDArray(INDArray view, double value) {
         Pointer pointer = view.data().pointer();
         int[] shape = view.shape();
-//        log.info("Shape: {}", Arrays.toString(shape));
+        //        log.info("Shape: {}", Arrays.toString(shape));
 
         for (int c = 0; c < shape[0]; c++) {
             for (int h = 0; h < shape[1]; h++) {
@@ -115,7 +109,7 @@ public class SpecialImageRecordReader extends ImageRecordReader {
             }
         }
 
-/*
+        /*
         if (pointer instanceof FloatPointer) {
             FloatIndexer idx = FloatIndexer.create((FloatPointer) pointer, new long[]{view.shape()[0], view.shape()[1], view.shape()[2]}, new long[]{view.stride()[0], view.stride()[1], view.stride()[2]});
             for (long c = 0; c < shape[0]; c++) {

@@ -46,7 +46,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
         }
     }
 
-    protected String layerId(){
+    protected String layerId() {
         String name = insideLayer.conf().getLayer().getLayerName();
         return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + insideLayer.getIndex() + ")";
     }
@@ -179,8 +179,8 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
      * @param listener
      */
     @Override
-    public void addListener(IterationListener listener) {
-        insideLayer.addListener(listener);
+    public void addListeners(IterationListener... listener) {
+        insideLayer.addListeners(listener);
     }
 
     @Override

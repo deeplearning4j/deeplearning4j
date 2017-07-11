@@ -54,6 +54,16 @@ public class StackVertex extends GraphVertex {
     }
 
     @Override
+    public int minVertexInputs() {
+        return 1;
+    }
+
+    @Override
+    public int maxVertexInputs() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
     public int hashCode() {
         return 433682566;
     }

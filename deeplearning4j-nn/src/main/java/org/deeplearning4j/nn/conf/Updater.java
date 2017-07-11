@@ -9,13 +9,11 @@ import org.nd4j.linalg.learning.config.*;
  * @author Adam Gibson
  */
 public enum Updater {
-    SGD, ADAM, ADAMAX, ADADELTA, NESTEROVS, ADAGRAD, RMSPROP, NONE,
-    @Deprecated
-    CUSTOM;
+    SGD, ADAM, ADAMAX, ADADELTA, NESTEROVS, NADAM, ADAGRAD, RMSPROP, NONE, @Deprecated CUSTOM;
 
 
-    public IUpdater getIUpdaterWithDefaultConfig(){
-        switch (this){
+    public IUpdater getIUpdaterWithDefaultConfig() {
+        switch (this) {
             case SGD:
                 return new Sgd();
             case ADAM:
@@ -26,6 +24,8 @@ public enum Updater {
                 return new AdaDelta();
             case NESTEROVS:
                 return new Nesterovs();
+            case NADAM:
+                return new Nadam();
             case ADAGRAD:
                 return new AdaGrad();
             case RMSPROP:

@@ -410,7 +410,7 @@ public class ParagraphVectors extends Word2Vec {
         for (String s : labelsSource.getLabels()) {
             INDArray otherVec = getWordVectorMatrix(s);
             double sim = Transforms.cosineSim(docMean, otherVec);
-            distances.incrementCount(s, sim);
+            distances.incrementCount(s, (float) sim);
         }
 
         return distances.argMax();
@@ -481,7 +481,7 @@ public class ParagraphVectors extends Word2Vec {
             INDArray otherVec = getWordVectorMatrix(s);
             double sim = Transforms.cosineSim(docMean, otherVec);
             log.debug("Similarity inside: [" + s + "] -> " + sim);
-            distances.incrementCount(s, sim);
+            distances.incrementCount(s, (float) sim);
         }
 
         return distances.getSortedKeys().subList(0, limit);

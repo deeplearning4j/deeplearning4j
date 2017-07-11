@@ -141,9 +141,9 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
                 String predicted = split[3];
                 String w = wordsNearest(positive, negative, 1).iterator().next();
                 if (predicted.equals(w))
-                    right.incrementCount(CORRECT, 1.0);
+                    right.incrementCount(CORRECT, 1.0f);
                 else
-                    right.incrementCount(WRONG, 1.0);
+                    right.incrementCount(WRONG, 1.0f);
 
             }
         }
@@ -266,7 +266,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
         for (String s : vocabCache.words()) {
             INDArray otherVec = lookupTable.vector(s);
             double sim = Transforms.cosineSim(words, otherVec);
-            distances.incrementCount(s, sim);
+            distances.incrementCount(s, (float) sim);
         }
 
 
@@ -347,7 +347,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
         for (String s : vocabCache.words()) {
             INDArray otherVec = lookupTable.vector(s);
             double sim = Transforms.cosineSim(words, otherVec);
-            distances.incrementCount(s, sim);
+            distances.incrementCount(s, (float) sim);
         }
 
         distances.keepTopNKeys(top);
