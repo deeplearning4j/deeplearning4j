@@ -124,11 +124,13 @@ public class TestPCA extends BaseNd4jTest {
         PCA analyzePCA = new PCA(testSample);
         for (int i = 0; i < testSample.columns(); i++) {
             assertEquals(myPCA.getMean().getDouble(i), analyzePCA.getMean().getDouble(i), 0.3);
-            assertEquals(myPCA.getCovarianceMatrix().getRow(i).getColumn(i).getDouble(0),
-                    analyzePCA.getCovarianceMatrix().getRow(i).getColumn(i).getDouble(0), 2.0);
+            assertEquals(myPCA.getCovarianceMatrix().getDouble(i,i),
+                    analyzePCA.getCovarianceMatrix().getDouble(i,i), 3.0);
             assertEquals(myPCA.getEigenvalues().getDouble(i), analyzePCA.getEigenvalues().getDouble(i), 1.0);
         }
-        System.out.println(ns.format(myPCA.getCovarianceMatrix()) + "\n" + ns.format(analyzePCA.getCovarianceMatrix()));
+        System.out.println("Original cov:\n"+ns.format(myPCA.getCovarianceMatrix()) + "\nDummy cov:\n" + ns.format(analyzePCA.getCovarianceMatrix()));
+        INDArray testSample2 = analyzePCA.convertBackToFeatures(analyzePCA.convertToComponents(testSample));
+        assertTrue("Transformation does not work.", testSample.equalsWithEps(testSample2, 1e-4*testSample.rows()*testSample.columns()));
     }
 
 

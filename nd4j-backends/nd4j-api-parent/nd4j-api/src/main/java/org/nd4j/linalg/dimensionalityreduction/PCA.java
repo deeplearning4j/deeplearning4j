@@ -57,7 +57,7 @@ public class PCA {
      * @return The basis vectors as columns, size <i>N</i> rows by <i>ndims</i> columns, where <i>ndims</i> is <= <i>N</i>
      */
     public INDArray reducedBasis(double variance) {
-        INDArray vars = Transforms.pow(Transforms.sqrt(eigenvalues, true), -1, true);
+        INDArray vars = Transforms.pow(eigenvalues, -0.5, true);
         double res = vars.sumNumber().doubleValue();
         double total = 0.0;
         int ndims = 0;
@@ -69,6 +69,28 @@ public class PCA {
         INDArray result = Nd4j.create(eigenvectors.rows(), ndims);
         for (int i = 0; i < ndims; i++) result.putColumn(i, eigenvectors.getColumn(i));
         return result;
+    }
+
+    /**
+     * Takes a set of data on each row, with the same number of features as the constructing data
+     * and returns the data in the coordinates of the basis set about the mean.
+     * @param data Data of the same features used to construct the PCA object
+     * @return The record in terms of the principal component vectors, you can set unused ones to zero.
+     */
+    public INDArray convertToComponents(INDArray data) {
+        INDArray dx = data.subRowVector(mean);
+        return Nd4j.tensorMmul(eigenvectors.transpose(), dx, new int[][] {{1},{1}}).transposei();
+    }
+
+    /**
+     * Take the data that has been transformed to the principal components about the mean and
+     * transform it back into the original feature set.  Make sure to fill in zeroes in columns
+     * where components were dropped!
+     * @param data Data of the same features used to construct the PCA object but in the components
+     * @return The records in terms of the original features
+     */
+    public INDArray convertBackToFeatures(INDArray data) {
+        return Nd4j.tensorMmul(eigenvectors, data, new int[][] {{1}, {1}}).transposei().addiRowVector(mean);
     }
 
     /**
@@ -266,13 +288,12 @@ public class PCA {
      * about the mean.
      * @param in A matrix of datapoints as rows, where column are features with fixed number N
      * @param variance The desired fraction of the total variance required
-     * @return An array of INDArray of useful data: 0) the reduced basis set 1) the full basis set
-     *  2) the eigenvalues 3) the covariance matrix and 4) the mean
+     * @return The reduced basis set
      */
-    public static INDArray pca(INDArray in, double variance) {
-        // lets calculate the covariance and the mean
+    public static INDArray pca2(INDArray in, double variance) {
+        // let's calculate the covariance and the mean
         INDArray[] covmean = covarianceMatrix(in);
-        // use the covariance matrix to find "force constants" and then break into orthonormal
+        // use the covariance matrix (inverse) to find "force constants" and then break into orthonormal
         // unit vector components
         INDArray[] pce = principalComponents(covmean[0]);
         // calculate the variance of each component
