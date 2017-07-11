@@ -1122,6 +1122,22 @@ public class RecordReaderDataSetiteratorTest {
     }
 
     @Test
+    public void testRecordReaderDataSetIteratorConcat2() {
+        List<Writable> l = new ArrayList<>();
+        l.add(new IntWritable(0));
+        l.add(new NDArrayWritable(Nd4j.arange(1, 9)));
+        l.add(new IntWritable(9));
+
+        RecordReader rr = new CollectionRecordReader(Collections.singletonList(l));
+        DataSetIterator iter = new RecordReaderDataSetIterator(rr, 1);
+
+        DataSet ds = iter.next();
+        INDArray expF = Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+
+        assertEquals(expF, ds.getFeatures());
+    }
+
+    @Test
     public void testRecordReaderDataSetIteratorDisjointFeatures() {
 
         //Idea: input vector is like [f,f,f,f,l,l,f,f] or similar - i.e., label writables aren't start/end
