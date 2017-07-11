@@ -33,7 +33,7 @@ public class LayerValidation {
     /**
      * Validate the updater configuration - setting the default updater values, if necessary
      */
-    public static void updaterValidation(String layerName, Layer layer, double learningRate, double momentum,
+    public static void updaterValidation(String layerName, BaseLayer layer, double learningRate, double momentum,
                     Map<Integer, Double> momentumSchedule, double adamMeanDecay, double adamVarDecay, double rho,
                     double rmsDecay, double epsilon) {
         if ((!Double.isNaN(momentum) || !Double.isNaN(layer.getMomentum())) && layer.getUpdater() != Updater.NESTEROVS)
@@ -287,7 +287,7 @@ public class LayerValidation {
                         l1 == null ? Double.NaN : l1, l1Bias == null ? Double.NaN : l1Bias, dist);
     }
 
-    public static void generalValidation(String layerName, Layer layer, boolean useRegularization,
+    public static void generalValidation(String layerName, BaseLayer layer, boolean useRegularization,
                     boolean useDropConnect, double dropOut, double l2, double l2Bias, double l1, double l1Bias,
                     Distribution dist) {
 

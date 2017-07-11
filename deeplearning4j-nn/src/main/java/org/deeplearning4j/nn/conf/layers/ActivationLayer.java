@@ -96,6 +96,7 @@ public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     }
 
     @AllArgsConstructor
+    @NoArgsConstructor
     public static class Builder extends org.deeplearning4j.nn.conf.layers.Layer.Builder<Builder> {
 
         private IActivation activationFn = null;

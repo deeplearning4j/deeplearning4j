@@ -669,8 +669,7 @@ public class ConvolutionLayerTest {
                                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
                                         .layer(0, new ConvolutionLayer.Builder(new int[] {10, 10}).nOut(6).build())
                                         .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX,
-                                                        new int[] {2, 2}).stride(1, 1).weightInit(WeightInit.XAVIER)
-                                                                        .activation(Activation.RELU).build())
+                                                        new int[] {2, 2}).stride(1, 1).build())
                                         .layer(2, new OutputLayer.Builder(
                                                         LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                                                         .nOut(outputNum).weightInit(WeightInit.XAVIER)

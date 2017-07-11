@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
@@ -60,16 +61,16 @@ public class LSTMHelpers {
      * Returns FwdPassReturn object with activations/INDArrays. Allows activateHelper to be used for forward pass, backward pass
      * and rnnTimeStep whilst being reasonably efficient for all
      */
-    static public FwdPassReturn activateHelper(final Layer layer, final NeuralNetConfiguration conf,
-                    final IActivation gateActivationFn, //Activation function for the gates - sigmoid or hard sigmoid (must be found in range 0 to 1)
-                    final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
-                    final INDArray originalInputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
-                    final INDArray biases, //Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
-                    final boolean training, final INDArray originalPrevOutputActivations,
-                    final INDArray originalPrevMemCellState, boolean forBackprop, boolean forwards,
-                    final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
-                    final boolean hasPeepholeConnections, //True for GravesLSTM, false for LSTM
-                    final CacheMode cacheMode // cacheMode for layer calling this helper
+    static public FwdPassReturn activateHelper(final BaseLayer layer, final NeuralNetConfiguration conf,
+                                               final IActivation gateActivationFn, //Activation function for the gates - sigmoid or hard sigmoid (must be found in range 0 to 1)
+                                               final INDArray input, final INDArray recurrentWeights, //Shape: [hiddenLayerSize,4*hiddenLayerSize+3]; order: [wI,wF,wO,wG,wFF,wOO,wGG]
+                                               final INDArray originalInputWeights, //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
+                                               final INDArray biases, //Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
+                                               final boolean training, final INDArray originalPrevOutputActivations,
+                                               final INDArray originalPrevMemCellState, boolean forBackprop, boolean forwards,
+                                               final String inputWeightKey, INDArray maskArray, //Input mask: should only be used with bidirectional RNNs + variable length
+                                               final boolean hasPeepholeConnections, //True for GravesLSTM, false for LSTM
+                                               final CacheMode cacheMode // cacheMode for layer calling this helper
     ) {
 
         //Mini-batch data format: for mini-batch size m, nIn inputs, and T time series length
@@ -127,7 +128,7 @@ public class LSTMHelpers {
 
         //Allocate arrays for activations:
         boolean sigmoidGates = gateActivationFn instanceof ActivationSigmoid;
-        IActivation afn = conf.getLayer().getActivationFn();
+        IActivation afn = layer.layerConf().getActivationFn();
         INDArray outputActivations = null;
 
         FwdPassReturn toReturn = new FwdPassReturn();
@@ -214,7 +215,7 @@ public class LSTMHelpers {
                 if (cacheMode != CacheMode.NONE)
                     Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeLeft();
             }
-            conf.getLayer().getActivationFn().getActivation(inputActivations, training);
+            layer.layerConf().getActivationFn().getActivation(inputActivations, training);
             if (forBackprop)
                 toReturn.ia[time] = inputActivations;
 
@@ -434,7 +435,7 @@ public class LSTMHelpers {
         }
 
         boolean sigmoidGates = gateActivationFn instanceof ActivationSigmoid;
-        IActivation afn = conf.getLayer().getActivationFn();
+        IActivation afn = ((org.deeplearning4j.nn.conf.layers.BaseLayer)conf.getLayer()).getActivationFn();
 
         // we check, if we have defined workspace here. If we don't - we working without workspace, and we're skipping internal LSTM one. Otherwise - we go for it
         MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace() != null && !Nd4j.getMemoryManager()

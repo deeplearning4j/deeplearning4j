@@ -109,11 +109,14 @@ public class TransferLearningCompGraphTest {
                         //.setOutputs("layer3")
                         .build();
 
-        assertEquals(modelNow.getLayer("layer0").conf().getLayer().getWeightInit(), WeightInit.DISTRIBUTION);
-        assertEquals(modelNow.getLayer("layer0").conf().getLayer().getDist(), new NormalDistribution(1, 1e-1));
-        assertEquals(modelNow.getLayer("layer1").conf().getLayer().getWeightInit(), WeightInit.XAVIER);
-        assertEquals(modelNow.getLayer("layer1").conf().getLayer().getDist(), null);
-        assertEquals(modelNow.getLayer("layer3").conf().getLayer().getWeightInit(), WeightInit.XAVIER);
+        BaseLayer bl0 = ((BaseLayer)modelNow.getLayer("layer0").conf().getLayer());
+        BaseLayer bl1 = ((BaseLayer)modelNow.getLayer("layer1").conf().getLayer());
+        BaseLayer bl3 = ((BaseLayer)modelNow.getLayer("layer3").conf().getLayer());
+        assertEquals(bl0.getWeightInit(), WeightInit.DISTRIBUTION);
+        assertEquals(bl0.getDist(), new NormalDistribution(1, 1e-1));
+        assertEquals(bl1.getWeightInit(), WeightInit.XAVIER);
+        assertEquals(bl1.getDist(), null);
+        assertEquals(bl1.getWeightInit(), WeightInit.XAVIER);
 
         ComputationGraph modelExpectedArch = new ComputationGraph(overallConf.graphBuilder().addInputs("layer0In")
                         .addLayer("layer0", new DenseLayer.Builder().nIn(4).nOut(3).build(), "layer0In")

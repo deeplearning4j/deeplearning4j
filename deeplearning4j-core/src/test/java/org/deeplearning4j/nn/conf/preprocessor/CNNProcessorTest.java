@@ -223,7 +223,7 @@ public class CNNProcessorTest {
                                         new int[] {1, 1}).nOut(20).weightInit(WeightInit.XAVIER)
                                                         .activation(Activation.RELU).build())
                         .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
-                                        .activation(Activation.RELU).weightInit(WeightInit.XAVIER).build())
+                                        .build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD).nOut(10)
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutionalFlat(28, 28, 1)).build();

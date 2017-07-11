@@ -352,9 +352,9 @@ public class TransferLearning {
 
             NeuralNetConfiguration layerConf = editedConfs.get(layerNum);
             Layer layerImpl = layerConf.getLayer(); //not a clone need to modify nOut in place
-            layerImpl.setWeightInit(schemedist.getLeft());
-            layerImpl.setDist(schemedist.getRight());
             FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
+            layerImplF.setWeightInit(schemedist.getLeft());
+            layerImplF.setDist(schemedist.getRight());
             layerImplF.setNOut(nOut);
             int numParams = layerImpl.initializer().numParams(layerConf);
             INDArray params = Nd4j.create(1, numParams);
@@ -364,9 +364,9 @@ public class TransferLearning {
             if (layerNum + 1 < editedConfs.size()) {
                 layerConf = editedConfs.get(layerNum + 1);
                 layerImpl = layerConf.getLayer(); //modify in place
-                layerImpl.setWeightInit(schemedistNext.getLeft());
-                layerImpl.setDist(schemedistNext.getRight());
                 layerImplF = (FeedForwardLayer) layerImpl;
+                layerImplF.setWeightInit(schemedistNext.getLeft());
+                layerImplF.setDist(schemedistNext.getRight());
                 layerImplF.setNIn(nOut);
                 numParams = layerImpl.initializer().numParams(layerConf);
                 if (numParams > 0) {
@@ -552,10 +552,9 @@ public class TransferLearning {
                 NeuralNetConfiguration layerConf = origGraph.getLayer(layerName).conf();
                 Layer layerImpl = layerConf.getLayer().clone();
                 layerImpl.resetLayerDefaultConfig();
-
-                layerImpl.setWeightInit(scheme);
-                layerImpl.setDist(dist);
                 FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
+                layerImplF.setWeightInit(scheme);
+                layerImplF.setDist(dist);
                 layerImplF.setNOut(nOut);
 
                 editedConfigBuilder.removeVertex(layerName, false);
@@ -583,10 +582,9 @@ public class TransferLearning {
                     }
                     layerConf = origGraph.getLayer(fanoutVertexName).conf();
                     layerImpl = layerConf.getLayer().clone();
-
-                    layerImpl.setWeightInit(schemeNext);
-                    layerImpl.setDist(distNext);
                     layerImplF = (FeedForwardLayer) layerImpl;
+                    layerImplF.setWeightInit(schemeNext);
+                    layerImplF.setDist(distNext);
                     layerImplF.setNIn(nOut);
 
                     editedConfigBuilder.removeVertex(fanoutVertexName, false);

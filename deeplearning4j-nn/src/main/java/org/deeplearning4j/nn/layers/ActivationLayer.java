@@ -121,6 +121,10 @@ public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.la
         throw new UnsupportedOperationException("Not supported - " + layerId());
     }
 
+    @Override
+    public INDArray activationMean() {
+        return activate(false);
+    }
 
 
     @Override

@@ -343,10 +343,10 @@ public class MultiLayerNeuralNetConfigurationTest {
                                         .weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX).build())
                         .setInputType(InputType.convolutional(28, 28, 1)).build();
 
-        org.deeplearning4j.nn.conf.layers.Layer l0 = conf.getConf(0).getLayer();
-        org.deeplearning4j.nn.conf.layers.Layer l1 = conf.getConf(1).getLayer();
-        org.deeplearning4j.nn.conf.layers.Layer l2 = conf.getConf(2).getLayer();
-        org.deeplearning4j.nn.conf.layers.Layer l3 = conf.getConf(3).getLayer();
+        org.deeplearning4j.nn.conf.layers.BaseLayer l0 = (BaseLayer)conf.getConf(0).getLayer();
+        org.deeplearning4j.nn.conf.layers.BaseLayer l1 = (BaseLayer)conf.getConf(1).getLayer();
+        org.deeplearning4j.nn.conf.layers.BaseLayer l2 = (BaseLayer)conf.getConf(2).getLayer();
+        org.deeplearning4j.nn.conf.layers.BaseLayer l3 = (BaseLayer)conf.getConf(3).getLayer();
 
         assertEquals(0.5, l0.getBiasLearningRate(), 1e-6);
         assertEquals(1e-2, l0.getLearningRate(), 1e-6);

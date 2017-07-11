@@ -101,6 +101,9 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
     }
 
     @Override
+    public abstract Layer clone();
+
+    @Override
     public void setInput(INDArray input) {
         this.input = input;
         dropoutApplied = false;

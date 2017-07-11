@@ -162,7 +162,7 @@ public class RegressionTest071 {
         assertEquals(l1.getConvolutionMode(), ConvolutionMode.Same);
 
         OutputLayer l2 = (OutputLayer) conf.getConf(2).getLayer();
-        assertEquals("sigmoid", l1.getActivationFn().toString());
+        assertEquals("sigmoid", l2.getActivationFn().toString());
         assertEquals(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, l2.getLossFunction());
         assertTrue(l2.getLossFn() instanceof LossNegativeLogLikelihood); //TODO
         assertEquals(26 * 26 * 3, l2.getNIn());

@@ -157,12 +157,13 @@ public class ConvolutionLayerSetup {
                                             new CnnToRnnPreProcessor(lastHeight, lastWidth, lastOutChannels));
                             break;
                         case ACTIVATION_LAYER:
-                            feedForwardLayer = (ActivationLayer) outputLayer;
-                            lastOutChannels = lastnOut = convolutionLayer.getNOut();
-                            storeNInAndNOut(inLayerName, lastnOut);
-                            feedForwardLayer.setNOut(lastnOut);
-                            useCNN = true;
-                            break;
+                            throw new UnsupportedOperationException("To be removed");
+//                            feedForwardLayer = (ActivationLayer) outputLayer;
+//                            lastOutChannels = lastnOut = convolutionLayer.getNOut();
+//                            storeNInAndNOut(inLayerName, lastnOut);
+//                            feedForwardLayer.setNOut(lastnOut);
+//                            useCNN = true;
+//                            break;
                         case BATCH_NORMALIZATION:
                             feedForwardLayer = (BatchNormalization) outputLayer;
                             lastOutChannels = lastnOut = convolutionLayer.getNOut();
