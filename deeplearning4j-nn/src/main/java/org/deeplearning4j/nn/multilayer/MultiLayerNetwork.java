@@ -492,6 +492,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             int[] nParamsPerLayer = new int[nLayers];
             for (int i = 0; i < nLayers; i++) {
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
+                //TODO find a cleaner/better way to do this...
+                if(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer){
+                    conf = ((org.deeplearning4j.nn.conf.layers.misc.FrozenLayer)conf.getLayer()).getInnerConf(conf);
+                }
                 nParamsPerLayer[i] = conf.getLayer().initializer().numParams(conf);
                 paramLength += nParamsPerLayer[i];
             }

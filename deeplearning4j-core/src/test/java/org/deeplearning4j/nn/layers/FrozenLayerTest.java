@@ -2,13 +2,16 @@ package org.deeplearning4j.nn.layers;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.misc.*;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.transferlearning.FineTuneConfiguration;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
+import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -19,6 +22,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Created by susaneraly on 2/5/17.
@@ -250,6 +254,56 @@ public class FrozenLayerTest {
                         modelToFineTune.getLayer("layer1").params(), notFrozen.params());
         assertEquals(expectedParams, modelNow.params());
         assertEquals(expectedParams, clonedModel.params());
+    }
 
+
+    @Test
+    public void testFrozenLayerInstantiation(){
+
+        //We need to be able to instantitate frozen layers from JSON etc, and have them be the same as if
+        // they were initialized like this...
+
+        MultiLayerConfiguration conf1 = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).activation(Activation.TANH).weightInit(WeightInit.XAVIER).build())
+                .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).activation(Activation.TANH).weightInit(WeightInit.XAVIER).build())
+                .layer(2, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                        LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(10).nOut(10)
+                        .build())
+                .build();
+
+        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                .seed(12345)
+                .list()
+                .layer(0, new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer.Builder()
+                        .layer(new DenseLayer.Builder().nIn(10).nOut(10).activation(Activation.TANH)
+                                .weightInit(WeightInit.XAVIER).build()).build())
+                .layer(1, new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer.Builder()
+                        .layer(new DenseLayer.Builder().nIn(10).nOut(10).activation(Activation.TANH)
+                                .weightInit(WeightInit.XAVIER).build()).build())
+                .layer(2, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                        LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(10).nOut(10)
+                        .build())
+                .build();
+
+        MultiLayerNetwork net1 = new MultiLayerNetwork(conf1);
+        net1.init();
+        MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+        net2.init();
+
+        assertEquals(net1.params(), net2.params());
+
+
+        String json = conf2.toJson();
+
+        fail();
+    }
+
+    @Test
+    public void testFrozenLayerInstantiationCompGraph(){
+
+
+        fail();
     }
 }
