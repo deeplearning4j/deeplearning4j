@@ -3,12 +3,10 @@ package org.deeplearning4j.nearestneighbor.server;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
-import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.deeplearning4j.clustering.vptree.VPTree;
 import org.deeplearning4j.clustering.vptree.VPTreeFillSearch;
 import org.deeplearning4j.nearestneighbor.model.*;
-import org.jboss.netty.util.internal.ByteBufferUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.serde.base64.Nd4jBase64;
@@ -19,9 +17,6 @@ import play.routing.RoutingDsl;
 import play.server.Server;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -42,8 +37,8 @@ import static play.mvc.Results.ok;
  * @author Adam Gibson
  */
 public class NearestNeighborsServer {
-    @Parameter(names = {"--ndarrayPath"}, arity = 1, required = true)
-    private String ndarrayPath = null;
+    @Parameter(names = {"--ndarrayPaths"}, variableArity = true, required = true)
+    private List<String> ndarrayPaths = new ArrayList<>();
     @Parameter(names = {"--nearestNeighborsPort"}, arity = 1)
     private int port = 9000;
     @Parameter(names = {"--similarityFunction"}, arity = 1)
@@ -61,7 +56,7 @@ public class NearestNeighborsServer {
         } catch (ParameterException e) {
             //User provides invalid input -> print the usage info
             jcmdr.usage();
-            if (ndarrayPath == null)
+            if (ndarrayPaths == null)
                 System.err.println("Json path parameter is missing.");
             try {
                 Thread.sleep(500);
@@ -70,9 +65,12 @@ public class NearestNeighborsServer {
             System.exit(1);
         }
 
-        final INDArray points = BinarySerde.readFromDisk(new File(ndarrayPath));
-        VPTree tree = new VPTree(points,similarityFunction,invert);
+        INDArray[] pointArrays = new INDArray[ndarrayPaths.size()];
+        for (int i = 0; i < ndarrayPaths.size(); i++)
+            pointArrays[i] = BinarySerde.readFromDisk(new File(ndarrayPaths.get(i)));
 
+        final INDArray points = Nd4j.concat(0, pointArrays);
+        VPTree tree = new VPTree(points,similarityFunction,invert);
 
         RoutingDsl routingDsl = new RoutingDsl();
         //return the host information for a given id
