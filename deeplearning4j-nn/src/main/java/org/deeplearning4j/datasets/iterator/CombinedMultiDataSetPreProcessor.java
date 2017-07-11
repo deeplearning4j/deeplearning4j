@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Combine various multidataset preprocessors to be applied in the order they are added to in 
- * the builder
+ * Combines various multidataset preprocessors
+ * Applied in the order they are specified to in the builder
  */
 public class CombinedMultiDataSetPreProcessor implements MultiDataSetPreProcessor {
 
@@ -33,11 +33,19 @@ public class CombinedMultiDataSetPreProcessor implements MultiDataSetPreProcesso
 
         }
 
+        /**
+         * @param preProcessor to be added to list of preprocessors to be applied
+         */
         public Builder addPreProcessor(@NonNull MultiDataSetPreProcessor preProcessor) {
             preProcessors.add(preProcessor);
             return this;
         }
 
+        /**
+         * Inserts the specified preprocessor at the specified position to the list of preprocessors to be applied
+         * @param idx the position to apply the specified preprocessor at
+         * @param preProcessor to be added to list of preprocessors to be applied
+         */
         public Builder addPreProcessor(int idx, @NonNull MultiDataSetPreProcessor preProcessor) {
             preProcessors.add(idx, preProcessor);
             return this;

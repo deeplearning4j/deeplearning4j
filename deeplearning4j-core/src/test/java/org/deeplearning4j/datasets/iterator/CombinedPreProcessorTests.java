@@ -15,7 +15,7 @@ import static org.junit.Assert.assertEquals;
 public class CombinedPreProcessorTests {
 
     @Test
-    public void somePreProcessors() {
+    public void somePreProcessorsCombined() {
 
         INDArray[] featureArr = new INDArray[] {Nd4j.linspace(100,200,20).reshape(10,2)};
         org.nd4j.linalg.dataset.MultiDataSet multiDataSet = new org.nd4j.linalg.dataset.MultiDataSet(featureArr,null,null,null);
@@ -24,7 +24,7 @@ public class CombinedPreProcessorTests {
         minMaxScaler.fit(multiDataSet);
         CombinedMultiDataSetPreProcessor multiDataSetPreProcessor = new CombinedMultiDataSetPreProcessor.Builder()
                 .addPreProcessor(minMaxScaler)
-                .addPreProcessor(new addFivePreProcessor())
+                .addPreProcessor(1, new addFivePreProcessor())
                 .build();
 
         multiDataSetPreProcessor.preProcess(multiDataSet);
