@@ -768,10 +768,12 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         }
 
         /**
-         * Randomly offsetting the time series + masking appropriately
-         * @param timeSeriesRandomOffset
-         * @param rngSeed
-         * @return
+		 * For use with timeseries trained with tbptt
+  		 * In a given minbatch, shorter time series are padded and appropriately masked to be the same length as the longest time series.
+		 * Cases with a skewed distrbution of lengths can result in the last few updates from the time series coming from mostly masked time steps.
+         * timeSeriesRandomOffset randomly offsettsthe time series + masking appropriately to address this
+         * @param timeSeriesRandomOffset, "true" to randomly offset time series within a minibatch
+         * @param rngSeed seed for reproducibility
          */
         public Builder timeSeriesRandomOffset(boolean timeSeriesRandomOffset, long rngSeed){
             this.timeSeriesRandomOffset = timeSeriesRandomOffset;
