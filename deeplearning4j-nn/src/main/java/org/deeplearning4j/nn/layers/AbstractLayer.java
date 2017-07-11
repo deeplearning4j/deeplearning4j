@@ -192,24 +192,17 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
      */
     @Override
     public void iterate(INDArray input) {
-        setInput(input.dup());
-        applyDropOutIfNecessary(true);
-        Gradient gradient = gradient();
-        for (String paramType : gradient.gradientForVariable().keySet()) {
-            update(gradient.getGradientFor(paramType), paramType);
-        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void update(Gradient gradient) {
-        for (String paramType : gradient.gradientForVariable().keySet()) {
-            update(gradient.getGradientFor(paramType), paramType);
-        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public void update(INDArray gradient, String paramType) {
-        setParam(paramType, getParam(paramType).addi(gradient));
+        throw new UnsupportedOperationException();
     }
 
 
@@ -345,31 +338,12 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public double calcL1(boolean backpropParamsOnly) {
-        if (!conf.isUseRegularization())
-            return 0.0;
-        double l1Sum = 0.0;
-        if (conf.getL1ByParam(DefaultParamInitializer.WEIGHT_KEY) > 0.0) {
-            l1Sum += conf.getL1ByParam(DefaultParamInitializer.WEIGHT_KEY)
-                            * getParam(DefaultParamInitializer.WEIGHT_KEY).norm1Number().doubleValue();
-        }
-        if (conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY) > 0.0) {
-            l1Sum += conf.getL1ByParam(DefaultParamInitializer.BIAS_KEY)
-                            * getParam(DefaultParamInitializer.BIAS_KEY).norm1Number().doubleValue();
-        }
-        return l1Sum;
+        return 0.0;
     }
 
     @Override
     public int batchSize() {
         return input.size(0);
-    }
-
-
-    @Override
-    public INDArray activationMean() {
-        INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
-        INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
-        return input().mmul(W).addiRowVector(b);
     }
 
     @Override
@@ -406,8 +380,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
      */
     @Override
     public void merge(Layer l, int batchSize) {
-        setParams(params().addi(l.params().divi(batchSize)));
-        computeGradientAndScore();
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -489,5 +462,26 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
         this.maskState = currentMaskState;
 
         return new Pair<>(maskArray, currentMaskState);
+    }
+
+
+    @Override
+    public Gradient gradient() {
+        throw new UnsupportedOperationException("Not supported for this layer, or should be overridden for layers requiring it");
+    }
+
+    @Override
+    public void fit() {
+        throw new UnsupportedOperationException("Not supported for this layer, or should be overridden for layers requiring it");
+    }
+
+    @Override
+    public double score() {
+        throw new UnsupportedOperationException("Not supported for this layer, or should be overridden for layers requiring it");
+    }
+
+    @Override
+    public void accumulateScore(double accum) {
+        throw new UnsupportedOperationException("Not supported for this layer, or should be overridden for layers requiring it");
     }
 }

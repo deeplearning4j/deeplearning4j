@@ -127,7 +127,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
         org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
                         (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) conf.getLayer();
         if (initializeParams) {
-            Distribution dist = Distributions.createDistribution(conf.getLayer().getDist());
+            Distribution dist = Distributions.createDistribution(layerConf.getDist());
             int[] kernel = layerConf.getKernelSize();
             int[] stride = layerConf.getStride();
 

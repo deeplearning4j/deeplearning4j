@@ -206,11 +206,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         return optimizer;
     }
 
-    @Override
-    public void setConf(NeuralNetConfiguration conf) {
-        this.conf = conf;
-    }
-
     /**Returns the parameters of the neural network as a flattened row vector
      * @return the parameters of the neural network
      */
@@ -304,15 +299,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         return params;
     }
 
-    @Override
-    public INDArray preOutput(INDArray x, boolean training) {
-        if (x == null) {
-            throw new IllegalArgumentException("Cannot do forward pass with null input " + layerId());
-        }
-        setInput(x);
-        return preOutput(training);
-    }
-
     public INDArray preOutput(boolean training) {
         applyDropOutIfNecessary(training);
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
@@ -344,10 +330,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         return ret;
     }
 
-    protected void applyMask(INDArray to) {
-        to.muliColumnVector(maskArray);
-    }
-
     @Override
     public INDArray activate(boolean training) {
         INDArray z = preOutput(training);
@@ -360,37 +342,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         }
 
         return ret;
-    }
-
-    @Override
-    public INDArray activate(INDArray input) {
-        setInput(input);
-        return activate(true);
-    }
-
-    @Override
-    public INDArray activate(INDArray input, boolean training) {
-        setInput(input);
-        return activate(training);
-    }
-
-    @Override
-    public INDArray activate() {
-        return activate(false);
-    }
-
-
-    /**
-     * Classify input
-     * @param x the input (can either be a matrix or vector)
-     * If it's a matrix, each row is considered an example
-     * and associated rows are classified accordingly.
-     * Each row will be the likelihood of a label given that example
-     * @return a probability distribution for each row
-     */
-    @Override
-    public INDArray preOutput(INDArray x) {
-        return preOutput(x, true);
     }
 
     @Override
@@ -427,49 +378,12 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         return l1Sum;
     }
 
-    @Override
-    public int batchSize() {
-        return input.size(0);
-    }
-
 
     @Override
     public INDArray activationMean() {
         INDArray b = getParam(DefaultParamInitializer.BIAS_KEY);
         INDArray W = getParam(DefaultParamInitializer.WEIGHT_KEY);
         return input().mmul(W).addiRowVector(b);
-    }
-
-    @Override
-    public NeuralNetConfiguration conf() {
-        return conf;
-    }
-
-
-    @Override
-    public void clear() {
-        if (input != null) {
-            // NONONO
-            //input.data().destroy();
-            input = null;
-        }
-
-    }
-
-    protected void applyDropOutIfNecessary(boolean training) {
-        if (layerConf().getDropOut() > 0 && !conf.isUseDropConnect() && training && !dropoutApplied) {
-            if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceExternal)) {
-                try (MemoryWorkspace ws = Nd4j.getWorkspaceManager()
-                                .getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)
-                                .notifyScopeBorrowed()) {
-                    input = input.isView() ? input.dup() : input.unsafeDuplication();
-                }
-            } else
-                input = input.isView() ? input.dup() : input.unsafeDuplication();
-
-            Dropout.applyDropout(input, layerConf().getDropOut());
-            dropoutApplied = true;
-        }
     }
 
     /**
@@ -502,11 +416,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
 
     }
 
-    @Override
-    public Type type() {
-        return Type.FEED_FORWARD;
-    }
-
     /**
      * The number of parameters for the model
      *
@@ -518,11 +427,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         for (INDArray val : params.values())
             ret += val.length();
         return ret;
-    }
-
-    @Override
-    public int numParams(boolean backwards) {
-        return numParams();
     }
 
     @Override
@@ -542,22 +446,6 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         }
         this.optimizer = solver.getOptimizer();
         solver.optimize();
-    }
-
-
-    @Override
-    public Pair<Gradient, Double> gradientAndScore() {
-        return new Pair<>(gradient(), score());
-    }
-
-    @Override
-    public INDArray input() {
-        return input;
-    }
-
-    @Override
-    public void validateInput() {
-
     }
 
     @Override
@@ -620,39 +508,9 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
     }
 
     @Override
-    public void setInputMiniBatchSize(int size) {}
-
-    @Override
-    public int getInputMiniBatchSize() {
-        return input.size(0);
-    }
-
-    @Override
     public void applyLearningRateScoreDecay() {
         for (Map.Entry<String, Double> lrPair : conf.getLearningRateByParam().entrySet())
             conf.setLearningRateByParam(lrPair.getKey(),
                             lrPair.getValue() * (conf.getLrPolicyDecayRate() + Nd4j.EPS_THRESHOLD));
-    }
-
-    @Override
-    public void setMaskArray(INDArray maskArray) {
-        this.maskArray = maskArray;
-    }
-
-    @Override
-    public INDArray getMaskArray() {
-        return maskArray;
-    }
-
-
-    @Override
-    public Pair<INDArray, MaskState> feedForwardMaskArray(INDArray maskArray, MaskState currentMaskState,
-                    int minibatchSize) {
-        //Most layers: CNN, dense, activation, etc - set mask array, mask state and then leave the mask unmodified
-
-        this.maskArray = maskArray;
-        this.maskState = currentMaskState;
-
-        return new Pair<>(maskArray, currentMaskState);
     }
 }

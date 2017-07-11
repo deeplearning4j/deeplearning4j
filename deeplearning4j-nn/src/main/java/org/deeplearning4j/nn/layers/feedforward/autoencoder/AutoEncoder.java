@@ -68,7 +68,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
         INDArray preAct = v.mmul(W).addiRowVector(hBias);
 
         //INDArray ret = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), preAct));
-        INDArray ret = conf.getLayer().getActivationFn().getActivation(preAct, training);
+        INDArray ret = layerConf().getActivationFn().getActivation(preAct, training);
 
         return ret;
     }
@@ -79,7 +79,7 @@ public class AutoEncoder extends BasePretrainNetwork<org.deeplearning4j.nn.conf.
         INDArray vBias = getParam(PretrainParamInitializer.VISIBLE_BIAS_KEY);
         INDArray preAct = y.mmul(W.transposei()).addiRowVector(vBias);
         //return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), preAct));
-        return conf.getLayer().getActivationFn().getActivation(preAct, true);
+        return layerConf().getActivationFn().getActivation(preAct, true);
 
     }
 
