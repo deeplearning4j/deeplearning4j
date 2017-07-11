@@ -229,15 +229,16 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                 }
             }
         }
+        long rngSeed = (timeSeriesRandomOffset ? timeSeriesRandomOffsetRng.nextLong() : -1);
         Pair<INDArray[], INDArray[]> features = convertFeaturesOrLabels(new INDArray[inputs.size()],
                         new INDArray[inputs.size()], inputs, minExamples, nextRRVals, nextRRValsBatched, nextSeqRRVals,
-                        longestTS, longestSequence);
+                        longestTS, longestSequence, rngSeed);
 
 
         //Third: create the outputs/labels
         Pair<INDArray[], INDArray[]> labels = convertFeaturesOrLabels(new INDArray[outputs.size()],
                         new INDArray[outputs.size()], outputs, minExamples, nextRRVals, nextRRValsBatched,
-                        nextSeqRRVals, longestTS, longestSequence);
+                        nextSeqRRVals, longestTS, longestSequence, rngSeed);
 
 
 
@@ -254,11 +255,9 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
     private Pair<INDArray[], INDArray[]> convertFeaturesOrLabels(INDArray[] featuresOrLabels, INDArray[] masks,
                     List<SubsetDetails> subsetDetails, int minExamples, Map<String, List<List<Writable>>> nextRRVals,
                     Map<String, List<Writable>> nextRRValsBatched,
-                    Map<String, List<List<List<Writable>>>> nextSeqRRVals, int longestTS, int[] longestSequence) {
+                    Map<String, List<List<List<Writable>>>> nextSeqRRVals, int longestTS, int[] longestSequence, long rngSeed) {
         boolean hasMasks = false;
         int i = 0;
-
-        long rngSeed = (timeSeriesRandomOffset ? timeSeriesRandomOffsetRng.nextLong() : -1);
 
         for (SubsetDetails d : subsetDetails) {
             if (nextRRValsBatched != null && nextRRValsBatched.containsKey(d.readerName)) {
@@ -768,6 +767,12 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
             return this;
         }
 
+        /**
+         * Randomly offsetting the time series + masking appropriately
+         * @param timeSeriesRandomOffset
+         * @param rngSeed
+         * @return
+         */
         public Builder timeSeriesRandomOffset(boolean timeSeriesRandomOffset, long rngSeed){
             this.timeSeriesRandomOffset = timeSeriesRandomOffset;
             this.timeSeriesRandomOffsetSeed = rngSeed;
