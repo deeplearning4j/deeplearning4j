@@ -34,6 +34,7 @@ Hyperparameters are variables that determine how a neural network learns. They i
         .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
         .learningRate(0.05)
         // ... other hyperparameters
+        .list()
         .backprop(true)
         .build();
 ```
