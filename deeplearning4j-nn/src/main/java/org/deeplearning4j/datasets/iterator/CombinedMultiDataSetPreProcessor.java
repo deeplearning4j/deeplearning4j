@@ -8,7 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by susaneraly on 6/17/17.
+ * Combine various multidataset preprocessors to be applied in the order they are added to in 
+ * the builder
  */
 public class CombinedMultiDataSetPreProcessor implements MultiDataSetPreProcessor {
 
