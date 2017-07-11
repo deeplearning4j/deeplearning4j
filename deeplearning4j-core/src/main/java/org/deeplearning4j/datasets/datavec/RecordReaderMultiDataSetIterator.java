@@ -28,6 +28,7 @@ import org.datavec.api.records.metadata.RecordMetaData;
 import org.datavec.api.records.metadata.RecordMetaDataComposableMap;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;
+import org.datavec.api.util.ndarray.RecordConverter;
 import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Writable;
 import org.deeplearning4j.berkeley.Pair;
@@ -313,6 +314,31 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         return out;
     }
 
+    private int countLength(List<Writable> list){
+        return countLength(list, 0, list.size()-1);
+    }
+
+    private int countLength(List<Writable> list, int from, int to){
+        int length = 0;
+        for( int i=from; i<=to; i++ ) {
+            Writable w = list.get(i);
+            if (w instanceof NDArrayWritable) {
+                INDArray a = ((NDArrayWritable) w).get();
+                if (!a.isRowVector()) {
+                    throw new UnsupportedOperationException("Multiple writables present but NDArrayWritable is "
+                            + "not a row vector. Can only concat row vectors with other writables. Shape: "
+                            + Arrays.toString(a.shape()));
+                }
+                length += a.length();
+            } else {
+                //Assume all others are single value
+                length++;
+            }
+        }
+
+        return length;
+    }
+
     private INDArray convertWritables(List<List<Writable>> list, int minValues, SubsetDetails details) {
         INDArray arr;
         if (details.entireReader) {
@@ -323,7 +349,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                 shape[0] = minValues;
                 arr = Nd4j.create(shape);
             } else {
-                arr = Nd4j.create(minValues, list.get(0).size());
+                arr = Nd4j.create(minValues, countLength(list.get(0)));
             }
         } else if (details.oneHot) {
             arr = Nd4j.zeros(minValues, details.oneHotNumClasses);
@@ -337,24 +363,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                 arr = Nd4j.create(shape);
             } else {
                 //Need to check for multiple NDArrayWritables, or mixed NDArrayWritable + DoubleWritable etc
-
-                int length = 0;
-                for (int i = details.subsetStart; i <= details.subsetEndInclusive; i++) {
-                    Writable w = list.get(0).get(i);
-                    if (w instanceof NDArrayWritable) {
-                        INDArray a = ((NDArrayWritable) w).get();
-                        if (!a.isRowVector()) {
-                            throw new UnsupportedOperationException("Multiple writables present but NDArrayWritable is "
-                                            + "not a row vector. Can only concat row vectors with other writables. Shape: "
-                                            + Arrays.toString(a.shape()));
-                        }
-                        length += a.length();
-                    } else {
-                        //Assume all others are single value
-                        length++;
-                    }
-                }
-
+                int length = countLength(list.get(0), details.subsetStart, details.subsetEndInclusive);
                 arr = Nd4j.create(minValues, length);
             }
         }
@@ -363,20 +372,8 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
             List<Writable> c = list.get(i);
             if (details.entireReader) {
                 //Convert entire reader contents, without modification
-                int j = 0;
-                for (Writable w : c) {
-                    try {
-                        arr.putScalar(i, j, w.toDouble());
-                    } catch (UnsupportedOperationException e) {
-                        // This isn't a scalar, so check if we got an array already
-                        if (w instanceof NDArrayWritable) {
-                            putExample(arr, ((NDArrayWritable) w).get(), i);
-                        } else {
-                            throw e;
-                        }
-                    }
-                    j++;
-                }
+                INDArray converted = RecordConverter.toArray(c);
+                putExample(arr, converted, i);
             } else if (details.oneHot) {
                 //Convert a single column to a one-hot representation
                 Writable w = c.get(details.subsetStart);
