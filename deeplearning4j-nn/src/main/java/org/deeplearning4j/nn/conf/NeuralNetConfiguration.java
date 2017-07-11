@@ -1186,17 +1186,17 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     bLayer.setGradientNormalization(gradientNormalization);
                 if (Double.isNaN(bLayer.getGradientNormalizationThreshold()))
                     bLayer.setGradientNormalizationThreshold(gradientNormalizationThreshold);
-                if (layer instanceof ConvolutionLayer) {
-                    ConvolutionLayer cl = (ConvolutionLayer) layer;
-                    if (cl.getConvolutionMode() == null) {
-                        cl.setConvolutionMode(convolutionMode);
-                    }
+            }
+            if (layer instanceof ConvolutionLayer) {
+                ConvolutionLayer cl = (ConvolutionLayer) layer;
+                if (cl.getConvolutionMode() == null) {
+                    cl.setConvolutionMode(convolutionMode);
                 }
-                if (layer instanceof SubsamplingLayer) {
-                    SubsamplingLayer sl = (SubsamplingLayer) layer;
-                    if (sl.getConvolutionMode() == null) {
-                        sl.setConvolutionMode(convolutionMode);
-                    }
+            }
+            if (layer instanceof SubsamplingLayer) {
+                SubsamplingLayer sl = (SubsamplingLayer) layer;
+                if (sl.getConvolutionMode() == null) {
+                    sl.setConvolutionMode(convolutionMode);
                 }
             }
             LayerValidation.generalValidation(layerName, layer, useRegularization, useDropConnect, dropOut, l2, l2Bias,

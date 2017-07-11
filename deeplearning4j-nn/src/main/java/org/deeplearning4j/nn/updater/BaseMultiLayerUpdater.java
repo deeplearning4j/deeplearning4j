@@ -71,49 +71,51 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
         int currentUpdaterOffset = 0;
         for (int i = 0; i < layers.length; i++) {
             Map<String, INDArray> layerParamTable = layers[i].paramTable();
-            List<String> variables = new ArrayList<>(layerParamTable.keySet()); //Is from a set, but iteration order should be fixed per layer as it's a from a LinkedHashSet
-            for (int j = 0; j < variables.size(); j++) {
-                String var = variables.get(j);
-                int paramSizeThisVariable = layerParamTable.get(var).length();
-                int updaterStateSizeThisVariable = (int) layers[i].conf().getLayer().getIUpdaterByParam(var)
-                                .stateSize(paramSizeThisVariable);
+            if(layerParamTable != null) {
+                List<String> variables = new ArrayList<>(layerParamTable.keySet()); //Is from a set, but iteration order should be fixed per layer as it's a from a LinkedHashSet
+                for (int j = 0; j < variables.size(); j++) {
+                    String var = variables.get(j);
+                    int paramSizeThisVariable = layerParamTable.get(var).length();
+                    int updaterStateSizeThisVariable = (int) layers[i].conf().getLayer().getIUpdaterByParam(var)
+                            .stateSize(paramSizeThisVariable);
 
-                INDArray gradientViewSubset = null;
-                INDArray paramsViewSubset = null;
-                if (paramSizeThisVariable > 0) {
-                    paramsViewSubset = paramsView.get(NDArrayIndex.point(0),
-                                    NDArrayIndex.interval(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable));
-                    gradientViewSubset = gradientView.get(NDArrayIndex.point(0),
-                                    NDArrayIndex.interval(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable));
+                    INDArray gradientViewSubset = null;
+                    INDArray paramsViewSubset = null;
+                    if (paramSizeThisVariable > 0) {
+                        paramsViewSubset = paramsView.get(NDArrayIndex.point(0),
+                                NDArrayIndex.interval(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable));
+                        gradientViewSubset = gradientView.get(NDArrayIndex.point(0),
+                                NDArrayIndex.interval(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable));
+                    }
+
+                    //First: decide whether to add to the existing updater block, or create a new one
+                    if (currentBlock == null
+                            || !UpdaterUtils.updaterConfigurationsEquals(lastLayer, lastVariable, layers[i], var)) {
+                        //Create a new block
+                        List<UpdaterBlock.ParamState> list = new ArrayList<>();
+                        list.add(new UpdaterBlock.ParamState(layers[i], var, paramsViewSoFar,
+                                paramsViewSoFar + paramSizeThisVariable, paramsViewSubset, gradientViewSubset));
+                        currentBlock = new UpdaterBlock(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable,
+                                currentUpdaterOffset, currentUpdaterOffset + updaterStateSizeThisVariable, list);
+
+                        updaterBlocks.add(currentBlock);
+                    } else {
+                        //Add to existing updater block
+                        currentBlock.setParamOffsetEnd(currentBlock.getParamOffsetEnd() + paramSizeThisVariable);
+                        currentBlock.setUpdaterViewOffsetEnd(
+                                currentBlock.getUpdaterViewOffsetEnd() + updaterStateSizeThisVariable);
+                        currentBlock.getLayersAndVariablesInBlock()
+                                .add(new UpdaterBlock.ParamState(layers[i], var, paramsViewSoFar,
+                                        paramsViewSoFar + paramSizeThisVariable, paramsViewSubset,
+                                        gradientViewSubset));
+                    }
+
+                    lastLayer = layers[i];
+                    lastVariable = variables.get(j);
+                    updaterStateSize += updaterStateSizeThisVariable;
+                    paramsViewSoFar += paramSizeThisVariable;
+                    currentUpdaterOffset += updaterStateSizeThisVariable;
                 }
-
-                //First: decide whether to add to the existing updater block, or create a new one
-                if (currentBlock == null
-                                || !UpdaterUtils.updaterConfigurationsEquals(lastLayer, lastVariable, layers[i], var)) {
-                    //Create a new block
-                    List<UpdaterBlock.ParamState> list = new ArrayList<>();
-                    list.add(new UpdaterBlock.ParamState(layers[i], var, paramsViewSoFar,
-                                    paramsViewSoFar + paramSizeThisVariable, paramsViewSubset, gradientViewSubset));
-                    currentBlock = new UpdaterBlock(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable,
-                                    currentUpdaterOffset, currentUpdaterOffset + updaterStateSizeThisVariable, list);
-
-                    updaterBlocks.add(currentBlock);
-                } else {
-                    //Add to existing updater block
-                    currentBlock.setParamOffsetEnd(currentBlock.getParamOffsetEnd() + paramSizeThisVariable);
-                    currentBlock.setUpdaterViewOffsetEnd(
-                                    currentBlock.getUpdaterViewOffsetEnd() + updaterStateSizeThisVariable);
-                    currentBlock.getLayersAndVariablesInBlock()
-                                    .add(new UpdaterBlock.ParamState(layers[i], var, paramsViewSoFar,
-                                                    paramsViewSoFar + paramSizeThisVariable, paramsViewSubset,
-                                                    gradientViewSubset));
-                }
-
-                lastLayer = layers[i];
-                lastVariable = variables.get(j);
-                updaterStateSize += updaterStateSizeThisVariable;
-                paramsViewSoFar += paramSizeThisVariable;
-                currentUpdaterOffset += updaterStateSizeThisVariable;
             }
         }
 

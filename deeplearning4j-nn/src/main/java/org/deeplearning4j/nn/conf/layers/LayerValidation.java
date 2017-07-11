@@ -286,7 +286,7 @@ public class LayerValidation {
     public static void generalValidation(String layerName, Layer layer, boolean useRegularization,
                     boolean useDropConnect, Double dropOut, Double l2, Double l2Bias, Double l1, Double l1Bias,
                     Distribution dist) {
-        generalValidation(layerName, (BaseLayer)layer, useRegularization, useDropConnect, dropOut == null ? 0.0 : dropOut,
+        generalValidation(layerName, layer, useRegularization, useDropConnect, dropOut == null ? 0.0 : dropOut,
                         l2 == null ? Double.NaN : l2, l2Bias == null ? Double.NaN : l2Bias,
                         l1 == null ? Double.NaN : l1, l1Bias == null ? Double.NaN : l1Bias, dist);
     }

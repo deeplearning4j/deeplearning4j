@@ -74,7 +74,8 @@ public class TestConvolutionModes {
                                 MultiLayerConfiguration conf =
                                                 new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
                                                                 .convolutionMode(cm).list()
-                                                                .layer(0, layer).layer(1,
+                                                                .layer(0, layer)
+                                                                .layer(1,
                                                                                 new OutputLayer.Builder()
                                                                                                 .lossFunction(LossFunctions.LossFunction.MCXENT)
                                                                                                 .nOut(3).build())
