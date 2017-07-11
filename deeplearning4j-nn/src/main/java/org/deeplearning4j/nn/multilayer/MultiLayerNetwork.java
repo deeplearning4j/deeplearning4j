@@ -145,6 +145,20 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         this.defaultConfiguration = conf.getConf(0).clone();
     }
 
+    /**
+     * This method sets specified CacheMode for all layers within network
+     *
+     * @param mode
+     */
+    public void setCacheMode(CacheMode mode) {
+        if (mode == null)
+            mode = CacheMode.NONE;
+
+        for (Layer layer: layers) {
+            layer.setCacheMode(mode);
+        }
+    }
+
     public void setLastEtlTime(long time) {
         lastEtlTime.set(time);
     }
@@ -2759,6 +2773,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         DataSetIterator iter = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 2, true) : iterator;
 
+        WorkspaceMode cMode = layerWiseConfigurations.getTrainingWorkspaceMode();
+        layerWiseConfigurations.setTrainingWorkspaceMode(layerWiseConfigurations.getInferenceWorkspaceMode());
+
         MemoryWorkspace workspace =
                         layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
@@ -2795,6 +2812,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         if (iterator.asyncSupported())
             ((AsyncDataSetIterator) iter).shutdown();
+
+        layerWiseConfigurations.setTrainingWorkspaceMode(cMode);
 
         return evaluations;
     }
@@ -2845,8 +2864,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     @Override
     public <T extends IEvaluation> T[] doEvaluation(MultiDataSetIterator iterator, T[] evaluations) {
-        throw new DL4JInvalidInputException(
-                        "MultiLayerNetwork can't handle MultiDataSet. Please consider use of ComputationGraph");
+        return doEvaluation(new MultiDataSetWrapperIterator(iterator), evaluations);
     }
 
     /**

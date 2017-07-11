@@ -468,25 +468,28 @@ public class VPTree {
 
         }
 
-        if (node.getLeft() == null && node.getRight() == null)
+        Node left = node.getLeft();
+        Node right = node.getRight();
+
+        if (left == null && right == null)
             return;
 
         if (distance < node.getThreshold()) {
             if (distance - tau <= node.getThreshold()) { // if there can still be neighbors inside the ball, recursively search left child first
-                search(node.getLeft(), target, k, pq);
+                search(left, target, k, pq);
             }
 
-            if (distance + tau >= node.getThreshold()) { // if there can still be neighbors outside the ball, recursively search right child
-                search(node.getRight(), target, k, pq);
+             if (distance + tau >= node.getThreshold()) { // if there can still be neighbors outside the ball, recursively search right child
+                search(right, target, k, pq);
             }
 
         } else {
             if (distance + tau >= node.getThreshold()) { // if there can still be neighbors outside the ball, recursively search right child first
-                search(node.getRight(), target, k, pq);
+                search(right, target, k, pq);
             }
 
-            if (distance - tau <= node.getThreshold()) { // if there can still be neighbors inside the ball, recursively search left child
-                search(node.getLeft(), target, k, pq);
+             if (distance - tau <= node.getThreshold()) { // if there can still be neighbors inside the ball, recursively search left child
+                search(left, target, k, pq);
             }
         }
 

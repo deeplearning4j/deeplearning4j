@@ -75,6 +75,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A ComputationGraph network is a neural network with arbitrary (directed acyclic graph) connection structure.
@@ -179,15 +180,41 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         this.defaultConfiguration = configuration.getDefaultConfiguration();
     }
 
+    /**
+     * This method allows to set ETL field time, useful for performance tracking
+     * @param time
+     */
     public void setLastEtlTime(long time) {
         lastEtlTime.set(time);
     }
 
+    /**
+     * This method returns ETL time field value
+     * @return
+     */
     public long getLastEtlTime() {
         Long time = lastEtlTime.get();
         return time == null ? 0L : time;
     }
 
+    /**
+     * This method sets specified CacheMode for all layers within network
+     *
+     * @param mode
+     */
+    public void setCacheMode(CacheMode mode) {
+        if (mode == null)
+            mode = CacheMode.NONE;
+
+        for (Layer layer: layers) {
+            layer.setCacheMode(mode);
+        }
+    }
+
+    /**
+     * This method returns configuration of this ComputationGraph
+     * @return
+     */
     public ComputationGraphConfiguration getConfiguration() {
         return configuration;
     }
@@ -2917,6 +2944,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         DataSetIterator iter = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 2, true) : iterator;
 
+        WorkspaceMode cMode = configuration.getTrainingWorkspaceMode();
+        configuration.setTrainingWorkspaceMode(configuration.getInferenceWorkspaceMode());
+
         MemoryWorkspace workspace =
                         configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
@@ -2950,6 +2980,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (iterator.asyncSupported())
             ((AsyncDataSetIterator) iter).shutdown();
 
+        configuration.setTrainingWorkspaceMode(cMode);
+
         return evaluations;
     }
 
@@ -2976,11 +3008,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         MultiDataSetIterator iter =
                         iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 2, true) : iterator;
 
+        WorkspaceMode cMode = configuration.getTrainingWorkspaceMode();
+        configuration.setTrainingWorkspaceMode(configuration.getInferenceWorkspaceMode());
+
         MemoryWorkspace workspace =
                         configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
                                         : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
                                                         workspaceConfigurationExternal, workspaceExternal);
-
 
         while (iter.hasNext()) {
             MultiDataSet next = iter.next();
@@ -3011,6 +3045,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
         if (iterator.asyncSupported())
             ((AsyncMultiDataSetIterator) iter).shutdown();
+
+        configuration.setTrainingWorkspaceMode(cMode);
 
         return evaluations;
     }

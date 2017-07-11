@@ -7,6 +7,7 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Updater;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.variational.CompositeReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.LossFunctionWrapper;
@@ -69,6 +70,7 @@ public class VariationalAutoencoder implements Layer {
     protected ReconstructionDistribution reconstructionDistribution;
     protected IActivation pzxActivationFn;
     protected int numSamples;
+    protected CacheMode cacheMode = CacheMode.NONE;
 
     protected boolean zeroedPretrainParamGradients = false;
 
@@ -88,6 +90,14 @@ public class VariationalAutoencoder implements Layer {
                         .getPzxActivationFn();
         this.numSamples = ((org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf.getLayer())
                         .getNumSamples();
+    }
+
+    @Override
+    public void setCacheMode(CacheMode mode) {
+        if (mode == null)
+            mode = CacheMode.NONE;
+
+        this.cacheMode = mode;
     }
 
     protected String layerId() {
