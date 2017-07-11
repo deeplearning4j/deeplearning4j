@@ -23,11 +23,10 @@ import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Adam Gibson
@@ -41,23 +40,9 @@ public class RecordConverter {
      *
      * @return the array
      */
+    @Deprecated
     public static INDArray toArray(Collection<Writable> record, int size) {
-        Iterator<Writable> writables = record.iterator();
-        Writable firstWritable = writables.next();
-        if (firstWritable instanceof NDArrayWritable) {
-            NDArrayWritable ret = (NDArrayWritable) firstWritable;
-            return ret.get();
-        } else {
-            INDArray vector = Nd4j.create(size);
-            vector.putScalar(0, firstWritable.toDouble());
-            int count = 1;
-            while (writables.hasNext()) {
-                Writable w = writables.next();
-                vector.putScalar(count++, w.toDouble());
-            }
-
-            return vector;
-        }
+        return toArray(record);
     }
 
     /**
@@ -80,21 +65,64 @@ public class RecordConverter {
      * @return the matrix for the records
      */
     public static INDArray toMatrix(List<List<Writable>> records) {
-        INDArray arr = Nd4j.create(records.size(), records.get(0).size());
-        for (int i = 0; i < arr.rows(); i++) {
-            arr.putRow(i, toArray(records.get(i)));
+        List<INDArray> toStack = new ArrayList<>();
+        for(List<Writable> l : records){
+            toStack.add(toArray(l));
         }
 
-        return arr;
+        return Nd4j.vstack(toStack);
     }
 
     /**
-     * Convert a record to an ndarray
+     * Convert a record to an INDArray. May contain a mix of Writables and row vector NDArrayWritables.
      * @param record the record to convert
      * @return the array
      */
-    public static INDArray toArray(Collection<Writable> record) {
-        return toArray(record, record.size());
+    public static INDArray toArray(Collection<? extends Writable> record) {
+        List<Writable> l;
+        if(record instanceof List){
+            l = (List<Writable>)record;
+        } else {
+            l = new ArrayList<>(record);
+        }
+
+        //Edge case: single NDArrayWritable
+        if(l.size() == 1 && l.get(0) instanceof NDArrayWritable){
+            return ((NDArrayWritable) l.get(0)).get();
+        }
+
+        int length = 0;
+        for (Writable w : record) {
+            if (w instanceof NDArrayWritable) {
+                INDArray a = ((NDArrayWritable) w).get();
+                if (!a.isRowVector()) {
+                    throw new UnsupportedOperationException("Multiple writables present but NDArrayWritable is "
+                            + "not a row vector. Can only concat row vectors with other writables. Shape: "
+                            + Arrays.toString(a.shape()));
+                }
+                length += a.length();
+            } else {
+                //Assume all others are single value
+                length++;
+            }
+        }
+
+        INDArray arr = Nd4j.create(1, length);
+
+        int k = 0;
+        for (Writable w : record ) {
+            if (w instanceof NDArrayWritable) {
+                INDArray toPut = ((NDArrayWritable) w).get();
+                arr.put(new INDArrayIndex[] {NDArrayIndex.point(0),
+                        NDArrayIndex.interval(k, k + toPut.length())}, toPut);
+                k += toPut.length();
+            } else {
+                arr.putScalar(0, k, w.toDouble());
+                k++;
+            }
+        }
+
+        return arr;
     }
 
 
