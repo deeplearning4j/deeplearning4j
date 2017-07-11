@@ -148,8 +148,8 @@ public class GradientCheckTestsComputationGraph {
     @Test
     public void testBasicIrisWithElementWiseNode() {
 
-        ElementWiseVertex.Op[] ops =
-                        new ElementWiseVertex.Op[] {ElementWiseVertex.Op.Add, ElementWiseVertex.Op.Subtract};
+        ElementWiseVertex.Op[] ops = new ElementWiseVertex.Op[] {ElementWiseVertex.Op.Add,
+                        ElementWiseVertex.Op.Subtract, ElementWiseVertex.Op.Product};
 
         for (ElementWiseVertex.Op op : ops) {
 
@@ -173,6 +173,65 @@ public class GradientCheckTestsComputationGraph {
             graph.init();
 
             int numParams = (4 * 5 + 5) + (4 * 5 + 5) + (5 * 3 + 3);
+            assertEquals(numParams, graph.numParams());
+
+            Nd4j.getRandom().setSeed(12345);
+            int nParams = graph.numParams();
+            INDArray newParams = Nd4j.rand(1, nParams);
+            graph.setParams(newParams);
+
+            DataSet ds = new IrisDataSetIterator(150, 150).next();
+            INDArray min = ds.getFeatureMatrix().min(0);
+            INDArray max = ds.getFeatureMatrix().max(0);
+            ds.getFeatureMatrix().subiRowVector(min).diviRowVector(max.sub(min));
+            INDArray input = ds.getFeatureMatrix();
+            INDArray labels = ds.getLabels();
+
+            if (PRINT_RESULTS) {
+                System.out.println("testBasicIrisWithElementWiseVertex(op=" + op + ")");
+                for (int j = 0; j < graph.getNumLayers(); j++)
+                    System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
+            }
+
+            boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {input},
+                            new INDArray[] {labels});
+
+            String msg = "testBasicIrisWithElementWiseVertex(op=" + op + ")";
+            assertTrue(msg, gradOK);
+        }
+    }
+
+    @Test
+    public void testBasicIrisWithElementWiseNodeInputSizeGreaterThanTwo() {
+
+        ElementWiseVertex.Op[] ops =
+                        new ElementWiseVertex.Op[] {ElementWiseVertex.Op.Add, ElementWiseVertex.Op.Product};
+
+        for (ElementWiseVertex.Op op : ops) {
+
+            Nd4j.getRandom().setSeed(12345);
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
+                            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                            .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                            .updater(Updater.NONE).learningRate(1.0).graphBuilder().addInputs("input")
+                            .addLayer("l1", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.TANH).build(),
+                                            "input")
+                            .addLayer("l2", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.SIGMOID)
+                                            .build(), "input")
+                            .addLayer("l3", new DenseLayer.Builder().nIn(4).nOut(5).activation(Activation.RELU).build(),
+                                            "input")
+                            .addVertex("elementwise", new ElementWiseVertex(op), "l1", "l2", "l3")
+                            .addLayer("outputLayer",
+                                            new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
+                                                            .activation(Activation.SOFTMAX).nIn(5).nOut(3).build(),
+                                            "elementwise")
+                            .setOutputs("outputLayer").pretrain(false).backprop(true).build();
+
+            ComputationGraph graph = new ComputationGraph(conf);
+            graph.init();
+
+            int numParams = (4 * 5 + 5) + (4 * 5 + 5) + (4 * 5 + 5) + (5 * 3 + 3);
             assertEquals(numParams, graph.numParams());
 
             Nd4j.getRandom().setSeed(12345);
@@ -987,23 +1046,22 @@ public class GradientCheckTestsComputationGraph {
 
         Nd4j.getRandom().setSeed(12345);
         ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().seed(12345)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
-                .activation(Activation.TANH).updater(Updater.NONE).learningRate(1.0).graphBuilder()
-                .addInputs("in1", "in2")
-                .addLayer("d0", new GravesLSTM.Builder().nIn(layerSizes).nOut(layerSizes).build(), "in1")
-                .addLayer("d1", new GravesLSTM.Builder().nIn(layerSizes).nOut(layerSizes).build(), "in2")
-                .addVertex("stack", new StackVertex(), "d0", "d1")
-                .addLayer("d2", new GravesLSTM.Builder().nIn(layerSizes).nOut(layerSizes).build(), "stack")
-                .addVertex("u1", new UnstackVertex(0, 2), "d2")
-                .addVertex("u2", new UnstackVertex(1, 2), "d2")
-                .addLayer("p1", new GlobalPoolingLayer.Builder(PoolingType.AVG).build(), "u1")
-                .addLayer("p2", new GlobalPoolingLayer.Builder(PoolingType.AVG).build(), "u2")
-                .addLayer("out1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
-                        .nIn(layerSizes).nOut(layerSizes).activation(Activation.IDENTITY).build(), "p1")
-                .addLayer("out2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
-                        .nIn(layerSizes).nOut(2).activation(Activation.IDENTITY).build(), "p2")
-                .setOutputs("out1", "out2").pretrain(false).backprop(true).build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .weightInit(WeightInit.DISTRIBUTION).dist(new NormalDistribution(0, 1))
+                        .activation(Activation.TANH).updater(Updater.NONE).learningRate(1.0).graphBuilder()
+                        .addInputs("in1", "in2")
+                        .addLayer("d0", new GravesLSTM.Builder().nIn(layerSizes).nOut(layerSizes).build(), "in1")
+                        .addLayer("d1", new GravesLSTM.Builder().nIn(layerSizes).nOut(layerSizes).build(), "in2")
+                        .addVertex("stack", new StackVertex(), "d0", "d1")
+                        .addLayer("d2", new GravesLSTM.Builder().nIn(layerSizes).nOut(layerSizes).build(), "stack")
+                        .addVertex("u1", new UnstackVertex(0, 2), "d2").addVertex("u2", new UnstackVertex(1, 2), "d2")
+                        .addLayer("p1", new GlobalPoolingLayer.Builder(PoolingType.AVG).build(), "u1")
+                        .addLayer("p2", new GlobalPoolingLayer.Builder(PoolingType.AVG).build(), "u2")
+                        .addLayer("out1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
+                                        .nIn(layerSizes).nOut(layerSizes).activation(Activation.IDENTITY).build(), "p1")
+                        .addLayer("out2", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.L2)
+                                        .nIn(layerSizes).nOut(2).activation(Activation.IDENTITY).build(), "p2")
+                        .setOutputs("out1", "out2").pretrain(false).backprop(true).build();
 
         ComputationGraph graph = new ComputationGraph(conf);
         graph.init();
@@ -1017,15 +1075,15 @@ public class GradientCheckTestsComputationGraph {
         int[] mbSizes = new int[] {1, 3, 10};
         for (int minibatch : mbSizes) {
 
-            INDArray in1 = Nd4j.rand(new int[]{minibatch, layerSizes, 4});
-            INDArray in2 = Nd4j.rand(new int[]{minibatch, layerSizes, 5});
+            INDArray in1 = Nd4j.rand(new int[] {minibatch, layerSizes, 4});
+            INDArray in2 = Nd4j.rand(new int[] {minibatch, layerSizes, 5});
             INDArray inMask1 = Nd4j.zeros(minibatch, 4);
-            inMask1.get(NDArrayIndex.all(), NDArrayIndex.interval(0,3)).assign(1);
+            inMask1.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 3)).assign(1);
             INDArray inMask2 = Nd4j.zeros(minibatch, 5);
-            inMask2.get(NDArrayIndex.all(), NDArrayIndex.interval(0,4)).assign(1);
+            inMask2.get(NDArrayIndex.all(), NDArrayIndex.interval(0, 4)).assign(1);
 
-            INDArray labels1 = Nd4j.rand(new int[]{minibatch, 2});
-            INDArray labels2 = Nd4j.rand(new int[]{minibatch, 2});
+            INDArray labels1 = Nd4j.rand(new int[] {minibatch, 2});
+            INDArray labels2 = Nd4j.rand(new int[] {minibatch, 2});
 
             String testName = "testBasicStackUnstackVariableLengthTS() - minibatch = " + minibatch;
 
@@ -1035,11 +1093,11 @@ public class GradientCheckTestsComputationGraph {
                     System.out.println("Layer " + j + " # params: " + graph.getLayer(j).numParams());
             }
 
-            graph.setLayerMaskArrays(new INDArray[]{inMask1,inMask2}, null);
+            graph.setLayerMaskArrays(new INDArray[] {inMask1, inMask2}, null);
 
             boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
-                    DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in1, in2},
-                    new INDArray[]{labels1, labels2});
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[] {in1, in2},
+                            new INDArray[] {labels1, labels2});
 
             assertTrue(testName, gradOK);
         }

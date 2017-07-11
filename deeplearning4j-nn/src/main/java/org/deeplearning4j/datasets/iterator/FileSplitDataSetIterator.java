@@ -106,16 +106,16 @@ public class FileSplitDataSetIterator implements DataSetIterator {
 
     @Override
     public DataSet next() {
-//        long time1 = System.nanoTime();
+        //        long time1 = System.nanoTime();
         DataSet ds = callback.call(files.get(counter.getAndIncrement()));
 
         if (preProcessor != null && ds != null)
             preProcessor.preProcess(ds);
 
-//        long time2 = System.nanoTime();
+        //        long time2 = System.nanoTime();
 
-//        if (counter.get() % 5 == 0)
-//            log.info("Device: [{}]; Time: [{}] ns;", Nd4j.getAffinityManager().getDeviceForCurrentThread(), time2 - time1);
+        //        if (counter.get() % 5 == 0)
+        //            log.info("Device: [{}]; Time: [{}] ns;", Nd4j.getAffinityManager().getDeviceForCurrentThread(), time2 - time1);
 
         return ds;
     }

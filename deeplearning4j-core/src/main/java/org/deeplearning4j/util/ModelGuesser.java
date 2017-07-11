@@ -122,10 +122,10 @@ public class ModelGuesser {
                 log.warn("Tried computation graph");
                 try {
                     return ModelSerializer.restoreMultiLayerNetwork(new File(path), false);
-                }catch(Exception e4) {
+                } catch (Exception e4) {
                     try {
                         return ModelSerializer.restoreComputationGraph(new File(path), false);
-                    }catch(Exception e5) {
+                    } catch (Exception e5) {
                         try {
                             return KerasModelImport.importKerasModelAndWeights(path);
                         } catch (Exception e2) {
@@ -165,11 +165,11 @@ public class ModelGuesser {
                 try {
                     return ModelSerializer.restoreMultiLayerNetwork(stream, false);
 
-                }catch(Exception e5) {
+                } catch (Exception e5) {
                     try {
                         return ModelSerializer.restoreComputationGraph(stream, false);
 
-                    }catch(Exception e6) {
+                    } catch (Exception e6) {
                         try {
                             return KerasModelImport.importKerasModelAndWeights(stream);
                         } catch (Exception e2) {

@@ -84,8 +84,7 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
     @Override
     public INDArray activate(boolean training) {
         if (input == null) {
-            throw new IllegalStateException(
-                            "Cannot perform forward pass: input not set for layer " + layerId());
+            throw new IllegalStateException("Cannot perform forward pass: input not set for layer " + layerId());
         }
 
         int[] poolDim = null;
@@ -135,8 +134,8 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
                                     "Only 2d mask arrays are currently supported for masked global reductions "
                                                     + "on CNN data. Got 4d activations array (shape "
                                                     + Arrays.toString(input.shape()) + ") and " + maskArray.rank()
-                                                    + "d mask array (shape " + Arrays.toString(maskArray.shape())
-                                                    + ") " + layerId());
+                                                    + "d mask array (shape " + Arrays.toString(maskArray.shape()) + ") "
+                                                    + layerId());
                 }
 
                 int h = input.size(2);
@@ -149,8 +148,8 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
                                                     + " mask array of shape [minibatchSize,width] or [minibatchSize,height] respectively.\n"
                                                     + " Got 4d activations array (shape "
                                                     + Arrays.toString(input.shape()) + ") and " + maskArray.rank()
-                                                    + "d mask array (shape " + Arrays.toString(maskArray.shape())
-                                                    + ") " + layerId());
+                                                    + "d mask array (shape " + Arrays.toString(maskArray.shape()) + ") "
+                                                    + layerId());
                 }
 
                 //Valid combinations of global pooling + masking for CNNs:

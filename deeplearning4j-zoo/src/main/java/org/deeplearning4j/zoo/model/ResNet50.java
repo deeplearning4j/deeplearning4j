@@ -54,7 +54,7 @@ public class ResNet50 extends ZooModel {
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
-        if(pretrainedType==PretrainedType.IMAGENET)
+        if (pretrainedType == PretrainedType.IMAGENET)
             return "http://blob.deeplearning4j.org/models/resnet50_dl4j_inference.zip";
         else
             return null;
@@ -62,7 +62,7 @@ public class ResNet50 extends ZooModel {
 
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
-        if(pretrainedType==PretrainedType.IMAGENET)
+        if (pretrainedType == PretrainedType.IMAGENET)
             return 1982516793L;
         else
             return 0L;

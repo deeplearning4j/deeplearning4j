@@ -19,11 +19,14 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
+
+import java.util.Arrays;
 
 /**
  * Adds the ability to reshape and flatten the tensor in the computation graph.
@@ -48,7 +51,7 @@ public class ReshapeVertex extends GraphVertex {
     public boolean equals(Object o) {
         if (!(o instanceof ReshapeVertex))
             return false;
-        return ((ReshapeVertex) o).newShape == newShape;
+        return Arrays.equals(((ReshapeVertex) o).newShape, newShape);
     }
 
     @Override
@@ -62,8 +65,18 @@ public class ReshapeVertex extends GraphVertex {
     }
 
     @Override
+    public int minVertexInputs() {
+        return 1;
+    }
+
+    @Override
+    public int maxVertexInputs() {
+        return 1;
+    }
+
+    @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
-                                                                      INDArray paramsView, boolean initializeParams) {
+                    INDArray paramsView, boolean initializeParams) {
         return new org.deeplearning4j.nn.graph.vertex.impl.ReshapeVertex(graph, name, idx, newShape);
     }
 

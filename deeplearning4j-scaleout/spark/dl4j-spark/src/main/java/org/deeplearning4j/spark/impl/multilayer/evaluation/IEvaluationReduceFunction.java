@@ -14,12 +14,14 @@ import org.slf4j.LoggerFactory;
  * @author Alex Black
  */
 @Slf4j
-public class IEvaluationReduceFunction<T extends IEvaluation> implements Function2<T, T, T> {
+public class IEvaluationReduceFunction<T extends IEvaluation> implements Function2<T[], T[], T[]> {
     public IEvaluationReduceFunction() {}
 
     @Override
-    public T call(T eval1, T eval2) throws Exception {
-        eval1.merge(eval2);
+    public T[] call(T[] eval1, T[] eval2) throws Exception {
+        for( int i=0; i<eval1.length; i++ ){
+            eval1[i].merge(eval2[i]);
+        }
         return eval1;
     }
 }

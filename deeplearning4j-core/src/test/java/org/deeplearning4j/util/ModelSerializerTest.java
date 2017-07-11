@@ -161,24 +161,20 @@ public class ModelSerializerTest {
     }
 
     private DataSet trivialDataSet() {
-        INDArray inputs = Nd4j.create(new float[] { 1.0f, 2.0f, 3.0f });
-        INDArray labels = Nd4j.create(new float[] { 4.0f, 5.0f, 6.0f });
+        INDArray inputs = Nd4j.create(new float[] {1.0f, 2.0f, 3.0f});
+        INDArray labels = Nd4j.create(new float[] {4.0f, 5.0f, 6.0f});
         return new DataSet(inputs, labels);
     }
 
     private ComputationGraph simpleComputationGraph() {
         ComputationGraphConfiguration config = new NeuralNetConfiguration.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(0.1)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("dense", new DenseLayer.Builder().nIn(4).nOut(2).build(), "in")
-                .addLayer("out",
-                        new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3).build(), "dense")
-                .setOutputs("out")
-                .pretrain(false)
-                .backprop(true)
-                .build();
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT).learningRate(0.1)
+                        .graphBuilder().addInputs("in")
+                        .addLayer("dense", new DenseLayer.Builder().nIn(4).nOut(2).build(), "in").addLayer("out",
+                                        new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).nIn(2).nOut(3)
+                                                        .build(),
+                                        "dense")
+                        .setOutputs("out").pretrain(false).backprop(true).build();
 
         return new ComputationGraph(config);
     }

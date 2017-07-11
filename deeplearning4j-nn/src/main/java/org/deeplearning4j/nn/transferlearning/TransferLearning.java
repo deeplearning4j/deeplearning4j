@@ -732,7 +732,8 @@ public class TransferLearning {
             initBuilderIfReq();
 
             ComputationGraphConfiguration newConfig = editedConfigBuilder.build();
-            if(this.workspaceMode != null) newConfig.setTrainingWorkspaceMode(workspaceMode);
+            if (this.workspaceMode != null)
+                newConfig.setTrainingWorkspaceMode(workspaceMode);
             ComputationGraph newGraph = new ComputationGraph(newConfig);
             newGraph.init();
 

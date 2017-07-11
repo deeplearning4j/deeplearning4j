@@ -36,9 +36,10 @@ import org.deeplearning4j.spark.impl.SparkListenable;
 import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
 import org.deeplearning4j.spark.impl.graph.dataset.DataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.graph.dataset.PairDataSetToMultiDataSetFn;
+import org.deeplearning4j.spark.impl.graph.evaluation.IEvaluateMDSFlatMapFunction;
 import org.deeplearning4j.spark.impl.graph.scoring.*;
+import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateAggregateFunction;
 import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluateFlatMapFunction;
-import org.deeplearning4j.spark.impl.multilayer.evaluation.IEvaluationReduceFunction;
 import org.deeplearning4j.spark.util.SparkUtils;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -565,8 +566,7 @@ public class SparkComputationGraph extends SparkListenable {
      * @return ROC for the entire data set
      */
     public ROC evaluateROC(JavaRDD<DataSet> data) {
-        return evaluateROC(data, DEFAULT_ROC_THRESHOLD_STEPS,
-                DEFAULT_EVAL_SCORE_BATCH_SIZE);
+        return evaluateROC(data, DEFAULT_ROC_THRESHOLD_STEPS, DEFAULT_EVAL_SCORE_BATCH_SIZE);
     }
 
     /**
@@ -623,6 +623,68 @@ public class SparkComputationGraph extends SparkListenable {
         return e;
     }
 
+
+
+    /**
+     * Evaluate the network (classification performance) in a distributed manner on the provided data
+     */
+    public Evaluation evaluateMDS(JavaRDD<MultiDataSet> data) {
+        return evaluateMDS(data, DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**
+     * Evaluate the network (classification performance) in a distributed manner on the provided data
+     */
+    public Evaluation evaluateMDS(JavaRDD<MultiDataSet> data, int minibatchSize) {
+        return doEvaluationMDS(data, minibatchSize, new Evaluation())[0];
+    }
+
+    /**
+     * Evaluate the network (regression performance) in a distributed manner on the provided data
+     *
+     * @param data Data to evaluate
+     * @return     {@link RegressionEvaluation} instance with regression performance
+     */
+    public RegressionEvaluation evaluateRegressionMDS(JavaRDD<MultiDataSet> data) {
+        return evaluateRegressionMDS(data, DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**
+     * Evaluate the network (regression performance) in a distributed manner on the provided data
+     *
+     * @param data Data to evaluate
+     * @param minibatchSize Minibatch size to use when doing performing evaluation
+     * @return     {@link RegressionEvaluation} instance with regression performance
+     */
+    public RegressionEvaluation evaluateRegressionMDS(JavaRDD<MultiDataSet> data, int minibatchSize) {
+        return doEvaluationMDS(data, minibatchSize, new RegressionEvaluation())[0];
+    }
+
+    /**
+     * Perform ROC analysis/evaluation on the given DataSet in a distributed manner, using the default number of
+     * threshold steps ({@link #DEFAULT_ROC_THRESHOLD_STEPS}) and the default minibatch size ({@link #DEFAULT_EVAL_SCORE_BATCH_SIZE})
+     *
+     * @param data                    Test set data (to evaluate on)
+     * @return ROC for the entire data set
+     */
+    public ROC evaluateROCMDS(JavaRDD<MultiDataSet> data) {
+        return evaluateROCMDS(data, DEFAULT_ROC_THRESHOLD_STEPS, DEFAULT_EVAL_SCORE_BATCH_SIZE);
+    }
+
+    /**
+     * Perform ROC analysis/evaluation on the given DataSet in a distributed manner, using the specified number of
+     * steps and minibatch size
+     *
+     * @param data                    Test set data (to evaluate on)
+     * @param rocThresholdNumSteps    See {@link ROC} for details
+     * @param minibatchSize           Minibatch size for evaluation
+     * @return ROC for the entire data set
+     */
+    public ROC evaluateROCMDS(JavaRDD<MultiDataSet> data, int rocThresholdNumSteps, int minibatchSize) {
+        return doEvaluationMDS(data, minibatchSize, new ROC(rocThresholdNumSteps))[0];
+    }
+
+
     /**
      * Perform distributed evaluation of any type of {@link IEvaluation}. For example, {@link Evaluation}, {@link RegressionEvaluation},
      * {@link ROC}, {@link ROCMultiClass} etc.
@@ -633,10 +695,44 @@ public class SparkComputationGraph extends SparkListenable {
      * @param <T>             Type of evaluation instance to return
      * @return                IEvaluation instance
      */
+    @SuppressWarnings("unchecked")
     public <T extends IEvaluation> T doEvaluation(JavaRDD<DataSet> data, T emptyEvaluation, int evalBatchSize) {
+        IEvaluation[] arr = new IEvaluation[]{emptyEvaluation};
+        return (T)doEvaluation(data, evalBatchSize, arr)[0];
+    }
+
+    /**
+     * Perform distributed evaluation on a <i>single output</i> ComputationGraph form DataSet objects using Spark.
+     * Can be used to perform multiple evaluations on this single output (for example, {@link Evaluation} and
+     * {@link ROC}) at the same time.
+     *
+     * @param data             Data to evaluatie
+     * @param evalBatchSize    Minibatch size for evaluation
+     * @param emptyEvaluations Evaluations to perform
+     * @return                 Evaluations
+     */
+    public <T extends IEvaluation> T[] doEvaluation(JavaRDD<DataSet> data, int evalBatchSize, T... emptyEvaluations ) {
         IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(true, sc.broadcast(conf.toJson()),
-                sc.broadcast(network.params()), evalBatchSize, emptyEvaluation);
-        JavaRDD<T> evaluations = data.mapPartitions(evalFn);
-        return evaluations.reduce(new IEvaluationReduceFunction<T>());
+                        sc.broadcast(network.params()), evalBatchSize, emptyEvaluations);
+        JavaRDD<T[]> evaluations = data.mapPartitions(evalFn);
+        return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<T>(), new IEvaluateAggregateFunction<T>());
+    }
+
+    /**
+     * Perform distributed evaluation on a <i>single output</i> ComputationGraph form MultiDataSet objects using Spark.
+     * Can be used to perform multiple evaluations on this single output (for example, {@link Evaluation} and
+     * {@link ROC}) at the same time.
+     *
+     * @param data             Data to evaluatie
+     * @param evalBatchSize    Minibatch size for evaluation
+     * @param emptyEvaluations Evaluations to perform
+     * @return                 Evaluations
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends IEvaluation> T[] doEvaluationMDS(JavaRDD<MultiDataSet> data, int evalBatchSize, T... emptyEvaluations ) {
+        IEvaluateMDSFlatMapFunction<T> evalFn = new IEvaluateMDSFlatMapFunction<>(sc.broadcast(conf.toJson()),
+                sc.broadcast(network.params()), evalBatchSize, emptyEvaluations);
+        JavaRDD<T[]> evaluations = data.mapPartitions(evalFn);
+        return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<T>(), new IEvaluateAggregateFunction<T>());
     }
 }

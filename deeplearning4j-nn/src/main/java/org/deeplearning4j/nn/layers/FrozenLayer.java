@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -46,7 +47,12 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
         }
     }
 
-    protected String layerId(){
+    @Override
+    public void setCacheMode(CacheMode mode) {
+        // no-op
+    }
+
+    protected String layerId() {
         String name = insideLayer.conf().getLayer().getLayerName();
         return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + insideLayer.getIndex() + ")";
     }
@@ -179,8 +185,8 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
      * @param listener
      */
     @Override
-    public void addListener(IterationListener listener) {
-        insideLayer.addListener(listener);
+    public void addListeners(IterationListener... listener) {
+        insideLayer.addListeners(listener);
     }
 
     @Override

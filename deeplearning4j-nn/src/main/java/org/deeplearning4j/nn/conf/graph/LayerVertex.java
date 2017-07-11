@@ -67,7 +67,10 @@ public class LayerVertex extends GraphVertex {
         if (!(o instanceof LayerVertex))
             return false;
         LayerVertex lv = (LayerVertex) o;
-        if (!layerConf.equals(lv.layerConf))
+        if ((layerConf == null && lv.layerConf != null) || (layerConf != null && lv.layerConf == null)) {
+            return false;
+        }
+        if (layerConf != null && !layerConf.equals(lv.layerConf))
             return false;
         if (preProcessor == null && lv.preProcessor != null || preProcessor != null && lv.preProcessor == null)
             return false;
@@ -82,6 +85,16 @@ public class LayerVertex extends GraphVertex {
     @Override
     public int numParams(boolean backprop) {
         return layerConf.getLayer().initializer().numParams(layerConf);
+    }
+
+    @Override
+    public int minVertexInputs() {
+        return 1;
+    }
+
+    @Override
+    public int maxVertexInputs() {
+        return 1;
     }
 
     @Override

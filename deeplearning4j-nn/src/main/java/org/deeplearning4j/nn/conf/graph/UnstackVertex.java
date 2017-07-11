@@ -75,6 +75,16 @@ public class UnstackVertex extends GraphVertex {
     }
 
     @Override
+    public int minVertexInputs() {
+        return 1;
+    }
+
+    @Override
+    public int maxVertexInputs() {
+        return 1;
+    }
+
+    @Override
     public int hashCode() {
         return 433682566;
     }

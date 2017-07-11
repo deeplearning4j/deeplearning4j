@@ -164,7 +164,7 @@ public class BatchNormalization extends FeedForwardLayer {
     }
 
     @Override
-    public IUpdater getIUpdaterByParam(String paramName){
+    public IUpdater getIUpdaterByParam(String paramName) {
         switch (paramName) {
             case BatchNormalizationParamInitializer.BETA:
             case BatchNormalizationParamInitializer.GAMMA:

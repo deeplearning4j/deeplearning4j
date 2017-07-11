@@ -67,6 +67,25 @@ public class ElementWiseVertex extends GraphVertex {
     }
 
     @Override
+    public int minVertexInputs() {
+        return 2;
+    }
+
+    @Override
+    public int maxVertexInputs() {
+        switch (op) {
+            case Add:
+            case Product:
+                //No upper bound
+                return Integer.MAX_VALUE;
+            case Subtract:
+                return 2;
+            default:
+                throw new UnsupportedOperationException("Unknown op: " + op);
+        }
+    }
+
+    @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                     INDArray paramsView, boolean initializeParams) {
         org.deeplearning4j.nn.graph.vertex.impl.ElementWiseVertex.Op op;

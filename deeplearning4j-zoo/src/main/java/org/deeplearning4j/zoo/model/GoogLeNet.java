@@ -56,7 +56,7 @@ public class GoogLeNet extends ZooModel {
 
     @Override
     public String pretrainedUrl(PretrainedType pretrainedType) {
-        if(pretrainedType==PretrainedType.IMAGENET)
+        if (pretrainedType == PretrainedType.IMAGENET)
             return "http://blob.deeplearning4j.org/models/googlenet_dl4j_inference.zip";
         else
             return null;
@@ -64,7 +64,7 @@ public class GoogLeNet extends ZooModel {
 
     @Override
     public long pretrainedChecksum(PretrainedType pretrainedType) {
-        if(pretrainedType==PretrainedType.IMAGENET)
+        if (pretrainedType == PretrainedType.IMAGENET)
             return 3337733202L;
         else
             return 0L;

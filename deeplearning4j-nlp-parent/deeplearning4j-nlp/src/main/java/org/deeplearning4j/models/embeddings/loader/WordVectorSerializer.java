@@ -1363,7 +1363,7 @@ public class WordVectorSerializer {
             Line 0 - VectorsConfiguration JSON string
             Line 1 - expTable
             Line 2 - table
-
+        
             All following lines are vocab/weight lookup table saved line by line as VocabularyWord JSON representation
          */
 

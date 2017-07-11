@@ -30,6 +30,16 @@ public class TestGraphVertex extends GraphVertex {
     }
 
     @Override
+    public int minVertexInputs() {
+        return 1;
+    }
+
+    @Override
+    public int maxVertexInputs() {
+        return 1;
+    }
+
+    @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                     INDArray paramsView, boolean initializeParams) {
         throw new UnsupportedOperationException("Not supported");

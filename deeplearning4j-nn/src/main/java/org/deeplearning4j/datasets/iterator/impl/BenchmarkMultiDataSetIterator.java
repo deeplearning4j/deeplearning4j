@@ -23,15 +23,15 @@ public class BenchmarkMultiDataSetIterator implements MultiDataSetIterator {
     private AtomicLong counter = new AtomicLong(0);
 
     public BenchmarkMultiDataSetIterator(int[][] featuresShape, int[] numLabels, int totalIterations) {
-        if(featuresShape.length != numLabels.length)
+        if (featuresShape.length != numLabels.length)
             throw new IllegalArgumentException("Number of input features must match length of input labels.");
 
         this.baseFeatures = new INDArray[featuresShape.length];
-        for(int i = 0; i < featuresShape.length; i++) {
+        for (int i = 0; i < featuresShape.length; i++) {
             baseFeatures[i] = Nd4j.rand(featuresShape[i]);
         }
         this.baseLabels = new INDArray[featuresShape.length];
-        for(int i = 0; i < featuresShape.length; i++) {
+        for (int i = 0; i < featuresShape.length; i++) {
             baseLabels[i] = Nd4j.create(featuresShape[i][0], numLabels[i]);
             baseLabels[i].getColumn(1).assign(1.0);
         }
@@ -42,11 +42,11 @@ public class BenchmarkMultiDataSetIterator implements MultiDataSetIterator {
 
     public BenchmarkMultiDataSetIterator(MultiDataSet example, int totalIterations) {
         this.baseFeatures = new INDArray[example.getFeatures().length];
-        for(int i = 0; i < example.getFeatures().length; i++) {
+        for (int i = 0; i < example.getFeatures().length; i++) {
             baseFeatures[i] = example.getFeatures()[i].dup();
         }
         this.baseLabels = new INDArray[example.getLabels().length];
-        for(int i = 0; i < example.getLabels().length; i++) {
+        for (int i = 0; i < example.getLabels().length; i++) {
             baseFeatures[i] = example.getLabels()[i].dup();
         }
 
@@ -106,11 +106,11 @@ public class BenchmarkMultiDataSetIterator implements MultiDataSetIterator {
         counter.incrementAndGet();
 
         INDArray[] features = new INDArray[baseFeatures.length];
-        for(int i = 0; i < baseFeatures.length; i++) {
+        for (int i = 0; i < baseFeatures.length; i++) {
             features[i] = baseFeatures[i];
         }
         INDArray[] labels = new INDArray[baseLabels.length];
-        for(int i = 0; i < baseLabels.length; i++) {
+        for (int i = 0; i < baseLabels.length; i++) {
             labels[i] = baseLabels[i];
         }
 

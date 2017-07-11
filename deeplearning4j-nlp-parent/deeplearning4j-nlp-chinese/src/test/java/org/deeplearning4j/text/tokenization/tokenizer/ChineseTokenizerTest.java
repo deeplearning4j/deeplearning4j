@@ -14,8 +14,6 @@ import org.deeplearning4j.text.tokenization.tokenizerFactory.ChineseTokenizerFac
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**@author wangfeng
  * @date June 3,2017
@@ -25,8 +23,8 @@ import org.slf4j.LoggerFactory;
 @Slf4j
 public class ChineseTokenizerTest {
 
-    private final String toTokenize = "青山绿水和伟大的科学家让世界更美好";
-    private final String[] expect = {"青山绿水","和","伟大","的","科学家","让","世界","更","美好"};
+    private final String toTokenize = "青山绿水和伟大的科学家让世界更美好和平";
+    private final String[] expect = {"青山绿水", "和", "伟大", "的", "科学家", "让", "世界", "更", "美好", "和平"};
 
     @Test
     public void testChineseTokenizer() {
@@ -49,21 +47,13 @@ public class ChineseTokenizerTest {
         //tokenizerFactory.setTokenPreProcessor(new ChineseTokenizer());
 
         //Generates a word-vector from the dataset stored in resources folder
-        Word2Vec vec = new Word2Vec.Builder()
-                .minWordFrequency(2)
-                .iterations(5)
-                .layerSize(100)
-                .seed(42)
-                .learningRate(0.1)
-                .windowSize(20)
-                .iterate(iter)
-                .tokenizerFactory(tokenizerFactory)
-                .build();
+        Word2Vec vec = new Word2Vec.Builder().minWordFrequency(2).iterations(5).layerSize(100).seed(42)
+                        .learningRate(0.1).windowSize(20).iterate(iter).tokenizerFactory(tokenizerFactory).build();
         vec.fit();
         WordVectorSerializer.writeWordVectors(vec, new File("src/test/resources/chineseNameWordVector.txt"));
 
         //trains a model that can find out all names from news(Suffix txt),It uses word vector generated
-       // WordVectors wordVectors;
+        // WordVectors wordVectors;
 
         //test model,Whether the model find out name from unknow text;
 

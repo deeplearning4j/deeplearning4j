@@ -25,7 +25,7 @@ public abstract class ZooModel<T> implements InstantiableModel {
     public static File ROOT_CACHE_DIR = new File(System.getProperty("user.home"), "/.deeplearning4j/");
 
     public boolean pretrainedAvailable(PretrainedType pretrainedType) {
-        if(pretrainedUrl(pretrainedType) == null)
+        if (pretrainedUrl(pretrainedType) == null)
             return false;
         else
             return true;
@@ -50,9 +50,9 @@ public abstract class ZooModel<T> implements InstantiableModel {
      */
     public Model initPretrained(PretrainedType pretrainedType) throws IOException {
         String remoteUrl = pretrainedUrl(pretrainedType);
-        if(remoteUrl==null)
+        if (remoteUrl == null)
             throw new UnsupportedOperationException(
-                    "Pretrained "+pretrainedType+" weights are not available for this model.");
+                            "Pretrained " + pretrainedType + " weights are not available for this model.");
 
         String localFilename = new File(remoteUrl).getName();
 
@@ -67,18 +67,18 @@ public abstract class ZooModel<T> implements InstantiableModel {
         }
 
         long expectedChecksum = pretrainedChecksum(pretrainedType);
-        if(expectedChecksum != 0L) {
+        if (expectedChecksum != 0L) {
             log.info("Verifying download...");
             Checksum adler = new Adler32();
             FileUtils.checksum(cachedFile, adler);
             long localChecksum = adler.getValue();
-            log.info("Checksum local is " + localChecksum + ", expecting "+expectedChecksum);
+            log.info("Checksum local is " + localChecksum + ", expecting " + expectedChecksum);
 
-            if(expectedChecksum != localChecksum) {
+            if (expectedChecksum != localChecksum) {
                 log.error("Checksums do not match. Cleaning up files and failing...");
                 cachedFile.delete();
                 throw new IllegalStateException(
-                        "Pretrained model file failed checksum. If this error persists, please open an issue at https://github.com/deeplearning4j/deeplearning4j.");
+                                "Pretrained model file failed checksum. If this error persists, please open an issue at https://github.com/deeplearning4j/deeplearning4j.");
             }
         }
 

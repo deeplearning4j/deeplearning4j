@@ -30,7 +30,8 @@ public class EarlyTerminationMultiDataSetIteratorTest {
 
         int terminateAfter = 2;
 
-        MultiDataSetIterator iter = new MultiDataSetIteratorAdapter(new MnistDataSetIterator(minibatchSize, numExamples));
+        MultiDataSetIterator iter =
+                        new MultiDataSetIteratorAdapter(new MnistDataSetIterator(minibatchSize, numExamples));
 
         int count = 0;
         List<MultiDataSet> seenMDS = new ArrayList<>();
@@ -40,7 +41,8 @@ public class EarlyTerminationMultiDataSetIteratorTest {
         }
         iter.reset();
 
-        EarlyTerminationMultiDataSetIterator earlyEndIter = new EarlyTerminationMultiDataSetIterator(iter, terminateAfter);
+        EarlyTerminationMultiDataSetIterator earlyEndIter =
+                        new EarlyTerminationMultiDataSetIterator(iter, terminateAfter);
 
         assertTrue(earlyEndIter.hasNext());
         count = 0;
@@ -67,8 +69,10 @@ public class EarlyTerminationMultiDataSetIteratorTest {
     public void testNextNum() throws IOException {
         int terminateAfter = 1;
 
-        MultiDataSetIterator iter = new MultiDataSetIteratorAdapter(new MnistDataSetIterator(minibatchSize, numExamples));
-        EarlyTerminationMultiDataSetIterator earlyEndIter = new EarlyTerminationMultiDataSetIterator(iter, terminateAfter);
+        MultiDataSetIterator iter =
+                        new MultiDataSetIteratorAdapter(new MnistDataSetIterator(minibatchSize, numExamples));
+        EarlyTerminationMultiDataSetIterator earlyEndIter =
+                        new EarlyTerminationMultiDataSetIterator(iter, terminateAfter);
 
         earlyEndIter.next(10);
         assertEquals(false, earlyEndIter.hasNext());
@@ -81,8 +85,10 @@ public class EarlyTerminationMultiDataSetIteratorTest {
     public void testCallstoNextNotAllowed() throws IOException {
         int terminateAfter = 1;
 
-        MultiDataSetIterator iter = new MultiDataSetIteratorAdapter(new MnistDataSetIterator(minibatchSize, numExamples));
-        EarlyTerminationMultiDataSetIterator earlyEndIter = new EarlyTerminationMultiDataSetIterator(iter, terminateAfter);
+        MultiDataSetIterator iter =
+                        new MultiDataSetIteratorAdapter(new MnistDataSetIterator(minibatchSize, numExamples));
+        EarlyTerminationMultiDataSetIterator earlyEndIter =
+                        new EarlyTerminationMultiDataSetIterator(iter, terminateAfter);
 
         earlyEndIter.next(10);
         iter.reset();

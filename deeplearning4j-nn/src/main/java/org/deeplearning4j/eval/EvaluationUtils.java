@@ -22,13 +22,13 @@ public class EvaluationUtils {
      * @param edgeCase Edge case value use to avoid 0/0
      * @return Precision
      */
-    public static double precision(long tpCount, long fpCount, double edgeCase){
+    public static double precision(long tpCount, long fpCount, double edgeCase) {
         //Edge case
         if (tpCount == 0 && fpCount == 0) {
             return edgeCase;
         }
 
-        return tpCount / (double)(tpCount + fpCount);
+        return tpCount / (double) (tpCount + fpCount);
     }
 
     /**
@@ -39,13 +39,13 @@ public class EvaluationUtils {
      * @param edgeCase Edge case values used to avoid 0/0
      * @return Recall
      */
-    public static double recall(long tpCount, long fnCount, double edgeCase){
+    public static double recall(long tpCount, long fnCount, double edgeCase) {
         //Edge case
         if (tpCount == 0 && fnCount == 0) {
             return edgeCase;
         }
 
-        return tpCount / (double)(tpCount + fnCount);
+        return tpCount / (double) (tpCount + fnCount);
     }
 
     /**
@@ -56,12 +56,12 @@ public class EvaluationUtils {
      * @param edgeCase Edge case values are used to avoid 0/0
      * @return False positive rate
      */
-    public static double falsePositiveRate(long fpCount, long tnCount, double edgeCase){
+    public static double falsePositiveRate(long fpCount, long tnCount, double edgeCase) {
         //Edge case
         if (fpCount == 0 && tnCount == 0) {
             return edgeCase;
         }
-        return fpCount / (double)(fpCount + tnCount);
+        return fpCount / (double) (fpCount + tnCount);
     }
 
     /**
@@ -72,13 +72,13 @@ public class EvaluationUtils {
      * @param edgeCase Edge case value to use to avoid 0/0
      * @return False negative rate
      */
-    public  static double falseNegativeRate(long fnCount, long tpCount, double edgeCase){
+    public static double falseNegativeRate(long fnCount, long tpCount, double edgeCase) {
         //Edge case
         if (fnCount == 0 && tpCount == 0) {
             return edgeCase;
         }
 
-        return fnCount / (double)(fnCount + tpCount);
+        return fnCount / (double) (fnCount + tpCount);
     }
 
     /**
@@ -104,12 +104,12 @@ public class EvaluationUtils {
      * @param recall    Recall
      * @return F-beta value
      */
-    public static double fBeta(double beta, double precision, double recall){
+    public static double fBeta(double beta, double precision, double recall) {
         if (precision == 0.0 || recall == 0.0)
             return 0;
 
-        double numerator = (1 + beta*beta) * precision * recall;
-        double denominator = beta*beta*precision + recall;
+        double numerator = (1 + beta * beta) * precision * recall;
+        double denominator = beta * beta * precision + recall;
 
         return numerator / denominator;
     }
@@ -121,7 +121,7 @@ public class EvaluationUtils {
      * @param recall    Recall value
      * @return G-measure
      */
-    public static double gMeasure(double precision, double recall){
+    public static double gMeasure(double precision, double recall) {
         return Math.sqrt(precision * recall);
     }
 
@@ -134,9 +134,9 @@ public class EvaluationUtils {
      * @param tn True negative count
      * @return Matthews correlation coefficient
      */
-    public static double matthewsCorrelation(long tp, long fp, long fn, long tn){
-        double numerator = ((double)tp)*tn - ((double)fp)*fn;
-        double denominator = Math.sqrt(((double)tp + fp) * (tp+fn) * (tn+fp) * (tn+fn));
+    public static double matthewsCorrelation(long tp, long fp, long fn, long tn) {
+        double numerator = ((double) tp) * tn - ((double) fp) * fn;
+        double denominator = Math.sqrt(((double) tp + fp) * (tp + fn) * (tn + fp) * (tn + fn));
         return numerator / denominator;
     }
 

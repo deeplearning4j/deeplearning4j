@@ -26,8 +26,8 @@ public class ChineseTokenizerFactory implements TokenizerFactory {
     @Override
     public Tokenizer create(InputStream toTokenize) {
         throw new UnsupportedOperationException();
-      /*  Tokenizer t =  new ChineseStreamTokenizer(toTokenize);
-    	t.setTokenPreProcessor(tokenPreProcess);
+        /*  Tokenizer t =  new ChineseStreamTokenizer(toTokenize);
+        t.setTokenPreProcessor(tokenPreProcess);
         return t;*/
     }
 
