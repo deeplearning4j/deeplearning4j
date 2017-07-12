@@ -286,7 +286,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public Map<String, INDArray> paramTable(boolean backpropParamsOnly) {
-        return null;
+        return Collections.emptyMap();
     }
 
     @Override
