@@ -10,6 +10,7 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -75,7 +76,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     @Override
     public Gradient error(INDArray input) {
         if (!logGradient) {
-            log.info("Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
+            OneTimeLogger.info(log,"Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
             logGradient = true;
         }
         return zeroGradient;
@@ -165,7 +166,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
 
     @Override
     public Layer clone() {
-        log.info("Frozen layers are cloned as their original versions.");
+        OneTimeLogger.info(log,"Frozen layers are cloned as their original versions.");
         return new FrozenLayer(insideLayer.clone());
     }
 
@@ -192,7 +193,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     @Override
     public void fit() {
         if (!logFit) {
-            log.info("Frozen layers cannot be fit. Warning will be issued only once per instance");
+            OneTimeLogger.info(log,"Frozen layers cannot be fit. Warning will be issued only once per instance");
             logFit = true;
         }
         //no op
@@ -201,7 +202,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     @Override
     public void update(Gradient gradient) {
         if (!logUpdate) {
-            log.info("Frozen layers will not be updated. Warning will be issued only once per instance");
+            OneTimeLogger.info(log,"Frozen layers will not be updated. Warning will be issued only once per instance");
             logUpdate = true;
         }
         //no op
@@ -210,7 +211,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     @Override
     public void update(INDArray gradient, String paramType) {
         if (!logUpdate) {
-            log.info("Frozen layers will not be updated. Warning will be issued only once per instance");
+            OneTimeLogger.info(log,"Frozen layers will not be updated. Warning will be issued only once per instance");
             logUpdate = true;
         }
         //no op
@@ -224,7 +225,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     @Override
     public void computeGradientAndScore() {
         if (!logGradient) {
-            log.info("Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
+            OneTimeLogger.info(log,"Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
             logGradient = true;
         }
         insideLayer.score();
@@ -269,7 +270,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
         if (!logGradient) {
-            log.info("Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
+            OneTimeLogger.info(log,"Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
             logGradient = true;
         }
         //no-op
@@ -283,7 +284,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     @Override
     public void fit(INDArray data) {
         if (!logFit) {
-            log.info("Frozen layers cannot be fit.Warning will be issued only once per instance");
+            OneTimeLogger.info(log,"Frozen layers cannot be fit.Warning will be issued only once per instance");
             logFit = true;
         }
     }
@@ -303,7 +304,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     @Override
     public Pair<Gradient, Double> gradientAndScore() {
         if (!logGradient) {
-            log.info("Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
+            OneTimeLogger.info(log,"Gradients for the frozen layer are not set and will therefore will not be updated.Warning will be issued only once per instance");
             logGradient = true;
         }
         return new Pair<>(zeroGradient, insideLayer.score());
@@ -439,7 +440,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
         if (logTestMode) {
             return;
         } else {
-            log.info("Frozen layer instance found! Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
+            OneTimeLogger.info(log,"Frozen layer instance found! Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
             logTestMode = true;
         }
     }
@@ -450,7 +451,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
         if (logTestMode) {
             return;
         } else {
-            log.info("Frozen layer instance found! Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
+            OneTimeLogger.info(log,"Frozen layer instance found! Frozen layers are treated as always in test mode. Warning will only be issued once per instance");
             logTestMode = true;
         }
     }

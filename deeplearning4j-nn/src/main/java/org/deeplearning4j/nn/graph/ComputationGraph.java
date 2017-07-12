@@ -53,6 +53,7 @@ import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.ModelSerializer;
+import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.*;
@@ -380,7 +381,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (initCalled)
             return;
 
-        log.info("Starting ComputationGraph with WorkspaceModes set to [training: {}; inference: {}]",
+        OneTimeLogger.info(log, "Starting ComputationGraph with WorkspaceModes set to [training: {}; inference: {}]",
                         configuration.getTrainingWorkspaceMode(), configuration.getInferenceWorkspaceMode());
 
         if (configuration.getCacheMode() == CacheMode.HOST) {
