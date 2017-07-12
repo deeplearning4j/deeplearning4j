@@ -114,7 +114,7 @@ public class FrozenLayerTest {
         MultiLayerNetwork clonedModel = modelNow.clone();
 
         //Check json
-        assertEquals(clonedModel.getLayerWiseConfigurations().toJson(), modelNow.getLayerWiseConfigurations().toJson());
+        assertEquals(modelNow.getLayerWiseConfigurations().toJson(), clonedModel.getLayerWiseConfigurations().toJson());
 
         //Check params
         assertEquals(modelNow.params(), clonedModel.params());

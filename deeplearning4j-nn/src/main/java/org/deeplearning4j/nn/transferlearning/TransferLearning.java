@@ -284,10 +284,29 @@ public class TransferLearning {
                 for (int i = frozenTill; i >= 0; i--) {
                     //Complication here: inner Layer (implementation) NeuralNetConfiguration.layer (config) should keep
                     // the original layer config. While network NNC should have the frozen layer, for to/from JSON etc
-                    NeuralNetConfiguration layerNNC = editedModel.getLayerWiseConfigurations().getConf(i).clone();
+                    NeuralNetConfiguration origNNC = editedModel.getLayerWiseConfigurations().getConf(i);
+                    NeuralNetConfiguration layerNNC = origNNC.clone();
                     editedModel.getLayerWiseConfigurations().getConf(i).resetVariables();
                     layers[i].setConf(layerNNC);
                     layers[i] = new FrozenLayer(layers[i]);
+
+                    if(origNNC.getVariables() != null){
+                        List<String> vars = origNNC.variables(true);
+                        origNNC.clearVariables();
+                        layerNNC.clearVariables();
+                        for(String s : vars){
+                            origNNC.variables(false).add(s);
+                            origNNC.getL1ByParam().put(s, 0.0);
+                            origNNC.getL2ByParam().put(s, 0.0);
+                            origNNC.getLearningRateByParam().put(s, 0.0);
+
+                            layerNNC.variables(false).add(s);
+                            layerNNC.getL1ByParam().put(s, 0.0);
+                            layerNNC.getL2ByParam().put(s, 0.0);
+                            layerNNC.getLearningRateByParam().put(s, 0.0);
+                        }
+                    }
+
 
 
                     Layer origLayerConf = editedModel.getLayerWiseConfigurations().getConf(i).getLayer();
