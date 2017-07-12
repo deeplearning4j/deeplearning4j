@@ -822,4 +822,42 @@ public class ROCTest {
             assertEquals(1-0.05, p.getRecall(), 1e-6);
         }
     }
+
+    @Test
+    public void testPrecisionRecallCurveConfusion(){
+        //Sanity check: values calculated from the confusion matrix should match the PR curve values
+
+        for(boolean removeRedundantPts : new boolean[]{true, false}) {
+            ROC r = new ROC(0, removeRedundantPts);
+
+            INDArray labels = Nd4j.getExecutioner().exec(new BernoulliDistribution(Nd4j.createUninitialized(100, 1), 0.5));
+            INDArray probs = Nd4j.rand(100, 1);
+
+            r.eval(labels, probs);
+
+            PrecisionRecallCurve prc = r.getPrecisionRecallCurve();
+            int nPoints = prc.numPoints();
+
+            for (int i = 0; i < nPoints; i++) {
+                PrecisionRecallCurve.Confusion c = prc.getConfusionMatrixAtPoint(i);
+                PrecisionRecallCurve.Point p = c.getPoint();
+
+                int tp = c.getTpCount();
+                int fp = c.getFpCount();
+                int fn = c.getFnCount();
+
+                double prec = tp / (double) (tp + fp);
+                double rec = tp / (double) (tp + fn);
+
+                //Handle edge cases:
+                if(tp == 0 && fp == 0){
+                    prec = 1.0;
+                }
+
+                assertEquals(p.getPrecision(), prec, 1e-8);
+                assertEquals(p.getRecall(), rec, 1e-8);
+            }
+        }
+    }
+
 }
