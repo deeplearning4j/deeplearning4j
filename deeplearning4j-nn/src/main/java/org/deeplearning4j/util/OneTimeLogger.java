@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Queue;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  *
@@ -15,25 +16,38 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 @Slf4j
 public class OneTimeLogger {
-    protected static final Queue<Long> buffer = new LinkedTransferQueue<>();
+    protected static HashSet<String> hashSet = new HashSet<>();
+    protected static final Queue<String> buffer = new LinkedTransferQueue<>();
 
-    private static final ReentrantLock lock = new ReentrantLock();
+    private static final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     protected static boolean isEligible(String message) {
-        long hash = HashUtil.getLongHash(message);
+        //long hash = HashUtil.getLongHash(message);
+
         try {
-            lock.lock();
+            lock.readLock().lock();
 
-            if (buffer.size() >= 100)
-                buffer.remove();
-
-            if (buffer.contains(new Long(hash)))
+            if (hashSet.contains(message))
                 return false;
 
-            buffer.add(new Long(hash));
+        } finally {
+                lock.readLock().unlock();
+        }
+
+        try {
+            lock.writeLock().lock();
+
+            if (buffer.size() >= 100) {
+                String rem = buffer.remove();
+                hashSet.remove(rem);
+            }
+
+            buffer.add(message);
+            hashSet.add(message);
+
             return true;
         } finally {
-            lock.unlock();
+            lock.writeLock().unlock();
         }
     }
 
