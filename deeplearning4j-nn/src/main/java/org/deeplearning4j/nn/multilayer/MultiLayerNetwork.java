@@ -930,7 +930,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             Layer[] clonedLayers = ret.getLayers();
             for (int i = 0; i < layers.length; i++) {
                 if (layers[i] instanceof FrozenLayer) {
-                    clonedLayers[i] = new FrozenLayer<>(ret.getLayer(i));
+                    clonedLayers[i] = new FrozenLayer(ret.getLayer(i));
                 }
             }
             ret.setLayers(clonedLayers);

@@ -282,8 +282,11 @@ public class TransferLearning {
             if (frozenTill != -1) {
                 org.deeplearning4j.nn.api.Layer[] layers = editedModel.getLayers();
                 for (int i = frozenTill; i >= 0; i--) {
-                    //unchecked?
                     layers[i] = new FrozenLayer(layers[i]);
+
+                    Layer origLayerConf = editedModel.getLayerWiseConfigurations().getConf(i).getLayer();
+                    Layer newLayerConf = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(origLayerConf);
+                    editedModel.getLayerWiseConfigurations().getConf(i).setLayer(newLayerConf);
                 }
                 editedModel.setLayers(layers);
             }
@@ -773,9 +776,15 @@ public class TransferLearning {
                     org.deeplearning4j.nn.graph.vertex.GraphVertex gv = vertices[topologicalOrder[i]];
                     if (allFrozen.contains(gv.getVertexName())) {
                         if (gv.hasLayer()) {
-                            //Need to freeze this layer
+                            //Need to freeze this layer - both the layer implementation, and the layer configuration
                             org.deeplearning4j.nn.api.Layer l = gv.getLayer();
                             gv.setLayerAsFrozen();
+
+                            String layerName = gv.getVertexName();
+                            LayerVertex currLayerVertex = (LayerVertex)newConfig.getVertices().get(layerName);
+                            Layer origLayerConf = currLayerVertex.getLayerConf().getLayer();
+                            Layer newLayerConf = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(origLayerConf);
+                            currLayerVertex.getLayerConf().setLayer(newLayerConf);
 
                             //We also need to place the layer in the CompGraph Layer[] (replacing the old one)
                             //This could no doubt be done more efficiently

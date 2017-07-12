@@ -51,7 +51,7 @@ public class FrozenLayer extends Layer {
         //Need to be able to instantiate a layer, from a config - for JSON -> net type situations
         org.deeplearning4j.nn.api.Layer underlying = layer.instantiate(getInnerConf(conf), iterationListeners, layerIndex, layerParamsView, initializeParams);
 
-        return new org.deeplearning4j.nn.layers.FrozenLayer<>(underlying);
+        return new org.deeplearning4j.nn.layers.FrozenLayer(underlying);
     }
 
     @Override
