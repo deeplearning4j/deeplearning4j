@@ -790,10 +790,19 @@ public class TransferLearning {
                             //Complication here(and reason for clone on next line): inner Layer (implementation)
                             // NeuralNetConfiguration.layer (config) should keep the original layer config. While network
                             // NNC should have the frozen layer
-                            currLayerVertex.getLayerConf().resetVariables();
-                            NeuralNetConfiguration clone = currLayerVertex.getLayerConf().clone();
-                            currLayerVertex.setLayerConf(clone);
+                            NeuralNetConfiguration newNNC = currLayerVertex.getLayerConf().clone();
+                            currLayerVertex.setLayerConf(newNNC);
                             currLayerVertex.getLayerConf().setLayer(newLayerConf);
+
+                            //Make sure the underlying layer doesn't change:
+                            List<String> vars = currLayerVertex.getLayerConf().variables(true);
+                            currLayerVertex.getLayerConf().clearVariables();
+                            for(String s : vars){
+                                newNNC.variables(false).add(s);
+                                newNNC.getL1ByParam().put(s, 0.0);
+                                newNNC.getL2ByParam().put(s, 0.0);
+                                newNNC.getLearningRateByParam().put(s, 0.0);
+                            }
 
                             //We also need to place the layer in the CompGraph Layer[] (replacing the old one)
                             //This could no doubt be done more efficiently

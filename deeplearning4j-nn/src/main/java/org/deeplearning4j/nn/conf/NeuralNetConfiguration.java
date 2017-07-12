@@ -1149,6 +1149,16 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             conf.lrPolicyPower = lrPolicyPower;
             conf.pretrain = pretrain;
             conf.cacheMode = this.cacheMode;
+
+            configureLayer(layer);
+            if(layer instanceof FrozenLayer){
+                configureLayer(((FrozenLayer)layer).getLayer());
+            }
+
+            return conf;
+        }
+
+        private void configureLayer(Layer layer){
             String layerName;
             if (layer == null || layer.getLayerName() == null)
                 layerName = "Layer not named";
@@ -1178,8 +1188,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 }
             }
             LayerValidation.generalValidation(layerName, layer, useRegularization, useDropConnect, dropOut, l2, l2Bias,
-                            l1, l1Bias, dist);
-            return conf;
+                    l1, l1Bias, dist);
         }
 
         private void copyConfigToLayer(String layerName, BaseLayer bLayer){

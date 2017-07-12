@@ -9,12 +9,14 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
+import org.deeplearning4j.nn.params.FrozenLayerParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Collection;
+import java.util.List;
 
 /**
  * Created by Alex on 10/07/2017.
@@ -53,12 +55,30 @@ public class FrozenLayer extends Layer {
         //Need to be able to instantiate a layer, from a config - for JSON -> net type situations
         org.deeplearning4j.nn.api.Layer underlying = layer.instantiate(getInnerConf(conf), iterationListeners, layerIndex, layerParamsView, initializeParams);
 
+        NeuralNetConfiguration nncUnderlying = underlying.conf();
+        if(nncUnderlying.variables() != null){
+            List<String> vars = nncUnderlying.variables(true);
+            nncUnderlying.clearVariables();
+            conf.clearVariables();
+            for(String s : vars){
+                conf.variables(false).add(s);
+                conf.getL1ByParam().put(s, 0.0);
+                conf.getL2ByParam().put(s, 0.0);
+                conf.getLearningRateByParam().put(s, 0.0);
+
+                nncUnderlying.variables(false).add(s);
+                nncUnderlying.getL1ByParam().put(s, 0.0);
+                nncUnderlying.getL2ByParam().put(s, 0.0);
+                nncUnderlying.getLearningRateByParam().put(s, 0.0);
+            }
+        }
+
         return new org.deeplearning4j.nn.layers.FrozenLayer(underlying);
     }
 
     @Override
     public ParamInitializer initializer() {
-        return layer.initializer();
+        return FrozenLayerParamInitializer.getInstance();
     }
 
     @Override
