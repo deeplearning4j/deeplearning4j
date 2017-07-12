@@ -792,7 +792,8 @@ public class Transforms {
 
     /**
      * Raises a square matrix to a power <i>n</i>, which can be positive, negative, or zero.
-     * The behavior is similar to the numpy matrix_power() function.
+     * The behavior is similar to the numpy matrix_power() function.  The algorithm uses
+     * repeated squarings to minimize the number of mmul() operations needed
      * <p>If <i>n</i> is zero, the identity matrix is returned.</p>
      * <p>If <i>n</i> is negative, the matrix is inverted and raised to the abs(n) power.</p>
      * @param in A square matrix to raise to an integer power, which will be changed if dup is false.
@@ -812,11 +813,21 @@ public class Transforms {
             n = -n;
         } else temp = in.dup();
         INDArray result = temp.dup();
-        for (int i = 1; i < n; i++) {
-            result.mmuli(temp);
+        if (n < 4) {
+            for (int i = 1; i < n; i++) {
+                result.mmuli(temp);
+            }
+            if (dup) return result;
+            else return in.assign(result);
+        } else {
+            // lets try to optimize by squaring itself a bunch of times
+            int squares = (int)(Math.log(n)/Math.log(2.0));
+            for (int i = 0; i < squares; i++) result = result.mmul(result);
+            int diff = (int)Math.round(n-Math.pow(2.0,squares));
+            for (int i = 0; i < diff; i++) result.mmuli(temp);
+            if (dup) return result;
+            else return in.assign(result);
         }
-        if (dup) return result;
-        else return in.assign(result);
     }
 
 }
