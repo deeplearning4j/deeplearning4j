@@ -25,6 +25,8 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -84,6 +86,10 @@ public class LayerVertex extends GraphVertex {
 
     @Override
     public int numParams(boolean backprop) {
+        if(layerConf.getLayer() instanceof FrozenLayer){
+            Layer innerLayer = ((FrozenLayer)layerConf.getLayer()).getLayer();
+            return innerLayer.initializer().numParams(innerLayer);
+        }
         return layerConf.getLayer().initializer().numParams(layerConf);
     }
 

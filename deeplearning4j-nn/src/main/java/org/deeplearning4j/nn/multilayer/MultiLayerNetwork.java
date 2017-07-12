@@ -593,16 +593,20 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
             int nLayers = layers.length;
 
-            //First: Work out total length of (backprop) params
-            int backpropParamLength = 0;
+            //First: Work out total length of params
+            int paramLength = 0;
             int[] nParamsPerLayer = new int[nLayers];
             for (int i = 0; i < nLayers; i++) {
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
-                nParamsPerLayer[i] = layers[i].conf().getLayer().initializer().numParams(conf);
-                backpropParamLength += nParamsPerLayer[i];
+                //TODO find a cleaner/better way to do this...
+                if(conf.getLayer() instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer){
+                    conf = ((org.deeplearning4j.nn.conf.layers.misc.FrozenLayer)conf.getLayer()).getInnerConf(conf);
+                }
+                nParamsPerLayer[i] = conf.getLayer().initializer().numParams(conf);
+                paramLength += nParamsPerLayer[i];
             }
 
-            flattenedGradients = Nd4j.zeros(new int[] {1, backpropParamLength}, 'f'); //No need to initialize, as each layer will do it each iteration anyway
+            flattenedGradients = Nd4j.zeros(new int[] {1, paramLength}, 'f'); //No need to initialize, as each layer will do it each iteration anyway
 
             int backpropParamsSoFar = 0;
             for (int i = 0; i < layers.length; i++) {

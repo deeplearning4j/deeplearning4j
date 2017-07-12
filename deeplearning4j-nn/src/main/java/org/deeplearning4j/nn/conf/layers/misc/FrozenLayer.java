@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.conf.layers.misc;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
@@ -18,6 +19,7 @@ import java.util.Collection;
 /**
  * Created by Alex on 10/07/2017.
  */
+@EqualsAndHashCode
 public class FrozenLayer extends Layer {
 
     @Getter
@@ -104,6 +106,11 @@ public class FrozenLayer extends Layer {
         return null;
     }
 
+    @Override
+    public void setLayerName(String layerName){
+        super.setLayerName(layerName);
+        layer.setLayerName(layerName);
+    }
 
     public static class Builder extends Layer.Builder<Builder>{
         private Layer layer;

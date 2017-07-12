@@ -173,6 +173,15 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
 
     public void clearVariables() {
         variables.clear();
+        l1ByParam.clear();
+        l2ByParam.clear();
+        learningRateByParam.clear();
+    }
+
+    public void resetVariables(){
+        for(String s : variables){
+            setLayerParamLR(s);
+        }
     }
 
     public void setLayerParamLR(String variable) {

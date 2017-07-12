@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
@@ -422,11 +423,11 @@ public class TransferLearningCompGraphTest {
                         .updater(Updater.ADAM).adamMeanDecay(0.9).adamVarDecay(0.999).weightInit(WeightInit.XAVIER)
                         .learningRate(0.01).graphBuilder().addInputs("in")
                         .addLayer("blstm1",
-                                        new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10)
-                                                        .activation(Activation.TANH).build(),
+                                        new FrozenLayer(new GravesBidirectionalLSTM.Builder().nIn(10).nOut(10)
+                                                        .activation(Activation.TANH).build()),
                                         "in")
-                        .addLayer("pool", new GlobalPoolingLayer.Builder().build(), "blstm1")
-                        .addLayer("dense", new DenseLayer.Builder().nIn(10).nOut(10).build(), "pool")
+                        .addLayer("pool", new FrozenLayer(new GlobalPoolingLayer.Builder().build()), "blstm1")
+                        .addLayer("dense", new FrozenLayer(new DenseLayer.Builder().nIn(10).nOut(10).build()), "pool")
                         .addLayer("out", new OutputLayer.Builder().nIn(10).nOut(5).activation(Activation.SOFTMAX)
                                         .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "dense")
                         .setOutputs("out").build();
@@ -434,6 +435,6 @@ public class TransferLearningCompGraphTest {
         ComputationGraph modelExpected = new ComputationGraph(confExpected);
         modelExpected.init();
 
-        assertEquals(confExpected, graph.getConfiguration());
+        assertEquals(confExpected.toJson().toString(), graph.getConfiguration().toJson().toString());
     }
 }

@@ -14,12 +14,15 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Map;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
@@ -40,6 +43,7 @@ public class TestTransferLearningModelSerializer {
                 .learningRate(0.1)
                 .updater(Updater.SGD)
                 .activation(Activation.TANH)
+                .regularization(true).dropOut(0.5)
                 .list()
                 .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(5).build())
                 .layer(1, new DenseLayer.Builder().nIn(5).nOut(4).build())
@@ -78,6 +82,16 @@ public class TestTransferLearningModelSerializer {
         assertTrue(restored.getLayer(1) instanceof FrozenLayer);
         assertFalse(restored.getLayer(2) instanceof FrozenLayer);
         assertFalse(restored.getLayer(3) instanceof FrozenLayer);
+
+        INDArray in = Nd4j.rand(3, nIn);
+        INDArray out = withFrozen.output(in);
+        INDArray out2 = restored.output(in);
+
+        assertEquals(out, out2);
+
+        //Sanity check on train mode:
+        out = withFrozen.output(in, true);
+        out2 = restored.output(in, true);
     }
 
 
@@ -133,5 +147,15 @@ public class TestTransferLearningModelSerializer {
         assertTrue(restored.getLayer(1) instanceof FrozenLayer);
         assertFalse(restored.getLayer(2) instanceof FrozenLayer);
         assertFalse(restored.getLayer(3) instanceof FrozenLayer);
+
+        INDArray in = Nd4j.rand(3, nIn);
+        INDArray out = withFrozen.outputSingle(in);
+        INDArray out2 = restored.outputSingle(in);
+
+        assertEquals(out, out2);
+
+        //Sanity check on train mode:
+        out = withFrozen.outputSingle(true, in);
+        out2 = restored.outputSingle(true, in);
     }
 }

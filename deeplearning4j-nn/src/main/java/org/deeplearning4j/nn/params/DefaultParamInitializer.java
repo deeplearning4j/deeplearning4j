@@ -21,6 +21,8 @@ package org.deeplearning4j.nn.params;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
+import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
@@ -50,13 +52,18 @@ public class DefaultParamInitializer implements ParamInitializer {
 
     @Override
     public int numParams(NeuralNetConfiguration conf) {
-        org.deeplearning4j.nn.conf.layers.FeedForwardLayer layerConf;
-        if(conf.getLayer() instanceof FrozenLayer){
-            FrozenLayer fl = (FrozenLayer) conf.getLayer();
-            layerConf = (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) fl.getLayer();
-        } else {
-            layerConf = (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
-        }
+        return numParams(conf.getLayer());
+    }
+
+    @Override
+    public int numParams(Layer l) {
+        FeedForwardLayer layerConf = (FeedForwardLayer) l;
+//        if(conf.getLayer() instanceof FrozenLayer){
+//            FrozenLayer fl = (FrozenLayer) conf.getLayer();
+//            layerConf = (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) fl.getLayer();
+//        } else {
+//            layerConf = (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+//        }
 
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut();
