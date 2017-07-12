@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -65,7 +66,8 @@ import java.util.Map;
                 @JsonSubTypes.Type(value = VariationalAutoencoder.class, name = "VariationalAutoencoder"),
                 @JsonSubTypes.Type(value = DropoutLayer.class, name = "dropout"),
                 @JsonSubTypes.Type(value = GlobalPoolingLayer.class, name = "GlobalPooling"),
-                @JsonSubTypes.Type(value = ZeroPaddingLayer.class, name = "zeroPadding")})
+                @JsonSubTypes.Type(value = ZeroPaddingLayer.class, name = "zeroPadding"),
+                @JsonSubTypes.Type(value = FrozenLayer.class, name = "FrozenLayer")})
 @Data
 @NoArgsConstructor
 public abstract class Layer implements Serializable, Cloneable {

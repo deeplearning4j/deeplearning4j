@@ -444,6 +444,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             initializeParams = true;
         }
 
+        //Set RNG seed, for repeatability between initializations when set
+        if (initializeParams) {
+            Nd4j.getRandom().setSeed(conf().getSeed());
+        }
 
         //Given the topological ordering: work out the subset of the parameters array used for each layer
         // Then extract out for use when initializing the Layers

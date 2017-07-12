@@ -11,6 +11,7 @@ import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Collection;
 
@@ -27,7 +28,7 @@ public class FrozenLayer extends Layer {
         this.layer = builder.layer;
     }
 
-    public FrozenLayer(Layer layer){
+    public FrozenLayer(@JsonProperty("layer") Layer layer){
         this.layer = layer;
     }
 
