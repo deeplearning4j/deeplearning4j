@@ -39,8 +39,8 @@ public class PCA {
 
     /**
      * Create a PCA instance with calculated data: covariance, mean, eigenvectors, and eigenvalues.
-     * @param dataset The set of data result (records) of features, each row is a data result and each
-     *                column is a feature, every data point has the same number of features.
+     * @param dataset The set of data (records) of features, each row is a data record and each
+     *                column is a feature, every data record has the same number of features.
      */
     public PCA(INDArray dataset) {
         INDArray[] covmean = covarianceMatrix(dataset);
@@ -51,10 +51,11 @@ public class PCA {
         this.eigenvalues = pce[1];
     }
 
+
     /**
      * Return a reduced basis set that covers a certain fraction of the variance of the data
-     * @param variance The desired fractional variance (0 to 1)
-     * @return The basis vectors as columns, size <i>N</i> rows by <i>ndims</i> columns, where <i>ndims</i> is <= <i>N</i>
+     * @param variance The desired fractional variance (0 to 1), it will always be greater than the value.
+     * @return The basis vectors as columns, size <i>N</i> rows by <i>ndims</i> columns, where <i>ndims</i> is less than or equal to <i>N</i>
      */
     public INDArray reducedBasis(double variance) {
         INDArray vars = Transforms.pow(eigenvalues, -0.5, true);
@@ -71,6 +72,7 @@ public class PCA {
         return result;
     }
 
+
     /**
      * Takes a set of data on each row, with the same number of features as the constructing data
      * and returns the data in the coordinates of the basis set about the mean.
@@ -82,22 +84,24 @@ public class PCA {
         return Nd4j.tensorMmul(eigenvectors.transpose(), dx, new int[][] {{1},{1}}).transposei();
     }
 
+
     /**
      * Take the data that has been transformed to the principal components about the mean and
      * transform it back into the original feature set.  Make sure to fill in zeroes in columns
      * where components were dropped!
-     * @param data Data of the same features used to construct the PCA object but in the components
+     * @param data Data of the same features used to construct the PCA object but as the components
      * @return The records in terms of the original features
      */
     public INDArray convertBackToFeatures(INDArray data) {
         return Nd4j.tensorMmul(eigenvectors, data, new int[][] {{1}, {1}}).transposei().addiRowVector(mean);
     }
 
+
     /**
      * Estimate the variance of a single record with reduced # of dimensions.
      * @param data A single record with the same <i>N</i> features as the constructing data set
      * @param ndims The number of dimensions to include in calculation
-     * @return The fraction (0 to 1) of the total variance covered by the <i>ndim</i> basis set.
+     * @return The fraction (0 to 1) of the total variance covered by the <i>ndims</i> basis set.
      */
     public double estimateVariance(INDArray data, int ndims) {
         INDArray dx = data.sub(mean);
@@ -107,6 +111,7 @@ public class PCA {
         double total = t2.sumNumber().doubleValue();
         return fraction/total;
     }
+
 
     /**
      * Generates a set of <i>count</i> random samples with the same variance and mean and eigenvector/values
@@ -120,6 +125,7 @@ public class PCA {
         samples.muliRowVector(factors);
         return Nd4j.tensorMmul(eigenvectors, samples, new int[][] {{1}, {1}}).transposei().addiRowVector(mean);
     }
+
 
     /**
      * Calculates pca vectors of a matrix, for a fixed number of reduced features
@@ -149,7 +155,6 @@ public class PCA {
         INDArray factor = pca_factor(A, nDims, normalize);
         return A.mmul(factor);
     }
-
 
 
     /**
@@ -195,7 +200,6 @@ public class PCA {
 
         return factor;
     }
-
 
 
     /**
@@ -282,6 +286,7 @@ public class PCA {
         return factor;
     }
 
+
     /**
      * This method performs a dimensionality reduction, including principal components
      * that cover a fraction of the total variance of the system.  It does all calculations
@@ -313,11 +318,12 @@ public class PCA {
 
     /**
      * Returns the covariance matrix of a data set of many records, each with N features.
-     * It also returns the average values, which are usually going to be important since
-     * all modes are centered around the mean.
+     * It also returns the average values, which are usually going to be important since in this
+     * version, all modes are centered around the mean.  It's a matrix that has elements that are
+     * expressed as average dx_i * dx_j (used in procedure) or average x_i * x_j - average x_i * average x_j
      *
      * @param in A matrix of vectors of fixed length N (N features) on each row
-     * @return an N x N covariance matrix is element 0, and the average values is element 1.
+     * @return INDArray[2], an N x N covariance matrix is element 0, and the average values is element 1.
      */
     public static INDArray[] covarianceMatrix(INDArray in) {
         int dlength = in.rows();
@@ -339,11 +345,12 @@ public class PCA {
 
     /**
      * Calculates the principal component vectors and their eigenvalues (lambda) for the covariance matrix.
-     * The result includes two things: the eigenvectors (modes) at [0] and the eigenvalues (lambda) at [1].
-     * The variance of each mode is 1/sqrt(lambda).
+     * The result includes two things: the eigenvectors (modes) as result[0] and the eigenvalues (lambda)
+     * as result[1].
+     *
      * @param cov The covariance matrix (calculated with the covarianceMatrix(in) method)
-     * @return An array of INDArray.  The principal component vectors in decreasing flexibility is element 0
-     *      and the eigenvalues are element 1  (1/sqrt(eigenvalue) is the variance of each mode)
+     * @return Array INDArray[2] "result".  The principal component vectors in decreasing flexibility are
+     *      the columns of element 0 and the eigenvalues are element 1.
      */
     public static INDArray[] principalComponents(INDArray cov) {
         assert cov.rows() == cov.columns();
