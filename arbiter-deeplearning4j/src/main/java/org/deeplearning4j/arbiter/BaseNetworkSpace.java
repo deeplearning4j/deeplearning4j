@@ -87,7 +87,6 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
     protected ParameterSpace<Double> adamVarDecay;
     protected ParameterSpace<GradientNormalization> gradientNormalization;
     protected ParameterSpace<Double> gradientNormalizationThreshold;
-    protected ParameterSpace<int[]> cnnInputSize;
 
 
     protected List<LayerConf> layerSpaces = new ArrayList<>();
@@ -154,7 +153,6 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         this.backpropType = builder.backpropType;
         this.tbpttFwdLength = builder.tbpttFwdLength;
         this.tbpttBwdLength = builder.tbpttBwdLength;
-        this.cnnInputSize = builder.cnnInputSize;
 
         this.numEpochs = builder.numEpochs;
     }
@@ -246,7 +244,6 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         if (rmsDecay != null) list.addAll(rmsDecay.collectLeaves());
         if (gradientNormalization != null) list.addAll(gradientNormalization.collectLeaves());
         if (gradientNormalizationThreshold != null) list.addAll(gradientNormalizationThreshold.collectLeaves());
-        if (cnnInputSize != null) list.addAll(cnnInputSize.collectLeaves());
         if (adamMeanDecay != null) list.addAll(adamMeanDecay.collectLeaves());
         if (adamVarDecay != null) list.addAll(adamVarDecay.collectLeaves());
         if (convolutionMode != null) list.add(convolutionMode);
@@ -315,7 +312,6 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         if (backpropType != null) sb.append("backpropType: ").append(backpropType).append("\n");
         if (tbpttFwdLength != null) sb.append("tbpttFwdLength: ").append(tbpttFwdLength).append("\n");
         if (tbpttBwdLength != null) sb.append("tbpttBwdLength: ").append(tbpttBwdLength).append("\n");
-        if (cnnInputSize != null) sb.append("cnnInputSize: ").append(cnnInputSize).append("\n");
         if (adamMeanDecay != null) sb.append("adamMeanDecay: ").append(adamMeanDecay).append("\n");
         if (adamVarDecay != null) sb.append("adamVarDecay: ").append(adamVarDecay).append("\n");
         if (convolutionMode != null) sb.append("convolutionMode: ").append(convolutionMode).append("\n");
@@ -377,7 +373,6 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         private ParameterSpace<Double> rmsDecay;
         private ParameterSpace<GradientNormalization> gradientNormalization;
         private ParameterSpace<Double> gradientNormalizationThreshold;
-        private ParameterSpace<int[]> cnnInputSize;
         private ParameterSpace<Double> adamMeanDecay;
         private ParameterSpace<Double> adamVarDecay;
 

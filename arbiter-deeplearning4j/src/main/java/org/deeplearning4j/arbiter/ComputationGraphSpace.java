@@ -125,7 +125,6 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         for (LayerConf lc : layerSpaces) {
             list.addAll(lc.layerSpace.collectLeaves());
         }
-        if (cnnInputSize != null) list.addAll(cnnInputSize.collectLeaves());
         if(inputTypes != null) list.add(inputTypes);
         return list;
     }

@@ -96,7 +96,6 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         if (backpropType != null) listBuilder.backpropType(backpropType.getValue(values));
         if (tbpttFwdLength != null) listBuilder.tBPTTForwardLength(tbpttFwdLength.getValue(values));
         if (tbpttBwdLength != null) listBuilder.tBPTTBackwardLength(tbpttBwdLength.getValue(values));
-        if (cnnInputSize != null) listBuilder.cnnInputSize(cnnInputSize.getValue(values));
         if (inputType != null) listBuilder.setInputType(inputType.getValue(values));
         if (inputPreProcessors != null) listBuilder.setInputPreProcessors(inputPreProcessors.getValue(values));
 
@@ -116,7 +115,6 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
             list.addAll(lc.numLayers.collectLeaves());
             list.addAll(lc.layerSpace.collectLeaves());
         }
-        if (cnnInputSize != null) list.addAll(cnnInputSize.collectLeaves());
         if (inputType != null) list.addAll(inputType.collectLeaves());
         if (inputPreProcessors != null) list.addAll(inputPreProcessors.collectLeaves());
         return list;
@@ -135,7 +133,6 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
                     .append(conf.layerSpace.toString()).append("\n");
         }
 
-        if (cnnInputSize != null) sb.append("cnnInputSize: ").append(cnnInputSize).append("\n");
         if (inputType != null) sb.append("inputType: ").append(inputType).append("\n");
         if (inputPreProcessors != null) sb.append("inputPreProcessors: ").append(inputPreProcessors).append("\n");
 
