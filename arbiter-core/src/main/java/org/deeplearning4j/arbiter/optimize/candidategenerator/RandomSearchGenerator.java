@@ -37,7 +37,7 @@ import java.util.Map;
  * @param <T> Type of candidates to generate
  * @author Alex Black
  */
-@EqualsAndHashCode(exclude = {"order","candidateCounter","rng"})
+@EqualsAndHashCode(callSuper = true)
 @JsonIgnoreProperties({"numValuesPerParam", "totalNumCandidates", "order", "candidateCounter", "rng","candidate"})
 public class RandomSearchGenerator<T> extends BaseCandidateGenerator<T> {
 

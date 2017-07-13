@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.junit.Test;
@@ -134,16 +135,16 @@ public class TestComputationGraphSpace {
             for( int j=0; j<nLayers; j++ ){
                 NeuralNetConfiguration layerConf = ((LayerVertex)conf.getVertices().get(String.valueOf(j))).getLayerConf();
 
-                double lr = layerConf.getLayer().getLearningRate();
+                double lr = ((BaseLayer)layerConf.getLayer()).getLearningRate();
                 assertTrue(lr >= 0.0001 && lr <= 0.1);
                 assertEquals(true, layerConf.isUseRegularization());
-                double l2 = layerConf.getLayer().getL2();
+                double l2 = ((BaseLayer)layerConf.getLayer()).getL2();
                 assertTrue( l2 >= 0.2 && l2 <= 0.5);
 
                 if(j == nLayers - 1) { //Output layer
-                    assertEquals("softmax",layerConf.getLayer().getActivationFn().toString());
+                    assertEquals("softmax",((BaseLayer)layerConf.getLayer()).getActivationFn().toString());
                 } else {
-                    String actFn = layerConf.getLayer().getActivationFn().toString();
+                    String actFn = ((BaseLayer)layerConf.getLayer()).getActivationFn().toString();
                     assertTrue("relu".equals(actFn) || "tanh".equals(actFn));
                     if("relu".equals(actFn)) reluCount++;
                     else tanhCount++;

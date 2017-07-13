@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -124,7 +125,6 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         for (LayerConf lc : layerSpaces) {
             list.addAll(lc.layerSpace.collectLeaves());
         }
-        if (cnnInputSize != null) list.addAll(cnnInputSize.collectLeaves());
         if(inputTypes != null) list.add(inputTypes);
         return list;
     }
@@ -199,7 +199,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
             return this;
         }
 
-        public Builder addLayer(String layerName, LayerSpace<? extends org.deeplearning4j.nn.conf.layers.Layer> layerSpace,
+        public Builder addLayer(String layerName, LayerSpace<? extends Layer> layerSpace,
                                 String... layerInputs) {
             layerList.add(new LayerConf(layerSpace, layerName, layerInputs));
             return this;

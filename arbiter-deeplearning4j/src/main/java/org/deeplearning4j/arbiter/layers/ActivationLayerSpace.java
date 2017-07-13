@@ -15,7 +15,7 @@ import org.deeplearning4j.nn.conf.layers.ActivationLayer;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor(access = AccessLevel.PRIVATE) //For Jackson JSON/YAML deserialization
-public class ActivationLayerSpace extends FeedForwardLayerSpace<ActivationLayer> {
+public class ActivationLayerSpace extends LayerSpace<ActivationLayer> {
     protected ActivationLayerSpace(Builder builder) {
         super(builder);
 

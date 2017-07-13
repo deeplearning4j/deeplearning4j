@@ -2,6 +2,7 @@ package org.deeplearning4j.arbiter;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
@@ -14,6 +15,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -23,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
     @JsonProperty
     protected List<LayerConf> layerSpaces = new ArrayList<>();
@@ -93,7 +96,6 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         if (backpropType != null) listBuilder.backpropType(backpropType.getValue(values));
         if (tbpttFwdLength != null) listBuilder.tBPTTForwardLength(tbpttFwdLength.getValue(values));
         if (tbpttBwdLength != null) listBuilder.tBPTTBackwardLength(tbpttBwdLength.getValue(values));
-        if (cnnInputSize != null) listBuilder.cnnInputSize(cnnInputSize.getValue(values));
         if (inputType != null) listBuilder.setInputType(inputType.getValue(values));
         if (inputPreProcessors != null) listBuilder.setInputPreProcessors(inputPreProcessors.getValue(values));
 
@@ -113,7 +115,6 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
             list.addAll(lc.numLayers.collectLeaves());
             list.addAll(lc.layerSpace.collectLeaves());
         }
-        if (cnnInputSize != null) list.addAll(cnnInputSize.collectLeaves());
         if (inputType != null) list.addAll(inputType.collectLeaves());
         if (inputPreProcessors != null) list.addAll(inputPreProcessors.collectLeaves());
         return list;
@@ -132,7 +133,6 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
                     .append(conf.layerSpace.toString()).append("\n");
         }
 
-        if (cnnInputSize != null) sb.append("cnnInputSize: ").append(cnnInputSize).append("\n");
         if (inputType != null) sb.append("inputType: ").append(inputType).append("\n");
         if (inputPreProcessors != null) sb.append("inputPreProcessors: ").append(inputPreProcessors).append("\n");
 
@@ -187,7 +187,7 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
          * @param duplicateConfig       Only used if more than 1 layer can be generated. If true: generate N identical (stacked) layers.
          *                              If false: generate N independent layers
          */
-        public Builder addLayer(LayerSpace<? extends org.deeplearning4j.nn.conf.layers.Layer> layerSpace,
+        public Builder addLayer(LayerSpace<? extends Layer> layerSpace,
                                 ParameterSpace<Integer> numLayersDistribution, boolean duplicateConfig) {
             layerSpaces.add(new LayerConf(layerSpace, numLayersDistribution, duplicateConfig));
             return this;
