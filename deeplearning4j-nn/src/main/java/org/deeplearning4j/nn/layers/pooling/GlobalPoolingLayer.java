@@ -65,7 +65,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
     @Override
     public INDArray preOutput(boolean training) {
-        return null;
+        return activate(training);
     }
 
     @Override

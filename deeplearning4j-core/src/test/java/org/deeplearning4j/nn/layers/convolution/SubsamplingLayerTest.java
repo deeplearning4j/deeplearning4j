@@ -6,10 +6,9 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
-import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -251,8 +250,8 @@ public class SubsamplingLayerTest {
                                                         .stride(1, 1).build())
                                         .layer(2, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER)
                                                         .activation(Activation.SOFTMAX).build())
-                                        .backprop(true).pretrain(false);
-        new ConvolutionLayerSetup(builder, imageHeight, imageWidth, nChannels);
+                                        .backprop(true).pretrain(false)
+                                .setInputType(InputType.convolutional(imageHeight, imageWidth, nChannels));
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);

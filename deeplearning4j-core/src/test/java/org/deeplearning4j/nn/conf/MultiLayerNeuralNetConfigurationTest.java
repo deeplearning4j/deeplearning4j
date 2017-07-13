@@ -23,7 +23,6 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -102,9 +101,9 @@ public class MultiLayerNeuralNetConfigurationTest {
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)
                                         .build())
-                        .backprop(true).pretrain(false);
+                        .backprop(true).pretrain(false)
+                        .setInputType(InputType.convolutional(numRows, numColumns, nChannels));
 
-        new ConvolutionLayerSetup(builder, numRows, numColumns, nChannels);
         MultiLayerConfiguration conf = builder.build();
         String json = conf.toJson();
         MultiLayerConfiguration conf2 = MultiLayerConfiguration.fromJson(json);

@@ -78,7 +78,7 @@ public class ZeroPaddingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
     @Override
     public Layer clone() {
-        return null;
+        return new ZeroPaddingLayer(conf.clone());
     }
 
     @Override

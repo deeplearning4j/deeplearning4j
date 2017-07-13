@@ -23,7 +23,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -58,13 +57,6 @@ public class DefaultParamInitializer implements ParamInitializer {
     @Override
     public int numParams(Layer l) {
         FeedForwardLayer layerConf = (FeedForwardLayer) l;
-        //        if(conf.getLayer() instanceof FrozenLayer){
-        //            FrozenLayer fl = (FrozenLayer) conf.getLayer();
-        //            layerConf = (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) fl.getLayer();
-        //        } else {
-        //            layerConf = (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
-        //        }
-
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut();
         return nIn * nOut + nOut; //weights + bias

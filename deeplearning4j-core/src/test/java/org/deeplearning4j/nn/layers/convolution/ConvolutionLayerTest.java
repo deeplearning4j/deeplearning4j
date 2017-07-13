@@ -9,12 +9,10 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
-import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Before;
@@ -173,8 +171,8 @@ public class ConvolutionLayerTest {
                                                         .weightInit(WeightInit.XAVIER).build())
                                         .layer(1, new OutputLayer.Builder().nOut(classes).weightInit(WeightInit.XAVIER)
                                                         .activation(Activation.SOFTMAX).build())
-                                        .backprop(true).pretrain(false);
-        new ConvolutionLayerSetup(builder, imageHeight, imageWidth, nChannels);
+                                        .backprop(true).pretrain(false)
+                                        .setInputType(InputType.convolutional(imageHeight, imageWidth, nChannels));
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
