@@ -2,6 +2,8 @@ import unittest
 
 from jumpy import *
 
+import gc
+gc.disable()
 
 class TestArrayCreation(unittest.TestCase):
 
