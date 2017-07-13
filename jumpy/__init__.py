@@ -3,13 +3,13 @@ import os
 import inspect
 
 import numpy as np
+
 jnius_config.add_options('-Dorg.bytedeco.javacpp.nopointergc=true')
 
 try:
     jnius_classpath = os.environ['JUMPY_CLASS_PATH']
 except KeyError:
     raise 'Please specify a jar or directory for JUMPY_CLASS_PATH in the environment'
-
 
 
 def get_classpath(base_path):
@@ -185,7 +185,8 @@ class Nd4jArray(object):
      in java.
     """
 
-    def __init__(self, nd4j_array=None,numpy_array=None):
+    def __init__(self, nd4j_array=None,
+                 numpy_array=None):
         self.array = nd4j_array
         self.numpy_array = numpy_array
 
@@ -193,70 +194,70 @@ class Nd4jArray(object):
         if isinstance(other, Nd4jArray):
             return Nd4jArray(self.array.add(other.array))
         # scalar
-        return Nd4jArray(self.array.add(_to_number(other)))
+        return Nd4jArray(nd4j_array=self.array.add(_to_number(other)))
 
     def __sub__(self, other):
         if isinstance(other, Nd4jArray):
-            return Nd4jArray(self.array.sub(other.array))
+            return Nd4jArray(nd4j_array=self.array.sub(other.array))
             # scalar
-        return Nd4jArray(self.array.sub(_to_number(other)))
+        return Nd4jArray(nd4j_array=self.array.sub(_to_number(other)))
 
     def __div__(self, other):
         if isinstance(other, Nd4jArray):
-            return Nd4jArray(self.array.div(other.array))
+            return Nd4jArray(nd4j_array=self.array.div(other.array))
             # scalar
-        return Nd4jArray(self.array.div(_to_number(other)))
+        return Nd4jArray(nd4j_array=self.array.div(_to_number(other)))
 
     def __mul__(self, other):
         if isinstance(other, Nd4jArray):
-            return Nd4jArray(self.array.mul(other.array))
+            return Nd4jArray(nd4j_array=self.array.mul(other.array))
             # scalar
-        return Nd4jArray(self.array.mul(_to_number(other)))
+        return Nd4jArray(nd4j_array=self.array.mul(_to_number(other)))
 
     def __gt__(self, other):
         if isinstance(other, Nd4jArray):
-            return Nd4jArray(self.array.gt(other.array))
+            return Nd4jArray(nd4j_array=self.array.gt(other.array))
             # scalar
-        return Nd4jArray(self.array.gt(_to_number(other)))
+        return Nd4jArray(nd4j_array=self.array.gt(_to_number(other)))
 
     def __lt__(self, other):
         if isinstance(other, Nd4jArray):
-            return Nd4jArray(self.array.lt(other.array))
+            return Nd4jArray(nd4j_array=self.array.lt(other.array))
             # scalar
-        return Nd4jArray(self.array.lt(_to_number(other)))
+        return Nd4jArray(nd4j_array=self.array.lt(_to_number(other)))
 
     def __deepcopy__(self, memodict={}):
-        return Nd4jArray(self.array.dup())
+        return Nd4jArray(nd4j_array=self.array.dup())
 
     def __eq__(self, other):
         if isinstance(other, Nd4jArray):
-            return Nd4jArray(self.array.add(other.array))
+            return Nd4jArray(nd4j_array=self.array.add(other.array))
             # scalar
-        return Nd4jArray(self.array.add(_to_number(other)))
+        return Nd4jArray(nd4j_array=self.array.add(_to_number(other)))
 
     def __imul__(self, other):
         if isinstance(other, Nd4jArray):
-            return Nd4jArray(self.array.muli(other.array))
+            return Nd4jArray(nd4j_array=self.array.muli(other.array))
             # scalar
-        return Nd4jArray(self.array.muli(_to_number(other)))
+        return Nd4jArray(nd4j_array=self.array.muli(_to_number(other)))
 
     def __isub__(self, other):
         if isinstance(other, Nd4jArray):
-            return Nd4jArray(self.array.subi(other.array))
+            return Nd4jArray(nd4j_array=self.array.subi(other.array))
             # scalar
-        return Nd4jArray(self.array.subi(_to_number(other)))
+        return Nd4jArray(nd4j_array=self.array.subi(_to_number(other)))
 
     def __iadd__(self, other):
         if isinstance(other, Nd4jArray):
-            return Nd4jArray(self.array.addi(other.array))
+            return Nd4jArray(nd4j_array=self.array.addi(other.array))
             # scalar
-        return Nd4jArray(self.array.addi(_to_number(other)))
+        return Nd4jArray(nd4j_array=self.array.addi(_to_number(other)))
 
     def __idiv__(self, other):
         if isinstance(other, Nd4jArray):
-            return Nd4jArray(self.array.divi(other.array))
+            return Nd4jArray(nd4j_array=self.array.divi(other.array))
             # scalar
-        return Nd4jArray(self.array.divi(_to_number(other)))
+        return Nd4jArray(nd4j_array=self.array.divi(_to_number(other)))
 
     def __getitem__(self, item):
         if isinstance(item, int):
@@ -292,7 +293,7 @@ for name, method in methods:
 
 
 class Nd4jBuffer(object):
-    def __init__(self, data_buffer=None,numpy_pointer=None):
+    def __init__(self, data_buffer=None, numpy_pointer=None):
         self.data_buffer = data_buffer
         self.numpy_pointer = numpy_pointer
 
@@ -412,4 +413,4 @@ def from_np(np_arr):
     # the reason we do this is because numpy's strides are based on bytes rather than words
     strides = map(lambda x: x / data_buffer.getElementSize(), np_arr.strides)
     shape = np_arr.shape
-    return Nd4jArray(nd4j.create(data_buffer, shape, strides, 0))
+    return Nd4jArray(nd4j_array=nd4j.create(data_buffer, shape, strides, 0), numpy_array=np_arr)

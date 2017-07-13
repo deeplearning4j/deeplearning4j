@@ -9,10 +9,10 @@ jumpy.disable_gc()
 
 
 class Benchmark(object):
-    def __init__(self, n=80):
+    def __init__(self, n=100):
         self.np_arr = np.linspace(1, n * n, n * n).reshape((n, n))
         self.nd4j_arr = Nd4jArray(jumpy.nd4j.linspace(1, n * n, n * n).reshape(n, n))
-        # self.nd4j_arr = jumpy.from_np(np.copy(self.np_arr))
+        #self.nd4j_arr = jumpy.from_np(np.copy(self.np_arr))
 
     def run_nd4j_add(self):
         self.nd4j_arr += self.nd4j_arr
