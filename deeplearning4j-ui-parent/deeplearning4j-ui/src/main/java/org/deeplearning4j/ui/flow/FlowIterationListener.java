@@ -284,8 +284,8 @@ public class FlowIterationListener implements IterationListener {
         List<Double> lrs = new ArrayList<>();
         if (layers != null) {
             for (Layer layer : layers) {
-                if(layer.conf().getLayer() instanceof BaseLayer){
-                    lrs.add(((BaseLayer)layer.conf().getLayer()).getLearningRate());
+                if (layer.conf().getLayer() instanceof BaseLayer) {
+                    lrs.add(((BaseLayer) layer.conf().getLayer()).getLearningRate());
                 } else {
                     lrs.add(0.0);
                 }
@@ -540,8 +540,8 @@ public class FlowIterationListener implements IterationListener {
         }
 
         String afn;
-        if(layer.conf().getLayer() instanceof BaseLayer){
-            afn = ((BaseLayer)layer.conf().getLayer()).getActivationFn().toString();
+        if (layer.conf().getLayer() instanceof BaseLayer) {
+            afn = ((BaseLayer) layer.conf().getLayer()).getActivationFn().toString();
         } else {
             afn = "n/a";
         }

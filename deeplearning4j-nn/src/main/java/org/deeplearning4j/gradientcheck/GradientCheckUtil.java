@@ -100,29 +100,29 @@ public class GradientCheckUtil {
 
         int layerCount = 0;
         for (NeuralNetConfiguration n : mln.getLayerWiseConfigurations().getConfs()) {
-            if(n.getLayer() instanceof BaseLayer) {
-                BaseLayer bl = (BaseLayer)n.getLayer();
+            if (n.getLayer() instanceof BaseLayer) {
+                BaseLayer bl = (BaseLayer) n.getLayer();
                 IUpdater u = bl.getIUpdater();
                 if (u instanceof Sgd) {
                     //Must have LR of 1.0
                     double lr = bl.getLearningRate();
                     if (lr != 1.0) {
                         throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
-                                + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
-                                + n.getLayer().getLayerName() + "\"");
+                                        + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
+                                        + n.getLayer().getLayerName() + "\"");
                     }
                 } else if (!(u instanceof NoOp)) {
                     throw new IllegalStateException(
-                            "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
+                                    "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
                 }
 
                 IActivation activation = bl.getActivationFn();
                 if (activation != null) {
                     if (!VALID_ACTIVATION_FUNCTIONS.contains(activation.getClass())) {
                         log.warn("Layer " + layerCount + " is possibly using an unsuitable activation function: "
-                                + activation.getClass()
-                                + ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not "
-                                + "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
+                                        + activation.getClass()
+                                        + ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not "
+                                        + "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
                     }
                 }
             }
@@ -273,29 +273,29 @@ public class GradientCheckUtil {
                 continue;
             LayerVertex lv = (LayerVertex) gv;
 
-            if(lv.getLayerConf().getLayer() instanceof BaseLayer) {
-                BaseLayer bl = (BaseLayer)lv.getLayerConf().getLayer();
+            if (lv.getLayerConf().getLayer() instanceof BaseLayer) {
+                BaseLayer bl = (BaseLayer) lv.getLayerConf().getLayer();
                 IUpdater u = bl.getIUpdater();
                 if (u instanceof Sgd) {
                     //Must have LR of 1.0
                     double lr = bl.getLearningRate();
                     if (lr != 1.0) {
                         throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
-                                + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
-                                + lv.getLayerConf().getLayer().getLayerName() + "\"");
+                                        + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
+                                        + lv.getLayerConf().getLayer().getLayerName() + "\"");
                     }
                 } else if (!(u instanceof NoOp)) {
                     throw new IllegalStateException(
-                            "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
+                                    "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
                 }
 
                 IActivation activation = bl.getActivationFn();
                 if (activation != null) {
                     if (!VALID_ACTIVATION_FUNCTIONS.contains(activation.getClass())) {
                         log.warn("Layer \"" + vertexName + "\" is possibly using an unsuitable activation function: "
-                                + activation.getClass()
-                                + ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not "
-                                + "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
+                                        + activation.getClass()
+                                        + ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not "
+                                        + "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
                     }
                 }
             }

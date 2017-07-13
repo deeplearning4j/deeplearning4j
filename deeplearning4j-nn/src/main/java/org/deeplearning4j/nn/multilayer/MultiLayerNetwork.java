@@ -155,7 +155,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if (mode == null)
             mode = CacheMode.NONE;
 
-        for (Layer layer: layers) {
+        for (Layer layer : layers) {
             layer.setCacheMode(mode);
         }
     }
@@ -605,7 +605,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 if (nParamsPerLayer[i] == 0)
                     continue; //This layer doesn't have any parameters...
                 INDArray thisLayerGradView = flattenedGradients.get(NDArrayIndex.point(0),
-                        NDArrayIndex.interval(backpropParamsSoFar, backpropParamsSoFar + nParamsPerLayer[i]));
+                                NDArrayIndex.interval(backpropParamsSoFar, backpropParamsSoFar + nParamsPerLayer[i]));
                 layers[i].setBackpropGradientsViewArray(thisLayerGradView);
                 backpropParamsSoFar += nParamsPerLayer[i];
             }
@@ -826,7 +826,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
      */
     public List<INDArray> feedForwardToLayer(int layerNum, boolean train) {
         // TODO: maybe remove that?
-        INDArray currInput = layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE || !input.isAttached() ? input : input.migrate();
+        INDArray currInput =
+                        layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE || !input.isAttached()
+                                        ? input : input.migrate();
         List<INDArray> activations = new ArrayList<>();
         activations.add(currInput);
 
@@ -1423,7 +1425,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         IOutputLayer outputLayer = (IOutputLayer) getOutputLayer();
         if (labels == null)
             throw new IllegalStateException("No labels found");
-        if (outputLayer instanceof BaseLayer && ((BaseLayer)outputLayer.conf().getLayer()).getWeightInit() == WeightInit.ZERO) {
+        if (outputLayer instanceof BaseLayer
+                        && ((BaseLayer) outputLayer.conf().getLayer()).getWeightInit() == WeightInit.ZERO) {
             throw new IllegalStateException("Output layer weights cannot be initialized to zero when using backprop.");
         }
 

@@ -63,8 +63,8 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
         int nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
 
         int nParams = nLast * (4 * nL) //"input" weights
-                + nL * (4 * nL + 3) //recurrent weights
-                + 4 * nL; //bias
+                        + nL * (4 * nL + 3) //recurrent weights
+                        + 4 * nL; //bias
 
         return nParams;
     }

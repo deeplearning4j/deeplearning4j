@@ -45,7 +45,8 @@ import java.util.concurrent.LinkedBlockingDeque;
  *
  * @author Alex Black
  */
-public class IEvaluateFlatMapFunction<T extends IEvaluation> extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, T[]> {
+public class IEvaluateFlatMapFunction<T extends IEvaluation>
+                extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, T[]> {
 
     public IEvaluateFlatMapFunction(boolean isCompGraph, Broadcast<String> json, Broadcast<INDArray> params,
                     int evalBatchSize, T... evaluations) {

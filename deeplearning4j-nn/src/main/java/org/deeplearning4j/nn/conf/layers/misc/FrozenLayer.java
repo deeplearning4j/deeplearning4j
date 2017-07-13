@@ -27,16 +27,16 @@ public class FrozenLayer extends Layer {
     @Getter
     protected Layer layer;
 
-    private FrozenLayer(Builder builder){
+    private FrozenLayer(Builder builder) {
         super(builder);
         this.layer = builder.layer;
     }
 
-    public FrozenLayer(@JsonProperty("layer") Layer layer){
+    public FrozenLayer(@JsonProperty("layer") Layer layer) {
         this.layer = layer;
     }
 
-    public NeuralNetConfiguration getInnerConf(NeuralNetConfiguration conf){
+    public NeuralNetConfiguration getInnerConf(NeuralNetConfiguration conf) {
         NeuralNetConfiguration nnc = conf.clone();
         nnc.setLayer(layer);
         return nnc;
@@ -44,23 +44,26 @@ public class FrozenLayer extends Layer {
 
     @Override
     public Layer clone() {
-        FrozenLayer l = (FrozenLayer)super.clone();
+        FrozenLayer l = (FrozenLayer) super.clone();
         l.layer = layer.clone();
         return l;
     }
 
     @Override
-    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+    public org.deeplearning4j.nn.api.Layer instantiate(NeuralNetConfiguration conf,
+                    Collection<IterationListener> iterationListeners, int layerIndex, INDArray layerParamsView,
+                    boolean initializeParams) {
 
         //Need to be able to instantiate a layer, from a config - for JSON -> net type situations
-        org.deeplearning4j.nn.api.Layer underlying = layer.instantiate(getInnerConf(conf), iterationListeners, layerIndex, layerParamsView, initializeParams);
+        org.deeplearning4j.nn.api.Layer underlying = layer.instantiate(getInnerConf(conf), iterationListeners,
+                        layerIndex, layerParamsView, initializeParams);
 
         NeuralNetConfiguration nncUnderlying = underlying.conf();
-        if(nncUnderlying.variables() != null){
+        if (nncUnderlying.variables() != null) {
             List<String> vars = nncUnderlying.variables(true);
             nncUnderlying.clearVariables();
             conf.clearVariables();
-            for(String s : vars){
+            for (String s : vars) {
                 conf.variables(false).add(s);
                 conf.getL1ByParam().put(s, 0.0);
                 conf.getL2ByParam().put(s, 0.0);
@@ -127,22 +130,22 @@ public class FrozenLayer extends Layer {
     }
 
     @Override
-    public void setLayerName(String layerName){
+    public void setLayerName(String layerName) {
         super.setLayerName(layerName);
         layer.setLayerName(layerName);
     }
 
-    public static class Builder extends Layer.Builder<Builder>{
+    public static class Builder extends Layer.Builder<Builder> {
         private Layer layer;
 
-        public Builder layer(Layer layer){
+        public Builder layer(Layer layer) {
             this.layer = layer;
             return this;
         }
 
         @Override
         @SuppressWarnings("unchecked")
-        public FrozenLayer build(){
+        public FrozenLayer build() {
             return new FrozenLayer(this);
         }
     }

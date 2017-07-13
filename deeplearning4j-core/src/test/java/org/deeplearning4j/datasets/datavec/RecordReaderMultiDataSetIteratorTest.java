@@ -616,51 +616,44 @@ public class RecordReaderMultiDataSetIteratorTest {
 
 
 
-
     @Test
-    public void testTimeSeriesRandomOffset(){
+    public void testTimeSeriesRandomOffset() {
         //2 in, 2 out, 3 total sequences of length [1,3,5]
 
-        List<List<Writable>> seq1 = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(1.0), new DoubleWritable(2.0)));
-        List<List<Writable>> seq2 = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(10.0), new DoubleWritable(11.0)),
-                Arrays.<Writable>asList(new DoubleWritable(20.0), new DoubleWritable(21.0)),
-                Arrays.<Writable>asList(new DoubleWritable(30.0), new DoubleWritable(31.0)));
-        List<List<Writable>> seq3 = Arrays.asList(
-                Arrays.<Writable>asList(new DoubleWritable(100.0), new DoubleWritable(101.0)),
-                Arrays.<Writable>asList(new DoubleWritable(200.0), new DoubleWritable(201.0)),
-                Arrays.<Writable>asList(new DoubleWritable(300.0), new DoubleWritable(301.0)),
-                Arrays.<Writable>asList(new DoubleWritable(400.0), new DoubleWritable(401.0)),
-                Arrays.<Writable>asList(new DoubleWritable(500.0), new DoubleWritable(501.0)));
+        List<List<Writable>> seq1 =
+                        Arrays.asList(Arrays.<Writable>asList(new DoubleWritable(1.0), new DoubleWritable(2.0)));
+        List<List<Writable>> seq2 =
+                        Arrays.asList(Arrays.<Writable>asList(new DoubleWritable(10.0), new DoubleWritable(11.0)),
+                                        Arrays.<Writable>asList(new DoubleWritable(20.0), new DoubleWritable(21.0)),
+                                        Arrays.<Writable>asList(new DoubleWritable(30.0), new DoubleWritable(31.0)));
+        List<List<Writable>> seq3 =
+                        Arrays.asList(Arrays.<Writable>asList(new DoubleWritable(100.0), new DoubleWritable(101.0)),
+                                        Arrays.<Writable>asList(new DoubleWritable(200.0), new DoubleWritable(201.0)),
+                                        Arrays.<Writable>asList(new DoubleWritable(300.0), new DoubleWritable(301.0)),
+                                        Arrays.<Writable>asList(new DoubleWritable(400.0), new DoubleWritable(401.0)),
+                                        Arrays.<Writable>asList(new DoubleWritable(500.0), new DoubleWritable(501.0)));
 
         Collection<List<List<Writable>>> seqs = Arrays.asList(seq1, seq2, seq3);
 
         SequenceRecordReader rr = new CollectionSequenceRecordReader(seqs);
 
-        RecordReaderMultiDataSetIterator rrmdsi = new RecordReaderMultiDataSetIterator.Builder(3)
-                .addSequenceReader("rr", rr)
-                .addInput("rr",0,0)
-                .addOutput("rr",1,1)
-                .timeSeriesRandomOffset(true, 1234L)
-                .build();
+        RecordReaderMultiDataSetIterator rrmdsi =
+                        new RecordReaderMultiDataSetIterator.Builder(3).addSequenceReader("rr", rr).addInput("rr", 0, 0)
+                                        .addOutput("rr", 1, 1).timeSeriesRandomOffset(true, 1234L).build();
 
 
-        Random r = new Random(1234);    //Provides seed for each minibatch
+        Random r = new Random(1234); //Provides seed for each minibatch
         long seed = r.nextLong();
-        Random r2 = new Random(seed);      //Use same RNG seed in new RNG for each minibatch
-        int expOffsetSeq1 = r2.nextInt(5-1+1);   //0 to 4 inclusive
-        int expOffsetSeq2 = r2.nextInt(5-3+1);
-        int expOffsetSeq3 = 0;                        //Longest TS, always 0
+        Random r2 = new Random(seed); //Use same RNG seed in new RNG for each minibatch
+        int expOffsetSeq1 = r2.nextInt(5 - 1 + 1); //0 to 4 inclusive
+        int expOffsetSeq2 = r2.nextInt(5 - 3 + 1);
+        int expOffsetSeq3 = 0; //Longest TS, always 0
         //With current seed: 3, 1, 0
-//        System.out.println(expOffsetSeq1 + "\t" + expOffsetSeq2 + "\t" + expOffsetSeq3);
+        //        System.out.println(expOffsetSeq1 + "\t" + expOffsetSeq2 + "\t" + expOffsetSeq3);
 
         MultiDataSet mds = rrmdsi.next();
 
-        INDArray expMask = Nd4j.create(new double[][]{
-                {0,0,0,1,0},
-                {0,1,1,1,0},
-                {1,1,1,1,1}});
+        INDArray expMask = Nd4j.create(new double[][] {{0, 0, 0, 1, 0}, {0, 1, 1, 1, 0}, {1, 1, 1, 1, 1}});
 
         assertEquals(expMask, mds.getFeaturesMaskArray(0));
         assertEquals(expMask, mds.getLabelsMaskArray(0));
@@ -668,22 +661,28 @@ public class RecordReaderMultiDataSetIteratorTest {
         INDArray f = mds.getFeatures(0);
         INDArray l = mds.getLabels(0);
 
-        INDArray expF1 = Nd4j.create(new double[]{1.0});
-        INDArray expL1 = Nd4j.create(new double[]{2.0});
+        INDArray expF1 = Nd4j.create(new double[] {1.0});
+        INDArray expL1 = Nd4j.create(new double[] {2.0});
 
-        INDArray expF2 = Nd4j.create(new double[]{10, 20, 30});
-        INDArray expL2 = Nd4j.create(new double[]{11, 21, 31});
+        INDArray expF2 = Nd4j.create(new double[] {10, 20, 30});
+        INDArray expL2 = Nd4j.create(new double[] {11, 21, 31});
 
-        INDArray expF3 = Nd4j.create(new double[]{100,200,300,400,500});
-        INDArray expL3 = Nd4j.create(new double[]{101,201,301,401,501});
+        INDArray expF3 = Nd4j.create(new double[] {100, 200, 300, 400, 500});
+        INDArray expL3 = Nd4j.create(new double[] {101, 201, 301, 401, 501});
 
-        assertEquals(expF1, f.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.interval(expOffsetSeq1, expOffsetSeq1+1)));
-        assertEquals(expL1, l.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.interval(expOffsetSeq1, expOffsetSeq1+1)));
+        assertEquals(expF1, f.get(NDArrayIndex.point(0), NDArrayIndex.all(),
+                        NDArrayIndex.interval(expOffsetSeq1, expOffsetSeq1 + 1)));
+        assertEquals(expL1, l.get(NDArrayIndex.point(0), NDArrayIndex.all(),
+                        NDArrayIndex.interval(expOffsetSeq1, expOffsetSeq1 + 1)));
 
-        assertEquals(expF2, f.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(expOffsetSeq2, expOffsetSeq2+3)));
-        assertEquals(expL2, l.get(NDArrayIndex.point(1), NDArrayIndex.all(), NDArrayIndex.interval(expOffsetSeq2, expOffsetSeq2+3)));
+        assertEquals(expF2, f.get(NDArrayIndex.point(1), NDArrayIndex.all(),
+                        NDArrayIndex.interval(expOffsetSeq2, expOffsetSeq2 + 3)));
+        assertEquals(expL2, l.get(NDArrayIndex.point(1), NDArrayIndex.all(),
+                        NDArrayIndex.interval(expOffsetSeq2, expOffsetSeq2 + 3)));
 
-        assertEquals(expF3, f.get(NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.interval(expOffsetSeq3, expOffsetSeq3+5)));
-        assertEquals(expL3, l.get(NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.interval(expOffsetSeq3, expOffsetSeq3+5)));
+        assertEquals(expF3, f.get(NDArrayIndex.point(2), NDArrayIndex.all(),
+                        NDArrayIndex.interval(expOffsetSeq3, expOffsetSeq3 + 5)));
+        assertEquals(expL3, l.get(NDArrayIndex.point(2), NDArrayIndex.all(),
+                        NDArrayIndex.interval(expOffsetSeq3, expOffsetSeq3 + 5)));
     }
 }

@@ -110,9 +110,9 @@ public class TransferLearningCompGraphTest {
                         //.setOutputs("layer3")
                         .build();
 
-        BaseLayer bl0 = ((BaseLayer)modelNow.getLayer("layer0").conf().getLayer());
-        BaseLayer bl1 = ((BaseLayer)modelNow.getLayer("layer1").conf().getLayer());
-        BaseLayer bl3 = ((BaseLayer)modelNow.getLayer("layer3").conf().getLayer());
+        BaseLayer bl0 = ((BaseLayer) modelNow.getLayer("layer0").conf().getLayer());
+        BaseLayer bl1 = ((BaseLayer) modelNow.getLayer("layer1").conf().getLayer());
+        BaseLayer bl3 = ((BaseLayer) modelNow.getLayer("layer3").conf().getLayer());
         assertEquals(bl0.getWeightInit(), WeightInit.DISTRIBUTION);
         assertEquals(bl0.getDist(), new NormalDistribution(1, 1e-1));
         assertEquals(bl1.getWeightInit(), WeightInit.XAVIER);
@@ -288,88 +288,77 @@ public class TransferLearningCompGraphTest {
                         .build();
 
         ComputationGraph modelNow =
-                new TransferLearning.GraphBuilder(modelToFineTune).fineTuneConfiguration(fineTuneConfiguration)
-                        .setFeatureExtractor("layer1").nOutReplace("layer4", 600, WeightInit.XAVIER)
-                        .removeVertexAndConnections("layer5").removeVertexAndConnections("layer6")
-                        .setInputs("layer0In").setInputTypes(InputType.convolutionalFlat(28, 28, 3))
-                        .addLayer("layer5",
-                                new DenseLayer.Builder().activation(Activation.RELU).nIn(600)
-                                        .nOut(300).build(),
-                                "layer4")
-                        .addLayer("layer6",
-                                new DenseLayer.Builder().activation(Activation.RELU).nIn(300)
-                                        .nOut(150).build(),
-                                "layer5")
-                        .addLayer("layer7",
-                                new DenseLayer.Builder().activation(Activation.RELU).nIn(150)
-                                        .nOut(50).build(),
-                                "layer6")
-                        .addLayer("layer8",
-                                new OutputLayer.Builder(
-                                        LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                        .activation(Activation.SOFTMAX)
-                                        .nIn(50).nOut(10).build(),
-                                "layer7")
-                        .setOutputs("layer8").build();
+                        new TransferLearning.GraphBuilder(modelToFineTune).fineTuneConfiguration(fineTuneConfiguration)
+                                        .setFeatureExtractor("layer1").nOutReplace("layer4", 600, WeightInit.XAVIER)
+                                        .removeVertexAndConnections("layer5").removeVertexAndConnections("layer6")
+                                        .setInputs("layer0In").setInputTypes(InputType.convolutionalFlat(28, 28, 3))
+                                        .addLayer("layer5",
+                                                        new DenseLayer.Builder().activation(Activation.RELU).nIn(600)
+                                                                        .nOut(300).build(),
+                                                        "layer4")
+                                        .addLayer("layer6",
+                                                        new DenseLayer.Builder().activation(Activation.RELU).nIn(300)
+                                                                        .nOut(150).build(),
+                                                        "layer5")
+                                        .addLayer("layer7",
+                                                        new DenseLayer.Builder().activation(Activation.RELU).nIn(150)
+                                                                        .nOut(50).build(),
+                                                        "layer6")
+                                        .addLayer("layer8",
+                                                        new OutputLayer.Builder(
+                                                                        LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                                                                                        .activation(Activation.SOFTMAX)
+                                                                                        .nIn(50).nOut(10).build(),
+                                                        "layer7")
+                                        .setOutputs("layer8").build();
 
         ComputationGraph modelExpectedArch =
-                new ComputationGraph(
-                        overallConf.graphBuilder().addInputs("layer0In")
-                                .setInputTypes(InputType.convolutionalFlat(28, 28,3))
-                                .addLayer("layer0",
-                                        new FrozenLayer(new ConvolutionLayer.Builder(5, 5).nIn(3)
-                                                .stride(1, 1).nOut(20)
-                                                .activation(Activation.IDENTITY)
-                                                .build()),
-                                        "layer0In")
-                                .addLayer("layer1",
-                                        new FrozenLayer(new SubsamplingLayer.Builder(
-                                                SubsamplingLayer.PoolingType.MAX)
-                                                .kernelSize(2, 2)
-                                                .stride(2, 2)
-                                                .build()),
-                                        "layer0")
-                                .addLayer("layer2",
-                                        new ConvolutionLayer.Builder(5, 5).stride(1, 1)
-                                                .nOut(50)
-                                                .activation(Activation.IDENTITY)
-                                                .build(),
-                                        "layer1")
-                                .addLayer("layer3",
-                                        new SubsamplingLayer.Builder(
-                                                SubsamplingLayer.PoolingType.MAX)
-                                                .kernelSize(2, 2)
-                                                .stride(2, 2)
-                                                .build(),
-                                        "layer2")
-                                .addLayer("layer4",
-                                        new DenseLayer.Builder()
-                                                .activation(Activation.RELU)
-                                                .nOut(600).build(),
-                                        "layer3")
-                                .addLayer("layer5",
-                                        new DenseLayer.Builder()
-                                                .activation(Activation.RELU)
-                                                .nOut(300).build(),
-                                        "layer4")
-                                .addLayer("layer6",
-                                        new DenseLayer.Builder()
-                                                .activation(Activation.RELU)
-                                                .nOut(150).build(),
-                                        "layer5")
-                                .addLayer("layer7",
-                                        new DenseLayer.Builder()
-                                                .activation(Activation.RELU)
-                                                .nOut(50).build(),
-                                        "layer6")
-                                .addLayer("layer8",
-                                        new OutputLayer.Builder(
-                                                LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                                                .nOut(10)
-                                                .activation(Activation.SOFTMAX)
-                                                .build(),
-                                        "layer7")
-                                .setOutputs("layer8").backprop(true).pretrain(false).build());
+                        new ComputationGraph(overallConf.graphBuilder().addInputs("layer0In")
+                                        .setInputTypes(InputType.convolutionalFlat(28,
+                                                        28, 3))
+                                        .addLayer("layer0",
+                                                        new FrozenLayer(new ConvolutionLayer.Builder(5, 5).nIn(3)
+                                                                        .stride(1, 1).nOut(20)
+                                                                        .activation(Activation.IDENTITY).build()),
+                                                        "layer0In")
+                                        .addLayer("layer1",
+                                                        new FrozenLayer(new SubsamplingLayer.Builder(
+                                                                        SubsamplingLayer.PoolingType.MAX)
+                                                                                        .kernelSize(2, 2).stride(2, 2)
+                                                                                        .build()),
+                                                        "layer0")
+                                        .addLayer("layer2",
+                                                        new ConvolutionLayer.Builder(5, 5).stride(1, 1).nOut(50)
+                                                                        .activation(Activation.IDENTITY).build(),
+                                                        "layer1")
+                                        .addLayer("layer3",
+                                                        new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
+                                                                        .kernelSize(2, 2).stride(2, 2).build(),
+                                                        "layer2")
+                                        .addLayer("layer4",
+                                                        new DenseLayer.Builder().activation(Activation.RELU).nOut(600)
+                                                                        .build(),
+                                                        "layer3")
+                                        .addLayer("layer5",
+                                                        new DenseLayer.Builder().activation(Activation.RELU).nOut(300)
+                                                                        .build(),
+                                                        "layer4")
+                                        .addLayer("layer6",
+                                                        new DenseLayer.Builder().activation(Activation.RELU).nOut(150)
+                                                                        .build(),
+                                                        "layer5")
+                                        .addLayer("layer7",
+                                                        new DenseLayer.Builder().activation(Activation.RELU).nOut(50)
+                                                                        .build(),
+                                                        "layer6")
+                                        .addLayer("layer8",
+                                                        new OutputLayer.Builder(
+                                                                        LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
+                                                                                        .nOut(10)
+                                                                                        .activation(Activation.SOFTMAX)
+                                                                                        .build(),
+                                                        "layer7")
+                                        .setOutputs("layer8").backprop(true).pretrain(false).build());
         modelExpectedArch.init();
         modelExpectedArch.getVertex("layer0").setLayerAsFrozen();
         modelExpectedArch.getVertex("layer1").setLayerAsFrozen();

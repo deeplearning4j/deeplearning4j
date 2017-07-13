@@ -195,14 +195,14 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         MultiLayerNetwork netCopy = sparkNet.getNetwork().clone();
 
         netCopy.fit(data);
-        Updater expectedUpdater = ((BaseLayer)netCopy.conf().getLayer()).getUpdater();
-        double expectedLR = ((BaseLayer)netCopy.conf().getLayer()).getLearningRate();
-        double expectedMomentum = ((BaseLayer)netCopy.conf().getLayer()).getMomentum();
+        Updater expectedUpdater = ((BaseLayer) netCopy.conf().getLayer()).getUpdater();
+        double expectedLR = ((BaseLayer) netCopy.conf().getLayer()).getLearningRate();
+        double expectedMomentum = ((BaseLayer) netCopy.conf().getLayer()).getMomentum();
 
-        Updater actualUpdater = ((BaseLayer)sparkNet.getNetwork().conf().getLayer()).getUpdater();
+        Updater actualUpdater = ((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getUpdater();
         sparkNet.fit(sparkData);
-        double actualLR = ((BaseLayer)sparkNet.getNetwork().conf().getLayer()).getLearningRate();
-        double actualMomentum = ((BaseLayer)sparkNet.getNetwork().conf().getLayer()).getMomentum();
+        double actualLR = ((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getLearningRate();
+        double actualMomentum = ((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getMomentum();
 
         assertEquals(expectedUpdater, actualUpdater);
         assertEquals(expectedLR, actualLR, 0.01);

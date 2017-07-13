@@ -139,13 +139,13 @@ public class FineTuneConfiguration {
         Updater originalUpdater = null;
         WeightInit origWeightInit = null;
 
-        if(l != null){
+        if (l != null) {
             if (dropOut != null)
                 l.setDropOut(dropOut);
         }
 
         if (l != null && l instanceof BaseLayer) {
-            BaseLayer bl = (BaseLayer)l;
+            BaseLayer bl = (BaseLayer) l;
             originalUpdater = bl.getUpdater();
             origWeightInit = bl.getWeightInit();
             if (activationFn != null)
@@ -232,8 +232,9 @@ public class FineTuneConfiguration {
         }
 
         //Check the updater config. If we change updaters, we want to remove the old config to avoid warnings
-        if (l != null && l instanceof BaseLayer && updater != null && originalUpdater != null && updater != originalUpdater) {
-            BaseLayer bl = (BaseLayer)l;
+        if (l != null && l instanceof BaseLayer && updater != null && originalUpdater != null
+                        && updater != originalUpdater) {
+            BaseLayer bl = (BaseLayer) l;
             switch (originalUpdater) {
                 case ADAM:
                 case ADAMAX:
@@ -274,7 +275,7 @@ public class FineTuneConfiguration {
         //Check weight init. Remove dist if originally was DISTRIBUTION, and isn't now -> remove no longer needed distribution
         if (l != null && l instanceof BaseLayer && origWeightInit == WeightInit.DISTRIBUTION && weightInit != null
                         && weightInit != WeightInit.DISTRIBUTION) {
-            ((BaseLayer)l).setDist(null);
+            ((BaseLayer) l).setDist(null);
         }
 
         //Perform validation. This also sets the defaults for updaters. For example, Updater.RMSProp -> set rmsDecay

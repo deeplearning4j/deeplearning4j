@@ -17,7 +17,7 @@ public class FrozenLayerParamInitializer implements ParamInitializer {
 
     private static final FrozenLayerParamInitializer INSTANCE = new FrozenLayerParamInitializer();
 
-    public static FrozenLayerParamInitializer getInstance(){
+    public static FrozenLayerParamInitializer getInstance() {
         return INSTANCE;
     }
 
@@ -28,18 +28,18 @@ public class FrozenLayerParamInitializer implements ParamInitializer {
 
     @Override
     public int numParams(Layer layer) {
-        FrozenLayer fl = (FrozenLayer)layer;
+        FrozenLayer fl = (FrozenLayer) layer;
         ParamInitializer initializer = fl.getLayer().initializer();
         return initializer.numParams(fl.getLayer());
     }
 
     @Override
     public Map<String, INDArray> init(NeuralNetConfiguration conf, INDArray paramsView, boolean initializeParams) {
-        FrozenLayer fl = (FrozenLayer)conf.getLayer();
+        FrozenLayer fl = (FrozenLayer) conf.getLayer();
         Layer innerLayer = fl.getLayer();
         ParamInitializer initializer = innerLayer.initializer();
         conf.setLayer(innerLayer);
-        Map<String,INDArray> m = initializer.init(conf, paramsView, initializeParams);
+        Map<String, INDArray> m = initializer.init(conf, paramsView, initializeParams);
         conf.setLayer(fl);
 
         return m;
@@ -47,11 +47,11 @@ public class FrozenLayerParamInitializer implements ParamInitializer {
 
     @Override
     public Map<String, INDArray> getGradientsFromFlattened(NeuralNetConfiguration conf, INDArray gradientView) {
-        FrozenLayer fl = (FrozenLayer)conf.getLayer();
+        FrozenLayer fl = (FrozenLayer) conf.getLayer();
         Layer innerLayer = fl.getLayer();
         ParamInitializer initializer = innerLayer.initializer();
         conf.setLayer(innerLayer);
-        Map<String,INDArray> m = initializer.getGradientsFromFlattened(conf, gradientView);
+        Map<String, INDArray> m = initializer.getGradientsFromFlattened(conf, gradientView);
         conf.setLayer(fl);
         return m;
     }

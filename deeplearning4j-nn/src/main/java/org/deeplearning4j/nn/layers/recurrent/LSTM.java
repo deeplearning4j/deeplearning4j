@@ -153,9 +153,10 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         final INDArray inputWeights = getParam(LSTMParamInitializer.INPUT_WEIGHT_KEY); //Shape: [n^(L-1),4*hiddenLayerSize]; order: [wi,wf,wo,wg]
         final INDArray biases = getParam(LSTMParamInitializer.BIAS_KEY); //by row: IFOG			//Shape: [4,hiddenLayerSize]; order: [bi,bf,bo,bg]^T
 
-        FwdPassReturn fwd = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
-                recurrentWeights, inputWeights, biases, training, prevOutputActivations, prevMemCellState,
-                (training && cacheMode != CacheMode.NONE) || forBackprop, true, LSTMParamInitializer.INPUT_WEIGHT_KEY, null, false, forBackprop ? cacheMode : CacheMode.NONE);
+        FwdPassReturn fwd = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
+                        this.input, recurrentWeights, inputWeights, biases, training, prevOutputActivations,
+                        prevMemCellState, (training && cacheMode != CacheMode.NONE) || forBackprop, true,
+                        LSTMParamInitializer.INPUT_WEIGHT_KEY, null, false, forBackprop ? cacheMode : CacheMode.NONE);
 
         if (training && cacheMode != CacheMode.NONE) {
             cachedFwdPass = fwd;

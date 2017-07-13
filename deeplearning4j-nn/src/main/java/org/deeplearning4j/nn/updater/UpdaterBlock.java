@@ -134,11 +134,11 @@ public class UpdaterBlock {
         //Second: apply learning rate policy. Note that by definition we have the same LR policy for every single
         // variable in the block
         Layer l0 = layersAndVariablesInBlock.get(0).getLayer();
-        if(!(l0.conf().getLayer() instanceof BaseLayer) ){
+        if (!(l0.conf().getLayer() instanceof BaseLayer)) {
             //No params for this layer
             return;
         }
-        BaseLayer baseLayer = (BaseLayer)l0.conf().getLayer();
+        BaseLayer baseLayer = (BaseLayer) l0.conf().getLayer();
         LearningRatePolicy lrPolicy = l0.conf().getLearningRatePolicy();
         if (lrPolicy != LearningRatePolicy.None || baseLayer.getIUpdater() instanceof Nesterovs) {
             applyLrDecayPolicy(lrPolicy, iteration);
@@ -205,12 +205,12 @@ public class UpdaterBlock {
         double decayRate = layer.conf().getLrPolicyDecayRate();
         double lr = conf.getLearningRateByParam(variable);
 
-        if(!(conf.getLayer() instanceof BaseLayer)){
+        if (!(conf.getLayer() instanceof BaseLayer)) {
             //No params
             return;
         }
 
-        BaseLayer baseLayer = (BaseLayer)conf.getLayer();
+        BaseLayer baseLayer = (BaseLayer) conf.getLayer();
 
         double newLr;
         switch (decay) {
@@ -254,8 +254,7 @@ public class UpdaterBlock {
         //Handle momentum schedules. Given the new updater design, this change is purely cosmetic
         double newMomentum = 0.0;
         if (baseLayer.getIUpdater() instanceof Nesterovs) {
-            if (baseLayer.getMomentumSchedule() != null
-                            && baseLayer.getMomentumSchedule().containsKey(iteration)) {
+            if (baseLayer.getMomentumSchedule() != null && baseLayer.getMomentumSchedule().containsKey(iteration)) {
                 newMomentum = baseLayer.getMomentumSchedule().get(iteration);
             } else {
                 newMomentum = baseLayer.getMomentum();
@@ -266,8 +265,8 @@ public class UpdaterBlock {
         // same block) share the same LR schedule
         for (ParamState vs : layersAndVariablesInBlock) {
             vs.getLayer().conf().setLearningRateByParam(vs.getParamName(), newLr);
-            if (((BaseLayer)layer.conf().getLayer()).getIUpdater() instanceof Nesterovs) {
-                ((BaseLayer)vs.getLayer().conf().getLayer()).setMomentum(newMomentum);
+            if (((BaseLayer) layer.conf().getLayer()).getIUpdater() instanceof Nesterovs) {
+                ((BaseLayer) vs.getLayer().conf().getLayer()).setMomentum(newMomentum);
             }
         }
 

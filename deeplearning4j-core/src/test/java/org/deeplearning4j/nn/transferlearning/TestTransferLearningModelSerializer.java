@@ -39,34 +39,28 @@ public class TestTransferLearningModelSerializer {
         int nIn = 6;
         int nOut = 3;
 
-        MultiLayerConfiguration origConf = new NeuralNetConfiguration.Builder()
-                .learningRate(0.1)
-                .updater(Updater.SGD)
-                .activation(Activation.TANH)
-                .regularization(true).dropOut(0.5)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(5).build())
-                .layer(1, new DenseLayer.Builder().nIn(5).nOut(4).build())
-                .layer(2, new DenseLayer.Builder().nIn(4).nOut(3).build())
-                .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
-                        LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(nOut)
-                        .build())
-                .build();
+        MultiLayerConfiguration origConf = new NeuralNetConfiguration.Builder().learningRate(0.1).updater(Updater.SGD)
+                        .activation(Activation.TANH).regularization(true).dropOut(0.5).list()
+                        .layer(0, new DenseLayer.Builder().nIn(nIn).nOut(5).build())
+                        .layer(1, new DenseLayer.Builder().nIn(5).nOut(4).build())
+                        .layer(2, new DenseLayer.Builder().nIn(4).nOut(3).build())
+                        .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                        LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3)
+                                                        .nOut(nOut).build())
+                        .build();
         MultiLayerNetwork origModel = new MultiLayerNetwork(origConf);
         origModel.init();
 
-        MultiLayerNetwork withFrozen = new TransferLearning.Builder(origModel)
-                .fineTuneConfiguration(finetune)
-                .setFeatureExtractor(1)
-                .build();
+        MultiLayerNetwork withFrozen = new TransferLearning.Builder(origModel).fineTuneConfiguration(finetune)
+                        .setFeatureExtractor(1).build();
 
         assertTrue(withFrozen.getLayer(0) instanceof FrozenLayer);
         assertTrue(withFrozen.getLayer(1) instanceof FrozenLayer);
 
-        assertTrue(withFrozen.getLayerWiseConfigurations().getConf(0).getLayer()
-                instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer);
-        assertTrue(withFrozen.getLayerWiseConfigurations().getConf(1).getLayer()
-                instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer);
+        assertTrue(withFrozen.getLayerWiseConfigurations().getConf(0)
+                        .getLayer() instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer);
+        assertTrue(withFrozen.getLayerWiseConfigurations().getConf(1)
+                        .getLayer() instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer);
 
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -102,34 +96,28 @@ public class TestTransferLearningModelSerializer {
         int nIn = 6;
         int nOut = 3;
 
-        ComputationGraphConfiguration origConf = new NeuralNetConfiguration.Builder()
-                .learningRate(0.1)
-                .updater(Updater.SGD)
-                .activation(Activation.TANH)
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(5).build(), "in")
-                .addLayer("1", new DenseLayer.Builder().nIn(5).nOut(4).build(), "0")
-                .addLayer("2", new DenseLayer.Builder().nIn(4).nOut(3).build(), "1")
-                .addLayer("3", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
-                        LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(nOut)
-                        .build(), "2")
-                .setOutputs("3")
-                .build();
+        ComputationGraphConfiguration origConf = new NeuralNetConfiguration.Builder().learningRate(0.1)
+                        .updater(Updater.SGD).activation(Activation.TANH).graphBuilder().addInputs("in")
+                        .addLayer("0", new DenseLayer.Builder().nIn(nIn).nOut(5).build(), "in")
+                        .addLayer("1", new DenseLayer.Builder().nIn(5).nOut(4).build(), "0")
+                        .addLayer("2", new DenseLayer.Builder().nIn(4).nOut(3).build(), "1")
+                        .addLayer("3", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                        LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3)
+                                                        .nOut(nOut).build(),
+                                        "2")
+                        .setOutputs("3").build();
         ComputationGraph origModel = new ComputationGraph(origConf);
         origModel.init();
 
-        ComputationGraph withFrozen = new TransferLearning.GraphBuilder(origModel)
-                .fineTuneConfiguration(finetune)
-                .setFeatureExtractor("1")
-                .build();
+        ComputationGraph withFrozen = new TransferLearning.GraphBuilder(origModel).fineTuneConfiguration(finetune)
+                        .setFeatureExtractor("1").build();
 
         assertTrue(withFrozen.getLayer(0) instanceof FrozenLayer);
         assertTrue(withFrozen.getLayer(1) instanceof FrozenLayer);
 
         Map<String, GraphVertex> m = withFrozen.getConfiguration().getVertices();
-        Layer l0 = ((LayerVertex)m.get("0")).getLayerConf().getLayer();
-        Layer l1 = ((LayerVertex)m.get("1")).getLayerConf().getLayer();
+        Layer l0 = ((LayerVertex) m.get("0")).getLayerConf().getLayer();
+        Layer l1 = ((LayerVertex) m.get("1")).getLayerConf().getLayer();
         assertTrue(l0 instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer);
         assertTrue(l1 instanceof org.deeplearning4j.nn.conf.layers.misc.FrozenLayer);
 

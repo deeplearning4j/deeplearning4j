@@ -927,7 +927,7 @@ public class MultiLayerTest {
         MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
         net2.init();
 
-        BaseLayer bl0 = (BaseLayer)net2.getLayer(0).conf().getLayer();
+        BaseLayer bl0 = (BaseLayer) net2.getLayer(0).conf().getLayer();
         assertEquals(0.1, bl0.getL1Bias(), 1e-6);
         assertEquals(0.2, bl0.getL2Bias(), 1e-6);
 

@@ -57,7 +57,7 @@ public class TransferLearningMLNTest {
                                         .build();
 
         for (org.deeplearning4j.nn.api.Layer l : modelNow.getLayers()) {
-            BaseLayer bl = ((BaseLayer)l.conf().getLayer());
+            BaseLayer bl = ((BaseLayer) l.conf().getLayer());
             assertEquals(Updater.RMSPROP, bl.getUpdater());
             assertEquals(0.5, bl.getLearningRate(), 1e-6);
         }
@@ -128,9 +128,9 @@ public class TransferLearningMLNTest {
         //Will fail - expected because of dist and weight init changes
         //assertEquals(modelExpectedArch.getLayerWiseConfigurations().toJson(), modelNow.getLayerWiseConfigurations().toJson());
 
-        BaseLayer bl0 = ((BaseLayer)modelNow.getLayerWiseConfigurations().getConf(0).getLayer());
-        BaseLayer bl1 = ((BaseLayer)modelNow.getLayerWiseConfigurations().getConf(1).getLayer());
-        BaseLayer bl3 = ((BaseLayer)modelNow.getLayerWiseConfigurations().getConf(3).getLayer());
+        BaseLayer bl0 = ((BaseLayer) modelNow.getLayerWiseConfigurations().getConf(0).getLayer());
+        BaseLayer bl1 = ((BaseLayer) modelNow.getLayerWiseConfigurations().getConf(1).getLayer());
+        BaseLayer bl3 = ((BaseLayer) modelNow.getLayerWiseConfigurations().getConf(3).getLayer());
         assertEquals(bl0.getWeightInit(), WeightInit.XAVIER);
         assertEquals(bl0.getDist(), null);
         assertEquals(bl1.getWeightInit(), WeightInit.DISTRIBUTION);
@@ -487,14 +487,14 @@ public class TransferLearningMLNTest {
 
 
         //Check original net isn't modified:
-        BaseLayer l0 = (BaseLayer)net.getLayer(0).conf().getLayer();
+        BaseLayer l0 = (BaseLayer) net.getLayer(0).conf().getLayer();
         assertEquals(Updater.ADAM, l0.getUpdater());
         assertEquals(Activation.TANH.getActivationFunction(), l0.getActivationFn());
         assertEquals(1e-4, l0.getLearningRate(), 1e-8);
         assertEquals(WeightInit.RELU, l0.getWeightInit());
         assertEquals(0.1, l0.getL1(), 1e-6);
 
-        BaseLayer l1 = (BaseLayer)net.getLayer(1).conf().getLayer();
+        BaseLayer l1 = (BaseLayer) net.getLayer(1).conf().getLayer();
         assertEquals(Updater.ADAM, l1.getUpdater());
         assertEquals(Activation.HARDSIGMOID.getActivationFunction(), l1.getActivationFn());
         assertEquals(1e-4, l1.getLearningRate(), 1e-8);
@@ -504,14 +504,14 @@ public class TransferLearningMLNTest {
         assertEquals(BackpropType.Standard, conf.getBackpropType());
 
         //Check new net has only the appropriate things modified (i.e., LR)
-        l0 = (BaseLayer)net2.getLayer(0).conf().getLayer();
+        l0 = (BaseLayer) net2.getLayer(0).conf().getLayer();
         assertEquals(Updater.ADAM, l0.getUpdater());
         assertEquals(Activation.TANH.getActivationFunction(), l0.getActivationFn());
         assertEquals(2e-2, l0.getLearningRate(), 1e-8);
         assertEquals(WeightInit.RELU, l0.getWeightInit());
         assertEquals(0.1, l0.getL1(), 1e-6);
 
-        l1 = (BaseLayer)net2.getLayer(1).conf().getLayer();
+        l1 = (BaseLayer) net2.getLayer(1).conf().getLayer();
         assertEquals(Updater.ADAM, l1.getUpdater());
         assertEquals(Activation.HARDSIGMOID.getActivationFunction(), l1.getActivationFn());
         assertEquals(2e-2, l1.getLearningRate(), 1e-8);

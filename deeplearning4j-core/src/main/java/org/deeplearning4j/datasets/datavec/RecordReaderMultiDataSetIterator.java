@@ -92,7 +92,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         this.inputs.addAll(builder.inputs);
         this.outputs.addAll(builder.outputs);
         this.timeSeriesRandomOffset = builder.timeSeriesRandomOffset;
-        if(this.timeSeriesRandomOffset){
+        if (this.timeSeriesRandomOffset) {
             timeSeriesRandomOffsetRng = new Random(builder.timeSeriesRandomOffsetSeed);
         }
     }
@@ -256,7 +256,8 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
     private Pair<INDArray[], INDArray[]> convertFeaturesOrLabels(INDArray[] featuresOrLabels, INDArray[] masks,
                     List<SubsetDetails> subsetDetails, int minExamples, Map<String, List<List<Writable>>> nextRRVals,
                     Map<String, List<Writable>> nextRRValsBatched,
-                    Map<String, List<List<List<Writable>>>> nextSeqRRVals, int longestTS, int[] longestSequence, long rngSeed) {
+                    Map<String, List<List<List<Writable>>>> nextSeqRRVals, int longestTS, int[] longestSequence,
+                    long rngSeed) {
         boolean hasMasks = false;
         int i = 0;
 
@@ -271,7 +272,8 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
             } else {
                 //Sequence reader
                 List<List<List<Writable>>> list = nextSeqRRVals.get(d.readerName);
-                Pair<INDArray, INDArray> p = convertWritablesSequence(list, minExamples, longestTS, d, longestSequence, rngSeed);
+                Pair<INDArray, INDArray> p =
+                                convertWritablesSequence(list, minExamples, longestTS, d, longestSequence, rngSeed);
                 featuresOrLabels[i] = p.getFirst();
                 masks[i] = p.getSecond();
                 if (masks[i] != null)
@@ -322,20 +324,20 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         return out;
     }
 
-    private int countLength(List<Writable> list){
-        return countLength(list, 0, list.size()-1);
+    private int countLength(List<Writable> list) {
+        return countLength(list, 0, list.size() - 1);
     }
 
-    private int countLength(List<Writable> list, int from, int to){
+    private int countLength(List<Writable> list, int from, int to) {
         int length = 0;
-        for( int i=from; i<=to; i++ ) {
+        for (int i = from; i <= to; i++) {
             Writable w = list.get(i);
             if (w instanceof NDArrayWritable) {
                 INDArray a = ((NDArrayWritable) w).get();
                 if (!a.isRowVector()) {
                     throw new UnsupportedOperationException("Multiple writables present but NDArrayWritable is "
-                            + "not a row vector. Can only concat row vectors with other writables. Shape: "
-                            + Arrays.toString(a.shape()));
+                                    + "not a row vector. Can only concat row vectors with other writables. Shape: "
+                                    + Arrays.toString(a.shape()));
                 }
                 length += a.length();
             } else {
@@ -504,7 +506,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
 
         //Don't use the global RNG as we need repeatability for each subset (i.e., features and labels must be aligned)
         Random rng = null;
-        if(timeSeriesRandomOffset){
+        if (timeSeriesRandomOffset) {
             rng = new Random(rngSeed);
         }
 
@@ -521,7 +523,7 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
                 startOffset = longestSequence[i] - sequence.size();
             }
 
-            if(timeSeriesRandomOffset){
+            if (timeSeriesRandomOffset) {
                 int maxPossible = maxTSLength - sequence.size() + 1;
                 startOffset = rng.nextInt(maxPossible);
             }
@@ -765,14 +767,14 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator {
         }
 
         /**
-		 * For use with timeseries trained with tbptt
-  		 * In a given minbatch, shorter time series are padded and appropriately masked to be the same length as the longest time series.
-		 * Cases with a skewed distrbution of lengths can result in the last few updates from the time series coming from mostly masked time steps.
+         * For use with timeseries trained with tbptt
+         * In a given minbatch, shorter time series are padded and appropriately masked to be the same length as the longest time series.
+         * Cases with a skewed distrbution of lengths can result in the last few updates from the time series coming from mostly masked time steps.
          * timeSeriesRandomOffset randomly offsettsthe time series + masking appropriately to address this
          * @param timeSeriesRandomOffset, "true" to randomly offset time series within a minibatch
          * @param rngSeed seed for reproducibility
          */
-        public Builder timeSeriesRandomOffset(boolean timeSeriesRandomOffset, long rngSeed){
+        public Builder timeSeriesRandomOffset(boolean timeSeriesRandomOffset, long rngSeed) {
             this.timeSeriesRandomOffset = timeSeriesRandomOffset;
             this.timeSeriesRandomOffsetSeed = rngSeed;
             return this;

@@ -57,7 +57,7 @@ public class ConvolutionParamInitializer implements ParamInitializer {
     @Override
     public int numParams(Layer l) {
         org.deeplearning4j.nn.conf.layers.ConvolutionLayer layerConf =
-                (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) l;
+                        (org.deeplearning4j.nn.conf.layers.ConvolutionLayer) l;
 
         int[] kernel = layerConf.getKernelSize();
         int nIn = layerConf.getNIn();

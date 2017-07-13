@@ -26,10 +26,10 @@ public class LayerValidation {
                     Map<Integer, Double> momentumSchedule, Double adamMeanDecay, Double adamVarDecay, Double rho,
                     Double rmsDecay, Double epsilon) {
         BaseLayer bLayer;
-        if(layer instanceof FrozenLayer && ((FrozenLayer) layer).getLayer() instanceof BaseLayer){
-            bLayer = (BaseLayer)((FrozenLayer) layer).getLayer();
-        } else if(layer instanceof BaseLayer){
-            bLayer = (BaseLayer)layer;
+        if (layer instanceof FrozenLayer && ((FrozenLayer) layer).getLayer() instanceof BaseLayer) {
+            bLayer = (BaseLayer) ((FrozenLayer) layer).getLayer();
+        } else if (layer instanceof BaseLayer) {
+            bLayer = (BaseLayer) layer;
         } else {
             return;
         }
@@ -309,25 +309,27 @@ public class LayerValidation {
             if (useDropConnect && layer.getDropOut() == 0.0)
                 log.warn("Layer \"" + layerName + " dropConnect is set to true but dropout rate is set to 0.0");
 
-            if(layer instanceof BaseLayer ) {
-                BaseLayer bLayer = (BaseLayer)layer;
-                configureBaseLayer(layerName, bLayer, useRegularization, useDropConnect, dropOut, l2, l2Bias, l1, l1Bias, dist);
-            } else if(layer instanceof FrozenLayer && ((FrozenLayer)layer).getLayer() instanceof BaseLayer){
-                BaseLayer bLayer = (BaseLayer)((FrozenLayer)layer).getLayer();
-                configureBaseLayer(layerName, bLayer, useRegularization, useDropConnect, dropOut, l2, l2Bias, l1, l1Bias, dist);
+            if (layer instanceof BaseLayer) {
+                BaseLayer bLayer = (BaseLayer) layer;
+                configureBaseLayer(layerName, bLayer, useRegularization, useDropConnect, dropOut, l2, l2Bias, l1,
+                                l1Bias, dist);
+            } else if (layer instanceof FrozenLayer && ((FrozenLayer) layer).getLayer() instanceof BaseLayer) {
+                BaseLayer bLayer = (BaseLayer) ((FrozenLayer) layer).getLayer();
+                configureBaseLayer(layerName, bLayer, useRegularization, useDropConnect, dropOut, l2, l2Bias, l1,
+                                l1Bias, dist);
             }
         }
     }
 
     private static void configureBaseLayer(String layerName, BaseLayer bLayer, boolean useRegularization,
-                                           boolean useDropConnect, Double dropOut, Double l2, Double l2Bias, Double l1, Double l1Bias,
-                                           Distribution dist){
+                    boolean useDropConnect, Double dropOut, Double l2, Double l2Bias, Double l1, Double l1Bias,
+                    Distribution dist) {
         if (useRegularization && (Double.isNaN(l1) && Double.isNaN(bLayer.getL1()) && Double.isNaN(l2)
-                && Double.isNaN(bLayer.getL2()) && Double.isNaN(l2Bias) && Double.isNaN(l1Bias)
-                && (Double.isNaN(dropOut) || dropOut == 0.0)
-                && (Double.isNaN(bLayer.getDropOut()) || bLayer.getDropOut() == 0.0)))
+                        && Double.isNaN(bLayer.getL2()) && Double.isNaN(l2Bias) && Double.isNaN(l1Bias)
+                        && (Double.isNaN(dropOut) || dropOut == 0.0)
+                        && (Double.isNaN(bLayer.getDropOut()) || bLayer.getDropOut() == 0.0)))
             log.warn("Layer \"" + layerName
-                    + "\" regularization is set to true but l1, l2 or dropout has not been added to configuration.");
+                            + "\" regularization is set to true but l1, l2 or dropout has not been added to configuration.");
 
         if (useRegularization) {
             if (!Double.isNaN(l1) && Double.isNaN(bLayer.getL1())) {
@@ -343,14 +345,14 @@ public class LayerValidation {
                 bLayer.setL2Bias(l2Bias);
             }
         } else if (!useRegularization && ((!Double.isNaN(l1) && l1 > 0.0)
-                || (!Double.isNaN(bLayer.getL1()) && bLayer.getL1() > 0.0) || (!Double.isNaN(l2) && l2 > 0.0)
-                || (!Double.isNaN(bLayer.getL2()) && bLayer.getL2() > 0.0)
-                || (!Double.isNaN(l1Bias) && l1Bias > 0.0)
-                || (!Double.isNaN(bLayer.getL1Bias()) && bLayer.getL1Bias() > 0.0)
-                || (!Double.isNaN(l2Bias) && l2Bias > 0.0)
-                || (!Double.isNaN(bLayer.getL2Bias()) && bLayer.getL2Bias() > 0.0))) {
+                        || (!Double.isNaN(bLayer.getL1()) && bLayer.getL1() > 0.0) || (!Double.isNaN(l2) && l2 > 0.0)
+                        || (!Double.isNaN(bLayer.getL2()) && bLayer.getL2() > 0.0)
+                        || (!Double.isNaN(l1Bias) && l1Bias > 0.0)
+                        || (!Double.isNaN(bLayer.getL1Bias()) && bLayer.getL1Bias() > 0.0)
+                        || (!Double.isNaN(l2Bias) && l2Bias > 0.0)
+                        || (!Double.isNaN(bLayer.getL2Bias()) && bLayer.getL2Bias() > 0.0))) {
             log.warn("Layer \"" + layerName
-                    + "\" l1 or l2 has been added to configuration but useRegularization is set to false.");
+                            + "\" l1 or l2 has been added to configuration but useRegularization is set to false.");
         }
 
         if (Double.isNaN(l2) && Double.isNaN(bLayer.getL2())) {
@@ -373,11 +375,11 @@ public class LayerValidation {
             else if (dist == null && bLayer.getDist() == null) {
                 bLayer.setDist(new NormalDistribution(0, 1));
                 log.warn("Layer \"" + layerName
-                        + "\" distribution is automatically set to normalize distribution with mean 0 and variance 1.");
+                                + "\" distribution is automatically set to normalize distribution with mean 0 and variance 1.");
             }
         } else if ((dist != null || bLayer.getDist() != null)) {
             log.warn("Layer \"" + layerName
-                    + "\" distribution is set but will not be applied unless weight init is set to WeighInit.DISTRIBUTION.");
+                            + "\" distribution is set but will not be applied unless weight init is set to WeighInit.DISTRIBUTION.");
         }
     }
 }

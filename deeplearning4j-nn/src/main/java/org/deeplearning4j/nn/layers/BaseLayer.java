@@ -41,7 +41,8 @@ import java.util.*;
  * A layer with parameters
  * @author Adam Gibson
  */
-public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseLayer> extends AbstractLayer<LayerConfT> {
+public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.layers.BaseLayer>
+                extends AbstractLayer<LayerConfT> {
 
     protected INDArray paramsFlattened;
     protected INDArray gradientsFlattened;

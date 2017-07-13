@@ -911,25 +911,25 @@ public class TrainModule implements UIModule {
                         layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerSize"),
                                         String.valueOf(ffl.getNOut())});
                     }
-                    if( layer instanceof BaseLayer ) {
-                        BaseLayer bl = (BaseLayer)layer;
+                    if (layer instanceof BaseLayer) {
+                        BaseLayer bl = (BaseLayer) layer;
                         activationFn = bl.getActivationFn().toString();
                         int nParams = layer.initializer().numParams(nnc);
-                        layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerNParams"),
-                                String.valueOf(nParams)});
+                        layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerNParams"),
+                                        String.valueOf(nParams)});
                         if (nParams > 0) {
                             WeightInit wi = bl.getWeightInit();
                             String str = wi.toString();
                             if (wi == WeightInit.DISTRIBUTION) {
                                 str += bl.getDist();
                             }
-                            layerInfoRows.add(new String[]{i18N.getMessage("train.model.layerinfotable.layerWeightInit"),
-                                    str});
+                            layerInfoRows.add(new String[] {
+                                            i18N.getMessage("train.model.layerinfotable.layerWeightInit"), str});
 
                             IUpdater u = bl.getIUpdater();
                             String us = (u == null ? "" : u.getClass().getSimpleName());
-                            layerInfoRows.add(
-                                    new String[]{i18N.getMessage("train.model.layerinfotable.layerUpdater"), us});
+                            layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerUpdater"),
+                                            us});
 
                             //TODO: Maybe L1/L2, dropout, updater-specific values etc
                         }

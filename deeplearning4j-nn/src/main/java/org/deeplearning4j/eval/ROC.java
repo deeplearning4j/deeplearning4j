@@ -377,20 +377,20 @@ public class ROC extends BaseEvaluation<ROC> {
             fpCountOut = new int[thresholdOut.length];
             fnCountOut = new int[thresholdOut.length];
 
-            for( int i=1; i<tpCountOut.length-1; i++ ){
-                tpCountOut[i] = cumSumPos.getInt(i-1);
-                fpCountOut[i] = i - tpCountOut[i];   //predicted positive - true positive
-                fnCountOut[i] = (int)countActualPositive - tpCountOut[i];
+            for (int i = 1; i < tpCountOut.length - 1; i++) {
+                tpCountOut[i] = cumSumPos.getInt(i - 1);
+                fpCountOut[i] = i - tpCountOut[i]; //predicted positive - true positive
+                fnCountOut[i] = (int) countActualPositive - tpCountOut[i];
             }
 
             //Edge cases: last idx -> threshold of 0.0, all predicted positive
-            tpCountOut[tpCountOut.length-1] = (int)countActualPositive;
-            fpCountOut[tpCountOut.length-1] = (int)(exampleCount - countActualPositive);
-            fnCountOut[tpCountOut.length-1] = 0;
+            tpCountOut[tpCountOut.length - 1] = (int) countActualPositive;
+            fpCountOut[tpCountOut.length - 1] = (int) (exampleCount - countActualPositive);
+            fnCountOut[tpCountOut.length - 1] = 0;
             //Edge case: first idx -> threshold of 1.0, all predictions negative
             tpCountOut[0] = 0;
-            fpCountOut[0] = 0;  //(int)(exampleCount - countActualPositive);  //All negatives are predicted positive
-            fnCountOut[0] = (int)countActualPositive;
+            fpCountOut[0] = 0; //(int)(exampleCount - countActualPositive);  //All negatives are predicted positive
+            fnCountOut[0] = (int) countActualPositive;
 
             //Finally: 2 things to do
             //(a) Reverse order: lowest to highest threshold
@@ -404,7 +404,8 @@ public class ROC extends BaseEvaluation<ROC> {
             ArrayUtils.reverse(fnCountOut);
 
             if (rocRemoveRedundantPts) {
-                Pair<double[][], int[][]> pair = removeRedundant(thresholdOut, precisionOut, recallOut, tpCountOut, fpCountOut, fnCountOut);
+                Pair<double[][], int[][]> pair = removeRedundant(thresholdOut, precisionOut, recallOut, tpCountOut,
+                                fpCountOut, fnCountOut);
                 double[][] temp = pair.getFirst();
                 int[][] temp2 = pair.getSecond();
                 thresholdOut = temp[0];
@@ -450,14 +451,15 @@ public class ROC extends BaseEvaluation<ROC> {
                 precisionOut[i] = precision;
                 recallOut[i] = recall;
 
-                tpCountOut[i] = (int)tpCount;
-                fpCountOut[i] = (int)fpCount;
-                fnCountOut[i] = (int)(countActualPositive - tpCount);
+                tpCountOut[i] = (int) tpCount;
+                fpCountOut[i] = (int) fpCount;
+                fnCountOut[i] = (int) (countActualPositive - tpCount);
                 i++;
             }
         }
 
-        prCurve = new PrecisionRecallCurve(thresholdOut, precisionOut, recallOut, tpCountOut, fpCountOut, fnCountOut, exampleCount);
+        prCurve = new PrecisionRecallCurve(thresholdOut, precisionOut, recallOut, tpCountOut, fpCountOut, fnCountOut,
+                        exampleCount);
         return prCurve;
     }
 
@@ -510,7 +512,7 @@ public class ROC extends BaseEvaluation<ROC> {
             //Note: we can have multiple FPR for a given TPR, and multiple TPR for a given FPR
             //These can be omitted, without changing the area (as long as we keep the edge points)
             if (rocRemoveRedundantPts) {
-                Pair<double[][],int[][]> p = removeRedundant(tOut, x_fpr_out, y_tpr_out, null, null, null);
+                Pair<double[][], int[][]> p = removeRedundant(tOut, x_fpr_out, y_tpr_out, null, null, null);
                 double[][] temp = p.getFirst();
                 tOut = temp[0];
                 x_fpr_out = temp[1];
@@ -538,7 +540,8 @@ public class ROC extends BaseEvaluation<ROC> {
         }
     }
 
-    private static Pair<double[][],int[][]> removeRedundant(double[] threshold, double[] x, double[] y, int[] tpCount, int[] fpCount, int[] fnCount) {
+    private static Pair<double[][], int[][]> removeRedundant(double[] threshold, double[] x, double[] y, int[] tpCount,
+                    int[] fpCount, int[] fnCount) {
         double[] t_compacted = new double[threshold.length];
         double[] x_compacted = new double[x.length];
         double[] y_compacted = new double[y.length];
@@ -569,7 +572,7 @@ public class ROC extends BaseEvaluation<ROC> {
                 t_compacted[lastOutPos] = threshold[i];
                 y_compacted[lastOutPos] = y[i];
                 x_compacted[lastOutPos] = x[i];
-                if(hasInts){
+                if (hasInts) {
                     tp_compacted[lastOutPos] = tpCount[i];
                     fp_compacted[lastOutPos] = fpCount[i];
                     fn_compacted[lastOutPos] = fnCount[i];
@@ -581,7 +584,7 @@ public class ROC extends BaseEvaluation<ROC> {
             t_compacted = Arrays.copyOfRange(t_compacted, 0, lastOutPos + 1);
             x_compacted = Arrays.copyOfRange(x_compacted, 0, lastOutPos + 1);
             y_compacted = Arrays.copyOfRange(y_compacted, 0, lastOutPos + 1);
-            if(hasInts){
+            if (hasInts) {
                 tp_compacted = Arrays.copyOfRange(tp_compacted, 0, lastOutPos + 1);
                 fp_compacted = Arrays.copyOfRange(fp_compacted, 0, lastOutPos + 1);
                 fn_compacted = Arrays.copyOfRange(fn_compacted, 0, lastOutPos + 1);
@@ -589,7 +592,7 @@ public class ROC extends BaseEvaluation<ROC> {
         }
 
         return new Pair<>(new double[][] {t_compacted, x_compacted, y_compacted},
-                hasInts ? new int[][]{tp_compacted, fp_compacted, fn_compacted} : null);
+                        hasInts ? new int[][] {tp_compacted, fp_compacted, fn_compacted} : null);
     }
 
     /**

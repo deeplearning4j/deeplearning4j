@@ -231,7 +231,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
             //Also, pre 0.7.2: activation functions were Strings ("activationFunction" field), not classes ("activationFn")
             //Try to load the old format if necessary, and create the appropriate IActivation instance
-            if ( (l instanceof BaseLayer) && ((BaseLayer)l).getActivationFn() == null) {
+            if ((l instanceof BaseLayer) && ((BaseLayer) l).getActivationFn() == null) {
                 try {
                     JsonNode jsonNode = mapper.readTree(json);
                     if (confs == null) {
@@ -253,7 +253,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
                         if (activationFunction != null) {
                             IActivation ia = Activation.fromString(activationFunction.asText()).getActivationFunction();
-                            ((BaseLayer)l).setActivationFn(ia);
+                            ((BaseLayer) l).setActivationFn(ia);
                         }
                     }
 

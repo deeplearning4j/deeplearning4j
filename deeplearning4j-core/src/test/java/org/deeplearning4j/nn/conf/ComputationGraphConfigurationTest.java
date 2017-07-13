@@ -246,13 +246,13 @@ public class ComputationGraphConfigurationTest {
                         .setOutputs("3").setInputTypes(InputType.convolutional(28, 28, 1)).build();
 
         org.deeplearning4j.nn.conf.layers.BaseLayer l0 =
-                (BaseLayer)((LayerVertex) conf.getVertices().get("0")).getLayerConf().getLayer();
+                        (BaseLayer) ((LayerVertex) conf.getVertices().get("0")).getLayerConf().getLayer();
         org.deeplearning4j.nn.conf.layers.BaseLayer l1 =
-                (BaseLayer)((LayerVertex) conf.getVertices().get("1")).getLayerConf().getLayer();
+                        (BaseLayer) ((LayerVertex) conf.getVertices().get("1")).getLayerConf().getLayer();
         org.deeplearning4j.nn.conf.layers.BaseLayer l2 =
-                (BaseLayer)((LayerVertex) conf.getVertices().get("2")).getLayerConf().getLayer();
+                        (BaseLayer) ((LayerVertex) conf.getVertices().get("2")).getLayerConf().getLayer();
         org.deeplearning4j.nn.conf.layers.BaseLayer l3 =
-                (BaseLayer)((LayerVertex) conf.getVertices().get("3")).getLayerConf().getLayer();
+                        (BaseLayer) ((LayerVertex) conf.getVertices().get("3")).getLayerConf().getLayer();
 
         assertEquals(0.5, l0.getBiasLearningRate(), 1e-6);
         assertEquals(1e-2, l0.getLearningRate(), 1e-6);

@@ -92,8 +92,8 @@ public class VariationalAutoencoder implements Layer {
                         .getNumSamples();
     }
 
-    protected org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder layerConf(){
-        return (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder)conf().getLayer();
+    protected org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder layerConf() {
+        return (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf().getLayer();
     }
 
     @Override

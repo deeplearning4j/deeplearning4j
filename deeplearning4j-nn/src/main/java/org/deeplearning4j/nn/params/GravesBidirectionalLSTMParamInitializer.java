@@ -63,14 +63,14 @@ public class GravesBidirectionalLSTMParamInitializer implements ParamInitializer
     @Override
     public int numParams(Layer l) {
         org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM layerConf =
-                (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) l;
+                        (org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM) l;
 
         int nL = layerConf.getNOut(); //i.e., n neurons in this layer
         int nLast = layerConf.getNIn(); //i.e., n neurons in previous layer
 
         int nParamsForward = nLast * (4 * nL) //"input" weights
-                + nL * (4 * nL + 3) //recurrent weights
-                + 4 * nL; //bias
+                        + nL * (4 * nL + 3) //recurrent weights
+                        + 4 * nL; //bias
 
         return 2 * nParamsForward;
     }

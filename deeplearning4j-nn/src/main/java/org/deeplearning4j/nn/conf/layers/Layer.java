@@ -91,10 +91,10 @@ public abstract class Layer implements Serializable, Cloneable {
     }
 
     @Override
-    public Layer clone(){
-        try{
-            return (Layer)super.clone();
-        } catch (CloneNotSupportedException e){
+    public Layer clone() {
+        try {
+            return (Layer) super.clone();
+        } catch (CloneNotSupportedException e) {
             throw new RuntimeException(e);
         }
     }
@@ -187,8 +187,9 @@ public abstract class Layer implements Serializable, Cloneable {
      * @deprecated Use {@link #getIUpdaterByParam(String)}
      */
     @Deprecated
-    public Updater getUpdaterByParam(String paramName){
-        throw new UnsupportedOperationException("Not supported: all layers with parameters should override this method");
+    public Updater getUpdaterByParam(String paramName) {
+        throw new UnsupportedOperationException(
+                        "Not supported: all layers with parameters should override this method");
     }
 
     /**
@@ -198,8 +199,9 @@ public abstract class Layer implements Serializable, Cloneable {
      * @param paramName    Parameter name
      * @return             IUpdater for the parameter
      */
-    public IUpdater getIUpdaterByParam(String paramName){
-        throw new UnsupportedOperationException("Not supported: all layers with parameters should override this method");
+    public IUpdater getIUpdaterByParam(String paramName) {
+        throw new UnsupportedOperationException(
+                        "Not supported: all layers with parameters should override this method");
     }
 
     @SuppressWarnings("unchecked")

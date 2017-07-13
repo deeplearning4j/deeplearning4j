@@ -339,9 +339,10 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
             //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
             Updater updater = solver.getOptimizer().getUpdater();
             int updaterStateSize = 0;
-            Map<String,INDArray> paramTable = paramTable();
-            for(Map.Entry<String,INDArray> entry : paramTable.entrySet()){
-                updaterStateSize += (int) conf().getLayer().getIUpdaterByParam(entry.getKey()).stateSize(entry.getValue().length());
+            Map<String, INDArray> paramTable = paramTable();
+            for (Map.Entry<String, INDArray> entry : paramTable.entrySet()) {
+                updaterStateSize += (int) conf().getLayer().getIUpdaterByParam(entry.getKey())
+                                .stateSize(entry.getValue().length());
             }
             if (updaterStateSize > 0)
                 updater.setStateViewArray(this, Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order()),

@@ -73,7 +73,7 @@ public class TestUpdaters {
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        BaseLayer layer = (BaseLayer)conf.getLayer().instantiate(conf, null, 0, params, true);
+        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
         int updaterStateSize = (int) layer.layerConf().getIUpdater().stateSize(numParams);
@@ -140,7 +140,7 @@ public class TestUpdaters {
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        BaseLayer layer = (BaseLayer)conf.getLayer().instantiate(conf, null, 0, params, true);
+        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
         int updaterStateSize = (int) layer.layerConf().getIUpdater().stateSize(numParams);
@@ -184,7 +184,7 @@ public class TestUpdaters {
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        BaseLayer layer = (BaseLayer)conf.getLayer().instantiate(conf, null, 0, params, true);
+        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
         int updaterStateSize = (int) layer.layerConf().getIUpdater().stateSize(numParams);
@@ -247,7 +247,7 @@ public class TestUpdaters {
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        BaseLayer layer = (BaseLayer)conf.getLayer().instantiate(conf, null, 0, params, true);
+        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
 
         Updater updater = UpdaterCreator.getUpdater(layer);
@@ -337,7 +337,7 @@ public class TestUpdaters {
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        BaseLayer layer = (BaseLayer)conf.getLayer().instantiate(conf, null, 0, params, true);
+        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
         int updaterStateSize = (int) layer.layerConf().getIUpdater().stateSize(numParams);
@@ -394,7 +394,7 @@ public class TestUpdaters {
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        BaseLayer layer = (BaseLayer)conf.getLayer().instantiate(conf, null, 0, params, true);
+        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
         int updaterStateSize = (int) layer.layerConf().getIUpdater().stateSize(numParams);
@@ -442,7 +442,7 @@ public class TestUpdaters {
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        BaseLayer layer = (BaseLayer)conf.getLayer().instantiate(conf, null, 0, params, true);
+        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
         int updaterStateSize = (int) layer.layerConf().getIUpdater().stateSize(numParams);
@@ -490,7 +490,7 @@ public class TestUpdaters {
 
         int numParams = conf.getLayer().initializer().numParams(conf);
         INDArray params = Nd4j.create(1, numParams);
-        BaseLayer layer = (BaseLayer)conf.getLayer().instantiate(conf, null, 0, params, true);
+        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
@@ -717,9 +717,12 @@ public class TestUpdaters {
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).epsilon(0.123).build())
                         .layer(2, new OutputLayer.Builder().nIn(2).nOut(2).epsilon(0.456).build()).build();
 
-        assertEquals(1e-6, ((org.deeplearning4j.nn.conf.layers.BaseLayer)conf.getConf(0).getLayer()).getEpsilon(), 0.0);
-        assertEquals(0.123, ((org.deeplearning4j.nn.conf.layers.BaseLayer)conf.getConf(1).getLayer()).getEpsilon(), 0.0);
-        assertEquals(0.456, ((org.deeplearning4j.nn.conf.layers.BaseLayer)conf.getConf(2).getLayer()).getEpsilon(), 0.0);
+        assertEquals(1e-6, ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getConf(0).getLayer()).getEpsilon(),
+                        0.0);
+        assertEquals(0.123, ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getConf(1).getLayer()).getEpsilon(),
+                        0.0);
+        assertEquals(0.456, ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getConf(2).getLayer()).getEpsilon(),
+                        0.0);
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -743,9 +746,12 @@ public class TestUpdaters {
                         .layer(1, new DenseLayer.Builder().nIn(2).nOut(2).epsilon(0.123).build())
                         .layer(2, new OutputLayer.Builder().nIn(2).nOut(2).epsilon(0.456).build()).build();
 
-        assertEquals(1e-6, ((org.deeplearning4j.nn.conf.layers.BaseLayer)conf.getConf(0).getLayer()).getEpsilon(), 0.0);
-        assertEquals(0.123, ((org.deeplearning4j.nn.conf.layers.BaseLayer)conf.getConf(1).getLayer()).getEpsilon(), 0.0);
-        assertEquals(0.456, ((org.deeplearning4j.nn.conf.layers.BaseLayer)conf.getConf(2).getLayer()).getEpsilon(), 0.0);
+        assertEquals(1e-6, ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getConf(0).getLayer()).getEpsilon(),
+                        0.0);
+        assertEquals(0.123, ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getConf(1).getLayer()).getEpsilon(),
+                        0.0);
+        assertEquals(0.456, ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getConf(2).getLayer()).getEpsilon(),
+                        0.0);
 
         net = new MultiLayerNetwork(conf);
         net.init();
@@ -789,7 +795,7 @@ public class TestUpdaters {
         int numParams = conf.getLayer().initializer().numParams(conf);
         conf.setPretrain(true);
         INDArray params = Nd4j.create(1, numParams);
-        BaseLayer layer = (BaseLayer)conf.getLayer().instantiate(conf, null, 0, params, true);
+        BaseLayer layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         Updater updater = UpdaterCreator.getUpdater(layer);
 
@@ -835,7 +841,7 @@ public class TestUpdaters {
 
         conf.setPretrain(false);
         params = Nd4j.create(1, numParams);
-        layer = (BaseLayer)conf.getLayer().instantiate(conf, null, 0, params, true);
+        layer = (BaseLayer) conf.getLayer().instantiate(conf, null, 0, params, true);
         layer.setBackpropGradientsViewArray(gradients);
         updater = UpdaterCreator.getUpdater(layer);
 
@@ -1125,10 +1131,10 @@ public class TestUpdaters {
 
             MultiLayerConfiguration conf = listBuilder.build();
 
-            Sgd sgd = (Sgd) ((org.deeplearning4j.nn.conf.layers.BaseLayer)conf.getConf(0).getLayer()).getIUpdater();
+            Sgd sgd = (Sgd) ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getConf(0).getLayer()).getIUpdater();
             assertEquals(lr, sgd.getLearningRate(), 1e-6);
 
-            Adam adam = (Adam) ((org.deeplearning4j.nn.conf.layers.BaseLayer)conf.getConf(1).getLayer()).getIUpdater();
+            Adam adam = (Adam) ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getConf(1).getLayer()).getIUpdater();
             assertEquals(lr, adam.getLearningRate(), 1e-6);
             assertEquals(eps, adam.getEpsilon(), 1e-6);
             assertEquals(adamMean, adam.getBeta1(), 1e-6);
@@ -1136,16 +1142,19 @@ public class TestUpdaters {
 
             //Adadelta: no params
 
-            Nesterovs nesterovs = (Nesterovs) ((org.deeplearning4j.nn.conf.layers.BaseLayer)conf.getConf(3).getLayer()).getIUpdater();
+            Nesterovs nesterovs = (Nesterovs) ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getConf(3).getLayer())
+                            .getIUpdater();
             assertEquals(lr, nesterovs.getLearningRate(), 1e-6);
             assertEquals(momentum, nesterovs.getMomentum(), 1e-6);
             assertEquals(momentumSchedule, nesterovs.getMomentumSchedule());
 
-            AdaGrad adagrad = (AdaGrad) ((org.deeplearning4j.nn.conf.layers.BaseLayer)conf.getConf(4).getLayer()).getIUpdater();
+            AdaGrad adagrad = (AdaGrad) ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getConf(4).getLayer())
+                            .getIUpdater();
             assertEquals(lr, adagrad.getLearningRate(), 1e-6);
             assertEquals(eps, adagrad.getEpsilon(), 1e-6);
 
-            RmsProp rmsProp = (RmsProp) ((org.deeplearning4j.nn.conf.layers.BaseLayer)conf.getConf(5).getLayer()).getIUpdater();
+            RmsProp rmsProp = (RmsProp) ((org.deeplearning4j.nn.conf.layers.BaseLayer) conf.getConf(5).getLayer())
+                            .getIUpdater();
             assertEquals(lr, rmsProp.getLearningRate(), 1e-6);
             assertEquals(rmsDecay, rmsProp.getRmsDecay(), 1e-6);
             assertEquals(eps, rmsProp.getEpsilon(), 1e-6);

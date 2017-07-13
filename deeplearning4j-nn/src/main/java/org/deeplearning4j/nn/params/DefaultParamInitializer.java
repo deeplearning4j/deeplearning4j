@@ -58,12 +58,12 @@ public class DefaultParamInitializer implements ParamInitializer {
     @Override
     public int numParams(Layer l) {
         FeedForwardLayer layerConf = (FeedForwardLayer) l;
-//        if(conf.getLayer() instanceof FrozenLayer){
-//            FrozenLayer fl = (FrozenLayer) conf.getLayer();
-//            layerConf = (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) fl.getLayer();
-//        } else {
-//            layerConf = (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
-//        }
+        //        if(conf.getLayer() instanceof FrozenLayer){
+        //            FrozenLayer fl = (FrozenLayer) conf.getLayer();
+        //            layerConf = (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) fl.getLayer();
+        //        } else {
+        //            layerConf = (org.deeplearning4j.nn.conf.layers.FeedForwardLayer) conf.getLayer();
+        //        }
 
         int nIn = layerConf.getNIn();
         int nOut = layerConf.getNOut();

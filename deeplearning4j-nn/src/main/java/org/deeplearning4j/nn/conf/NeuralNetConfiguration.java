@@ -268,12 +268,12 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             for (int i = 0; i < layerwise.size(); i++) {
                 if (layerwise.get(i) == null) {
                     throw new IllegalStateException("Invalid configuration: layer number " + i
-                            + " not specified. Expect layer " + "numbers to be 0 to " + (layerwise.size() - 1)
-                            + " inclusive (number of layers defined: " + layerwise.size() + ")");
+                                    + " not specified. Expect layer " + "numbers to be 0 to " + (layerwise.size() - 1)
+                                    + " inclusive (number of layers defined: " + layerwise.size() + ")");
                 }
                 if (layerwise.get(i).getLayer() == null)
                     throw new IllegalStateException("Cannot construct network: Layer config for" + "layer with index "
-                            + i + " is not defined)");
+                                    + i + " is not defined)");
 
                 //Layer names: set to default, if not set
                 if (layerwise.get(i).getLayer().getLayerName() == null) {
@@ -283,11 +283,11 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 list.add(layerwise.get(i).build());
             }
             return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors)
-                    .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
-                    .tBPTTBackwardLength(tbpttBackLength).cnnInputSize(this.cnnInputSize)
-                    .setInputType(this.inputType).trainingWorkspaceMode(globalConfig.trainingWorkspaceMode)
-                    .cacheMode(globalConfig.cacheMode)
-                    .inferenceWorkspaceMode(globalConfig.inferenceWorkspaceMode).confs(list).build();
+                            .pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
+                            .tBPTTBackwardLength(tbpttBackLength).cnnInputSize(this.cnnInputSize)
+                            .setInputType(this.inputType).trainingWorkspaceMode(globalConfig.trainingWorkspaceMode)
+                            .cacheMode(globalConfig.cacheMode)
+                            .inferenceWorkspaceMode(globalConfig.inferenceWorkspaceMode).confs(list).build();
         }
 
     }
@@ -410,7 +410,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         customDeserializerModule.setDeserializerModifier(new BeanDeserializerModifier() {
             @Override
             public JsonDeserializer<?> modifyDeserializer(DeserializationConfig config, BeanDescription beanDesc,
-                                                          JsonDeserializer<?> deserializer) {
+                            JsonDeserializer<?> deserializer) {
                 //Use our custom deserializers to handle backward compatibility for updaters -> IUpdater
                 if (beanDesc.getBeanClass() == MultiLayerConfiguration.class) {
                     return new MultiLayerConfigurationDeserializer(deserializer);
@@ -430,7 +430,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         //Register concrete subtypes for JSON serialization
 
         List<Class<?>> classes = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class,
-                IActivation.class, Layer.class, GraphVertex.class, ReconstructionDistribution.class);
+                        IActivation.class, Layer.class, GraphVertex.class, ReconstructionDistribution.class);
         List<String> classNames = new ArrayList<>(6);
         for (Class<?> c : classes)
             classNames.add(c.getName());
@@ -446,7 +446,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             } else {
 
                 List<Class<?>> interfaces = Arrays.<Class<?>>asList(InputPreProcessor.class, ILossFunction.class,
-                        IActivation.class, ReconstructionDistribution.class);
+                                IActivation.class, ReconstructionDistribution.class);
                 List<Class<?>> classesList = Arrays.<Class<?>>asList(Layer.class, GraphVertex.class);
 
                 Collection<URL> urls = ClasspathHelper.forClassLoader();
@@ -459,15 +459,15 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 }
 
                 Reflections reflections = new Reflections(new ConfigurationBuilder().filterInputsBy(new FilterBuilder()
-                        .exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
-                        //Exclude the following: the assumption here is that no custom functionality will ever be present
-                        // under these package name prefixes. These are all common dependencies for DL4J
-                        .exclude("^org.nd4j.*").exclude("^org.datavec.*").exclude("^org.bytedeco.*") //JavaCPP
-                        .exclude("^com.fasterxml.*")//Jackson
-                        .exclude("^org.apache.*") //Apache commons, Spark, log4j etc
-                        .exclude("^org.projectlombok.*").exclude("^com.twelvemonkeys.*").exclude("^org.joda.*")
-                        .exclude("^org.slf4j.*").exclude("^com.google.*").exclude("^org.reflections.*")
-                        .exclude("^ch.qos.*") //Logback
+                                .exclude("^(?!.*\\.class$).*$") //Consider only .class files (to avoid debug messages etc. on .dlls, etc
+                                //Exclude the following: the assumption here is that no custom functionality will ever be present
+                                // under these package name prefixes. These are all common dependencies for DL4J
+                                .exclude("^org.nd4j.*").exclude("^org.datavec.*").exclude("^org.bytedeco.*") //JavaCPP
+                                .exclude("^com.fasterxml.*")//Jackson
+                                .exclude("^org.apache.*") //Apache commons, Spark, log4j etc
+                                .exclude("^org.projectlombok.*").exclude("^com.twelvemonkeys.*").exclude("^org.joda.*")
+                                .exclude("^org.slf4j.*").exclude("^com.google.*").exclude("^org.reflections.*")
+                                .exclude("^ch.qos.*") //Logback
                 ).addUrls(scanUrls).setScanners(new DL4JSubTypesScanner(interfaces, classesList)));
                 org.reflections.Store store = reflections.getStore();
 
@@ -489,10 +489,10 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         Set<Class<?>> registeredSubtypes = new HashSet<>();
         for (Class<?> c : classes) {
             AnnotatedClass ac = AnnotatedClass.construct(c, mapper.getSerializationConfig().getAnnotationIntrospector(),
-                    null);
+                            null);
             Collection<NamedType> types =
-                    mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(),
-                            mapper.getSerializationConfig().getAnnotationIntrospector());
+                            mapper.getSubtypeResolver().collectAndResolveSubtypes(ac, mapper.getSerializationConfig(),
+                                            mapper.getSerializationConfig().getAnnotationIntrospector());
             for (NamedType nt : types) {
                 registeredSubtypes.add(nt.getType());
             }
@@ -520,7 +520,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     for (Class<?> baseClass : classes) {
                         if (baseClass.isAssignableFrom(c)) {
                             log.debug("Registering class for JSON serialization: {} as subtype of {}", c.getName(),
-                                    baseClass.getName());
+                                            baseClass.getName());
                             break;
                         }
                     }
@@ -1155,45 +1155,45 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
             if (learningRatePolicy != LearningRatePolicy.None && Double.isNaN(lrPolicyDecayRate)) {
                 //LR policy, if used, should have a decay rate. 2 exceptions: Map for schedule, and Poly + power param
                 if (!(learningRatePolicy == LearningRatePolicy.Schedule && learningRateSchedule != null)
-                        && !(learningRatePolicy == LearningRatePolicy.Poly && !Double.isNaN(lrPolicyPower)))
+                                && !(learningRatePolicy == LearningRatePolicy.Poly && !Double.isNaN(lrPolicyPower)))
                     throw new IllegalStateException("Layer \"" + layerName
-                            + "\" learning rate policy decay rate (lrPolicyDecayRate) must be set to use learningRatePolicy.");
+                                    + "\" learning rate policy decay rate (lrPolicyDecayRate) must be set to use learningRatePolicy.");
             }
             switch (learningRatePolicy) {
                 case Inverse:
                 case Poly:
                     if (Double.isNaN(lrPolicyPower))
                         throw new IllegalStateException("Layer \"" + layerName
-                                + "\" learning rate policy power (lrPolicyPower) must be set to use "
-                                + learningRatePolicy);
+                                        + "\" learning rate policy power (lrPolicyPower) must be set to use "
+                                        + learningRatePolicy);
                     break;
                 case Step:
                 case Sigmoid:
                     if (Double.isNaN(lrPolicySteps))
                         throw new IllegalStateException("Layer \"" + layerName
-                                + "\" learning rate policy steps (lrPolicySteps) must be set to use "
-                                + learningRatePolicy);
+                                        + "\" learning rate policy steps (lrPolicySteps) must be set to use "
+                                        + learningRatePolicy);
                     break;
                 case Schedule:
                     if (learningRateSchedule == null)
                         throw new IllegalStateException("Layer \"" + layerName
-                                + "\" learning rate policy schedule (learningRateSchedule) must be set to use "
-                                + learningRatePolicy);
+                                        + "\" learning rate policy schedule (learningRateSchedule) must be set to use "
+                                        + learningRatePolicy);
                     break;
             }
 
             if (!Double.isNaN(lrPolicyPower) && (learningRatePolicy != LearningRatePolicy.Inverse
-                    && learningRatePolicy != LearningRatePolicy.Poly))
+                            && learningRatePolicy != LearningRatePolicy.Poly))
                 throw new IllegalStateException("Layer \"" + layerName
-                        + "\" power has been set but will not be applied unless the learning rate policy is set to Inverse or Poly.");
+                                + "\" power has been set but will not be applied unless the learning rate policy is set to Inverse or Poly.");
             if (!Double.isNaN(lrPolicySteps) && (learningRatePolicy != LearningRatePolicy.Step
-                    && learningRatePolicy != LearningRatePolicy.Sigmoid
-                    && learningRatePolicy != LearningRatePolicy.TorchStep))
+                            && learningRatePolicy != LearningRatePolicy.Sigmoid
+                            && learningRatePolicy != LearningRatePolicy.TorchStep))
                 throw new IllegalStateException("Layer \"" + layerName
-                        + "\" steps have been set but will not be applied unless the learning rate policy is set to Step or Sigmoid.");
+                                + "\" steps have been set but will not be applied unless the learning rate policy is set to Step or Sigmoid.");
             if ((learningRateSchedule != null) && (learningRatePolicy != LearningRatePolicy.Schedule))
                 throw new IllegalStateException("Layer \"" + layerName
-                        + "\" learning rate schedule has been set but will not be applied unless the learning rate policy is set to Schedule.");
+                                + "\" learning rate schedule has been set but will not be applied unless the learning rate policy is set to Schedule.");
 
         }
         ////////////////
@@ -1260,7 +1260,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                 }
             }
             LayerValidation.generalValidation(layerName, layer, useRegularization, useDropConnect, dropOut, l2, l2Bias,
-                    l1, l1Bias, dist);
+                            l1, l1Bias, dist);
         }
 
         private void copyConfigToLayer(String layerName, Layer layer) {
@@ -1301,7 +1301,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
                     bLayer.setIUpdater(iUpdater.clone());
                 }
                 LayerValidation.updaterValidation(layerName, layer, learningRate, momentum, momentumSchedule,
-                        adamMeanDecay, adamVarDecay, rho, rmsDecay, epsilon);
+                                adamMeanDecay, adamVarDecay, rho, rmsDecay, epsilon);
                 if (bLayer.getGradientNormalization() == null)
                     bLayer.setGradientNormalization(gradientNormalization);
                 if (Double.isNaN(bLayer.getGradientNormalizationThreshold()))

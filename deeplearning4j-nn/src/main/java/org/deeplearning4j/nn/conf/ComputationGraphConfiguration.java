@@ -172,7 +172,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             if (lv.getLayerConf() != null && lv.getLayerConf().getLayer() != null) {
                 Layer layer = lv.getLayerConf().getLayer();
 
-                if (layer instanceof BaseLayer && ((BaseLayer)layer).getActivationFn() == null) {
+                if (layer instanceof BaseLayer && ((BaseLayer) layer).getActivationFn() == null) {
                     String layerName = layer.getLayerName();
 
                     try {
@@ -198,7 +198,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
                         if (activationFunction != null) {
                             IActivation ia = Activation.fromString(activationFunction.asText()).getActivationFunction();
-                            ((BaseLayer)layer).setActivationFn(ia);
+                            ((BaseLayer) layer).setActivationFn(ia);
                         }
 
                     } catch (IOException e) {

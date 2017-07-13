@@ -258,7 +258,8 @@ public class ConvolutionLayerSetupTest {
                         .optimizationAlgo(OptimizationAlgorithm.LINE_GRADIENT_DESCENT).list()
                         .layer(0, new org.deeplearning4j.nn.conf.layers.ConvolutionLayer.Builder(new int[] {10, 10},
                                         new int[] {2, 2}).nIn(nChannels).nOut(6).build())
-                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2}).build())
+                        .layer(1, new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX, new int[] {2, 2})
+                                        .build())
                         .layer(2, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nIn(5 * 5 * 1 * 6) //216
                                         .nOut(outputNum).weightInit(WeightInit.XAVIER).activation(Activation.SOFTMAX)

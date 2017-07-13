@@ -37,12 +37,10 @@ import static org.junit.Assert.assertTrue;
 public class TestFrozenLayers extends BaseSparkTest {
 
     @Test
-    public void testSparkFrozenLayers(){
+    public void testSparkFrozenLayers() {
 
-        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder()
-                .learningRate(0.1)
-                .updater(Updater.SGD)
-                .activation(Activation.TANH);
+        NeuralNetConfiguration.Builder overallConf = new NeuralNetConfiguration.Builder().learningRate(0.1)
+                        .updater(Updater.SGD).activation(Activation.TANH);
 
         FineTuneConfiguration finetune = new FineTuneConfiguration.Builder().learningRate(0.1).build();
 
@@ -50,23 +48,21 @@ public class TestFrozenLayers extends BaseSparkTest {
         int nOut = 3;
 
         MultiLayerNetwork origModel = new MultiLayerNetwork(overallConf.clone().list()
-                .layer(0, new DenseLayer.Builder().nIn(6).nOut(5).build())
-                .layer(1, new DenseLayer.Builder().nIn(5).nOut(4).build())
-                .layer(2, new DenseLayer.Builder().nIn(4).nOut(3).build())
-                .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
-                        LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3)
-                        .build())
-                .build());
+                        .layer(0, new DenseLayer.Builder().nIn(6).nOut(5).build())
+                        .layer(1, new DenseLayer.Builder().nIn(5).nOut(4).build())
+                        .layer(2, new DenseLayer.Builder().nIn(4).nOut(3).build())
+                        .layer(3, new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                        LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3)
+                                                        .build())
+                        .build());
         origModel.init();
 
-        MultiLayerNetwork withFrozen = new TransferLearning.Builder(origModel)
-                .fineTuneConfiguration(finetune)
-                .setFeatureExtractor(1)
-                .build();
+        MultiLayerNetwork withFrozen = new TransferLearning.Builder(origModel).fineTuneConfiguration(finetune)
+                        .setFeatureExtractor(1).build();
 
-        Map<String,INDArray> m = withFrozen.paramTable();
-        Map<String,INDArray> pCopy = new HashMap<>();
-        for(Map.Entry<String,INDArray> entry : m.entrySet()){
+        Map<String, INDArray> m = withFrozen.paramTable();
+        Map<String, INDArray> pCopy = new HashMap<>();
+        for (Map.Entry<String, INDArray> entry : m.entrySet()) {
             pCopy.put(entry.getKey(), entry.getValue().dup());
         }
 
@@ -74,10 +70,8 @@ public class TestFrozenLayers extends BaseSparkTest {
         int avgFreq = 2;
         int batchSize = 8;
         ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(batchSize)
-                .averagingFrequency(avgFreq)
-                .batchSizePerWorker(batchSize)
-                .rddTrainingApproach(RDDTrainingApproach.Direct)
-                .workerPrefetchNumBatches(0).build();
+                        .averagingFrequency(avgFreq).batchSizePerWorker(batchSize)
+                        .rddTrainingApproach(RDDTrainingApproach.Direct).workerPrefetchNumBatches(0).build();
 
         SparkDl4jMultiLayer sNet = new SparkDl4jMultiLayer(sc, withFrozen.clone(), tm);
 
@@ -87,11 +81,11 @@ public class TestFrozenLayers extends BaseSparkTest {
         int numMinibatches = 4 * sc.defaultParallelism();
 
         List<DataSet> list = new ArrayList<>();
-        for( int i=0; i<numMinibatches; i++ ){
+        for (int i = 0; i < numMinibatches; i++) {
             INDArray f = Nd4j.rand(batchSize, nIn);
             INDArray l = Nd4j.zeros(batchSize, nOut);
-            for( int j=0; j<batchSize; j++ ){
-                l.putScalar(j, j%nOut, 1.0);
+            for (int j = 0; j < batchSize; j++) {
+                l.putScalar(j, j % nOut, 1.0);
             }
             list.add(new DataSet(f, l));
         }
@@ -102,14 +96,14 @@ public class TestFrozenLayers extends BaseSparkTest {
 
         MultiLayerNetwork fitted = sNet.getNetwork();
 
-        Map<String,INDArray> fittedParams = fitted.paramTable();
+        Map<String, INDArray> fittedParams = fitted.paramTable();
 
-        for(Map.Entry<String,INDArray> entry : fittedParams.entrySet()){
+        for (Map.Entry<String, INDArray> entry : fittedParams.entrySet()) {
             INDArray orig = pCopy.get(entry.getKey());
             INDArray now = entry.getValue();
             boolean isFrozen = entry.getKey().startsWith("0_") || entry.getKey().startsWith("1_");
 
-            if(isFrozen){
+            if (isFrozen) {
                 //Layer should be frozen -> no change
                 assertEquals(entry.getKey(), orig, now);
             } else {
@@ -121,38 +115,31 @@ public class TestFrozenLayers extends BaseSparkTest {
 
 
     @Test
-    public void testSparkFrozenLayersCompGraph(){
+    public void testSparkFrozenLayersCompGraph() {
 
         FineTuneConfiguration finetune = new FineTuneConfiguration.Builder().learningRate(0.1).build();
 
         int nIn = 6;
         int nOut = 3;
 
-       ComputationGraph origModel = new ComputationGraph(
-               new NeuralNetConfiguration.Builder()
-                       .learningRate(0.1)
-                       .updater(Updater.SGD)
-                       .activation(Activation.TANH)
-                       .graphBuilder()
-                       .addInputs("in")
-                .addLayer("0", new DenseLayer.Builder().nIn(6).nOut(5).build(), "in")
-                .addLayer("1", new DenseLayer.Builder().nIn(5).nOut(4).build(), "0")
-                .addLayer("2", new DenseLayer.Builder().nIn(4).nOut(3).build(), "1")
-                .addLayer("3", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
-                        LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3)
-                        .build(), "2")
-                       .setOutputs("3")
-                .build());
+        ComputationGraph origModel = new ComputationGraph(new NeuralNetConfiguration.Builder().learningRate(0.1)
+                        .updater(Updater.SGD).activation(Activation.TANH).graphBuilder().addInputs("in")
+                        .addLayer("0", new DenseLayer.Builder().nIn(6).nOut(5).build(), "in")
+                        .addLayer("1", new DenseLayer.Builder().nIn(5).nOut(4).build(), "0")
+                        .addLayer("2", new DenseLayer.Builder().nIn(4).nOut(3).build(), "1")
+                        .addLayer("3", new org.deeplearning4j.nn.conf.layers.OutputLayer.Builder(
+                                        LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).nIn(3).nOut(3)
+                                                        .build(),
+                                        "2")
+                        .setOutputs("3").build());
         origModel.init();
 
-        ComputationGraph withFrozen = new TransferLearning.GraphBuilder(origModel)
-                .fineTuneConfiguration(finetune)
-                .setFeatureExtractor("1")
-                .build();
+        ComputationGraph withFrozen = new TransferLearning.GraphBuilder(origModel).fineTuneConfiguration(finetune)
+                        .setFeatureExtractor("1").build();
 
-        Map<String,INDArray> m = withFrozen.paramTable();
-        Map<String,INDArray> pCopy = new HashMap<>();
-        for(Map.Entry<String,INDArray> entry : m.entrySet()){
+        Map<String, INDArray> m = withFrozen.paramTable();
+        Map<String, INDArray> pCopy = new HashMap<>();
+        for (Map.Entry<String, INDArray> entry : m.entrySet()) {
             pCopy.put(entry.getKey(), entry.getValue().dup());
         }
 
@@ -160,10 +147,8 @@ public class TestFrozenLayers extends BaseSparkTest {
         int avgFreq = 2;
         int batchSize = 8;
         ParameterAveragingTrainingMaster tm = new ParameterAveragingTrainingMaster.Builder(batchSize)
-                .averagingFrequency(avgFreq)
-                .batchSizePerWorker(batchSize)
-                .rddTrainingApproach(RDDTrainingApproach.Direct)
-                .workerPrefetchNumBatches(0).build();
+                        .averagingFrequency(avgFreq).batchSizePerWorker(batchSize)
+                        .rddTrainingApproach(RDDTrainingApproach.Direct).workerPrefetchNumBatches(0).build();
 
         SparkComputationGraph sNet = new SparkComputationGraph(sc, withFrozen.clone(), tm);
 
@@ -173,11 +158,11 @@ public class TestFrozenLayers extends BaseSparkTest {
         int numMinibatches = 4 * sc.defaultParallelism();
 
         List<DataSet> list = new ArrayList<>();
-        for( int i=0; i<numMinibatches; i++ ){
+        for (int i = 0; i < numMinibatches; i++) {
             INDArray f = Nd4j.rand(batchSize, nIn);
             INDArray l = Nd4j.zeros(batchSize, nOut);
-            for( int j=0; j<batchSize; j++ ){
-                l.putScalar(j, j%nOut, 1.0);
+            for (int j = 0; j < batchSize; j++) {
+                l.putScalar(j, j % nOut, 1.0);
             }
             list.add(new DataSet(f, l));
         }
@@ -188,14 +173,14 @@ public class TestFrozenLayers extends BaseSparkTest {
 
         ComputationGraph fitted = sNet.getNetwork();
 
-        Map<String,INDArray> fittedParams = fitted.paramTable();
+        Map<String, INDArray> fittedParams = fitted.paramTable();
 
-        for(Map.Entry<String,INDArray> entry : fittedParams.entrySet()){
+        for (Map.Entry<String, INDArray> entry : fittedParams.entrySet()) {
             INDArray orig = pCopy.get(entry.getKey());
             INDArray now = entry.getValue();
             boolean isFrozen = entry.getKey().startsWith("0_") || entry.getKey().startsWith("1_");
 
-            if(isFrozen){
+            if (isFrozen) {
                 //Layer should be frozen -> no change
                 assertEquals(entry.getKey(), orig, now);
             } else {

@@ -362,9 +362,9 @@ public class TestEarlyStopping {
         assertEquals(net.getnLayers(), mln.getnLayers());
         assertEquals(net.conf().getNumIterations(), mln.conf().getNumIterations());
         assertEquals(net.conf().getOptimizationAlgo(), mln.conf().getOptimizationAlgo());
-        BaseLayer bl = (BaseLayer)net.conf().getLayer();
-        assertEquals(bl.getActivationFn().toString(), ((BaseLayer)mln.conf().getLayer()).getActivationFn().toString());
-        assertEquals(bl.getUpdater(), ((BaseLayer)mln.conf().getLayer()).getUpdater());
+        BaseLayer bl = (BaseLayer) net.conf().getLayer();
+        assertEquals(bl.getActivationFn().toString(), ((BaseLayer) mln.conf().getLayer()).getActivationFn().toString());
+        assertEquals(bl.getUpdater(), ((BaseLayer) mln.conf().getLayer()).getUpdater());
     }
 
     @Test

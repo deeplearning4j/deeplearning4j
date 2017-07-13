@@ -88,8 +88,8 @@ public class UpdaterUtils {
                 lrConfigEqual = layer1.conf().getLrPolicyPower() == layer2.conf().getLrPolicyPower();
                 break;
             case Schedule:
-                BaseLayer bl1 = (BaseLayer)layer1.conf().getLayer();
-                BaseLayer bl2 = (BaseLayer)layer2.conf().getLayer();
+                BaseLayer bl1 = (BaseLayer) layer1.conf().getLayer();
+                BaseLayer bl2 = (BaseLayer) layer2.conf().getLayer();
                 lrConfigEqual = Objects.equals(bl1.getLearningRateSchedule(), bl2.getLearningRateSchedule());
                 break;
             case Score:

@@ -290,11 +290,11 @@ public class TransferLearning {
                     layers[i].setConf(layerNNC);
                     layers[i] = new FrozenLayer(layers[i]);
 
-                    if(origNNC.getVariables() != null){
+                    if (origNNC.getVariables() != null) {
                         List<String> vars = origNNC.variables(true);
                         origNNC.clearVariables();
                         layerNNC.clearVariables();
-                        for(String s : vars){
+                        for (String s : vars) {
                             origNNC.variables(false).add(s);
                             origNNC.getL1ByParam().put(s, 0.0);
                             origNNC.getL2ByParam().put(s, 0.0);
@@ -802,7 +802,7 @@ public class TransferLearning {
                             gv.setLayerAsFrozen();
 
                             String layerName = gv.getVertexName();
-                            LayerVertex currLayerVertex = (LayerVertex)newConfig.getVertices().get(layerName);
+                            LayerVertex currLayerVertex = (LayerVertex) newConfig.getVertices().get(layerName);
                             Layer origLayerConf = currLayerVertex.getLayerConf().getLayer();
                             Layer newLayerConf = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(origLayerConf);
                             newLayerConf.setLayerName(origLayerConf.getLayerName());
@@ -816,7 +816,7 @@ public class TransferLearning {
                             //Make sure the underlying layer doesn't change:
                             List<String> vars = currLayerVertex.getLayerConf().variables(true);
                             currLayerVertex.getLayerConf().clearVariables();
-                            for(String s : vars){
+                            for (String s : vars) {
                                 newNNC.variables(false).add(s);
                                 newNNC.getL1ByParam().put(s, 0.0);
                                 newNNC.getL2ByParam().put(s, 0.0);

@@ -199,15 +199,11 @@ public class EvalJsonTest {
         evalProb.diviColumnVector(evalProb.sum(1));
         ec.eval(evalLabel, evalProb);
 
-        Histogram[] histograms = new Histogram[]{
-                ec.getResidualPlotAllClasses(),
-                ec.getResidualPlot(0),
-                ec.getResidualPlot(1),
-                ec.getProbabilityHistogramAllClasses(),
-                ec.getProbabilityHistogram(0),
-                ec.getProbabilityHistogram(1)};
+        Histogram[] histograms = new Histogram[] {ec.getResidualPlotAllClasses(), ec.getResidualPlot(0),
+                        ec.getResidualPlot(1), ec.getProbabilityHistogramAllClasses(), ec.getProbabilityHistogram(0),
+                        ec.getProbabilityHistogram(1)};
 
-        for(Histogram h : histograms){
+        for (Histogram h : histograms) {
             String json = h.toJson();
             String yaml = h.toYaml();
 

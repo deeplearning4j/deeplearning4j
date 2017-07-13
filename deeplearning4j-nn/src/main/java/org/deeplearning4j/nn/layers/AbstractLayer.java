@@ -239,7 +239,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public void setParams(INDArray params) {
-        if(params != null){
+        if (params != null) {
             throw new UnsupportedOperationException("Not supported");
         }
     }
@@ -250,7 +250,7 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public void setParamsViewArray(INDArray params) {
-        if(params != null){
+        if (params != null) {
             throw new UnsupportedOperationException("Not supported");
         }
     }
@@ -262,14 +262,14 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public void setBackpropGradientsViewArray(INDArray gradients) {
-        if(gradients != null){
+        if (gradients != null) {
             throw new UnsupportedOperationException("Not supported");
         }
     }
 
     @Override
     public void setParamTable(Map<String, INDArray> paramTable) {
-        if(paramTable != null && !paramTable.isEmpty()){
+        if (paramTable != null && !paramTable.isEmpty()) {
             throw new UnsupportedOperationException("Not supported");
         }
     }
@@ -472,21 +472,25 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public Gradient gradient() {
-        throw new UnsupportedOperationException("Not supported for this layer, or should be overridden for layers requiring it");
+        throw new UnsupportedOperationException(
+                        "Not supported for this layer, or should be overridden for layers requiring it");
     }
 
     @Override
     public void fit() {
-        throw new UnsupportedOperationException("Not supported for this layer, or should be overridden for layers requiring it");
+        throw new UnsupportedOperationException(
+                        "Not supported for this layer, or should be overridden for layers requiring it");
     }
 
     @Override
     public double score() {
-        throw new UnsupportedOperationException("Not supported for this layer, or should be overridden for layers requiring it");
+        throw new UnsupportedOperationException(
+                        "Not supported for this layer, or should be overridden for layers requiring it");
     }
 
     @Override
     public void accumulateScore(double accum) {
-        throw new UnsupportedOperationException("Not supported for this layer, or should be overridden for layers requiring it");
+        throw new UnsupportedOperationException(
+                        "Not supported for this layer, or should be overridden for layers requiring it");
     }
 }

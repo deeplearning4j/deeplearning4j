@@ -45,12 +45,12 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
         //Here, we manually create the appropriate Updater instances, if the iupdater field is empty
         for (int i = 0; i < layers.length; i++) {
             Layer l = layers[i];
-            if (l == null || !(l instanceof BaseLayer) || ((BaseLayer)l).getIUpdater() != null ) {
+            if (l == null || !(l instanceof BaseLayer) || ((BaseLayer) l).getIUpdater() != null) {
                 //OK - no need to manually handle IUpdater instances for this layer
                 continue;
             }
 
-            BaseLayer bl = (BaseLayer)l;
+            BaseLayer bl = (BaseLayer) l;
 
             Updater u = bl.getUpdater();
             double lr = bl.getLearningRate();
