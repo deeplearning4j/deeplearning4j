@@ -4,9 +4,9 @@ import timeit
 
 
 class Benchmark(object):
-    def __init__(self, n=100):
-        self.np_arr = np.linspace(1, n * n, n * n).reshape((n,n))
-        self.nd4j_arr = jumpy.from_np(self.np_arr)
+    def __init__(self, n=80):
+        self.np_arr = np.linspace(1, n * n, n * n).reshape((n, n))
+        self.nd4j_arr = jumpy.from_np(np.copy(self.np_arr))
 
     def run_nd4j_add(self):
         self.nd4j_arr += self.nd4j_arr
@@ -28,11 +28,11 @@ class Benchmark(object):
 
     def run_benchmark(self,n_trials=1000):
         print 'nd4j add ', timeit.timeit(self.run_nd4j_add, number=n_trials)
-        print 'numpy add ', timeit.timeit(self.run_numpy_add, number=n_trials)
-        print 'nd4j sub ', timeit.timeit(self.run_nd4j_sub, number=n_trials)
-        print 'numpy sub ', timeit.timeit(self.run_numpy_sub, number=n_trials)
-        print 'nd4j mmul ', timeit.timeit(self.run_nd4j_mmul, number=n_trials)
-        print 'numpy mmul ', timeit.timeit(self.run_numpy_mmul, number=n_trials)
+        #print 'numpy add ', timeit.timeit(self.run_numpy_add, number=n_trials)
+        #print 'nd4j sub ', timeit.timeit(self.run_nd4j_sub, number=n_trials)
+        #print 'numpy sub ', timeit.timeit(self.run_numpy_sub, number=n_trials)
+        #print 'nd4j mmul ', timeit.timeit(self.run_nd4j_mmul, number=n_trials)
+        #print 'numpy mmul ', timeit.timeit(self.run_numpy_mmul, number=n_trials)
 
 
 
