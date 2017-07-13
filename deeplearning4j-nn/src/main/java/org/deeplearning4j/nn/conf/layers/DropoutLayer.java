@@ -5,6 +5,8 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -85,6 +87,25 @@ public class DropoutLayer extends FeedForwardLayer {
     public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("Dropout layer does not contain parameters");
     }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+
+        int actElementsPerEx = inputType.arrayElementsPerExample();
+
+        return LayerMemoryReport.builder()
+                .layerName(layerName)
+                .layerType(DropoutLayer.class)
+                .inputType(inputType)
+                .outputType(inputType)
+                .parameterSize(0)
+                .activationSizePerEx(actElementsPerEx)      //Assume we duplicate before applying dropout
+                .updaterStateSize(0)
+                .fwdPassWorkingSize(0)
+                .backwardPassWorkingSize(0)
+                .build();
+    }
+
 
     @NoArgsConstructor
     public static class Builder extends FeedForwardLayer.Builder<DropoutLayer.Builder> {

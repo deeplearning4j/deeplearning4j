@@ -23,6 +23,8 @@ import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.LayerValidation;
@@ -62,6 +64,30 @@ public class DenseLayer extends FeedForwardLayer {
     @Override
     public ParamInitializer initializer() {
         return DefaultParamInitializer.getInstance();
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        InputType outputType = getOutputType(-1, inputType);
+
+        int actElementsPerEx = outputType.arrayElementsPerExample();
+        int numParams = initializer().numParams(this);
+        int updaterStateSize = (int)getIUpdater().stateSize(numParams);
+
+        int fwdPassWorkingSize = -1;        //TODO
+        int backwardPassWorkingSize = -1;   //TODO
+
+        return LayerMemoryReport.builder()
+                .layerName(layerName)
+                .layerType(DenseLayer.class)
+                .inputType(inputType)
+                .outputType(outputType)
+                .parameterSize(numParams)
+                .activationSizePerEx(actElementsPerEx)      //Assume we duplicate before applying dropout
+                .updaterStateSize(updaterStateSize)
+                .fwdPassWorkingSize(fwdPassWorkingSize)
+                .backwardPassWorkingSize(backwardPassWorkingSize)
+                .build();
     }
 
     @AllArgsConstructor

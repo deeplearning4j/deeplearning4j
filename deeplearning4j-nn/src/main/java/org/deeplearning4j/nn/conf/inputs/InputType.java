@@ -56,6 +56,9 @@ public abstract class InputType implements Serializable {
     @Override
     public abstract String toString();
 
+    @JsonIgnore
+    public abstract int arrayElementsPerExample();
+
     /** InputType for feed forward network data
      * @param size The size of the activations
      */
@@ -111,13 +114,23 @@ public abstract class InputType implements Serializable {
         public String toString() {
             return "InputTypeFeedForward(" + size + ")";
         }
+
+        @Override
+        public int arrayElementsPerExample() {
+            return size;
+        }
     }
 
-    @AllArgsConstructor
     @Getter
     @NoArgsConstructor
+    @AllArgsConstructor
     public static class InputTypeRecurrent extends InputType {
         private int size;
+        private int timeSeriesLength;
+
+        public InputTypeRecurrent(int size) {
+            this(size, -1);
+        }
 
         @Override
         public Type getType() {
@@ -127,6 +140,15 @@ public abstract class InputType implements Serializable {
         @Override
         public String toString() {
             return "InputTypeRecurrent(" + size + ")";
+        }
+
+        @Override
+        public int arrayElementsPerExample() {
+            if(timeSeriesLength <= 0){
+                throw new IllegalStateException("Cannot calculate number of array elements per example: "
+                        + "time series length is not set");
+            }
+            return timeSeriesLength * size;
         }
     }
 
@@ -147,6 +169,11 @@ public abstract class InputType implements Serializable {
         @Override
         public String toString() {
             return "InputTypeConvolutional(h=" + height + ",w=" + width + ",d=" + depth + ")";
+        }
+
+        @Override
+        public int arrayElementsPerExample() {
+            return height * width * depth;
         }
     }
 
@@ -175,6 +202,11 @@ public abstract class InputType implements Serializable {
         @Override
         public String toString() {
             return "InputTypeConvolutionalFlat(h=" + height + ",w=" + width + ",d=" + depth + ")";
+        }
+
+        @Override
+        public int arrayElementsPerExample() {
+            return height * width * depth;
         }
     }
 

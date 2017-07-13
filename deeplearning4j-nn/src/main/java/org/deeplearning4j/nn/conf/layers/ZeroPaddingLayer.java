@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -112,6 +113,25 @@ public class ZeroPaddingLayer extends Layer {
     @Override
     public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("ZeroPaddingLayer does not contain parameters");
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        InputType outputType = getOutputType(-1, inputType);
+
+        int actElementsPerEx = outputType.arrayElementsPerExample();
+
+        return LayerMemoryReport.builder()
+                .layerName(layerName)
+                .layerType(ZeroPaddingLayer.class)
+                .inputType(inputType)
+                .outputType(outputType)
+                .parameterSize(0)
+                .activationSizePerEx(actElementsPerEx)      //Assume we duplicate before applying dropout
+                .updaterStateSize(0)
+                .fwdPassWorkingSize(0)
+                .backwardPassWorkingSize(0)
+                .build();
     }
 
     public static class Builder extends Layer.Builder<Builder> {

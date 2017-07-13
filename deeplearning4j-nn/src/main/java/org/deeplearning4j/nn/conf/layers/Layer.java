@@ -206,7 +206,7 @@ public abstract class Layer implements Serializable, Cloneable {
                         "Not supported: all layers with parameters should override this method");
     }
 
-    public abstract MemoryReport getMemoryReport(InputType inputType);
+    public abstract LayerMemoryReport getMemoryReport(InputType inputType);
 
     @SuppressWarnings("unchecked")
     public abstract static class Builder<T extends Builder<T>> {

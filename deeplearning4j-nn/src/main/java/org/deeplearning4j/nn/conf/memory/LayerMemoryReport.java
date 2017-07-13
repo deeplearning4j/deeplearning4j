@@ -12,6 +12,7 @@ public class LayerMemoryReport extends MemoryReport {
     private final String layerName;
     private final Class<?> layerType;
     private final InputType inputType;
+    private final InputType outputType;
     private final int parameterSize;
     private final int activationSizePerEx;
     private final int updaterStateSize;
@@ -19,11 +20,12 @@ public class LayerMemoryReport extends MemoryReport {
     private final int backwardPassWorkingSize;
 
     @Builder
-    public LayerMemoryReport(String layerName, Class<?> layerType, InputType inputType, int parameterSize,
+    public LayerMemoryReport(String layerName, Class<?> layerType, InputType inputType, InputType outputType, int parameterSize,
                              int activationSizePerEx, int updaterStateSize, int fwdPassWorkingSize, int backwardPassWorkingSize){
         this.layerName = layerName;
         this.layerType = layerType;
         this.inputType = inputType;
+        this.outputType = outputType;
         this.parameterSize = parameterSize;
         this.activationSizePerEx = activationSizePerEx;
         this.updaterStateSize = updaterStateSize;
