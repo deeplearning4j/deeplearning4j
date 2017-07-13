@@ -94,6 +94,8 @@ DataTypeUtil = autoclass('org.nd4j.linalg.api.buffer.util.DataTypeUtil')
 MemoryManager = autoclass('org.nd4j.linalg.memory.MemoryManager')
 memory_manager = nd4j.getMemoryManager()
 
+import gc
+gc.set_debug(gc.DEBUG_LEAK)
 
 def disable_gc():
     memory_manager.togglePeriodicGc(False)
@@ -129,10 +131,14 @@ def dot(array1, array2):
     The equivalent of numpy's "dot"
     :param array1: the first Nd4jArray
     :param array2: the second Nd4jArray
-    :return: an nd4j array with the mattrix multiplication
+    :return: an nd4j array with the matrix multiplication
     result
     """
     return Nd4jArray(array1.array.mmul(array2.array))
+
+
+def _get_numpy_buffer_reference(np_arr):
+    return np_arr.__array_interface__['data'][0]
 
 
 def get_buffer_from_arr(np_arr):
@@ -158,7 +164,7 @@ def get_buffer_from_arr(np_arr):
     elif np_arr.dtype == 'int64':
         as_int = IntPointer(pointer)
         return Nd4jBuffer(data_buffer=nd4j.createBuffer(as_int, size),
-                          numpy_pointer=np_arr)
+                          numpy_pointer=_get_numpy_buffer_reference(np_arr))
 
 
 def _to_number(number):
@@ -412,5 +418,6 @@ def from_np(np_arr):
     #   note here we divide the strides by 8 for numpy
     # the reason we do this is because numpy's strides are based on bytes rather than words
     strides = map(lambda x: x / data_buffer.getElementSize(), np_arr.strides)
-    shape = np_arr.shape
-    return Nd4jArray(nd4j_array=nd4j.create(data_buffer, shape, strides, 0), numpy_array=np_arr)
+    arr_shape = np_arr.shape
+    return Nd4jArray(nd4j_array=nd4j.create(data_buffer, arr_shape, strides, 0),
+                     numpy_array=_get_numpy_buffer_reference(np_arr))
