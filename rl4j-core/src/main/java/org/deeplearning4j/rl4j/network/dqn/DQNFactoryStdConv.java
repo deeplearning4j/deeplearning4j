@@ -6,15 +6,15 @@ import lombok.Value;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.rl4j.util.Constants;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -44,18 +44,17 @@ public class DQNFactoryStdConv implements DQNFactory {
                         .updater(conf.getUpdater() != null ? conf.getUpdater() : new Adam())
                         .weightInit(WeightInit.XAVIER).regularization(true).l2(conf.getL2()).list()
                         .layer(0, new ConvolutionLayer.Builder(8, 8).nIn(shapeInputs[0]).nOut(16).stride(4, 4)
-                                        .activation("relu").build());
+                                        .activation(Activation.RELU).build());
 
 
-        confB.layer(1, new ConvolutionLayer.Builder(4, 4).nOut(32).stride(2, 2).activation("relu").build());
+        confB.layer(1, new ConvolutionLayer.Builder(4, 4).nOut(32).stride(2, 2).activation(Activation.RELU).build());
 
-        confB.layer(2, new DenseLayer.Builder().nOut(256).activation("relu").build());
+        confB.layer(2, new DenseLayer.Builder().nOut(256).activation(Activation.RELU).build());
 
-        confB.layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation("identity").nOut(numOutputs)
+        confB.layer(3, new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).nOut(numOutputs)
                         .build());
 
-
-        new ConvolutionLayerSetup(confB, shapeInputs[1], shapeInputs[2], shapeInputs[0]);
+        confB.setInputType(InputType.convolutional(shapeInputs[1], shapeInputs[2], shapeInputs[0]));
         MultiLayerConfiguration mlnconf = confB.pretrain(false).backprop(true).build();
         MultiLayerNetwork model = new MultiLayerNetwork(mlnconf);
         model.init();
