@@ -135,7 +135,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         INDArray preOutput2d = preOutput2d(training);
 
         //if(conf.getLayer().getActivationFunction().equals("softmax")) {
-        if (conf.getLayer().getActivationFn() instanceof ActivationSoftmax) {
+        if (layerConf().getActivationFn() instanceof ActivationSoftmax) {
             INDArray out2d = Nd4j.getExecutioner().execAndReturn(new SoftMax(preOutput2d));
             if (maskArray != null) {
                 out2d.muliColumnVector(maskArray);
@@ -170,7 +170,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
 
         //INDArray act2d = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(),
         //        input2d.mmul(W).addiRowVector(b)));
-        INDArray act2d = conf.getLayer().getActivationFn().getActivation(input2d.mmul(W).addiRowVector(b), training);
+        INDArray act2d = layerConf().getActivationFn().getActivation(input2d.mmul(W).addiRowVector(b), training);
         if (maskArray != null) {
             act2d.muliColumnVector(maskArray);
         }

@@ -19,6 +19,7 @@
 package org.deeplearning4j.nn.api;
 
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Map;
@@ -31,6 +32,8 @@ import java.util.Map;
 public interface ParamInitializer {
 
     int numParams(NeuralNetConfiguration conf);
+
+    int numParams(org.deeplearning4j.nn.conf.layers.Layer layer);
 
     /**
      * Initialize the parameters

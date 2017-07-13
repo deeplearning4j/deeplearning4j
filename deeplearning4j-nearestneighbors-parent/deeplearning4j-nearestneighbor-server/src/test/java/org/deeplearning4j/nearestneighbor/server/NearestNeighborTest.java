@@ -80,13 +80,13 @@ public class NearestNeighborTest {
         int numNeighbors = 42;
         INDArray points = Nd4j.rand(numRows, numCols);
         VPTree tree = new VPTree(points);
-        INDArray query = Nd4j.rand(new int[]{1,numCols});
-        VPTreeFillSearch fillSearch = new VPTreeFillSearch(tree,numNeighbors,query);
+        INDArray query = Nd4j.rand(new int[] {1, numCols});
+        VPTreeFillSearch fillSearch = new VPTreeFillSearch(tree, numNeighbors, query);
         fillSearch.search();
         List<DataPoint> results = fillSearch.getResults();
         List<Double> distances = fillSearch.getDistances();
-        assertEquals(numNeighbors,distances.size());
-        assertEquals(numNeighbors,results.size());
+        assertEquals(numNeighbors, distances.size());
+        assertEquals(numNeighbors, results.size());
     }
 
 }

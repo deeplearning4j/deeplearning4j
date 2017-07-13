@@ -7,6 +7,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -76,9 +77,10 @@ public class TransferLearningComplex {
             }
 
             //Also check config:
-            assertEquals(Updater.ADAM, l.conf().getLayer().getUpdater());
-            assertEquals(2e-2, l.conf().getLayer().getLearningRate(), 1e-5);
-            assertEquals(Activation.LEAKYRELU.getActivationFunction(), l.conf().getLayer().getActivationFn());
+            BaseLayer bl = ((BaseLayer) l.conf().getLayer());
+            assertEquals(Updater.ADAM, bl.getUpdater());
+            assertEquals(2e-2, bl.getLearningRate(), 1e-5);
+            assertEquals(Activation.LEAKYRELU.getActivationFunction(), bl.getActivationFn());
         }
         assertTrue(cFound);
 

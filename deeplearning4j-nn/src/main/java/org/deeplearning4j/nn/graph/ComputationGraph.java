@@ -206,7 +206,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         if (mode == null)
             mode = CacheMode.NONE;
 
-        for (Layer layer: layers) {
+        for (Layer layer : layers) {
             layer.setCacheMode(mode);
         }
     }
@@ -444,6 +444,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             initializeParams = true;
         }
 
+        //Set RNG seed, for repeatability between initializations when set
+        if (initializeParams) {
+            Nd4j.getRandom().setSeed(conf().getSeed());
+        }
 
         //Given the topological ordering: work out the subset of the parameters array used for each layer
         // Then extract out for use when initializing the Layers
@@ -604,7 +608,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 numParamsForVertex[i] = 0; //No parameters for input vertices
             }
             Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
-            for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()) {
+            for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap
+                            .entrySet()) {
                 org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
                 numParamsForVertex[i] = n.numParams(true);
                 numParams += numParamsForVertex[i];
@@ -619,7 +624,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 int nParamsThisVertex = numParamsForVertex[vertexIdx];
                 if (nParamsThisVertex != 0) {
                     INDArray gradientView = flattenedGradients.get(NDArrayIndex.point(0),
-                            NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
+                                    NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
                     vertices[vertexIdx].setBackpropGradientsViewArray(gradientView);
                 }
                 i++;

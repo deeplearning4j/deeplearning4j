@@ -593,7 +593,7 @@ public class SparkDl4jMultiLayer extends SparkListenable {
     @SuppressWarnings("unchecked")
     public <T extends IEvaluation> T[] doEvaluation(JavaRDD<DataSet> data, int evalBatchSize, T... emptyEvaluations) {
         IEvaluateFlatMapFunction<T> evalFn = new IEvaluateFlatMapFunction<>(false, sc.broadcast(conf.toJson()),
-                sc.broadcast(network.params()), evalBatchSize, emptyEvaluations);
+                        sc.broadcast(network.params()), evalBatchSize, emptyEvaluations);
         JavaRDD<T[]> evaluations = data.mapPartitions(evalFn);
         return evaluations.treeAggregate(null, new IEvaluateAggregateFunction<T>(), new IEvaluationReduceFunction<T>());
     }

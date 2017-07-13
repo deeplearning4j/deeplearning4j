@@ -497,7 +497,8 @@ public class MultiLayerTest {
 
         assertEquals(layerNameList.get(0), net.getLayer(0).conf().getLayer().getLayerName());
         assertEquals(layerNameList, net.getLayerNames());
-        assertEquals("softmax", net.getLayer(layerNameList.get(2)).conf().getLayer().getActivationFn().toString());
+        BaseLayer b = (BaseLayer) net.getLayer(layerNameList.get(2)).conf().getLayer();
+        assertEquals("softmax", b.getActivationFn().toString());
     }
 
     @Test
@@ -926,8 +927,9 @@ public class MultiLayerTest {
         MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
         net2.init();
 
-        assertEquals(0.1, net2.getLayer(0).conf().getLayer().getL1Bias(), 1e-6);
-        assertEquals(0.2, net2.getLayer(0).conf().getLayer().getL2Bias(), 1e-6);
+        BaseLayer bl0 = (BaseLayer) net2.getLayer(0).conf().getLayer();
+        assertEquals(0.1, bl0.getL1Bias(), 1e-6);
+        assertEquals(0.2, bl0.getL2Bias(), 1e-6);
 
         INDArray features = Nd4j.rand(10, 10);
         INDArray labels = Nd4j.rand(10, 10);

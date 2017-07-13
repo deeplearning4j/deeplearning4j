@@ -25,25 +25,27 @@ import java.util.Map;
  */
 
 @Slf4j
-public class FrozenLayer<LayerT extends Layer> implements Layer {
+public class FrozenLayer implements Layer {
 
-    private LayerT insideLayer;
+    private Layer insideLayer;
     private boolean logUpdate = false;
     private boolean logFit = false;
     private boolean logTestMode = false;
     private boolean logGradient = false;
     private Gradient zeroGradient;
 
-    public FrozenLayer(LayerT insideLayer) {
+    public FrozenLayer(Layer insideLayer) {
         this.insideLayer = insideLayer;
         if (insideLayer instanceof OutputLayer) {
             throw new IllegalArgumentException("Output Layers are not allowed to be frozen " + layerId());
         }
         this.insideLayer = insideLayer;
         this.zeroGradient = new DefaultGradient(insideLayer.params());
-        for (String paramType : insideLayer.paramTable().keySet()) {
-            //save memory??
-            zeroGradient.setGradientFor(paramType, null);
+        if (insideLayer.paramTable() != null) {
+            for (String paramType : insideLayer.paramTable().keySet()) {
+                //save memory??
+                zeroGradient.setGradientFor(paramType, null);
+            }
         }
     }
 
@@ -455,7 +457,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
         }
     }
 
-    public LayerT getInsideLayer() {
+    public Layer getInsideLayer() {
         return insideLayer;
     }
 }

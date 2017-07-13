@@ -17,18 +17,18 @@ public class CombinedPreProcessorTests {
     @Test
     public void somePreProcessorsCombined() {
 
-        INDArray[] featureArr = new INDArray[] {Nd4j.linspace(100,200,20).reshape(10,2)};
-        org.nd4j.linalg.dataset.MultiDataSet multiDataSet = new org.nd4j.linalg.dataset.MultiDataSet(featureArr,null,null,null);
+        INDArray[] featureArr = new INDArray[] {Nd4j.linspace(100, 200, 20).reshape(10, 2)};
+        org.nd4j.linalg.dataset.MultiDataSet multiDataSet =
+                        new org.nd4j.linalg.dataset.MultiDataSet(featureArr, null, null, null);
 
         MultiNormalizerMinMaxScaler minMaxScaler = new MultiNormalizerMinMaxScaler();
         minMaxScaler.fit(multiDataSet);
         CombinedMultiDataSetPreProcessor multiDataSetPreProcessor = new CombinedMultiDataSetPreProcessor.Builder()
-                .addPreProcessor(minMaxScaler)
-                .addPreProcessor(1, new addFivePreProcessor())
-                .build();
+                        .addPreProcessor(minMaxScaler).addPreProcessor(1, new addFivePreProcessor()).build();
 
         multiDataSetPreProcessor.preProcess(multiDataSet);
-        assertEquals(Nd4j.zeros(10,2).addColumnVector(Nd4j.linspace(0,1,10).reshape(10,1)).addi(5),multiDataSet.getFeatures(0));
+        assertEquals(Nd4j.zeros(10, 2).addColumnVector(Nd4j.linspace(0, 1, 10).reshape(10, 1)).addi(5),
+                        multiDataSet.getFeatures(0));
 
     }
 

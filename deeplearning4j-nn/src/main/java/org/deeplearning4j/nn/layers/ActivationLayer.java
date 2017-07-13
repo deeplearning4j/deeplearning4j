@@ -36,7 +36,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * BatchNormLayer. For example, use "identity" activation on the layer prior to BatchNorm and
  * apply this layer after the BatchNorm.
  */
-public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.ActivationLayer> {
+public class ActivationLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.ActivationLayer> {
 
     public ActivationLayer(NeuralNetConfiguration conf) {
         super(conf);
@@ -66,7 +66,7 @@ public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon) {
-        INDArray delta = conf().getLayer().getActivationFn().backprop(input.dup(), epsilon).getFirst(); //TODO handle activation function params
+        INDArray delta = layerConf().getActivationFn().backprop(input.dup(), epsilon).getFirst(); //TODO handle activation function params
 
         if (maskArray != null) {
             delta.muliColumnVector(maskArray);
@@ -91,13 +91,18 @@ public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
             in = input;
         }
         //return Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), in));
-        return conf().getLayer().getActivationFn().getActivation(in, training);
+        return layerConf().getActivationFn().getActivation(in, training);
 
     }
 
     @Override
     public Layer transpose() {
         throw new UnsupportedOperationException("Not supported - " + layerId());
+    }
+
+    @Override
+    public Layer clone() {
+        return new ActivationLayer(conf.clone());
     }
 
     @Override
@@ -117,7 +122,18 @@ public class ActivationLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers
     }
 
     @Override
+    public INDArray activationMean() {
+        return activate(false);
+    }
+
+
+    @Override
     public INDArray params() {
+        return null;
+    }
+
+    @Override
+    public INDArray preOutput(boolean training) {
         return null;
     }
 

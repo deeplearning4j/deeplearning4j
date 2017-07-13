@@ -27,6 +27,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.Dropout;
@@ -54,7 +55,7 @@ import java.util.Arrays;
  * @author Adam Gibson
  */
 @Slf4j
-public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.SubsamplingLayer> {
+public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.SubsamplingLayer> {
 
     protected SubsamplingHelper helper = null;
     protected ConvolutionMode convolutionMode;
@@ -353,6 +354,11 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     }
 
     @Override
+    public Layer clone() {
+        return new SubsamplingLayer(conf.clone());
+    }
+
+    @Override
     public boolean isPretrainLayer() {
         return false;
     }
@@ -360,6 +366,11 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     @Override
     public void iterate(INDArray input) {
         throw new UnsupportedOperationException(layerId());
+    }
+
+    @Override
+    public Gradient gradient() {
+        throw new UnsupportedOperationException("Not supported - no parameters");
     }
 
     @Override
@@ -377,7 +388,7 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
     @Override
     public void computeGradientAndScore() {
-
+        throw new UnsupportedOperationException("Not supported");
     }
 
     @Override
@@ -409,6 +420,11 @@ public class SubsamplingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
     @Override
     public void setParams(INDArray params) {
 
+    }
+
+    @Override
+    public INDArray preOutput(boolean training) {
+        return activate(training);
     }
 
 

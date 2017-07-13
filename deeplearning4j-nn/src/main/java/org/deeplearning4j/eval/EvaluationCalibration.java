@@ -47,32 +47,41 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
     private final int histogramNumBins;
     private final boolean excludeEmptyBins;
 
-    @JsonSerialize(using = NDArraySerializer.class) @JsonDeserialize(using = NDArrayDeSerializer.class)
+    @JsonSerialize(using = NDArraySerializer.class)
+    @JsonDeserialize(using = NDArrayDeSerializer.class)
     private INDArray rDiagBinPosCount;
-    @JsonSerialize(using = NDArraySerializer.class) @JsonDeserialize(using = NDArrayDeSerializer.class)
+    @JsonSerialize(using = NDArraySerializer.class)
+    @JsonDeserialize(using = NDArrayDeSerializer.class)
     private INDArray rDiagBinTotalCount;
-    @JsonSerialize(using = NDArraySerializer.class) @JsonDeserialize(using = NDArrayDeSerializer.class)
+    @JsonSerialize(using = NDArraySerializer.class)
+    @JsonDeserialize(using = NDArrayDeSerializer.class)
     private INDArray rDiagBinSumPredictions;
 
-    @JsonSerialize(using = RowVectorSerializer.class) @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray labelCountsEachClass;
-    @JsonSerialize(using = RowVectorSerializer.class) @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray predictionCountsEachClass;
 
-    @JsonSerialize(using = RowVectorSerializer.class) @JsonDeserialize(using = RowVectorDeserializer.class)
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray residualPlotOverall;
-    @JsonSerialize(using = NDArraySerializer.class) @JsonDeserialize(using = NDArrayDeSerializer.class)
+    @JsonSerialize(using = NDArraySerializer.class)
+    @JsonDeserialize(using = NDArrayDeSerializer.class)
     private INDArray residualPlotByLabelClass;
 
-    @JsonSerialize(using = RowVectorSerializer.class) @JsonDeserialize(using = RowVectorDeserializer.class)
-    private INDArray probHistogramOverall;              //Simple histogram over all probabilities
-    @JsonSerialize(using = NDArraySerializer.class) @JsonDeserialize(using = NDArrayDeSerializer.class)
-    private INDArray probHistogramByLabelClass;         //Histogram - for each label class separately
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
+    private INDArray probHistogramOverall; //Simple histogram over all probabilities
+    @JsonSerialize(using = NDArraySerializer.class)
+    @JsonDeserialize(using = NDArrayDeSerializer.class)
+    private INDArray probHistogramByLabelClass; //Histogram - for each label class separately
 
     /**
      * Create an EvaluationCalibration instance with the default number of bins
      */
-    public EvaluationCalibration(){
+    public EvaluationCalibration() {
         this(DEFAULT_RELIABILITY_DIAG_NUM_BINS, DEFAULT_HISTOGRAM_NUM_BINS, true);
     }
 
@@ -82,7 +91,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
      * @param reliabilityDiagNumBins Number of bins for the reliability diagram (usually 10)
      * @param histogramNumBins       Number of bins for the histograms
      */
-    public EvaluationCalibration(int reliabilityDiagNumBins, int histogramNumBins){
+    public EvaluationCalibration(int reliabilityDiagNumBins, int histogramNumBins) {
         this(reliabilityDiagNumBins, histogramNumBins, true);
     }
 
@@ -94,8 +103,8 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
      * @param excludeEmptyBins       For the reliability diagram,  whether empty bins should be excluded
      */
     public EvaluationCalibration(@JsonProperty("reliabilityDiagNumBins") int reliabilityDiagNumBins,
-                                 @JsonProperty("histogramNumBins") int histogramNumBins,
-                                 @JsonProperty("excludeEmptyBins") boolean excludeEmptyBins){
+                    @JsonProperty("histogramNumBins") int histogramNumBins,
+                    @JsonProperty("excludeEmptyBins") boolean excludeEmptyBins) {
         this.reliabilityDiagNumBins = reliabilityDiagNumBins;
         this.histogramNumBins = histogramNumBins;
         this.excludeEmptyBins = excludeEmptyBins;
@@ -114,7 +123,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
 
         int nClasses = labels.size(1);
 
-        if(rDiagBinPosCount == null){
+        if (rDiagBinPosCount == null) {
             //Initialize
             rDiagBinPosCount = Nd4j.create(reliabilityDiagNumBins, nClasses);
             rDiagBinTotalCount = Nd4j.create(reliabilityDiagNumBins, nClasses);
@@ -137,9 +146,9 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         INDArray p = networkPredictions;
         INDArray l = labels;
 
-        if(maskArray != null){
+        if (maskArray != null) {
             //2 options: per-output masking, or
-            if(maskArray.isColumnVector()){
+            if (maskArray.isColumnVector()) {
                 //Per-example masking
                 l = l.mulColumnVector(maskArray);
             } else {
@@ -147,20 +156,20 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
             }
         }
 
-        for(int j = 0; j< reliabilityDiagNumBins; j++ ){
-            INDArray geqBinLower = p.gte(j*binSize);
+        for (int j = 0; j < reliabilityDiagNumBins; j++) {
+            INDArray geqBinLower = p.gte(j * binSize);
             INDArray ltBinUpper;
-            if(j == reliabilityDiagNumBins -1){
+            if (j == reliabilityDiagNumBins - 1) {
                 //Handle edge case
                 ltBinUpper = p.lte(1.0);
             } else {
-                ltBinUpper = p.lt((j+1)*binSize);
+                ltBinUpper = p.lt((j + 1) * binSize);
             }
 
             //Calculate bit-mask over each entry - whether that entry is in the current bin or not
             INDArray currBinBitMask = geqBinLower.muli(ltBinUpper);
-            if(maskArray != null){
-                if(maskArray.isColumnVector()){
+            if (maskArray != null) {
+                if (maskArray.isColumnVector()) {
                     currBinBitMask.muliColumnVector(maskArray);
                 } else {
                     currBinBitMask.muli(maskArray);
@@ -187,7 +196,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         labelCountsEachClass.addi(labels.sum(0));
         //For prediction counts: do an IsMax op, but we need to take masking into account...
         INDArray isPredictedClass = Nd4j.getExecutioner().execAndReturn(new IsMax(p.dup(), 1));
-        if(maskArray != null){
+        if (maskArray != null) {
             LossUtil.applyMask(isPredictedClass, maskArray);
         }
         predictionCountsEachClass.addi(isPredictedClass.sum(0));
@@ -202,7 +211,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         Transforms.abs(labelsSubPredicted, false);
 
         //if masking: replace entries with < 0 to effectively remove them
-        if(maskArray != null){
+        if (maskArray != null) {
             //Assume per-example masking
             INDArray newMask = maskArray.mul(-10);
             labelsSubPredicted.addiColumnVector(newMask);
@@ -210,33 +219,33 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         }
 
         INDArray notLabels = Transforms.not(labels);
-        for( int j=0; j<histogramNumBins; j++ ){
-            INDArray geqBinLower = labelsSubPredicted.gte(j*binSize);
+        for (int j = 0; j < histogramNumBins; j++) {
+            INDArray geqBinLower = labelsSubPredicted.gte(j * binSize);
             INDArray ltBinUpper;
-            INDArray geqBinLowerProbs = maskedProbs.gte(j*binSize);
+            INDArray geqBinLowerProbs = maskedProbs.gte(j * binSize);
             INDArray ltBinUpperProbs;
-            if(j == histogramNumBins -1){
+            if (j == histogramNumBins - 1) {
                 //Handle edge case
                 ltBinUpper = labelsSubPredicted.lte(1.0);
                 ltBinUpperProbs = maskedProbs.lte(1.0);
             } else {
-                ltBinUpper = labelsSubPredicted.lt((j+1)*binSize);
-                ltBinUpperProbs = maskedProbs.lt((j+1)*binSize);
+                ltBinUpper = labelsSubPredicted.lt((j + 1) * binSize);
+                ltBinUpperProbs = maskedProbs.lt((j + 1) * binSize);
             }
 
             INDArray currBinBitMask = geqBinLower.muli(ltBinUpper);
             INDArray currBinBitMaskProbs = geqBinLowerProbs.muli(ltBinUpperProbs);
 
-            int newTotalCount = residualPlotOverall.getInt(0,j) + currBinBitMask.sumNumber().intValue();
-            residualPlotOverall.putScalar(0,j,newTotalCount);
+            int newTotalCount = residualPlotOverall.getInt(0, j) + currBinBitMask.sumNumber().intValue();
+            residualPlotOverall.putScalar(0, j, newTotalCount);
 
             //Counts for positive class only: values are in the current bin AND it's a positive label
             INDArray isPosLabelForBin = l.mul(currBinBitMask);
 
             residualPlotByLabelClass.getRow(j).addi(isPosLabelForBin.sum(0));
 
-            int probNewTotalCount = probHistogramOverall.getInt(0,j) + currBinBitMaskProbs.sumNumber().intValue();
-            probHistogramOverall.putScalar(0,j,probNewTotalCount);
+            int probNewTotalCount = probHistogramOverall.getInt(0, j) + currBinBitMaskProbs.sumNumber().intValue();
+            probHistogramOverall.putScalar(0, j, probNewTotalCount);
 
             INDArray isPosLabelForBinProbs = l.mul(currBinBitMaskProbs);
             probHistogramByLabelClass.getRow(j).addi(isPosLabelForBinProbs.sum(0));
@@ -245,20 +254,21 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
 
     @Override
     public void eval(INDArray labels, INDArray networkPredictions) {
-        eval(labels, networkPredictions, (INDArray)null);
+        eval(labels, networkPredictions, (INDArray) null);
     }
 
     @Override
     public void merge(EvaluationCalibration other) {
-        if(reliabilityDiagNumBins != other.reliabilityDiagNumBins){
-            throw new UnsupportedOperationException("Cannot merge EvaluationCalibration instances with different numbers of bins");
+        if (reliabilityDiagNumBins != other.reliabilityDiagNumBins) {
+            throw new UnsupportedOperationException(
+                            "Cannot merge EvaluationCalibration instances with different numbers of bins");
         }
 
-        if(other.rDiagBinPosCount == null){
+        if (other.rDiagBinPosCount == null) {
             return;
         }
 
-        if(rDiagBinPosCount == null){
+        if (rDiagBinPosCount == null) {
             this.rDiagBinPosCount = other.rDiagBinPosCount;
             this.rDiagBinTotalCount = other.rDiagBinTotalCount;
             this.rDiagBinSumPredictions = other.rDiagBinSumPredictions;
@@ -281,8 +291,8 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
         return "EvaluationCalibration(nBins=" + reliabilityDiagNumBins + ")";
     }
 
-    public int numClasses(){
-        if(rDiagBinTotalCount == null){
+    public int numClasses() {
+        if (rDiagBinTotalCount == null) {
             return -1;
         }
 
@@ -294,28 +304,27 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
      *
      * @param classIdx Index of the class to get the reliability diagram for
      */
-    public ReliabilityDiagram getReliabilityDiagram(int classIdx){
+    public ReliabilityDiagram getReliabilityDiagram(int classIdx) {
 
         INDArray totalCountBins = rDiagBinTotalCount.getColumn(classIdx);
         INDArray countPositiveBins = rDiagBinPosCount.getColumn(classIdx);
 
-        double[] meanPredictionBins = rDiagBinSumPredictions.getColumn(classIdx)
-                .div(totalCountBins).data().asDouble();
+        double[] meanPredictionBins = rDiagBinSumPredictions.getColumn(classIdx).div(totalCountBins).data().asDouble();
 
         double[] fracPositives = countPositiveBins.div(totalCountBins).data().asDouble();
 
-        if(excludeEmptyBins){
+        if (excludeEmptyBins) {
             MatchCondition condition = new MatchCondition(totalCountBins, Conditions.equals(0));
             int numZeroBins = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
-            if(numZeroBins != 0){
+            if (numZeroBins != 0) {
                 double[] mpb = meanPredictionBins;
                 double[] fp = fracPositives;
 
                 meanPredictionBins = new double[totalCountBins.length() - numZeroBins];
                 fracPositives = new double[meanPredictionBins.length];
-                int j=0;
-                for( int i=0; i<mpb.length; i++ ){
-                    if(totalCountBins.getDouble(i) != 0){
+                int j = 0;
+                for (int i = 0; i < mpb.length; i++) {
+                    if (totalCountBins.getDouble(i) != 0) {
                         meanPredictionBins[j] = mpb[i];
                         fracPositives[j] = fp[i];
                         j++;
@@ -331,7 +340,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
      * @return The number of observed labels for each class. For N classes, be returned array is of length N, with
      * out[i] being the number of labels of class i
      */
-    public int[] getLabelCountsEachClass(){
+    public int[] getLabelCountsEachClass() {
         return labelCountsEachClass == null ? null : labelCountsEachClass.data().asInt();
     }
 
@@ -339,7 +348,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
      * @return The number of network predictions for each class. For N classes, be returned array is of length N, with
      * out[i] being the number of predicted values (max probability) for class i
      */
-    public int[] getPredictionCountsEachClass(){
+    public int[] getPredictionCountsEachClass() {
         return predictionCountsEachClass == null ? null : predictionCountsEachClass.data().asInt();
     }
 
@@ -350,7 +359,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
      *
      * @return Residual plot (histogram) - all predictions/classes
      */
-    public Histogram getResidualPlotAllClasses(){
+    public Histogram getResidualPlotAllClasses() {
         String title = "Residual Plot - All Predictions and Classes";
         int[] counts = residualPlotOverall.data().asInt();
         return new Histogram(title, 0.0, 1.0, counts);
@@ -365,7 +374,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
      * @param labelClassIdx Index of the class to get the residual plot for
      * @return Residual plot (histogram) - all predictions/classes
      */
-    public Histogram getResidualPlot(int labelClassIdx){
+    public Histogram getResidualPlot(int labelClassIdx) {
         String title = "Residual Plot - Predictions for Label Class " + labelClassIdx;
         int[] counts = residualPlotByLabelClass.getColumn(labelClassIdx).dup().data().asInt();
         return new Histogram(title, 0.0, 1.0, counts);
@@ -376,7 +385,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
      *
      * @return Probability histogram
      */
-    public Histogram getProbabilityHistogramAllClasses(){
+    public Histogram getProbabilityHistogramAllClasses() {
         String title = "Network Probabilities Histogram - All Predictions and Classes";
         int[] counts = probHistogramOverall.data().asInt();
         return new Histogram(title, 0.0, 1.0, counts);
@@ -389,9 +398,9 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
      * @param labelClassIdx Index of the label class to get the histogram for
      * @return Probability histogram
      */
-    public Histogram getProbabilityHistogram(int labelClassIdx){
+    public Histogram getProbabilityHistogram(int labelClassIdx) {
         String title = "Network Probabilities Histogram - P(class " + labelClassIdx + ") - Data Labelled Class "
-                + labelClassIdx + " Only";
+                        + labelClassIdx + " Only";
         int[] counts = probHistogramByLabelClass.getColumn(labelClassIdx).dup().data().asInt();
         return new Histogram(title, 0.0, 1.0, counts);
     }

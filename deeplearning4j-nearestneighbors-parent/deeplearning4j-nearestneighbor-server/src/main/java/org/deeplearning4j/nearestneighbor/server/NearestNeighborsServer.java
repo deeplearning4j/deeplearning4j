@@ -71,7 +71,7 @@ public class NearestNeighborsServer {
         }
 
         final INDArray points = BinarySerde.readFromDisk(new File(ndarrayPath));
-        VPTree tree = new VPTree(points,similarityFunction,invert);
+        VPTree tree = new VPTree(points, similarityFunction, invert);
 
 
         RoutingDsl routingDsl = new RoutingDsl();
@@ -79,16 +79,14 @@ public class NearestNeighborsServer {
         routingDsl.POST("/knn").routeTo(FunctionUtil.function0((() -> {
             try {
                 NearestNeighborRequest record = Json.fromJson(request().body().asJson(), NearestNeighborRequest.class);
-                NearestNeighbor nearestNeighbor = NearestNeighbor.builder()
-                        .points(points)
-                        .record(record)
-                        .tree(tree)
-                        .build();
+                NearestNeighbor nearestNeighbor =
+                                NearestNeighbor.builder().points(points).record(record).tree(tree).build();
 
-                if(record == null)
-                    return badRequest(Json.toJson(Collections.singletonMap("status","invalid json passed.")));
+                if (record == null)
+                    return badRequest(Json.toJson(Collections.singletonMap("status", "invalid json passed.")));
 
-                NearstNeighborsResults results = NearstNeighborsResults.builder().results(nearestNeighbor.search()).build();
+                NearstNeighborsResults results =
+                                NearstNeighborsResults.builder().results(nearestNeighbor.search()).build();
 
 
                 return ok(Json.toJson(results));
@@ -102,29 +100,28 @@ public class NearestNeighborsServer {
         routingDsl.POST("/knnnew").routeTo(FunctionUtil.function0((() -> {
             try {
                 Base64NDArrayBody record = Json.fromJson(request().body().asJson(), Base64NDArrayBody.class);
-                if(record == null)
-                    return badRequest(Json.toJson(Collections.singletonMap("status","invalid json passed.")));
+                if (record == null)
+                    return badRequest(Json.toJson(Collections.singletonMap("status", "invalid json passed.")));
 
                 INDArray arr = Nd4jBase64.fromBase64(record.getNdarray());
                 List<DataPoint> results;
                 List<Double> distances;
 
-                if(record.isForceFillK()) {
-                    VPTreeFillSearch vpTreeFillSearch = new VPTreeFillSearch(tree,record.getK(),arr);
+                if (record.isForceFillK()) {
+                    VPTreeFillSearch vpTreeFillSearch = new VPTreeFillSearch(tree, record.getK(), arr);
                     vpTreeFillSearch.search();
                     results = vpTreeFillSearch.getResults();
                     distances = vpTreeFillSearch.getDistances();
-                }
-                else {
+                } else {
                     results = new ArrayList<>();
-                    distances =new ArrayList<>();
-                    tree.search(arr,record.getK(),results,distances);
+                    distances = new ArrayList<>();
+                    tree.search(arr, record.getK(), results, distances);
 
 
                 }
 
                 List<NearestNeighborsResult> nnResult = new ArrayList<>();
-                for(DataPoint dataPoint : results) {
+                for (DataPoint dataPoint : results) {
                     nnResult.add(new NearestNeighborsResult(dataPoint.getIndex()));
                 }
 

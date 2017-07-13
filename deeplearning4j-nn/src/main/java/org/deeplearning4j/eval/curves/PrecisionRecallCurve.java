@@ -28,12 +28,9 @@ public class PrecisionRecallCurve extends BaseCurve {
     private Double area;
 
     public PrecisionRecallCurve(@JsonProperty("threshold") double[] threshold,
-                                @JsonProperty("precision") double[] precision,
-                                @JsonProperty("recall") double[] recall,
-                                @JsonProperty("tpCount") int[] tpCount,
-                                @JsonProperty("fpCount") int[] fpCount,
-                                @JsonProperty("fnCount") int[] fnCount,
-                                @JsonProperty("totalCount") int totalCount) {
+                    @JsonProperty("precision") double[] precision, @JsonProperty("recall") double[] recall,
+                    @JsonProperty("tpCount") int[] tpCount, @JsonProperty("fpCount") int[] fpCount,
+                    @JsonProperty("fnCount") int[] fnCount, @JsonProperty("totalCount") int totalCount) {
         this.threshold = threshold;
         this.precision = precision;
         this.recall = recall;
@@ -110,7 +107,7 @@ public class PrecisionRecallCurve extends BaseCurve {
      * @param threshold Threshold to get the point for
      * @return point (index, threshold, precision, recall) at the given threshold
      */
-    public Point getPointAtThreshold(double threshold){
+    public Point getPointAtThreshold(double threshold) {
 
         //Return (closest) point number, precision, recall, whether it's interpolated or not
 
@@ -146,17 +143,17 @@ public class PrecisionRecallCurve extends BaseCurve {
      * @param precision Precision to get the point for
      * @return point (index, threshold, precision, recall) at (or closest exceeding) the given precision
      */
-    public Point getPointAtPrecision(double precision){
+    public Point getPointAtPrecision(double precision) {
         //Find the LOWEST threshold that gives the specified precision
 
-        for( int i=0; i<this.precision.length; i++ ){
-            if(this.precision[i] >= precision){
+        for (int i = 0; i < this.precision.length; i++) {
+            if (this.precision[i] >= precision) {
                 return new Point(i, threshold[i], this.precision[i], recall[i]);
             }
         }
 
         //Not found, return last point. Should never happen though...
-        int i = threshold.length-1;
+        int i = threshold.length - 1;
         return new Point(i, threshold[i], this.precision[i], this.recall[i]);
     }
 
@@ -168,10 +165,10 @@ public class PrecisionRecallCurve extends BaseCurve {
      * @param recall Recall to get the point for
      * @return point (index, threshold, precision, recall) at (or closest exceeding) the given recall
      */
-    public Point getPointAtRecall(double recall){
+    public Point getPointAtRecall(double recall) {
         //Find the HIGHEST threshold that gives the specified recall
-        for( int i=this.recall.length-1; i>=0; i-- ){
-            if(this.recall[i] >= recall){
+        for (int i = this.recall.length - 1; i >= 0; i--) {
+            if (this.recall[i] >= recall) {
                 return new Point(i, threshold[i], precision[i], this.recall[i]);
             }
         }
@@ -192,7 +189,7 @@ public class PrecisionRecallCurve extends BaseCurve {
         Point p = getPointAtThreshold(threshold);
         int idx = p.idx;
         int tn = totalCount - (tpCount[idx] + fpCount[idx] + fnCount[idx]);
-        return new Confusion(p, tpCount[idx], fpCount[idx], fnCount[idx], tn );
+        return new Confusion(p, tpCount[idx], fpCount[idx], fnCount[idx], tn);
     }
 
     /**
@@ -201,7 +198,7 @@ public class PrecisionRecallCurve extends BaseCurve {
      * @param point Position at which to get the binary confusion matrix
      * @return Binary confusion matrix
      */
-    public Confusion getConfusionMatrixAtPoint(int point){
+    public Confusion getConfusionMatrixAtPoint(int point) {
         return getConfusionMatrixAtThreshold(threshold[point]);
     }
 

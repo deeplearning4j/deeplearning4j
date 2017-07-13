@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -21,6 +22,10 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.learning.SgdUpdater;
+import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.config.NoOp;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -95,34 +100,37 @@ public class GradientCheckUtil {
 
         int layerCount = 0;
         for (NeuralNetConfiguration n : mln.getLayerWiseConfigurations().getConfs()) {
-            org.deeplearning4j.nn.conf.Updater u = n.getLayer().getUpdater();
-            if (u == org.deeplearning4j.nn.conf.Updater.SGD) {
-                //Must have LR of 1.0
-                double lr = n.getLayer().getLearningRate();
-                if (lr != 1.0) {
-                    throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
-                                    + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
-                                    + n.getLayer().getLayerName() + "\"");
+            if (n.getLayer() instanceof BaseLayer) {
+                BaseLayer bl = (BaseLayer) n.getLayer();
+                IUpdater u = bl.getIUpdater();
+                if (u instanceof Sgd) {
+                    //Must have LR of 1.0
+                    double lr = bl.getLearningRate();
+                    if (lr != 1.0) {
+                        throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
+                                        + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
+                                        + n.getLayer().getLayerName() + "\"");
+                    }
+                } else if (!(u instanceof NoOp)) {
+                    throw new IllegalStateException(
+                                    "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
                 }
-            } else if (u != org.deeplearning4j.nn.conf.Updater.NONE) {
-                throw new IllegalStateException(
-                                "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
+
+                IActivation activation = bl.getActivationFn();
+                if (activation != null) {
+                    if (!VALID_ACTIVATION_FUNCTIONS.contains(activation.getClass())) {
+                        log.warn("Layer " + layerCount + " is possibly using an unsuitable activation function: "
+                                        + activation.getClass()
+                                        + ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not "
+                                        + "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
+                    }
+                }
             }
 
             double dropout = n.getLayer().getDropOut();
             if (n.isUseRegularization() && dropout != 0.0) {
                 throw new IllegalStateException("Must have dropout == 0.0 for gradient checks - got dropout = "
                                 + dropout + " for layer " + layerCount);
-            }
-
-            IActivation activation = n.getLayer().getActivationFn();
-            if (activation != null) {
-                if (!VALID_ACTIVATION_FUNCTIONS.contains(activation.getClass())) {
-                    log.warn("Layer " + layerCount + " is possibly using an unsuitable activation function: "
-                                    + activation.getClass()
-                                    + ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not "
-                                    + "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
-                }
             }
         }
 
@@ -265,33 +273,37 @@ public class GradientCheckUtil {
                 continue;
             LayerVertex lv = (LayerVertex) gv;
 
-            org.deeplearning4j.nn.conf.Updater u = lv.getLayerConf().getLayer().getUpdater();
-            if (u == org.deeplearning4j.nn.conf.Updater.SGD) {
-                //Must have LR of 1.0
-                double lr = lv.getLayerConf().getLayer().getLearningRate();
-                if (lr != 1.0) {
-                    throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer \""
-                                    + vertexName + "\"; got " + u);
+            if (lv.getLayerConf().getLayer() instanceof BaseLayer) {
+                BaseLayer bl = (BaseLayer) lv.getLayerConf().getLayer();
+                IUpdater u = bl.getIUpdater();
+                if (u instanceof Sgd) {
+                    //Must have LR of 1.0
+                    double lr = bl.getLearningRate();
+                    if (lr != 1.0) {
+                        throw new IllegalStateException("When using SGD updater, must also use lr=1.0 for layer "
+                                        + layerCount + "; got " + u + " with lr=" + lr + " for layer \""
+                                        + lv.getLayerConf().getLayer().getLayerName() + "\"");
+                    }
+                } else if (!(u instanceof NoOp)) {
+                    throw new IllegalStateException(
+                                    "Must have Updater.NONE (or SGD + lr=1.0) for layer " + layerCount + "; got " + u);
                 }
-            } else if (u != org.deeplearning4j.nn.conf.Updater.NONE) {
-                throw new IllegalStateException(
-                                "Must have Updater.NONE (or SGD + lr=1.0) for layer \"" + vertexName + "\"; got " + u);
+
+                IActivation activation = bl.getActivationFn();
+                if (activation != null) {
+                    if (!VALID_ACTIVATION_FUNCTIONS.contains(activation.getClass())) {
+                        log.warn("Layer \"" + vertexName + "\" is possibly using an unsuitable activation function: "
+                                        + activation.getClass()
+                                        + ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not "
+                                        + "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
+                    }
+                }
             }
 
             double dropout = lv.getLayerConf().getLayer().getDropOut();
             if (lv.getLayerConf().isUseRegularization() && dropout != 0.0) {
                 throw new IllegalStateException("Must have dropout == 0.0 for gradient checks - got dropout = "
                                 + dropout + " for layer " + layerCount);
-            }
-
-            IActivation activation = lv.getLayerConf().getLayer().getActivationFn();
-            if (activation != null) {
-                if (!VALID_ACTIVATION_FUNCTIONS.contains(activation.getClass())) {
-                    log.warn("Layer \"" + vertexName + "\" is possibly using an unsuitable activation function: "
-                                    + activation.getClass()
-                                    + ". Activation functions for gradient checks must be smooth (like sigmoid, tanh, softmax) and not "
-                                    + "contain discontinuities like ReLU or LeakyReLU (these may cause spurious failures)");
-                }
             }
         }
 

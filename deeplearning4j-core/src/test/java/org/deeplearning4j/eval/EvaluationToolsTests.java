@@ -113,7 +113,7 @@ public class EvaluationToolsTests {
         arr.diviColumnVector(arr.sum(1));
         INDArray labels = Nd4j.zeros(minibatch, nClasses);
         Random r = new Random(12345);
-        for( int i=0; i<minibatch; i++ ){
+        for (int i = 0; i < minibatch; i++) {
             labels.putScalar(i, r.nextInt(nClasses), 1.0);
         }
 
@@ -122,7 +122,7 @@ public class EvaluationToolsTests {
         ec.eval(labels, arr);
 
         String str = EvaluationTools.evaluationCalibrationToHtml(ec);
-//        System.out.println(str);
+        //        System.out.println(str);
     }
 
 }

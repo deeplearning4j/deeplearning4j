@@ -7,10 +7,7 @@ import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.LayerValidation;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
@@ -141,57 +138,66 @@ public class FineTuneConfiguration {
         Layer l = nnc.getLayer();
         Updater originalUpdater = null;
         WeightInit origWeightInit = null;
+
         if (l != null) {
-            originalUpdater = l.getUpdater();
-            origWeightInit = l.getWeightInit();
+            if (dropOut != null)
+                l.setDropOut(dropOut);
+        }
+
+        if (l != null && l instanceof BaseLayer) {
+            BaseLayer bl = (BaseLayer) l;
+            originalUpdater = bl.getUpdater();
+            origWeightInit = bl.getWeightInit();
             if (activationFn != null)
-                l.setActivationFn(activationFn);
+                bl.setActivationFn(activationFn);
             if (weightInit != null)
-                l.setWeightInit(weightInit);
+                bl.setWeightInit(weightInit);
             if (biasInit != null)
-                l.setBiasInit(biasInit);
+                bl.setBiasInit(biasInit);
             if (dist != null)
-                l.setDist(dist);
+                bl.setDist(dist);
             if (learningRate != null) {
                 //usually the same learning rate is applied to both bias and weights
                 //so always overwrite the learning rate to both?
-                l.setLearningRate(learningRate);
-                l.setBiasLearningRate(learningRate);
+                bl.setLearningRate(learningRate);
+                bl.setBiasLearningRate(learningRate);
 
             }
             if (biasLearningRate != null)
-                l.setBiasLearningRate(biasLearningRate);
+                bl.setBiasLearningRate(biasLearningRate);
             if (learningRateSchedule != null)
-                l.setLearningRateSchedule(learningRateSchedule);
+                bl.setLearningRateSchedule(learningRateSchedule);
             //        if(lrScoreBasedDecay != null)
             if (l1 != null)
-                l.setL1(l1);
+                bl.setL1(l1);
             if (l2 != null)
-                l.setL2(l2);
+                bl.setL2(l2);
             if (l1Bias != null)
-                l.setL1Bias(l1Bias);
+                bl.setL1Bias(l1Bias);
             if (l2Bias != null)
-                l.setL2Bias(l2Bias);
-            if (dropOut != null)
-                l.setDropOut(dropOut);
+                bl.setL2Bias(l2Bias);
             if (updater != null)
-                l.setUpdater(updater);
+                bl.setUpdater(updater);
             if (iUpdater != null)
-                l.setIUpdater(iUpdater);
+                bl.setIUpdater(iUpdater);
             if (momentum != null)
-                l.setMomentum(momentum);
+                bl.setMomentum(momentum);
             if (momentumSchedule != null)
-                l.setMomentum(momentum);
+                bl.setMomentum(momentum);
             if (epsilon != null)
-                l.setEpsilon(epsilon);
+                bl.setEpsilon(epsilon);
             if (rho != null)
-                l.setRho(rho);
+                bl.setRho(rho);
             if (rmsDecay != null)
-                l.setRmsDecay(rmsDecay);
+                bl.setRmsDecay(rmsDecay);
             if (adamMeanDecay != null)
-                l.setAdamMeanDecay(adamMeanDecay);
+                bl.setAdamMeanDecay(adamMeanDecay);
             if (adamVarDecay != null)
-                l.setAdamVarDecay(adamVarDecay);
+                bl.setAdamVarDecay(adamVarDecay);
+            if (gradientNormalization != null)
+                bl.setGradientNormalization(gradientNormalization);
+            if (gradientNormalizationThreshold != null)
+                bl.setGradientNormalizationThreshold(gradientNormalizationThreshold);
         }
         if (miniBatch != null)
             nnc.setMiniBatch(miniBatch);
@@ -211,10 +217,6 @@ public class FineTuneConfiguration {
             nnc.setUseDropConnect(useDropConnect);
         if (minimize != null)
             nnc.setMinimize(minimize);
-        if (gradientNormalization != null)
-            l.setGradientNormalization(gradientNormalization);
-        if (gradientNormalizationThreshold != null)
-            l.setGradientNormalizationThreshold(gradientNormalizationThreshold);
         if (learningRatePolicy != null)
             nnc.setLearningRatePolicy(learningRatePolicy);
         if (lrPolicySteps != null)
@@ -230,38 +232,40 @@ public class FineTuneConfiguration {
         }
 
         //Check the updater config. If we change updaters, we want to remove the old config to avoid warnings
-        if (l != null && updater != null && originalUpdater != null && updater != originalUpdater) {
+        if (l != null && l instanceof BaseLayer && updater != null && originalUpdater != null
+                        && updater != originalUpdater) {
+            BaseLayer bl = (BaseLayer) l;
             switch (originalUpdater) {
                 case ADAM:
                 case ADAMAX:
                     if (adamMeanDecay == null)
-                        l.setAdamMeanDecay(Double.NaN);
+                        bl.setAdamMeanDecay(Double.NaN);
                     if (adamVarDecay == null)
-                        l.setAdamVarDecay(Double.NaN);
+                        bl.setAdamVarDecay(Double.NaN);
                     break;
                 case ADADELTA:
                     if (rho == null)
-                        l.setRho(Double.NaN);
+                        bl.setRho(Double.NaN);
                     if (epsilon == null)
-                        l.setEpsilon(Double.NaN);
+                        bl.setEpsilon(Double.NaN);
                     break;
                 case NESTEROVS:
                     if (momentum == null)
-                        l.setMomentum(Double.NaN);
+                        bl.setMomentum(Double.NaN);
                     if (momentumSchedule == null)
-                        l.setMomentumSchedule(null);
+                        bl.setMomentumSchedule(null);
                     if (epsilon == null)
-                        l.setEpsilon(Double.NaN);
+                        bl.setEpsilon(Double.NaN);
                     break;
                 case ADAGRAD:
                     if (epsilon == null)
-                        l.setEpsilon(Double.NaN);
+                        bl.setEpsilon(Double.NaN);
                     break;
                 case RMSPROP:
                     if (rmsDecay == null)
-                        l.setRmsDecay(Double.NaN);
+                        bl.setRmsDecay(Double.NaN);
                     if (epsilon == null)
-                        l.setEpsilon(Double.NaN);
+                        bl.setEpsilon(Double.NaN);
                     break;
 
                 //Other cases: no changes required
@@ -269,9 +273,9 @@ public class FineTuneConfiguration {
         }
 
         //Check weight init. Remove dist if originally was DISTRIBUTION, and isn't now -> remove no longer needed distribution
-        if (l != null && origWeightInit == WeightInit.DISTRIBUTION && weightInit != null
+        if (l != null && l instanceof BaseLayer && origWeightInit == WeightInit.DISTRIBUTION && weightInit != null
                         && weightInit != WeightInit.DISTRIBUTION) {
-            l.setDist(null);
+            ((BaseLayer) l).setDist(null);
         }
 
         //Perform validation. This also sets the defaults for updaters. For example, Updater.RMSProp -> set rmsDecay
