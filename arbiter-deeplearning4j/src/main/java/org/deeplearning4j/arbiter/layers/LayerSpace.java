@@ -29,9 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * BaseLayerSpace contains the common
- * Layer hyperparameters; should match
- * {@link Layer} in terms of features
+ * LayerSpace contains common Layer hyperparameters; should match {@link Layer} in terms of features
  *
  * @author Alex Black
  */

@@ -17,7 +17,7 @@
 package org.deeplearning4j.arbiter;
 
 import lombok.*;
-import org.deeplearning4j.arbiter.layers.BaseLayerSpace;
+import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
@@ -164,7 +164,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
     @Data
     @NoArgsConstructor  //For Jackson JSON
     private static class LayerConf {
-        private BaseLayerSpace<?> layerSpace;
+        private LayerSpace<?> layerSpace;
         private String layerName;
         private String[] inputs;
     }
@@ -200,7 +200,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
             return this;
         }
 
-        public Builder addLayer(String layerName, BaseLayerSpace<? extends Layer> layerSpace,
+        public Builder addLayer(String layerName, LayerSpace<? extends Layer> layerSpace,
                                 String... layerInputs) {
             layerList.add(new LayerConf(layerSpace, layerName, layerInputs));
             return this;

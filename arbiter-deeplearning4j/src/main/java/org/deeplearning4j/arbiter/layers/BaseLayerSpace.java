@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.layers;
 
 import lombok.AccessLevel;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
@@ -38,15 +39,15 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * BaseLayerSpace contains the common
- * Layer hyperparameters; should match
- * {@link BaseLayer} in terms of features
+ * BaseLayerSpace contains the common Layer hyperparameters; should match {@link BaseLayer} in terms of features
  *
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 
-@Data @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
+@Data
+@EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
 public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> {
     protected ParameterSpace<IActivation> activationFunction;
     protected ParameterSpace<WeightInit> weightInit;

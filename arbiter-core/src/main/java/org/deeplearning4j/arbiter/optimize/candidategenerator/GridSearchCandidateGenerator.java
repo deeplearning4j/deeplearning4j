@@ -45,7 +45,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * @param <T> Type of candidates to generate
  * @author Alex Black
  */
-@EqualsAndHashCode(exclude = {"order","candidateCounter","rng","candidate"})
+@EqualsAndHashCode(exclude = {"order"}, callSuper = true)
 @JsonIgnoreProperties({"numValuesPerParam", "totalNumCandidates", "order", "candidateCounter", "rng","candidate"})
 public class GridSearchCandidateGenerator<T> extends BaseCandidateGenerator<T> {
 
