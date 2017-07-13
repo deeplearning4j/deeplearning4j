@@ -14,44 +14,42 @@ public class NetworkMemoryReport extends MemoryReport {
 
     private final Map<String,LayerMemoryReport> layerAndVertexReports;
     private final Class<? extends Model> modelClass;
+    private final String modelName;
 
-    public NetworkMemoryReport(@NonNull Map<String,LayerMemoryReport> layerAndVertexReports, Class<? extends Model> modelClass ){
+    public NetworkMemoryReport(@NonNull Map<String,LayerMemoryReport> layerAndVertexReports,
+                               @NonNull Class<? extends Model> modelClass,
+                               String modelName){
         this.layerAndVertexReports = layerAndVertexReports;
         this.modelClass = modelClass;
-    }
-
-    @Override
-    public long getTotalMemoryBytes(int minibatchSize, @NonNull DataBuffer.Type dataType ){
-        int bytesPerElem;
-        switch (dataType){
-            case DOUBLE:
-                bytesPerElem = 8;
-                break;
-            case FLOAT:
-                bytesPerElem = 4;
-                break;
-            case HALF:
-                bytesPerElem = 2;
-                break;
-            default:
-                throw new UnsupportedOperationException("Data type not supported: " + dataType);
-        }
-        long sumBytes = 0;
-        for(LayerMemoryReport lmr : layerAndVertexReports.values() ){
-
-        }
+        this.modelName = modelName;
     }
 
 
     @Override
-    public long getMemoryBytes(MemoryType memoryType, int minibatchSize, DataBuffer.Type dataType ){
-
+    public Class<?> getReportClass() {
+        return modelClass;
     }
 
+    @Override
+    public String getName() {
+        return modelName;
+    }
+
+    @Override
+    public long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode, DataBuffer.Type dataType) {
+        long totalBytes = 0;
+        for(LayerMemoryReport lmr : layerAndVertexReports.values()){
+
+            totalBytes += lmr.getMemoryBytes(memoryType, minibatchSize, memoryUseMode, dataType);
+        }
+
+        return totalBytes;
+    }
 
     @Override
     public String toString(){
-
+        //TODO
+        return "NetworkMemoryReport()";
     }
 
 }

@@ -24,6 +24,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -305,6 +306,11 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     public InputPreProcessor getInputPreProcess(int curr) {
         return inputPreProcessors.get(curr);
+    }
+
+    public NetworkMemoryReport getMemoryReport(InputType inputType){
+
+        throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Data
