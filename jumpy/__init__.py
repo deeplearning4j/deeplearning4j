@@ -3,11 +3,13 @@ import os
 import inspect
 
 import numpy as np
+jnius_config.add_options('-Dorg.bytedeco.javacpp.nopointergc=true')
 
 try:
     jnius_classpath = os.environ['JUMPY_CLASS_PATH']
 except KeyError:
     raise 'Please specify a jar or directory for JUMPY_CLASS_PATH in the environment'
+
 
 
 def get_classpath(base_path):
@@ -65,7 +67,11 @@ nd4j = autoclass('org.nd4j.linalg.factory.Nd4j')
 INDArray = autoclass('org.nd4j.linalg.api.ndarray.INDArray')
 transforms = autoclass('org.nd4j.linalg.ops.transforms.Transforms')
 indexing = autoclass('org.nd4j.linalg.indexing.NDArrayIndex')
+
+DataBuffer = autoclass('org.nd4j.linalg.api.buffer.DataBuffer')
+
 system = autoclass('java.lang.System')
+system.out.println(system.getProperty('org.bytedeco.javacpp.nopointergc'))
 Integer = autoclass('java.lang.Integer')
 Float = autoclass('java.lang.Float')
 Double = autoclass('java.lang.Double')
@@ -84,6 +90,17 @@ FloatPointer = autoclass('org.bytedeco.javacpp.FloatPointer')
 IntPointer = autoclass('org.bytedeco.javacpp.IntPointer')
 
 DataTypeUtil = autoclass('org.nd4j.linalg.api.buffer.util.DataTypeUtil')
+
+MemoryManager = autoclass('org.nd4j.linalg.memory.MemoryManager')
+memory_manager = nd4j.getMemoryManager()
+
+
+def disable_gc():
+    memory_manager.togglePeriodicGc(False)
+
+
+def set_gc_interval(interval=5000):
+    memory_manager.setAutoGcWindow(interval)
 
 
 def data_type():
@@ -134,13 +151,14 @@ def get_buffer_from_arr(np_arr):
     size = np_arr.size
     if np_arr.dtype == 'float64':
         as_double = DoublePointer(pointer)
-        return nd4j.createBuffer(as_double, size)
+        return Nd4jBuffer(nd4j.createBuffer(as_double, size))
     elif np_arr.dtype == 'float32':
         as_float = FloatPointer(pointer)
-        return nd4j.createBuffer(as_float, size)
+        return Nd4jBuffer(nd4j.createBuffer(as_float, size))
     elif np_arr.dtype == 'int64':
         as_int = IntPointer(pointer)
-        return nd4j.createBuffer(as_int, size)
+        return Nd4jBuffer(data_buffer=nd4j.createBuffer(as_int, size),
+                          numpy_pointer=np_arr)
 
 
 def _to_number(number):
@@ -167,8 +185,9 @@ class Nd4jArray(object):
      in java.
     """
 
-    def __init__(self, array):
-        self.array = array
+    def __init__(self, nd4j_array=None,numpy_array=None):
+        self.array = nd4j_array
+        self.numpy_array = numpy_array
 
     def __add__(self, other):
         if isinstance(other, Nd4jArray):
@@ -239,6 +258,18 @@ class Nd4jArray(object):
             # scalar
         return Nd4jArray(self.array.divi(_to_number(other)))
 
+    def __getitem__(self, item):
+        if isinstance(item, int):
+            return self.array.getDouble(item)
+        else:
+            raise AssertionError("Only int types are supported for indexing right now")
+
+    def __setitem__(self, key, value):
+        if isinstance(key, int):
+            self.array.putScalar(key, value)
+        else:
+            raise AssertionError("Only int types are supported for indexing right now")
+
     def rank(self):
         return self.array.rank()
 
@@ -260,6 +291,35 @@ for name, method in methods:
     Nd4jArray.name = method
 
 
+class Nd4jBuffer(object):
+    def __init__(self, data_buffer=None,numpy_pointer=None):
+        self.data_buffer = data_buffer
+        self.numpy_pointer = numpy_pointer
+
+    def __getitem__(self, item):
+        if isinstance(item, int):
+            return self.data_buffer.getDouble(item)
+        else:
+            raise AssertionError("Please ensure that item is of type int")
+
+    def __setitem__(self, key, value):
+        if isinstance(key, int):
+            self.data_buffer.put(key, value)
+        else:
+            raise AssertionError("Please ensure that item is of type int")
+
+    def length(self):
+        return self.data_buffer.length()
+
+    def element_size(self):
+        return self.data_buffer.getElementSize()
+
+
+methods = inspect.getmembers(DataBuffer, predicate=inspect.ismethod)
+for name, method in methods:
+    Nd4jBuffer.name = method
+
+
 def _nd4j_datatype_from_np(np_datatype_name):
     """
 
@@ -279,6 +339,7 @@ def _nd4j_datatype_from_np(np_datatype_name):
         return 'half'
     return None
 
+
 def _nd4j_datatype_from_np_array(array):
     """
     Gets the equivalent nd4j datatype
@@ -288,6 +349,7 @@ def _nd4j_datatype_from_np_array(array):
     :return:
     """
     return _nd4j_datatype_from_np(array.dtype.name)
+
 
 def _numpy_datatype_from_nd4j_context():
     """
@@ -305,6 +367,7 @@ def _numpy_datatype_from_nd4j_context():
     elif nd4j_datatype == 'half':
         return np.float16
 
+
 def _align_np_datatype_for_array(array):
     """
     Ensure the given numpy array
@@ -312,7 +375,18 @@ def _align_np_datatype_for_array(array):
     :param array:
     :return:
     """
-    return np.asarray(array,_numpy_datatype_from_nd4j_context())
+    return np.asarray(array, _numpy_datatype_from_nd4j_context())
+
+
+def _assert_data_type_length(data_buffer):
+    data_type = _numpy_datatype_from_nd4j_context()
+    element_size = data_buffer.getElementSize()
+    if data_type == np.float32 and element_size != 4:
+        raise AssertionError("Data Type from nd4j is float. Data buffer size is not 4")
+    elif data_type == np.float64 and element_size != 8:
+        raise AssertionError("Data Type from nd4j is double. Data buffer size is not 8")
+    elif data_type == np.int and element_size != 4:
+        raise AssertionError("Data Type from nd4j is int. Data buffer size is not 4")
 
 
 def from_np(np_arr):
@@ -332,7 +406,10 @@ def from_np(np_arr):
     if np_arr.ndim == 1:
         np_arr = np.reshape(np_arr, (1, np_arr.size))
 
-    data_buffer = get_buffer_from_arr(np_arr)
+    data_buffer = get_buffer_from_arr(np_arr).data_buffer
+    _assert_data_type_length(data_buffer)
     #   note here we divide the strides by 8 for numpy
     # the reason we do this is because numpy's strides are based on bytes rather than words
-    return Nd4jArray(nd4j.create(data_buffer, np_arr.shape, map(lambda x: x / 8, np_arr.strides), 0))
+    strides = map(lambda x: x / data_buffer.getElementSize(), np_arr.strides)
+    shape = np_arr.shape
+    return Nd4jArray(nd4j.create(data_buffer, shape, strides, 0))
