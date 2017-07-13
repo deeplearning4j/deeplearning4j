@@ -17,7 +17,7 @@
 package org.deeplearning4j.arbiter;
 
 import lombok.*;
-import org.deeplearning4j.arbiter.layers.LayerSpace;
+import org.deeplearning4j.arbiter.layers.BaseLayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
@@ -28,6 +28,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -163,7 +164,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
     @Data
     @NoArgsConstructor  //For Jackson JSON
     private static class LayerConf {
-        private LayerSpace<?> layerSpace;
+        private BaseLayerSpace<?> layerSpace;
         private String layerName;
         private String[] inputs;
     }
@@ -199,7 +200,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
             return this;
         }
 
-        public Builder addLayer(String layerName, LayerSpace<? extends org.deeplearning4j.nn.conf.layers.Layer> layerSpace,
+        public Builder addLayer(String layerName, BaseLayerSpace<? extends Layer> layerSpace,
                                 String... layerInputs) {
             layerList.add(new LayerConf(layerSpace, layerName, layerInputs));
             return this;

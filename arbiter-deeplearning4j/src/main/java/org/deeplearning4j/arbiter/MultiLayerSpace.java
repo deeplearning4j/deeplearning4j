@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 
@@ -187,7 +188,7 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
          * @param duplicateConfig       Only used if more than 1 layer can be generated. If true: generate N identical (stacked) layers.
          *                              If false: generate N independent layers
          */
-        public Builder addLayer(LayerSpace<? extends org.deeplearning4j.nn.conf.layers.Layer> layerSpace,
+        public Builder addLayer(LayerSpace<? extends Layer> layerSpace,
                                 ParameterSpace<Integer> numLayersDistribution, boolean duplicateConfig) {
             layerSpaces.add(new LayerConf(layerSpace, numLayersDistribution, duplicateConfig));
             return this;

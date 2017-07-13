@@ -196,14 +196,14 @@ public class TestMultiLayerSpace {
             for( int j=0; j<nLayers; j++ ){
                 NeuralNetConfiguration layerConf = conf.getConf(j);
 
-                double lr = layerConf.getLayer().getLearningRate();
+                double lr = ((BaseLayer)layerConf.getLayer()).getLearningRate();
                 assertTrue(lr >= 0.0001 && lr <= 0.1);
                 assertEquals(true, layerConf.isUseRegularization());
-                double l2 = layerConf.getLayer().getL2();
+                double l2 = ((BaseLayer)layerConf.getLayer()).getL2();
                 assertTrue( l2 >= 0.2 && l2 <= 0.5);
 
                 if(j == nLayers-1) { //Output layer
-                    assertEquals("softmax", layerConf.getLayer().getActivationFn().toString());
+                    assertEquals("softmax", ((BaseLayer)layerConf.getLayer()).getActivationFn().toString());
                 } else if(j == 0){
                     //Conv layer
                     ConvolutionLayer cl = (ConvolutionLayer) layerConf.getLayer();
@@ -211,7 +211,7 @@ public class TestMultiLayerSpace {
                     assertEquals(3, cl.getNOut());
                     assertEquals(ConvolutionMode.Same, cl.getConvolutionMode());
                 } else {
-                    String actFn = layerConf.getLayer().getActivationFn().toString();
+                    String actFn = ((BaseLayer)layerConf.getLayer()).getActivationFn().toString();
                     assertTrue("relu".equals(actFn) || "tanh".equals(actFn));
                     if("relu".equals(actFn)) reluCount++;
                     else tanhCount++;

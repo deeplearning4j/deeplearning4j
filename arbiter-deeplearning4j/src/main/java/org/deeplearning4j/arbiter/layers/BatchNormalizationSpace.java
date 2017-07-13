@@ -12,7 +12,7 @@ import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import java.util.List;
 
 /**
- * LayerSpace for batch normalization layers
+ * BaseLayerSpace for batch normalization layers
  *
  * @author Alex Black
  */

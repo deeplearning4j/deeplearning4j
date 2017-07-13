@@ -77,7 +77,7 @@ public class GlobalPoolingLayerSpace extends LayerSpace<GlobalPoolingLayer> {
 
 
 
-    public static class Builder extends LayerSpace.Builder<Builder> {
+    public static class Builder extends BaseLayerSpace.Builder<Builder> {
 
         protected ParameterSpace<int[]> poolingDimensions;
         protected ParameterSpace<Boolean> collapseDimensions;

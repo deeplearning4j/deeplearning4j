@@ -164,5 +164,6 @@ public class VariationalAutoencoderLayerSpace extends BasePretrainNetworkLayerSp
         public <E extends LayerSpace> E build() {
             return (E)new VariationalAutoencoderLayerSpace(this);
         }
+
     }
 }

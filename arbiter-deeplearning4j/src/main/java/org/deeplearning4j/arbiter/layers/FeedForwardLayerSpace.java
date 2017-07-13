@@ -29,7 +29,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor //For Jackson JSON/YAML deserialization
-public abstract class FeedForwardLayerSpace<L extends FeedForwardLayer> extends LayerSpace<L> {
+public abstract class FeedForwardLayerSpace<L extends FeedForwardLayer> extends BaseLayerSpace<L> {
     protected ParameterSpace<Integer> nIn;
     protected ParameterSpace<Integer> nOut;
 
@@ -55,7 +55,7 @@ public abstract class FeedForwardLayerSpace<L extends FeedForwardLayer> extends 
     }
 
 
-    public abstract static class Builder<T> extends LayerSpace.Builder<T> {
+    public abstract static class Builder<T> extends BaseLayerSpace.Builder<T> {
 
         protected ParameterSpace<Integer> nIn;
         protected ParameterSpace<Integer> nOut;
