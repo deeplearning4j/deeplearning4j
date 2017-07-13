@@ -17,6 +17,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.rl4j.network.dqn.DQN;
 import org.deeplearning4j.rl4j.util.Constants;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -44,15 +45,15 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
                         .regularization(conf.getL2() > 0)
                         .l2(conf.getL2())
                         .list().layer(0, new DenseLayer.Builder().nIn(numInputs[0]).nOut(conf.getNumHiddenNodes())
-                                        .activation("relu").build());
+                                        .activation(Activation.RELU).build());
 
 
         for (int i = 1; i < conf.getNumLayer(); i++) {
             confB.layer(i, new DenseLayer.Builder().nIn(conf.getNumHiddenNodes()).nOut(conf.getNumHiddenNodes())
-                            .activation("relu").build());
+                            .activation(Activation.RELU).build());
         }
 
-        confB.layer(conf.getNumLayer(), new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation("identity")
+        confB.layer(conf.getNumLayer(), new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY)
                         .nIn(conf.getNumHiddenNodes()).nOut(1).build());
 
 
@@ -71,16 +72,16 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
                         //.regularization(true)
                         //.l2(conf.getL2())
                         .list().layer(0, new DenseLayer.Builder().nIn(numInputs[0]).nOut(conf.getNumHiddenNodes())
-                                        .activation("relu").build());
+                                        .activation(Activation.RELU).build());
 
 
         for (int i = 1; i < conf.getNumLayer(); i++) {
             confB2.layer(i, new DenseLayer.Builder().nIn(conf.getNumHiddenNodes()).nOut(conf.getNumHiddenNodes())
-                            .activation("relu").build());
+                            .activation(Activation.RELU).build());
         }
 
         confB2.layer(conf.getNumLayer(), new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                        .activation("softmax").nIn(conf.getNumHiddenNodes()).nOut(numOutputs).build());
+                        .activation(Activation.SOFTMAX).nIn(conf.getNumHiddenNodes()).nOut(numOutputs).build());
 
 
         MultiLayerConfiguration mlnconf = confB2.pretrain(false).backprop(true).build();

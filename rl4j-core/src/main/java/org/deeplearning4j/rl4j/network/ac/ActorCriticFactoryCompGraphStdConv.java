@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.rl4j.util.Constants;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -49,18 +50,18 @@ public class ActorCriticFactoryCompGraphStdConv implements ActorCriticFactoryCom
                                                         shapeInputs[0]))
                                         .addInputs("input").addLayer("0",
                                                         new ConvolutionLayer.Builder(8, 8).nIn(shapeInputs[0]).nOut(16)
-                                                                        .stride(4, 4).activation("relu").build(),
+                                                                        .stride(4, 4).activation(Activation.RELU).build(),
                                                         "input");
 
-        confB.addLayer("1", new ConvolutionLayer.Builder(4, 4).nOut(32).stride(2, 2).activation("relu").build(), "0");
+        confB.addLayer("1", new ConvolutionLayer.Builder(4, 4).nOut(32).stride(2, 2).activation(Activation.RELU).build(), "0");
 
-        confB.addLayer("2", new DenseLayer.Builder().nOut(256).activation("relu").build(), "1");
+        confB.addLayer("2", new DenseLayer.Builder().nOut(256).activation(Activation.RELU).build(), "1");
 
         confB.addLayer("value",
-                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation("identity").nOut(1).build(),
+                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).nOut(1).build(),
                         "2");
 
-        confB.addLayer("softmax", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax") //fixthat
+        confB.addLayer("softmax", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX) //fixthat
                         .nOut(numOutputs).build(), "2");
 
         confB.setOutputs("value", "softmax");

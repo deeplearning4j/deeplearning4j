@@ -14,6 +14,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.rl4j.util.Constants;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -42,21 +43,21 @@ public class ActorCriticFactoryCompGraphStdDense implements ActorCriticFactoryCo
                                         .l2(conf.getL2()).graphBuilder()
                                         .setInputTypes(InputType.feedForward(numInputs[0])).addInputs("input")
                                         .addLayer("0", new DenseLayer.Builder().nIn(numInputs[0])
-                                                        .nOut(conf.getNumHiddenNodes()).activation("relu").build(),
+                                                        .nOut(conf.getNumHiddenNodes()).activation(Activation.RELU).build(),
                                                         "input");
 
 
         for (int i = 1; i < conf.getNumLayer(); i++) {
             confB.addLayer(i + "", new DenseLayer.Builder().nIn(conf.getNumHiddenNodes()).nOut(conf.getNumHiddenNodes())
-                            .activation("relu").build(), (i - 1) + "");
+                            .activation(Activation.RELU).build(), (i - 1) + "");
         }
 
 
         confB.addLayer("value",
-                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation("identity").nOut(1).build(),
+                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).nOut(1).build(),
                         (getConf().getNumLayer() - 1) + "");
 
-        confB.addLayer("softmax", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation("softmax") //fixthat
+        confB.addLayer("softmax", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX) //fixthat
                         .nOut(numOutputs).build(), (getConf().getNumLayer() - 1) + "");
 
         confB.setOutputs("value", "softmax");
