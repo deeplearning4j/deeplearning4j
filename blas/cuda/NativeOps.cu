@@ -6443,3 +6443,7 @@ void NativeOps::execReduce3AllHalf(Nd4jPointer *extraPointers,
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
 }
+
+void NativeOps::sortFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, bool descending) {
+	// to be implemented
+}

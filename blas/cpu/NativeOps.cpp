@@ -2970,3 +2970,7 @@ int NativeOps::elementSizeForNpyArray(Nd4jPointer npyArray) {
 Nd4jPointer NativeOps::pointerForAddress(long address) {
     return reinterpret_cast<Nd4jPointer >(address);
 }
+
+void NativeOps::sortFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, bool descending) {
+    NativeOpExcutioner<float>::execSort(x, xShapeInfo, descending);
+}

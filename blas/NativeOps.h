@@ -2905,6 +2905,10 @@ public:
     void decodeThresholdDouble(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, double *dz);
 
     void decodeThresholdHalf(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float16 *dz);
+
+
+
+    void sortFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, bool descending);
 };
 
 

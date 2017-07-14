@@ -16,6 +16,7 @@
 #include <loops/aggregates.h>
 #include <loops/random.h>
 #include <pointercast.h>
+#include <ops/specials.h>
 /**
  * Native op executioner:
  *
@@ -760,6 +761,11 @@ public:
                                                             z,
                                                             zShapeBuffer,
                                                             extraArguments);
+    }
+
+
+    static void execSort(T *x, int *xShapeInfo, bool descending) {
+        sortGeneric<T>(x, xShapeInfo, descending);
     }
 };
 
