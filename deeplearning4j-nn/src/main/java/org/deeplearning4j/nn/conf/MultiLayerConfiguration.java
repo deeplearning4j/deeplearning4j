@@ -330,7 +330,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             inputType = confs.get(i).getLayer().getOutputType(i, inputType);
         }
 
-        return new NetworkMemoryReport(memoryReportMap, MultiLayerConfiguration.class, "MultiLayerNetwork");
+        return new NetworkMemoryReport(memoryReportMap, MultiLayerConfiguration.class, "MultiLayerNetwork", inputType);
     }
 
     @Data

@@ -491,7 +491,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             memoryReportMap.put(s, mr);
         }
 
-        return new NetworkMemoryReport(memoryReportMap, ComputationGraphConfiguration.class, "ComputationGraph");
+        return new NetworkMemoryReport(memoryReportMap, ComputationGraphConfiguration.class, "ComputationGraph", inputTypes);
     }
 
 

@@ -57,7 +57,9 @@ public class RnnOutputLayer extends BaseOutputLayer {
             throw new IllegalStateException("Invalid input type for RnnOutputLayer (layer index = " + layerIndex
                             + ", layer name=\"" + getLayerName() + "\"): Expected RNN input, got " + inputType);
         }
-        return InputType.recurrent(nOut);
+        InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent)inputType;
+
+        return InputType.recurrent(nOut, itr.getTimeSeriesLength());
     }
 
     @Override

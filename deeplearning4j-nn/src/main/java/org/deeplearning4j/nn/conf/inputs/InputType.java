@@ -74,6 +74,15 @@ public abstract class InputType implements Serializable {
         return new InputTypeRecurrent(size);
     }
 
+    /** InputType for recurrent neural network (time series) data
+     * @param size The size of the activations
+     * @param timeSeriesLength Length of the input time series
+     * @return
+     */
+    public static InputType recurrent(int size, int timeSeriesLength) {
+        return new InputTypeRecurrent(size, timeSeriesLength);
+    }
+
     /**Input type for convolutional (CNN) data, that is 4d with shape [miniBatchSize, depth, height, width].
      * For CNN data that has been flattened, use {@link #convolutionalFlat(int, int, int)}
      * @param height height of the input
