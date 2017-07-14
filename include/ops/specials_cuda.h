@@ -29,35 +29,39 @@ __device__ inline int getDevicePosition(int *xShapeInfo, int index) {
 
 template<typename T>
 __device__
- void bitonic_sort_step(T *x, int *xShapeInfo, int j, int k, bool descending) {
-  unsigned int i, ixj; /* Sorting partners: i and ixj */
-  i = threadIdx.x + blockDim.x * blockIdx.x;
-  ixj = i^j;
+ void bitonic_sort_step(T *x, int *xShapeInfo, int j, int k, int length, bool descending) {
 
-  /* The threads with the lowest ids sort the array. */
-  if ((ixj)>i) {
-    int posI = getDevicePosition(xShapeInfo, i);
-    int posIXJ = getDevicePosition(xShapeInfo, ixj);
+    unsigned int i, ixj; /* Sorting partners: i and ixj */
+    i = threadIdx.x + blockDim.x * blockIdx.x;
 
-    if ((i&k)==0) {
-      /* Sort ascending */
-      if (x[posI]>x[posIXJ]) {
-        /* exchange(i,ixj); */
-        T temp = x[posI];
-        x[posI] = x[posIXJ];
-        x[posIXJ] = temp;
-      }
+    if (i >= length)
+        return;
+
+    ixj = i^j;
+
+    /* The threads with the lowest ids sort the array. */
+    if ((ixj)>i) {
+        int posI = getDevicePosition(xShapeInfo, i);
+        int posIXJ = getDevicePosition(xShapeInfo, ixj);
+
+        if ((i&k)==0) {
+            /* Sort ascending */
+            if (!descending == (x[posI]>x[posIXJ])) {
+                /* exchange(i,ixj); */
+                T temp = x[posI];
+                x[posI] = x[posIXJ];
+                x[posIXJ] = temp;
+            }
+        } else if ((i&k)!=0) {
+            /* Sort descending */
+            if (!descending == (x[posI]<x[posIXJ])) {
+                /* exchange(i,ixj); */
+                T temp = x[posI];
+                x[posI] = x[posIXJ];
+                x[posIXJ] = temp;
+            }
+        }
     }
-    if ((i&k)!=0) {
-      /* Sort descending */
-      if (x[posI]<x[posIXJ]) {
-        /* exchange(i,ixj); */
-        T temp = x[posI];
-        x[posI] = x[posIXJ];
-        x[posIXJ] = temp;
-      }
-    }
-  }
 }
 
 template<typename T>
@@ -171,6 +175,17 @@ void oes_tad(T *x, int *xShapeInfo, int *dimension, int dimensionLength, int *ta
 
 
 
+extern "C" __global__ void cudaBitonicSortFloat(float *x, int *xShapeInfo, int j, int k, int length, bool descending) {
+    bitonic_sort_step<float>(x, xShapeInfo, j, k, length, descending);
+}
+
+extern "C" __global__ void cudaBitonicSortDouble(double *x, int *xShapeInfo, int j, int k, int length, bool descending) {
+    bitonic_sort_step<double>(x, xShapeInfo, j, k, length, descending);
+}
+
+extern "C" __global__ void cudaBitonicSortHalf(float16 *x, int *xShapeInfo, int j, int k, int length, bool descending) {
+    bitonic_sort_step<float16>(x, xShapeInfo, j, k, length, descending);
+}
 
 
 extern "C" __global__ void cudaSortFloat(float *x, int *xShapeInfo, int j, int k, bool descending) {

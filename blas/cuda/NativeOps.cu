@@ -6451,36 +6451,22 @@ void NativeOps::sortFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo,
     int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
     int xLength = shape::length(hostXShapeInfo);
-    int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
-    int numBlocks = xLength / numThreads;
-    if (xLength % numThreads > 0 || numBlocks == 0)
-        numBlocks++;
-    int i,j,k;
-/*
-   int i,j,k;
-    for (k=2;k<=N;k=2*k) {
-      for (j=k>>1;j>0;j=j>>1) {
-        for (i=0;i<N;i++) {
-          int ixj=i^j;
-          if ((ixj)>i) {
-            if ((i&k)==0 && get(i)>get(ixj)) exchange(i,ixj);
-            if ((i&k)!=0 && get(i)<get(ixj)) exchange(i,ixj);
-          }
-        }
-      }
-    }
- */
-/*
-    int j, k;
-      for (k = 2; k <= xLength; k = 2*k) {
-          for (j=k>>1; j>0; j=j>>1) {
-            printf("K: %i; J: %i\n", k, j);
-            bitonicFloat<<<numBlocks, numThreads, 512, *stream>>>(x, xShapeInfo, j, k, descending);
-        }
-    }
-*/
 
-	cudaSortFloat<<<numBlocks, numThreads, 512, *stream>>>(x, xShapeInfo, j, k, descending);
+    // check if xLength is a power of 2, and use bitonic sort, if that's the case
+    if ((xLength != 0) && ((xLength & (xLength - 1)) == 0)) {
+        int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
+        int numBlocks = xLength / numThreads;
+        if (xLength % numThreads > 0 || numBlocks == 0)
+            numBlocks++;
+
+        for (int k = 2; k <= xLength; k = 2*k) {
+            for (int j = k >> 1; j > 0; j = j >> 1) {
+                cudaBitonicSortFloat<<<numBlocks, numThreads, 512, *stream>>>(x, xShapeInfo, j, k, xLength, descending);
+            }
+        }
+    } else {
+
+    }
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
