@@ -248,15 +248,15 @@ public class SVMLightRecordWriterTest {
 
         String lineOriginal = "1,3 0:1.0 1:11.0 2:12.0 3:2.0 4:3.0";
 
-        SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true);
-        Configuration configWriter = new Configuration();
-        configWriter.setBoolean(SVMLightRecordWriter.ZERO_BASED_INDEXING, true);
-        configWriter.setBoolean(SVMLightRecordWriter.MULTILABEL, true);
-        configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
-        configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 3);
-        writer.setConf(configWriter);
-        writer.write(record);
-        writer.close();
+        try (SVMLightRecordWriter writer = new SVMLightRecordWriter(tempFile, true)) {
+            Configuration configWriter = new Configuration();
+            configWriter.setBoolean(SVMLightRecordWriter.ZERO_BASED_INDEXING, true);
+            configWriter.setBoolean(SVMLightRecordWriter.MULTILABEL, true);
+            configWriter.setInt(SVMLightRecordWriter.FEATURE_FIRST_COLUMN, 0);
+            configWriter.setInt(SVMLightRecordWriter.FEATURE_LAST_COLUMN, 3);
+            writer.setConf(configWriter);
+            writer.write(record);
+        }
 
         String lineNew = FileUtils.readFileToString(tempFile).trim();
         assertEquals(lineOriginal, lineNew);
