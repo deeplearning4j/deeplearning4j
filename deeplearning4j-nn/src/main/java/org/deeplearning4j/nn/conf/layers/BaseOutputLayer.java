@@ -4,9 +4,16 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.deeplearning4j.nn.conf.CacheMode;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.nd4j.linalg.lossfunctions.impl.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
@@ -39,6 +46,50 @@ public abstract class BaseOutputLayer extends FeedForwardLayer {
             //TODO: are there any others??
             return null;
         }
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        //Basically a dense layer...
+        InputType outputType = getOutputType(-1, inputType);
+
+        int actElementsPerEx = outputType.arrayElementsPerExample();
+        int numParams = initializer().numParams(this);
+        int updaterStateSize = (int)getIUpdater().stateSize(numParams);
+
+        int trainSize = 0;
+        if(getDropOut() > 0){
+            if(false) {
+                //TODO drop connect
+                //Dup the weights... note that this does NOT depend on the minibatch size...
+            } else {
+                //Assume we dup the input
+                trainSize += inputType.arrayElementsPerExample();
+            }
+        }
+
+        //Also, during backprop: we do a preOut call -> gives us activations size equal to the output size
+        // which is modified in-place by loss function
+        trainSize += actElementsPerEx;
+
+        //Dense layer does not use caching
+        Map<CacheMode,Integer> trainMode = new HashMap<>();
+        for(CacheMode cm : CacheMode.values()){
+            trainMode.put(cm, trainSize);
+        }
+
+        return LayerMemoryReport.builder()
+                .layerName(layerName)
+                .layerType(getClass())
+                .inputType(inputType)
+                .outputType(outputType)
+                .parameterSize(numParams)
+                .activationSizePerEx(actElementsPerEx)
+                .updaterStateSize(updaterStateSize)
+                .inferenceWorkingSizePerEx(0)               //No additional working memory for forward pass
+                .trainingWorkingSizePerEx(trainMode)
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching in DenseLayer
+                .build();
     }
 
 

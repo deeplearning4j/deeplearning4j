@@ -1,8 +1,11 @@
 package org.deeplearning4j.nn.conf.memory;
 
 import lombok.Builder;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+
+import java.util.Map;
 
 /**
  * Created by Alex on 13/07/2017.
@@ -16,12 +19,18 @@ public class LayerMemoryReport extends MemoryReport {
     private final int parameterSize;
     private final int activationSizePerEx;
     private final int updaterStateSize;
-    private final int fwdPassWorkingSize;
-    private final int backwardPassWorkingSize;
+    //Assume no cache is used for inference
+    private final int inferenceWorkingSizePerEx;
+    //Train working memory (ex. activations, etc) that is either GC'd or in workspace
+    private final Map<CacheMode,Integer> trainingWorkingSizePerEx;
+    //Train working memory (ex. activations, etc) that is cached, hence cannot be GC'd or reused via workspace
+    //Note that this is in ADDITION to the non-cached memory
+    private final Map<CacheMode,Integer> trainingWorkingSizeCachedPerEx;
 
     @Builder
     public LayerMemoryReport(String layerName, Class<?> layerType, InputType inputType, InputType outputType, int parameterSize,
-                             int activationSizePerEx, int updaterStateSize, int fwdPassWorkingSize, int backwardPassWorkingSize){
+                             int activationSizePerEx, int updaterStateSize, int inferenceWorkingSizePerEx,
+                             Map<CacheMode,Integer> trainingWorkingSizePerEx, Map<CacheMode, Integer> trainingWorkingSizeCachedPerEx){
         this.layerName = layerName;
         this.layerType = layerType;
         this.inputType = inputType;
@@ -29,8 +38,9 @@ public class LayerMemoryReport extends MemoryReport {
         this.parameterSize = parameterSize;
         this.activationSizePerEx = activationSizePerEx;
         this.updaterStateSize = updaterStateSize;
-        this.fwdPassWorkingSize = fwdPassWorkingSize;
-        this.backwardPassWorkingSize = backwardPassWorkingSize;
+        this.inferenceWorkingSizePerEx = inferenceWorkingSizePerEx;
+        this.trainingWorkingSizePerEx = trainingWorkingSizePerEx;
+        this.trainingWorkingSizeCachedPerEx = trainingWorkingSizeCachedPerEx;
     }
 
     @Override
@@ -44,7 +54,7 @@ public class LayerMemoryReport extends MemoryReport {
     }
 
     @Override
-    public long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode, DataBuffer.Type dataType) {
+    public long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode, CacheMode cacheMode, DataBuffer.Type dataType) {
         int bytesPerElement = getBytesPerElement(dataType);
         switch (memoryType){
             case PARAMETERS:
@@ -66,10 +76,11 @@ public class LayerMemoryReport extends MemoryReport {
                     return 0;
                 }
                 return updaterStateSize * bytesPerElement;
-            case FORWARD_PASS_WORKING_MEM:
-                return fwdPassWorkingSize * bytesPerElement;
-            case BACKWARD_PASS_WORKING_MEM:
-                return backwardPassWorkingSize * bytesPerElement;
+            case INFERENCE_WORKING_MEM:
+                return minibatchSize * inferenceWorkingSizePerEx * bytesPerElement;
+            case TRAINING_WORKING_MEM:
+                int totalPerEx = trainingWorkingSizePerEx.get(cacheMode) + trainingWorkingSizeCachedPerEx.get(cacheMode);
+                return minibatchSize * totalPerEx * bytesPerElement;
             default:
                 throw new IllegalStateException("Unknown memory type: " + memoryType);
         }

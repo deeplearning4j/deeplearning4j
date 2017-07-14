@@ -212,7 +212,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
                 Transforms.pow(abs, pnorm, false);
                 INDArray pNorm = abs.sum(poolDim);
 
-                return Transforms.pow(pNorm, 1.0 / pnorm);
+                return Transforms.pow(pNorm, 1.0 / pnorm, false);
             default:
                 throw new RuntimeException("Unknown or not supported pooling type: " + poolingType + " " + layerId());
         }

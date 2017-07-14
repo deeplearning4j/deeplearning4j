@@ -22,15 +22,18 @@ import lombok.*;
 import org.deeplearning4j.exception.DL4JInvalidConfigException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.LayerValidation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**Dense layer: fully connected feed forward layer trainable by backprop.
@@ -74,8 +77,27 @@ public class DenseLayer extends FeedForwardLayer {
         int numParams = initializer().numParams(this);
         int updaterStateSize = (int)getIUpdater().stateSize(numParams);
 
-        int fwdPassWorkingSize = -1;        //TODO
-        int backwardPassWorkingSize = -1;   //TODO
+        int trainSize = 0;
+        if(getDropOut() > 0){
+            if(false) {
+                //TODO drop connect
+                //Dup the weights... note that this does NOT depend on the minibatch size...
+            } else {
+                //Assume we dup the input
+                trainSize += inputType.arrayElementsPerExample();
+            }
+        }
+
+        //Also, during backprop: we do a preOut call -> gives us activations size equal to the output size
+        // which is modified in-place by activation function backprop
+        // then we have 'epsilonNext' which is equivalent to input size
+        trainSize += actElementsPerEx;
+
+        //Dense layer does not use caching
+        Map<CacheMode,Integer> trainMode = new HashMap<>();
+        for(CacheMode cm : CacheMode.values()){
+            trainMode.put(cm, trainSize);
+        }
 
         return LayerMemoryReport.builder()
                 .layerName(layerName)
@@ -83,10 +105,11 @@ public class DenseLayer extends FeedForwardLayer {
                 .inputType(inputType)
                 .outputType(outputType)
                 .parameterSize(numParams)
-                .activationSizePerEx(actElementsPerEx)      //Assume we duplicate before applying dropout
+                .activationSizePerEx(actElementsPerEx)
                 .updaterStateSize(updaterStateSize)
-                .fwdPassWorkingSize(fwdPassWorkingSize)
-                .backwardPassWorkingSize(backwardPassWorkingSize)
+                .inferenceWorkingSizePerEx(0)               //No additional working memory for forward pass
+                .trainingWorkingSizePerEx(trainMode)
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching in DenseLayer
                 .build();
     }
 

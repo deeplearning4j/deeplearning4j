@@ -8,6 +8,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -129,8 +130,10 @@ public class ZeroPaddingLayer extends Layer {
                 .parameterSize(0)
                 .activationSizePerEx(actElementsPerEx)      //Assume we duplicate before applying dropout
                 .updaterStateSize(0)
-                .fwdPassWorkingSize(0)
-                .backwardPassWorkingSize(0)
+                //No extra memory in addition to activations
+                .inferenceWorkingSizePerEx(0)
+                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
                 .build();
     }
 

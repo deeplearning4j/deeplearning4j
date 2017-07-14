@@ -2,16 +2,20 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -154,6 +158,45 @@ public class SubsamplingLayer extends Layer {
     @Override
     public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("SubsamplingLayer does not contain parameters");
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional)getOutputType(-1, inputType);
+        int actElementsPerEx = outputType.arrayElementsPerExample();
+
+        //TODO Subsampling helper memory use... (CuDNN etc)
+
+        //During forward pass: im2col array + reduce
+        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+
+        int im2colSizePerEx = c.getDepth() * outputType.getHeight() * outputType.getWidth() * kernelSize[0] * kernelSize[1];
+
+        //Current implementation does NOT cache im2col etc...
+        Map<CacheMode,Integer> trainWorkingMemory = new HashMap<>();
+        int trainingWorkingSize = im2colSizePerEx;
+        if(getDropOut() > 0){
+            //Dup on the input before dropout, but only for training
+            trainingWorkingSize += inputType.arrayElementsPerExample();
+        }
+        for(CacheMode cm : CacheMode.values()){
+            trainWorkingMemory.put(cm, trainingWorkingSize);
+        }
+
+
+        return LayerMemoryReport.builder()
+                .layerName(layerName)
+                .layerType(SubsamplingLayer.class)
+                .inputType(inputType)
+                .outputType(outputType)
+                .parameterSize(0)
+                .activationSizePerEx(actElementsPerEx)
+                .updaterStateSize(0)
+                .inferenceWorkingSizePerEx(im2colSizePerEx)                     //Only fwd pass working array: im2col
+                .trainingWorkingSizePerEx(trainWorkingMemory)
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)  //No cached data in current impl.
+                .build();
+
     }
 
     public int getPnorm() {

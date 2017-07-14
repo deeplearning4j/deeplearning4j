@@ -101,8 +101,10 @@ public class DropoutLayer extends FeedForwardLayer {
                 .parameterSize(0)
                 .activationSizePerEx(actElementsPerEx)      //Assume we duplicate before applying dropout
                 .updaterStateSize(0)
-                .fwdPassWorkingSize(0)
-                .backwardPassWorkingSize(0)
+                //No extra memory in addition to activations
+                .inferenceWorkingSizePerEx(0)
+                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
                 .build();
     }
 

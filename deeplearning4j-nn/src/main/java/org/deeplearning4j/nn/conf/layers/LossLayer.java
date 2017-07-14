@@ -7,12 +7,16 @@ import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.lossfunctions.impl.LossL2;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 
 import java.util.Collection;
@@ -52,6 +56,30 @@ public class LossLayer extends FeedForwardLayer {
     @Override
     public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("LossLayer does not contain parameters");
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+
+        InputType outputType = getOutputType(-1, inputType);
+
+        int actElementsPerEx = outputType.arrayElementsPerExample();
+
+        return LayerMemoryReport.builder()
+                .layerName(layerName)
+                .layerType(LossLayer.class)
+                .inputType(inputType)
+                .outputType(outputType)
+                .parameterSize(0)
+                .activationSizePerEx(actElementsPerEx)      //Assume we duplicate before applying dropout
+                .updaterStateSize(0)
+                //TODO working memory in loss functions...
+                //OTher than loss function working memory: No extra memory in addition to activations
+                .inferenceWorkingSizePerEx(0)
+                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+                .build();
+
     }
 
     @Override
