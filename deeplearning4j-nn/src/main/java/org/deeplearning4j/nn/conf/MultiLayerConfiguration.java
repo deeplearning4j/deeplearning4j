@@ -24,6 +24,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -39,10 +40,7 @@ import org.nd4j.shade.jackson.databind.node.ArrayNode;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Configuration for a multi layer network
@@ -310,7 +308,28 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     public NetworkMemoryReport getMemoryReport(InputType inputType){
 
-        throw new UnsupportedOperationException("Not yet implemented");
+        Map<String,LayerMemoryReport> memoryReportMap = new LinkedHashMap<>();
+        int nLayers = confs.size();
+        for( int i=0; i<nLayers; i++ ){
+            String layerName = confs.get(i).getLayer().getLayerName();
+            if(layerName == null){
+                layerName = String.valueOf(i);
+            }
+
+            //Pass input type through preprocessor, if necessary
+            InputPreProcessor preproc = getInputPreProcess(0);
+            //TODO memory requirements for preprocessor
+            if(preproc != null){
+                inputType = preproc.getOutputType(inputType);
+            }
+
+            LayerMemoryReport report = confs.get(i).getLayer().getMemoryReport(inputType);
+            memoryReportMap.put(layerName, report);
+
+            inputType = confs.get(i).getLayer().getOutputType(i, inputType);
+        }
+
+        return new NetworkMemoryReport(memoryReportMap, MultiLayerConfiguration.class, "MultiLayerNetwork");
     }
 
     @Data

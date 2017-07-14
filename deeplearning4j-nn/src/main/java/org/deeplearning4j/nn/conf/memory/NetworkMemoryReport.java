@@ -12,12 +12,12 @@ import java.util.Map;
 
 public class NetworkMemoryReport extends MemoryReport {
 
-    private final Map<String,LayerMemoryReport> layerAndVertexReports;
-    private final Class<? extends Model> modelClass;
+    private final Map<String,MemoryReport> layerAndVertexReports;
+    private final Class<?> modelClass;
     private final String modelName;
 
-    public NetworkMemoryReport(@NonNull Map<String,LayerMemoryReport> layerAndVertexReports,
-                               @NonNull Class<? extends Model> modelClass,
+    public NetworkMemoryReport(@NonNull Map<String,MemoryReport> layerAndVertexReports,
+                               @NonNull Class<?> modelClass,
                                String modelName){
         this.layerAndVertexReports = layerAndVertexReports;
         this.modelClass = modelClass;
@@ -38,7 +38,7 @@ public class NetworkMemoryReport extends MemoryReport {
     @Override
     public long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode, DataBuffer.Type dataType) {
         long totalBytes = 0;
-        for(LayerMemoryReport lmr : layerAndVertexReports.values()){
+        for(MemoryReport lmr : layerAndVertexReports.values()){
 
             totalBytes += lmr.getMemoryBytes(memoryType, minibatchSize, memoryUseMode, dataType);
         }

@@ -98,6 +98,6 @@ public abstract class GraphVertex implements Cloneable, Serializable {
      */
     public abstract InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException;
 
-    public abstract MemoryReport getMemoryReport(InputType inputType);
+    public abstract MemoryReport getMemoryReport(InputType... inputTypes);
 
 }
