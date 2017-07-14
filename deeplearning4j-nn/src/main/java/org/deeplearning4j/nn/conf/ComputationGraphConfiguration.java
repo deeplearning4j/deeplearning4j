@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.graph.MergeVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.BasePretrainNetwork;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
@@ -171,7 +172,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             if (lv.getLayerConf() != null && lv.getLayerConf().getLayer() != null) {
                 Layer layer = lv.getLayerConf().getLayer();
 
-                if (layer.getActivationFn() == null) {
+                if (layer instanceof BaseLayer && ((BaseLayer) layer).getActivationFn() == null) {
                     String layerName = layer.getLayerName();
 
                     try {
@@ -197,7 +198,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
 
                         if (activationFunction != null) {
                             IActivation ia = Activation.fromString(activationFunction.asText()).getActivationFunction();
-                            layer.setActivationFn(ia);
+                            ((BaseLayer) layer).setActivationFn(ia);
                         }
 
                     } catch (IOException e) {

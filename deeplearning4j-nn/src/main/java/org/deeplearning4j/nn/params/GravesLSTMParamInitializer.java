@@ -21,6 +21,7 @@ package org.deeplearning4j.nn.params;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.weights.WeightInitUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
@@ -51,8 +52,12 @@ public class GravesLSTMParamInitializer implements ParamInitializer {
 
     @Override
     public int numParams(NeuralNetConfiguration conf) {
-        org.deeplearning4j.nn.conf.layers.GravesLSTM layerConf =
-                        (org.deeplearning4j.nn.conf.layers.GravesLSTM) conf.getLayer();
+        return numParams(conf.getLayer());
+    }
+
+    @Override
+    public int numParams(Layer l) {
+        org.deeplearning4j.nn.conf.layers.GravesLSTM layerConf = (org.deeplearning4j.nn.conf.layers.GravesLSTM) l;
 
         int nL = layerConf.getNOut(); //i.e., n neurons in this layer
         int nLast = layerConf.getNIn(); //i.e., n neurons in previous layer

@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.params;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+import org.deeplearning4j.nn.conf.layers.Layer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
@@ -29,8 +30,12 @@ public class BatchNormalizationParamInitializer implements ParamInitializer {
 
     @Override
     public int numParams(NeuralNetConfiguration conf) {
-        BatchNormalization layer = (BatchNormalization) conf.getLayer();
+        return numParams(conf.getLayer());
+    }
 
+    @Override
+    public int numParams(Layer l) {
+        BatchNormalization layer = (BatchNormalization) l;
         //Parameters in batch norm:
         //gamma, beta, global mean estimate, global variance estimate
         // latter 2 are treated as parameters, which greatly simplifies spark training and model serialization

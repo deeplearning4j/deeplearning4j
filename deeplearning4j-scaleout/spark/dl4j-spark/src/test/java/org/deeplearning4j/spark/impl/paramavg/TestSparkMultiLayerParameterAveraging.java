@@ -40,6 +40,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
@@ -194,14 +195,14 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         MultiLayerNetwork netCopy = sparkNet.getNetwork().clone();
 
         netCopy.fit(data);
-        Updater expectedUpdater = netCopy.conf().getLayer().getUpdater();
-        double expectedLR = netCopy.conf().getLayer().getLearningRate();
-        double expectedMomentum = netCopy.conf().getLayer().getMomentum();
+        Updater expectedUpdater = ((BaseLayer) netCopy.conf().getLayer()).getUpdater();
+        double expectedLR = ((BaseLayer) netCopy.conf().getLayer()).getLearningRate();
+        double expectedMomentum = ((BaseLayer) netCopy.conf().getLayer()).getMomentum();
 
-        Updater actualUpdater = sparkNet.getNetwork().conf().getLayer().getUpdater();
+        Updater actualUpdater = ((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getUpdater();
         sparkNet.fit(sparkData);
-        double actualLR = sparkNet.getNetwork().conf().getLayer().getLearningRate();
-        double actualMomentum = sparkNet.getNetwork().conf().getLayer().getMomentum();
+        double actualLR = ((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getLearningRate();
+        double actualMomentum = ((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getMomentum();
 
         assertEquals(expectedUpdater, actualUpdater);
         assertEquals(expectedLR, actualLR, 0.01);

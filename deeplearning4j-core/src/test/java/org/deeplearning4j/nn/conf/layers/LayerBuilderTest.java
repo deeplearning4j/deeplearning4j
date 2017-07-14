@@ -193,12 +193,10 @@ public class LayerBuilderTest {
 
     @Test
     public void testActivationLayer() throws Exception {
-        ActivationLayer activationLayer = new ActivationLayer.Builder().nIn(numIn).nOut(numOut).activation(act).build();
+        ActivationLayer activationLayer = new ActivationLayer.Builder().activation(act).build();
 
         checkSerialization(activationLayer);
 
-        assertEquals(numIn, activationLayer.nIn);
-        assertEquals(numOut, activationLayer.nOut);
         assertEquals(act, activationLayer.activationFn);
     }
 

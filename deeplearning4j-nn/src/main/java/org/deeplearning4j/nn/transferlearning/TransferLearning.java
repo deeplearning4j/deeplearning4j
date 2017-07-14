@@ -282,8 +282,37 @@ public class TransferLearning {
             if (frozenTill != -1) {
                 org.deeplearning4j.nn.api.Layer[] layers = editedModel.getLayers();
                 for (int i = frozenTill; i >= 0; i--) {
-                    //unchecked?
+                    //Complication here: inner Layer (implementation) NeuralNetConfiguration.layer (config) should keep
+                    // the original layer config. While network NNC should have the frozen layer, for to/from JSON etc
+                    NeuralNetConfiguration origNNC = editedModel.getLayerWiseConfigurations().getConf(i);
+                    NeuralNetConfiguration layerNNC = origNNC.clone();
+                    editedModel.getLayerWiseConfigurations().getConf(i).resetVariables();
+                    layers[i].setConf(layerNNC);
                     layers[i] = new FrozenLayer(layers[i]);
+
+                    if (origNNC.getVariables() != null) {
+                        List<String> vars = origNNC.variables(true);
+                        origNNC.clearVariables();
+                        layerNNC.clearVariables();
+                        for (String s : vars) {
+                            origNNC.variables(false).add(s);
+                            origNNC.getL1ByParam().put(s, 0.0);
+                            origNNC.getL2ByParam().put(s, 0.0);
+                            origNNC.getLearningRateByParam().put(s, 0.0);
+
+                            layerNNC.variables(false).add(s);
+                            layerNNC.getL1ByParam().put(s, 0.0);
+                            layerNNC.getL2ByParam().put(s, 0.0);
+                            layerNNC.getLearningRateByParam().put(s, 0.0);
+                        }
+                    }
+
+
+
+                    Layer origLayerConf = editedModel.getLayerWiseConfigurations().getConf(i).getLayer();
+                    Layer newLayerConf = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(origLayerConf);
+                    newLayerConf.setLayerName(origLayerConf.getLayerName());
+                    editedModel.getLayerWiseConfigurations().getConf(i).setLayer(newLayerConf);
                 }
                 editedModel.setLayers(layers);
             }
@@ -352,9 +381,9 @@ public class TransferLearning {
 
             NeuralNetConfiguration layerConf = editedConfs.get(layerNum);
             Layer layerImpl = layerConf.getLayer(); //not a clone need to modify nOut in place
-            layerImpl.setWeightInit(schemedist.getLeft());
-            layerImpl.setDist(schemedist.getRight());
             FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
+            layerImplF.setWeightInit(schemedist.getLeft());
+            layerImplF.setDist(schemedist.getRight());
             layerImplF.setNOut(nOut);
             int numParams = layerImpl.initializer().numParams(layerConf);
             INDArray params = Nd4j.create(1, numParams);
@@ -364,9 +393,9 @@ public class TransferLearning {
             if (layerNum + 1 < editedConfs.size()) {
                 layerConf = editedConfs.get(layerNum + 1);
                 layerImpl = layerConf.getLayer(); //modify in place
-                layerImpl.setWeightInit(schemedistNext.getLeft());
-                layerImpl.setDist(schemedistNext.getRight());
                 layerImplF = (FeedForwardLayer) layerImpl;
+                layerImplF.setWeightInit(schemedistNext.getLeft());
+                layerImplF.setDist(schemedistNext.getRight());
                 layerImplF.setNIn(nOut);
                 numParams = layerImpl.initializer().numParams(layerConf);
                 if (numParams > 0) {
@@ -411,11 +440,6 @@ public class TransferLearning {
                 }
             }
 
-            //            return new MultiLayerConfiguration.Builder().backprop(backprop).inputPreProcessors(inputPreProcessors).
-            //                    pretrain(pretrain).backpropType(backpropType).tBPTTForwardLength(tbpttFwdLength)
-            //                    .tBPTTBackwardLength(tbpttBackLength)
-            //                    .setInputType(this.inputType)
-            //                    .confs(allConfs).build();
             MultiLayerConfiguration conf = new MultiLayerConfiguration.Builder().inputPreProcessors(inputPreProcessors)
                             .setInputType(this.inputType).confs(allConfs).build();
             if (finetuneConfiguration != null) {
@@ -552,10 +576,9 @@ public class TransferLearning {
                 NeuralNetConfiguration layerConf = origGraph.getLayer(layerName).conf();
                 Layer layerImpl = layerConf.getLayer().clone();
                 layerImpl.resetLayerDefaultConfig();
-
-                layerImpl.setWeightInit(scheme);
-                layerImpl.setDist(dist);
                 FeedForwardLayer layerImplF = (FeedForwardLayer) layerImpl;
+                layerImplF.setWeightInit(scheme);
+                layerImplF.setDist(dist);
                 layerImplF.setNOut(nOut);
 
                 editedConfigBuilder.removeVertex(layerName, false);
@@ -583,10 +606,9 @@ public class TransferLearning {
                     }
                     layerConf = origGraph.getLayer(fanoutVertexName).conf();
                     layerImpl = layerConf.getLayer().clone();
-
-                    layerImpl.setWeightInit(schemeNext);
-                    layerImpl.setDist(distNext);
                     layerImplF = (FeedForwardLayer) layerImpl;
+                    layerImplF.setWeightInit(schemeNext);
+                    layerImplF.setDist(distNext);
                     layerImplF.setNIn(nOut);
 
                     editedConfigBuilder.removeVertex(fanoutVertexName, false);
@@ -775,9 +797,31 @@ public class TransferLearning {
                     org.deeplearning4j.nn.graph.vertex.GraphVertex gv = vertices[topologicalOrder[i]];
                     if (allFrozen.contains(gv.getVertexName())) {
                         if (gv.hasLayer()) {
-                            //Need to freeze this layer
+                            //Need to freeze this layer - both the layer implementation, and the layer configuration
                             org.deeplearning4j.nn.api.Layer l = gv.getLayer();
                             gv.setLayerAsFrozen();
+
+                            String layerName = gv.getVertexName();
+                            LayerVertex currLayerVertex = (LayerVertex) newConfig.getVertices().get(layerName);
+                            Layer origLayerConf = currLayerVertex.getLayerConf().getLayer();
+                            Layer newLayerConf = new org.deeplearning4j.nn.conf.layers.misc.FrozenLayer(origLayerConf);
+                            newLayerConf.setLayerName(origLayerConf.getLayerName());
+                            //Complication here(and reason for clone on next line): inner Layer (implementation)
+                            // NeuralNetConfiguration.layer (config) should keep the original layer config. While network
+                            // NNC should have the frozen layer
+                            NeuralNetConfiguration newNNC = currLayerVertex.getLayerConf().clone();
+                            currLayerVertex.setLayerConf(newNNC);
+                            currLayerVertex.getLayerConf().setLayer(newLayerConf);
+
+                            //Make sure the underlying layer doesn't change:
+                            List<String> vars = currLayerVertex.getLayerConf().variables(true);
+                            currLayerVertex.getLayerConf().clearVariables();
+                            for (String s : vars) {
+                                newNNC.variables(false).add(s);
+                                newNNC.getL1ByParam().put(s, 0.0);
+                                newNNC.getL2ByParam().put(s, 0.0);
+                                newNNC.getLearningRateByParam().put(s, 0.0);
+                            }
 
                             //We also need to place the layer in the CompGraph Layer[] (replacing the old one)
                             //This could no doubt be done more efficiently

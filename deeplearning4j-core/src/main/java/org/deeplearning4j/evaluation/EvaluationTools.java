@@ -57,8 +57,8 @@ public class EvaluationTools {
     private static final StyleDiv OUTER_DIV_STYLE = new StyleDiv.Builder().width(2 * CHART_WIDTH_PX, LengthUnit.Px)
                     .height(CHART_HEIGHT_PX, LengthUnit.Px).build();
 
-    private static final StyleDiv OUTER_DIV_STYLE_WIDTH_ONLY = new StyleDiv.Builder().width(2 * CHART_WIDTH_PX, LengthUnit.Px)
-            .build();
+    private static final StyleDiv OUTER_DIV_STYLE_WIDTH_ONLY =
+                    new StyleDiv.Builder().width(2 * CHART_WIDTH_PX, LengthUnit.Px).build();
 
     private static final StyleDiv INNER_DIV_STYLE = new StyleDiv.Builder().width(CHART_WIDTH_PX, LengthUnit.Px)
                     .floatValue(StyleDiv.FloatValue.left).build();
@@ -76,9 +76,8 @@ public class EvaluationTools {
                                     .backgroundColor(Color.LIGHT_GRAY).margin(LengthUnit.Px, 5, 5, 200, 10)
                                     .floatValue(StyleDiv.FloatValue.left).build();
 
-    private static final StyleDiv HEADER_DIV_STYLE_1400 =
-            new StyleDiv.Builder().width(1400 - 150, LengthUnit.Px).height(30, LengthUnit.Px)
-                    .backgroundColor(Color.LIGHT_GRAY).margin(LengthUnit.Px, 5, 5, 200, 10)
+    private static final StyleDiv HEADER_DIV_STYLE_1400 = new StyleDiv.Builder().width(1400 - 150, LengthUnit.Px)
+                    .height(30, LengthUnit.Px).backgroundColor(Color.LIGHT_GRAY).margin(LengthUnit.Px, 5, 5, 200, 10)
                     .floatValue(StyleDiv.FloatValue.left).build();
 
     private static final StyleDiv HEADER_DIV_PAD_STYLE = new StyleDiv.Builder().width(2 * CHART_WIDTH_PX, LengthUnit.Px)
@@ -188,20 +187,22 @@ public class EvaluationTools {
         FileUtils.writeStringToFile(file, asHtml);
     }
 
-    public static String evaluationCalibrationToHtml(EvaluationCalibration ec){
+    public static String evaluationCalibrationToHtml(EvaluationCalibration ec) {
 
         List<Component> components = new ArrayList<>();
         int nClasses = ec.numClasses();
 
         //Distribution of class labels + distribution of predicted classes
         Component headerDiv = new ComponentDiv(HEADER_DIV_STYLE_1400,
-                new ComponentText("Labels and Network Prediction Class Distributions (X: Class Index. Y: Count)", HEADER_TEXT_STYLE));
+                        new ComponentText(
+                                        "Labels and Network Prediction Class Distributions (X: Class Index. Y: Count)",
+                                        HEADER_TEXT_STYLE));
         components.add(headerDiv);
         int[] labelCounts = ec.getLabelCountsEachClass();
         int[] predictedCounts = ec.getPredictionCountsEachClass();
         ChartHistogram.Builder chbLabels = new ChartHistogram.Builder("Label Class Distribution", CHART_STYLE);
         ChartHistogram.Builder chbPredictions = new ChartHistogram.Builder("Predicted Class Distribution", CHART_STYLE);
-        for( int i=0; i<nClasses; i++ ){
+        for (int i = 0; i < nClasses; i++) {
             double lower = i - 0.5;
             double upper = i + 0.5;
             chbLabels.addBin(lower, upper, labelCounts[i]);
@@ -213,36 +214,34 @@ public class EvaluationTools {
         components.add(new ComponentDiv(OUTER_DIV_STYLE_WIDTH_ONLY, chL, chP));
 
         //Reliability diagram, for each class
-        headerDiv = new ComponentDiv(HEADER_DIV_STYLE_1400,
-                new ComponentText("Reliability Diagrams (X: Mean Predicted Value. Y: Fraction Positives)", HEADER_TEXT_STYLE));
+        headerDiv = new ComponentDiv(HEADER_DIV_STYLE_1400, new ComponentText(
+                        "Reliability Diagrams (X: Mean Predicted Value. Y: Fraction Positives)", HEADER_TEXT_STYLE));
         components.add(headerDiv);
         List<Component> sectionDiv = new ArrayList<>();
-        double[] zeroOne = new double[]{0.0, 1.0};
-        for( int i=0; i<nClasses; i++ ){
+        double[] zeroOne = new double[] {0.0, 1.0};
+        for (int i = 0; i < nClasses; i++) {
             ReliabilityDiagram rd = ec.getReliabilityDiagram(i);
 
             double[] x = rd.getMeanPredictedValueX();
             double[] y = rd.getFractionPositivesY();
             String title = rd.getTitle();
 
-            ChartLine cl = new ChartLine.Builder(title, CHART_STYLE)
-                    .addSeries("Classifier", x, y)
-                    .addSeries("Ideal Classifier", zeroOne, zeroOne)
-                    .build();
+            ChartLine cl = new ChartLine.Builder(title, CHART_STYLE).addSeries("Classifier", x, y)
+                            .addSeries("Ideal Classifier", zeroOne, zeroOne).build();
 
             sectionDiv.add(cl);
         }
         components.add(new ComponentDiv(OUTER_DIV_STYLE_WIDTH_ONLY, sectionDiv));
 
         //Residual plots
-        headerDiv = new ComponentDiv(HEADER_DIV_STYLE_1400,
-                new ComponentText("Network Predictions - Residual Plots - |Label(i) - P(class(i))|", HEADER_TEXT_STYLE));
+        headerDiv = new ComponentDiv(HEADER_DIV_STYLE_1400, new ComponentText(
+                        "Network Predictions - Residual Plots - |Label(i) - P(class(i))|", HEADER_TEXT_STYLE));
         components.add(headerDiv);
 
         sectionDiv = new ArrayList<>();
         Histogram resPlotAll = ec.getResidualPlotAllClasses();
         sectionDiv.add(getHistogram(resPlotAll));
-        for( int i=0; i<nClasses; i++ ){
+        for (int i = 0; i < nClasses; i++) {
             Histogram resPlotCurrent = ec.getResidualPlot(i);
             sectionDiv.add(getHistogram(resPlotCurrent));
         }
@@ -250,14 +249,14 @@ public class EvaluationTools {
 
 
         //Histogram of probabilities, overall and for each class
-        headerDiv = new ComponentDiv(HEADER_DIV_STYLE_1400,
-                new ComponentText("Network Prediction Probabilities (X: P(class). Y: Count)", HEADER_TEXT_STYLE));
+        headerDiv = new ComponentDiv(HEADER_DIV_STYLE_1400, new ComponentText(
+                        "Network Prediction Probabilities (X: P(class). Y: Count)", HEADER_TEXT_STYLE));
         components.add(headerDiv);
         sectionDiv = new ArrayList<>();
         Histogram allProbs = ec.getProbabilityHistogramAllClasses();
         sectionDiv.add(getHistogram(allProbs));
 
-        for( int i=0; i<nClasses; i++ ){
+        for (int i = 0; i < nClasses; i++) {
             Histogram classProbs = ec.getProbabilityHistogram(i);
             sectionDiv.add(getHistogram(classProbs));
         }
@@ -316,12 +315,12 @@ public class EvaluationTools {
                         .addSeries("Recall", thresholdX, recallY).showLegend(true).build();
     }
 
-    private static Component getHistogram(Histogram histogram){
+    private static Component getHistogram(Histogram histogram) {
         ChartHistogram.Builder chb = new ChartHistogram.Builder(histogram.getTitle(), CHART_STYLE);
         double[] lower = histogram.getBinLowerBounds();
         double[] upper = histogram.getBinUpperBounds();
         int[] counts = histogram.getBinCounts();
-        for( int i=0; i<counts.length; i++ ){
+        for (int i = 0; i < counts.length; i++) {
             chb.addBin(lower[i], upper[i], counts[i]);
         }
 

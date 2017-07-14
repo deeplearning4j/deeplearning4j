@@ -44,14 +44,14 @@ public class VPTreeFillSearch {
         //fill till there is k results
         //by going down the list
         //   if(results.size() < k) {
-        INDArray distancesArr = Nd4j.create(vpTree.getItems().rows(),1);
-        vpTree.calcDistancesRelativeTo(target,distancesArr);
-        INDArray[] sortWithIndices = Nd4j.sortWithIndices(distancesArr,0,!vpTree.isInvert());
+        INDArray distancesArr = Nd4j.create(vpTree.getItems().rows(), 1);
+        vpTree.calcDistancesRelativeTo(target, distancesArr);
+        INDArray[] sortWithIndices = Nd4j.sortWithIndices(distancesArr, 0, !vpTree.isInvert());
         results.clear();
         distances.clear();
-        for(int i = 0; i < k; i++) {
+        for (int i = 0; i < k; i++) {
             int idx = sortWithIndices[0].getInt(i);
-            results.add(new DataPoint(idx,vpTree.getItems().getRow(idx)));
+            results.add(new DataPoint(idx, vpTree.getItems().getRow(idx)));
             distances.add(sortWithIndices[1].getDouble(idx));
         }
         //  }

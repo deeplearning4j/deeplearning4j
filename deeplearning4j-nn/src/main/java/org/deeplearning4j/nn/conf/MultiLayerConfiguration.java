@@ -24,7 +24,6 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.factory.Nd4j;
@@ -226,7 +225,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
             //Also, pre 0.7.2: activation functions were Strings ("activationFunction" field), not classes ("activationFn")
             //Try to load the old format if necessary, and create the appropriate IActivation instance
-            if (l.getActivationFn() == null) {
+            if ((l instanceof BaseLayer) && ((BaseLayer) l).getActivationFn() == null) {
                 try {
                     JsonNode jsonNode = mapper.readTree(json);
                     if (confs == null) {
@@ -248,7 +247,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
                         if (activationFunction != null) {
                             IActivation ia = Activation.fromString(activationFunction.asText()).getActivationFunction();
-                            l.setActivationFn(ia);
+                            ((BaseLayer) l).setActivationFn(ia);
                         }
                     }
 
@@ -320,8 +319,6 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         protected int tbpttFwdLength = 20;
         protected int tbpttBackLength = 20;
         protected InputType inputType;
-        @Deprecated
-        protected int[] cnnInputSize;
 
         protected WorkspaceMode trainingWorkspaceMode = WorkspaceMode.NONE;
         protected WorkspaceMode inferenceWorkspaceMode = WorkspaceMode.SEPARATE;
@@ -446,48 +443,13 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             return this;
         }
 
-        /** Size of input for CNNs. Should only be used when convolutional layers are present.
-         * This information (input size) is necessary in order to:<br>
-         * (a) automatically add layer preprocessors, which allow CNN and dense/output layers to be used together
-         * (as well as CNN/RNN layers) <br>
-         * (b) automatically calculate input/output sizes; for example, input size for a dense layer, in a
-         *     Convolutional->DenseLayer or Convolutional->OutputLayer configuratio
-         * @param height Input image height
-         * @param width Input image width
-         * @param depth Input image depth / number of channels (for example: 3 for color, 1 for grayscale etc)
-         * @deprecated use {@link #setInputType(InputType)} with {@code InputType.convolutional(height,width,depth)}, for CNN data with
-         * shape [minibatchSize,depth,height,width]. For image data that has been flattened into a row vector per example
-         * (shape [minibatchSize,depth*height*width]) instead use {@code InputType.convolutionalFlat(height,width,depth)}
-         */
-        @Deprecated
-        public Builder cnnInputSize(int height, int width, int depth) {
-            this.cnnInputSize = new int[] {height, width, depth};
-            return this;
-        }
-
-        /** CNN input size, in order of {height,width,depth}.
-         * @see #cnnInputSize(int, int, int)
-         * @deprecated use {@link #setInputType(InputType)} with {@code InputType.convolutional(height,width,depth)}, for CNN data with
-         * shape [minibatchSize,depth,height,width]. For image data that has been flattened into a row vector per example
-         * (shape [minibatchSize,depth*height*width]) instead use {@code InputType.convolutionalFlat(height,width,depth)}
-         */
-        @Deprecated
-        public Builder cnnInputSize(int[] cnnInputSize) {
-            if (cnnInputSize != null) {
-                this.cnnInputSize = cnnInputSize;
-            }
-            return this;
-        }
-
         public Builder setInputType(InputType inputType) {
             this.inputType = inputType;
             return this;
         }
 
         public MultiLayerConfiguration build() {
-            if (cnnInputSize != null) {
-                new ConvolutionLayerSetup(this, cnnInputSize[0], cnnInputSize[1], cnnInputSize[2]);
-            } else if (inputType == null && inputPreProcessors.get(0) == null) {
+            if (inputType == null && inputPreProcessors.get(0) == null) {
                 //User hasn't set the InputType. Sometimes we can infer it...
                 // For example, Dense/RNN layers, where preprocessor isn't set -> user is *probably* going to feed in
                 // standard feedforward or RNN data
@@ -516,8 +478,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
             // Builder.inputType field can be set in 1 of 4 ways:
             // 1. User calls setInputType directly
             // 2. Via ConvolutionLayerSetup -> internally calls setInputType(InputType.convolutional(...))
-            // 3. User calls one of  the two cnnInputSize methods -> sets inputType field directly
-            // 4. Via the above code: i.e., assume input is as expected  by the RNN or dense layer -> sets the inputType field
+            // 3. Via the above code: i.e., assume input is as expected  by the RNN or dense layer -> sets the inputType field
             if (inputType != null) {
                 InputType currentInputType = inputType;
                 for (int i = 0; i < confs.size(); i++) {

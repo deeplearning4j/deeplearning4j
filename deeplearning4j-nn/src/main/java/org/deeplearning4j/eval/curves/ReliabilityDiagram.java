@@ -16,8 +16,8 @@ public class ReliabilityDiagram extends BaseCurve {
 
 
     public ReliabilityDiagram(@JsonProperty("title") String title,
-                              @NonNull @JsonProperty("meanPredictedValueX") double[] meanPredictedValueX,
-                              @NonNull @JsonProperty("fractionPositivesY") double[] fractionPositivesY ){
+                    @NonNull @JsonProperty("meanPredictedValueX") double[] meanPredictedValueX,
+                    @NonNull @JsonProperty("fractionPositivesY") double[] fractionPositivesY) {
         this.title = title;
         this.meanPredictedValueX = meanPredictedValueX;
         this.fractionPositivesY = fractionPositivesY;
@@ -40,7 +40,7 @@ public class ReliabilityDiagram extends BaseCurve {
 
     @Override
     public String getTitle() {
-        if(title == null){
+        if (title == null) {
             return "Reliability Diagram";
         }
         return title;

@@ -16,6 +16,7 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -361,9 +362,9 @@ public class TestEarlyStopping {
         assertEquals(net.getnLayers(), mln.getnLayers());
         assertEquals(net.conf().getNumIterations(), mln.conf().getNumIterations());
         assertEquals(net.conf().getOptimizationAlgo(), mln.conf().getOptimizationAlgo());
-        assertEquals(net.conf().getLayer().getActivationFn().toString(),
-                        mln.conf().getLayer().getActivationFn().toString());
-        assertEquals(net.conf().getLayer().getUpdater(), mln.conf().getLayer().getUpdater());
+        BaseLayer bl = (BaseLayer) net.conf().getLayer();
+        assertEquals(bl.getActivationFn().toString(), ((BaseLayer) mln.conf().getLayer()).getActivationFn().toString());
+        assertEquals(bl.getUpdater(), ((BaseLayer) mln.conf().getLayer()).getUpdater());
     }
 
     @Test

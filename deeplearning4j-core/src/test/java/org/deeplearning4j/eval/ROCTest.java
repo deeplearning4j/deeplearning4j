@@ -186,12 +186,12 @@ public class ROCTest {
         expFPR.put(0.9, 0.0 / totalNegatives);
         expFPR.put(1.0, 0.0 / totalNegatives);
 
-        int[] expTPs = new int[]{2,2,2,2,2,2,1,1,1,0,0};
-        int[] expFPs = new int[]{3,3,2,1,1,1,1,0,0,0,0};
+        int[] expTPs = new int[] {2, 2, 2, 2, 2, 2, 1, 1, 1, 0, 0};
+        int[] expFPs = new int[] {3, 3, 2, 1, 1, 1, 1, 0, 0, 0, 0};
         int[] expFNs = new int[11];
         int[] expTNs = new int[11];
-        for( int i=0; i<11; i++ ){
-            expFNs[i] = (int)totalPositives - expTPs[i];
+        for (int i = 0; i < 11; i++) {
+            expFNs[i] = (int) totalPositives - expTPs[i];
             expTNs[i] = 5 - expTPs[i] - expFPs[i] - expFNs[i];
         }
 
@@ -224,7 +224,7 @@ public class ROCTest {
         assertEquals(expAUC, actAUC, 1e-6);
 
         PrecisionRecallCurve prc = roc.getPrecisionRecallCurve();
-        for( int i=0; i<11; i++ ){
+        for (int i = 0; i < 11; i++) {
             PrecisionRecallCurve.Confusion c = prc.getConfusionMatrixAtThreshold(i * 0.1);
             assertEquals(expTPs[i], c.getTpCount());
             assertEquals(expFPs[i], c.getFpCount());
@@ -569,8 +569,8 @@ public class ROCTest {
         //at threshold 0.331 to 0.66: tp=1, fp=0, fn=1, tn=1 prec=1/1=1, recall=1/2=0.5
         //at threshold 0.661 to 1.0:  tp=0, fp=0, fn=2, tn=1 prec=0/0=1, recall=0/2=0
 
-        for( int steps : new int[]{10, 0}) {    //0 steps = exact
-//        for (int steps : new int[] {0}) { //0 steps = exact
+        for (int steps : new int[] {10, 0}) { //0 steps = exact
+            //        for (int steps : new int[] {0}) { //0 steps = exact
             String msg = "Steps = " + steps;
             //area: 1.0
             ROC r = new ROC(steps);
@@ -728,8 +728,8 @@ public class ROCTest {
 
         //Check precision recall curve counts etc
         PrecisionRecallCurve prc = roc.getPrecisionRecallCurve();
-        for( int i=0; i<thr_skl.length; i++ ){
-            double threshold = thr_skl[i] - 1e-6;   //Subtract a bit, so we get the correct point (rounded up on the get op)
+        for (int i = 0; i < thr_skl.length; i++) {
+            double threshold = thr_skl[i] - 1e-6; //Subtract a bit, so we get the correct point (rounded up on the get op)
             threshold = Math.max(0.0, threshold);
             PrecisionRecallCurve.Confusion c = prc.getConfusionMatrixAtThreshold(threshold);
             int tp = c.getTpCount();
@@ -739,19 +739,19 @@ public class ROCTest {
 
             assertEquals(30, tp + fp + tn + fn);
 
-            double prec = tp / (double)(tp + fp);
-            double rec = tp / (double)(tp + fn);
+            double prec = tp / (double) (tp + fp);
+            double rec = tp / (double) (tp + fn);
             double fpr = fp / 19.0;
 
-            if(c.getPoint().getThreshold() == 0.0){
+            if (c.getPoint().getThreshold() == 0.0) {
                 rec = 1.0;
-                prec = 11.0 / 30;       //11 positives, 30 total
-            } else if(c.getPoint().getThreshold() == 1.0){
+                prec = 11.0 / 30; //11 positives, 30 total
+            } else if (c.getPoint().getThreshold() == 1.0) {
                 rec = 0.0;
                 prec = 1.0;
             }
 
-//            System.out.println(i + "\t" + threshold);
+            //            System.out.println(i + "\t" + threshold);
             assertEquals(tpr_skl[i], rec, 1e-6);
             assertEquals(fpr_skl[i], fpr, 1e-6);
 
@@ -784,12 +784,12 @@ public class ROCTest {
 
 
     @Test
-    public void testPrecisionRecallCurveGetPointMethods(){
+    public void testPrecisionRecallCurveGetPointMethods() {
         double[] threshold = new double[101];
         double[] precision = threshold;
         double[] recall = new double[101];
         int i = 0;
-        for( double d = 0; d<=1; d += 0.01){
+        for (double d = 0; d <= 1; d += 0.01) {
             threshold[i] = d;
             recall[i] = 1.0 - d;
             i++;
@@ -798,28 +798,63 @@ public class ROCTest {
 
         PrecisionRecallCurve prc = new PrecisionRecallCurve(threshold, precision, recall, null, null, null, -1);
 
-        PrecisionRecallCurve.Point[] points = new PrecisionRecallCurve.Point[]{
-                //Test exact:
-                prc.getPointAtThreshold(0.05),
-                prc.getPointAtPrecision(0.05),
-                prc.getPointAtRecall(1-0.05),
+        PrecisionRecallCurve.Point[] points = new PrecisionRecallCurve.Point[] {
+                        //Test exact:
+                        prc.getPointAtThreshold(0.05), prc.getPointAtPrecision(0.05), prc.getPointAtRecall(1 - 0.05),
 
-                //Test approximate (point doesn't exist exactly). When it doesn't exist:
-                //Threshold: lowest threshold equal to or exceeding the specified threshold value
-                //Precision: lowest threshold equal to or exceeding the specified precision value
-                //Recall: highest threshold equal to or exceeding the specified recall value
-                prc.getPointAtThreshold(0.0495),
-                prc.getPointAtPrecision(0.0495),
-                prc.getPointAtRecall(1-0.0505)
-        };
+                        //Test approximate (point doesn't exist exactly). When it doesn't exist:
+                        //Threshold: lowest threshold equal to or exceeding the specified threshold value
+                        //Precision: lowest threshold equal to or exceeding the specified precision value
+                        //Recall: highest threshold equal to or exceeding the specified recall value
+                        prc.getPointAtThreshold(0.0495), prc.getPointAtPrecision(0.0495),
+                        prc.getPointAtRecall(1 - 0.0505)};
 
 
 
-        for(PrecisionRecallCurve.Point p : points){
+        for (PrecisionRecallCurve.Point p : points) {
             assertEquals(5, p.getIdx());
             assertEquals(0.05, p.getThreshold(), 1e-6);
             assertEquals(0.05, p.getPrecision(), 1e-6);
-            assertEquals(1-0.05, p.getRecall(), 1e-6);
+            assertEquals(1 - 0.05, p.getRecall(), 1e-6);
         }
     }
+
+    @Test
+    public void testPrecisionRecallCurveConfusion() {
+        //Sanity check: values calculated from the confusion matrix should match the PR curve values
+
+        for (boolean removeRedundantPts : new boolean[] {true, false}) {
+            ROC r = new ROC(0, removeRedundantPts);
+
+            INDArray labels = Nd4j.getExecutioner()
+                            .exec(new BernoulliDistribution(Nd4j.createUninitialized(100, 1), 0.5));
+            INDArray probs = Nd4j.rand(100, 1);
+
+            r.eval(labels, probs);
+
+            PrecisionRecallCurve prc = r.getPrecisionRecallCurve();
+            int nPoints = prc.numPoints();
+
+            for (int i = 0; i < nPoints; i++) {
+                PrecisionRecallCurve.Confusion c = prc.getConfusionMatrixAtPoint(i);
+                PrecisionRecallCurve.Point p = c.getPoint();
+
+                int tp = c.getTpCount();
+                int fp = c.getFpCount();
+                int fn = c.getFnCount();
+
+                double prec = tp / (double) (tp + fp);
+                double rec = tp / (double) (tp + fn);
+
+                //Handle edge cases:
+                if (tp == 0 && fp == 0) {
+                    prec = 1.0;
+                }
+
+                assertEquals(p.getPrecision(), prec, 1e-8);
+                assertEquals(p.getRecall(), rec, 1e-8);
+            }
+        }
+    }
+
 }
