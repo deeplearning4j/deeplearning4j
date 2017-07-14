@@ -1116,8 +1116,7 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         if (dimensions.size() > 1 && arrays.size() != dimensions.size())
             throw new IllegalStateException("Number of dimensions do not match number of arrays to shuffle");
 
-        if (Nd4j.getExecutioner() instanceof GridExecutioner)
-            ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
+        Nd4j.getExecutioner().push();
 
         // first we build TAD for input array and dimensions
 
@@ -1526,5 +1525,76 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
         AtomicAllocator.getInstance().getFlowController().registerAction(context,null, result);
 
         return result;
+    }
+
+
+    @Override
+    public INDArray sort(INDArray x, boolean descending) {
+        // to be implemented
+
+        Nd4j.getExecutioner().push();
+
+        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(x);
+
+        PointerPointer extraz = new PointerPointer(AtomicAllocator.getInstance().getHostPointer(x.shapeInfoDataBuffer()), // not used
+                context.getOldStream(), AtomicAllocator.getInstance().getDeviceIdPointer());
+
+        if (x.data().dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.sortFloat(extraz,
+                    (FloatPointer) AtomicAllocator.getInstance().getPointer(x, context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(x.shapeInfoDataBuffer(), context),
+                    descending
+                    );
+        } else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
+
+        } else if (x.data().dataType() == DataBuffer.Type.HALF) {
+
+        } else {
+            throw new UnsupportedOperationException("Unknown dataType " + x.data().dataType());
+        }
+
+        AtomicAllocator.getInstance().getFlowController().registerAction(context, x);
+
+        return x;
+    }
+
+    @Override
+    public INDArray sort(INDArray x, boolean descending, int... dimension) {
+        Arrays.sort(dimension);
+
+        Nd4j.getExecutioner().push();
+
+        Pair<DataBuffer, DataBuffer> tadBuffers = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, dimension);
+
+        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(x);
+
+        PointerPointer extraz = new PointerPointer(AtomicAllocator.getInstance().getHostPointer(x.shapeInfoDataBuffer()), // not used
+                context.getOldStream(), AtomicAllocator.getInstance().getDeviceIdPointer());
+
+
+        Pointer dimensionPointer = AtomicAllocator.getInstance()
+                .getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context);
+
+        if (x.data().dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.sortTadFloat(extraz,
+                    (FloatPointer) AtomicAllocator.getInstance().getPointer(x, context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(x.shapeInfoDataBuffer(), context),
+                    (IntPointer) dimensionPointer,
+                    dimension.length,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context),
+                    descending
+            );
+        } else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
+
+        } else if (x.data().dataType() == DataBuffer.Type.HALF) {
+
+        } else {
+            throw new UnsupportedOperationException("Unknown dataType " + x.data().dataType());
+        }
+
+        AtomicAllocator.getInstance().getFlowController().registerAction(context, x);
+
+        return x;
     }
 }

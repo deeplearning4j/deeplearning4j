@@ -1222,4 +1222,28 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
         Pointer pointer = nativeOps.numpyFromFile(new BytePointer(directBuffer));
         return createFromNpyPointer(pointer);
     }
+
+
+    @Override
+    public INDArray sort(INDArray x, boolean descending) {
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sortFloat(null, (FloatPointer) x.data().addressPointer(), (IntPointer) x.shapeInfoDataBuffer().addressPointer(), descending);
+        return x;
+    }
+
+    @Override
+    public INDArray sort(INDArray x, boolean descending, int... dimension) {
+        Arrays.sort(dimension);
+        Pair<DataBuffer, DataBuffer> tadBuffers = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, dimension);
+
+        NativeOpsHolder.getInstance().getDeviceNativeOps().sortTadFloat(null,
+                (FloatPointer) x.data().addressPointer(),
+                (IntPointer) x.shapeInfoDataBuffer().addressPointer(),
+                new IntPointer(dimension),
+                dimension.length,
+                (IntPointer) tadBuffers.getFirst().addressPointer(),
+                (IntPointer) tadBuffers.getSecond().addressPointer(),
+                descending);
+
+        return x;
+    }
 }

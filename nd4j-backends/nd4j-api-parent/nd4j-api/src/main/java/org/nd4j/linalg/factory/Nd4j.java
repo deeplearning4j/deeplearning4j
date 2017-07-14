@@ -1682,6 +1682,11 @@ public class Nd4j {
         return ndarray;
     }
 
+
+    public static INDArray sort(INDArray ndarray, boolean ascending) {
+        return getNDArrayFactory().sort(ndarray, !ascending);
+    }
+
     /**
      * Sort an ndarray along a particular dimension
      *
@@ -1690,6 +1695,8 @@ public class Nd4j {
      * @return the sorted ndarray
      */
     public static INDArray sort(INDArray ndarray, int dimension, boolean ascending) {
+        return getNDArrayFactory().sort(ndarray, !ascending, dimension);
+        /*
         for (int i = 0; i < ndarray.vectorsAlongDimension(dimension); i++) {
             INDArray vec = ndarray.vectorAlongDimension(i, dimension);
             double[] data = new double[vec.length()];
@@ -1711,7 +1718,7 @@ public class Nd4j {
 
         }
 
-        return ndarray;
+        return ndarray;*/
     }
 
     /**Sort (shuffle) the rows of a 2d array according to the value at a specified column.

@@ -1520,4 +1520,9 @@ public abstract class NativeOps extends Pointer {
     public abstract void decodeThresholdDouble(PointerPointer extraPointers, Pointer dx, long N, DoublePointer dz);
 
     public abstract void decodeThresholdHalf(PointerPointer extraPointers, Pointer dx, long N, @Cast("float16*") ShortPointer dz);
+
+
+    public abstract void sortFloat(PointerPointer extraPointers, FloatPointer dx, IntPointer xShapeInfo, boolean descending);
+
+    public abstract void sortTadFloat(PointerPointer extraPointers, FloatPointer dx, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, IntPointer tadOffsets, boolean descending);
 }

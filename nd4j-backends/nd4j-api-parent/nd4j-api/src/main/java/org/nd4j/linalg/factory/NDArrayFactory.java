@@ -1839,4 +1839,9 @@ public interface NDArrayFactory {
 
 
     INDArray[] tear(INDArray tensor, int... dimensions);
+
+
+    INDArray sort(INDArray x, boolean descending);
+
+    INDArray sort(INDArray x, boolean descending, int... dimensions);
 }
