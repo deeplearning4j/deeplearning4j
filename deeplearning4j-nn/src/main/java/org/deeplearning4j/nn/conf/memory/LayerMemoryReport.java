@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.conf.memory;
 
 import lombok.Builder;
+import lombok.Getter;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -10,6 +11,7 @@ import java.util.Map;
 /**
  * Created by Alex on 13/07/2017.
  */
+@Getter
 public class LayerMemoryReport extends MemoryReport {
 
     private final String layerName;

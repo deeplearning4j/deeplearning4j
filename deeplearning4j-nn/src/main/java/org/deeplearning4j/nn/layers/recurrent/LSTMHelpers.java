@@ -6,6 +6,11 @@ import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -23,6 +28,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
@@ -668,5 +674,112 @@ public class LSTMHelpers {
         retGradient.gradientForVariable().put(biasWeightKey, bGradientsOut);
 
         return new Pair<>(retGradient, epsilonNext);
+    }
+
+
+    public static LayerMemoryReport getMemoryReport(AbstractLSTM lstmLayer, InputType inputType) {
+        boolean isGraves = lstmLayer instanceof org.deeplearning4j.nn.conf.layers.GravesLSTM;
+        return getMemoryReport(isGraves, lstmLayer, inputType);
+    }
+
+    public static LayerMemoryReport getMemoryReport(GravesBidirectionalLSTM lstmLayer, InputType inputType) {
+        LayerMemoryReport r = getMemoryReport(true, lstmLayer, inputType);
+        //Double everything for bidirectional
+
+        Map<CacheMode,Integer> trainNoCache = new HashMap<>();
+        Map<CacheMode,Integer> trainCache = new HashMap<>();
+        for(CacheMode cm : r.getTrainingWorkingSizeCachedPerEx().keySet()){
+            trainNoCache.put(cm, 2 * r.getTrainingWorkingSizePerEx().get(cm));
+            trainCache.put(cm, 2 * r.getTrainingWorkingSizeCachedPerEx().get(cm));
+        }
+
+        return LayerMemoryReport.builder()
+                .layerName(lstmLayer.getLayerName())
+                .layerType(lstmLayer.getClass())
+                .inputType(inputType)
+                .outputType(lstmLayer.getOutputType(-1, inputType))
+                .parameterSize(2 * r.getParameterSize())
+                .activationSizePerEx(r.getActivationSizePerEx())
+                .updaterStateSize(2 * r.getUpdaterStateSize())
+                .inferenceWorkingSizePerEx(2 * r.getInferenceWorkingSizePerEx())
+                .trainingWorkingSizePerEx(trainNoCache)
+                .trainingWorkingSizeCachedPerEx(trainCache)
+                .build();
+    }
+
+    public static LayerMemoryReport getMemoryReport(boolean isGraves, org.deeplearning4j.nn.conf.layers.FeedForwardLayer lstmLayer, InputType inputType ){
+
+
+        InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent)inputType;
+        int tsLength = itr.getTimeSeriesLength();
+
+        InputType outputType = lstmLayer.getOutputType(-1, inputType);
+
+        int numParams = lstmLayer.initializer().numParams(lstmLayer);
+        int updaterSize = (int)lstmLayer.getIUpdater().stateSize(numParams);
+        int actSize = outputType.arrayElementsPerExample();
+
+        //Memory use during forward pass:
+        //ifogActivations: nTimeSteps * [minibatch,4*layerSize] (not cached during fwd pass)
+        int workingMemInference = tsLength * 4 * lstmLayer.getNOut();   //Reduced by factor of tsLength if using workspace
+
+        //For training, we also have
+        //nTimeSteps * 5 * [minibatch, nOut] - 4 x gate pre-outs, memory cell state - may be cached
+        //nTimeSteps * [minibatch, nOut] - peephole conneciton activations, graves LSTM only - may be cached
+        //Total: 4 + 5 + 1 = 10xnOut per time step (training) or 4x (inference)
+        int fwdPassPerTimeStepTrainCache = tsLength * 6 * lstmLayer.getNOut();
+
+        //During backprop:
+        //2 dups of size [minibatch, nOut] for nablaCellState (1 alloc only for no peephole)
+        //1 [minibatch, nOut] for deltao
+        //2 for memory cell error
+        //1 allocation for input modulation gate
+        //1 for layer input
+        //3 dups [minibatch, nOut] for peephole (Graves only)
+        // 5xnOut (independent of minibatch size) - deltaiFog, peephole etc. Only 2 if no peephole TODO
+        //6 for non-graves, 9 for graves
+
+        int backpropWorkingSpace = (isGraves ? 9 : 6) * tsLength * lstmLayer.getNOut();
+
+        //TODO NO WAY TO TAKE LSTM WORKSPACE INTO ACCOUNT HERE :(
+
+
+        Map<CacheMode,Integer> trainNoCache = new HashMap<>();
+        Map<CacheMode,Integer> trainCache = new HashMap<>();
+        for(CacheMode cm : CacheMode.values()){
+            int totalBackpropNoCache;
+            int totalBackpropCache;
+            switch (cm){
+                case DEVICE:
+                case HOST:
+                    totalBackpropNoCache = workingMemInference + backpropWorkingSpace;
+                    totalBackpropCache = fwdPassPerTimeStepTrainCache;
+                    break;
+                case NONE:
+                    totalBackpropNoCache = workingMemInference + fwdPassPerTimeStepTrainCache + backpropWorkingSpace;
+                    totalBackpropCache = 0;
+                    break;
+                default:
+                    throw new RuntimeException("Unknown cache mode: " + cm);
+            }
+
+            trainNoCache.put(cm, totalBackpropNoCache);
+            trainCache.put(cm, totalBackpropCache);
+        }
+
+
+
+        return LayerMemoryReport.builder()
+                .layerName(lstmLayer.getLayerName())
+                .layerType(lstmLayer.getClass())
+                .inputType(inputType)
+                .outputType(outputType)
+                .parameterSize(numParams)
+                .activationSizePerEx(actSize)
+                .updaterStateSize(updaterSize)
+                .inferenceWorkingSizePerEx(workingMemInference)
+                .trainingWorkingSizePerEx(trainNoCache)
+                .trainingWorkingSizeCachedPerEx(trainCache)
+                .build();
     }
 }

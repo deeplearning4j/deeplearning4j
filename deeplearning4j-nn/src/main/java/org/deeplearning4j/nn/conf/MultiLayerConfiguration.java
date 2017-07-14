@@ -25,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -308,7 +309,7 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
 
     public NetworkMemoryReport getMemoryReport(InputType inputType){
 
-        Map<String,LayerMemoryReport> memoryReportMap = new LinkedHashMap<>();
+        Map<String,MemoryReport> memoryReportMap = new LinkedHashMap<>();
         int nLayers = confs.size();
         for( int i=0; i<nLayers; i++ ){
             String layerName = confs.get(i).getLayer().getLayerName();
