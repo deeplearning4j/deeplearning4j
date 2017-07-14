@@ -3,10 +3,13 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -15,6 +18,7 @@ import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.NoOp;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -175,6 +179,49 @@ public class BatchNormalization extends FeedForwardLayer {
             default:
                 throw new IllegalArgumentException("Unknown parameter: \"" + paramName + "\"");
         }
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        InputType outputType = getOutputType(-1, inputType);
+
+        //TODO CuDNN helper etc
+
+        int actElementsPerEx = outputType.arrayElementsPerExample();
+        int numParams = initializer().numParams(this);
+        int updaterStateSize = 0;
+
+        for(String s : BatchNormalizationParamInitializer.keys()){
+            updaterStateSize += getIUpdaterByParam(s).stateSize(nOut);
+        }
+
+        //During forward pass: working memory size approx. equal to 2x input size (copy ops, etc)
+        int inferenceWorkingSize = 2 * inputType.arrayElementsPerExample();
+
+        //During training: we calculate mean and variance... result is equal to nOut, and INDEPENDENT of minibatch size
+        //TODO
+        //During backprop: multiple working arrays... output size, 2 * output size (indep. of example size),
+        int trainWorkingSizePerExample = (2 * nOut + inferenceWorkingSize)  //Inference during backprop
+                + (outputType.arrayElementsPerExample() + 2 * nOut);        //Backprop gradient calculation
+
+        //Batch normalization layer does not use caching
+        Map<CacheMode,Integer> trainMode = new HashMap<>();
+        for(CacheMode cm : CacheMode.values()){
+            trainMode.put(cm, trainWorkingSizePerExample);
+        }
+
+        return LayerMemoryReport.builder()
+                .layerName(layerName)
+                .layerType(DenseLayer.class)
+                .inputType(inputType)
+                .outputType(outputType)
+                .parameterSize(numParams)
+                .activationSizePerEx(actElementsPerEx)
+                .updaterStateSize(updaterStateSize)
+                .inferenceWorkingSizePerEx(0)               //No additional working memory for forward pass
+                .trainingWorkingSizePerEx(trainMode)
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching in DenseLayer
+                .build();
     }
 
     @Override

@@ -6,6 +6,8 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -18,6 +20,7 @@ import org.nd4j.linalg.convolution.Convolution;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -206,6 +209,72 @@ public class ConvolutionLayer extends FeedForwardLayer {
             default:
                 throw new IllegalArgumentException("Unknown parameter name: \"" + paramName + "\"");
         }
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+
+        int paramSize = initializer().numParams(this);
+        int updaterStateSize = (int)getIUpdater().stateSize(paramSize);
+
+        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional)getOutputType(-1, inputType);
+        int actElementsPerEx = outputType.arrayElementsPerExample();
+
+        //TODO convolution helper memory use... (CuDNN etc)
+
+        //During forward pass: im2col array, mmul (result activations), in-place broadcast add
+        int im2colSizePerEx = c.getDepth() * outputType.getHeight() * outputType.getWidth() * kernelSize[0] * kernelSize[1];
+
+        //During training: have im2col array, in-place gradient calculation, then epsilons...
+        //But: im2col array may be cached...
+        Map<CacheMode,Integer> trainWorkingMemoryPerEx = new HashMap<>();
+        Map<CacheMode,Integer> trainWorkingMemoryCachedPerEx = new HashMap<>();
+
+        //During backprop: im2col array for forward pass (possibly cached) + the epsilon6d array required to calculate
+        // the 4d epsilons (equal size to input)
+        //Note that the pre-col2im array is same size as im2col
+        for(CacheMode cm : CacheMode.values()){
+            int nonCachedMemSize = 0;
+            int cacheMemSize = 0;
+            switch (cm){
+                case DEVICE:
+                case HOST:
+                    //im2col is cached, but epsNext2d/eps6d is not
+                    cacheMemSize = im2colSizePerEx;
+                    nonCachedMemSize = im2colSizePerEx;
+                    break;
+                case NONE:
+                    //No caching
+                    nonCachedMemSize = 2 * im2colSizePerEx;
+                    break;
+                default:
+                    throw new RuntimeException("Unknown cache mode: " + cm);
+            }
+
+            if(getDropOut() > 0){
+                //Dup on the input before dropout, but only for training
+                nonCachedMemSize += inputType.arrayElementsPerExample();
+            }
+
+            trainWorkingMemoryPerEx.put(cm, nonCachedMemSize);
+            trainWorkingMemoryCachedPerEx.put(cm, cacheMemSize);
+        }
+
+
+        return LayerMemoryReport.builder()
+                .layerName(layerName)
+                .layerType(ConvolutionLayer.class)
+                .inputType(inputType)
+                .outputType(outputType)
+                .parameterSize(paramSize)
+                .activationSizePerEx(actElementsPerEx)
+                .updaterStateSize(updaterStateSize)
+                .inferenceWorkingSizePerEx(im2colSizePerEx)                     //Only fwd pass working array: im2col
+                .trainingWorkingSizePerEx(trainWorkingMemoryPerEx)
+                .trainingWorkingSizeCachedPerEx(trainWorkingMemoryCachedPerEx)
+                .build();
+
     }
 
     public static class Builder extends BaseConvBuilder<Builder> {

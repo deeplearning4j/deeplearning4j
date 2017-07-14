@@ -162,17 +162,16 @@ public class SubsamplingLayer extends Layer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
+        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
         InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional)getOutputType(-1, inputType);
         int actElementsPerEx = outputType.arrayElementsPerExample();
 
         //TODO Subsampling helper memory use... (CuDNN etc)
 
         //During forward pass: im2col array + reduce
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
-
         int im2colSizePerEx = c.getDepth() * outputType.getHeight() * outputType.getWidth() * kernelSize[0] * kernelSize[1];
 
-        //Current implementation does NOT cache im2col etc...
+        //Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
         Map<CacheMode,Integer> trainWorkingMemory = new HashMap<>();
         int trainingWorkingSize = im2colSizePerEx;
         if(getDropOut() > 0){

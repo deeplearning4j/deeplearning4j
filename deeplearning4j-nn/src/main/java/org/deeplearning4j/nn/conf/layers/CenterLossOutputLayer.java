@@ -24,8 +24,12 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.CenterLossParamInitializer;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -37,6 +41,7 @@ import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -167,6 +172,56 @@ public class CenterLossOutputLayer extends BaseOutputLayer {
 
     public boolean getGradientCheck() {
         return gradientCheck;
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        //Basically a dense layer, with some extra params...
+        InputType outputType = getOutputType(-1, inputType);
+
+        int actElementsPerEx = outputType.arrayElementsPerExample();
+        int nParamsW = nIn * nOut;
+        int nParamsB = nOut;
+        int nParamsCenter = nIn * nOut;
+        int numParams = nParamsW + nParamsB + nParamsCenter;
+
+        int updaterStateSize = (int) (getIUpdaterByParam(CenterLossParamInitializer.WEIGHT_KEY).stateSize(nParamsW)
+                        + getIUpdaterByParam(CenterLossParamInitializer.BIAS_KEY).stateSize(nParamsB)
+                        + getIUpdaterByParam(CenterLossParamInitializer.CENTER_KEY).stateSize(nParamsCenter));
+
+        int trainSizePerEx = 0;
+        if(getDropOut() > 0){
+            if(false) {
+                //TODO drop connect
+                //Dup the weights... note that this does NOT depend on the minibatch size...
+            } else {
+                //Assume we dup the input
+                trainSizePerEx += inputType.arrayElementsPerExample();
+            }
+        }
+
+        //Also, during backprop: we do a preOut call -> gives us activations size equal to the output size
+        // which is modified in-place by loss function
+        trainSizePerEx += actElementsPerEx;
+
+        //Dense layer does not use caching
+        Map<CacheMode,Integer> trainMode = new HashMap<>();
+        for(CacheMode cm : CacheMode.values()){
+            trainMode.put(cm, trainSizePerEx);
+        }
+
+        return LayerMemoryReport.builder()
+                .layerName(layerName)
+                .layerType(getClass())
+                .inputType(inputType)
+                .outputType(outputType)
+                .parameterSize(numParams)
+                .activationSizePerEx(actElementsPerEx)
+                .updaterStateSize(updaterStateSize)
+                .inferenceWorkingSizePerEx(0)               //No additional working memory for forward pass
+                .trainingWorkingSizePerEx(trainMode)
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching in CenterLossOutputLayer
+                .build();
     }
 
     @NoArgsConstructor

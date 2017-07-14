@@ -2,6 +2,7 @@ package org.deeplearning4j.nn.conf.memory;
 
 import lombok.NonNull;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
 import java.util.Map;
@@ -36,11 +37,12 @@ public class NetworkMemoryReport extends MemoryReport {
     }
 
     @Override
-    public long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode, DataBuffer.Type dataType) {
+    public long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode,
+                               CacheMode cacheMode, DataBuffer.Type dataType) {
         long totalBytes = 0;
         for(MemoryReport lmr : layerAndVertexReports.values()){
 
-            totalBytes += lmr.getMemoryBytes(memoryType, minibatchSize, memoryUseMode, dataType);
+            totalBytes += lmr.getMemoryBytes(memoryType, minibatchSize, memoryUseMode, cacheMode, dataType);
         }
 
         return totalBytes;

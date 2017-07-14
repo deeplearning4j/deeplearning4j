@@ -21,12 +21,17 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.PretrainParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -67,6 +72,50 @@ public class AutoEncoder extends BasePretrainNetwork {
     @Override
     public ParamInitializer initializer() {
         return PretrainParamInitializer.getInstance();
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        //Because of supervised + unsupervised modes: we'll assume unsupervised, which has the larger memory requiremnts
+        InputType outputType = getOutputType(-1, inputType);
+
+        int actElementsPerEx = outputType.arrayElementsPerExample() + inputType.arrayElementsPerExample();
+        int numParams = initializer().numParams(this);
+        int updaterStateSize = (int) getIUpdater().stateSize(numParams);
+
+        int trainSizePerEx = 0;
+        if(getDropOut() > 0){
+            if(false) {
+                //TODO drop connect
+                //Dup the weights... note that this does NOT depend on the minibatch size...
+            } else {
+                //Assume we dup the input
+                trainSizePerEx += inputType.arrayElementsPerExample();
+            }
+        }
+
+        //Also, during backprop: we do a preOut call -> gives us activations size equal to the output size
+        // which is modified in-place by loss function
+        trainSizePerEx += actElementsPerEx;
+
+        //AutoEncoder layer does not use caching
+        Map<CacheMode,Integer> trainMode = new HashMap<>();
+        for(CacheMode cm : CacheMode.values()){
+            trainMode.put(cm, trainSizePerEx);
+        }
+
+        return LayerMemoryReport.builder()
+                .layerName(layerName)
+                .layerType(AutoEncoder.class)
+                .inputType(inputType)
+                .outputType(outputType)
+                .parameterSize(numParams)
+                .activationSizePerEx(actElementsPerEx)
+                .updaterStateSize(updaterStateSize)
+                .inferenceWorkingSizePerEx(0)               //No additional working memory for forward pass, as per dense
+                .trainingWorkingSizePerEx(trainMode)
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching in CenterLossOutputLayer
+                .build();
     }
 
     @AllArgsConstructor

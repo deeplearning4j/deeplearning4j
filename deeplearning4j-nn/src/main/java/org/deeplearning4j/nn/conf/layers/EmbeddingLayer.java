@@ -3,12 +3,17 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**Embedding layer: feed-forward layer that expects single integers per example as input (class numbers, in range 0 to numClass-1)
@@ -48,6 +53,33 @@ public class EmbeddingLayer extends FeedForwardLayer {
     @Override
     public ParamInitializer initializer() {
         return DefaultParamInitializer.getInstance();
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        //Basically a dense layer, but no dropout is possible here, and no epsilons
+        InputType outputType = getOutputType(-1, inputType);
+
+        int actElementsPerEx = outputType.arrayElementsPerExample();
+        int numParams = initializer().numParams(this);
+        int updaterStateSize = (int)getIUpdater().stateSize(numParams);
+
+        //Embedding layer does not use caching.
+        //Inference: no working memory - just activations (pullRows)
+        //Training: no working memory - only in-place ops on epsilon (from layer above) + assign ops
+
+        return LayerMemoryReport.builder()
+                .layerName(layerName)
+                .layerType(EmbeddingLayer.class)
+                .inputType(inputType)
+                .outputType(outputType)
+                .parameterSize(numParams)
+                .activationSizePerEx(actElementsPerEx)
+                .updaterStateSize(updaterStateSize)
+                .inferenceWorkingSizePerEx(0)               //No additional working memory for forward pass
+                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)    //No working memory for training
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching in DenseLayer
+                .build();
     }
 
     @AllArgsConstructor

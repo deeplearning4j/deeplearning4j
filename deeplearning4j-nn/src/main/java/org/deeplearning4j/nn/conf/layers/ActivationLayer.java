@@ -3,9 +3,12 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.activations.Activation;
@@ -13,6 +16,7 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -82,6 +86,30 @@ public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     @Override
     public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("Activation layer does not contain parameters");
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        int actElementsPerEx = inputType.arrayElementsPerExample();
+
+        //During backprop: we duplicate the input activations array (so we can reuse it later)
+        Map<CacheMode,Integer> trainMemUse = new HashMap<>();
+        for(CacheMode cm : CacheMode.values()){
+            trainMemUse.put(cm, actElementsPerEx);
+        }
+
+        return LayerMemoryReport.builder()
+                .layerName(layerName)
+                .layerType(ActivationLayer.class)
+                .inputType(inputType)
+                .outputType(inputType)
+                .parameterSize(0)
+                .activationSizePerEx(actElementsPerEx)
+                .updaterStateSize(0)
+                .inferenceWorkingSizePerEx(0)   //Activations done in-place during inference
+                .trainingWorkingSizePerEx(trainMemUse)
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching
+                .build();
     }
 
     @Override

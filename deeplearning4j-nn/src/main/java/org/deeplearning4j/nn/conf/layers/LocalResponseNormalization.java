@@ -2,14 +2,18 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -108,6 +112,34 @@ public class LocalResponseNormalization extends Layer {
     @Override
     public boolean isPretrainParam(String paramName) {
         return false; //No params in LRN
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        int actElementsPerEx = inputType.arrayElementsPerExample();
+
+
+        //Forward pass: 3x input size as working memory, in addition to output activations
+        //Backward pass: 2x input size as working memory, in addition to epsilons
+
+        //Dense layer does not use caching
+        Map<CacheMode,Integer> trainMode = new HashMap<>();
+        for(CacheMode cm : CacheMode.values()){
+            trainMode.put(cm, 3 * actElementsPerEx);
+        }
+
+        return LayerMemoryReport.builder()
+                .layerName(layerName)
+                .layerType(LocalResponseNormalization.class)
+                .inputType(inputType)
+                .outputType(inputType)
+                .parameterSize(0)
+                .activationSizePerEx(actElementsPerEx)
+                .updaterStateSize(0)
+                .inferenceWorkingSizePerEx(2 * actElementsPerEx)
+                .trainingWorkingSizePerEx(trainMode)
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching
+                .build();
     }
 
     @AllArgsConstructor

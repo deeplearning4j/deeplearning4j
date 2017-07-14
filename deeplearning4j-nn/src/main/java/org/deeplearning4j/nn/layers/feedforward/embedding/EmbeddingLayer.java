@@ -61,7 +61,6 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
             delta.muliColumnVector(maskArray);
         }
 
-        INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray weightGradients = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
         weightGradients.assign(0);
 
