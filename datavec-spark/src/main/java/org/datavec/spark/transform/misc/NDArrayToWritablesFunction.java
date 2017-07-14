@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Convert an NDArray to a List<Writable> using a DataVec record reader
+ * Function for converting NDArrays to lists of writables.
  *
  * @author dave@skymind.io
  */

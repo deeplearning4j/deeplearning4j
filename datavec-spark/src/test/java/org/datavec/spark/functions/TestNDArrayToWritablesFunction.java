@@ -31,7 +31,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 /**
- * Unit tests for NDArrayToWritables function
+ * Unit tests for NDArrayToWritablesFunction.
  *
  * @author dave@skymind.io
  */
