@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.misc;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -33,6 +34,8 @@ public class TestMemoryReports {
         l.add(new Pair<>(new LSTM.Builder().nIn(20).nOut(20).build(), InputType.recurrent(20, 30)));
         l.add(new Pair<>(new GravesBidirectionalLSTM.Builder().nIn(20).nOut(20).build(), InputType.recurrent(20, 30)));
         l.add(new Pair<>(new RnnOutputLayer.Builder().nIn(20).nOut(20).build(), InputType.recurrent(20, 30)));
+
+        return l;
     }
 
     @Test
@@ -60,8 +63,24 @@ public class TestMemoryReports {
     @Test
     public void testMemoryReportSimpleCG(){
 
+        List<Pair<? extends Layer,InputType>> l = getTestLayers();
 
-        fail();
+
+        for(Pair<? extends Layer,InputType> p : l){
+
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .graphBuilder()
+                    .addInputs("in")
+                    .addLayer("0", p.getFirst().clone(), "in")
+                    .addLayer("1", p.getFirst().clone(), "0")
+                    .setOutputs("1")
+                    .build();
+
+            MemoryReport mr = conf.getMemoryReport(p.getSecond());
+            System.out.println(mr.toString());
+
+            System.out.println("\n\n");
+        }
     }
 
 }

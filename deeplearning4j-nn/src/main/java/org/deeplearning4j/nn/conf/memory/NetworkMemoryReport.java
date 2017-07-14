@@ -89,10 +89,10 @@ public class NetworkMemoryReport extends MemoryReport {
         appendFixedPlusVariable(sb, "  Inference Memory (FP32)             ", fixedMemBytes, perEx);
         appendFixedPlusVariable(sb, "  Training Memory (FP32):             ", fixedMemBytesTrain, perExTrain);
 
-                sb.append("  Inference Memory Breakdown:\n");
+                sb.append("  Inference Memory Breakdown (FP32):\n");
         appendBreakDown(sb, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT);
 
-        sb.append("  Training Memory Breakdown (CacheMode = ").append(CacheMode.NONE).append("):\n");
+        sb.append("  Training Memory Breakdown (CacheMode = ").append(CacheMode.NONE).append(", FP32):\n");
         appendBreakDown(sb, MemoryUseMode.TRAINING, CacheMode.NONE, DataBuffer.Type.FLOAT);
 
 
@@ -105,7 +105,7 @@ public class NetworkMemoryReport extends MemoryReport {
             long bytesPerEx = getMemoryBytes(mt, 1, useMode, cacheMode, dataType) - bytesFixed;
 
             if(bytesFixed > 0 || bytesPerEx > 0){
-                String formatted = String.format("    %-40s", mt);
+                String formatted = String.format("  - %-34s", mt);
                 appendFixedPlusVariable(sb, formatted, bytesFixed, bytesPerEx);
             }
 
