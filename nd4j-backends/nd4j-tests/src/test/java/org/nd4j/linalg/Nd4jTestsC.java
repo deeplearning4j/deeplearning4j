@@ -4816,6 +4816,20 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testNativeSort3() throws Exception {
+        INDArray array = Nd4j.linspace(1, 1048576, 1048576);
+        INDArray exp = array.dup();
+        Nd4j.shuffle(array, 0);
+
+        long time1 = System.currentTimeMillis();
+        INDArray res = Nd4j.sort(array, true);
+        long time2 = System.currentTimeMillis();
+        log.info("Time spent: {} ms", time2 - time1);
+
+        assertEquals(exp, res);
+    }
+
+    @Test
     public void testNativeSortAlongDimension1() throws Exception {
         INDArray array = Nd4j.create(1000, 1000);
         INDArray exp1 =  Nd4j.linspace(1, 1000, 1000);
