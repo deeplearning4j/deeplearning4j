@@ -410,7 +410,7 @@ int getPosition(int *xShapeInfo, int index) {
 }
 
 template<typename T>
-void quickSort_parallel_internal(T* array, int *xShapeInfo, int left, int right, int cutoff)
+void quickSort_parallel_internal(T* array, int *xShapeInfo, int left, int right, int cutoff, bool descending)
 {
 
     int i = left, j = right;
@@ -421,16 +421,30 @@ void quickSort_parallel_internal(T* array, int *xShapeInfo, int left, int right,
     {
         /* PARTITION PART */
         while (i <= j) {
-            while (array[getPosition(xShapeInfo, i)] < pivot)
-                i++;
-            while (array[getPosition(xShapeInfo, j)] > pivot)
-                j--;
-            if (i <= j) {
-                tmp = array[getPosition(xShapeInfo, i)];
-                array[getPosition(xShapeInfo, i)] = array[getPosition(xShapeInfo, j)];
-                array[getPosition(xShapeInfo, j)] = tmp;
-                i++;
-                j--;
+            if (descending) {
+                while (array[getPosition(xShapeInfo, i)] > pivot)
+                    i++;
+                while (array[getPosition(xShapeInfo, j)] < pivot)
+                    j--;
+                if (i <= j) {
+                    tmp = array[getPosition(xShapeInfo, i)];
+                    array[getPosition(xShapeInfo, i)] = array[getPosition(xShapeInfo, j)];
+                    array[getPosition(xShapeInfo, j)] = tmp;
+                    i++;
+                    j--;
+                }
+            } else {
+                while (array[getPosition(xShapeInfo, i)] < pivot)
+                    i++;
+                while (array[getPosition(xShapeInfo, j)] > pivot)
+                    j--;
+                if (i <= j) {
+                    tmp = array[getPosition(xShapeInfo, i)];
+                    array[getPosition(xShapeInfo, i)] = array[getPosition(xShapeInfo, j)];
+                    array[getPosition(xShapeInfo, j)] = tmp;
+                    i++;
+                    j--;
+                }
             }
         }
 
@@ -438,20 +452,20 @@ void quickSort_parallel_internal(T* array, int *xShapeInfo, int left, int right,
 
 
     if ( ((right-left)<cutoff) ){
-        if (left < j){ quickSort_parallel_internal(array, xShapeInfo, left, j, cutoff); }
-        if (i < right){ quickSort_parallel_internal(array, xShapeInfo, i, right, cutoff); }
+        if (left < j){ quickSort_parallel_internal(array, xShapeInfo, left, j, cutoff, descending); }
+        if (i < right){ quickSort_parallel_internal(array, xShapeInfo, i, right, cutoff, descending); }
 
     }else{
 #pragma omp task
-        { quickSort_parallel_internal(array, xShapeInfo, left, j, cutoff); }
+        { quickSort_parallel_internal(array, xShapeInfo, left, j, cutoff, descending); }
 #pragma omp task
-        { quickSort_parallel_internal(array, xShapeInfo, i, right, cutoff); }
+        { quickSort_parallel_internal(array, xShapeInfo, i, right, cutoff, descending); }
     }
 
 }
 
 template<typename T>
-void quickSort_parallel(T* array, int *xShapeInfo, int lenArray, int numThreads){
+void quickSort_parallel(T* array, int *xShapeInfo, int lenArray, int numThreads, bool desending){
 
     int cutoff = 1000;
 
@@ -459,7 +473,7 @@ void quickSort_parallel(T* array, int *xShapeInfo, int lenArray, int numThreads)
     {
 #pragma omp single nowait
         {
-            quickSort_parallel_internal(array, xShapeInfo, 0, lenArray-1, cutoff);
+            quickSort_parallel_internal(array, xShapeInfo, 0, lenArray-1, cutoff, desending);
         }
     }
 
@@ -468,8 +482,22 @@ void quickSort_parallel(T* array, int *xShapeInfo, int lenArray, int numThreads)
 
 template<typename T>
 void sortGeneric(T *x, int *xShapeInfo, bool descending) {
-    quickSort_parallel(x, xShapeInfo, shape::length(xShapeInfo), omp_get_max_threads());
+    quickSort_parallel(x, xShapeInfo, shape::length(xShapeInfo), omp_get_max_threads(), descending);
 }
 
+template<typename T>
+void sortTadGeneric(T *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
+    //quickSort_parallel(x, xShapeInfo, shape::length(xShapeInfo), omp_get_max_threads(), descending);
+    int xLength = shape::length(xShapeInfo);
+    int xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+    int numTads = xLength / xTadLength;
+
+#pragma omp parallel for
+    for (int r = 0; r < numTads; r++) {
+        T *dx = x + tadOffsets[r];
+
+        quickSort_parallel(dx, tadShapeInfo, xTadLength, 1, descending);
+    }
+}
 
 #endif //LIBND4J_CONCAT_H

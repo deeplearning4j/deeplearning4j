@@ -6447,3 +6447,7 @@ void NativeOps::execReduce3AllHalf(Nd4jPointer *extraPointers,
 void NativeOps::sortFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, bool descending) {
 	// to be implemented
 }
+
+void NativeOps::sortTadFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
+    // to be implemented
+}

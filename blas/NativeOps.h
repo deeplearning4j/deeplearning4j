@@ -2909,6 +2909,8 @@ public:
 
 
     void sortFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, bool descending);
+
+    void sortTadFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending);
 };
 
 
