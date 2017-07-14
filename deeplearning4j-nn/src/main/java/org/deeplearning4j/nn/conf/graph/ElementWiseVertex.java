@@ -19,12 +19,18 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.nn.conf.CacheMode;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /** An ElementWiseVertex is used to combine the activations of two or more layer in an element-wise manner<br>
  * For example, the activations may be combined by addition, subtraction or multiplication.
@@ -150,5 +156,21 @@ public class ElementWiseVertex extends GraphVertex {
             }
         }
         return first; //Same output shape/size as
+    }
+
+    @Override
+    public MemoryReport getMemoryReport(InputType... inputTypes) {
+        return LayerMemoryReport.builder()
+                .layerName(null)    //TODO
+                .layerType(ElementWiseVertex.class)
+                .inputType(inputTypes[0])
+                .outputType(inputTypes[0])
+                .parameterSize(0)
+                .activationSizePerEx(inputTypes[0].arrayElementsPerExample())
+                .updaterStateSize(0)
+                .inferenceWorkingSizePerEx(0)       //No additional working memory (beyond activations size)
+                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)    //No additional working memory (beyond activations/epsilons size)
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+                .build();
     }
 }

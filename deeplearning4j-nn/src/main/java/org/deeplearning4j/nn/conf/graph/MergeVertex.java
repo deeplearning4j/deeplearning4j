@@ -21,6 +21,8 @@ package org.deeplearning4j.nn.conf.graph;
 
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -162,5 +164,22 @@ public class MergeVertex extends GraphVertex {
 
             return InputType.convolutional(fh, fw, depthSum);
         }
+    }
+
+    @Override
+    public MemoryReport getMemoryReport(InputType... inputTypes) {
+        InputType outputType = getOutputType(-1, inputTypes);
+        return LayerMemoryReport.builder()
+                .layerName(null)    //TODO
+                .layerType(MergeVertex.class)
+                .inputType(inputTypes[0])   //TODO multiple types
+                .outputType(outputType)
+                .parameterSize(0)
+                .activationSizePerEx(outputType.arrayElementsPerExample())
+                .updaterStateSize(0)
+                .inferenceWorkingSizePerEx(0)
+                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)    //No working mem, jsut activations
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+                .build();
     }
 }

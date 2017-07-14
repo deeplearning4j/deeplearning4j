@@ -19,11 +19,17 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.Data;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * L2NormalizeVertex performs L2 normalization on a single input.
@@ -98,5 +104,31 @@ public class L2NormalizeVertex extends GraphVertex {
         InputType first = vertexInputs[0];
 
         return first; //Same output shape/size as
+    }
+
+    @Override
+    public MemoryReport getMemoryReport(InputType... inputTypes) {
+
+        //norm2 value (inference working mem): 1 per example during forward pass
+
+        //Training working mem: 2 per example + 2x input size + 1 per example (in addition to epsilons
+        int trainModePerEx = 3 + 2 * inputTypes[0].arrayElementsPerExample();
+        Map<CacheMode, Integer> trainModeWorkingMem = new HashMap<>();
+        for(CacheMode cm : CacheMode.values()){
+            trainModeWorkingMem.put(cm, trainModePerEx);
+        }
+
+        return LayerMemoryReport.builder()
+                .layerName(null)    //TODO
+                .layerType(L2NormalizeVertex.class)
+                .inputType(inputTypes[0])
+                .outputType(inputTypes[0])
+                .parameterSize(0)
+                .activationSizePerEx(inputTypes[0].arrayElementsPerExample())
+                .updaterStateSize(0)
+                .inferenceWorkingSizePerEx(1)
+                .trainingWorkingSizePerEx(trainModeWorkingMem)
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+                .build();
     }
 }

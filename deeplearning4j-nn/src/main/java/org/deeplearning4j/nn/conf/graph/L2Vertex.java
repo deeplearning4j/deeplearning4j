@@ -19,11 +19,17 @@
 package org.deeplearning4j.nn.conf.graph;
 
 
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * L2Vertex calculates the L2 least squares error of two inputs.
@@ -83,5 +89,31 @@ public class L2Vertex extends GraphVertex {
     @Override
     public InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException {
         return InputType.feedForward(1);
+    }
+
+    @Override
+    public MemoryReport getMemoryReport(InputType... inputTypes) {
+        InputType outputType = getOutputType(-1, inputTypes);
+
+        //Working memory for training:
+        //1 for each example (fwd pass) + output size (1 per ex) + input size + output size... in addition to the returned eps arrays
+        int trainWorkingSizePerEx = 3 + 2 * inputTypes[0].arrayElementsPerExample();
+        Map<CacheMode,Integer> trainWorkingMem = new HashMap<>();
+        for(CacheMode cm : CacheMode.values()){
+            trainWorkingMem.put(cm, trainWorkingSizePerEx);
+        }
+
+        return LayerMemoryReport.builder()
+                .layerName(null)    //TODO
+                .layerType(L2Vertex.class)
+                .inputType(inputTypes[0])   //TODO multiple types
+                .outputType(outputType)
+                .parameterSize(0)
+                .activationSizePerEx(inputTypes[0].arrayElementsPerExample())
+                .updaterStateSize(0)
+                .inferenceWorkingSizePerEx(0)
+                .trainingWorkingSizePerEx(trainWorkingMem)
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+                .build();
     }
 }
