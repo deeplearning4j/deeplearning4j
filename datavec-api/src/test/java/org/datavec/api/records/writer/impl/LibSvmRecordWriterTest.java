@@ -179,7 +179,7 @@ public class LibSvmRecordWriterTest {
 
         String lineOriginal = "13.0,14.0,15.0,4 1:1.0 2:11.0 3:12.0 4:2.0 5:3.0";
 
-        try     (LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true)) {
+        try (LibSvmRecordWriter writer = new LibSvmRecordWriter(tempFile, true)) {
             Configuration configWriter = new Configuration();
             configWriter.setInt(LibSvmRecordWriter.FEATURE_FIRST_COLUMN, 0);
             configWriter.setInt(LibSvmRecordWriter.FEATURE_LAST_COLUMN, 3);
