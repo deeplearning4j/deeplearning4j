@@ -70,9 +70,12 @@ public class NearestNeighborsServer {
             System.exit(1);
         }
 
-        final INDArray points = BinarySerde.readFromDisk(new File(ndarrayPath));
+        String[] pathArr = ndarrayPath.split(",");
+        INDArray[] pointsArr = new INDArray[pathArr.length];
+        for (int i = 0; i < pathArr.length; i++)
+            pointsArr[i] = BinarySerde.readFromDisk(new File(pathArr[i]));
+        final INDArray points = Nd4j.concat(0, pointsArr);
         VPTree tree = new VPTree(points, similarityFunction, invert);
-
 
         RoutingDsl routingDsl = new RoutingDsl();
         //return the host information for a given id
