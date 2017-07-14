@@ -60,49 +60,21 @@ __device__
   }
 }
 
-
-template<typename T>
-__device__
-void odd_even_sort(T *x, int *xShapeInfo, int length, bool descending) {
-    int tid = threadIdx.x;
-
-    int xLength = length;
-
-    int rem = xLength % 2;
-    for(int i=0;i < (xLength / 2) + rem; i++) {
-
-            if((!(tid & 1)) && tid < xLength - 1) {
-                if(x[tid] > x[tid+1]) {
-                    T temp = x[tid+1];
-                    x[tid+1] = x[tid];
-                    x[tid] = temp;
-                }
-            }
-            __syncthreads();
-
-            if((tid & 1) && tid < xLength - 1) {
-                if(x[tid] > x[tid+1]) {
-                    T temp = x[tid+1];
-                    x[tid+1] = x[tid];
-                    x[tid] = temp;
-                }
-            }
-            __syncthreads();
-    }
-}
-
-
 template<typename T>
 __device__
 void oes_tad(T *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
     __shared__ int xLength;
     __shared__ int xTadLength;
     __shared__ int numTads;
+    __shared__ T *shmem;
     __shared__ T *dx;
     if (threadIdx.x == 0) {
         xLength = shape::length(xShapeInfo);
         xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
         numTads = xLength / xTadLength;
+
+        extern __shared__ unsigned char shrd[];
+        shmem = (T *) shrd;
     }
     __syncthreads();
 
@@ -112,10 +84,92 @@ void oes_tad(T *x, int *xShapeInfo, int *dimension, int dimensionLength, int *ta
         }
         __syncthreads();
 
-        odd_even_sort<T>(dx, tadShapeInfo, xTadLength, descending);
+        // this is general loop, we go uncached
+
+        int rem = xTadLength % 2;
+        if (xTadLength > 1024) {
+
+            for (int i = 0; i < (xTadLength / 2) + rem; i++) {
+
+                // since we can have TAD larger then blockDim, we'll have this loop here
+                for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x ) {
+                    if((!(tid & 1)) && tid < xTadLength - 1) {
+                        int t0 = getDevicePosition(tadShapeInfo, tid);
+                        int t1 = getDevicePosition(tadShapeInfo, tid+1);
+
+                        if(!descending == (dx[t0] > dx[t1])) {
+                            T temp = dx[t1];
+                            dx[t1] = dx[t0];
+                            dx[t0] = temp;
+                        }
+                    }
+                }
+                __syncthreads();
+
+                for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x ) {
+                    if((tid & 1) && tid < xTadLength - 1) {
+                        int t0 = getDevicePosition(tadShapeInfo, tid);
+                        int t1 = getDevicePosition(tadShapeInfo, tid+1);
+
+                        if(!descending == (dx[t0] > dx[t1])) {
+                            T temp = dx[t1];
+                            dx[t1] = dx[t0];
+                            dx[t0] = temp;
+                        }
+                    }
+                }
+                __syncthreads();
+            }
+
+        } else {
+            // we just load up to 1024 elements into shared memory, and sort will be applied there
+            for (int e = threadIdx.x; e < xTadLength; e += blockDim.x)
+                shmem[e] = dx[getDevicePosition(tadShapeInfo, e)];
+
+            __syncthreads();
+
+
+            for(int i=0; i < (xTadLength / 2) + rem; i++) {
+
+                for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x ) {
+                    if((!(tid & 1)) && tid < xTadLength - 1) {
+                        int t0 = tid;
+                        int t1 = tid+1;
+
+                        if(!descending == (shmem[t0] > shmem[t1])) {
+                            T temp = shmem[t1];
+                            shmem[t1] = shmem[t0];
+                            shmem[t0] = temp;
+                        }
+                    }
+                    __syncthreads();
+
+                    if((tid & 1) && tid < xTadLength - 1) {
+                        int t0 = tid;
+                        int t1 = tid+1;
+
+                        if(!descending == (shmem[t0] > shmem[t1])) {
+                            T temp = shmem[t1];
+                            shmem[t1] = shmem[t0];
+                            shmem[t0] = temp;
+                        }
+                    }
+                    __syncthreads();
+                }
+            }
+
+            // we're dumping our shared memory back to device memory
+            for (int e = threadIdx.x; e < xTadLength; e += blockDim.x)
+                dx[getDevicePosition(tadShapeInfo, e)] = shmem[e];
+
+            __syncthreads();
+        }
+
         __syncthreads();
     }
 }
+
+
 
 
 

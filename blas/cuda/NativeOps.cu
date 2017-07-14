@@ -6490,7 +6490,7 @@ void NativeOps::sortTadFloat(Nd4jPointer *extraPointers, float *x, int *xShapeIn
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
-    cudaSortTadFloat<<<512, 512, 512, *stream>>>(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
+    cudaSortTadFloat<<<512, 512, 1088 * sizeof(float), *stream>>>(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
