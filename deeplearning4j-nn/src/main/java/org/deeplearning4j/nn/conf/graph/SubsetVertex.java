@@ -19,6 +19,8 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -121,5 +123,22 @@ public class SubsetVertex extends GraphVertex {
             default:
                 throw new RuntimeException("Unknown input type: " + vertexInputs[0]);
         }
+    }
+
+    @Override
+    public MemoryReport getMemoryReport(InputType... inputTypes) {
+        //Get op without dup - no additional memory use
+        return LayerMemoryReport.builder()
+                .layerName(null)    //TODO
+                .layerType(SubsetVertex.class)
+                .inputType(inputTypes[0])
+                .outputType(getOutputType(-1, inputTypes))
+                .parameterSize(0)
+                .activationSizePerEx(0)
+                .updaterStateSize(0)
+                .inferenceWorkingSizePerEx(0)
+                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+                .build();
     }
 }

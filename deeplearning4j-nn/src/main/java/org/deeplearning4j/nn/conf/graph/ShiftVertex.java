@@ -24,6 +24,8 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -90,5 +92,22 @@ public class ShiftVertex extends GraphVertex {
         InputType first = vertexInputs[0];
 
         return first; //Same output shape/size as
+    }
+
+    @Override
+    public MemoryReport getMemoryReport(InputType... inputTypes) {
+        //Do one dup on the forward pass (output activations)
+        return LayerMemoryReport.builder()
+                .layerName(null)    //TODO
+                .layerType(ShiftVertex.class)
+                .inputType(inputTypes[0])
+                .outputType(inputTypes[0])
+                .parameterSize(0)
+                .activationSizePerEx(inputTypes[0].arrayElementsPerExample())
+                .updaterStateSize(0)
+                .inferenceWorkingSizePerEx(0)
+                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+                .build();
     }
 }

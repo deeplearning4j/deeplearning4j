@@ -19,6 +19,8 @@
 package org.deeplearning4j.nn.conf.graph.rnn;
 
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
@@ -110,5 +112,22 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
         }
 
 
+    }
+
+    @Override
+    public MemoryReport getMemoryReport(InputType... inputTypes) {
+        //TODO hard to estimate memory requirements here... we'll put it as 0 for now
+        return LayerMemoryReport.builder()
+                .layerName(null)    //TODO
+                .layerType(DuplicateToTimeSeriesVertex.class)
+                .inputType(inputTypes[0])
+                .outputType(getOutputType(-1, inputTypes))
+                .parameterSize(0)
+                .activationSizePerEx(getOutputType(-1, inputTypes).arrayElementsPerExample())
+                .updaterStateSize(0)
+                .inferenceWorkingSizePerEx(0)
+                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+                .build();
     }
 }

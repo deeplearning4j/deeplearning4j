@@ -178,7 +178,7 @@ public class MergeVertex extends GraphVertex {
                 .activationSizePerEx(outputType.arrayElementsPerExample())
                 .updaterStateSize(0)
                 .inferenceWorkingSizePerEx(0)
-                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)    //No working mem, jsut activations
+                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)    //No working mem, just activations
                 .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
                 .build();
     }
