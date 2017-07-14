@@ -65,11 +65,11 @@ public class NearestNeighborsServer {
             System.exit(1);
         }
 
-        INDArray[] pointArrays = new INDArray[ndarrayPaths.size()];
+        INDArray[] pointsArray = new INDArray[ndarrayPaths.size()];
         for (int i = 0; i < ndarrayPaths.size(); i++)
             pointArrays[i] = BinarySerde.readFromDisk(new File(ndarrayPaths.get(i)));
 
-        final INDArray points = Nd4j.concat(0, pointArrays);
+        final INDArray points = Nd4j.concat(0, pointsArray);
         VPTree tree = new VPTree(points,similarityFunction,invert);
 
         RoutingDsl routingDsl = new RoutingDsl();
