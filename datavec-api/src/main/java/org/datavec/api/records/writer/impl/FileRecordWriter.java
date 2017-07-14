@@ -105,14 +105,27 @@ public class FileRecordWriter implements RecordWriter {
     @Override
     public void setConf(Configuration conf) {
         this.conf = conf;
-        this.writeTo = new File(conf.get(PATH, "input.txt"));
-        append = conf.getBoolean(APPEND, true);
-        try {
-            out = new DataOutputStream(new FileOutputStream(writeTo, append));
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
+        if (this.writeTo == null) {
+            this.writeTo = new File(conf.get(PATH, "input.txt"));
+            this.append = conf.getBoolean(APPEND, true);
+            this.out = null;
+        } else {
+            String currPath = this.writeTo.getAbsolutePath();
+            String configPath = conf.get(PATH, currPath);
+            if (!configPath.equals(currPath))
+                throw new IllegalArgumentException("File path in configuration (" + configPath + ") does not match existing file path (" + currPath);
+            boolean configAppend = conf.getBoolean(APPEND, this.append);
+            if (configAppend != this.append)
+                throw new IllegalArgumentException("File append setting in configuration (" + configAppend + ") does not match existing setting (" + this.append);
         }
 
+        if (out == null) {
+            try {
+                out = new DataOutputStream(new FileOutputStream(writeTo, append));
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     @Override

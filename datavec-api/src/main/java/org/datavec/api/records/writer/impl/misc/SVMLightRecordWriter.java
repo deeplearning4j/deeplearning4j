@@ -104,7 +104,7 @@ public class SVMLightRecordWriter extends FileRecordWriter {
      */
     @Override
     public void setConf(Configuration conf) {
-//        super.setConf(conf); // this is not safe -- overwrites output file path!
+        super.setConf(conf); // this is not safe -- overwrites output file path!
         featureFirstColumn = conf.getInt(FEATURE_FIRST_COLUMN, 0);
         hasLabel = conf.getBoolean(HAS_LABELS, true);
         multilabel = conf.getBoolean(MULTILABEL, false);
