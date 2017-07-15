@@ -3,7 +3,6 @@ import os
 import inspect
 
 import numpy as np
-import ctypes
 
 jnius_config.add_options('-Dorg.bytedeco.javacpp.nopointergc=true')
 
@@ -57,7 +56,6 @@ else:
         new_class_path += _expand_directory(class_path_item)
 
 jnius_classpath = new_class_path
-
 jnius_config.set_classpath(jnius_classpath)
 
 # after jnius is initialized with proper class path *then* we setup nd4j
@@ -258,7 +256,6 @@ class Nd4jArray(object):
         if isinstance(other, Nd4jArray):
             return Nd4jArray(nd4j_array=self.array.addi(other.array), numpy_array=self.numpy_array)
             # scalar
-        return Nd4jArray(nd4j_array=self.array.addi(_to_number(other)), numpy_array=self.numpy_array)
 
     def __idiv__(self, other):
         if isinstance(other, Nd4jArray):
