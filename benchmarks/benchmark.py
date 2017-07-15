@@ -10,10 +10,10 @@ jumpy.disable_gc()
 
 
 class Benchmark(object):
-    def __init__(self, n=100):
+    def __init__(self, n=1000):
         print 'Running tests with [',n,'x',n,'] dimensionality'
         self.n = n
-        self.m = 200;
+        self.m = 200
         self.np_arr = []
         self.nd4j_arr = []
         for counter in range(0, self.m + 1):
@@ -21,7 +21,6 @@ class Benchmark(object):
 
         for counter in range(0, self.m + 1):
             self.nd4j_arr.append(jumpy.from_np(self.np_arr[counter]))
-        # self.nd4j_arr = jumpy.from_np(np.copy(self.np_arr))
 
     def run_nd4j_scalar(self):
         self.nd4j_arr[randint(0, self.m)] += 1.0172

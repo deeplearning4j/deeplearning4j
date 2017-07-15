@@ -1,6 +1,7 @@
 from setuptools import setup
 from setuptools import find_packages
 
+
 setup(name='jumpy',
       version='0.1',
       description='Numpy and nd4j interop',
