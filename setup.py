@@ -3,7 +3,7 @@ from setuptools import find_packages
 
 
 setup(name='jumpy',
-      version='0.2.1',
+      version='0.2.2',
       description='Numpy and nd4j interop',
       author='Adam Gibson',
       author_email='adam@skymind.io',
