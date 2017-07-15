@@ -801,6 +801,249 @@ namespace simdOps {
 	};
 
 
+	template<typename T>
+	class Reverse {
+	public:
+		static const bool requiresSpecial = true;
+
+#ifdef __CUDACC__
+		static inline __device__ void execSpecialCuda(T *dx, int *xShapeBuffer, T *result, int *zShapeBuffer, T *extraParams, int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
+            __shared__ Nd4jIndex xLength;
+			__shared__ int xEWS;
+            __shared__ char xOrder;
+            __shared__ Nd4jIndex sLength;
+            __shared__ T *shmem;
+            int tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+            if (threadIdx.x == 0) {
+                xLength = shape::length(xShapeBuffer);
+			    xEWS = shape::elementWiseStride(xShapeBuffer);
+                xOrder = shape::order(xShapeBuffer);
+                sLength = xLength - 1;
+
+                extern __shared__ unsigned char shrd[];
+                shmem = (T *) shrd;
+            }
+            __syncthreads();
+
+
+
+            if (dx == result) {
+
+                if (xEWS == 1) {
+                    for (int e = tid; e < xLength / 2; e += blockDim.x * gridDim.x) {
+                        Nd4jIndex idx = sLength - e;
+                        T tmp = dx[e];
+                        dx[e] = dx[idx];
+                        dx[idx] = tmp;
+                    }
+                } else if (xEWS >= 1) {
+                    for (int e = tid; e < xLength / 2; e += blockDim.x * gridDim.x) {
+                        Nd4jIndex idx1 = (sLength - e) * xEWS;
+                        Nd4jIndex idx2 =  e * xEWS;
+                        T tmp = dx[idx2];
+                        dx[idx2] = dx[idx1];
+                        dx[idx1] = tmp;
+                    }
+                } else {
+                    __shared__ int xRank;
+                    __shared__ int *xShape;
+                    __shared__ int *xStride;
+
+                    if (threadIdx.x == 0) {
+				        xRank = shape::rank(xShapeBuffer);
+                        xShape = shape::shapeOf(xShapeBuffer);
+                        xStride = shape::stride(xShapeBuffer);
+				    }
+				    __syncthreads();
+
+					int xCoord[MAX_RANK];
+					int zCoord[MAX_RANK];
+
+					for (int e = tid; e < xLength / 2; e += blockDim.x * gridDim.x) {
+                        if (xOrder == 'c') {
+                            shape::ind2subC(xRank, xShape, e, xCoord);
+                            shape::ind2subC(xRank, xShape, sLength - e, zCoord);
+                        } else {
+                            shape::ind2sub(xRank, xShape, e, xCoord);
+                            shape::ind2sub(xRank, xShape, sLength - e, zCoord);
+                        }
+
+                        Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                        Nd4jIndex zOffset = shape::getOffset(0, xShape, xStride, zCoord, xRank);
+
+                        result[zOffset] = dx[xOffset];
+					}
+                }
+
+            } else {
+                __shared__ int zEWS;
+				__shared__ char zOrder;
+
+				if (threadIdx.x == 0) {
+				    zEWS = shape::elementWiseStride(zShapeBuffer);
+				    zOrder = shape::order(zShapeBuffer);
+				}
+				__syncthreads();
+
+                if (xEWS == 1 && zEWS == 1 && xOrder == zOrder) {
+                    // loop for whole array
+                    for (int e = tid; e < xLength; e += blockDim.x * gridDim.x) {
+                        result[sLength - e] = dx[e];
+                    }
+                } else if (xEWS >= 1 && zEWS >= 1 && xOrder == zOrder) {
+
+                    for (int e = tid; e < xLength; e += blockDim.x * gridDim.x) {
+                        result[(sLength - e) * zEWS] = dx[e * xEWS];
+                    }
+                } else {
+                    __shared__ int xRank;
+                    __shared__ int *xShape;
+                    __shared__ int *xStride;
+
+					__shared__ int zRank;
+					__shared__ int *zShape;
+                    __shared__ int *zStride;
+
+                    if (threadIdx.x == 0) {
+				        xRank = shape::rank(xShapeBuffer);
+                        xShape = shape::shapeOf(xShapeBuffer);
+                        xStride = shape::stride(xShapeBuffer);
+
+					    zRank = shape::rank(zShapeBuffer);
+					    zShape = shape::shapeOf(zShapeBuffer);
+                        zStride = shape::stride(zShapeBuffer);
+				    }
+				    __syncthreads();
+
+					int xCoord[MAX_RANK];
+					int zCoord[MAX_RANK];
+
+                    for (int e = tid; e < xLength; e += blockDim.x * gridDim.x) {
+                        if (xOrder == 'c') {
+                            shape::ind2subC(xRank, xShape, e, xCoord);
+                            shape::ind2subC(xRank, xShape, sLength - e, zCoord);
+                        } else {
+                            shape::ind2sub(xRank, xShape, e, xCoord);
+                            shape::ind2sub(xRank, xShape, sLength - e, zCoord);
+                        }
+
+
+                        Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                        Nd4jIndex zOffset = shape::getOffset(0, xShape, xStride, zCoord, xRank);
+
+                        result[zOffset] = dx[xOffset];
+                    }
+                }
+            }
+		}
+
+#endif
+
+
+		static void execSpecial(T *dx, int *xShapeBuffer, T *result, int *zShapeBuffer, T *extraParams, int *tadShapeInfo, int *tadOffsets) {
+			Nd4jIndex xLength = shape::length(xShapeBuffer);
+			int xEWS = shape::elementWiseStride(xShapeBuffer);
+            char xOrder = shape::order(xShapeBuffer);
+            Nd4jIndex sLength = xLength - 1;
+
+			// two step phase here
+			if (dx == result) {
+				if (xEWS == 1) {
+#pragma omp parallel for schedule(guided)
+                    for (Nd4jIndex e = 0; e < xLength / 2; e++) {
+                        Nd4jIndex idx = sLength - e;
+                        T tmp = dx[e];
+                        dx[e] = dx[idx];
+                        dx[idx] = tmp;
+                    }
+				} else if (xEWS > 1) {
+#pragma omp parallel for schedule(guided)
+                    for (Nd4jIndex e = 0; e < xLength / 2; e++) {
+                        Nd4jIndex idx1 = (sLength - e) * xEWS;
+                        Nd4jIndex idx2 =  e * xEWS;
+                        T tmp = dx[idx2];
+                        dx[idx2] = dx[idx1];
+                        dx[idx1] = tmp;
+                    }
+				} else {
+                    int xRank = shape::rank(xShapeBuffer);
+                    int *xShape = shape::shapeOf(xShapeBuffer);
+                    int *xStride = shape::stride(xShapeBuffer);
+
+                    int xCoord[MAX_RANK];
+                    int zCoord[MAX_RANK];
+
+#pragma omp parallel for private(xCoord, zCoord) schedule(guided)
+                    for (Nd4jIndex e = 0; e < xLength / 2; e++) {
+                        if (xOrder == 'c') {
+                            shape::ind2subC(xRank, xShape, e, xCoord);
+                            shape::ind2subC(xRank, xShape, sLength - e, zCoord);
+                        } else {
+                            shape::ind2sub(xRank, xShape, e, xCoord);
+                            shape::ind2sub(xRank, xShape, sLength - e, zCoord);
+                        }
+
+                        Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                        Nd4jIndex zOffset = shape::getOffset(0, xShape, xStride, zCoord, xRank);
+
+                        result[zOffset] = dx[xOffset];
+                    }
+				}
+			} else {
+				// single step phase here
+				int zEWS = shape::elementWiseStride(zShapeBuffer);
+				char zOrder = shape::order(zShapeBuffer);
+
+				if (xEWS == 1 && zEWS == 1 && xOrder == zOrder) {
+#pragma omp parallel for schedule(guided)
+					for (Nd4jIndex e = 0; e < xLength; e++) {
+						result[sLength - e] = dx[e];
+					}
+				} else if (xEWS >= 1 && zEWS >= 1 && xOrder == zOrder) {
+#pragma omp parallel for schedule(guided)
+					for (Nd4jIndex e = 0; e < xLength; e++) {
+						result[(sLength - e) * zEWS] = dx[e * xEWS];
+					}
+				} else {
+
+					int xRank = shape::rank(xShapeBuffer);
+                    int *xShape = shape::shapeOf(xShapeBuffer);
+                    int *xStride = shape::stride(xShapeBuffer);
+
+					int zRank = shape::rank(zShapeBuffer);
+					int *zShape = shape::shapeOf(zShapeBuffer);
+                    int *zStride = shape::stride(zShapeBuffer);
+
+					int xCoord[MAX_RANK];
+					int zCoord[MAX_RANK];
+
+#pragma omp parallel for private(xCoord, zCoord) schedule(guided)
+					for (Nd4jIndex e = 0; e < xLength; e++) {
+
+						if (xOrder == 'c')
+							shape::ind2subC(xRank, xShape, e, xCoord);
+						else
+							shape::ind2sub(xRank, xShape, e, xCoord);
+
+						if (zOrder == 'c')
+                            shape::ind2subC(zRank, zShape, (sLength - e), zCoord);
+                        else
+                        	shape::ind2sub(zRank, zShape, (sLength - e), zCoord);
+
+						Nd4jIndex xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+                        Nd4jIndex zOffset = shape::getOffset(0, zShape, zStride, zCoord, zRank);
+
+						result[zOffset] = dx[xOffset];
+					}
+				}
+			}
+		}
+
+        op_def static T op(T d1, T *params) {
+            return d1;
+        }
+	};
 
 	template<typename T>
 	class SoftMax {

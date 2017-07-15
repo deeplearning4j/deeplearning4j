@@ -1654,6 +1654,10 @@ void   NativeOps::execTransformDouble(
             launchDims.x = 512;
             launchDims.y = 512;
             launchDims.z += 768;
+        } else if (opNum == 70) {
+            // we'll be using shared memory to speed up reverse
+
+            launchDims.z += launchDims.y * sizeof(float);
         }
 
 		// Histogram op requires additional memory chunk
@@ -3798,7 +3802,11 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
             launchDims.x = 512;
             launchDims.y = 512;
             launchDims.z += 384;
-        }
+        } else if (opNum == 70) {
+			// we'll be using shared memory to speed up reverse
+
+			launchDims.z += launchDims.y * sizeof(float);
+		}
 
 		// histogram op requies additional memory chunk :(
         if (opNum == 48) {
@@ -4043,6 +4051,10 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
             launchDims.x = 512;
             launchDims.y = 512;
             launchDims.z += 384;
+        } else if (opNum == 70) {
+            // we'll be using shared memory to speed up reverse
+
+            launchDims.z += launchDims.y * sizeof(float);
         }
 
 		// Histogram op requires additional memory chunk
