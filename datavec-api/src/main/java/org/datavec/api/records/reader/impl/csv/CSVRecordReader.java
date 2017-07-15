@@ -17,7 +17,6 @@
 package org.datavec.api.records.reader.impl.csv;
 
 
-import au.com.bytecode.opencsv.CSVParser;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.records.Record;
 import org.datavec.api.records.metadata.RecordMetaData;
@@ -30,7 +29,6 @@ import org.datavec.api.writable.Writable;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -50,7 +48,7 @@ public class CSVRecordReader extends LineRecordReader {
     public final static String DELIMITER = NAME_SPACE + ".delimiter";
     public final static String QUOTE = NAME_SPACE + ".quote";
 
-    private CSVParser csvParser;
+    private SerializableCSVParser csvParser;
 
     /**
      * Skip first n lines
@@ -77,7 +75,7 @@ public class CSVRecordReader extends LineRecordReader {
      */
     public CSVRecordReader(int skipNumLines, char delimiter, char quote) {
         this.skipNumLines = skipNumLines;
-        this.csvParser = new CSVParser(delimiter, quote);
+        this.csvParser = new SerializableCSVParser(delimiter, quote);
     }
 
     public CSVRecordReader() {
@@ -88,7 +86,7 @@ public class CSVRecordReader extends LineRecordReader {
     public void initialize(Configuration conf, InputSplit split) throws IOException, InterruptedException {
         super.initialize(conf, split);
         this.skipNumLines = conf.getInt(SKIP_NUM_LINES, this.skipNumLines);
-        this.csvParser = new CSVParser(conf.getChar(DELIMITER, DEFAULT_DELIMITER), conf.getChar(QUOTE, DEFAULT_QUOTE));
+        this.csvParser = new SerializableCSVParser(conf.getChar(DELIMITER, DEFAULT_DELIMITER), conf.getChar(QUOTE, DEFAULT_QUOTE));
     }
 
     private boolean skipLines() {
