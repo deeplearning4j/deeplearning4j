@@ -47,6 +47,7 @@ public class CSVNLinesSequenceRecordReader extends CSVRecordReader implements Se
     public static final String LINES_PER_SEQUENCE = NAME_SPACE + ".nlinespersequence";
 
     private int nLinesPerSequence;
+    private String delimiter;
 
     /**
      * No-arg constructor with the default number of lines per sequence (10)
@@ -59,7 +60,7 @@ public class CSVNLinesSequenceRecordReader extends CSVRecordReader implements Se
      * @param nLinesPerSequence    Number of lines in each sequence, use default delemiter(,) between entries in the same line
      */
     public CSVNLinesSequenceRecordReader(int nLinesPerSequence) {
-        this(nLinesPerSequence, 0, CSVRecordReader.DEFAULT_DELIMITER);
+        this(nLinesPerSequence, 0, String.valueOf(CSVRecordReader.DEFAULT_DELIMITER));
     }
 
     /**
@@ -69,7 +70,8 @@ public class CSVNLinesSequenceRecordReader extends CSVRecordReader implements Se
      * @param delimiter            Delimiter between entries in the same line, for example ","
      */
     public CSVNLinesSequenceRecordReader(int nLinesPerSequence, int skipNumLines, String delimiter) {
-        super(skipNumLines, delimiter);
+        super(skipNumLines);
+        this.delimiter = delimiter;
         this.nLinesPerSequence = nLinesPerSequence;
     }
 

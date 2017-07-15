@@ -389,6 +389,36 @@ public class Configuration implements Iterable<Map.Entry<String, String>>, Writa
     }
 
     /**
+     * Get the char value of the <code>name</code> property, <code>null</code> if
+     * no such property exists.
+     *
+     * Values are processed for <a href="#VariableExpansion">variable expansion</a>
+     * before being returned.
+     *
+     * @param name the property name.
+     * @return the value of the <code>name</code> property,
+     *         or null if no such property exists.
+     */
+    public char getChar(String name) {
+        return getProps().getProperty(name).charAt(0);
+    }
+
+    /**
+     * Get the char value of the <code>name</code> property, <code>null</code> if
+     * no such property exists.
+     *
+     * Values are processed for <a href="#VariableExpansion">variable expansion</a>
+     * before being returned.
+     *
+     * @param name the property name.
+     * @return the value of the <code>name</code> property,
+     *         or null if no such property exists.
+     */
+    public char getChar(String name, char defaultValue) {
+        return getProps().getProperty(name, String.valueOf(defaultValue)).charAt(0);
+    }
+
+    /**
      * Set the <code>value</code> of the <code>name</code> property.
      *
      * @param name property name.

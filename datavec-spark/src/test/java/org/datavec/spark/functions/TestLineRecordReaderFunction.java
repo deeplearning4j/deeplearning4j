@@ -48,13 +48,13 @@ public class TestLineRecordReaderFunction extends BaseSparkTest {
         JavaSparkContext sc = getContext();
         JavaRDD<String> linesRdd = sc.parallelize(lines);
 
-        CSVRecordReader rr = new CSVRecordReader(0, ",");
+        CSVRecordReader rr = new CSVRecordReader(0, ',');
 
         JavaRDD<List<Writable>> out = linesRdd.map(new LineRecordReaderFunction(rr));
         List<List<Writable>> outList = out.collect();
 
 
-        CSVRecordReader rr2 = new CSVRecordReader(0, ",");
+        CSVRecordReader rr2 = new CSVRecordReader(0, ',');
         rr2.initialize(new FileSplit(dataFile));
         Set<List<Writable>> expectedSet = new HashSet<>();
         int totalCount = 0;
