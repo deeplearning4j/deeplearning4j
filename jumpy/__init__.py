@@ -93,8 +93,6 @@ DataTypeUtil = autoclass('org.nd4j.linalg.api.buffer.util.DataTypeUtil')
 MemoryManager = autoclass('org.nd4j.linalg.memory.MemoryManager')
 memory_manager = nd4j.getMemoryManager()
 
-import gc
-gc.set_debug(gc.DEBUG_LEAK)
 
 def disable_gc():
     memory_manager.togglePeriodicGc(False)
