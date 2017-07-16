@@ -35,10 +35,13 @@
 #include <ops/specials_cuda.h>
 //#include <sys/time.h>
 
+// b40c only available for gcc :(
+#ifdef __GNUC__
 #include <b40c/util/error_utils.cuh>
 #include <b40c/util/multiple_buffering.cuh>
 
 #include <b40c/radix_sort/enactor.cuh>
+#endif
 
 #include <curand.h>
 
@@ -6483,6 +6486,8 @@ void NativeOps::sortFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo,
             }
         }
     } else {
+
+#ifdef __GNUC__
         if ((xLength > 1024 * 1024 * 10) && xEWS == 1) {
             b40c::radix_sort::Enactor enactor;
 
@@ -6494,6 +6499,9 @@ void NativeOps::sortFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo,
             if (descending)
                 execTransformFloat(extraPointers, 70, x, xShapeInfo, x, xShapeInfo, nullptr);
         } else {
+#else
+        if (1 > 0) {
+#endif
             int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
             int numBlocks = xLength / numThreads;
             if (xLength % numThreads > 0 || numBlocks == 0)
@@ -6546,6 +6554,7 @@ void NativeOps::sortDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInf
             }
         }
     } else {
+#ifdef __GNUC__
         if ((xLength > 1024 * 1024 * 10) && xEWS == 1) {
             b40c::radix_sort::Enactor enactor;
 
@@ -6557,6 +6566,9 @@ void NativeOps::sortDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInf
             if (descending)
                 execTransformDouble(extraPointers, 70, x, xShapeInfo, x, xShapeInfo, nullptr);
         } else {
+#else
+        if ( 1 > 0) {
+#endif
             int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
             int numBlocks = xLength / numThreads;
             if (xLength % numThreads > 0 || numBlocks == 0)
