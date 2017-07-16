@@ -1452,7 +1452,8 @@ public class TensorGrad {
 
 
         List<OpExecAction> opExecActions = graph().getOpOrder().getActions();
-        for(OpExecAction opExecAction : opExecActions) {
+        for(int i = 0; i < opExecActions.size(); i++) {
+            OpExecAction opExecAction = opExecActions.get(i);
             Op op = createOp(
                     opExecAction.getOpState().getOpType(),
                     opExecAction);

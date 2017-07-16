@@ -269,11 +269,10 @@ public class TensorGradTests {
         TensorGradVariable outputs = tensorGrad.sigmoid(preOutput);
         //    label_probabilities = preds * targets + (1 - preds) * (1 - targets)
         TensorGradVariable probs = outputs.mul(y).add(outputs.rsub(tensorGrad.scalar("one",1.0)).mul(y.rsub(tensorGrad.scalar("onetwo",1.0))));
-   /*     TensorGradVariable outputGrad = tensorGrad.grad(probs,x);
+        TensorGradVariable outputGrad = tensorGrad.grad(probs,x);
         for(int i = 0; i < 1; i++) {
             w = w.sub(w.mul(outputGrad).mul(learningRate));
         }
-*/
         List<Op> ops = tensorGrad.exec();
         System.out.println(ops);
     }
