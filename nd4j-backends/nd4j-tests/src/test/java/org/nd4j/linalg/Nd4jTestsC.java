@@ -4849,9 +4849,28 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertTrue(rev == array);
     }
 
+
+    @Test
+    public void testNativeSortView1() {
+        INDArray matrix = Nd4j.create(10, 10);
+        INDArray exp = Nd4j.linspace(0, 9, 10);
+        int cnt = 0;
+        for (int i = matrix.rows() - 1; i >=0; i--) {
+            matrix.getRow(i).assign(cnt);
+            cnt++;
+        }
+
+        Nd4j.sort(matrix.getColumn(0), true);
+
+
+        log.info("Matrix: {}", matrix);
+
+        assertEquals(exp, matrix.getColumn(0));
+    }
+
     @Test
     public void testNativeSort1() throws Exception {
-        INDArray array = Nd4j.create(new double[]{ 9, 8, 2, 7, 6, 5, 4, 3, 1, 0});
+        INDArray array = Nd4j.create(new double[]{ 9, 2, 1, 7, 6, 5, 4, 3, 8, 0});
         INDArray exp1 =  Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
         INDArray exp2 =  Nd4j.create(new double[] {9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
 
@@ -4882,6 +4901,21 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray array = Nd4j.linspace(1, 1048576, 1048576);
         INDArray exp = array.dup();
         Nd4j.shuffle(array, 0);
+
+        long time1 = System.currentTimeMillis();
+        INDArray res = Nd4j.sort(array, true);
+        long time2 = System.currentTimeMillis();
+        log.info("Time spent: {} ms", time2 - time1);
+
+        assertEquals(exp, res);
+    }
+
+    @Test
+    public void testNativeSort3_1() throws Exception {
+        INDArray array = Nd4j.linspace(1, 2017152, 2017152);
+        INDArray exp = array.dup();
+        Transforms.reverse(array, false);
+
 
         long time1 = System.currentTimeMillis();
         INDArray res = Nd4j.sort(array, true);

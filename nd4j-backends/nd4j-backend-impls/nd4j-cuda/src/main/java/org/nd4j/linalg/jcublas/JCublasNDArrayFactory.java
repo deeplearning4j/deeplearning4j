@@ -1536,19 +1536,54 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
         CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(x);
 
-        PointerPointer extraz = new PointerPointer(AtomicAllocator.getInstance().getHostPointer(x.shapeInfoDataBuffer()), // not used
-                context.getOldStream(), AtomicAllocator.getInstance().getDeviceIdPointer());
+        Pointer ptr = AtomicAllocator.getInstance().getHostPointer(x.shapeInfoDataBuffer());
+
+        PointerPointer extraz = new PointerPointer(ptr, // 0
+                context.getOldStream(), // 1
+                AtomicAllocator.getInstance().getDeviceIdPointer(), // 2
+                context.getBufferAllocation(), // 3
+                context.getBufferReduction(), // 4
+                context.getBufferScalar(), // 5
+                context.getBufferSpecial(), // 6
+                ptr, // 7
+                AtomicAllocator.getInstance().getHostPointer(x.shapeInfoDataBuffer()), // 8
+                ptr, // 9
+                ptr, // 10
+                ptr, // 11
+                ptr, // 12
+                ptr, // 13
+                ptr, // 14
+                ptr, // special pointer for IsMax  // 15
+                ptr, // special pointer for IsMax  // 16
+                ptr, // special pointer for IsMax // 17
+                new CudaPointer(0));
+
+        // we're sending > 10m elements to radixSort
+        boolean isRadix = !x.isView() && (x.lengthLong() > 1024 * 1024 * 10);
+        INDArray tmpX = x;
+
+        // we need to guarantee all threads are finished here
+        if (isRadix)
+            Nd4j.getExecutioner().commit();
 
         if (x.data().dataType() == DataBuffer.Type.FLOAT) {
             nativeOps.sortFloat(extraz,
-                    (FloatPointer) AtomicAllocator.getInstance().getPointer(x, context),
-                    (IntPointer) AtomicAllocator.getInstance().getPointer(x.shapeInfoDataBuffer(), context),
+                    (FloatPointer) AtomicAllocator.getInstance().getPointer(tmpX, context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tmpX.shapeInfoDataBuffer(), context),
                     descending
                     );
         } else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
-
+            nativeOps.sortDouble(extraz,
+                    (DoublePointer) AtomicAllocator.getInstance().getPointer(tmpX, context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tmpX.shapeInfoDataBuffer(), context),
+                    descending
+            );
         } else if (x.data().dataType() == DataBuffer.Type.HALF) {
-
+            nativeOps.sortHalf(extraz,
+                    (ShortPointer) AtomicAllocator.getInstance().getPointer(tmpX, context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tmpX.shapeInfoDataBuffer(), context),
+                    descending
+            );
         } else {
             throw new UnsupportedOperationException("Unknown dataType " + x.data().dataType());
         }
@@ -1586,9 +1621,25 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
                     descending
             );
         } else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
-
+            nativeOps.sortTadDouble(extraz,
+                    (DoublePointer) AtomicAllocator.getInstance().getPointer(x, context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(x.shapeInfoDataBuffer(), context),
+                    (IntPointer) dimensionPointer,
+                    dimension.length,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context),
+                    descending
+            );
         } else if (x.data().dataType() == DataBuffer.Type.HALF) {
-
+            nativeOps.sortTadHalf(extraz,
+                    (ShortPointer) AtomicAllocator.getInstance().getPointer(x, context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(x.shapeInfoDataBuffer(), context),
+                    (IntPointer) dimensionPointer,
+                    dimension.length,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context),
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context),
+                    descending
+            );
         } else {
             throw new UnsupportedOperationException("Unknown dataType " + x.data().dataType());
         }
