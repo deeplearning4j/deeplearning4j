@@ -389,7 +389,134 @@ void averageGeneric(T **x, T *z, int n, const Nd4jIndex length, bool propagate) 
         delete[] z;
 }
 
+int getPosition(int *xShapeInfo, int index) {
+    int xEWS = shape::elementWiseStride(xShapeInfo);
+
+    if (xEWS == 1) {
+        return index;
+    } else if (xEWS > 1) {
+        return index * xEWS;
+    } else {
+        int xCoord[MAX_RANK];
+        int xRank = shape::rank(xShapeInfo);
+        int *xShape = shape::shapeOf(xShapeInfo);
+        int *xStride = shape::stride(xShapeInfo);
+
+        shape::ind2subC(xRank, xShape, index, xCoord);
+        int xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
+
+        return xOffset;
+    }
+}
+
+template<typename T>
+void quickSort_parallel_internal(T* array, int *xShapeInfo, int left, int right, int cutoff, bool descending)
+{
+
+    int i = left, j = right;
+    T tmp;
+    T pivot = array[getPosition(xShapeInfo, (left + right) / 2)];
 
 
+    {
+        /* PARTITION PART */
+        while (i <= j) {
+            if (descending) {
+                while (array[getPosition(xShapeInfo, i)] > pivot)
+                    i++;
+                while (array[getPosition(xShapeInfo, j)] < pivot)
+                    j--;
+                if (i <= j) {
+                    tmp = array[getPosition(xShapeInfo, i)];
+                    array[getPosition(xShapeInfo, i)] = array[getPosition(xShapeInfo, j)];
+                    array[getPosition(xShapeInfo, j)] = tmp;
+                    i++;
+                    j--;
+                }
+            } else {
+                while (array[getPosition(xShapeInfo, i)] < pivot)
+                    i++;
+                while (array[getPosition(xShapeInfo, j)] > pivot)
+                    j--;
+                if (i <= j) {
+                    tmp = array[getPosition(xShapeInfo, i)];
+                    array[getPosition(xShapeInfo, i)] = array[getPosition(xShapeInfo, j)];
+                    array[getPosition(xShapeInfo, j)] = tmp;
+                    i++;
+                    j--;
+                }
+            }
+        }
+
+    }
+
+
+    if ( ((right-left)<cutoff) ){
+        if (left < j){ quickSort_parallel_internal(array, xShapeInfo, left, j, cutoff, descending); }
+        if (i < right){ quickSort_parallel_internal(array, xShapeInfo, i, right, cutoff, descending); }
+
+    }else{
+#pragma omp task
+        { quickSort_parallel_internal(array, xShapeInfo, left, j, cutoff, descending); }
+#pragma omp task
+        { quickSort_parallel_internal(array, xShapeInfo, i, right, cutoff, descending); }
+    }
+
+}
+
+template<typename T>
+void quickSort_parallel(T* array, int *xShapeInfo, int lenArray, int numThreads, bool descending){
+
+    int cutoff = 1000;
+
+#pragma omp parallel num_threads(numThreads)
+    {
+#pragma omp single nowait
+        {
+            quickSort_parallel_internal(array, xShapeInfo, 0, lenArray-1, cutoff, descending);
+        }
+    }
+
+}
+
+int nextPowerOf2(int number) {
+    int pos = 0;
+
+    while (number > 0) {
+        pos++;
+        number = number >> 1;
+    }
+    return (int) pow(2, pos);
+}
+
+int lastPowerOf2(int number) {
+    int p = 1;
+    while (p <= number)
+        p <<= 1;
+
+    p >>= 1;
+    return p;
+}
+
+
+template<typename T>
+void sortGeneric(T *x, int *xShapeInfo, bool descending) {
+    quickSort_parallel(x, xShapeInfo, shape::length(xShapeInfo), omp_get_max_threads(), descending);
+}
+
+template<typename T>
+void sortTadGeneric(T *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
+    //quickSort_parallel(x, xShapeInfo, shape::length(xShapeInfo), omp_get_max_threads(), descending);
+    int xLength = shape::length(xShapeInfo);
+    int xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
+    int numTads = xLength / xTadLength;
+
+#pragma omp parallel for
+    for (int r = 0; r < numTads; r++) {
+        T *dx = x + tadOffsets[r];
+
+        quickSort_parallel(dx, tadShapeInfo, xTadLength, 1, descending);
+    }
+}
 
 #endif //LIBND4J_CONCAT_H

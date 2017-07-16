@@ -2905,6 +2905,22 @@ public:
     void decodeThresholdDouble(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, double *dz);
 
     void decodeThresholdHalf(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float16 *dz);
+
+
+
+    void sortFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, bool descending);
+
+    void sortDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, bool descending);
+
+    void sortHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, bool descending);
+
+
+
+    void sortTadFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending);
+
+    void sortTadDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending);
+
+    void sortTadHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending);
 };
 
 

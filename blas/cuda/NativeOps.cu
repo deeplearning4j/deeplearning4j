@@ -31,7 +31,17 @@
 #include <loops/grid.h>
 #include <loops/aggregates.h>
 #include <helpers/threshold.h>
+
+#include <ops/specials_cuda.h>
 //#include <sys/time.h>
+
+// b40c only available for gcc :(
+#ifdef __GNUC__
+#include <b40c/util/error_utils.cuh>
+#include <b40c/util/multiple_buffering.cuh>
+
+#include <b40c/radix_sort/enactor.cuh>
+#endif
 
 #include <curand.h>
 
@@ -1652,6 +1662,10 @@ void   NativeOps::execTransformDouble(
             launchDims.x = 512;
             launchDims.y = 512;
             launchDims.z += 768;
+        } else if (opNum == 70) {
+            // we'll be using shared memory to speed up reverse
+
+            launchDims.z += launchDims.y * sizeof(float);
         }
 
 		// Histogram op requires additional memory chunk
@@ -3796,7 +3810,11 @@ void   NativeOps::execTransformFloat(Nd4jPointer *extraPointers,int opNum,
             launchDims.x = 512;
             launchDims.y = 512;
             launchDims.z += 384;
-        }
+        } else if (opNum == 70) {
+			// we'll be using shared memory to speed up reverse
+
+			launchDims.z += launchDims.y * sizeof(float);
+		}
 
 		// histogram op requies additional memory chunk :(
         if (opNum == 48) {
@@ -4041,6 +4059,10 @@ void   NativeOps::execTransformHalf(Nd4jPointer *extraPointers,int opNum,
             launchDims.x = 512;
             launchDims.y = 512;
             launchDims.z += 384;
+        } else if (opNum == 70) {
+            // we'll be using shared memory to speed up reverse
+
+            launchDims.z += launchDims.y * sizeof(float);
         }
 
 		// Histogram op requires additional memory chunk
@@ -6442,4 +6464,220 @@ void NativeOps::execReduce3AllHalf(Nd4jPointer *extraPointers,
 
     if (debug)
         checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::sortFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, bool descending) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[     1]);
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+
+    int xLength = shape::length(hostXShapeInfo);
+    int xEWS = shape::elementWiseStride(hostXShapeInfo);
+
+    // check if xLength is a power of 2, and use bitonic sort, if that's the case
+    if ((xLength != 0) && ((xLength & (xLength - 1)) == 0) && (xLength <= 1024 * 1024 * 10)) {
+        int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
+        int numBlocks = xLength / numThreads;
+        if (xLength % numThreads > 0 || numBlocks == 0)
+            numBlocks++;
+
+        for (int k = 2; k <= xLength; k = 2*k) {
+            for (int j = k >> 1; j > 0; j = j >> 1) {
+                cudaBitonicSortFloat<<<numBlocks, numThreads, 512, *stream>>>(x, xShapeInfo, j, k, xLength, descending);
+            }
+        }
+    } else {
+
+#ifdef __GNUC__
+        if ((xLength > 1024 * 1024 * 10) && xEWS == 1) {
+            b40c::radix_sort::Enactor enactor;
+
+            b40c::util::DoubleBuffer<float> sort_storage(x);
+
+            enactor.Sort(sort_storage, xLength);
+
+            // fire reverse op
+            if (descending)
+                execTransformFloat(extraPointers, 70, x, xShapeInfo, x, xShapeInfo, nullptr);
+        } else {
+#else
+        if (1 > 0) {
+#endif
+            int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
+            int numBlocks = xLength / numThreads;
+            if (xLength % numThreads > 0 || numBlocks == 0)
+                numBlocks++;
+
+            numBlocks = nd4j::math::nd4j_min<int>(512, numBlocks);
+
+            int max = 2, dg = 0;
+            while (max < xLength) {
+                max <<= 1;
+                dg++;
+            }
+            max <<= 1;
+
+
+            for (int window = 2; window < max; window<<=1) {
+                int n = window;
+                int rev = 0;
+                do{
+                    int half = n >> 1;
+                    cudaSortFloat<<<numBlocks, numThreads, numThreads * 2 * sizeof(float), *stream>>>(x, xShapeInfo, n, xLength, rev, descending);
+                    n>>=1;
+                    rev = 1;
+                } while(n > 1);
+            }
+        }
+    }
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+
+void NativeOps::sortDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, bool descending) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+
+    int xLength = shape::length(hostXShapeInfo);
+    int xEWS = shape::elementWiseStride(hostXShapeInfo);
+
+    // check if xLength is a power of 2, and use bitonic sort, if that's the case
+    if ((xLength != 0) && ((xLength & (xLength - 1)) == 0) && (xLength <= 1024 * 1024 * 10)) {
+        int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
+        int numBlocks = xLength / numThreads;
+        if (xLength % numThreads > 0 || numBlocks == 0)
+            numBlocks++;
+
+        for (int k = 2; k <= xLength; k = 2*k) {
+            for (int j = k >> 1; j > 0; j = j >> 1) {
+                cudaBitonicSortDouble<<<numBlocks, numThreads, 512, *stream>>>(x, xShapeInfo, j, k, xLength, descending);
+            }
+        }
+    } else {
+#ifdef __GNUC__
+        if ((xLength > 1024 * 1024 * 10) && xEWS == 1) {
+            b40c::radix_sort::Enactor enactor;
+
+            b40c::util::DoubleBuffer<double> sort_storage(x);
+
+            enactor.Sort(sort_storage, xLength);
+
+            // fire reverse op
+            if (descending)
+                execTransformDouble(extraPointers, 70, x, xShapeInfo, x, xShapeInfo, nullptr);
+        } else {
+#else
+        if ( 1 > 0) {
+#endif
+            int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
+            int numBlocks = xLength / numThreads;
+            if (xLength % numThreads > 0 || numBlocks == 0)
+                numBlocks++;
+
+            numBlocks = nd4j::math::nd4j_min<int>(512, numBlocks);
+
+            int max = 2, dg = 0;
+            while (max < xLength) {
+                max <<= 1;
+                dg++;
+            }
+            max <<= 1;
+
+
+            for (int window = 2; window < max; window<<=1) {
+                int n = window;
+                int rev = 0;
+                do{
+                    int half = n >> 1;
+                    cudaSortDouble<<<numBlocks, numThreads, numThreads * 2 * sizeof(double), *stream>>>(x, xShapeInfo, n, xLength, rev, descending);
+                    n>>=1;
+                    rev = 1;
+                } while(n > 1);
+            }
+        }
+    }
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+
+void NativeOps::sortHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, bool descending) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+
+    int xLength = shape::length(hostXShapeInfo);
+
+    // check if xLength is a power of 2, and use bitonic sort, if that's the case
+    if ((xLength != 0) && ((xLength & (xLength - 1)) == 0)) {
+        int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
+        int numBlocks = xLength / numThreads;
+        if (xLength % numThreads > 0 || numBlocks == 0)
+            numBlocks++;
+
+        for (int k = 2; k <= xLength; k = 2*k) {
+            for (int j = k >> 1; j > 0; j = j >> 1) {
+                cudaBitonicSortHalf<<<numBlocks, numThreads, 512, *stream>>>(x, xShapeInfo, j, k, xLength, descending);
+            }
+        }
+    } else {
+        // half is incompatible with radix, so only bitonic here
+
+        int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
+        int numBlocks = xLength / numThreads;
+        if (xLength % numThreads > 0 || numBlocks == 0)
+            numBlocks++;
+
+        numBlocks = nd4j::math::nd4j_min<int>(512, numBlocks);
+
+        int max = 2, dg = 0;
+        while (max < xLength) {
+            max <<= 1;
+            dg++;
+        }
+        max <<= 1;
+
+
+        for (int window = 2; window < max; window<<=1) {
+            int n = window;
+            int rev = 0;
+            do{
+                int half = n >> 1;
+                cudaSortHalf<<<numBlocks, numThreads, numThreads * 2 * sizeof(float16), *stream>>>(x, xShapeInfo, n, xLength, rev, descending);
+                n>>=1;
+                rev = 1;
+            } while(n > 1);
+        }
+    }
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::sortTadFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
+    // to be implemented
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+
+    cudaSortTadFloat<<<512, 512, 1088 * sizeof(float), *stream>>>(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::sortTadHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
+    // to be implemented
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+
+    cudaSortTadHalf<<<512, 512, 1088 * sizeof(float16), *stream>>>(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+void NativeOps::sortTadDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
+    // to be implemented
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+
+    cudaSortTadDouble<<<512, 512, 1088 * sizeof(double), *stream>>>(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }
