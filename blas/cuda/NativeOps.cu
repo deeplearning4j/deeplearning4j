@@ -6468,9 +6468,10 @@ void NativeOps::sortFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo,
     int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
     int xLength = shape::length(hostXShapeInfo);
+    int xEWS = shape::elementWiseStride(hostXShapeInfo);
 
     // check if xLength is a power of 2, and use bitonic sort, if that's the case
-    if ((xLength != 0) && ((xLength & (xLength - 1)) == 0)) {
+    if ((xLength != 0) && ((xLength & (xLength - 1)) == 0) && (xLength <= 1024 * 1024 * 10)) {
         int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
         int numBlocks = xLength / numThreads;
         if (xLength % numThreads > 0 || numBlocks == 0)
@@ -6482,7 +6483,7 @@ void NativeOps::sortFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo,
             }
         }
     } else {
-        if (xLength > 1024 * 1024 * 10) {
+        if ((xLength > 1024 * 1024 * 10) && xEWS == 1) {
             b40c::radix_sort::Enactor enactor;
 
             b40c::util::DoubleBuffer<float> sort_storage(x);
@@ -6530,9 +6531,10 @@ void NativeOps::sortDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInf
     int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
     int xLength = shape::length(hostXShapeInfo);
+    int xEWS = shape::elementWiseStride(hostXShapeInfo);
 
     // check if xLength is a power of 2, and use bitonic sort, if that's the case
-    if ((xLength != 0) && ((xLength & (xLength - 1)) == 0)) {
+    if ((xLength != 0) && ((xLength & (xLength - 1)) == 0) && (xLength <= 1024 * 1024 * 10)) {
         int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
         int numBlocks = xLength / numThreads;
         if (xLength % numThreads > 0 || numBlocks == 0)
@@ -6544,7 +6546,7 @@ void NativeOps::sortDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInf
             }
         }
     } else {
-        if (xLength > 1024 * 1024 * 10) {
+        if ((xLength > 1024 * 1024 * 10) && xEWS == 1) {
             b40c::radix_sort::Enactor enactor;
 
             b40c::util::DoubleBuffer<double> sort_storage(x);
