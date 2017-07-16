@@ -1,15 +1,15 @@
 package org.datavec.api.transform.transform.integer;
 
 import lombok.NoArgsConstructor;
-import org.datavec.api.transform.transform.string.BaseStringTransform;
+import org.datavec.api.transform.metadata.ColumnMetaData;
+import org.datavec.api.transform.metadata.IntegerMetaData;
 import org.datavec.api.writable.IntWritable;
-import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 
 /**
  * Convert any value to an Integer.
  *
- * @author Adam Gibson
+ * @author Justin Long (crockpotveggies)
  */
 @NoArgsConstructor
 public class ConvertToInteger extends BaseIntegerTransform {
@@ -39,5 +39,16 @@ public class ConvertToInteger extends BaseIntegerTransform {
     @Override
     public Object map(Object input) {
         return Integer.parseInt(input.toString());
+    }
+
+
+    @Override
+    public ColumnMetaData getNewColumnMetaData(String newColumnName, ColumnMetaData oldColumnType) {
+        return new IntegerMetaData(newColumnName);
+    }
+
+    @Override
+    public String toString() {
+        return "ConvertToInteger()";
     }
 }

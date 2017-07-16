@@ -1,6 +1,9 @@
 package org.datavec.api.transform.transform.doubletransform;
 
 import lombok.NoArgsConstructor;
+import org.datavec.api.transform.metadata.ColumnMetaData;
+import org.datavec.api.transform.metadata.DoubleMetaData;
+import org.datavec.api.transform.metadata.IntegerMetaData;
 import org.datavec.api.transform.transform.integer.BaseIntegerTransform;
 import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.IntWritable;
@@ -9,7 +12,7 @@ import org.datavec.api.writable.Writable;
 /**
  * Convert any value to an Integer.
  *
- * @author Adam Gibson
+ * @author Justin Long (crockpotveggies)
  */
 @NoArgsConstructor
 public class ConvertToDouble extends BaseDoubleTransform {
@@ -39,5 +42,16 @@ public class ConvertToDouble extends BaseDoubleTransform {
     @Override
     public Object map(Object input) {
         return Double.parseDouble(input.toString());
+    }
+
+
+    @Override
+    public ColumnMetaData getNewColumnMetaData(String newColumnName, ColumnMetaData oldColumnType) {
+        return new DoubleMetaData(newColumnName);
+    }
+
+    @Override
+    public String toString() {
+        return "ConvertToDouble()";
     }
 }
