@@ -100,7 +100,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Before
     public void before() throws Exception {
         super.before();
-        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
         Nd4j.getRandom().setSeed(123);
 
     }
@@ -4784,6 +4784,217 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         return ret;
     }
+
+
+    @Test
+    public void testReverse1() throws Exception {
+        INDArray array =  Nd4j.create(new double[] {9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
+        INDArray exp = Nd4j.create(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+
+        INDArray rev = Nd4j.reverse(array);
+
+        assertEquals(exp, rev);
+    }
+
+    @Test
+    public void testReverse2() throws Exception {
+        INDArray array =  Nd4j.create(new double[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
+        INDArray exp = Nd4j.create(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+
+        INDArray rev = Nd4j.reverse(array);
+
+        assertEquals(exp, rev);
+    }
+
+    @Test
+    public void testReverse3() throws Exception {
+        INDArray array =  Nd4j.create(new double[] {9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
+        INDArray exp = Nd4j.create(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+
+        INDArray rev = Nd4j.getExecutioner().exec(new Reverse(array, Nd4j.createUninitialized(array.length()))).z();
+
+        assertEquals(exp, rev);
+    }
+
+    @Test
+    public void testReverse4() throws Exception {
+        INDArray array =  Nd4j.create(new double[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
+        INDArray exp = Nd4j.create(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+
+        INDArray rev = Nd4j.getExecutioner().exec(new Reverse(array, Nd4j.createUninitialized(array.length()))).z();
+
+        assertEquals(exp, rev);
+    }
+
+    @Test
+    public void testReverse5() throws Exception {
+        INDArray array =  Nd4j.create(new double[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
+        INDArray exp = Nd4j.create(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+
+        INDArray rev = Transforms.reverse(array, true);
+
+        assertEquals(exp, rev);
+        assertFalse(rev == array);
+    }
+
+
+    @Test
+    public void testReverse6() throws Exception {
+        INDArray array =  Nd4j.create(new double[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
+        INDArray exp = Nd4j.create(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+
+        INDArray rev = Transforms.reverse(array, false);
+
+        assertEquals(exp, rev);
+        assertTrue(rev == array);
+    }
+
+
+    @Test
+    public void testNativeSortView1() {
+        INDArray matrix = Nd4j.create(10, 10);
+        INDArray exp = Nd4j.linspace(0, 9, 10);
+        int cnt = 0;
+        for (int i = matrix.rows() - 1; i >=0; i--) {
+            matrix.getRow(i).assign(cnt);
+            cnt++;
+        }
+
+        Nd4j.sort(matrix.getColumn(0), true);
+
+
+        log.info("Matrix: {}", matrix);
+
+        assertEquals(exp, matrix.getColumn(0));
+    }
+
+    @Test
+    public void testNativeSort1() throws Exception {
+        INDArray array = Nd4j.create(new double[]{ 9, 2, 1, 7, 6, 5, 4, 3, 8, 0});
+        INDArray exp1 =  Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+        INDArray exp2 =  Nd4j.create(new double[] {9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
+
+        INDArray res = Nd4j.sort(array, true);
+
+        assertEquals(exp1, res);
+
+        res = Nd4j.sort(res, false);
+
+        assertEquals(exp2, res);
+    }
+
+    @Test
+    public void testNativeSort2() throws Exception {
+        INDArray array = Nd4j.rand(1, 10000);
+
+        INDArray res = Nd4j.sort(array, true);
+        INDArray exp = res.dup();
+
+        res = Nd4j.sort(res, false);
+        res = Nd4j.sort(res, true);
+
+        assertEquals(exp, res);
+    }
+
+    @Test
+    public void testNativeSort3() throws Exception {
+        INDArray array = Nd4j.linspace(1, 1048576, 1048576);
+        INDArray exp = array.dup();
+        Nd4j.shuffle(array, 0);
+
+        long time1 = System.currentTimeMillis();
+        INDArray res = Nd4j.sort(array, true);
+        long time2 = System.currentTimeMillis();
+        log.info("Time spent: {} ms", time2 - time1);
+
+        assertEquals(exp, res);
+    }
+
+    @Test
+    public void testNativeSort3_1() throws Exception {
+        INDArray array = Nd4j.linspace(1, 2017152, 2017152);
+        INDArray exp = array.dup();
+        Transforms.reverse(array, false);
+
+
+        long time1 = System.currentTimeMillis();
+        INDArray res = Nd4j.sort(array, true);
+        long time2 = System.currentTimeMillis();
+        log.info("Time spent: {} ms", time2 - time1);
+
+        assertEquals(exp, res);
+    }
+
+    @Test
+    public void testNativeSortAlongDimension1() throws Exception {
+        INDArray array = Nd4j.create(1000, 1000);
+        INDArray exp1 =  Nd4j.linspace(1, 1000, 1000);
+        INDArray dps = exp1.dup();
+        Nd4j.shuffle(dps, 0);
+
+        assertNotEquals(exp1, dps);
+
+
+        for (int r = 0; r < array.rows(); r++) {
+            array.getRow(r).assign(dps);
+        }
+
+        long time1 = System.currentTimeMillis();
+        INDArray res = Nd4j.sort(array,1, true);
+        long time2 = System.currentTimeMillis();
+
+        log.info("Time spent: {} ms", time2 - time1);
+
+        for (int r = 0; r < array.rows(); r++) {
+            assertEquals("Failed at " + r, exp1, res.getRow(r).dup());
+        }
+    }
+
+    @Test
+    public void testNativeSortAlongDimension3() throws Exception {
+        INDArray array = Nd4j.create(2000, 2000);
+        INDArray exp1 =  Nd4j.linspace(1, 2000, 2000);
+        INDArray dps = exp1.dup();
+
+        Nd4j.getExecutioner().commit();
+        Nd4j.shuffle(dps, 0);
+
+        assertNotEquals(exp1, dps);
+
+
+        for (int r = 0; r < array.rows(); r++) {
+            array.getRow(r).assign(dps);
+        }
+
+        long time1 = System.currentTimeMillis();
+        INDArray res = Nd4j.sort(array,1, true);
+        long time2 = System.currentTimeMillis();
+
+        log.info("Time spent: {} ms", time2 - time1);
+
+        for (int r = 0; r < array.rows(); r++) {
+            assertEquals("Failed at " + r, exp1, res.getRow(r));
+            //assertArrayEquals("Failed at " + r, exp1.data().asDouble(), res.getRow(r).dup().data().asDouble(), 1e-5);
+        }
+    }
+
+    @Test
+    public void testNativeSortAlongDimension2() throws Exception {
+        INDArray array = Nd4j.create(100, 10);
+        INDArray exp1 =  Nd4j.create(new double[] {9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
+
+        for (int r = 0; r < array.rows(); r++) {
+            array.getRow(r).assign(Nd4j.create(new double[]{ 3, 8, 2, 7, 5, 6, 4, 9, 1, 0}));
+        }
+
+        INDArray res = Nd4j.sort(array,1, false);
+
+        for (int r = 0; r < array.rows(); r++) {
+            assertEquals("Failed at " + r, exp1, res.getRow(r).dup());
+        }
+    }
+
+
 
     @Override
     public char ordering() {

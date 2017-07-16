@@ -4957,6 +4957,34 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native void decodeThresholdHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jIndex") long N, @Cast("float16*") ShortPointer dz);
     public native void decodeThresholdHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jIndex") long N, @Cast("float16*") ShortBuffer dz);
     public native void decodeThresholdHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jIndex") long N, @Cast("float16*") short[] dz);
+
+
+
+    public native void sortFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatPointer x, IntPointer xShapeInfo, @Cast("bool") boolean descending);
+    public native void sortFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatBuffer x, IntBuffer xShapeInfo, @Cast("bool") boolean descending);
+    public native void sortFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, float[] x, int[] xShapeInfo, @Cast("bool") boolean descending);
+
+    public native void sortDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoublePointer x, IntPointer xShapeInfo, @Cast("bool") boolean descending);
+    public native void sortDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoubleBuffer x, IntBuffer xShapeInfo, @Cast("bool") boolean descending);
+    public native void sortDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, double[] x, int[] xShapeInfo, @Cast("bool") boolean descending);
+
+    public native void sortHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortPointer x, IntPointer xShapeInfo, @Cast("bool") boolean descending);
+    public native void sortHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortBuffer x, IntBuffer xShapeInfo, @Cast("bool") boolean descending);
+    public native void sortHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") short[] x, int[] xShapeInfo, @Cast("bool") boolean descending);
+
+
+
+    public native void sortTadFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatPointer x, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, IntPointer tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatBuffer x, IntBuffer xShapeInfo, IntBuffer dimension, int dimensionLength, IntBuffer tadShapeInfo, IntBuffer tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, float[] x, int[] xShapeInfo, int[] dimension, int dimensionLength, int[] tadShapeInfo, int[] tadOffsets, @Cast("bool") boolean descending);
+
+    public native void sortTadDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoublePointer x, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, IntPointer tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoubleBuffer x, IntBuffer xShapeInfo, IntBuffer dimension, int dimensionLength, IntBuffer tadShapeInfo, IntBuffer tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, double[] x, int[] xShapeInfo, int[] dimension, int dimensionLength, int[] tadShapeInfo, int[] tadOffsets, @Cast("bool") boolean descending);
+
+    public native void sortTadHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortPointer x, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, IntPointer tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortBuffer x, IntBuffer xShapeInfo, IntBuffer dimension, int dimensionLength, IntBuffer tadShapeInfo, IntBuffer tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") short[] x, int[] xShapeInfo, int[] dimension, int dimensionLength, int[] tadShapeInfo, int[] tadOffsets, @Cast("bool") boolean descending);
 }
 
 
