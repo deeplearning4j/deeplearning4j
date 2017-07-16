@@ -66,6 +66,80 @@ __device__
 
 template<typename T>
 __device__
+ void bitonic_arbitrary_step(T *x, int *xShapeInfo, int window, int length,  int reverse, bool descending) {
+    int tid = threadIdx.x + blockDim.x * blockIdx.x;
+    int half = window>>1;
+
+    __shared__ T *shmem;
+    if (threadIdx.x == 0) {
+        extern __shared__ unsigned char shrd[];
+        shmem = (T *) shrd;
+    }
+    __syncthreads();
+
+    //for (int i = 0; i < length; i+= window)
+    /*
+        if window == 4;
+        iterations will be: 0; 4; 8; 12; 16; 20
+        if gridDim = 3;
+        on first iteration we'll have: 0; 4; 8;
+        on second iteration we'll have: 0 + (3 * 4) = 12;  4 + (3 * 4) = 16; 8 + (3 * 4) = 20
+    */
+    int firstPosition;
+    int firstStep;
+    int secondPosition;
+    int secondStep;
+
+    int WARP_SIZE = 32;
+    int numWarps = (gridDim.x * blockDim.x) / 32;
+    int warpId = tid / WARP_SIZE;
+    int warpIdx = tid % WARP_SIZE;
+
+    if (half >= 128) {
+        firstPosition = blockIdx.x * window;
+        firstStep = gridDim.x * window;
+
+        secondPosition = threadIdx.x;
+        secondStep = blockDim.x;
+    } else if (half >= 32) {
+        firstPosition = warpId * window;
+        firstStep = numWarps * window;
+
+        secondPosition = warpIdx;
+        secondStep = WARP_SIZE;
+    } else {
+        firstPosition = tid * window;
+        firstStep = blockDim.x * gridDim.x * window;
+
+        secondPosition = 0;
+        secondStep = 1;
+    }
+
+
+    for (int i = firstPosition; i < length; i += firstStep) {
+        for (int j = secondPosition; j < half; j += secondStep) {
+            int it = (reverse) ? i + j + half : i + window - j - 1;
+            int ij = i+j;
+            if (it < length && ij < length ) {
+                int posIT = getDevicePosition(xShapeInfo,it);
+                int posIJ = getDevicePosition(xShapeInfo, ij);
+
+                shmem[threadIdx.x] = x[posIJ];
+                shmem[threadIdx.x + blockDim.x] = x[posIT];
+
+                if(!descending == (shmem[threadIdx.x] > shmem[threadIdx.x + blockDim.x])) {
+                    x[posIJ] = shmem[threadIdx.x + blockDim.x];
+                    x[posIT] = shmem[threadIdx.x];
+                }
+            }
+        }
+    }
+
+}
+
+
+template<typename T>
+__device__
 void oes_tad(T *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
     __shared__ int xLength;
     __shared__ int xTadLength;
@@ -188,17 +262,16 @@ extern "C" __global__ void cudaBitonicSortHalf(float16 *x, int *xShapeInfo, int 
 }
 
 
-extern "C" __global__ void cudaSortFloat(float *x, int *xShapeInfo, int j, int k, bool descending) {
-    //bitonic_sort_step<float>(x, xShapeInfo, j, k, descending);
-    //odd_even_sort<float>(x, xShapeInfo, descending);
+extern "C" __global__ void cudaSortFloat(float *x, int *xShapeInfo, int window, int length,  int reverse, bool descending) {
+    bitonic_arbitrary_step<float>(x, xShapeInfo, window, length, reverse, descending);
 }
 
-extern "C" __global__ void cudaSortDouble(double *x, int *xShapeInfo, int j, int k, bool descending) {
-    //bitonic_sort_step<double>(x, xShapeInfo, j, k, descending);
+extern "C" __global__ void cudaSortDouble(double *x, int *xShapeInfo, int window, int length, int reverse, bool descending) {
+    bitonic_arbitrary_step<double>(x, xShapeInfo, window, length, reverse, descending);
 }
 
-extern "C" __global__ void cudaSortHalf(float16 *x, int *xShapeInfo, int j, int k, bool descending) {
-    //bitonic_sort_step<float16>(x, xShapeInfo, j, k, descending);
+extern "C" __global__ void cudaSortHalf(float16 *x, int *xShapeInfo, int window, int length, int reverse, bool descending) {
+    bitonic_arbitrary_step<float16>(x, xShapeInfo, window, length, reverse, descending);
 }
 
 extern "C" __global__ void cudaSortTadFloat(float *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {

@@ -6464,7 +6464,7 @@ void NativeOps::execReduce3AllHalf(Nd4jPointer *extraPointers,
 }
 
 void NativeOps::sortFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo, bool descending) {
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[     1]);
     int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
     int xLength = shape::length(hostXShapeInfo);
@@ -6482,15 +6482,43 @@ void NativeOps::sortFloat(Nd4jPointer *extraPointers, float *x, int *xShapeInfo,
             }
         }
     } else {
-        b40c::radix_sort::Enactor enactor;
+        if (xLength > 1024 * 1024 * 10) {
+            b40c::radix_sort::Enactor enactor;
 
-        b40c::util::DoubleBuffer<float> sort_storage(x);
+            b40c::util::DoubleBuffer<float> sort_storage(x);
 
-        enactor.Sort(sort_storage, xLength);
+            enactor.Sort(sort_storage, xLength);
 
-        // fire reverse op
-        if (descending)
-            execTransformFloat(extraPointers, 70, x, xShapeInfo, x, xShapeInfo, nullptr);
+            // fire reverse op
+            if (descending)
+                execTransformFloat(extraPointers, 70, x, xShapeInfo, x, xShapeInfo, nullptr);
+        } else {
+            int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
+            int numBlocks = xLength / numThreads;
+            if (xLength % numThreads > 0 || numBlocks == 0)
+                numBlocks++;
+
+            numBlocks = nd4j::math::nd4j_min<int>(512, numBlocks);
+
+            int max = 2, dg = 0;
+            while (max < xLength) {
+                max <<= 1;
+                dg++;
+            }
+            max <<= 1;
+
+
+            for (int window = 2; window < max; window<<=1) {
+                int n = window;
+                int rev = 0;
+                do{
+                    int half = n >> 1;
+                    cudaSortFloat<<<numBlocks, numThreads, numThreads * 2 * sizeof(float), *stream>>>(x, xShapeInfo, n, xLength, rev, descending);
+                    n>>=1;
+                    rev = 1;
+                } while(n > 1);
+            }
+        }
     }
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -6516,15 +6544,43 @@ void NativeOps::sortDouble(Nd4jPointer *extraPointers, double *x, int *xShapeInf
             }
         }
     } else {
-        b40c::radix_sort::Enactor enactor;
+        if (xLength > 1024 * 1024 * 10) {
+            b40c::radix_sort::Enactor enactor;
 
-        b40c::util::DoubleBuffer<double> sort_storage(x);
+            b40c::util::DoubleBuffer<double> sort_storage(x);
 
-        enactor.Sort(sort_storage, xLength);
+            enactor.Sort(sort_storage, xLength);
 
-        // fire reverse op
-        if (descending)
-            execTransformDouble(extraPointers, 70, x, xShapeInfo, x, xShapeInfo, nullptr);
+            // fire reverse op
+            if (descending)
+                execTransformDouble(extraPointers, 70, x, xShapeInfo, x, xShapeInfo, nullptr);
+        } else {
+            int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
+            int numBlocks = xLength / numThreads;
+            if (xLength % numThreads > 0 || numBlocks == 0)
+                numBlocks++;
+
+            numBlocks = nd4j::math::nd4j_min<int>(512, numBlocks);
+
+            int max = 2, dg = 0;
+            while (max < xLength) {
+                max <<= 1;
+                dg++;
+            }
+            max <<= 1;
+
+
+            for (int window = 2; window < max; window<<=1) {
+                int n = window;
+                int rev = 0;
+                do{
+                    int half = n >> 1;
+                    cudaSortDouble<<<numBlocks, numThreads, numThreads * 2 * sizeof(double), *stream>>>(x, xShapeInfo, n, xLength, rev, descending);
+                    n>>=1;
+                    rev = 1;
+                } while(n > 1);
+            }
+        }
     }
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
@@ -6550,17 +6606,33 @@ void NativeOps::sortHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo
             }
         }
     } else {
-        /*
-        b40c::radix_sort::Enactor enactor;
+        // half is incompatible with radix, so only bitonic here
 
-        b40c::util::DoubleBuffer<float16> sort_storage(x);
+        int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
+        int numBlocks = xLength / numThreads;
+        if (xLength % numThreads > 0 || numBlocks == 0)
+            numBlocks++;
 
-        enactor.Sort(sort_storage, xLength);
+        numBlocks = nd4j::math::nd4j_min<int>(512, numBlocks);
 
-        // fire reverse op
-        if (descending)
-            execTransformHalf(extraPointers, 70, x, xShapeInfo, x, xShapeInfo, nullptr);
-            */
+        int max = 2, dg = 0;
+        while (max < xLength) {
+            max <<= 1;
+            dg++;
+        }
+        max <<= 1;
+
+
+        for (int window = 2; window < max; window<<=1) {
+            int n = window;
+            int rev = 0;
+            do{
+                int half = n >> 1;
+                cudaSortHalf<<<numBlocks, numThreads, numThreads * 2 * sizeof(float16), *stream>>>(x, xShapeInfo, n, xLength, rev, descending);
+                n>>=1;
+                rev = 1;
+            } while(n > 1);
+        }
     }
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
