@@ -335,6 +335,10 @@ local_def half cpu_float2half_rn(float f)
   template <class T>
   local_def float16 operator-(const float16& a, const T& b) { return float16((float)a - (float)b); }
 
+
+//  template <class T>
+//  local_def int operator&(const T& a, const float16& b) { return a & (float)b; }
+
   template <class T>
   local_def float16 operator*(const float16& a, const T& b) { return float16((float)a * (float)b); }
 

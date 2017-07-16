@@ -465,7 +465,7 @@ void quickSort_parallel_internal(T* array, int *xShapeInfo, int left, int right,
 }
 
 template<typename T>
-void quickSort_parallel(T* array, int *xShapeInfo, int lenArray, int numThreads, bool desending){
+void quickSort_parallel(T* array, int *xShapeInfo, int lenArray, int numThreads, bool descending){
 
     int cutoff = 1000;
 
@@ -473,10 +473,29 @@ void quickSort_parallel(T* array, int *xShapeInfo, int lenArray, int numThreads,
     {
 #pragma omp single nowait
         {
-            quickSort_parallel_internal(array, xShapeInfo, 0, lenArray-1, cutoff, desending);
+            quickSort_parallel_internal(array, xShapeInfo, 0, lenArray-1, cutoff, descending);
         }
     }
 
+}
+
+int nextPowerOf2(int number) {
+    int pos = 0;
+
+    while (number > 0) {
+        pos++;
+        number = number >> 1;
+    }
+    return (int) pow(2, pos);
+}
+
+int lastPowerOf2(int number) {
+    int p = 1;
+    while (p <= number)
+        p <<= 1;
+
+    p >>= 1;
+    return p;
 }
 
 
