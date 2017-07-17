@@ -186,6 +186,13 @@ public class SequenceVectorsTest {
 
         Collection<String> labels = vectors.wordsNearest("day", 10);
         logger.info("Nearest labels to 'day': " + labels);
+        
+        SequenceElementFactory<VocabWord> factory = new AbstractElementFactory<VocabWord>(VocabWord.class);
+        WordVectorSerializer.writeSequenceVectors(vectors, factory, "seqvec.mod");
+
+        SequenceVectors<VocabWord> model = WordVectorSerializer.readSequenceVectors(factory, new File("seqvec.mod"));
+        sim = model.similarity("day", "night");
+        logger.info("day/night similarity: " + sim);
     }
 
     @Test
