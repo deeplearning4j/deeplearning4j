@@ -76,7 +76,7 @@ class Reshape(
   }
 
   override def compile: InputPreProcessor = {
-    if (inputShape.isEmpty || (inputShape.length == 1 && inputShape.head == 0)) {
+    if (PartialFunction.cond(inputShape){ case Nil => true; case 0::Nil => true}) {
       throw new IllegalArgumentException("Input shape must be nonempty and nonzero.")
     }
     if (inputShape.product != outputShape.product) {

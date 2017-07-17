@@ -45,8 +45,8 @@ class Unflatten3D(
     new Unflatten3D(newOutputShape, newIn.head)
   }
 
-    override def compile: InputPreProcessor = {
-    if (inputShape.isEmpty || (inputShape.length == 1 && inputShape.head == 0)) {
+  override def compile: InputPreProcessor = {
+    if (PartialFunction.cond(inputShape){ case Nil => true; case 0::Nil => true}) {
       throw new IllegalArgumentException("Input shape must be nonempty and nonzero.")
     }
     if (inputShape.last != outputShape.product) {

@@ -35,7 +35,7 @@ abstract class Convolution(
     protected val nIn: Option[List[Int]] = None,
     protected val nFilter: Int = 0) extends Node {
 
-  override def inputShape: List[Int] = if (nIn.isDefined) nIn.get else List(nChannels)
+  override def inputShape: List[Int] = nIn.getOrElse(List(nChannels))
 
   if (kernelSize.length != stride.length || kernelSize.length != padding.length) {
     throw new IllegalArgumentException("Kernel, stride, and padding must all have same shape.")
