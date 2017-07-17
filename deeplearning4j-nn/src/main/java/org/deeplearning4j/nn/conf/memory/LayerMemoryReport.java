@@ -1,6 +1,5 @@
 package org.deeplearning4j.nn.conf.memory;
 
-import lombok.Builder;
 import lombok.Getter;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -14,36 +13,25 @@ import java.util.Map;
 @Getter
 public class LayerMemoryReport extends MemoryReport {
 
-    private final String layerName;
-    private final Class<?> layerType;
-    private final InputType inputType;
-    private final InputType outputType;
-    private final int parameterSize;
-    private final int activationSizePerEx;
-    private final int updaterStateSize;
-    //Assume no cache is used for inference
-    private final int inferenceWorkingSizePerEx;
-    //Train working memory (ex. activations, etc) that is either GC'd or in workspace
-    private final Map<CacheMode,Integer> trainingWorkingSizePerEx;
-    //Train working memory (ex. activations, etc) that is cached, hence cannot be GC'd or reused via workspace
-    //Note that this is in ADDITION to the non-cached memory
-    private final Map<CacheMode,Integer> trainingWorkingSizeCachedPerEx;
+    private String layerName;
+    private Class<?> layerType;
+    private InputType inputType;
+    private InputType outputType;
 
-    @Builder
-    public LayerMemoryReport(String layerName, Class<?> layerType, InputType inputType, InputType outputType, int parameterSize,
-                             int activationSizePerEx, int updaterStateSize, int inferenceWorkingSizePerEx,
-                             Map<CacheMode,Integer> trainingWorkingSizePerEx, Map<CacheMode, Integer> trainingWorkingSizeCachedPerEx){
-        this.layerName = layerName;
-        this.layerType = layerType;
-        this.inputType = inputType;
-        this.outputType = outputType;
-        this.parameterSize = parameterSize;
-        this.activationSizePerEx = activationSizePerEx;
-        this.updaterStateSize = updaterStateSize;
-        this.inferenceWorkingSizePerEx = inferenceWorkingSizePerEx;
-        this.trainingWorkingSizePerEx = trainingWorkingSizePerEx;
-        this.trainingWorkingSizeCachedPerEx = trainingWorkingSizeCachedPerEx;
-    }
+    //Standard memory (in terms of total ND4J array length)
+    private long parameterSize;
+    private long activationSizePerEx;
+    private long updaterStateSize;
+
+    //Working memory (in ND4J array length)
+    private long workinMemoryFixedInference;
+    private long workingMemoryVariableInference;
+    private long workinMemoryFixedTrain;
+    private long workingMemoryVariableTrain;
+
+    //Cache memory, by cache mode:
+    Map<CacheMode,Long> cacheModeMemFixed;
+    Map<CacheMode,Long> cacheModeMemVariablePerEx;
 
     @Override
     public Class<?> getReportClass() {
@@ -91,5 +79,58 @@ public class LayerMemoryReport extends MemoryReport {
     @Override
     public String toString() {
         return null;
+    }
+
+
+    public static class Builder {
+
+        private String layerName;
+        private Class<?> layerType;
+        private InputType inputType;
+        private InputType outputType;
+
+        //Standard memory (in terms of total ND4J array length)
+        private long parameterSize;
+        private long activationSizePerEx;
+        private long updaterStateSize;
+
+        //Working memory (in ND4J array length)
+        private long workingMemoryFixedInference;
+        private long workingMemoryVariableInference;
+        private long workingMemoryFixedTrain;
+        private long workingMemoryVariableTrain;
+
+        //Cache memory, by cache mode:
+        Map<CacheMode,Long> cacheModeMemFixed;
+        Map<CacheMode,Long> cacheModeMemVariablePerEx;
+
+
+        public Builder(String layerName, Class<?> layerType, InputType inputType, InputType outputType){
+            this.layerName = layerName;
+            this.layerType = layerType;
+            this.inputType = inputType;
+            this.outputType = outputType;
+        }
+
+        public Builder standardMemory(long parameterSize, long updaterStateSizePerEx, long activationSizePerEx ){
+            this.parameterSize = parameterSize;
+            this.updaterStateSize = updaterStateSizePerEx;
+            this.activationSizePerEx = activationSizePerEx;
+            return this;
+        }
+
+        public Builder workingMemory(long fixedInference, long variableInferencePerEx, long fixedTrain, long variableTrainPerEx){
+            this.workingMemoryFixedInference = fixedInference;
+            this.workingMemoryVariableInference = variableInferencePerEx;
+            this.workingMemoryFixedTrain = fixedTrain;
+            this.workingMemoryVariableTrain = variableTrainPerEx;
+            return this;
+        }
+
+        public Builder cacheMemory(Map<CacheMode,Long> cacheModeMemoryFixed, Map<CacheMode,Long> cacheModeMemoryVariablePerEx){
+            this.cacheModeMemFixed = cacheModeMemoryFixed;
+            this.cacheModeMemVariablePerEx = cacheModeMemoryVariablePerEx;
+            return this;
+        }
     }
 }

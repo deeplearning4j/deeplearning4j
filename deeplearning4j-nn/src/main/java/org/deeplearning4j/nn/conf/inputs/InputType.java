@@ -148,7 +148,11 @@ public abstract class InputType implements Serializable {
 
         @Override
         public String toString() {
-            return "InputTypeRecurrent(" + size + ")";
+            if (timeSeriesLength > 0) {
+                return "InputTypeRecurrent(" + size + ",timeSeriesLength=" + timeSeriesLength + ")";
+            } else {
+                return "InputTypeRecurrent(" + size + ")";
+            }
         }
 
         @Override

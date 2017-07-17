@@ -212,7 +212,7 @@ public class BatchNormalization extends FeedForwardLayer {
 
         return LayerMemoryReport.builder()
                 .layerName(layerName)
-                .layerType(DenseLayer.class)
+                .layerType(BatchNormalization.class)
                 .inputType(inputType)
                 .outputType(outputType)
                 .parameterSize(numParams)
