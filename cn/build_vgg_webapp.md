@@ -1,102 +1,85 @@
 ---
-title: Building an Image Classification Web Application Using VGG-16
-layout: default
+title: 用VGG-16构建识别图像的网页应用
+layout: cn-default
 ---
 
-# How to Build an Image Classification Web App With VGG-16
+# 如何用VGG-16构建识别图像的网页应用
 
-Neural networks are setting new accuracy records for image recognition. This page describes how to build a web-based application to use a well-known network, VGG-16, for inference to classify images uploaded by the app's users. 
+神经网络不断刷新着图像识别的准确率纪录。本页主要介绍如何构建一个基于网页的应用程序，用著名的VGG-16网络实现推断，对用户上传的图像进行分类。 
 
-**Contents**
+**目录**
 
-* [What is VGG-16?](#VGG-16)
-* [Using VGG-16 for Web Applications](#Using VGG-16)
-* [Loading Pre-Trained Models](#Loading Pre-Trained Models)
-* [Configuring Data Pipelines for Testing](#Configure Data Pipelines for Testing)
-* [Testing Pre-Trained Models](#Testing Pre-Trained Models)
-* [Saving Models with ModelSerializer](#Save Model with ModelSerializer)
-* [Building Web Apps to Take Input Images](#Build Web App to Take Input Image)
-* [Tying Web App Front-End to Neural Net Backend](#Tie Web App Front End to Neural Net Backend)
-* [Just Show Me the Code](#code)
-* [Example Predictions (Cats! Dogs!)](#example)
+* [VGG-16是什么？](#VGG-16)
+* [将VGG-16用于网页应用](#UsingVGG-16)
+* [加载预定型模型](#LoadingPre-TrainedModels)
+* [为测试配置数据加工管道](#ConfigureDataPipelinesforTesting)
+* [测试预定型模型](#LoadingPre-TrainedModels)
+* [用ModelSerializer保存模型](#SaveModelwithModelSerializer)
+* [构建接受输入图像的网页应用](#BuildWebApptoTakeInputImage)
+* [将网页应用前端与神经网络后端绑定](#TieWebAppFrontEndtoNeuralNetBackend)
+* [直接看代码](#code)
+* [预测示例（猫咪！狗狗！）](#example)
 
-## <a name="VGG-16"> What is VGG-16?</a>
+## <a name="VGG-16"> VGG-16是什么？</a>
 
-Since 2010, [ImageNet](http://image-net.org/) has hosted an annual [challenge](http://www.image-net.org/challenges/LSVRC/) where research teams present solutions to image classification and other tasks by training on the ImageNet dataset. ImageNet currently has millions of labeled images; it's one of the largest high-quality image datasets in the world. The Visual Geometry group at the University of Oxford did really well in 2014 with two network architectures: VGG-16, a 16-layer convolutional Neural Network, and VGG-19, a 19-layer Convolutional Neural Network. 
+从2010年开始，[ImageNet](http://image-net.org/)每年都会举办一场[挑战赛](http://www.image-net.org/challenges/LSVRC/)，参赛的研究团队用ImageNet数据集作为定型数据，提出各种图像分类解决方案。ImageNet目前有数百万幅已标记的图像，是全世界最大的高质量图像数据集之一。牛津大学的Visual Geometry Group（视觉几何研究组）在2014年的比赛中取得了优异成绩，他们采用的网络架构有两种：16层卷积神经网络VGG-16和19层卷积神经网络VGG-19。 
 
-Here are the results:
+结果如下：
 
 * [VGG-16 ILSVRC-14](http://www.image-net.org/challenges/LSVRC/2014/results#clsloc) 
-* VGG-16 also performed well on two other image classification benchmarks: VOC and Caltech. Those results are [here](http://www.robots.ox.ac.uk/~vgg/research/very_deep/).
+* VGG-16在处理VOC和Caltech这两个图像分类基准数据集时的表现同样很出色。相关结果参见[此处](http://www.robots.ox.ac.uk/~vgg/research/very_deep/)。
 
-## <a name="Using VGG-16">Using VGG-16 in Web Applications</a>
+## <a name="UsingVGG-16"> 将VGG-16用于网页应用</a>
 
-The first step in working with neural networks is training. During training, the network is fed input data (images, in this case), and the net's output, or guesses, are compared to the expected results (the images' labels). With each run through the data, the network's weights are modified to decrease the error rate of the guesses; that is, they are adjusted so that the guesses better match the proper label of an image. (Training a large network on millions of images can take a lot of computing resources, thus the interest of distributing pre-trained nets like this.)
+神经网络应用的第一步是定型。在定型过程中，输入数据（此处为图像）进入网络，随后网络的输出或预测结果会与预期结果（即图像的标签）进行比较。每次完成对数据的迭代后，网络的权重会得到调整，以减少预测的误差率——也就是说，权重调整后，网络预测结果与实际图像标签的匹配率可得到改善。（用数百万幅图像对一个大型网络进行定型需要消耗大量计算资源，因此有必要发布此处介绍的预定型网络。）
 
-Once trained, the network can be used for inference, or making predictions about the data it sees. Inference happens to be a much less compute-intensive process. For VGG-16 and other architectures, developers can download and use pre-trained models without having to master the skills necessary to tune and train those models. Loading the pre-trained models and using the model for prediction is relatively straightforward and described here. 
+定型完毕后，网络可以用于推断，即对其读取的数据进行预测。推断恰好是一种不需要这么多计算资源的过程。对于VGG-16和其他架构而言，开发者可以下载预定型的模型直接使用，而无需掌握模型调试与定型的必要技能。预定型模型的加载和预测应用相对比较简单，本页将作详细介绍。 
 
-Loading the pre-trained models for further training is a process we will describe in a later tutorial.
+我们将在另一篇教程中介绍如何加载此类模型并进一步定型。  
 
-## <a name="Loading Pre-Trained Models">Load the Pre-Trained Model </a>
+## <a name="LoadingPre-TrainedModels"> 加载预定型模型</a>
 
-Deeplearning4J lets you import models from the Python-based deep-learning framework [Keras](https://keras.io/), which itself provides an intuitive, higher-level API over Theano and TensorFlow. DL4J's model import functionality is described [here](model-import-keras). Keras, for its part, is able to import models from Caffe, TensorFlow, Torch and Theano, so it serves as a bridge to import models created in any of those frameworks, which allows developers and researchers to preserve their work when they switch to Deeplearning4j for production-grade tasks and JVM environments. 
+0.9.0版（0.8.1-SNAPSHOT）的Deeplearning4J配有一个全新的原生模型库。您可以阅读[deeplearning4j-zoo](/model-zoo)模块的内容，了解更多关于使用预定型模型的信息。此处我们需要加载一个预定型的VGG-16模型，用经过ImageNet数据集定型后得到的权重来初始化：
 
-There are two options for loading the pretrained model:
+```
+ZooModel zooModel = new VGG16();
+ComputationGraph vgg16 = zooModel.initPretrained(PretrainedType.IMAGENET);
+```
 
-1. Load into Keras, save and Load into DeepLearning4J
-2. Load directly into DeepLearning4J using helper fundctions to retrieve model from internet
+### 导入Keras模型
 
-### Option 1
+Deeplearning4J还配有专门面向[Keras](http://keras.io/)的模型导入工具。我们的[模型导入器](/model-import-keras)可将您的Keras网络配置及权重转换为Deeplearning4J的格式。Keras的顺序（Sequential）模型和标准函数式（Functional）模型都可以导入DL4J。导入模型的代码可如此编写：
 
-Load a model into Keras, then save and load into DeepLearning4J.
-
-`ModelImport` can be used directly. You can start Keras, load VGG16, save the model and weights locally, and then load that model into DeepLearning4J. 
-
-### Code to load the model would look something like this
 
 ```
 ComputationGraph model = KerasModelImport.importKerasModelAndWeights(modelJsonFilename, weightsHdf5Filename, enforceTrainingConfig);
 
 ```
 
-If you want to import a pre-trained model *for inference only*, then you should set `enforceTrainingConfig=false`. Unsupported training-only configurations generate warnings, but model import will proceed.
+如果导入的预定型模型*仅用于推断*，那么应当设置`enforceTrainingConfig=false`。目前尚不支持的仅用于定型的模型配置会触发警告消息，但模型导入功能会继续运行。
 
-### Option 2
+## <a name="ConfigureDataPipelinesforTesting"> 为测试配置数据加工管道</a>
 
-Import VGG-16 directly from online sources using helper functions.
+就数据摄取和预处理而言，您可以选择手动流程或者助手功能。VGG-16形式的图像处理助手功能为`TrainedModels.VGG16.getPreProcessor`以及`VGG16ImagePreProcessor()`。（请记住：用于推断的图像的预处理方式必须和定型图像的处理方式相同。） 
 
-For important and widely used neural net models, DeepLearning4J provides helper functions. In the case of VGG-16, we can ask the helper function `TrainedModelHelper` to download the model configuration and the weights for us, and then build a DeepLearning4J version of the model. 
+### VGG-16图像预处理管道的步骤
 
-### Code to Load VGG-16 with Helper Functions
+1. 缩放至224 * 224、3通道（RGB图像）
+2. 均值缩放，每个像素的像素值都减去平均像素值
 
-```
-TrainedModelHelper helper = new TrainedModelHelper(TrainedModels.VGG16);
-ComputationGraph vgg16 = helper.loadModel();
+缩放工作可以由DataVec的原生图像加载器完成。 
 
-```
+均值消减可以手动操作，或者由助手功能完成。 
 
-## <a name=">Configure Data Pipelines for Testing">Configure a Data Pipeline for Testing</a>
+### 将图像缩放至高224、宽224、3通道的代码示例
 
-With data ingest and pre-processing, you can choose a manual process or the helper functions. The helper functions for VGG-16 style image processing are `TrainedModels.VGG16.getPreProcessor` and `VGG16ImagePreProcessor()`. (Remember that the images must be processed in the same way for inference as they were processed for training.) 
-
-### VGG-16 image-processing pipeline steps
-
-1. Scale to 224 * 224 3 layers (RGB images)
-2. Mean scaling, subtract the mean pixel value from each pixel
-
-Scaling can be handled with DataVec's native image loader. 
-
-Mean subtraction can be done manually or with the helper functions. 
-
-### Code Examples for scaling images to 224 height 224 width, 3 layers
-
-If reading a directory of images, use DataVec's ImageRecordReader
+如果读取的是图像目录，请使用DataVec的ImageRecordReader
 
 ```
 ImageRecordReader rr = new ImageRecordReader(224,224,3);
 ```
 
-If loading a single image, use DataVec's NativeImageLoader
+如果读取的是单一图像，请使用DataVec的NativeImageLoader
 
 ```
 NativeImageLoader loader = new NativeImageLoader(224, 224, 3);
@@ -104,40 +87,40 @@ INDArray image = loader.asMatrix(file);
 ```
 
 
-### Code Examples for mean subtraction
+### 均值消减的代码示例
 
-If loading a directory through DataVec's RecordReader
+如果用DataVec的RecordReader加载一个目录
 
 ```
  DataSetPreProcessor preProcessor = TrainedModels.VGG16.getPreProcessor();
  dataIter.setPreProcessor(preProcessor);
 ```
 
-If loading an image using NativeImageLoader
+如果采用NativeImageLoader加载图像
 
 ```
 DataNormalization scaler = new VGG16ImagePreProcessor();
 scaler.transform(image);
 ```
 
-## <a name="Testing Pre-Trained Models">Test Pre-Trained Model</a>
+## <a name="TestingPre-TrainedModels"> 测试预定型模型</a>
 
-Once your network is loaded, you should verify that it works as expected. Note that ImageNet was not designed for face recognition. It is better to test with a picture of an elephant, a dog, or a cat. 
+网络加载完毕后，您应当验证它能按预期的方式工作。请注意，ImageNet并非为人脸识别而设计，所以最好用大象、狗或者猫的图片来测试。 
 
-If you want to compare the results with Keras output, load the model in Keras and DeepLearning4J and compare the output of each. It should be quite similar.  If Keras outputs a 35.00094% likelihood that the image is Elephant while DeepLearning4j outputs a 35.00104% likelihood that the image is Elephant, that is probably a rounding error rather than a true divergence in models.
+如果您想将运行结果与Keras的输出作比较，请分别在Keras和DeepLearning4J中加载模型，然后比较两者的输出。最终的结果应该相当接近。如果Keras表示该图像有35.00094%的概率是大象，而DeepLearning4j输出的概率为35.00104%，这很可能只是取整误差，而不是因为模型之间存在实际差异。
 
-### Code to test a directory of images
+### 测试图像目录的代码
 
 ```
 
 while (dataIter.hasNext()) {
-            //prediction array
+            //预测数组
             DataSet next = dataIter.next();
             INDArray features = next.getFeatures();
             INDArray[] outputA = vgg16.output(false,features);
             INDArray output = Nd4j.concat(0,outputA);
 
-            //print top 5 predictions for each image in the dataset
+            //对数据集中的每幅图像，显示排名前五位的预测结果
             List<RecordMetaData> trainMetaData = next.getExampleMetaData(RecordMetaData.class);
             int batch = 0;
             for(RecordMetaData recordMetaData : trainMetaData){
@@ -149,13 +132,13 @@ while (dataIter.hasNext()) {
 ```
  
 
-### Code to test image input from command-line prompt
+### 测试由命令行提示输入的图像的代码
 
 
 ```
 
-//Buffered stream reader to provide prompt requesting file path of 
-// image to be tested
+//缓冲流加载器给出提示，请求指定测试图像的 
+// 文件路径
 InputStreamReader r = new InputStreamReader(System.in);
 BufferedReader br = new BufferedReader(r);
 for (; ; ){
@@ -168,8 +151,8 @@ for (; ; ){
     System.out.println("You typed" + path);
 
 
-	// Code to convert submitted image to INDArray
-	// apply mean subtraction and run inference
+	// 此处代码将已提交图像转换为INDArray
+	// 进行均值消减并运行推断
     File file = new File(path);
     NativeImageLoader loader = new NativeImageLoader(224, 224, 3);
     INDArray image = loader.asMatrix(file);
@@ -180,11 +163,11 @@ for (; ; ){
 
 ```
 
-## <a name="Save Model with ModelSerializer">Save model with ModelSerializer</a>
+## <a name="SaveModelwithModelSerializer"> 用ModelSerializer保存模型</a>
 
-Once you've loaded and tested the model, save it using DeepLearning4J's `ModelSerializer`. Loading a model from ModelSerializer is less resource intensive than loading from Keras. Our advice is to load once, then save in the DeepLearning4J format for later re-use. 
+加载模型并测试完毕后，请用DeepLearning4J的`ModelSerializer`保存模型。和用Keras加载模型相比，用ModelSerializer加载模型消耗的资源更少。我们建议您加载一次，然后将模型保存为DeepLearning4J格式，以便之后再次使用。 
 
-### Code to save Model to file
+### 将模型保存至文件的代码
 
 ```
 File locationToSave = new File("vgg16.zip");
@@ -192,7 +175,7 @@ ModelSerializer.writeModel(model,locationToSave,saveUpdater);
 		
 ```		
 
-### Code to Load saved model from file
+### 从文件中加载已保存模型的代码
 
 ```
 File locationToSave = new File("/Users/tomhanlon/SkyMind/java/Class_Labs/vgg16.zip");
@@ -200,9 +183,9 @@ ComputationGraph vgg16 = ModelSerializer.restoreComputationGraph(locationToSave)
 
 ```
 
-## <a name="Build Web App to Take Input Image">Build Web App to take input images</a>
+## <a name="BuildWebApptoTakeInputImage"> 构建接受输入图像的网页应用</a>
 
-The following HTML for a form element will present the user with a page to select and upload or "post" an image to our server. This one itself is not hooked. (WIP!) 
+下列HTML代码生成的表单元素可以让用户选择一幅图像并上传至我们的服务器。以下示例并未连接至服务器。（尚未完成！） 
 
 <pre>
 <form method='post' action='getPredictions' enctype='multipart/form-data'>
@@ -211,28 +194,28 @@ The following HTML for a form element will present the user with a page to selec
 </form>
 </pre>
 
-The action attribute of the form element is the URL that the user-selected image will be posted to. 
+表单元素的动作属性是用户所选图像的上传URL。 
 
-We used [Spark Java](http://sparkjava.com/) for the web application as it was straightforward. Just add the Spark Java code to a class that's already written. There are many other choices available. 
+我们选择用[Spark Java](http://sparkjava.com/)编写网页应用，因为它比较简单明了。您只需将Spark Java代码添加至一项已经编写好的类中即可。其他选择还有很多。 
 
-Whichever Java web framework you choose, the following steps are the same. 
+无论您选用哪种Java网页框架，以下步骤都是相同的。 
 
-1. Build a form 
-2. Test the form 
-3. Make sure the file upload works, write some Java that tests for access to the file as a Java File object, or the string for the Path. 
-4. Connect the web app functionality as input into the neural network
+1. 构建一个表单 
+2. 测试表单 
+3. 确保文件上传功能运行正常，编写一些Java代码来测试路径字符串，或者测试能否将文件作为Java文件对象访问。 
+4. 将网页应用功能作为输入连接至神经网络
 
-## <a name="Tie Web App Front End to Neural Net Backend">Tie Webapp Front End to Neural Net Backend</a>
+## <a name="TieWebAppFrontEndtoNeuralNetBackend"> 将网页应用前端与神经网络后端绑定</a>
 
-The final working code is below. 
+可正常工作的最终代码如下所示。 
 
-When this class is running, it will launch a Jetty webserver listening on port 4567. 
+这个类运行时会在4567端口上启动Jetty网页服务器监听。 
 
-Starting the web app will take as much time as it takes to load the neural network. VGG-16 takes about four minutes to load. 
+网页应用的启动时间大约和神经网络的加载时间相同。加载VGG-16大约需要四分钟。 
 
-Once running, it uses incrementally more RAM in about 60MB chunks until it hits 4G and garbage collection cleans things up. We ran VGG-16 on an AWS t2-large instance, testing it for about a week. It was stable. It may be possible to use an even smaller AMI.  
+一旦网络开始运行，其RAM使用量大约会以60MB为单位递增，直至达到4G，此时垃圾回收功能会开始清理内存。我们在一个AWS t2-large实例上运行VGG-16，测试了大约一周时间，运行状况很稳定。或许还可以使用更小的AMI。  
 
-## <a name="code">Full code example</a>
+## <a name="code"> 完整代码示例</a>
 
 
 ```
@@ -260,38 +243,38 @@ import static spark.Spark.*;
 public class VGG16SparkJavaWebApp {
     public static void main(String[] args) throws Exception {
 
-        // Set locations for certificates for https encryption
+        // 设置HTTPS加密证书的位置
         String keyStoreLocation = "clientkeystore";
         String keyStorePassword = "skymind";
         secure(keyStoreLocation, keyStorePassword, null,null );
 
-        // Load the trained model
+        // 加载已定型的模型
         File locationToSave = new File("vgg16.zip");
         ComputationGraph vgg16 = ModelSerializer.restoreComputationGraph(locationToSave);
 
 
-        // make upload directory for user submitted images
-        // Images are uploaded, processed and then deleted
+        // 将上传目录用于用户提交的图像
+        // 图像上传、处理后予以删除
         File uploadDir = new File("upload");
         uploadDir.mkdir(); // create the upload directory if it doesn't exist
 
-        // form this string displays an html form to select and upload an image
+        // 以下String类将会显示一个用于选择和上传图像的HTML表单
         String form = "<form method='post' action='getPredictions' enctype='multipart/form-data'>\n" +
                 "    <input type='file' name='uploaded_file'>\n" +
                 "    <button>Upload picture</button>\n" +
                 "</form>";
 
 
-        // Spark Java configuration to handle requests
-        // test request, the url /hello should return "hello world"
+        // 用以处理请求的Spark Java配置
+        // 测试请求，URL /hello应返回“hello world”
         get("/hello", (req, res) -> "Hello World");
 
-        // Request for VGGpredict returns the form to submit an image
+        // VGGpredict的请求会返回提交图像的表单
         get("VGGpredict", (req, res) -> form);
 
-        // a Post request (note the form uses http post) for
-        // getPredictions (note the action attribute or the form)
-        // Page prints results and then another form
+        // getPredictions（注意表单的动作属性）
+        //  Post请求（注意表单采用的是http post发布）
+        // 页面显示结果及另一个表单
 
         post("/getPredictions", (req, res) -> {
 
@@ -299,38 +282,38 @@ public class VGG16SparkJavaWebApp {
 
             req.attribute("org.eclipse.jetty.multipartConfig", new MultipartConfigElement("/temp"));
 
-            try (InputStream input = req.raw().getPart("uploaded_file").getInputStream()) { // getPart needs to use same "name" as input field in form
+            try (InputStream input = req.raw().getPart("uploaded_file").getInputStream()) { // getPart需要使用和表单输入字段相同的“名称”
                 Files.copy(input, tempFile, StandardCopyOption.REPLACE_EXISTING);
             }
 
 
-            // The user submitted file is tempFile, convert to Java File "file"
+            // 用户提交的文件为tempFile，转换为Java文件“file”
             File file = tempFile.toFile();
 
-            // Convert file to INDArray
+            // 将file转换为INDArray
             NativeImageLoader loader = new NativeImageLoader(224, 224, 3);
             INDArray image = loader.asMatrix(file);
 
-            // delete the physical file, if left our drive would fill up over time
+            // 删除实体文件，如果保留则硬盘会逐渐填满
             file.delete();
 
-            // Mean subtraction pre-processing step for VGG
+            // VGG网络的均值消减预处理
             DataNormalization scaler = new VGG16ImagePreProcessor();
             scaler.transform(image);
 
-            //Inference returns array of INDArray, index[0] has the predictions
+            //推断返回INDArray数组，index[0]为预测结果
             INDArray[] output = vgg16.output(false,image);
 
-            // convert 1000 length numeric index of probabilities per label
-            // to sorted return top 5 convert to string using helper function VGG16.decodePredictions
-            // "predictions" is string of our results
+            // 用助手功能VGG16.decodePredictions将标签的概率排序并
+            // 返回前五位结果，转换为字符串
+            // “predictions”为结果的字符串
             String predictions = TrainedModels.VGG16.decodePredictions(output[0]);
 
-            // return results along with form to run another inference
+            // 返回结果以及运行另一次推断的表单
             return "<h4> '" + predictions  + "' </h4>" +
                     "Would you like to try another" +
                     form;
-            //return "<h1>Your image is: '" + tempFile.getName(1).toString() + "' </h1>";
+            return "<h1>Your image is: '" + tempFile.getName(1).toString() + "' </h1>";
 
         });
 
@@ -341,16 +324,16 @@ public class VGG16SparkJavaWebApp {
 
 ```
 
-## <a name="example">Example predictions</a>
+## <a name="example"> 预测示例</a>
 
-Here are the results given on a photo of one of the Skymind cats, which VGG-16 has probably never seen before. (He's very shy is why.)
+Skymind公司养了几只猫，以下是VGG-16对其中之一的照片的预测结果，网络可能从未见过这只猫。（因为他很害羞……）
 
-![Alt text](./../img/cat.jpeg)
+![a cat for inference](./../img/cat.jpeg)
 
 	16.694832%, tabby 7.550286%, tiger_cat 0.065847%, cleaver 0.000000%, cleaver 0.000000%, cleaver
 
-For this dog found on the internet, which VGG-16 may have seen during training, the results are quite precise.
+VGG-16对下面这只来自互联网的狗给出了相当准确的预测结果，网络在定型过程中有可能见过这幅图片。
 
-![Alt text](./../img/dog_320x240.png)
+![a dog for inference](./../img/dog_320x240.png)
 
 	53.441956%, bluetick 17.103373%, English_setter 5.808368%, kelpie 3.517581%, Greater_Swiss_Mountain_dog 2.263778%, German_short-haired_pointer'
