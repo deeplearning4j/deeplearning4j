@@ -61,7 +61,7 @@ object LeNetMnistExample extends App {
   private val mnistTest: DataSetIterator = new MnistDataSetIterator(batchSize, false, seed)
 
   log.info("Build model....")
-  private val model: Sequential = new Sequential(rngSeed = rngSeed)
+  private val model: Sequential = Sequential(rngSeed = rngSeed)
   model.add(Unflatten3D(List(nbRows, nbColumns, nbChannels), nIn = nbRows * nbColumns))
   model.add(Convolution2D(nFilter = 20, kernelSize = List(5, 5), stride = List(1, 1),
     weightInit = WeightInit.XAVIER, regularizer = L2(weightDecay)))

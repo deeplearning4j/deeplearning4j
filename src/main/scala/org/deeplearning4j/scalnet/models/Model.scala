@@ -57,13 +57,14 @@ abstract class Model {
         sgd match {
           case opt if opt.nesterov =>
             builder = builder.updater(Updater.NESTEROVS).momentum(opt.momentum)
-          case _ =>
-            builder = builder.optimizationAlgo(optimizer.optimizationAlgorithm)
-              .learningRate(optimizer.asInstanceOf[SGD].lr)
         }
-        builder
+      case _ =>
+        builder = builder.optimizationAlgo(optimizer.optimizationAlgorithm)
+          .learningRate(optimizer.asInstanceOf[SGD].lr)
     }
+    builder
   }
+
 
   def buildOutput(lossFunction: LossFunction): Unit = {
     layers.lastOption match {

@@ -121,3 +121,7 @@ class Sequential(val rngSeed: Long = 0) extends Model {
 
   def getNetwork: MultiLayerNetwork = model
 }
+
+object Sequential {
+  def apply(rngSeed: Long = 0): Sequential = new Sequential(rngSeed)
+}

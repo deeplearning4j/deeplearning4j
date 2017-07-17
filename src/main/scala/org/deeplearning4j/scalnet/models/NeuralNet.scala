@@ -45,10 +45,6 @@ import scala.collection.JavaConverters._
 
 class NeuralNet(val inputType: Option[InputType] = None, val rngSeed: Long = 0) extends Model {
 
-  def this(inputType: InputType, rngSeed: Long) {
-    this(Option(inputType), rngSeed)
-  }
-
   private val log: Logger = LoggerFactory.getLogger(this.getClass)
 
   def add(layer: Node): Unit = {
@@ -91,4 +87,8 @@ class NeuralNet(val inputType: Option[InputType] = None, val rngSeed: Long = 0) 
   override def toYaml: String = model.getLayerWiseConfigurations.toYaml
 
   def getNetwork: MultiLayerNetwork = model
+}
+
+object NeuralNet {
+  def apply(inputType: InputType = null, rngSeed: Long = 0): NeuralNet = new NeuralNet(Option(inputType), rngSeed)
 }

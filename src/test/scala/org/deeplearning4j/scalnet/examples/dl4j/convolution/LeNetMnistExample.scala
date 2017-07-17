@@ -59,7 +59,7 @@ object LeNetMnistExample extends App {
   private val mnistTest: DataSetIterator = new MnistDataSetIterator(batchSize, false, seed)
 
   log.info("Build model....")
-  private val model: NeuralNet = new NeuralNet(
+  private val model: NeuralNet = NeuralNet(
     inputType = InputType.convolutionalFlat(nbRows, nbColumns, nbChannels), rngSeed = seed)
   model.add(Convolution2D(nFilter = 20, nChannels = nbChannels, kernelSize = List(5, 5), stride = List(1, 1),
     weightInit = WeightInit.XAVIER, regularizer = L2(weightDecay)))

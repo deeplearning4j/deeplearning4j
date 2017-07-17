@@ -69,7 +69,7 @@ object IrisCSVExample extends App {
   val training_data = new ListDataSetIterator(training_, training_.size)
 
   log.info("Build model....")
-  val model: NeuralNet = new NeuralNet
+  val model: NeuralNet = NeuralNet()
   model.add(Dense(numDenseOut, nIn = numIn, activation = "relu", regularizer = L2(learningRate * decay)))
   model.add(Dense(numDenseOut, activation = "relu", regularizer = L2(learningRate * decay)))
   model.add(Dense(numDenseOut, activation = "relu", regularizer = L2(learningRate * decay)))

@@ -54,7 +54,7 @@ object MLPMnistTwoLayerExample extends App {
   private val mnistTest: DataSetIterator = new MnistDataSetIterator(batchSize, false, rngSeed)
 
   log.info("Build model....")
-  private val model: Sequential = new Sequential(rngSeed = rngSeed)
+  private val model: Sequential = Sequential(rngSeed = rngSeed)
   model.add(Dense(nOut = 500, nIn = numRows*numColumns, weightInit = WeightInit.XAVIER, activation = "relu",
     regularizer = L2(learningRate * 0.005)))
   model.add(Dense(nOut = 100, weightInit = WeightInit.XAVIER, activation = "relu", regularizer = L2(learningRate * 0.005)))
