@@ -160,17 +160,11 @@ public class ElementWiseVertex extends GraphVertex {
 
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
-        return LayerMemoryReport.builder()
-                .layerName(null)    //TODO
-                .layerType(ElementWiseVertex.class)
-                .inputType(inputTypes[0])
-                .outputType(inputTypes[0])
-                .parameterSize(0)
-                .activationSizePerEx(inputTypes[0].arrayElementsPerExample())
-                .updaterStateSize(0)
-                .inferenceWorkingSizePerEx(0)       //No additional working memory (beyond activations size)
-                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)    //No additional working memory (beyond activations/epsilons size)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+        //No working memory in addition to output activations
+        return new LayerMemoryReport.Builder(null, ElementWiseVertex.class, inputTypes[0], inputTypes[0])
+                .standardMemory(0, 0)
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(0, 0)
                 .build();
     }
 }

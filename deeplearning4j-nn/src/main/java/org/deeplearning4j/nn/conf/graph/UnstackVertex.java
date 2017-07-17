@@ -186,18 +186,13 @@ public class UnstackVertex extends GraphVertex {
 
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
-        //Get op with dup
-        return LayerMemoryReport.builder()
-                .layerName(null)    //TODO
-                .layerType(UnstackVertex.class)
-                .inputType(inputTypes[0])
-                .outputType(getOutputType(-1, inputTypes))
-                .parameterSize(0)
-                .activationSizePerEx(getOutputType(-1, inputTypes).arrayElementsPerExample())
-                .updaterStateSize(0)
-                .inferenceWorkingSizePerEx(0)
-                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+        //Get op with dup - accounted for in activations size (no working memory)
+        //Do one dup on the forward pass (output activations). Accounted for in output activations.
+        InputType outputType = getOutputType(-1, inputTypes);
+        return new LayerMemoryReport.Builder(null, UnstackVertex.class, inputTypes[0], outputType )
+                .standardMemory(0, 0)   //No params
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(0, 0)  //No caching
                 .build();
     }
 }

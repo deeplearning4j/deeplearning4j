@@ -6,6 +6,7 @@ import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.graph.ScaleVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.GravesBidirectionalLSTM;
@@ -684,26 +685,23 @@ public class LSTMHelpers {
 
     public static LayerMemoryReport getMemoryReport(GravesBidirectionalLSTM lstmLayer, InputType inputType) {
         LayerMemoryReport r = getMemoryReport(true, lstmLayer, inputType);
-        //Double everything for bidirectional
 
-        Map<CacheMode,Integer> trainNoCache = new HashMap<>();
-        Map<CacheMode,Integer> trainCache = new HashMap<>();
-        for(CacheMode cm : r.getTrainingWorkingSizeCachedPerEx().keySet()){
-            trainNoCache.put(cm, 2 * r.getTrainingWorkingSizePerEx().get(cm));
-            trainCache.put(cm, 2 * r.getTrainingWorkingSizeCachedPerEx().get(cm));
+        //Double everything for bidirectional
+        Map<CacheMode,Long> fixedTrain = new HashMap<>();
+        Map<CacheMode,Long> varTrain = new HashMap<>();
+        Map<CacheMode,Long> cacheFixed = new HashMap<>();
+        Map<CacheMode,Long> cacheVar = new HashMap<>();
+        for(CacheMode cm : CacheMode.values()){
+            fixedTrain.put(cm, 2 * r.getWorkingMemoryFixedTrain().get(cm));
+            varTrain.put(cm, 2 * r.getWorkingMemoryVariableTrain().get(cm));
+            cacheFixed.put(cm, 2 * r.getCacheModeMemFixed().get(cm));
+            cacheVar.put(cm, 2 * r.getCacheModeMemVariablePerEx().get(cm));
         }
 
-        return LayerMemoryReport.builder()
-                .layerName(lstmLayer.getLayerName())
-                .layerType(lstmLayer.getClass())
-                .inputType(inputType)
-                .outputType(lstmLayer.getOutputType(-1, inputType))
-                .parameterSize(2 * r.getParameterSize())
-                .activationSizePerEx(r.getActivationSizePerEx())
-                .updaterStateSize(2 * r.getUpdaterStateSize())
-                .inferenceWorkingSizePerEx(2 * r.getInferenceWorkingSizePerEx())
-                .trainingWorkingSizePerEx(trainNoCache)
-                .trainingWorkingSizeCachedPerEx(trainCache)
+        return new LayerMemoryReport.Builder(r.getLayerName(), r.getClass(), r.getInputType(), r.getOutputType())
+                .standardMemory(2 * r.getParameterSize(), 2 * r.getUpdaterStateSize())
+                .workingMemory(2 * r.getWorkingMemoryFixedInference(), 2 * r.getWorkingMemoryVariableInference(), fixedTrain, varTrain)
+                .cacheMemory(cacheFixed, cacheVar)
                 .build();
     }
 
@@ -717,11 +715,10 @@ public class LSTMHelpers {
 
         int numParams = lstmLayer.initializer().numParams(lstmLayer);
         int updaterSize = (int)lstmLayer.getIUpdater().stateSize(numParams);
-        int actSize = outputType.arrayElementsPerExample();
 
         //Memory use during forward pass:
-        //ifogActivations: nTimeSteps * [minibatch,4*layerSize] (not cached during fwd pass)
-        int workingMemInference = tsLength * 4 * lstmLayer.getNOut();   //Reduced by factor of tsLength if using workspace
+        //ifogActivations: nTimeSteps * [minibatch,4*layerSize] (not cached during inference fwd pass)
+        int workingMemInferencePerEx = tsLength * 4 * lstmLayer.getNOut();   //Reduced by factor of tsLength if using workspace
 
         //For training, we also have
         //nTimeSteps * 5 * [minibatch, nOut] - 4 x gate pre-outs, memory cell state - may be cached
@@ -744,42 +741,28 @@ public class LSTMHelpers {
         //TODO NO WAY TO TAKE LSTM WORKSPACE INTO ACCOUNT HERE :(
 
 
-        Map<CacheMode,Integer> trainNoCache = new HashMap<>();
-        Map<CacheMode,Integer> trainCache = new HashMap<>();
+        Map<CacheMode,Long> trainVariable = new HashMap<>();
+        Map<CacheMode,Long> cacheVariable = new HashMap<>();
         for(CacheMode cm : CacheMode.values()){
-            int totalBackpropNoCache;
-            int totalBackpropCache;
-            switch (cm){
-                case DEVICE:
-                case HOST:
-                    totalBackpropNoCache = workingMemInference + backpropWorkingSpace;
-                    totalBackpropCache = fwdPassPerTimeStepTrainCache;
-                    break;
-                case NONE:
-                    totalBackpropNoCache = workingMemInference + fwdPassPerTimeStepTrainCache + backpropWorkingSpace;
-                    totalBackpropCache = 0;
-                    break;
-                default:
-                    throw new RuntimeException("Unknown cache mode: " + cm);
+            long trainWorking;
+            long cacheMem;
+
+            if(cm == CacheMode.NONE){
+                trainWorking = workingMemInferencePerEx + fwdPassPerTimeStepTrainCache + backpropWorkingSpace;
+                cacheMem = 0;
+            } else {
+                trainWorking = workingMemInferencePerEx + backpropWorkingSpace;
+                cacheMem = fwdPassPerTimeStepTrainCache;
             }
 
-            trainNoCache.put(cm, totalBackpropNoCache);
-            trainCache.put(cm, totalBackpropCache);
+            trainVariable.put(cm, trainWorking);
+            cacheVariable.put(cm, cacheMem);
         }
 
-
-
-        return LayerMemoryReport.builder()
-                .layerName(lstmLayer.getLayerName())
-                .layerType(lstmLayer.getClass())
-                .inputType(inputType)
-                .outputType(outputType)
-                .parameterSize(numParams)
-                .activationSizePerEx(actSize)
-                .updaterStateSize(updaterSize)
-                .inferenceWorkingSizePerEx(workingMemInference)
-                .trainingWorkingSizePerEx(trainNoCache)
-                .trainingWorkingSizeCachedPerEx(trainCache)
+        return new LayerMemoryReport.Builder(null, lstmLayer.getClass(), inputType, outputType )
+                .standardMemory(numParams, updaterSize)
+                .workingMemory(0, workingMemInferencePerEx, MemoryReport.CACHE_MODE_ALL_ZEROS, trainVariable)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, cacheVariable)
                 .build();
     }
 }

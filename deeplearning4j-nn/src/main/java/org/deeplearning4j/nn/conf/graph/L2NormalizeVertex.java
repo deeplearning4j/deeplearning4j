@@ -108,27 +108,16 @@ public class L2NormalizeVertex extends GraphVertex {
 
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
-
+        InputType outputType = getOutputType(-1, inputTypes);
         //norm2 value (inference working mem): 1 per example during forward pass
 
-        //Training working mem: 2 per example + 2x input size + 1 per example (in addition to epsilons
+        //Training working mem: 2 per example + 2x input size + 1 per example (in addition to epsilons)
         int trainModePerEx = 3 + 2 * inputTypes[0].arrayElementsPerExample();
-        Map<CacheMode, Integer> trainModeWorkingMem = new HashMap<>();
-        for(CacheMode cm : CacheMode.values()){
-            trainModeWorkingMem.put(cm, trainModePerEx);
-        }
 
-        return LayerMemoryReport.builder()
-                .layerName(null)    //TODO
-                .layerType(L2NormalizeVertex.class)
-                .inputType(inputTypes[0])
-                .outputType(inputTypes[0])
-                .parameterSize(0)
-                .activationSizePerEx(inputTypes[0].arrayElementsPerExample())
-                .updaterStateSize(0)
-                .inferenceWorkingSizePerEx(1)
-                .trainingWorkingSizePerEx(trainModeWorkingMem)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+        return new LayerMemoryReport.Builder(null, L2NormalizeVertex.class, inputTypes[0], outputType )
+                .standardMemory(0, 0)   //No params
+                .workingMemory(0, 1, 0, trainModePerEx)
+                .cacheMemory(0, 0)  //No caching
                 .build();
     }
 }

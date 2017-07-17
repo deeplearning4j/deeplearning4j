@@ -169,17 +169,12 @@ public class MergeVertex extends GraphVertex {
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
         InputType outputType = getOutputType(-1, inputTypes);
-        return LayerMemoryReport.builder()
-                .layerName(null)    //TODO
-                .layerType(MergeVertex.class)
-                .inputType(inputTypes[0])   //TODO multiple types
-                .outputType(outputType)
-                .parameterSize(0)
-                .activationSizePerEx(outputType.arrayElementsPerExample())
-                .updaterStateSize(0)
-                .inferenceWorkingSizePerEx(0)
-                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)    //No working mem, just activations
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+
+        //TODO multiple input types
+        return new LayerMemoryReport.Builder(null, MergeVertex.class, inputTypes[0], outputType )
+                .standardMemory(0, 0)   //No params
+                .workingMemory(0, 0, 0, 0)  //No working memory in addition to activations/epsilons
+                .cacheMemory(0, 0)  //No caching
                 .build();
     }
 }

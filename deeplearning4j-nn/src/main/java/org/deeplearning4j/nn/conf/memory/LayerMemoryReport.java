@@ -160,7 +160,7 @@ public class LayerMemoryReport extends MemoryReport {
         }
 
         public Builder workingMemory(long fixedInference, long variableInferencePerEx, long fixedTrain, long variableTrainPerEx) {
-            return workingMemory(fixedInference, variableInferencePerEx, MemoryReport.cacheModeMapFor(fixedInference), MemoryReport.cacheModeMapFor(variableInferencePerEx) );
+            return workingMemory(fixedInference, variableInferencePerEx, MemoryReport.cacheModeMapFor(fixedTrain), MemoryReport.cacheModeMapFor(variableTrainPerEx) );
         }
 
         public Builder workingMemory(long fixedInference, long variableInferencePerEx, Map<CacheMode, Long> fixedTrain, Map<CacheMode, Long> variableTrainPerEx) {
@@ -169,6 +169,10 @@ public class LayerMemoryReport extends MemoryReport {
             this.workingMemoryFixedTrain = fixedTrain;
             this.workingMemoryVariableTrain = variableTrainPerEx;
             return this;
+        }
+
+        public Builder cacheMemory(long cacheModeMemoryFixed, long cacheModeMemoryVariablePerEx ){
+            return cacheMemory(MemoryReport.cacheModeMapFor(cacheModeMemoryFixed), MemoryReport.cacheModeMapFor(cacheModeMemoryVariablePerEx));
         }
 
         public Builder cacheMemory(Map<CacheMode, Long> cacheModeMemoryFixed, Map<CacheMode, Long> cacheModeMemoryVariablePerEx) {

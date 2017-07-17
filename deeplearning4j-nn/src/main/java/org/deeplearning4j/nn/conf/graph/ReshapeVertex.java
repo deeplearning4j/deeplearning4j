@@ -131,18 +131,12 @@ public class ReshapeVertex extends GraphVertex {
 
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
-        //Assume it's a reshape-with-copy op
-        return LayerMemoryReport.builder()
-                .layerName(null)    //TODO
-                .layerType(ReshapeVertex.class)
-                .inputType(inputTypes[0])
-                .outputType(getOutputType(-1, inputTypes))
-                .parameterSize(0)
-                .activationSizePerEx(getOutputType(-1, inputTypes).arrayElementsPerExample())
-                .updaterStateSize(0)
-                .inferenceWorkingSizePerEx(0)
-                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+        //Assume it's a reshape-with-copy op. In this case: memory use is accounted for in activations
+        InputType outputType = getOutputType(-1, inputTypes);
+        return new LayerMemoryReport.Builder(null, ReshapeVertex.class, inputTypes[0], outputType )
+                .standardMemory(0, 0)   //No params
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(0, 0)  //No caching
                 .build();
     }
 }

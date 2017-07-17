@@ -95,25 +95,16 @@ public class L2Vertex extends GraphVertex {
     public MemoryReport getMemoryReport(InputType... inputTypes) {
         InputType outputType = getOutputType(-1, inputTypes);
 
+        //Inference: only calculation is for output activations; no working memory
         //Working memory for training:
         //1 for each example (fwd pass) + output size (1 per ex) + input size + output size... in addition to the returned eps arrays
+        //output size == input size here
         int trainWorkingSizePerEx = 3 + 2 * inputTypes[0].arrayElementsPerExample();
-        Map<CacheMode,Integer> trainWorkingMem = new HashMap<>();
-        for(CacheMode cm : CacheMode.values()){
-            trainWorkingMem.put(cm, trainWorkingSizePerEx);
-        }
 
-        return LayerMemoryReport.builder()
-                .layerName(null)    //TODO
-                .layerType(L2Vertex.class)
-                .inputType(inputTypes[0])   //TODO multiple types
-                .outputType(outputType)
-                .parameterSize(0)
-                .activationSizePerEx(inputTypes[0].arrayElementsPerExample())
-                .updaterStateSize(0)
-                .inferenceWorkingSizePerEx(0)
-                .trainingWorkingSizePerEx(trainWorkingMem)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+        return new LayerMemoryReport.Builder(null, L2Vertex.class, inputTypes[0], outputType )
+                .standardMemory(0, 0)   //No params
+                .workingMemory(0, 0, 0, trainWorkingSizePerEx)
+                .cacheMemory(0, 0)  //No caching
                 .build();
     }
 }

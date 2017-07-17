@@ -36,7 +36,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 @NoArgsConstructor
 @Data
-@EqualsAndHashCode(callSuper = false)
 public class PreprocessorVertex extends GraphVertex {
 
     private InputPreProcessor preProcessor;
@@ -97,17 +96,12 @@ public class PreprocessorVertex extends GraphVertex {
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
         //TODO: eventually account for preprocessor memory use
-        return LayerMemoryReport.builder()
-                .layerName(null)    //TODO
-                .layerType(PreprocessorVertex.class)
-                .inputType(inputTypes[0])   //TODO multiple types
-                .outputType(getOutputType(-1, inputTypes))
-                .parameterSize(0)
-                .activationSizePerEx(getOutputType(-1, inputTypes).arrayElementsPerExample())
-                .updaterStateSize(0)
-                .inferenceWorkingSizePerEx(0)
-                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+
+        InputType outputType = getOutputType(-1, inputTypes);
+        return new LayerMemoryReport.Builder(null, PreprocessorVertex.class, inputTypes[0], outputType )
+                .standardMemory(0, 0)   //No params
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(0, 0)  //No caching
                 .build();
     }
 }

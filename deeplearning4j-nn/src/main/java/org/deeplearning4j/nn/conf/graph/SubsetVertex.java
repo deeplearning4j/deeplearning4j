@@ -41,7 +41,6 @@ import java.util.Arrays;
  * @author Alex Black
  */
 @Data
-@EqualsAndHashCode(callSuper = false)
 public class SubsetVertex extends GraphVertex {
 
     private int from;
@@ -128,17 +127,11 @@ public class SubsetVertex extends GraphVertex {
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
         //Get op without dup - no additional memory use
-        return LayerMemoryReport.builder()
-                .layerName(null)    //TODO
-                .layerType(SubsetVertex.class)
-                .inputType(inputTypes[0])
-                .outputType(getOutputType(-1, inputTypes))
-                .parameterSize(0)
-                .activationSizePerEx(0)
-                .updaterStateSize(0)
-                .inferenceWorkingSizePerEx(0)
-                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+        InputType outputType = getOutputType(-1, inputTypes);
+        return new LayerMemoryReport.Builder(null, SubsetVertex.class, inputTypes[0], outputType )
+                .standardMemory(0, 0)   //No params
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(0, 0)  //No caching
                 .build();
     }
 }

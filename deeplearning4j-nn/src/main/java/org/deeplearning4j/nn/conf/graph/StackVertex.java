@@ -174,17 +174,10 @@ public class StackVertex extends GraphVertex {
         //No working memory, just output activations
         InputType outputType = getOutputType(-1, inputTypes);
 
-        return LayerMemoryReport.builder()
-                .layerName(null)    //TODO
-                .layerType(StackVertex.class)
-                .inputType(inputTypes[0])
-                .outputType(getOutputType(-1, inputTypes))
-                .parameterSize(0)
-                .activationSizePerEx(outputType.arrayElementsPerExample())
-                .updaterStateSize(0)
-                .inferenceWorkingSizePerEx(0)
-                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+        return new LayerMemoryReport.Builder(null, StackVertex.class, inputTypes[0], outputType )
+                .standardMemory(0, 0)   //No params
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(0, 0)  //No caching
                 .build();
     }
 }

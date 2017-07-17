@@ -116,18 +116,11 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
 
     @Override
     public MemoryReport getMemoryReport(InputType... inputTypes) {
-        //TODO hard to estimate memory requirements here... we'll put it as 0 for now
-        return LayerMemoryReport.builder()
-                .layerName(null)    //TODO
-                .layerType(DuplicateToTimeSeriesVertex.class)
-                .inputType(inputTypes[0])
-                .outputType(getOutputType(-1, inputTypes))
-                .parameterSize(0)
-                .activationSizePerEx(getOutputType(-1, inputTypes).arrayElementsPerExample())
-                .updaterStateSize(0)
-                .inferenceWorkingSizePerEx(0)
-                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+        //No working memory in addition to output activations
+        return new LayerMemoryReport.Builder(null, DuplicateToTimeSeriesVertex.class, inputTypes[0], getOutputType(-1, inputTypes))
+                .standardMemory(0, 0)
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(0, 0)
                 .build();
     }
 }
