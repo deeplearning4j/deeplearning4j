@@ -168,35 +168,20 @@ public class GlobalPoolingLayer extends Layer {
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         InputType outputType = getOutputType(-1, inputType);
 
-        int actElementsPerEx = outputType.arrayElementsPerExample();
-
-        int trainWorkingSize = 0;
+        int fwdTrainInferenceWorkingPerEx = 0;
         //Here: we'll assume we are doing 'full array' global pooling.
         //For max/avg/sum pooling, no working memory (GlobalPoolingLayer.activateHelperFullArray
         //But for pnorm, we have working memory
         if(poolingType == PoolingType.PNORM){
             //Dup the input array once before
-            trainWorkingSize += inputType.arrayElementsPerExample();
+            fwdTrainInferenceWorkingPerEx = inputType.arrayElementsPerExample();
         }
 
-
-        //GlobalPooling layer does not use caching
-        Map<CacheMode,Integer> trainMode = new HashMap<>();
-        for(CacheMode cm : CacheMode.values()){
-            trainMode.put(cm, trainWorkingSize);
-        }
-
-        return LayerMemoryReport.builder()
-                .layerName(layerName)
-                .layerType(DenseLayer.class)
-                .inputType(inputType)
-                .outputType(outputType)
-                .parameterSize(0)
-                .activationSizePerEx(actElementsPerEx)
-                .updaterStateSize(0)
-                .inferenceWorkingSizePerEx(0)               //No additional working memory for forward pass
-                .trainingWorkingSizePerEx(trainMode)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching in GlobalPoolingLayer
+        return new LayerMemoryReport.Builder(layerName, GlobalPoolingLayer.class, inputType, outputType)
+                .standardMemory(0, 0)   //No params
+                //Train + Inference: no additional working memory (except pnorm) - the reduction is the output activations
+                .workingMemory(0, fwdTrainInferenceWorkingPerEx, 0, fwdTrainInferenceWorkingPerEx)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
                 .build();
     }
 

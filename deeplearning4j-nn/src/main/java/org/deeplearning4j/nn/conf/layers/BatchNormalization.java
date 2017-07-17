@@ -3,7 +3,6 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
-import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
@@ -18,7 +17,6 @@ import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.config.NoOp;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -187,7 +185,6 @@ public class BatchNormalization extends FeedForwardLayer {
 
         //TODO CuDNN helper etc
 
-        int actElementsPerEx = outputType.arrayElementsPerExample();
         int numParams = initializer().numParams(this);
         int updaterStateSize = 0;
 
@@ -199,28 +196,15 @@ public class BatchNormalization extends FeedForwardLayer {
         int inferenceWorkingSize = 2 * inputType.arrayElementsPerExample();
 
         //During training: we calculate mean and variance... result is equal to nOut, and INDEPENDENT of minibatch size
-        //TODO
+        int trainWorkFixed = 2 * nOut;
         //During backprop: multiple working arrays... output size, 2 * output size (indep. of example size),
-        int trainWorkingSizePerExample = (2 * nOut + inferenceWorkingSize)  //Inference during backprop
+        int trainWorkingSizePerExample = inferenceWorkingSize               //Inference during backprop
                 + (outputType.arrayElementsPerExample() + 2 * nOut);        //Backprop gradient calculation
 
-        //Batch normalization layer does not use caching
-        Map<CacheMode,Integer> trainMode = new HashMap<>();
-        for(CacheMode cm : CacheMode.values()){
-            trainMode.put(cm, trainWorkingSizePerExample);
-        }
-
-        return LayerMemoryReport.builder()
-                .layerName(layerName)
-                .layerType(BatchNormalization.class)
-                .inputType(inputType)
-                .outputType(outputType)
-                .parameterSize(numParams)
-                .activationSizePerEx(actElementsPerEx)
-                .updaterStateSize(updaterStateSize)
-                .inferenceWorkingSizePerEx(0)               //No additional working memory for forward pass
-                .trainingWorkingSizePerEx(trainMode)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching in DenseLayer
+        return new LayerMemoryReport.Builder(layerName, BatchNormalization.class, inputType, outputType)
+                .standardMemory(numParams, updaterStateSize)
+                .workingMemory(0, 0, trainWorkFixed, trainWorkingSizePerExample)     //No additional memory (beyond activations) for inference
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
                 .build();
     }
 

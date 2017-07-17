@@ -76,7 +76,7 @@ public class AutoEncoder extends BasePretrainNetwork {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        //Because of supervised + unsupervised modes: we'll assume unsupervised, which has the larger memory requiremnts
+        //Because of supervised + unsupervised modes: we'll assume unsupervised, which has the larger memory requirements
         InputType outputType = getOutputType(-1, inputType);
 
         int actElementsPerEx = outputType.arrayElementsPerExample() + inputType.arrayElementsPerExample();
@@ -98,23 +98,10 @@ public class AutoEncoder extends BasePretrainNetwork {
         // which is modified in-place by loss function
         trainSizePerEx += actElementsPerEx;
 
-        //AutoEncoder layer does not use caching
-        Map<CacheMode,Integer> trainMode = new HashMap<>();
-        for(CacheMode cm : CacheMode.values()){
-            trainMode.put(cm, trainSizePerEx);
-        }
-
-        return LayerMemoryReport.builder()
-                .layerName(layerName)
-                .layerType(AutoEncoder.class)
-                .inputType(inputType)
-                .outputType(outputType)
-                .parameterSize(numParams)
-                .activationSizePerEx(actElementsPerEx)
-                .updaterStateSize(updaterStateSize)
-                .inferenceWorkingSizePerEx(0)               //No additional working memory for forward pass, as per dense
-                .trainingWorkingSizePerEx(trainMode)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching in CenterLossOutputLayer
+        return new LayerMemoryReport.Builder(layerName, AutoEncoder.class, inputType, outputType)
+                .standardMemory(numParams, updaterStateSize)
+                .workingMemory(0, 0, 0, trainSizePerEx)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
                 .build();
     }
 

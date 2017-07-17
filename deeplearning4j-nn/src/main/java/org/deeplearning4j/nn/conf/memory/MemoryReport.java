@@ -37,12 +37,14 @@ import java.util.Map;
  * <br>
  * For MemoryUseMode (X = train or inference), for a given cache mode CM and minibatch size M and layers L:<br>
  * TotalMemory(X,CM,M) = sum_L ( StandardFixedMem(X) + M * StandardVariableMem(X) )<br>
- *  + max_L ( WorkingFixedMem(X) + M * WorkingVariableMem(X) )<br>
+ *  + max_L ( WorkingFixedMem(X,CM) + M * WorkingVariableMem(X,CM) )<br>
  *  + sum_L ( CachedFixedMem(X,CM) + M * CachedVariableMem(X,CM))<br>
  * <br>
- * Note 1: CachedFixedMem(inference,any) = 0 and CachedVariableMem(inference,any) = 0. i.e., cache is a train-only
+ * Note 1: CachedFixedMem(INFERENCE,any) = 0 and CachedVariableMem(INFERENCE,any) = 0. i.e., cache is a train-only
  * feature.<br>
- * Note 2: Reported memory figures are given in NDArray size unit - thus 1 refers to 1 float or 1 double value,
+ * Note 2: Working memory may depend on cache mode: after all, if we cache something, we have less computation to
+ *         do and hence less working memory.<br>
+ * Note 3: Reported memory figures are given in NDArray size unit - thus 1 refers to 1 float or 1 double value,
  * depending on the data type setting.
  * <br>
  *
@@ -107,6 +109,17 @@ public abstract class MemoryReport {
             default:
                 throw new UnsupportedOperationException("Data type not supported: " + dataType);
         }
+    }
+
+    public static Map<CacheMode,Long> cacheModeMapFor(long value){
+        if(value == 0){
+            return CACHE_MODE_ALL_ZEROS;
+        }
+        Map<CacheMode,Long> m = new HashMap<>();
+        for(CacheMode cm : CacheMode.values()){
+            m.put(cm, value);
+        }
+        return m;
     }
 
 }

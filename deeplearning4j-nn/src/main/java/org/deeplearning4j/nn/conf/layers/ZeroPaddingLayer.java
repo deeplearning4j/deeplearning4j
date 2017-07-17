@@ -123,7 +123,7 @@ public class ZeroPaddingLayer extends Layer {
         return new LayerMemoryReport.Builder(layerName, ZeroPaddingLayer.class, inputType, outputType)
                 .standardMemory(0, 0)   //No params
                 //Inference and training is same - just output activations, no working memory in addition to that
-                .workingMemory(0, 0, 0, 0)
+                .workingMemory(0, 0, MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)
                 .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching
                 .build();
     }

@@ -122,17 +122,10 @@ public class RBM extends BasePretrainNetwork {
             trainMode.put(cm, trainSizePerEx);
         }
 
-        return LayerMemoryReport.builder()
-                .layerName(layerName)
-                .layerType(RBM.class)
-                .inputType(inputType)
-                .outputType(outputType)
-                .parameterSize(numParams)
-                .activationSizePerEx(actElementsPerEx)
-                .updaterStateSize(updaterStateSize)
-                .inferenceWorkingSizePerEx(0)               //No additional working memory for forward pass, as per dense
-                .trainingWorkingSizePerEx(trainMode)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching in CenterLossOutputLayer
+        return new LayerMemoryReport.Builder(layerName, RBM.class, inputType, outputType)
+                .standardMemory(numParams, updaterStateSize)
+                .workingMemory(0, unsupervisedPerEx, 0, unsupervisedPerEx)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
                 .build();
     }
 

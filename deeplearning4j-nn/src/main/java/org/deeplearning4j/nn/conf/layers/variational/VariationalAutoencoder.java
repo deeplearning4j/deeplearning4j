@@ -166,25 +166,10 @@ public class VariationalAutoencoder extends BasePretrainNetwork {
             }
         }
 
-        //For
-
-        //Dense layer does not use caching
-        Map<CacheMode,Integer> trainMode = new HashMap<>();
-        for(CacheMode cm : CacheMode.values()){
-            trainMode.put(cm, trainWorkingMemSize);
-        }
-
-        return LayerMemoryReport.builder()
-                .layerName(layerName)
-                .layerType(VariationalAutoencoder.class)
-                .inputType(inputType)
-                .outputType(outputType)
-                .parameterSize(numParams)
-                .activationSizePerEx(actElementsPerEx)
-                .updaterStateSize(updaterStateSize)
-                .inferenceWorkingSizePerEx(inferenceWorkingMemSizePerEx)
-                .trainingWorkingSizePerEx(trainMode)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching in VAE
+        return new LayerMemoryReport.Builder(layerName, VariationalAutoencoder.class, inputType, outputType)
+                .standardMemory(numParams, updaterStateSize)
+                .workingMemory(0, inferenceWorkingMemSizePerEx, 0, trainWorkingMemSize)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
                 .build();
     }
 

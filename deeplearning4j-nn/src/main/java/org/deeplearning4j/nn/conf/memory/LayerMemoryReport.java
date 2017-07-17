@@ -28,10 +28,11 @@ public class LayerMemoryReport extends MemoryReport {
     private long updaterStateSize;
 
     //Working memory (in ND4J array length)
+    //Note that *working* memory may be reduced by caching (which is only used during train mode)
     private long workingMemoryFixedInference;
     private long workingMemoryVariableInference;
-    private long workingMemoryFixedTrain;
-    private long workingMemoryVariableTrain;
+    private Map<CacheMode,Long> workingMemoryFixedTrain;
+    private Map<CacheMode,Long> workingMemoryVariableTrain;
 
     //Cache memory, by cache mode:
     Map<CacheMode, Long> cacheModeMemFixed;
@@ -90,13 +91,13 @@ public class LayerMemoryReport extends MemoryReport {
                 if (memoryUseMode == MemoryUseMode.INFERENCE) {
                     return workingMemoryFixedInference * bytesPerElement;
                 } else {
-                    return workingMemoryFixedTrain * bytesPerElement;
+                    return workingMemoryFixedTrain.get(cacheMode) * bytesPerElement;
                 }
             case WORKING_MEMORY_VARIABLE:
                 if (memoryUseMode == MemoryUseMode.INFERENCE) {
                     return workingMemoryVariableInference * bytesPerElement;
                 } else {
-                    return minibatchSize * workingMemoryVariableTrain * bytesPerElement;
+                    return minibatchSize * workingMemoryVariableTrain.get(cacheMode) * bytesPerElement;
                 }
             case CACHED_MEMORY_FIXED:
                 if (memoryUseMode == MemoryUseMode.INFERENCE) {
@@ -134,10 +135,11 @@ public class LayerMemoryReport extends MemoryReport {
         private long updaterStateSize;
 
         //Working memory (in ND4J array length)
+        //Note that *working* memory may be reduced by caching (which is only used during train mode)
         private long workingMemoryFixedInference;
         private long workingMemoryVariableInference;
-        private long workingMemoryFixedTrain;
-        private long workingMemoryVariableTrain;
+        private Map<CacheMode,Long> workingMemoryFixedTrain;
+        private Map<CacheMode,Long> workingMemoryVariableTrain;
 
         //Cache memory, by cache mode:
         Map<CacheMode, Long> cacheModeMemFixed;
@@ -158,6 +160,10 @@ public class LayerMemoryReport extends MemoryReport {
         }
 
         public Builder workingMemory(long fixedInference, long variableInferencePerEx, long fixedTrain, long variableTrainPerEx) {
+            return workingMemory(fixedInference, variableInferencePerEx, MemoryReport.cacheModeMapFor(fixedInference), MemoryReport.cacheModeMapFor(variableInferencePerEx) );
+        }
+
+        public Builder workingMemory(long fixedInference, long variableInferencePerEx, Map<CacheMode, Long> fixedTrain, Map<CacheMode, Long> variableTrainPerEx) {
             this.workingMemoryFixedInference = fixedInference;
             this.workingMemoryVariableInference = variableInferencePerEx;
             this.workingMemoryFixedTrain = fixedTrain;

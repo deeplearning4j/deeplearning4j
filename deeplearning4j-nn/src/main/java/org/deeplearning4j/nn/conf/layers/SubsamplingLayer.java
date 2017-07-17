@@ -168,7 +168,7 @@ public class SubsamplingLayer extends Layer {
 
         //TODO Subsampling helper memory use... (CuDNN etc)
 
-        //During forward pass: im2col array + reduce. Reduce is counted as activations, so im2col is working mem
+        //During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
         int im2colSizePerEx = c.getDepth() * outputType.getHeight() * outputType.getWidth() * kernelSize[0] * kernelSize[1];
 
         //Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
