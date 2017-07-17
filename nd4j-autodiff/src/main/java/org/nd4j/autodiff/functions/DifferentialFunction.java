@@ -47,7 +47,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
      * @return
      */
     public  X getValue() {
-        return getValue(true);
+        return getValue(false);
     }
 
     /**
@@ -78,6 +78,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
     public abstract double getReal();
 
 
+    @Override
     public  String getFormula(List<Variable<X>> variables) {
         graph.freeze();
         String ret = doGetFormula(variables);
@@ -120,13 +121,14 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> add(DifferentialFunction<X> i_v) {
-        DifferentialFunction<X> ret = i_v.plused(this);
-        return ret;
+        X ret = i_v.getValue().add(getValue());
+        return new Constant<>(graph, ret, null);
     }
 
-    protected DifferentialFunction<X> plused(DifferentialFunction<X> i_v) {
-        DifferentialFunction<X> ret = new Sum<>(graph,i_v, this);
-        return ret;
+    @Override
+    public DifferentialFunction<X> mul(DifferentialFunction<X> i_v) {
+        X ret = i_v.getValue().mul(getValue());
+        return new Constant<>(graph, ret, null);
     }
 
     @Override
@@ -135,16 +137,8 @@ public abstract class DifferentialFunction<X extends Field<X>>
         return ret;
     }
 
-    @Override
-    public DifferentialFunction<X> mul(DifferentialFunction<X> i_v) {
-        DifferentialFunction<X> ret = muled(i_v);
-        return ret;
-    }
 
-    protected DifferentialFunction<X> muled(DifferentialFunction<X> i_v) {
-        DifferentialFunction<X> ret = new Product<>(graph,i_v, this);
-        return ret;
-    }
+
 
     @Override
     public DifferentialFunction<X> div(DifferentialFunction<X> i_v) {

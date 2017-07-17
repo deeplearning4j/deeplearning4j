@@ -22,11 +22,7 @@ public class Zero<X extends Field<X>> extends Constant<X> {
         return i_v;
     }
 
-    @Override
-    protected DifferentialFunction<X> plused(DifferentialFunction<X> i_v) {
-        addEdge(new AddOp().name(),i_v);
-        return i_v;
-    }
+
 
     @Override
     public Zero<X> mul(DifferentialFunction<X> i_v) {
@@ -34,11 +30,7 @@ public class Zero<X extends Field<X>> extends Constant<X> {
         return this;
     }
 
-    @Override
-    protected Zero<X> muled(DifferentialFunction<X> i_v) {
-        addEdge(new MulOp().name(),i_v);
-        return this;
-    }
+
 
     @Override
     public Constant<X> inverse() {

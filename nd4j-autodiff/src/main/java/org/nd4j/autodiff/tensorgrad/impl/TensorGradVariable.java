@@ -75,10 +75,12 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
 
         if(arrayField != null)
             return arrayField.getValue().getInput().getShape();
+
         else {
             OpState opState =  differentialFunction.getOpState();
-            if(opState == null)
-                throw new IllegalStateException("Unable to determine shape!");
+            if(opState == null) {
+                return differentialFunction.getValue().getInput().getShape();
+            }
             return opState.getResult().getShape();
         }
     }
@@ -118,7 +120,7 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
     public TensorGradVariable rsub(TensorGradVariable tensorGradVariable) {
         return TensorGradVariable.builder()
                 .varName(varName + " + " + tensorGradVariable.getVarName())
-                .arr(null)
+                .arr(null).tensorGrad(tensorGradVariable.getTensorGrad())
                 .differentialFunction(getFunction(tensorGradVariable).rsub(getFunction(this)))
                 .build();
     }
@@ -126,7 +128,7 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
     public TensorGradVariable rdiv(TensorGradVariable tensorGradVariable) {
         return TensorGradVariable.builder()
                 .varName(varName + " + " + tensorGradVariable.getVarName())
-                .arr(null)
+                .arr(null).tensorGrad(tensorGradVariable.getTensorGrad())
                 .differentialFunction(getFunction(tensorGradVariable).rdiv(getFunction(this)))
                 .build();
     }
@@ -134,7 +136,7 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
     public TensorGradVariable add(TensorGradVariable tensorGradVariable) {
         return TensorGradVariable.builder()
                 .varName(varName + " + " + tensorGradVariable.getVarName())
-                .arr(null)
+                .arr(null).tensorGrad(tensorGradVariable.getTensorGrad())
                 .differentialFunction(getFunction(tensorGradVariable).add(getFunction(this)))
                 .build();
     }
@@ -142,7 +144,7 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
     public TensorGradVariable sub(TensorGradVariable tensorGradVariable) {
         return TensorGradVariable.builder()
                 .varName(varName + " - " + tensorGradVariable.getVarName())
-                .arr(null)
+                .arr(null).tensorGrad(tensorGradVariable.getTensorGrad())
                 .differentialFunction(getFunction(tensorGradVariable).sub(getFunction(this)))
                 .build();
     }
@@ -150,7 +152,7 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
     public TensorGradVariable div(TensorGradVariable tensorGradVariable) {
         return TensorGradVariable.builder()
                 .varName(varName + " / " + tensorGradVariable.getVarName())
-                .arr(null)
+                .arr(null).tensorGrad(tensorGradVariable.getTensorGrad())
                 .differentialFunction(getFunction(tensorGradVariable).div(getFunction(this)))
                 .build();
     }
@@ -158,7 +160,7 @@ public class TensorGradVariable extends TensorGradFunction implements Serializab
     public TensorGradVariable mul(TensorGradVariable tensorGradVariable) {
         return TensorGradVariable.builder()
                 .varName(varName + " * " + tensorGradVariable.getVarName())
-                .arr(null)
+                .arr(null).tensorGrad(tensorGradVariable.getTensorGrad())
                 .differentialFunction(getFunction(tensorGradVariable).mul(getFunction(this)))
                 .build();
     }

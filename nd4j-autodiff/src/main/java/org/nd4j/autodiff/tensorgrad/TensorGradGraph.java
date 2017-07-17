@@ -10,10 +10,8 @@ import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpExecOrder;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.tensorgrad.impl.TensorGradVariable;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Graph data structure for tensors
@@ -121,6 +119,9 @@ public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
             for (Edge<OpState> edge : inputOpStates) {
                 if (edge.getTo() == order[i]) {
                     inputs[inputsCount] = getInformationFor(edge.getFrom());
+                    if(inputs[inputsCount] == null) {
+                        continue;
+                    }
                     inputIds[inputsCount] = edge.getFrom();
                     inputsCount++;
                 }
@@ -142,7 +143,10 @@ public class TensorGradGraph extends Graph<NDArrayInformation,OpState> {
     }
 
     public NDArrayInformation getInformationFor(int vertex) {
-        return getVertex(vertex).getValue();
+        Vertex<NDArrayInformation> ndArrayInformation = getVertex(vertex);
+        if(ndArrayInformation == null)
+            return null;
+        return ndArrayInformation.getValue();
     }
 
 

@@ -42,10 +42,6 @@ public class Scalar<X extends Field<X>> extends Constant<X> {
         return dup;
     }
 
-    @Override
-    protected DifferentialFunction<X> muled(DifferentialFunction<X> i_v) {
-        return mul(i_v);
-    }
 
     @Override
     public DifferentialFunction<X> dup() {

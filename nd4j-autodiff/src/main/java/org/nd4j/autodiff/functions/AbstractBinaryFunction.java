@@ -56,6 +56,8 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
         return m_x2;
     }
 
+
+
     @Override
     public DifferentialFunction<X> dup() {
         try {

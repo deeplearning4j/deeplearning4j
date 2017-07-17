@@ -18,6 +18,9 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
                        X i_v,
                        AbstractIdentityFactory<X> i_factory) {
         super(graph,new Object[]{i_v});
+        if(i_factory == null) {
+            i_factory = (AbstractIdentityFactory<X>) graph.getTensorGrad().getArrayFactory();
+        }
         if (i_v != null && i_factory != null) {
             m_x = i_v;
             m_factory = i_factory;
@@ -73,17 +76,6 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
         return "constant";
     }
 
-    @Override
-    protected DifferentialFunction<X> plused(DifferentialFunction<X> i_v) {
-        return i_v.isConstant() ? new Constant<>(graph, i_v.getValue(false).add(this.m_x), m_factory)
-                : super.plused(i_v);
-    }
-
-    @Override
-    protected DifferentialFunction<X> muled(DifferentialFunction<X> i_v) {
-        return i_v.isConstant() ? new Constant<>(graph, i_v.getValue(false).mul(this.m_x), m_factory)
-                : super.muled(i_v);
-    }
 
 
     @Override

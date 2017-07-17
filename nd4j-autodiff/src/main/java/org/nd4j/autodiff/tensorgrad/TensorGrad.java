@@ -1438,7 +1438,7 @@ public class TensorGrad {
          * Need to ensure op references
          * are consistent across a graph.
          *
-         * This means havig a central repository for
+         * This means having a central repository for
          * the variables allocated and using those with in ndarrays
          *
          * We also need a mechanism of validating op structure.

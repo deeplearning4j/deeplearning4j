@@ -104,7 +104,7 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField rdiv(ArrayField i_v) {
-        return null;
+        return addPairTransformOp("rdiv",i_v);
     }
 
     @Override
@@ -656,6 +656,43 @@ public class ArrayField implements Field<ArrayField> {
         return new ArrayField(newVertex,ops);
     }
 
+
+
+    private ArrayField addPairReduceOp(String name,ArrayField i_v,Object[] extraArgs) {
+        //result
+        NDArrayInformation resultInfo =  NDArrayInformation.builder()
+                .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
+                .shape(input.getShape()).build();
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId(), resultInfo);
+
+        //add the result vertex to the graph
+        this.getOps().addVertex(newVertex);
+
+        //map x -> z
+        OpState xToZ = OpState.builder()
+                .n(ArrayUtil.prod(input.getShape()))
+                .opName(name).extraArgs(extraArgs)
+                .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
+                .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
+                .opType(OpState.OpType.ACCUMULATION).build();
+        xToZ.setResult(resultInfo);
+        this.ops.addEdge(vertex.getIdx(),
+                newVertex.vertexID(),xToZ,true);
+        //map y -> z
+        OpState yToZ = OpState.builder()
+                .n(ArrayUtil.prod(input.getShape()))
+                .opName(name).extraArgs(extraArgs)
+                .id(i_v.getVertex().getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
+                .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
+                .opType(OpState.OpType.ACCUMULATION).build();
+        yToZ.setResult(resultInfo);
+        this.ops.addEdge(i_v.getVertex().getIdx(),
+                newVertex.vertexID(),yToZ,true);
+        resultInfo.setOwner(yToZ);
+        return new ArrayField(newVertex,ops);
+    }
+
+
     private ArrayField addPairTransformOp(String name,ArrayField i_v,Object[] extraArgs) {
         //result
         NDArrayInformation resultInfo =  NDArrayInformation.builder()
@@ -686,7 +723,7 @@ public class ArrayField implements Field<ArrayField> {
         yToZ.setResult(resultInfo);
         this.ops.addEdge(i_v.getVertex().getIdx(),
                 newVertex.vertexID(),yToZ,true);
-
+        resultInfo.setOwner(yToZ);
         return new ArrayField(newVertex,ops);
     }
 
@@ -709,7 +746,7 @@ public class ArrayField implements Field<ArrayField> {
 
     private NDArrayVertex getVertex(String name,int[] shape) {
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.getVertices().size() ,
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId() ,
                 NDArrayInformation.builder()
                         .id(name + "(" + input.getId() + ")")
                         .shape(shape).build());
@@ -765,7 +802,7 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     public ArrayField tensorMmul(DifferentialFunction<ArrayField> y, int[][] dimensions) {
-        return addPairTransformOp("tensorMmul",y.getValue(),new Object[]{dimensions});
+        return addPairReduceOp("tensorMmul",y.getValue(),new Object[]{dimensions});
 
     }
 

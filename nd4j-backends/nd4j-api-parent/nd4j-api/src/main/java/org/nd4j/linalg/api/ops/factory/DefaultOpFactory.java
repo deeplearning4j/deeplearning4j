@@ -174,7 +174,7 @@ public class DefaultOpFactory implements OpFactory {
             case "mmul":
                 ret = new Mmul(x, y, x.length());
                 break;
-            case "tensormmul":
+            case "tensorMmul":
                 ret = new TensorMmul(x, y,(int[][]) extraArgs[0]);
                 break;
 
