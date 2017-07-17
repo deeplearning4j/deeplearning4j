@@ -699,6 +699,16 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
             return this;
         }
 
+        /**
+         * Specify the inputs to the network, and their associated labels.
+         *
+         * @param inputNames The names of the inputs. This also defines their order
+         */
+        public GraphBuilder addInputs(Collection<String> inputNames) {
+            networkInputs.addAll(inputNames);
+            return this;
+        }
+
         /**Specify the types of inputs to the network, so that:<br>
          * (a) preprocessors can be automatically added, and<br>
          * (b) the nIns (input size) for each layer can be automatically calculated and set<br>

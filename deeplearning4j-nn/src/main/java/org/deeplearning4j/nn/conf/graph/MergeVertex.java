@@ -68,6 +68,11 @@ public class MergeVertex extends GraphVertex {
     }
 
     @Override
+    public String toString(){
+        return "MergeVertex()";
+    }
+
+    @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                     INDArray paramsView, boolean initializeParams) {
         return new org.deeplearning4j.nn.graph.vertex.impl.MergeVertex(graph, name, idx);
@@ -118,16 +123,20 @@ public class MergeVertex extends GraphVertex {
 
             if (size > 0) {
                 //Size is specified
-                if (type == InputType.Type.FF)
+                if (type == InputType.Type.FF) {
                     return InputType.feedForward(size);
-                else
-                    return InputType.recurrent(size);
+                } else {
+                    int tsLength = ((InputType.InputTypeRecurrent)vertexInputs[0]).getTimeSeriesLength();
+                    return InputType.recurrent(size, tsLength);
+                }
             } else {
                 //size is unknown
-                if (type == InputType.Type.FF)
+                if (type == InputType.Type.FF) {
                     return InputType.feedForward(-1);
-                else
-                    return InputType.recurrent(-1);
+                } else {
+                    int tsLength = ((InputType.InputTypeRecurrent)vertexInputs[0]).getTimeSeriesLength();
+                    return InputType.recurrent(-1, tsLength);
+                }
             }
         } else {
             //CNN inputs... also check that the depth, width and heights match:

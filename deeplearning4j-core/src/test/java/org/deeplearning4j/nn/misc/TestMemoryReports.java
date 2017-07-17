@@ -4,9 +4,13 @@ import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.graph.*;
+import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
+import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
+import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 
@@ -36,6 +40,26 @@ public class TestMemoryReports {
         l.add(new Pair<>(new RnnOutputLayer.Builder().nIn(20).nOut(20).build(), InputType.recurrent(20, 30)));
 
         return l;
+    }
+
+    public static List<Pair<? extends GraphVertex, InputType[]>> getTestVertices(){
+
+        List<Pair<? extends GraphVertex, InputType[]>> out = new ArrayList<>();
+        out.add(new Pair<>(new ElementWiseVertex(ElementWiseVertex.Op.Add), new InputType[]{InputType.feedForward(10), InputType.feedForward(10)}));
+        out.add(new Pair<>(new ElementWiseVertex(ElementWiseVertex.Op.Add), new InputType[]{InputType.recurrent(10,10), InputType.recurrent(10,10)}));
+        out.add(new Pair<>(new L2NormalizeVertex(), new InputType[]{InputType.feedForward(10)}));
+        out.add(new Pair<>(new L2Vertex(), new InputType[]{InputType.recurrent(10,10), InputType.recurrent(10,10)}));
+        out.add(new Pair<>(new MergeVertex(), new InputType[]{InputType.recurrent(10,10), InputType.recurrent(10,10)}));
+        out.add(new Pair<>(new PreprocessorVertex(new FeedForwardToCnnPreProcessor(1,10,1)), new InputType[]{InputType.convolutional(1,10,1)}));
+        out.add(new Pair<>(new ScaleVertex(1.0), new InputType[]{InputType.recurrent(10,10)}));
+        out.add(new Pair<>(new ShiftVertex(1.0), new InputType[]{InputType.recurrent(10,10)}));
+        out.add(new Pair<>(new StackVertex(), new InputType[]{InputType.recurrent(10,10), InputType.recurrent(10,10)}));
+        out.add(new Pair<>(new UnstackVertex(0,2), new InputType[]{InputType.recurrent(10,10)}));
+
+        out.add(new Pair<>(new DuplicateToTimeSeriesVertex("0"), new InputType[]{InputType.recurrent(10,10), InputType.feedForward(10)}));
+        out.add(new Pair<>(new LastTimeStepVertex("0"), new InputType[]{InputType.recurrent(10,10)}));
+
+        return out;
     }
 
     @Test
@@ -83,4 +107,34 @@ public class TestMemoryReports {
         }
     }
 
+    @Test
+    public void testMemoryReportsVerticesCG(){
+        List<Pair<? extends GraphVertex, InputType[]>> l = getTestVertices();
+
+        for(Pair<? extends GraphVertex,InputType[]> p : l){
+            List<String> inputs = new ArrayList<>();
+            for( int i=0; i<p.getSecond().length; i++ ){
+                inputs.add(String.valueOf(i));
+            }
+
+            String[] layerInputs = inputs.toArray(new String[inputs.size()]);
+            if(p.getFirst() instanceof DuplicateToTimeSeriesVertex){
+                layerInputs = new String[]{"1"};
+            }
+
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .graphBuilder()
+                    .addInputs(inputs)
+                    .addVertex("gv", p.getFirst(), layerInputs)
+                    .setOutputs("gv")
+                    .build();
+
+            MemoryReport mr = conf.getMemoryReport(p.getSecond());
+            System.out.println(mr.toString());
+
+            System.out.println("\n\n");
+        }
+
+
+    }
 }

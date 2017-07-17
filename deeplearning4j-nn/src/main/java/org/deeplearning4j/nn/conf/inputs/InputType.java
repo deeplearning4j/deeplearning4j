@@ -159,7 +159,7 @@ public abstract class InputType implements Serializable {
         public int arrayElementsPerExample() {
             if(timeSeriesLength <= 0){
                 throw new IllegalStateException("Cannot calculate number of array elements per example: "
-                        + "time series length is not set");
+                        + "time series length is not set. Use InputType.recurrent(int size, int timeSeriesLength) instead?");
             }
             return timeSeriesLength * size;
         }

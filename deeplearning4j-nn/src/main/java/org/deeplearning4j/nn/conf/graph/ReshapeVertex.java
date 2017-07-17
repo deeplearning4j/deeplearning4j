@@ -38,7 +38,7 @@ import java.util.Arrays;
 @Data
 public class ReshapeVertex extends GraphVertex {
 
-    public ReshapeVertex(@JsonProperty("newShape") int[] newShape) {
+    public ReshapeVertex(@JsonProperty("newShape") int... newShape) {
         this.newShape = newShape;
     }
 

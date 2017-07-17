@@ -1,9 +1,6 @@
 package org.deeplearning4j.nn.conf.memory;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -51,6 +48,9 @@ public class LayerMemoryReport extends MemoryReport {
         this.workingMemoryVariableInference = b.workingMemoryVariableInference;
         this.workingMemoryFixedTrain = b.workingMemoryFixedTrain;
         this.workingMemoryVariableTrain = b.workingMemoryVariableTrain;
+
+        this.cacheModeMemFixed = b.cacheModeMemFixed;
+        this.cacheModeMemVariablePerEx = b.cacheModeMemVariablePerEx;
     }
 
     @Override
@@ -61,6 +61,15 @@ public class LayerMemoryReport extends MemoryReport {
     @Override
     public String getName() {
         return layerName;
+    }
+
+    @Override
+    public long getTotalMemoryBytes(int minibatchSize, @NonNull MemoryUseMode memoryUseMode, @NonNull CacheMode cacheMode, @NonNull DataBuffer.Type dataType) {
+        long total = 0;
+        for(MemoryType mt : MemoryType.values()){
+            total += getMemoryBytes(mt, minibatchSize, memoryUseMode, cacheMode, dataType);
+        }
+        return total;
     }
 
     @Override
@@ -118,8 +127,7 @@ public class LayerMemoryReport extends MemoryReport {
 
     @Override
     public String toString() {
-        //TODO
-        return null;
+        return "LayerMemoryReport(layerName=" + layerName + ",layerType=" + layerType.getSimpleName() + ")";
     }
 
 

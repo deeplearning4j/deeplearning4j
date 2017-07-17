@@ -101,10 +101,12 @@ public class DuplicateToTimeSeriesVertex extends GraphVertex {
         if (vertexInputs.length != 1)
             throw new InvalidInputTypeException("Invalid input type: cannot duplicate more than 1 input");
 
+        int tsLength = 1;   //TODO work this out properly
+
         if (vertexInputs[0].getType() == InputType.Type.FF) {
-            return InputType.recurrent(((InputType.InputTypeFeedForward) vertexInputs[0]).getSize());
+            return InputType.recurrent(((InputType.InputTypeFeedForward) vertexInputs[0]).getSize(), tsLength);
         } else if (vertexInputs[0].getType() != InputType.Type.CNNFlat) {
-            return InputType.recurrent(((InputType.InputTypeConvolutionalFlat) vertexInputs[0]).getFlattenedSize());
+            return InputType.recurrent(((InputType.InputTypeConvolutionalFlat) vertexInputs[0]).getFlattenedSize(), tsLength);
         } else {
             throw new InvalidInputTypeException(
                             "Invalid input type: cannot duplicate to time series non feed forward (or CNN flat) input (got: "

@@ -79,15 +79,8 @@ public abstract class MemoryReport {
         return getTotalMemoryBytes(minibatchSize, memoryUseMode, cacheMode, DataTypeUtil.getDtypeFromContext());
     }
 
-    public long getTotalMemoryBytes(int minibatchSize, @NonNull MemoryUseMode memoryUseMode, @NonNull CacheMode cacheMode,
-                                    @NonNull DataBuffer.Type dataType) {
-        long totalBytes = 0;
-        for (MemoryType mt : MemoryType.values()) {
-            totalBytes += getMemoryBytes(mt, minibatchSize, memoryUseMode, cacheMode, dataType);
-        }
-
-        return totalBytes;
-    }
+    public abstract long getTotalMemoryBytes(int minibatchSize, @NonNull MemoryUseMode memoryUseMode, @NonNull CacheMode cacheMode,
+                                    @NonNull DataBuffer.Type dataType);
 
     public long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode, CacheMode cacheMode) {
         return getMemoryBytes(memoryType, minibatchSize, memoryUseMode, cacheMode, DataTypeUtil.getDtypeFromContext());

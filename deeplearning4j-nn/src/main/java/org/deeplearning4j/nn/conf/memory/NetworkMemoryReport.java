@@ -44,8 +44,7 @@ public class NetworkMemoryReport extends MemoryReport {
     }
 
     @Override
-    public long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode,
-                               CacheMode cacheMode, DataBuffer.Type dataType) {
+    public long getTotalMemoryBytes(int minibatchSize, @NonNull MemoryUseMode memoryUseMode, @NonNull CacheMode cacheMode, @NonNull DataBuffer.Type dataType) {
 
         //As per MemoryReport javadoc: we need
         // sum_layers (StdFixed + minibatch * StdVariable) + sum_layers (CacheFixed + minibatch * CacheVariable)
@@ -66,6 +65,28 @@ public class NetworkMemoryReport extends MemoryReport {
                     + lmr.getMemoryBytes(MemoryType.CACHED_MEMORY_VARIABLE, minibatchSize, memoryUseMode, cacheMode, dataType);
 
             maxWorking = Math.max(maxWorking, currWorking);
+        }
+
+        return totalBytes + maxWorking;
+    }
+
+    @Override
+    public long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode,
+                               CacheMode cacheMode, DataBuffer.Type dataType) {
+
+        long totalBytes = 0;
+        for (MemoryReport lmr : layerAndVertexReports.values()) {
+
+            long bytes = lmr.getMemoryBytes(memoryType, minibatchSize, memoryUseMode, cacheMode, dataType);
+
+            if(memoryType == MemoryType.CACHED_MEMORY_FIXED || memoryType == MemoryType.CACHED_MEMORY_VARIABLE){
+                totalBytes = Math.max(totalBytes, bytes);
+            } else {
+                totalBytes += bytes;
+            }
+
+
+            totalBytes += lmr.getMemoryBytes(memoryType, minibatchSize, memoryUseMode, cacheMode, dataType);
         }
 
         return totalBytes;
@@ -117,6 +138,10 @@ public class NetworkMemoryReport extends MemoryReport {
 
     private void appendBreakDown(StringBuilder sb, MemoryUseMode useMode, CacheMode cacheMode, DataBuffer.Type dataType) {
         for (MemoryType mt : MemoryType.values()) {
+            if(useMode == MemoryUseMode.INFERENCE && !mt.isInference()){
+                continue;
+            }
+
             long bytesFixed = getMemoryBytes(mt, 0, useMode, cacheMode, dataType);
             long bytesPerEx = getMemoryBytes(mt, 1, useMode, cacheMode, dataType) - bytesFixed;
 
