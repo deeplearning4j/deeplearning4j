@@ -16,7 +16,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-/**Embedding layer: feed-forward layer that expects single integers per example as input (class numbers, in range 0 to numClass-1)
+/**
+ * Embedding layer: feed-forward layer that expects single integers per example as input (class numbers, in range 0 to numClass-1)
  * as input. This input has shape [numExamples,1] instead of [numExamples,numClasses] for the equivalent one-hot representation.
  * Mathematically, EmbeddingLayer is equivalent to using a DenseLayer with a one-hot representation for the input; however,
  * it can be much more efficient with a large number of classes (as a dense layer + one-hot input does a matrix multiply
@@ -24,6 +25,7 @@ import java.util.Map;
  * <b>Note</b>: can only be used as the first layer for a network<br>
  * <b>Note 2</b>: For a given example index i, the output is activationFunction(weights.getRow(i) + bias), hence the
  * weight rows can be considered a vector/embedding for each example.
+ *
  * @author Alex Black
  */
 @Data
@@ -38,9 +40,9 @@ public class EmbeddingLayer extends FeedForwardLayer {
 
     @Override
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
-                    int layerIndex, INDArray layerParamsView, boolean initializeParams) {
+                             int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer ret =
-                        new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer(conf);
+                new org.deeplearning4j.nn.layers.feedforward.embedding.EmbeddingLayer(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -62,23 +64,16 @@ public class EmbeddingLayer extends FeedForwardLayer {
 
         int actElementsPerEx = outputType.arrayElementsPerExample();
         int numParams = initializer().numParams(this);
-        int updaterStateSize = (int)getIUpdater().stateSize(numParams);
+        int updaterStateSize = (int) getIUpdater().stateSize(numParams);
 
         //Embedding layer does not use caching.
         //Inference: no working memory - just activations (pullRows)
-        //Training: no working memory - only in-place ops on epsilon (from layer above) + assign ops
+        //Training: preout op, the only in-place ops on epsilon (from layer above) + assign ops
 
-        return LayerMemoryReport.builder()
-                .layerName(layerName)
-                .layerType(EmbeddingLayer.class)
-                .inputType(inputType)
-                .outputType(outputType)
-                .parameterSize(numParams)
-                .activationSizePerEx(actElementsPerEx)
-                .updaterStateSize(updaterStateSize)
-                .inferenceWorkingSizePerEx(0)               //No additional working memory for forward pass
-                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)    //No working memory for training
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching in DenseLayer
+        return new LayerMemoryReport.Builder(layerName, EmbeddingLayer.class, inputType, outputType)
+                .standardMemory(numParams, updaterStateSize)
+                .workingMemory(0, 0, 0, actElementsPerEx)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
                 .build();
     }
 

@@ -46,10 +46,26 @@ public class NetworkMemoryReport extends MemoryReport {
     @Override
     public long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode,
                                CacheMode cacheMode, DataBuffer.Type dataType) {
+
+        //As per MemoryReport javadoc: we need
+        // sum_layers (StdFixed + minibatch * StdVariable) + sum_layers (CacheFixed + minibatch * CacheVariable)
+        // + max_layers ( WorkingMemoryFixed + minibatch * WorkingMemoryVariable)
+
         long totalBytes = 0;
+        long maxWorking = 0;
         for (MemoryReport lmr : layerAndVertexReports.values()) {
 
-            totalBytes += lmr.getMemoryBytes(memoryType, minibatchSize, memoryUseMode, cacheMode, dataType);
+            for(MemoryType mt : MemoryType.values()){
+                if(mt == MemoryType.CACHED_MEMORY_FIXED || mt == MemoryType.CACHED_MEMORY_VARIABLE){
+                    continue;
+                }
+                totalBytes += lmr.getMemoryBytes(mt, minibatchSize, memoryUseMode, cacheMode, dataType);
+            }
+
+            long currWorking = lmr.getMemoryBytes(MemoryType.CACHED_MEMORY_FIXED, minibatchSize, memoryUseMode, cacheMode, dataType)
+                    + lmr.getMemoryBytes(MemoryType.CACHED_MEMORY_VARIABLE, minibatchSize, memoryUseMode, cacheMode, dataType);
+
+            maxWorking = Math.max(maxWorking, currWorking);
         }
 
         return totalBytes;

@@ -73,43 +73,31 @@ public class DenseLayer extends FeedForwardLayer {
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         InputType outputType = getOutputType(-1, inputType);
 
-        int actElementsPerEx = outputType.arrayElementsPerExample();
         int numParams = initializer().numParams(this);
         int updaterStateSize = (int)getIUpdater().stateSize(numParams);
 
-        int trainSize = 0;
+        int trainSizeFixed = 0;
+        int trainSizeVariable = 0;
         if(getDropOut() > 0){
             if(false) {
                 //TODO drop connect
                 //Dup the weights... note that this does NOT depend on the minibatch size...
+                trainSizeVariable += 0; //TODO
             } else {
                 //Assume we dup the input
-                trainSize += inputType.arrayElementsPerExample();
+                trainSizeVariable += inputType.arrayElementsPerExample();
             }
         }
 
         //Also, during backprop: we do a preOut call -> gives us activations size equal to the output size
         // which is modified in-place by activation function backprop
         // then we have 'epsilonNext' which is equivalent to input size
-        trainSize += actElementsPerEx;
+        trainSizeVariable += outputType.arrayElementsPerExample();
 
-        //Dense layer does not use caching
-        Map<CacheMode,Integer> trainMode = new HashMap<>();
-        for(CacheMode cm : CacheMode.values()){
-            trainMode.put(cm, trainSize);
-        }
-
-        return LayerMemoryReport.builder()
-                .layerName(layerName)
-                .layerType(DenseLayer.class)
-                .inputType(inputType)
-                .outputType(outputType)
-                .parameterSize(numParams)
-                .activationSizePerEx(actElementsPerEx)
-                .updaterStateSize(updaterStateSize)
-                .inferenceWorkingSizePerEx(0)               //No additional working memory for forward pass
-                .trainingWorkingSizePerEx(trainMode)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching in DenseLayer
+        return new LayerMemoryReport.Builder(layerName, DenseLayer.class, inputType, outputType)
+                .standardMemory(numParams, updaterStateSize)
+                .workingMemory(0, 0, trainSizeFixed, trainSizeVariable)     //No additional memory (beyond activations) for inference
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching in DenseLayer
                 .build();
     }
 

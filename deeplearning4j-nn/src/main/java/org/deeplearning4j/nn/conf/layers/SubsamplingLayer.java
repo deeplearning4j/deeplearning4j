@@ -168,34 +168,21 @@ public class SubsamplingLayer extends Layer {
 
         //TODO Subsampling helper memory use... (CuDNN etc)
 
-        //During forward pass: im2col array + reduce
+        //During forward pass: im2col array + reduce. Reduce is counted as activations, so im2col is working mem
         int im2colSizePerEx = c.getDepth() * outputType.getHeight() * outputType.getWidth() * kernelSize[0] * kernelSize[1];
 
         //Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
-        Map<CacheMode,Integer> trainWorkingMemory = new HashMap<>();
-        int trainingWorkingSize = im2colSizePerEx;
+        int trainingWorkingSizePerEx = im2colSizePerEx;
         if(getDropOut() > 0){
             //Dup on the input before dropout, but only for training
-            trainingWorkingSize += inputType.arrayElementsPerExample();
-        }
-        for(CacheMode cm : CacheMode.values()){
-            trainWorkingMemory.put(cm, trainingWorkingSize);
+            trainingWorkingSizePerEx += inputType.arrayElementsPerExample();
         }
 
-
-        return LayerMemoryReport.builder()
-                .layerName(layerName)
-                .layerType(SubsamplingLayer.class)
-                .inputType(inputType)
-                .outputType(outputType)
-                .parameterSize(0)
-                .activationSizePerEx(actElementsPerEx)
-                .updaterStateSize(0)
-                .inferenceWorkingSizePerEx(im2colSizePerEx)                     //Only fwd pass working array: im2col
-                .trainingWorkingSizePerEx(trainWorkingMemory)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)  //No cached data in current impl.
+        return new LayerMemoryReport.Builder(layerName, SubsamplingLayer.class, inputType, outputType)
+                .standardMemory(0, 0)   //No params
+                .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
                 .build();
-
     }
 
     public int getPnorm() {

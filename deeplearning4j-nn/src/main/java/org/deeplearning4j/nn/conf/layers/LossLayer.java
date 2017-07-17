@@ -60,26 +60,12 @@ public class LossLayer extends FeedForwardLayer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-
-        InputType outputType = getOutputType(-1, inputType);
-
-        int actElementsPerEx = outputType.arrayElementsPerExample();
-
-        return LayerMemoryReport.builder()
-                .layerName(layerName)
-                .layerType(LossLayer.class)
-                .inputType(inputType)
-                .outputType(outputType)
-                .parameterSize(0)
-                .activationSizePerEx(actElementsPerEx)      //Assume we duplicate before applying dropout
-                .updaterStateSize(0)
-                //TODO working memory in loss functions...
-                //OTher than loss function working memory: No extra memory in addition to activations
-                .inferenceWorkingSizePerEx(0)
-                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+        //During inference and training: dup the input array. But, this counts as *activations* not working memory
+        return new LayerMemoryReport.Builder(layerName, LossLayer.class, inputType, inputType)
+                .standardMemory(0, 0)   //No params
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching
                 .build();
-
     }
 
     @Override

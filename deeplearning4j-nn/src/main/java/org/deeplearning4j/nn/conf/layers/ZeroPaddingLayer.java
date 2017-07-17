@@ -120,20 +120,11 @@ public class ZeroPaddingLayer extends Layer {
     public LayerMemoryReport getMemoryReport(InputType inputType) {
         InputType outputType = getOutputType(-1, inputType);
 
-        int actElementsPerEx = outputType.arrayElementsPerExample();
-
-        return LayerMemoryReport.builder()
-                .layerName(layerName)
-                .layerType(ZeroPaddingLayer.class)
-                .inputType(inputType)
-                .outputType(outputType)
-                .parameterSize(0)
-                .activationSizePerEx(actElementsPerEx)      //Assume we duplicate before applying dropout
-                .updaterStateSize(0)
-                //No extra memory in addition to activations
-                .inferenceWorkingSizePerEx(0)
-                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+        return new LayerMemoryReport.Builder(layerName, ZeroPaddingLayer.class, inputType, outputType)
+                .standardMemory(0, 0)   //No params
+                //Inference and training is same - just output activations, no working memory in addition to that
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching
                 .build();
     }
 

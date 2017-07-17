@@ -50,12 +50,12 @@ import java.util.Map;
  */
 public abstract class MemoryReport {
 
-    public static final Map<CacheMode, Integer> CACHE_MODE_ALL_ZEROS = getAllZerosMap();
+    public static final Map<CacheMode, Long> CACHE_MODE_ALL_ZEROS = getAllZerosMap();
 
-    private static Map<CacheMode, Integer> getAllZerosMap() {
-        Map<CacheMode, Integer> map = new HashMap<>();
+    private static Map<CacheMode, Long> getAllZerosMap() {
+        Map<CacheMode, Long> map = new HashMap<>();
         for (CacheMode c : CacheMode.values()) {
-            map.put(c, 0);
+            map.put(c, 0L);
         }
 
         return Collections.unmodifiableMap(map);

@@ -90,21 +90,15 @@ public class DropoutLayer extends FeedForwardLayer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-
         int actElementsPerEx = inputType.arrayElementsPerExample();
+        //During inference: not applied. During  backprop: dup the input, in case it's used elsewhere
+        //But: this will be counted in the activations
+        //(technically inference memory is over-estimated as a result)
 
-        return LayerMemoryReport.builder()
-                .layerName(layerName)
-                .layerType(DropoutLayer.class)
-                .inputType(inputType)
-                .outputType(inputType)
-                .parameterSize(0)
-                .activationSizePerEx(actElementsPerEx)      //Assume we duplicate before applying dropout
-                .updaterStateSize(0)
-                //No extra memory in addition to activations
-                .inferenceWorkingSizePerEx(0)
-                .trainingWorkingSizePerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
-                .trainingWorkingSizeCachedPerEx(MemoryReport.CACHE_MODE_ALL_ZEROS)
+        return new LayerMemoryReport.Builder(layerName, DropoutLayer.class, inputType, inputType)
+                .standardMemory(0, 0)   //No params
+                .workingMemory(0, 0, 0, 0)  //No working mem, other than activations etc
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching
                 .build();
     }
 
