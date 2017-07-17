@@ -73,9 +73,8 @@ class NeuralNet(val inputType: Option[InputType] = None, val rngSeed: Long = 0) 
           .learningRate(optimizer.asInstanceOf[SGD].lr)
     }
     var listBuilder: NeuralNetConfiguration.ListBuilder = builder.iterations(1).list()
-    if (inputType.isDefined) {
-      listBuilder.setInputType(inputType.orNull)
-    }
+    inputType foreach (i => listBuilder.setInputType(i))
+
     if (!layers.last.isInstanceOf[Output]) {
       throw new IllegalArgumentException("Last layer must have Output trait")
     } else if (!layers.last.asInstanceOf[Output].isOutput) {

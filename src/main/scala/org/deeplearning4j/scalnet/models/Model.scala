@@ -23,6 +23,8 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
 import org.deeplearning4j.scalnet.layers.{Node, OutputLayer}
 import org.deeplearning4j.scalnet.optimizers.{Optimizer, SGD}
+import org.deeplearning4j.scalnet.utils.Implicits._
+
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.DataSet
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
@@ -49,25 +51,28 @@ abstract class Model {
       builder = builder.seed(seed)
     }
     optimizer match {
-      case o: SGD =>
-        builder = builder.optimizationAlgo(o.optimizationAlgorithm)
-          .learningRate(o.lr)
-        if (o.nesterov) {
-          builder = builder.updater(Updater.NESTEROVS).momentum(o.momentum)
+      case sgd: SGD =>
+        builder = builder.optimizationAlgo(sgd.optimizationAlgorithm)
+          .learningRate(sgd.lr)
+        sgd match {
+          case opt if opt.nesterov =>
+            builder = builder.updater(Updater.NESTEROVS).momentum(opt.momentum)
+          case _ =>
+            builder = builder.optimizationAlgo(optimizer.optimizationAlgorithm)
+              .learningRate(optimizer.asInstanceOf[SGD].lr)
         }
-      case _ =>
-        builder = builder.optimizationAlgo(optimizer.optimizationAlgorithm)
-          .learningRate(optimizer.asInstanceOf[SGD].lr)
+        builder
     }
-    builder
   }
 
   def buildOutput(lossFunction: LossFunction): Unit = {
-    if (!layers.last.isInstanceOf[OutputLayer]) {
-      throw new IllegalArgumentException("Last layer must have Output trait")
-    } else if (!layers.last.asInstanceOf[OutputLayer].output.isOutput) {
-      val last: OutputLayer = layers.last.asInstanceOf[OutputLayer].toOutputLayer(lossFunction)
-      layers = layers.updated(layers.length - 1, last)
+    layers.lastOption match {
+      case l if !l.isInstanceOf[OutputLayer] =>
+        throw new IllegalArgumentException("Last layer must have Output trait")
+      case l if !l.asInstanceOf[OutputLayer].output.isOutput => {
+        val last: OutputLayer = layers.last.asInstanceOf[OutputLayer].toOutputLayer(lossFunction)
+        layers = layers.updated(layers.length - 1, last)
+      }
     }
   }
 

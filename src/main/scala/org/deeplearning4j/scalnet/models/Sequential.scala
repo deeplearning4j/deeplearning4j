@@ -91,12 +91,12 @@ class Sequential(val rngSeed: Long = 0) extends Model {
     var listBuilder: NeuralNetConfiguration.ListBuilder = builder.iterations(1).list()
     for ((layer, layerIndex) <- layers.zipWithIndex) {
       log.info("Layer " + layerIndex + ": " + layer.getClass.getSimpleName)
-      log.info(" size: " + layer.descibe())
+      log.info(" size: " + layer.describe())
       listBuilder.layer(layerIndex, layer.asInstanceOf[Layer].compile)
     }
     for ((layerIndex, preprocessor) <- preprocessors) {
       log.info("Preprocessor " + layerIndex + ": " + preprocessor.getClass.getSimpleName)
-      log.info(" size: " + preprocessor.descibe())
+      log.info(" size: " + preprocessor.describe())
       listBuilder.inputPreProcessor(layerIndex, preprocessor.asInstanceOf[Preprocessor].compile)
     }
     listBuilder = listBuilder.pretrain(false).backprop(true)

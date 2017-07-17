@@ -37,7 +37,7 @@ trait Node {
 
   def reshapeInput(nIn: List[Int]): Node = this
 
-  def descibe(): String = "in=" + inputShape + " out=" + outputShape
+  def describe(): String = "in=" + inputShape + " out=" + outputShape
 
 }
 
