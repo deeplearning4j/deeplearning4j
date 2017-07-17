@@ -22,6 +22,7 @@ package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 import org.apache.commons.math3.util.FastMath;
 import org.apache.commons.math3.util.Pair;
 import org.junit.After;
@@ -4995,6 +4996,59 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
 
+    @Test
+    public void testPercentile1() throws Exception {
+        INDArray array = Nd4j.linspace(1, 10, 10);
+        Percentile percentile = new Percentile(50);
+        double exp = percentile.evaluate(array.data().asDouble());
+
+        assertEquals(exp, array.percentileNumber(50));
+    }
+
+    @Test
+    public void testPercentile2() throws Exception {
+        INDArray array = Nd4j.linspace(1, 9, 9);
+        Percentile percentile = new Percentile(50);
+        double exp = percentile.evaluate(array.data().asDouble());
+
+        assertEquals(exp, array.percentileNumber(50));
+    }
+
+
+    @Test
+    public void testPercentile3() throws Exception {
+        INDArray array = Nd4j.linspace(1, 9, 9);
+        Percentile percentile = new Percentile(75);
+        double exp = percentile.evaluate(array.data().asDouble());
+
+        assertEquals(exp, array.percentileNumber(75));
+    }
+
+    @Test
+    public void testPercentile4() throws Exception {
+        INDArray array = Nd4j.linspace(1, 10, 10);
+        Percentile percentile = new Percentile(75);
+        double exp = percentile.evaluate(array.data().asDouble());
+
+        assertEquals(exp, array.percentileNumber(75));
+    }
+
+    @Test
+    public void testTadPercentile1() throws Exception {
+        INDArray array = Nd4j.linspace(1, 10, 10);
+        Transforms.reverse(array, false);
+        Percentile percentile = new Percentile(75);
+        double exp = percentile.evaluate(array.data().asDouble());
+
+        INDArray matrix = Nd4j.create(10, 10);
+        for (int i = 0; i < matrix.rows(); i++)
+            matrix.getRow(i).assign(array);
+
+        INDArray res = matrix.percentile(75, 1);
+
+        for (int i = 0; i < matrix.rows(); i++)
+            assertEquals(exp, res.getDouble(i), 1e-5);
+    }
 
     @Override
     public char ordering() {

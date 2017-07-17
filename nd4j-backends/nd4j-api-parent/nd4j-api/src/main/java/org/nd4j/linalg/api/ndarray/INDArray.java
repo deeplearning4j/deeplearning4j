@@ -2549,4 +2549,34 @@ public interface INDArray extends Serializable {
      * @return
      */
     INDArray migrate();
+
+    /**
+     * This method returns percentile value for this INDArray
+     *
+     * @param percentile target percentile in range of 0..100
+     * @return
+     */
+    Number percentileNumber(Number percentile);
+
+    /**
+     * This method returns median value for this INDArray
+     *
+     * @return
+     */
+    Number medianNumber();
+
+    /**
+     * This method returns median along given dimension(s)
+     * @param dimension
+     * @return
+     */
+    INDArray median(int... dimension);
+
+    /**
+     * This method returns median along given dimension(s)
+     * @param percentile target percentile in range of 0..100
+     * @param dimension
+     * @return
+     */
+    INDArray percentile(Number percentile, int... dimension);
 }
