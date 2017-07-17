@@ -307,6 +307,13 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         return inputPreProcessors.get(curr);
     }
 
+    /**
+     * Get a {@link MemoryReport} for the given MultiLayerConfiguration. This is used to estimate the
+     * memory requirements for the given network configuration and input
+     *
+     * @param inputType Input types for the network
+     * @return Memory report for the network
+     */
     public NetworkMemoryReport getMemoryReport(InputType inputType){
 
         Map<String,MemoryReport> memoryReportMap = new LinkedHashMap<>();

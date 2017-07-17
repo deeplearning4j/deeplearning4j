@@ -448,6 +448,13 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         return topologicalOrdering;
     }
 
+    /**
+     * Get a {@link MemoryReport} for the given computation graph configuration. This is used to estimate the
+     * memory requirements for the given network configuration and input
+     *
+     * @param inputTypes Input types for the network
+     * @return Memory report for the network
+     */
     public NetworkMemoryReport getMemoryReport(InputType... inputTypes){
 
 
