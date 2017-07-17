@@ -13,10 +13,14 @@ import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 /**
@@ -134,7 +138,28 @@ public class TestMemoryReports {
 
             System.out.println("\n\n");
         }
+    }
 
 
+    @Test
+    public void testInferInputType(){
+        List<Pair<INDArray[],InputType[]>> l = new ArrayList<>();
+        l.add(new Pair<>(new INDArray[]{Nd4j.create(10,8)}, new InputType[]{InputType.feedForward(8)}));
+        l.add(new Pair<>(new INDArray[]{Nd4j.create(10,8), Nd4j.create(10,20)},
+                new InputType[]{InputType.feedForward(8), InputType.feedForward(20)}));
+        l.add(new Pair<>(new INDArray[]{Nd4j.create(10,8, 7)}, new InputType[]{InputType.recurrent(8,7)}));
+        l.add(new Pair<>(new INDArray[]{Nd4j.create(10,8, 7), Nd4j.create(10,20, 6)},
+                new InputType[]{InputType.recurrent(8,7), InputType.recurrent(20,6)}));
+
+        //Activations order: [m,d,h,w]
+        l.add(new Pair<>(new INDArray[]{Nd4j.create(10,8, 7, 6)}, new InputType[]{InputType.convolutional(7,6,8)}));
+        l.add(new Pair<>(new INDArray[]{Nd4j.create(10,8, 7, 6), Nd4j.create(10,4,3,2),},
+                new InputType[]{InputType.convolutional(7,6,8), InputType.convolutional(3,2,4)}));
+
+        for(Pair<INDArray[], InputType[]> p : l ){
+            InputType[] act = InputType.inferInputTypes(p.getFirst());
+
+            assertArrayEquals(p.getSecond(), act);
+        }
     }
 }
