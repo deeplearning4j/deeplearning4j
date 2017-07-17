@@ -1,7 +1,9 @@
 package org.deeplearning4j.nn.conf.memory;
 
 /**
- * Created by Alex on 13/07/2017.
+ * This simple enumeration defines the memory is used during inference or training.
+ *
+ * @author Alex Black
  */
 public enum MemoryUseMode {
     INFERENCE,

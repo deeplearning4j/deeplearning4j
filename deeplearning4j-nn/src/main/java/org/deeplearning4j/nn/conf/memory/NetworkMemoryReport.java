@@ -6,16 +6,23 @@ import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Created by Alex on 13/07/2017.
+ *
+ * Network memory reports is a class that is used to store/represent the memory requirements of a
+ * {@link org.deeplearning4j.nn.multilayer.MultiLayerNetwork} or {@link org.deeplearning4j.nn.graph.ComputationGraph},
+ * composed of multiple layers and/or vertices.
+ *
+ * @author Alex Black
  */
-
 public class NetworkMemoryReport extends MemoryReport {
+
+    private static final DecimalFormat BYTES_FORMAT = new DecimalFormat("#,###");
 
     private final Map<String, MemoryReport> layerAndVertexReports;
     private final Class<?> modelClass;
@@ -149,23 +156,25 @@ public class NetworkMemoryReport extends MemoryReport {
                 String formatted = String.format("  - %-34s", mt);
                 appendFixedPlusVariable(sb, formatted, bytesFixed, bytesPerEx);
             }
-
-
         }
     }
 
     private void appendFixedPlusVariable(StringBuilder sb, String title, long bytesFixed, long bytesPerEx){
         sb.append(title);
         if(bytesFixed > 0){
-            sb.append(bytesFixed).append(" bytes");
+            sb.append(formatBytes(bytesFixed)).append(" bytes");
         }
         if(bytesPerEx > 0){
             if(bytesFixed > 0){
                 sb.append(" + ");
             }
-            sb.append("nExamples * ").append(bytesPerEx).append(" bytes");
+            sb.append("nExamples * ").append(formatBytes(bytesPerEx)).append(" bytes");
         }
         sb.append("\n");
+    }
+
+    private String formatBytes(long bytes){
+        return BYTES_FORMAT.format(bytes);
     }
 
 }

@@ -8,7 +8,9 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import java.util.Map;
 
 /**
- * Created by Alex on 13/07/2017.
+ * A {@link MemoryReport} Designed to report estimated memory use for a single layer or graph vertex.
+ *
+ * @author Alex Black
  */
 @Data
 @AllArgsConstructor
@@ -153,7 +155,13 @@ public class LayerMemoryReport extends MemoryReport {
         Map<CacheMode, Long> cacheModeMemFixed;
         Map<CacheMode, Long> cacheModeMemVariablePerEx;
 
-
+        /**
+         *
+         * @param layerName  Name of the layer or graph vertex
+         * @param layerType  Type of the layer or graph vertex
+         * @param inputType  Input type to the layer/vertex
+         * @param outputType Output type from the layer/vertex
+         */
         public Builder(String layerName, Class<?> layerType, InputType inputType, InputType outputType) {
             this.layerName = layerName;
             this.layerType = layerType;
@@ -161,16 +169,42 @@ public class LayerMemoryReport extends MemoryReport {
             this.outputType = outputType;
         }
 
+        /**
+         * Report the standard memory
+         *
+         * @param parameterSize    Number of parameters
+         * @param updaterStateSize Size for the updater array
+         */
         public Builder standardMemory(long parameterSize, long updaterStateSize) {
             this.parameterSize = parameterSize;
             this.updaterStateSize = updaterStateSize;
             return this;
         }
 
+        /**
+         * Report the working memory size, for both inference and training
+         *
+         * @param fixedInference         Number of elements used for inference ( independent of minibatch size)
+         * @param variableInferencePerEx Number of elements used for inference, for each example
+         * @param fixedTrain             Number of elements used for training (independent of minibatch size)
+         * @param variableTrainPerEx     Number of elements used for training, for each example
+         */
         public Builder workingMemory(long fixedInference, long variableInferencePerEx, long fixedTrain, long variableTrainPerEx) {
             return workingMemory(fixedInference, variableInferencePerEx, MemoryReport.cacheModeMapFor(fixedTrain), MemoryReport.cacheModeMapFor(variableTrainPerEx) );
         }
 
+        /**
+         * Report the working memory requirements, for both inference and training. As noted in {@link MemoryReport}
+         * Working memory is memory That will be allocated in a ND4J workspace, or can be garbage collected at any
+         * points after the method returns.
+         *
+         * @param fixedInference         Number of elements of working memory used for inference (independent of minibatch size)
+         * @param variableInferencePerEx Number of elements of working memory used for inference, for each example
+         * @param fixedTrain             Number of elements of working memory used for training (independent of
+         *                               minibatch size), for each cache mode
+         * @param variableTrainPerEx     Number of elements of working memory used for training, for each example, for
+         *                               each cache mode
+         */
         public Builder workingMemory(long fixedInference, long variableInferencePerEx, Map<CacheMode, Long> fixedTrain, Map<CacheMode, Long> variableTrainPerEx) {
             this.workingMemoryFixedInference = fixedInference;
             this.workingMemoryVariableInference = variableInferencePerEx;
@@ -179,10 +213,24 @@ public class LayerMemoryReport extends MemoryReport {
             return this;
         }
 
+        /**
+         * Reports the cached/cacheable memory requirements. This method assumes the caseload memory is the same for
+         * all cases, i.e., typically used with zeros (Layers that do not use caching)
+         *
+         *
+         * @param cacheModeMemoryFixed         Number of elements of cache memory, independent of the mini batch size
+         * @param cacheModeMemoryVariablePerEx Number of elements of cache memory, for each example
+         */
         public Builder cacheMemory(long cacheModeMemoryFixed, long cacheModeMemoryVariablePerEx ){
             return cacheMemory(MemoryReport.cacheModeMapFor(cacheModeMemoryFixed), MemoryReport.cacheModeMapFor(cacheModeMemoryVariablePerEx));
         }
 
+        /**
+         * Reports the cached/cacheable memory requirements.
+         *
+         * @param cacheModeMemoryFixed         Number of elements of cache memory, independent of the mini batch size
+         * @param cacheModeMemoryVariablePerEx Number of elements of cache memory, for each example
+         */
         public Builder cacheMemory(Map<CacheMode, Long> cacheModeMemoryFixed, Map<CacheMode, Long> cacheModeMemoryVariablePerEx) {
             this.cacheModeMemFixed = cacheModeMemoryFixed;
             this.cacheModeMemVariablePerEx = cacheModeMemoryVariablePerEx;

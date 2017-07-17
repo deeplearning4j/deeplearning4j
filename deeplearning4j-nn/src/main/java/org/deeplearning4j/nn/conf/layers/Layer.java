@@ -206,6 +206,12 @@ public abstract class Layer implements Serializable, Cloneable {
                         "Not supported: all layers with parameters should override this method");
     }
 
+    /**
+     * This is a report of the estimated memory consumption for the given layer
+     *
+     * @param inputType Input type to the layer. Memory consumption is often a function of the input type
+     * @return Memory report for the layer
+     */
     public abstract LayerMemoryReport getMemoryReport(InputType inputType);
 
     @SuppressWarnings("unchecked")

@@ -1,7 +1,9 @@
 package org.deeplearning4j.nn.conf.memory;
 
 /**
- * Created by Alex on 13/07/2017.
+ * Type of memory
+ *
+ * @author Alex Black
  */
 public enum MemoryType {
     PARAMETERS,
@@ -14,6 +16,9 @@ public enum MemoryType {
     CACHED_MEMORY_FIXED,
     CACHED_MEMORY_VARIABLE;
 
+    /**
+     * @return True, if the memory type is used during inference. False if the memory type is used only during training.
+     */
     public boolean isInference(){
         switch (this){
             case PARAMETERS:

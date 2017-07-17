@@ -98,6 +98,12 @@ public abstract class GraphVertex implements Cloneable, Serializable {
      */
     public abstract InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException;
 
+    /**
+     * This is a report of the estimated memory consumption for the given vertex
+     *
+     * @param inputTypes Input types to the vertex. Memory consumption is often a function of the input type
+     * @return Memory report for the vertex
+     */
     public abstract MemoryReport getMemoryReport(InputType... inputTypes);
 
 }
