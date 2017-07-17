@@ -31,7 +31,7 @@ Having built deeplearning4j and nd4j users can also `sbt` instead of `mvn` to bu
 ```$scala
 $ sbt compile
 ```
-to build the project.
+to build the project, see the [official sbt documentation](http://www.scala-sbt.org/documentation.html) for more on how to use sbt.
 
 # Getting started
 
