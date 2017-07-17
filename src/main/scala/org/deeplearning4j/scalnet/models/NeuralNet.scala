@@ -19,11 +19,11 @@
 package org.deeplearning4j.scalnet.models
 
 import org.deeplearning4j.nn.conf.inputs.InputType
-import org.deeplearning4j.nn.conf.{MultiLayerConfiguration, NeuralNetConfiguration, Updater}
+import org.deeplearning4j.nn.conf.{MultiLayerConfiguration, NeuralNetConfiguration}
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
-import org.deeplearning4j.scalnet.layers.{Layer, Node, Output, OutputLayer}
-import org.deeplearning4j.scalnet.optimizers.{Optimizer, SGD}
+import org.deeplearning4j.scalnet.layers.{Layer, Node}
+import org.deeplearning4j.scalnet.optimizers.Optimizer
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
@@ -56,35 +56,11 @@ class NeuralNet(val inputType: Option[InputType] = None, val rngSeed: Long = 0) 
   }
 
   override def compile(lossFunction: LossFunction, optimizer: Optimizer = defaultOptimizer): Unit = {
-    val loss = Option(lossFunction)
-    var builder: NeuralNetConfiguration.Builder = new NeuralNetConfiguration.Builder()
-    if (rngSeed != 0) {
-      builder = builder.seed(rngSeed)
-    }
-    optimizer match {
-      case o: SGD =>
-        builder = builder.optimizationAlgo(o.optimizationAlgorithm)
-          .learningRate(o.lr)
-        if (o.nesterov) {
-          builder = builder.updater(Updater.NESTEROVS).momentum(o.momentum)
-        }
-      case _ =>
-        builder = builder.optimizationAlgo(optimizer.optimizationAlgorithm)
-          .learningRate(optimizer.asInstanceOf[SGD].lr)
-    }
+    val builder = buildModelConfig(optimizer, rngSeed)
+    buildOutput(lossFunction)
+
     var listBuilder: NeuralNetConfiguration.ListBuilder = builder.iterations(1).list()
     inputType foreach (i => listBuilder.setInputType(i))
-
-    if (!layers.last.isInstanceOf[Output]) {
-      throw new IllegalArgumentException("Last layer must have Output trait")
-    } else if (!layers.last.asInstanceOf[Output].isOutput) {
-      if (loss.isDefined) {
-        val last: OutputLayer = layers.last.asInstanceOf[OutputLayer].toOutputLayer(lossFunction)
-        layers = layers.updated(layers.length-1, last)
-      } else {
-        throw new IllegalArgumentException("Last layer must be an output layer with a valid loss function")
-      }
-    }
 
     for ((layer, layerIndex) <- layers.zipWithIndex) {
       log.info("Layer " + layerIndex + ": " + layer.getClass.getSimpleName)

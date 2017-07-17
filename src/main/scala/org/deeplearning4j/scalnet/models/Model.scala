@@ -73,6 +73,8 @@ abstract class Model {
         val last: OutputLayer = layers.last.asInstanceOf[OutputLayer].toOutputLayer(lossFunction)
         layers = layers.updated(layers.length - 1, last)
       }
+      case _ =>
+        throw new IllegalArgumentException("Last layer must be an output layer with a valid loss function")
     }
   }
 
