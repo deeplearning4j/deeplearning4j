@@ -93,17 +93,20 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
 
     @Override
     public Constant<X> diff(Variable<X> i_v) {
-        Constant<X> ret =  (this.equals(i_v) ? new One<>(graph, m_factory) : new Zero<>(graph, m_factory));
         if(m_x instanceof ArrayField) {
             ArrayField arrayField = (ArrayField) m_x;
+            Constant<X> ret =  (this.equals(i_v) ? new One<>(graph, arrayField.getInput().getShape(),m_factory) : new Zero<>(graph,arrayField.getInput().getShape(), m_factory));
+
             /*addEdges(graph,
                     this,ret,
                     "diff",
                     OpState.OpType.TRANSFORM,
                     arrayField.getInput().getShape());*/
+            return ret;
 
         }
-        return ret;
+
+        throw new IllegalStateException("Illegal type for variable. Should be ArrayField");
     }
 
 
@@ -127,7 +130,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
 
     @Override
     public DifferentialFunction<X> div(DifferentialFunction<X> i_v) {
-        return (i_v == this) ? new One<>(graph, m_factory) : super.mul(i_v.inverse());
+        return (i_v == this) ? new One<>(graph,i_v.getResultShape(), m_factory) : super.mul(i_v.inverse());
     }
 
     @Override

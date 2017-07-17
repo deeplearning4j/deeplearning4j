@@ -120,8 +120,8 @@ public class ArrayTestAbstractFactory
         ArrayFactory arrayFactory = new ArrayFactory(graph);
 
         DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
-        Constant<ArrayField> constant  = arrayFieldDifferentialFunctionFactory.zero();
-        Constant<ArrayField> one = arrayFieldDifferentialFunctionFactory.zero();
+        Constant<ArrayField> constant  = arrayFieldDifferentialFunctionFactory.zero(new int[]{1,2});
+        Constant<ArrayField> one = arrayFieldDifferentialFunctionFactory.zero(new int[]{1,2});
         assertEquals(2,graph.numVertices());
         DifferentialFunction<ArrayField> mul = one.mul(constant);
         assertEquals(2/*why not one?*/,graph.getEdges().size());

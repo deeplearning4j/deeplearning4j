@@ -198,11 +198,14 @@ public class TensorGrad {
     public  TensorGradVariable var(String name, INDArray arr) {
         NDArrayInformation ndArrayInformation = NDArrayInformation.builder()
                 .shape(arr.shape()).id(name).build();
+        if(ArrayUtil.prod(arr.shape()) == 1)
+            ndArrayInformation.setScalarValue(arr.getDouble(0));
         NDArrayVertex ndArrayVertex = new NDArrayVertex(graph.nextVertexId(), ndArrayInformation);
         ArrayField arrayField = new ArrayField(ndArrayVertex,graph);
         TensorGradVariable ret = TensorGradVariable.builder()
                 .tensorGrad(this).
                         arrayField(arrayFieldDifferentialFunctionFactory.var(name,arrayField))
+                .shape(arr.shape())
                 .varName(name)
                 .arr(arr).build();
         addVariable(ret);
@@ -984,6 +987,7 @@ public class TensorGrad {
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.mmul(argNum ,x.getArrayField(), y.getArrayField()))
                 .varName("mmul(" + x.getVarName() + "," + y.getVarName()  + ")").tensorGrad(this)
                 .build();
+        ret.setShape(ret.getDifferentialFunction().getOpState().getResult().getShape());
         addVariable(ret);
         return ret;
     }

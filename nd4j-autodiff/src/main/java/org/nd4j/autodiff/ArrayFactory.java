@@ -195,16 +195,16 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
 
 
     @Override
-    public ArrayField zero() {
+    public ArrayField zero(int[] shape) {
         NDArrayInformation information = NDArrayInformation.builder()
-                .id("zero").owner(null).shape(new int[]{1,2}).build();
+                .id("zero").owner(null).shape(shape).build();
         return new ArrayField(new NDArrayVertex(graph.nextVertexId(), information), graph);
     }
 
     @Override
-    public ArrayField one() {
+    public ArrayField one(int[] shape) {
         NDArrayInformation information = NDArrayInformation.builder()
-                .id("one").owner(null).shape(new int[]{1,1}).build();
+                .id("one").owner(null).shape(shape).build();
         return new ArrayField(new NDArrayVertex(graph.nextVertexId(), information), graph);
     }
 

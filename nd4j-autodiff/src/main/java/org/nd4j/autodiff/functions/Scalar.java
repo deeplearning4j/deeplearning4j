@@ -19,7 +19,7 @@ public class Scalar<X extends Field<X>> extends Constant<X> {
     public Scalar(TensorGradGraph graph,
                   double value,
                   AbstractIdentityFactory<X> i_factory) {
-        super(graph,i_factory.scalar(value), i_factory);
+        super(graph,i_factory.scalar(value),new int[]{1,1} ,i_factory);
         this.value = value;
     }
 

@@ -20,9 +20,9 @@ public interface FunctionFactory<X extends Field<X>> {
 
 
 
-    Zero<X> zero();
+    Zero<X> zero(int[] shape);
 
-    One<X> one();
+    One<X> one(int[] shape);
 
 
     DifferentialFunction<X> tile(DifferentialFunction<X> iX, int[] repeat);

@@ -12,8 +12,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 public class Zero<X extends Field<X>> extends Constant<X> {
 
 
-    public Zero(TensorGradGraph graph, AbstractIdentityFactory<X> i_factory) {
-        super(graph,i_factory.zero(), i_factory);
+    public Zero(TensorGradGraph graph, int[] shape,AbstractIdentityFactory<X> i_factory) {
+        super(graph,i_factory.zero(shape),shape, i_factory);
     }
 
     @Override
@@ -62,6 +62,6 @@ public class Zero<X extends Field<X>> extends Constant<X> {
 
     @Override
     public DifferentialFunction<X> dup() {
-        return new Zero<>(graph, getM_factory());
+        return new Zero<>(graph,shape, getM_factory());
     }
 }

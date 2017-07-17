@@ -13,11 +13,14 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
 
     protected X m_x;
     protected AbstractIdentityFactory<X> m_factory;
+    protected int[] shape;
 
     protected Constant(TensorGradGraph graph,
                        X i_v,
+                       int[] shape,
                        AbstractIdentityFactory<X> i_factory) {
         super(graph,new Object[]{i_v});
+        this.shape = shape;
         if(i_factory == null) {
             i_factory = (AbstractIdentityFactory<X>) graph.getTensorGrad().getArrayFactory();
         }
@@ -35,6 +38,15 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
         }
     }
 
+    /**
+     * Get the result shape for this function
+     *
+     * @return
+     */
+    @Override
+    public int[] getResultShape() {
+        return shape;
+    }
 
     @Override
     public boolean isConstant() {
@@ -58,7 +70,7 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
 
     @Override
     public DifferentialFunction<X> diff(Variable<X> i_v) {
-        return new Zero<>(graph, m_factory);
+        return new Zero<>(graph,shape, m_factory);
     }
 
     @Override
@@ -80,19 +92,19 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
 
     @Override
     public Constant<X> inverse() {
-        Constant<X> ret = new Constant<>(graph, m_x.inverse(), m_factory);
+        Constant<X> ret = new Constant<>(graph, m_x.inverse(),shape, m_factory);
         return ret;
     }
 
     @Override
     public Constant<X> negate() {
-        Constant<X> ret =  new Constant<>(graph, m_x.negate(), m_factory);
+        Constant<X> ret =  new Constant<>(graph, m_x.negate(),shape, m_factory);
         return ret;
     }
 
     @Override
     public DifferentialFunction<X> dup() {
-        return new Constant<>(graph,m_x,getM_factory());
+        return new Constant<>(graph,m_x,shape,getM_factory());
     }
 
     // This class must be immutable.

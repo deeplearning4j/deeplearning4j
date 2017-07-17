@@ -254,7 +254,7 @@ public class TensorGradTests {
                 {0.74, -2.49, 1.39}
         });
 
-        INDArray labels = FeatureUtil.toOutcomeMatrix(new int[]{1,1,0,0},2);
+        INDArray labels = Nd4j.create(new double[]{1,1,0,0}).reshape(4,1);
 
         INDArray weights = Nd4j.zeros(3).transpose();
 
@@ -268,10 +268,14 @@ public class TensorGradTests {
 
         TensorGradVariable outputs = tensorGrad.sigmoid(preOutput);
         //    label_probabilities = preds * targets + (1 - preds) * (1 - targets)
-        TensorGradVariable probs = outputs.mul(y).add(outputs.rsub(tensorGrad.scalar("one",1.0)).mul(y.rsub(tensorGrad.scalar("onetwo",1.0))));
+        TensorGradVariable outputTimesY = outputs.mul(y);
+        TensorGradVariable oneMinusOutput = outputs.rsub(tensorGrad.scalar("one",1.0));
+        TensorGradVariable probs = outputTimesY.add(oneMinusOutput.mul(y.rsub(tensorGrad.scalar("onetwo",1.0))));
         TensorGradVariable outputGrad = tensorGrad.grad(probs,x);
         for(int i = 0; i < 1; i++) {
-            w = w.sub(w.mul(outputGrad).mul(learningRate));
+            TensorGradVariable preUpdate = w.mul(outputGrad);
+            TensorGradVariable update = preUpdate.mul(learningRate);
+            w = w.sub(update);
         }
         List<Op> ops = tensorGrad.exec();
         System.out.println(ops);

@@ -3,8 +3,6 @@ package org.nd4j.autodiff.functions;
 import org.nd4j.autodiff.AbstractIdentityFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.graph.Graph;
-import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
@@ -14,8 +12,10 @@ public class One<X extends Field<X>> extends Constant<X> {
 
 
     public One(TensorGradGraph graph,
+               int[] shape,
                AbstractIdentityFactory<X> i_factory) {
-        super(graph,i_factory.one(), i_factory);
+        super(graph,i_factory.one(shape),shape, i_factory);
+        this.shape = shape;
     }
 
 
@@ -41,6 +41,6 @@ public class One<X extends Field<X>> extends Constant<X> {
 
     @Override
     public DifferentialFunction<X> dup() {
-        return new One<>(graph, getM_factory());
+        return new One<>(graph, shape,getM_factory());
     }
 }

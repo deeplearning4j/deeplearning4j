@@ -4,7 +4,9 @@ import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.nd4j.autodiff.AbstractIdentityFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.graph.Graph;
@@ -24,6 +26,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
         Differential<X, DifferentialFunction<X>> {
 
     protected TensorGradGraph graph;
+    @Getter
     protected OpState opState;
     protected int vertexId;
     protected Object[] extraArgs;
@@ -32,6 +35,17 @@ public abstract class DifferentialFunction<X extends Field<X>>
     public DifferentialFunction(TensorGradGraph graph, Object[] extraArgs) {
         this.graph = graph;
         this.extraArgs = extraArgs;
+    }
+
+
+    /**
+     * Get the result shape for this function
+     * @return
+     */
+    public int[] getResultShape() {
+        if(opState == null)
+            throw new IllegalStateException("Unable to get result shape with null op state");
+        return opState.getResult().getShape();
     }
 
     /**
@@ -122,13 +136,13 @@ public abstract class DifferentialFunction<X extends Field<X>>
     @Override
     public DifferentialFunction<X> add(DifferentialFunction<X> i_v) {
         X ret = i_v.getValue().add(getValue());
-        return new Constant<>(graph, ret, null);
+        return new Constant<>(graph, ret, i_v.getResultShape(), (AbstractIdentityFactory<X>) graph.getTensorGrad().getArrayFactory());
     }
 
     @Override
     public DifferentialFunction<X> mul(DifferentialFunction<X> i_v) {
         X ret = i_v.getValue().mul(getValue());
-        return new Constant<>(graph, ret, null);
+        return new Constant<>(graph, ret, i_v.getResultShape(), (AbstractIdentityFactory<X>) graph.getTensorGrad().getArrayFactory());
     }
 
     @Override

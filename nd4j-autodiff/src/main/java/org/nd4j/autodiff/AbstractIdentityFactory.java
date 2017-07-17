@@ -4,15 +4,17 @@ public interface AbstractIdentityFactory<X> {
     /**
      *
      * @return
+     * @param shape
      */
-    X zero();
+    X zero(int[] shape);
 
 
     /**
      *
      * @return
+     * @param shape
      */
-    X one();
+    X one(int[] shape);
 
     /**
      * Scalar value

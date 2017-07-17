@@ -18,7 +18,17 @@ public class NDArrayInformation implements Serializable {
     private int[] shape;
     private String id;
     private OpState owner;
+    private Number scalarValue;
 
+
+    public Number scalar() {
+        if(scalarValue != null)
+            return scalarValue;
+
+        if(owner == null)
+            throw new IllegalStateException("No owner set.");
+        return owner.getScalarValue();
+    }
     @Override
     public String toString() {
         return "NDArrayInformation{" +

@@ -1,5 +1,6 @@
 package org.nd4j.autodiff;
 
+import com.google.common.base.Preconditions;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -13,17 +14,17 @@ import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarSubtraction;
+import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.DivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.SubOp;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.lossfunctions.impl.*;
 import org.nd4j.linalg.util.ArrayUtil;
+
+import java.util.Arrays;
 
 /**
  * Created by agibsonccc on 4/4/17.
@@ -61,6 +62,8 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField add(ArrayField i_v) {
+        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1)
+            return addScalarTransformOp(new ScalarAdd().name(),i_v.getInput().scalar());
         return addPairTransformOp(new AddOp().name(),i_v);
     }
 
@@ -68,12 +71,16 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField sub(ArrayField i_v) {
+        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1)
+            return addScalarTransformOp(new ScalarSubtraction().name(),i_v.getInput().scalar());
         return addPairTransformOp(new SubOp().name(),i_v);
     }
 
     @Override
     public ArrayField rsub(ArrayField i_v) {
-       return addPairTransformOp("rsub",i_v);
+        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1)
+            return addScalarTransformOp(new ScalarReverseSubtraction().name(),i_v.getInput().scalar());
+        return addPairTransformOp("rsub",i_v);
     }
 
     @Override
@@ -83,11 +90,13 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField sub(double i_v) {
-      return addScalarTransformOp("sub",i_v);
+        return addScalarTransformOp("sub",i_v);
     }
 
     @Override
     public ArrayField mul(ArrayField i_v) {
+        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1)
+            return addScalarTransformOp(new ScalarMultiplication().name(),i_v.getInput().scalar());
         return addPairTransformOp(new MulOp().name(),i_v);
     }
 
@@ -104,11 +113,15 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField rdiv(ArrayField i_v) {
+        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1)
+            return addScalarTransformOp(new ScalarReverseDivision().name(),i_v.getInput().scalar());
         return addPairTransformOp("rdiv",i_v);
     }
 
     @Override
     public ArrayField div(ArrayField i_v) {
+        if(ArrayUtil.prod(i_v.getInput().getShape()) == 1)
+            return addScalarTransformOp(new ScalarDivision().name(),i_v.getInput().scalar());
         return addPairTransformOp(new DivOp().name(),i_v);
     }
 
@@ -619,10 +632,16 @@ public class ArrayField implements Field<ArrayField> {
         return new ArrayField(newVertex,ops);
     }
 
+    private ArrayField addPairReduceOp(String name,ArrayField i_v,
+                                       int[] dimensions,
+                                       Object[] extraArgs) {
+        return addPairReduceOp(name,i_v,dimensions,ArrayUtil.removeIndex(input.getShape(),dimensions),extraArgs);
+    }
 
-    private ArrayField addPairReduceOp(String name,ArrayField i_v,int[] dimensions,Object[] extraArgs) {
-        //result
-        int[] resultShape = ArrayUtil.removeIndex(input.getShape(),dimensions);
+    private ArrayField addPairReduceOp(String name,ArrayField i_v,
+                                       int[] dimensions,
+                                       int[] resultShape,Object[] extraArgs) {
+
         NDArrayInformation information =   NDArrayInformation.builder()
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
                 .shape(resultShape).build();
@@ -699,6 +718,8 @@ public class ArrayField implements Field<ArrayField> {
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")
                 .shape(input.getShape()).build();
         NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId(), resultInfo);
+
+        Preconditions.checkArgument(Arrays.equals(input.getShape(),i_v.getInput().getShape()),"X and y not equal shapes.");
 
         //add the result vertex to the graph
         this.getOps().addVertex(newVertex);
@@ -798,11 +819,18 @@ public class ArrayField implements Field<ArrayField> {
 
 
     public ArrayField mmul(ArrayField value) {
-        return addPairTransformOp("mmul",value,null);
+        return addPairReduceOp("mmul",value,
+                null,
+                Shape.getMatrixMultiplyShape(getInput().getShape(),
+                        value.getInput().getShape()),null);
     }
 
     public ArrayField tensorMmul(DifferentialFunction<ArrayField> y, int[][] dimensions) {
-        return addPairReduceOp("tensorMmul",y.getValue(),new Object[]{dimensions});
+        return addPairReduceOp("tensorMmul",y.getValue(),
+                null,
+                ArrayUtil.getTensorMmulShape(getInput().getShape(),
+                        y.getValue().getInput().getShape(),
+                        dimensions),new Object[]{dimensions});
 
     }
 
