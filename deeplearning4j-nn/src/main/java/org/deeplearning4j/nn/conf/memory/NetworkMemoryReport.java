@@ -1,10 +1,13 @@
 package org.deeplearning4j.nn.conf.memory;
 
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NonNull;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.text.DecimalFormat;
 import java.util.Arrays;
@@ -20,6 +23,8 @@ import java.util.Map;
  *
  * @author Alex Black
  */
+@Getter
+@EqualsAndHashCode(callSuper = true)
 public class NetworkMemoryReport extends MemoryReport {
 
     private static final DecimalFormat BYTES_FORMAT = new DecimalFormat("#,###");
@@ -29,10 +34,10 @@ public class NetworkMemoryReport extends MemoryReport {
     private final String modelName;
     private final InputType[] networkInputTypes;
 
-    public NetworkMemoryReport(@NonNull Map<String, MemoryReport> layerAndVertexReports,
-                               @NonNull Class<?> modelClass,
-                               String modelName,
-                               @NonNull InputType... networkInputTypes) {
+    public NetworkMemoryReport(@NonNull @JsonProperty("layerAndVertexReports") Map<String, MemoryReport> layerAndVertexReports,
+                               @NonNull @JsonProperty("modelClass") Class<?> modelClass,
+                               @JsonProperty("modelName") String modelName,
+                               @NonNull @JsonProperty("networkInputTypes") InputType... networkInputTypes) {
         this.layerAndVertexReports = layerAndVertexReports;
         this.modelClass = modelClass;
         this.modelName = modelName;

@@ -1,10 +1,15 @@
 package org.deeplearning4j.nn.conf.memory;
 
+import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.deeplearning4j.nn.conf.CacheMode;
+import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
+import org.nd4j.shade.jackson.core.JsonProcessingException;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -60,6 +65,8 @@ import java.util.Map;
  *
  * @author Alex Black
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
+@EqualsAndHashCode
 public abstract class MemoryReport {
 
     /**
@@ -168,6 +175,38 @@ public abstract class MemoryReport {
             m.put(cm, value);
         }
         return m;
+    }
+
+    public String toJson(){
+        try{
+            return NeuralNetConfiguration.mapper().writeValueAsString(this);
+        }catch (JsonProcessingException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    public String toYaml(){
+        try{
+            return NeuralNetConfiguration.mapperYaml().writeValueAsString(this);
+        }catch (JsonProcessingException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static MemoryReport fromJson(String json){
+        try{
+            return NeuralNetConfiguration.mapper().readValue(json, MemoryReport.class);
+        }catch (IOException e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static MemoryReport fromYaml(String yaml){
+        try{
+            return NeuralNetConfiguration.mapperYaml().readValue(yaml, MemoryReport.class);
+        }catch (IOException e){
+            throw new RuntimeException(e);
+        }
     }
 
 }

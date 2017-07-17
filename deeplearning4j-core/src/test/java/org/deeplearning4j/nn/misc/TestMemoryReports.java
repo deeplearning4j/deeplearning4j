@@ -21,7 +21,6 @@ import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 /**
  * Created by Alex on 14/07/2017.
@@ -81,9 +80,18 @@ public class TestMemoryReports {
                     .build();
 
             MemoryReport mr = conf.getMemoryReport(p.getSecond());
-            System.out.println(mr.toString());
+//            System.out.println(mr.toString());
+//            System.out.println("\n\n");
 
-            System.out.println("\n\n");
+            //Test to/from JSON + YAML
+            String json = mr.toJson();
+            String yaml = mr.toYaml();
+
+            MemoryReport fromJson = MemoryReport.fromJson(json);
+            MemoryReport fromYaml = MemoryReport.fromYaml(yaml);
+
+            assertEquals(mr, fromJson);
+            assertEquals(mr, fromYaml);
         }
     }
 
@@ -105,9 +113,18 @@ public class TestMemoryReports {
                     .build();
 
             MemoryReport mr = conf.getMemoryReport(p.getSecond());
-            System.out.println(mr.toString());
+//            System.out.println(mr.toString());
+//            System.out.println("\n\n");
 
-            System.out.println("\n\n");
+            //Test to/from JSON + YAML
+            String json = mr.toJson();
+            String yaml = mr.toYaml();
+
+            MemoryReport fromJson = MemoryReport.fromJson(json);
+            MemoryReport fromYaml = MemoryReport.fromYaml(yaml);
+
+            assertEquals(mr, fromJson);
+            assertEquals(mr, fromYaml);
         }
     }
 
@@ -134,9 +151,18 @@ public class TestMemoryReports {
                     .build();
 
             MemoryReport mr = conf.getMemoryReport(p.getSecond());
-            System.out.println(mr.toString());
+//            System.out.println(mr.toString());
+//            System.out.println("\n\n");
 
-            System.out.println("\n\n");
+            //Test to/from JSON + YAML
+            String json = mr.toJson();
+            String yaml = mr.toYaml();
+
+            MemoryReport fromJson = MemoryReport.fromJson(json);
+            MemoryReport fromYaml = MemoryReport.fromYaml(yaml);
+
+            assertEquals(mr, fromJson);
+            assertEquals(mr, fromYaml);
         }
     }
 
