@@ -5033,6 +5033,23 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(exp, array.percentileNumber(75));
     }
 
+    @Test
+    public void testTadPercentile1() throws Exception {
+        INDArray array = Nd4j.linspace(1, 10, 10);
+        Transforms.reverse(array, false);
+        Percentile percentile = new Percentile(75);
+        double exp = percentile.evaluate(array.data().asDouble());
+
+        INDArray matrix = Nd4j.create(10, 10);
+        for (int i = 0; i < matrix.rows(); i++)
+            matrix.getRow(i).assign(array);
+
+        INDArray res = matrix.percentile(75, 1);
+
+        for (int i = 0; i < matrix.rows(); i++)
+            assertEquals(exp, res.getDouble(i), 1e-5);
+    }
+
     @Override
     public char ordering() {
         return 'c';

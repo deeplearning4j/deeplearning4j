@@ -1530,7 +1530,8 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray sort(INDArray x, boolean descending) {
-        // to be implemented
+        if (x.isScalar())
+            return x;
 
         Nd4j.getExecutioner().push();
 
@@ -1595,6 +1596,9 @@ public class JCublasNDArrayFactory extends BaseNDArrayFactory {
 
     @Override
     public INDArray sort(INDArray x, boolean descending, int... dimension) {
+        if (x.isScalar())
+            return x;
+
         Arrays.sort(dimension);
 
         Nd4j.getExecutioner().push();

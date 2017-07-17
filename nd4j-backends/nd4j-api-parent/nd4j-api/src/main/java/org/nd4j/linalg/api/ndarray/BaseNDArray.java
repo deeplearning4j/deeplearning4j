@@ -5272,12 +5272,26 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray sorted = Nd4j.sort(this.dup(this.ordering()), true);
 
+        return getPercentile(quantile, sorted);
+    }
+
+    @Override
+    public Number medianNumber() {
+        return percentileNumber(50);
+    }
+
+    @Override
+    public INDArray median(int... dimension) {
+        return percentile(50, dimension);
+    }
+
+    protected double getPercentile(Number quantile, INDArray sorted) {
         if (quantile.intValue() == 0)
             return sorted.getDouble(0);
         else if (quantile.intValue() == 100)
             return sorted.getDouble(sorted.length() - 1);
 
-        double pos = (quantile.doubleValue() / 100.0) * (double) (this.length() + 1);
+        double pos = (quantile.doubleValue() / 100.0) * (double) (sorted.length() + 1);
 
         double fposition = FastMath.floor(pos);
         int position = (int)fposition;
@@ -5291,16 +5305,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public Number medianNumber() {
-        return percentileNumber(50);
-    }
-
-    @Override
-    public INDArray median(int... dimension) {
-        return percentile(50, dimension);
-    }
-
-    @Override
     public INDArray percentile(Number quantile, int... dimension) {
         if (quantile.doubleValue() < 0 || quantile.doubleValue() > 100)
             throw new ND4JIllegalStateException("Percentile value should be in 0...100 range");
@@ -5310,12 +5314,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         INDArray sorted = Nd4j.getNDArrayFactory().sort(this.dup(this.ordering()), false, dimension);
 
-        if (isMatrix()) {
-
-        } else {
-            // tad edge case
+        // there's no practical sense doing this on GPU, stride will be just size of TAD.
+        INDArray ret = Nd4j.createUninitialized(sorted.tensorssAlongDimension(dimension));
+        for (int i = 0; i < ret.length(); i++) {
+            ret.putScalar(i, getPercentile(quantile, sorted.tensorAlongDimension(i, dimension)));
         }
 
-        return null;
+        return ret;
     }
 }
