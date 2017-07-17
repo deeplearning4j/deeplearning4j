@@ -1,6 +1,7 @@
 package org.deeplearning4j.nn.misc;
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -10,9 +11,12 @@ import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryType;
+import org.deeplearning4j.nn.conf.memory.MemoryUseMode;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -187,5 +191,47 @@ public class TestMemoryReports {
 
             assertArrayEquals(p.getSecond(), act);
         }
+    }
+
+
+    @Test
+    public void validateSimple(){
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(0, new DenseLayer.Builder().nIn(10).nOut(20).build())
+                .layer(1, new DenseLayer.Builder().nIn(20).nOut(27).build())
+                .build();
+
+        MemoryReport mr = conf.getMemoryReport(InputType.feedForward(10));
+
+        int numParams = (10 * 20 + 20) + (20 * 27 + 27);    //787 -> 3148 bytes
+        int actSize = 20 + 27;  //47 -> 188 bytes
+        int total15Minibatch = numParams + 15 * actSize;
+
+        //Fixed: should be just params
+        long fixedBytes = mr.getTotalMemoryBytes(0, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT);
+        long varBytes = mr.getTotalMemoryBytes(1, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT) - fixedBytes;
+
+        assertEquals(numParams * 4, fixedBytes);
+        assertEquals( actSize * 4, varBytes);
+
+        long minibatch15 = mr.getTotalMemoryBytes(15, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT);
+        assertEquals(total15Minibatch * 4, minibatch15);
+
+//        System.out.println(fixedBytes + "\t" + varBytes);
+//        System.out.println(mr.toString());
+
+        assertEquals(actSize * 4, mr.getMemoryBytes(MemoryType.ACTIVATIONS, 1, MemoryUseMode.TRAINING, CacheMode.NONE, DataBuffer.Type.FLOAT ));
+        assertEquals(actSize * 4, mr.getMemoryBytes(MemoryType.ACTIVATIONS, 1, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT ));
+
+        int inputActSize = 10 + 20;
+        assertEquals(inputActSize * 4, mr.getMemoryBytes(MemoryType.ACTIVATION_GRADIENTS, 1, MemoryUseMode.TRAINING, CacheMode.NONE, DataBuffer.Type.FLOAT ));
+        assertEquals(0, mr.getMemoryBytes(MemoryType.ACTIVATION_GRADIENTS, 1, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT ));
+
+        //Variable working memory - due to preout during backprop. But not it's the MAX value, as it can be GC'd or workspaced
+        int workingMemVariable = 27;
+        assertEquals(workingMemVariable * 4, mr.getMemoryBytes(MemoryType.WORKING_MEMORY_VARIABLE, 1, MemoryUseMode.TRAINING, CacheMode.NONE, DataBuffer.Type.FLOAT ));
+        assertEquals(0, mr.getMemoryBytes(MemoryType.WORKING_MEMORY_VARIABLE, 1, MemoryUseMode.INFERENCE, CacheMode.NONE, DataBuffer.Type.FLOAT ));
     }
 }

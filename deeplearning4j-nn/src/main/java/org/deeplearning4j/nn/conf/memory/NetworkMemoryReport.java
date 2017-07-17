@@ -64,41 +64,44 @@ public class NetworkMemoryReport extends MemoryReport {
 
         long totalBytes = 0;
         long maxWorking = 0;
+        long maxWorkingFixed = 0;
+        long maxWorkingVariable = 0;
         for (MemoryReport lmr : layerAndVertexReports.values()) {
 
             for(MemoryType mt : MemoryType.values()){
-                if(mt == MemoryType.CACHED_MEMORY_FIXED || mt == MemoryType.CACHED_MEMORY_VARIABLE){
+                if(mt == MemoryType.WORKING_MEMORY_FIXED || mt == MemoryType.WORKING_MEMORY_VARIABLE){
                     continue;
                 }
                 totalBytes += lmr.getMemoryBytes(mt, minibatchSize, memoryUseMode, cacheMode, dataType);
             }
 
-            long currWorking = lmr.getMemoryBytes(MemoryType.CACHED_MEMORY_FIXED, minibatchSize, memoryUseMode, cacheMode, dataType)
-                    + lmr.getMemoryBytes(MemoryType.CACHED_MEMORY_VARIABLE, minibatchSize, memoryUseMode, cacheMode, dataType);
+            long workFixed = lmr.getMemoryBytes(MemoryType.WORKING_MEMORY_FIXED, minibatchSize, memoryUseMode, cacheMode, dataType);
+            long workVar = lmr.getMemoryBytes(MemoryType.WORKING_MEMORY_VARIABLE, minibatchSize, memoryUseMode, cacheMode, dataType);
+            long currWorking = workFixed + workVar;
 
-            maxWorking = Math.max(maxWorking, currWorking);
+            if(currWorking > maxWorking){
+                maxWorking = currWorking;
+                maxWorkingFixed = workFixed;
+                maxWorkingVariable = workVar;
+            }
         }
 
-        return totalBytes + maxWorking;
+        return totalBytes + maxWorkingFixed + maxWorkingVariable;
     }
 
     @Override
     public long getMemoryBytes(MemoryType memoryType, int minibatchSize, MemoryUseMode memoryUseMode,
                                CacheMode cacheMode, DataBuffer.Type dataType) {
-
         long totalBytes = 0;
         for (MemoryReport lmr : layerAndVertexReports.values()) {
 
             long bytes = lmr.getMemoryBytes(memoryType, minibatchSize, memoryUseMode, cacheMode, dataType);
 
-            if(memoryType == MemoryType.CACHED_MEMORY_FIXED || memoryType == MemoryType.CACHED_MEMORY_VARIABLE){
+            if(memoryType == MemoryType.WORKING_MEMORY_FIXED|| memoryType == MemoryType.WORKING_MEMORY_VARIABLE){
                 totalBytes = Math.max(totalBytes, bytes);
             } else {
                 totalBytes += bytes;
             }
-
-
-            totalBytes += lmr.getMemoryBytes(memoryType, minibatchSize, memoryUseMode, cacheMode, dataType);
         }
 
         return totalBytes;
