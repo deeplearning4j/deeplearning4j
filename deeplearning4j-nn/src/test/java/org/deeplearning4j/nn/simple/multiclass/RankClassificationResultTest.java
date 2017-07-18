@@ -15,14 +15,15 @@ import static org.junit.Assume.assumeNotNull;
 public class RankClassificationResultTest {
     @Test
     public void testOutcome() {
-        RankClassificationResult result = new RankClassificationResult(Transforms.sigmoid(Nd4j.linspace(1,4,4)).reshape(2,2));
+        RankClassificationResult result =
+                        new RankClassificationResult(Transforms.sigmoid(Nd4j.linspace(1, 4, 4)).reshape(2, 2));
         assumeNotNull(result.getLabels());
-        assertEquals("1",result.maxOutcomeForRow(0));
-        assertEquals("1",result.maxOutcomeForRow(1));
+        assertEquals("1", result.maxOutcomeForRow(0));
+        assertEquals("1", result.maxOutcomeForRow(1));
         List<String> maxOutcomes = result.maxOutcomes();
-        assertEquals(2,result.maxOutcomes().size());
-        for(int i = 0; i < 2; i++) {
-            assertEquals("1",maxOutcomes.get(i));
+        assertEquals(2, result.maxOutcomes().size());
+        for (int i = 0; i < 2; i++) {
+            assertEquals("1", maxOutcomes.get(i));
         }
     }
 

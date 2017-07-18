@@ -3,6 +3,7 @@ package org.deeplearning4j.nn.updater;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.nd4j.linalg.learning.*;
 import org.nd4j.linalg.learning.config.*;
 
@@ -19,7 +20,7 @@ public class UpdaterUtils {
         org.deeplearning4j.nn.conf.layers.Layer l2 = layer2.conf().getLayer();
         IUpdater u1 = l1.getIUpdaterByParam(param1);
         IUpdater u2 = l2.getIUpdaterByParam(param2);
-        if(!u1.equals(u2)){
+        if (!u1.equals(u2)) {
             //Different updaters or different config
             return false;
         }
@@ -87,8 +88,9 @@ public class UpdaterUtils {
                 lrConfigEqual = layer1.conf().getLrPolicyPower() == layer2.conf().getLrPolicyPower();
                 break;
             case Schedule:
-                lrConfigEqual = Objects.equals(layer1.conf().getLayer().getLearningRateSchedule(),
-                                layer2.conf().getLayer().getLearningRateSchedule());
+                BaseLayer bl1 = (BaseLayer) layer1.conf().getLayer();
+                BaseLayer bl2 = (BaseLayer) layer2.conf().getLayer();
+                lrConfigEqual = Objects.equals(bl1.getLearningRateSchedule(), bl2.getLearningRateSchedule());
                 break;
             case Score:
                 //TODO - might be ok sometimes??

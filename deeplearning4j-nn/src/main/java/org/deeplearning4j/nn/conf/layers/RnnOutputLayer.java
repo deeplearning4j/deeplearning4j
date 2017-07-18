@@ -9,6 +9,7 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.LayerValidation;
@@ -56,7 +57,9 @@ public class RnnOutputLayer extends BaseOutputLayer {
             throw new IllegalStateException("Invalid input type for RnnOutputLayer (layer index = " + layerIndex
                             + ", layer name=\"" + getLayerName() + "\"): Expected RNN input, got " + inputType);
         }
-        return InputType.recurrent(nOut);
+        InputType.InputTypeRecurrent itr = (InputType.InputTypeRecurrent)inputType;
+
+        return InputType.recurrent(nOut, itr.getTimeSeriesLength());
     }
 
     @Override

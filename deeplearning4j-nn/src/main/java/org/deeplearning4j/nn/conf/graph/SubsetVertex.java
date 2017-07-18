@@ -19,6 +19,8 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import lombok.EqualsAndHashCode;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.Data;
 import org.deeplearning4j.nn.conf.inputs.InputType;
@@ -39,7 +41,6 @@ import java.util.Arrays;
  * @author Alex Black
  */
 @Data
-@EqualsAndHashCode(callSuper = false)
 public class SubsetVertex extends GraphVertex {
 
     private int from;
@@ -78,6 +79,16 @@ public class SubsetVertex extends GraphVertex {
     }
 
     @Override
+    public int minVertexInputs() {
+        return 1;
+    }
+
+    @Override
+    public int maxVertexInputs() {
+        return 1;
+    }
+
+    @Override
     public org.deeplearning4j.nn.graph.vertex.GraphVertex instantiate(ComputationGraph graph, String name, int idx,
                     INDArray paramsView, boolean initializeParams) {
         return new org.deeplearning4j.nn.graph.vertex.impl.SubsetVertex(graph, name, idx, from, to);
@@ -103,7 +114,7 @@ public class SubsetVertex extends GraphVertex {
                                     + "] inclusive from CNN activations with " + " [depth,width,height] = [" + depth
                                     + "," + conv.getWidth() + "," + conv.getHeight() + "]");
                 }
-                return InputType.convolutional(from - to + 1, conv.getWidth(), conv.getHeight());
+                return InputType.convolutional(conv.getHeight(), conv.getWidth(), from - to + 1);
             case CNNFlat:
                 //TODO work out how to do this - could be difficult...
                 throw new UnsupportedOperationException(
@@ -111,5 +122,16 @@ public class SubsetVertex extends GraphVertex {
             default:
                 throw new RuntimeException("Unknown input type: " + vertexInputs[0]);
         }
+    }
+
+    @Override
+    public MemoryReport getMemoryReport(InputType... inputTypes) {
+        //Get op without dup - no additional memory use
+        InputType outputType = getOutputType(-1, inputTypes);
+        return new LayerMemoryReport.Builder(null, SubsetVertex.class, inputTypes[0], outputType )
+                .standardMemory(0, 0)   //No params
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(0, 0)  //No caching
+                .build();
     }
 }

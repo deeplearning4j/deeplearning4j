@@ -2,16 +2,20 @@ package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -154,6 +158,31 @@ public class SubsamplingLayer extends Layer {
     @Override
     public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("SubsamplingLayer does not contain parameters");
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional)inputType;
+        InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional)getOutputType(-1, inputType);
+        int actElementsPerEx = outputType.arrayElementsPerExample();
+
+        //TODO Subsampling helper memory use... (CuDNN etc)
+
+        //During forward pass: im2col array + reduce. Reduce is counted as activations, so only im2col is working mem
+        int im2colSizePerEx = c.getDepth() * outputType.getHeight() * outputType.getWidth() * kernelSize[0] * kernelSize[1];
+
+        //Current implementation does NOT cache im2col etc... which means: it's recalculated on each backward pass
+        int trainingWorkingSizePerEx = im2colSizePerEx;
+        if(getDropOut() > 0){
+            //Dup on the input before dropout, but only for training
+            trainingWorkingSizePerEx += inputType.arrayElementsPerExample();
+        }
+
+        return new LayerMemoryReport.Builder(layerName, SubsamplingLayer.class, inputType, outputType)
+                .standardMemory(0, 0)   //No params
+                .workingMemory(0, im2colSizePerEx, 0, trainingWorkingSizePerEx)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS) //No caching
+                .build();
     }
 
     public int getPnorm() {

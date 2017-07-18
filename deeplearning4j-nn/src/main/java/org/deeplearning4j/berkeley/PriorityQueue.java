@@ -237,7 +237,7 @@ public class PriorityQueue<E> implements Iterator<E>, Serializable, Cloneable, P
         PriorityQueue<E> pq = clone();
         Counter<E> counter = new Counter<>();
         while (pq.hasNext()) {
-            double priority = pq.getPriority();
+            float priority = (float) pq.getPriority();
             E element = pq.next();
             counter.incrementCount(element, priority);
         }

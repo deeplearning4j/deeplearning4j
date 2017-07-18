@@ -20,6 +20,7 @@ package org.deeplearning4j.nn.api;
 
 
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -44,6 +45,13 @@ public interface Layer extends Serializable, Cloneable, Model {
         TRAIN, TEST
     }
 
+
+    /**
+     * This method sets given CacheMode for current layer
+     *
+     * @param mode
+     */
+    void setCacheMode(CacheMode mode);
 
     /**Calculate the l2 regularization term<br>
      * 0.0 if regularization is not used. Or 0.5 * l2Coeff * l2Magnitude otherwise.<br>

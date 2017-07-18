@@ -170,6 +170,34 @@ public class Word2VecTests {
     }
 
 
+    @Test
+    public void testWord2VecMultiEpoch() throws Exception {
+        SentenceIterator iter = new BasicLineIterator(inputFile.getAbsolutePath());
+
+        TokenizerFactory t = new DefaultTokenizerFactory();
+        t.setTokenPreProcessor(new CommonPreprocessor());
+
+        Word2Vec vec = new Word2Vec.Builder().minWordFrequency(1).iterations(5).learningRate(0.025).layerSize(150)
+                        .seed(42).sampling(0).negativeSample(0).useHierarchicSoftmax(true).windowSize(5).epochs(3)
+                        .modelUtils(new BasicModelUtils<VocabWord>()).useAdaGrad(false).iterate(iter).workers(8)
+                        .tokenizerFactory(t).elementsLearningAlgorithm(new CBOW<VocabWord>()).build();
+
+        vec.fit();
+
+        Collection<String> lst = vec.wordsNearest("day", 10);
+        log.info(Arrays.toString(lst.toArray()));
+
+        //   assertEquals(10, lst.size());
+
+        double sim = vec.similarity("day", "night");
+        log.info("Day/night similarity: " + sim);
+
+        assertTrue(lst.contains("week"));
+        assertTrue(lst.contains("night"));
+        assertTrue(lst.contains("year"));
+    }
+
+
 
     @Test
     public void testRunWord2Vec() throws Exception {

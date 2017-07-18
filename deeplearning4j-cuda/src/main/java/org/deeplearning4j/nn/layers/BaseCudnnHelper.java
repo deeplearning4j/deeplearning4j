@@ -177,9 +177,9 @@ public abstract class BaseCudnnHelper {
     protected static final int tensorFormat = CUDNN_TENSOR_NCHW;
 
     protected int dataType = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? CUDNN_DATA_DOUBLE
-                        : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
-    protected int dataTypeSize = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8
-                            : Nd4j.dataType() == DataBuffer.Type.FLOAT ? 4 : 2;
+                    : Nd4j.dataType() == DataBuffer.Type.FLOAT ? CUDNN_DATA_FLOAT : CUDNN_DATA_HALF;
+    protected int dataTypeSize =
+                    Nd4j.dataType() == DataBuffer.Type.DOUBLE ? 8 : Nd4j.dataType() == DataBuffer.Type.FLOAT ? 4 : 2;
     protected Pointer alpha = Nd4j.dataType() == DataBuffer.Type.DOUBLE ? new DoublePointer(1.0)
                     : Nd4j.dataType() == DataBuffer.Type.FLOAT ? new FloatPointer(1.0f)
                                     : new ShortPointer(new short[] {(short) HalfIndexer.fromFloat(1.0f)});

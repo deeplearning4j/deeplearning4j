@@ -40,6 +40,7 @@ import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RBM;
@@ -194,14 +195,14 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         MultiLayerNetwork netCopy = sparkNet.getNetwork().clone();
 
         netCopy.fit(data);
-        Updater expectedUpdater = netCopy.conf().getLayer().getUpdater();
-        double expectedLR = netCopy.conf().getLayer().getLearningRate();
-        double expectedMomentum = netCopy.conf().getLayer().getMomentum();
+        Updater expectedUpdater = ((BaseLayer) netCopy.conf().getLayer()).getUpdater();
+        double expectedLR = ((BaseLayer) netCopy.conf().getLayer()).getLearningRate();
+        double expectedMomentum = ((BaseLayer) netCopy.conf().getLayer()).getMomentum();
 
-        Updater actualUpdater = sparkNet.getNetwork().conf().getLayer().getUpdater();
+        Updater actualUpdater = ((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getUpdater();
         sparkNet.fit(sparkData);
-        double actualLR = sparkNet.getNetwork().conf().getLayer().getLearningRate();
-        double actualMomentum = sparkNet.getNetwork().conf().getLayer().getMomentum();
+        double actualLR = ((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getLearningRate();
+        double actualMomentum = ((BaseLayer) sparkNet.getNetwork().conf().getLayer()).getMomentum();
 
         assertEquals(expectedUpdater, actualUpdater);
         assertEquals(expectedLR, actualLR, 0.01);
@@ -368,8 +369,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, conf,
                         new ParameterAveragingTrainingMaster.Builder(numExecutors(), dataSetObjSize)
                                         .batchSizePerWorker(batchSizePerExecutor).averagingFrequency(1)
-                                        .aggregationDepth(1)
-                                        .repartionData(Repartition.Always).build());
+                                        .aggregationDepth(1).repartionData(Repartition.Always).build());
         sparkNet.setCollectTrainingStats(true);
 
         JavaRDD<DataSet> rdd = sc.parallelize(list);
@@ -916,11 +916,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
 
         assertEquals(sparkROC.calculateAUC(), sparkROC.calculateAUC(), 1e-6);
 
-        double[][] arrLocal = local.getResultsAsArray();
-        double[][] arrSpark = sparkROC.getResultsAsArray();
-
-        assertArrayEquals(arrLocal[0], arrSpark[0], 1e-6);
-        assertArrayEquals(arrLocal[1], arrSpark[1], 1e-6);
+        assertEquals(local.getRocCurve(), sparkROC.getRocCurve());
     }
 
 
@@ -976,11 +972,7 @@ public class TestSparkMultiLayerParameterAveraging extends BaseSparkTest {
         for (int i = 0; i < nOut; i++) {
             assertEquals(sparkROC.calculateAUC(i), sparkROC.calculateAUC(i), 1e-6);
 
-            double[][] arrLocal = local.getResultsAsArray(i);
-            double[][] arrSpark = sparkROC.getResultsAsArray(i);
-
-            assertArrayEquals(arrLocal[0], arrSpark[0], 1e-6);
-            assertArrayEquals(arrLocal[1], arrSpark[1], 1e-6);
+            assertEquals(local.getRocCurve(i), sparkROC.getRocCurve(i));
         }
     }
 }

@@ -67,8 +67,9 @@ public class TestInvalidInput {
 
         try {
             net.fit(Nd4j.create(1, 10), Nd4j.create(1, 20));
-            fail("Expected DL4JException");
-        } catch (DL4JException e) {
+            fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            //From loss function
             System.out.println("testLabelsNOutMismatchOutputLayer(): " + e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
@@ -87,8 +88,9 @@ public class TestInvalidInput {
 
         try {
             net.fit(Nd4j.create(1, 5, 8), Nd4j.create(1, 10, 8));
-            fail("Expected DL4JException");
-        } catch (DL4JException e) {
+            fail("Expected IllegalArgumentException");
+        } catch (IllegalArgumentException e) {
+            //From loss function
             System.out.println("testLabelsNOutMismatchRnnOutputLayer(): " + e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();

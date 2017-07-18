@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -24,29 +25,36 @@ import java.util.Map;
  */
 
 @Slf4j
-public class FrozenLayer<LayerT extends Layer> implements Layer {
+public class FrozenLayer implements Layer {
 
-    private LayerT insideLayer;
+    private Layer insideLayer;
     private boolean logUpdate = false;
     private boolean logFit = false;
     private boolean logTestMode = false;
     private boolean logGradient = false;
     private Gradient zeroGradient;
 
-    public FrozenLayer(LayerT insideLayer) {
+    public FrozenLayer(Layer insideLayer) {
         this.insideLayer = insideLayer;
         if (insideLayer instanceof OutputLayer) {
             throw new IllegalArgumentException("Output Layers are not allowed to be frozen " + layerId());
         }
         this.insideLayer = insideLayer;
         this.zeroGradient = new DefaultGradient(insideLayer.params());
-        for (String paramType : insideLayer.paramTable().keySet()) {
-            //save memory??
-            zeroGradient.setGradientFor(paramType, null);
+        if (insideLayer.paramTable() != null) {
+            for (String paramType : insideLayer.paramTable().keySet()) {
+                //save memory??
+                zeroGradient.setGradientFor(paramType, null);
+            }
         }
     }
 
-    protected String layerId(){
+    @Override
+    public void setCacheMode(CacheMode mode) {
+        // no-op
+    }
+
+    protected String layerId() {
         String name = insideLayer.conf().getLayer().getLayerName();
         return "(layer name: " + (name == null ? "\"\"" : name) + ", layer index: " + insideLayer.getIndex() + ")";
     }
@@ -171,6 +179,16 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
     @Override
     public void setListeners(IterationListener... listeners) {
         insideLayer.setListeners(listeners);
+    }
+
+    /**
+     * This method ADDS additional IterationListener to existing listeners
+     *
+     * @param listener
+     */
+    @Override
+    public void addListeners(IterationListener... listener) {
+        insideLayer.addListeners(listener);
     }
 
     @Override
@@ -439,7 +457,7 @@ public class FrozenLayer<LayerT extends Layer> implements Layer {
         }
     }
 
-    public LayerT getInsideLayer() {
+    public Layer getInsideLayer() {
         return insideLayer;
     }
 }

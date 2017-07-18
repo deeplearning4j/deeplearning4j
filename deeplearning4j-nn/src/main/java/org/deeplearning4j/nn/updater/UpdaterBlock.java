@@ -5,8 +5,10 @@ import lombok.Data;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.config.Nesterovs;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -40,6 +42,8 @@ public class UpdaterBlock {
     public static class ParamState {
         private final Layer layer;
         private final String paramName;
+        private final int paramOffsetStart;
+        private final int paramOffsetEnd;
         private final INDArray paramView;
         private final INDArray gradView;
     }
@@ -69,7 +73,8 @@ public class UpdaterBlock {
         if (gradientUpdater == null) {
             ParamState varState = layersAndVariablesInBlock.get(0);
             String varName = varState.getParamName();
-            gradientUpdater = varState.getLayer().conf().getLayer().getIUpdaterByParam(varName).instantiate(updaterView, updaterViewRequiresInitialization); //UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getParamName());
+            gradientUpdater = varState.getLayer().conf().getLayer().getIUpdaterByParam(varName).instantiate(updaterView,
+                            updaterViewRequiresInitialization); //UpdaterUtils.getGradientUpdater(varState.getLayer(), varState.getParamName());
         }
     }
 
@@ -86,8 +91,8 @@ public class UpdaterBlock {
         return !vs.getLayer().conf().isPretrain(); //Skip if not pretrain
     }
 
-    public GradientUpdater getGradientUpdater(){
-        if(gradientUpdater == null){
+    public GradientUpdater getGradientUpdater() {
+        if (gradientUpdater == null) {
             init();
         }
         return gradientUpdater;
@@ -99,9 +104,28 @@ public class UpdaterBlock {
      * @param iteration The current iteration (i.e., total number of parameter updates so far)
      */
     public void update(int iteration) {
+        update(iteration, false, gradientView, null);
+    }
+
+    public void updateExternalGradient(int iteration, INDArray fullNetworkGradientView,
+                    INDArray fullNetworkParamsArray) {
+        //Extract the relevant subset from the external network
+        update(iteration, true, fullNetworkGradientView, fullNetworkParamsArray);
+    }
+
+    private void update(int iteration, boolean externalGradient, INDArray fullNetworkGradientView,
+                    INDArray fullNetworkParamsArray) {
         //Initialize the updater, if necessary
         if (gradientUpdater == null) {
             init();
+        }
+
+        INDArray blockGradViewArray;
+        if (externalGradient) {
+            blockGradViewArray = fullNetworkGradientView.get(NDArrayIndex.point(0),
+                            NDArrayIndex.interval(paramOffsetStart, paramOffsetEnd));
+        } else {
+            blockGradViewArray = gradientView;
         }
 
         //First: Pre-apply gradient clipping etc: some are done on a per-layer basis
@@ -110,18 +134,34 @@ public class UpdaterBlock {
         //Second: apply learning rate policy. Note that by definition we have the same LR policy for every single
         // variable in the block
         Layer l0 = layersAndVariablesInBlock.get(0).getLayer();
+        if (!(l0.conf().getLayer() instanceof BaseLayer)) {
+            //No params for this layer
+            return;
+        }
+        BaseLayer baseLayer = (BaseLayer) l0.conf().getLayer();
         LearningRatePolicy lrPolicy = l0.conf().getLearningRatePolicy();
-        if (lrPolicy != LearningRatePolicy.None
-                        || l0.conf().getLayer().getUpdater() == org.deeplearning4j.nn.conf.Updater.NESTEROVS) {
+        if (lrPolicy != LearningRatePolicy.None || baseLayer.getIUpdater() instanceof Nesterovs) {
             applyLrDecayPolicy(lrPolicy, iteration);
         }
 
         //Apply the updater itself
-        gradientUpdater.applyUpdater(gradientView, iteration);
+        gradientUpdater.applyUpdater(blockGradViewArray, iteration);
 
         //Post apply: l1 and l2 by params
         for (ParamState p : layersAndVariablesInBlock) {
-            postApply(p.getLayer(), p.getParamName(), p.getGradView(), p.getParamView());
+            INDArray paramView;
+            INDArray gradView;
+            if (externalGradient) {
+                paramView = fullNetworkParamsArray.get(NDArrayIndex.point(0),
+                                NDArrayIndex.interval(p.getParamOffsetStart(), p.getParamOffsetEnd()));
+                gradView = fullNetworkGradientView.get(NDArrayIndex.point(0),
+                                NDArrayIndex.interval(p.getParamOffsetStart(), p.getParamOffsetEnd()));
+            } else {
+                //Standard case
+                paramView = p.getParamView();
+                gradView = p.getGradView();
+            }
+            postApply(p.getLayer(), p.getParamName(), gradView, paramView);
         }
     }
 
@@ -165,6 +205,13 @@ public class UpdaterBlock {
         double decayRate = layer.conf().getLrPolicyDecayRate();
         double lr = conf.getLearningRateByParam(variable);
 
+        if (!(conf.getLayer() instanceof BaseLayer)) {
+            //No params
+            return;
+        }
+
+        BaseLayer baseLayer = (BaseLayer) conf.getLayer();
+
         double newLr;
         switch (decay) {
             case Exponential:
@@ -190,8 +237,8 @@ public class UpdaterBlock {
                 newLr = lr / (1 + Math.exp(-decayRate * (iteration - conf.getLrPolicySteps())));
                 break;
             case Schedule:
-                if (conf.getLayer().getLearningRateSchedule().containsKey(iteration)) {
-                    newLr = conf.getLayer().getLearningRateSchedule().get(iteration);
+                if (baseLayer.getLearningRateSchedule().containsKey(iteration)) {
+                    newLr = baseLayer.getLearningRateSchedule().get(iteration);
                 } else {
                     newLr = lr;
                 }
@@ -206,12 +253,11 @@ public class UpdaterBlock {
 
         //Handle momentum schedules. Given the new updater design, this change is purely cosmetic
         double newMomentum = 0.0;
-        if (layer.conf().getLayer().getIUpdater() instanceof Nesterovs) {
-            if (conf.getLayer().getMomentumSchedule() != null
-                    && conf.getLayer().getMomentumSchedule().containsKey(iteration)) {
-                newMomentum = conf.getLayer().getMomentumSchedule().get(iteration);
+        if (baseLayer.getIUpdater() instanceof Nesterovs) {
+            if (baseLayer.getMomentumSchedule() != null && baseLayer.getMomentumSchedule().containsKey(iteration)) {
+                newMomentum = baseLayer.getMomentumSchedule().get(iteration);
             } else {
-                newMomentum = conf.getLayer().getMomentum();
+                newMomentum = baseLayer.getMomentum();
             }
         }
 
@@ -219,8 +265,8 @@ public class UpdaterBlock {
         // same block) share the same LR schedule
         for (ParamState vs : layersAndVariablesInBlock) {
             vs.getLayer().conf().setLearningRateByParam(vs.getParamName(), newLr);
-            if (layer.conf().getLayer().getIUpdater() instanceof Nesterovs) {
-                vs.getLayer().conf().getLayer().setMomentum(newMomentum);
+            if (((BaseLayer) layer.conf().getLayer()).getIUpdater() instanceof Nesterovs) {
+                ((BaseLayer) vs.getLayer().conf().getLayer()).setMomentum(newMomentum);
             }
         }
 

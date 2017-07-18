@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.Updater;
 import org.deeplearning4j.nn.conf.GradientNormalization;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -70,45 +71,52 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
         int currentUpdaterOffset = 0;
         for (int i = 0; i < layers.length; i++) {
             Map<String, INDArray> layerParamTable = layers[i].paramTable();
-            List<String> variables = new ArrayList<>(layerParamTable.keySet()); //Is from a set, but iteration order should be fixed per layer as it's a from a LinkedHashSet
-            for (int j = 0; j < variables.size(); j++) {
-                String var = variables.get(j);
-                int paramSizeThisVariable = layerParamTable.get(var).length();
-                int updaterStateSizeThisVariable = (int)layers[i].conf().getLayer().getIUpdaterByParam(var).stateSize(paramSizeThisVariable);
+            if (layerParamTable != null) {
+                List<String> variables = new ArrayList<>(layerParamTable.keySet()); //Is from a set, but iteration order should be fixed per layer as it's a from a LinkedHashSet
+                for (int j = 0; j < variables.size(); j++) {
+                    String var = variables.get(j);
+                    int paramSizeThisVariable = layerParamTable.get(var).length();
+                    int updaterStateSizeThisVariable = (int) layers[i].conf().getLayer().getIUpdaterByParam(var)
+                                    .stateSize(paramSizeThisVariable);
 
-                INDArray gradientViewSubset = null;
-                INDArray paramsViewSubset = null;
-                if (paramSizeThisVariable > 0) {
-                    paramsViewSubset = paramsView.get(NDArrayIndex.point(0),
-                                    NDArrayIndex.interval(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable));
-                    gradientViewSubset = gradientView.get(NDArrayIndex.point(0),
-                                    NDArrayIndex.interval(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable));
+                    INDArray gradientViewSubset = null;
+                    INDArray paramsViewSubset = null;
+                    if (paramSizeThisVariable > 0) {
+                        paramsViewSubset = paramsView.get(NDArrayIndex.point(0), NDArrayIndex.interval(paramsViewSoFar,
+                                        paramsViewSoFar + paramSizeThisVariable));
+                        gradientViewSubset = gradientView.get(NDArrayIndex.point(0), NDArrayIndex
+                                        .interval(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable));
+                    }
+
+                    //First: decide whether to add to the existing updater block, or create a new one
+                    if (currentBlock == null || !UpdaterUtils.updaterConfigurationsEquals(lastLayer, lastVariable,
+                                    layers[i], var)) {
+                        //Create a new block
+                        List<UpdaterBlock.ParamState> list = new ArrayList<>();
+                        list.add(new UpdaterBlock.ParamState(layers[i], var, paramsViewSoFar,
+                                        paramsViewSoFar + paramSizeThisVariable, paramsViewSubset, gradientViewSubset));
+                        currentBlock = new UpdaterBlock(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable,
+                                        currentUpdaterOffset, currentUpdaterOffset + updaterStateSizeThisVariable,
+                                        list);
+
+                        updaterBlocks.add(currentBlock);
+                    } else {
+                        //Add to existing updater block
+                        currentBlock.setParamOffsetEnd(currentBlock.getParamOffsetEnd() + paramSizeThisVariable);
+                        currentBlock.setUpdaterViewOffsetEnd(
+                                        currentBlock.getUpdaterViewOffsetEnd() + updaterStateSizeThisVariable);
+                        currentBlock.getLayersAndVariablesInBlock()
+                                        .add(new UpdaterBlock.ParamState(layers[i], var, paramsViewSoFar,
+                                                        paramsViewSoFar + paramSizeThisVariable, paramsViewSubset,
+                                                        gradientViewSubset));
+                    }
+
+                    lastLayer = layers[i];
+                    lastVariable = variables.get(j);
+                    updaterStateSize += updaterStateSizeThisVariable;
+                    paramsViewSoFar += paramSizeThisVariable;
+                    currentUpdaterOffset += updaterStateSizeThisVariable;
                 }
-
-                //First: decide whether to add to the existing updater block, or create a new one
-                if (currentBlock == null
-                                || !UpdaterUtils.updaterConfigurationsEquals(lastLayer, lastVariable, layers[i], var)) {
-                    //Create a new block
-                    List<UpdaterBlock.ParamState> list = new ArrayList<>();
-                    list.add(new UpdaterBlock.ParamState(layers[i], var, paramsViewSubset, gradientViewSubset));
-                    currentBlock = new UpdaterBlock(paramsViewSoFar, paramsViewSoFar + paramSizeThisVariable,
-                                    currentUpdaterOffset, currentUpdaterOffset + updaterStateSizeThisVariable, list);
-
-                    updaterBlocks.add(currentBlock);
-                } else {
-                    //Add to existing updater block
-                    currentBlock.setParamOffsetEnd(currentBlock.getParamOffsetEnd() + paramSizeThisVariable);
-                    currentBlock.setUpdaterViewOffsetEnd(
-                                    currentBlock.getUpdaterViewOffsetEnd() + updaterStateSizeThisVariable);
-                    currentBlock.getLayersAndVariablesInBlock().add(
-                                    new UpdaterBlock.ParamState(layers[i], var, paramsViewSubset, gradientViewSubset));
-                }
-
-                lastLayer = layers[i];
-                lastVariable = variables.get(j);
-                updaterStateSize += updaterStateSizeThisVariable;
-                paramsViewSoFar += paramSizeThisVariable;
-                currentUpdaterOffset += updaterStateSizeThisVariable;
             }
         }
 
@@ -165,6 +173,11 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
     protected abstract INDArray getFlattenedGradientsView();
 
     /**
+     * @return The flattened parameter array for the model
+     */
+    protected abstract INDArray getParams();
+
+    /**
      * @return True if the configuration for the model is set to minibatch (divide by minibatch size), false otherwise
      */
     protected abstract boolean isMiniBatch();
@@ -209,13 +222,17 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      */
     public void update(Gradient gradient, int iteration, int batchSize) {
 
+        //First: check if gradient is standard or external...
+        //In a MultiLayerNetwork, the INDArray returned by .gradient() is always the standard full view array
+        // hence should be the same object under normal circumstances
+        boolean isExternal = gradient.gradient() != getFlattenedGradientsView();
+
         //Split up the gradients on a per-layer basis, for pre-apply
         Map<String, Gradient> layerGradients = new HashMap<>();
 
         Layer[] layers = getOrderedLayers();
         if (layers.length == 1 && isSingleLayerUpdater()) {
             layerGradients.put(layers[0].conf().getLayer().getLayerName(), gradient);
-            //            layerGradients.put("0", gradient);
         } else {
             for (Map.Entry<String, INDArray> gradientPair : gradient.gradientForVariable().entrySet()) {
                 String key = gradientPair.getKey();
@@ -256,17 +273,34 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
             if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceFeedForward)) {
                 try (MemoryWorkspace workspace = Nd4j.getWorkspaceManager()
                                 .getAndActivateWorkspace(ComputationGraph.workspaceFeedForward)) {
-                    ub.update(iteration);
+                    if (isExternal) {
+                        //RL4J etc type case: calculate gradients in 1 net, update them in another
+                        ub.updateExternalGradient(iteration, gradient.gradient(), getParams());
+                    } else {
+                        //Standard case
+                        ub.update(iteration);
+                    }
                 }
             } else {
-                ub.update(iteration);
+                if (isExternal) {
+                    //RL4J etc type case: calculate gradients in 1 net, update them in another
+                    ub.updateExternalGradient(iteration, gradient.gradient(), getParams());
+                } else {
+                    //Standard case
+                    ub.update(iteration);
+                }
             }
         }
 
         //Divide by minibatch size if necessary
         if (isMiniBatch()) {
             //OK even with pretrain layers: their gradients will get modified during next backprop iteration
-            getFlattenedGradientsView().divi(batchSize);
+            if (isExternal) {
+                gradient.gradient().divi(batchSize);
+            } else {
+                //Standard case
+                getFlattenedGradientsView().divi(batchSize);
+            }
         }
     }
 
@@ -283,16 +317,22 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
      */
     public void preApply(Layer layer, Gradient gradient, int iteration) {
 
-        GradientNormalization normalization = layer.conf().getLayer().getGradientNormalization();
+        if (!(layer.conf().getLayer() instanceof BaseLayer)) {
+            //Layer does not have parameters -> no gradient
+            return;
+        }
+        BaseLayer bLayer = (BaseLayer) layer.conf().getLayer();
+
+        GradientNormalization normalization = bLayer.getGradientNormalization();
         if (normalization == null || normalization == GradientNormalization.None || layer.conf().isPretrain())
             return; //no op
 
-        final double threshold = layer.conf().getLayer().getGradientNormalizationThreshold();
+        final double threshold = bLayer.getGradientNormalizationThreshold();
         INDArray layerGradientView = layer.getGradientsViewArray();
 
         switch (normalization) {
             case RenormalizeL2PerLayer:
-                if(layerGradientView != null){
+                if (layerGradientView != null) {
                     double l2 = layerGradientView.norm2Number().doubleValue();
                     layerGradientView.divi(l2);
                 }
@@ -304,13 +344,13 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                 }
                 break;
             case ClipElementWiseAbsoluteValue:
-                if(layerGradientView != null){
+                if (layerGradientView != null) {
                     BooleanIndexing.replaceWhere(layerGradientView, threshold, Conditions.greaterThan(threshold));
                     BooleanIndexing.replaceWhere(layerGradientView, -threshold, Conditions.lessThan(-threshold));
                 }
                 break;
             case ClipL2PerLayer:
-                if(layerGradientView != null){
+                if (layerGradientView != null) {
                     double layerL2 = layerGradientView.norm2Number().doubleValue();
                     if (layerL2 > threshold) {
                         double scalingFactor = threshold / layerL2; // g = g / l2 * threshold ->
@@ -335,11 +375,14 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
 
         BaseMultiLayerUpdater<?> that = (BaseMultiLayerUpdater<?>) o;
-        return updaterStateViewArray != null ? updaterStateViewArray.equals(that.updaterStateViewArray) : that.updaterStateViewArray == null;
+        return updaterStateViewArray != null ? updaterStateViewArray.equals(that.updaterStateViewArray)
+                        : that.updaterStateViewArray == null;
     }
 
     @Override

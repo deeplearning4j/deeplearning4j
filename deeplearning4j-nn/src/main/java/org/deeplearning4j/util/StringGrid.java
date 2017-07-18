@@ -108,7 +108,7 @@ public class StringGrid extends ArrayList<List<String>> {
             if (line.indexOf('\"') > 0) {
                 Counter<Character> counter = new Counter<>();
                 for (int j = 0; j < line.length(); j++) {
-                    counter.incrementCount(line.charAt(j), 1.0);
+                    counter.incrementCount(line.charAt(j), 1.0f);
                 }
                 if (counter.getCount('"') > 1) {
                     String[] split = splitOnCharWithQuoting(line, sep.charAt(0), '"', '\\');
@@ -215,7 +215,7 @@ public class StringGrid extends ArrayList<List<String>> {
         for (String s : col) {
             StringTokenizer tokenizer = new StringTokenizer(s);
             while (tokenizer.hasMoreTokens()) {
-                counter.incrementCount(tokenizer.nextToken(), 1.0);
+                counter.incrementCount(tokenizer.nextToken(), 1.0f);
             }
         }
 
@@ -225,7 +225,7 @@ public class StringGrid extends ArrayList<List<String>> {
         }
 
         //laplace smoothing
-        counter.incrementAll(counter.keySet(), 1.0);
+        counter.incrementAll(counter.keySet(), 1.0f);
         Set<String> remove = new HashSet<>();
         for (String key : counter.keySet())
             if (key.length() < 2 || key.matches("[a-z]+"))
@@ -233,7 +233,7 @@ public class StringGrid extends ArrayList<List<String>> {
         for (String key : remove)
             counter.removeKey(key);
 
-        counter.pruneKeysBelowThreshold(4.0);
+        counter.pruneKeysBelowThreshold(4.0f);
 
 
         final double totalCount = counter.totalCount();
@@ -683,8 +683,8 @@ public class StringGrid extends ArrayList<List<String>> {
         List<String> columns = getColumn(column);
         Counter<String> counter = new Counter<>();
         for (String val : columns)
-            counter.incrementCount(val, 1.0);
-        counter.pruneKeysBelowThreshold(2.0);
+            counter.incrementCount(val, 1.0f);
+        counter.pruneKeysBelowThreshold(2.0f);
         Set<String> keys = counter.keySet();
         for (List<String> row : this) {
             for (String key : keys)
@@ -701,7 +701,7 @@ public class StringGrid extends ArrayList<List<String>> {
         List<String> columns = getColumn(column);
         Counter<String> counter = new Counter<>();
         for (String val : columns)
-            counter.incrementCount(val, 1.0);
+            counter.incrementCount(val, 1.0f);
 
         Set<String> keys = new HashSet<>(counter.keySet());
         for (String key : keys) {

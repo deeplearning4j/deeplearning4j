@@ -25,6 +25,7 @@ import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -67,7 +68,10 @@ public class LayerVertex extends GraphVertex {
         if (!(o instanceof LayerVertex))
             return false;
         LayerVertex lv = (LayerVertex) o;
-        if (!layerConf.equals(lv.layerConf))
+        if ((layerConf == null && lv.layerConf != null) || (layerConf != null && lv.layerConf == null)) {
+            return false;
+        }
+        if (layerConf != null && !layerConf.equals(lv.layerConf))
             return false;
         if (preProcessor == null && lv.preProcessor != null || preProcessor != null && lv.preProcessor == null)
             return false;
@@ -82,6 +86,16 @@ public class LayerVertex extends GraphVertex {
     @Override
     public int numParams(boolean backprop) {
         return layerConf.getLayer().initializer().numParams(layerConf);
+    }
+
+    @Override
+    public int minVertexInputs() {
+        return 1;
+    }
+
+    @Override
+    public int maxVertexInputs() {
+        return 1;
     }
 
     @Override
@@ -111,5 +125,11 @@ public class LayerVertex extends GraphVertex {
             afterPreprocessor = preProcessor.getOutputType(vertexInputs[0]);
 
         return layerConf.getLayer().getOutputType(layerIndex, afterPreprocessor);
+    }
+
+    @Override
+    public MemoryReport getMemoryReport(InputType... inputTypes) {
+        //TODO preprocessor memory
+        return layerConf.getLayer().getMemoryReport(inputTypes[0]);
     }
 }

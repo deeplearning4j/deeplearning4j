@@ -1,8 +1,14 @@
 package org.deeplearning4j.eval;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.Abs;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,6 +27,8 @@ import java.util.List;
  *
  * @author Alex Black
  */
+@Data
+@EqualsAndHashCode(callSuper = true)
 public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
     public static final int DEFAULT_PRECISION = 5;
@@ -28,18 +36,35 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     private boolean initialized;
     private List<String> columnNames;
     private int precision;
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray exampleCountPerColumn; //Necessary to account for per-output masking
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray labelsSumPerColumn; //sum(actual) per column -> used to calculate mean
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray sumSquaredErrorsPerColumn; //(predicted - actual)^2
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray sumAbsErrorsPerColumn; //abs(predicted-actial)
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray currentMean;
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray currentPredictionMean;
-
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray sumOfProducts;
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray sumSquaredLabels;
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
     private INDArray sumSquaredPredicted;
 
-    public RegressionEvaluation(){
+    public RegressionEvaluation() {
         this(null, DEFAULT_PRECISION);
     }
 
@@ -63,7 +88,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
      * @param columnNames Names of the columns
      */
     public RegressionEvaluation(String... columnNames) {
-        this(columnNames == null ? null : Arrays.asList(columnNames), DEFAULT_PRECISION);
+        this(columnNames == null || columnNames.length == 0 ? null : Arrays.asList(columnNames), DEFAULT_PRECISION);
     }
 
     /** Create a regression evaluation object with default precision for the stats() method
@@ -92,8 +117,8 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         initialized = false;
     }
 
-    private void initialize(int n){
-        if(columnNames == null || columnNames.size() != n){
+    private void initialize(int n) {
+        if (columnNames == null || columnNames.size() != n) {
             columnNames = createDefaultColumnNames(n);
         }
         exampleCountPerColumn = Nd4j.zeros(n);
@@ -119,7 +144,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
     @Override
     public void eval(INDArray labels, INDArray predictions) {
-        eval(labels, predictions, (INDArray)null);
+        eval(labels, predictions, (INDArray) null);
     }
 
     @Override
@@ -130,14 +155,15 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
             return;
         }
 
-        if(maskArray != null && !Arrays.equals(maskArray.shape(), labels.shape())){
+        if (maskArray != null && !Arrays.equals(maskArray.shape(), labels.shape())) {
             //Time series (per time step) masks are handled in evalTimeSeries by extracting the relevant steps
             // and flattening to 2d
             throw new RuntimeException("Per output masking detected, but mask array and labels have different shapes: "
-                    + Arrays.toString(maskArray.shape()) + " vs. labels shape " + Arrays.toString(labels.shape()));
+                            + Arrays.toString(maskArray.shape()) + " vs. labels shape "
+                            + Arrays.toString(labels.shape()));
         }
 
-        if(!initialized){
+        if (!initialized) {
             initialize(labels.size(1));
         }
         //References for the calculations is this section:
@@ -152,7 +178,7 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
                                             + predictions.size(1));
         }
 
-        if(maskArray != null){
+        if (maskArray != null) {
             //Handle per-output masking. We are assuming *binary* masks here
             labels = labels.mul(maskArray);
             predictions = predictions.mul(maskArray);
@@ -175,13 +201,14 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         int nRows = labels.size(0);
 
         INDArray newExampleCountPerColumn;
-        if(maskArray == null){
+        if (maskArray == null) {
             newExampleCountPerColumn = exampleCountPerColumn.add(nRows);
         } else {
             newExampleCountPerColumn = exampleCountPerColumn.add(maskArray.sum(0));
         }
         currentMean.muliRowVector(exampleCountPerColumn).addi(labels.sum(0)).diviRowVector(newExampleCountPerColumn);
-        currentPredictionMean.muliRowVector(exampleCountPerColumn).addi(predictions.sum(0)).divi(newExampleCountPerColumn);
+        currentPredictionMean.muliRowVector(exampleCountPerColumn).addi(predictions.sum(0))
+                        .divi(newExampleCountPerColumn);
         exampleCountPerColumn = newExampleCountPerColumn;
     }
 
@@ -212,9 +239,11 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         this.labelsSumPerColumn.addi(other.labelsSumPerColumn);
         this.sumSquaredErrorsPerColumn.addi(other.sumSquaredErrorsPerColumn);
         this.sumAbsErrorsPerColumn.addi(other.sumAbsErrorsPerColumn);
-        this.currentMean.muliRowVector(exampleCountPerColumn).addi(other.currentMean.mulRowVector(other.exampleCountPerColumn))
-                .diviRowVector(exampleCountPerColumn.add(other.exampleCountPerColumn));
-        this.currentPredictionMean.muliRowVector(exampleCountPerColumn).addi(other.currentPredictionMean.mulRowVector(other.exampleCountPerColumn))
+        this.currentMean.muliRowVector(exampleCountPerColumn)
+                        .addi(other.currentMean.mulRowVector(other.exampleCountPerColumn))
+                        .diviRowVector(exampleCountPerColumn.add(other.exampleCountPerColumn));
+        this.currentPredictionMean.muliRowVector(exampleCountPerColumn)
+                        .addi(other.currentPredictionMean.mulRowVector(other.exampleCountPerColumn))
                         .diviRowVector(exampleCountPerColumn.add(other.exampleCountPerColumn));
         this.sumOfProducts.addi(other.sumOfProducts);
         this.sumSquaredLabels.addi(other.sumSquaredLabels);
@@ -224,46 +253,56 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     }
 
     public String stats() {
+        if (!initialized) {
+            return "RegressionEvaluation: No Data";
+        } else {
 
-        int maxLabelLength = 0;
-        for (String s : columnNames)
-            maxLabelLength = Math.max(maxLabelLength, s.length());
+            if (columnNames == null)
+                columnNames = createDefaultColumnNames(numColumns());
+            int maxLabelLength = 0;
+            for (String s : columnNames)
+                maxLabelLength = Math.max(maxLabelLength, s.length());
 
-        int labelWidth = maxLabelLength + 5;
-        int columnWidth = precision + 10;
+            int labelWidth = maxLabelLength + 5;
+            int columnWidth = precision + 10;
 
-        String format = "%-" + labelWidth + "s" + "%-" + columnWidth + "." + precision + "e" //MSE
-                        + "%-" + columnWidth + "." + precision + "e" //MAE
-                        + "%-" + columnWidth + "." + precision + "e" //RMSE
-                        + "%-" + columnWidth + "." + precision + "e" //RSE
-                        + "%-" + columnWidth + "." + precision + "e"; //R2 (correlation coefficient)
+            String format = "%-" + labelWidth + "s" + "%-" + columnWidth + "." + precision + "e" //MSE
+                            + "%-" + columnWidth + "." + precision + "e" //MAE
+                            + "%-" + columnWidth + "." + precision + "e" //RMSE
+                            + "%-" + columnWidth + "." + precision + "e" //RSE
+                            + "%-" + columnWidth + "." + precision + "e"; //R2 (correlation coefficient)
 
 
-
-        //Print header:
-        StringBuilder sb = new StringBuilder();
-        String headerFormat = "%-" + labelWidth + "s" + "%-" + columnWidth + "s" + "%-" + columnWidth + "s" + "%-"
-                        + columnWidth + "s" + "%-" + columnWidth + "s" + "%-" + columnWidth + "s";
-        sb.append(String.format(headerFormat, "Column", "MSE", "MAE", "RMSE", "RSE", "R^2"));
-        sb.append("\n");
-
-        //Print results for each column:
-        for (int i = 0; i < columnNames.size(); i++) {
-            double mse = meanSquaredError(i);
-            double mae = meanAbsoluteError(i);
-            double rmse = rootMeanSquaredError(i);
-            double rse = relativeSquaredError(i);
-            double corr = correlationR2(i);
-
-            sb.append(String.format(format, columnNames.get(i), mse, mae, rmse, rse, corr));
+            //Print header:
+            StringBuilder sb = new StringBuilder();
+            String headerFormat = "%-" + labelWidth + "s" + "%-" + columnWidth + "s" + "%-" + columnWidth + "s" + "%-"
+                            + columnWidth + "s" + "%-" + columnWidth + "s" + "%-" + columnWidth + "s";
+            sb.append(String.format(headerFormat, "Column", "MSE", "MAE", "RMSE", "RSE", "R^2"));
             sb.append("\n");
+
+            //Print results for each column:
+            for (int i = 0; i < columnNames.size(); i++) {
+                double mse = meanSquaredError(i);
+                double mae = meanAbsoluteError(i);
+                double rmse = rootMeanSquaredError(i);
+                double rse = relativeSquaredError(i);
+                double corr = correlationR2(i);
+
+                sb.append(String.format(format, columnNames.get(i), mse, mae, rmse, rse, corr));
+                sb.append("\n");
+            }
+
+            return sb.toString();
         }
-
-
-        return sb.toString();
     }
 
     public int numColumns() {
+        if (columnNames == null) {
+            if (exampleCountPerColumn == null) {
+                return 0;
+            }
+            return exampleCountPerColumn.size(1);
+        }
         return columnNames.size();
     }
 
@@ -305,8 +344,8 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         // (sum(predicted^2) - 2 * sum(predicted * actual) + sum(actual ^ 2)) / (sum(actual ^ 2) - n * actualMean)
         double numerator = sumSquaredPredicted.getDouble(column) - 2 * sumOfProducts.getDouble(column)
                         + sumSquaredLabels.getDouble(column);
-        double denominator = sumSquaredLabels.getDouble(column)
-                        - exampleCountPerColumn.getDouble(column) * currentMean.getDouble(column) * currentMean.getDouble(column);
+        double denominator = sumSquaredLabels.getDouble(column) - exampleCountPerColumn.getDouble(column)
+                        * currentMean.getDouble(column) * currentMean.getDouble(column);
 
         if (Math.abs(denominator) > Nd4j.EPS_THRESHOLD) {
             return numerator / denominator;
@@ -315,4 +354,71 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         }
     }
 
+
+    /**
+     * Average MSE across all columns
+     * @return
+     */
+    public double averageMeanSquaredError() {
+        double ret = 0.0;
+        for (int i = 0; i < numColumns(); i++) {
+            ret += meanSquaredError(i);
+        }
+
+        return ret / (double) numColumns();
+    }
+
+    /**
+     * Average MAE across all columns
+     * @return
+     */
+    public double averageMeanAbsoluteError() {
+        double ret = 0.0;
+        for (int i = 0; i < numColumns(); i++) {
+            ret += meanAbsoluteError(i);
+        }
+
+        return ret / (double) numColumns();
+    }
+
+    /**
+     * Average RMSE across all columns
+     * @return
+     */
+    public double averagerootMeanSquaredError() {
+        double ret = 0.0;
+        for (int i = 0; i < numColumns(); i++) {
+            ret += rootMeanSquaredError(i);
+        }
+
+        return ret / (double) numColumns();
+    }
+
+
+    /**
+     * Average RSE across all columns
+     * @return
+     */
+    public double averagerelativeSquaredError() {
+        double ret = 0.0;
+        for (int i = 0; i < numColumns(); i++) {
+            ret += relativeSquaredError(i);
+        }
+
+        return ret / (double) numColumns();
+    }
+
+
+    /**
+     * Average R2 across all columns
+     * @return
+     */
+    public double averagecorrelationR2() {
+        double ret = 0.0;
+        for (int i = 0; i < numColumns(); i++) {
+            ret += correlationR2(i);
+        }
+
+        return ret / (double) numColumns();
+    }
 }

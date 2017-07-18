@@ -21,10 +21,7 @@ package org.deeplearning4j.nn.conf;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
-import org.deeplearning4j.nn.conf.layers.BatchNormalization;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.RBM;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.stepfunctions.DefaultStepFunction;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
@@ -98,16 +95,17 @@ public class NeuralNetConfigurationTest {
     @Test
     public void testClone() {
         NeuralNetConfiguration conf = getRBMConfig(1, 1, WeightInit.UNIFORM, true);
-        conf.getLayer().setMomentumSchedule(new HashMap<Integer, Double>());
+        BaseLayer bl = (BaseLayer) conf.getLayer();
+        bl.setMomentumSchedule(new HashMap<Integer, Double>());
         conf.setStepFunction(new DefaultStepFunction());
 
         NeuralNetConfiguration conf2 = conf.clone();
 
         assertEquals(conf, conf2);
         assertNotSame(conf, conf2);
-        assertNotSame(conf.getLayer().getMomentumSchedule(), conf2.getLayer().getMomentumSchedule());
+        assertNotSame(bl.getMomentumSchedule(), ((BaseLayer) conf2.getLayer()).getMomentumSchedule());
         assertNotSame(conf.getLayer(), conf2.getLayer());
-        assertNotSame(conf.getLayer().getDist(), conf2.getLayer().getDist());
+        assertNotSame(bl.getDist(), ((BaseLayer) conf2.getLayer()).getDist());
         assertNotSame(conf.getStepFunction(), conf2.getStepFunction());
     }
 

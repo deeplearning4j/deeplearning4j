@@ -18,6 +18,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
+import java.util.Random;
 
 /**
  * Created by Alex on 07/01/2017.
@@ -52,17 +53,19 @@ public class EvaluationToolsTests {
             net.fit(ds);
         }
 
-        ROC roc = new ROC(20);
-        iter.reset();
+        for (int numSteps : new int[] {20, 0}) {
+            ROC roc = new ROC(numSteps);
+            iter.reset();
 
-        INDArray f = ds.getFeatures();
-        INDArray l = ds.getLabels();
-        INDArray out = net.output(f);
-        roc.eval(l, out);
+            INDArray f = ds.getFeatures();
+            INDArray l = ds.getLabels();
+            INDArray out = net.output(f);
+            roc.eval(l, out);
 
 
-        String str = EvaluationTools.rocChartToHtml(roc);
-        //        System.out.println(str);
+            String str = EvaluationTools.rocChartToHtml(roc);
+            //            System.out.println(str);
+        }
     }
 
     @Test
@@ -86,16 +89,39 @@ public class EvaluationToolsTests {
             net.fit(ds);
         }
 
-        ROCMultiClass roc = new ROCMultiClass(20);
-        iter.reset();
+        for (int numSteps : new int[] {20, 0}) {
+            ROCMultiClass roc = new ROCMultiClass(numSteps);
+            iter.reset();
 
-        INDArray f = ds.getFeatures();
-        INDArray l = ds.getLabels();
-        INDArray out = net.output(f);
-        roc.eval(l, out);
+            INDArray f = ds.getFeatures();
+            INDArray l = ds.getLabels();
+            INDArray out = net.output(f);
+            roc.eval(l, out);
 
 
-        String str = EvaluationTools.rocChartToHtml(roc, Arrays.asList("setosa", "versicolor", "virginica"));
+            String str = EvaluationTools.rocChartToHtml(roc, Arrays.asList("setosa", "versicolor", "virginica"));
+            System.out.println(str);
+        }
+    }
+
+    @Test
+    public void testEvaluationCalibrationToHtml() throws Exception {
+        int minibatch = 1000;
+        int nClasses = 3;
+
+        INDArray arr = Nd4j.rand(minibatch, nClasses);
+        arr.diviColumnVector(arr.sum(1));
+        INDArray labels = Nd4j.zeros(minibatch, nClasses);
+        Random r = new Random(12345);
+        for (int i = 0; i < minibatch; i++) {
+            labels.putScalar(i, r.nextInt(nClasses), 1.0);
+        }
+
+        int numBins = 10;
+        EvaluationCalibration ec = new EvaluationCalibration(numBins, numBins);
+        ec.eval(labels, arr);
+
+        String str = EvaluationTools.evaluationCalibrationToHtml(ec);
         //        System.out.println(str);
     }
 

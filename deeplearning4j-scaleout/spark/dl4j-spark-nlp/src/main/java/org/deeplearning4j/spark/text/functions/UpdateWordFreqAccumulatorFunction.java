@@ -53,12 +53,12 @@ public class UpdateWordFreqAccumulatorFunction implements Function<List<String>,
 
             if (!stops.isEmpty()) {
                 if (stops.contains(w)) {
-                    counter.incrementCount("STOP", 1.0);
+                    counter.incrementCount("STOP", 1.0f);
                 } else {
-                    counter.incrementCount(w, 1.0);
+                    counter.incrementCount(w, 1.0f);
                 }
             } else {
-                counter.incrementCount(w, 1.0);
+                counter.incrementCount(w, 1.0f);
             }
         }
         wordFreqAcc.add(counter);

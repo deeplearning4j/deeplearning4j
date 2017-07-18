@@ -1,20 +1,27 @@
-/*
+/*-
  *
- * * Copyright 2015 Skymind,Inc. * * Licensed under the Apache License, Version 2.0 (the "License"); * you may not use
- * this file except in compliance with the License. * You may obtain a copy of the License at * *
- * http://www.apache.org/licenses/LICENSE-2.0 * * Unless required by applicable law or agreed to in writing, software *
- * distributed under the License is distributed on an "AS IS" BASIS, * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
- * either express or implied. * See the License for the specific language governing permissions and * limitations under
- * the License.
+ *  * Copyright 2016 Skymind,Inc.
+ *  *
+ *  *    Licensed under the Apache License, Version 2.0 (the "License");
+ *  *    you may not use this file except in compliance with the License.
+ *  *    You may obtain a copy of the License at
+ *  *
+ *  *        http://www.apache.org/licenses/LICENSE-2.0
+ *  *
+ *  *    Unless required by applicable law or agreed to in writing, software
+ *  *    distributed under the License is distributed on an "AS IS" BASIS,
+ *  *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  *    See the License for the specific language governing permissions and
+ *  *    limitations under the License.
  *
  */
-
 package org.deeplearning4j.nn.layers.convolution;
 
 
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
@@ -25,15 +32,11 @@ import org.deeplearning4j.nn.params.ConvolutionParamInitializer;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.deeplearning4j.util.Dropout;
 import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.activations.impl.ActivationIdentity;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
-import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.memory.abstracts.Nd4jWorkspace;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +52,7 @@ import java.util.Map;
 public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.ConvolutionLayer> {
     protected static final Logger log = LoggerFactory.getLogger(ConvolutionLayer.class);
 
+    protected INDArray i2d;
     protected ConvolutionHelper helper = null;
     protected ConvolutionMode convolutionMode;
 
@@ -154,10 +158,10 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
 
         INDArray delta;
-        IActivation afn = conf.getLayer().getActivationFn();
+        IActivation afn = layerConf().getActivationFn();
 
-        Pair<INDArray,INDArray> p = preOutput4d(true, true);
-        delta = conf().getLayer().getActivationFn().backprop(p.getFirst(), epsilon).getFirst(); //TODO handle activation function params
+        Pair<INDArray, INDArray> p = preOutput4d(true, true);
+        delta = afn.backprop(p.getFirst(), epsilon).getFirst(); //TODO handle activation function params
 
         if (helper != null) {
             Pair<Gradient, INDArray> ret = helper.backpropGradient(input, weights, delta, kernel, strides, pad,
@@ -177,12 +181,12 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //Do im2col, but with order [miniB,outH,outW,depthIn,kH,kW]; but need to input [miniBatch,depth,kH,kW,outH,outW] given the current im2col implementation
         //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
         //to get old order from required order: permute(0,3,4,5,1,2)
-        INDArray im2col2d = p.getSecond();  //Re-use im2col2d array from forward pass if available; recalculate if not
-        if(im2col2d == null) {
-            INDArray col = Nd4j.createUninitialized(new int[]{miniBatch, outH, outW, inDepth, kH, kW}, 'c');
+        INDArray im2col2d = p.getSecond(); //Re-use im2col2d array from forward pass if available; recalculate if not
+        if (im2col2d == null) {
+            INDArray col = Nd4j.createUninitialized(new int[] {miniBatch, outH, outW, inDepth, kH, kW}, 'c');
             INDArray col2 = col.permute(0, 3, 4, 5, 1, 2);
             Convolution.im2col(input, kH, kW, strides[0], strides[1], pad[0], pad[1],
-                    convolutionMode == ConvolutionMode.Same, col2);
+                            convolutionMode == ConvolutionMode.Same, col2);
             //Shape im2col to 2d. Due to the permuting above, this should be a zero-copy reshape
             im2col2d = col.reshape('c', miniBatch * outH * outW, inDepth * kH * kW);
         }
@@ -198,7 +202,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         //Calculate epsilons for layer below, in 2d format (note: this is in 'image patch' format before col2im reduction)
         //Note: cc -> f mmul here, then reshape to 6d in f order
-        INDArray epsNext2d = w2d.mmul(delta2d);
+        INDArray epsNext2d = w2d.mmul(delta2d);     //TODO can we reuse im2col array instead of allocating new result array?
         INDArray eps6d = Shape.newShapeNoCopy(epsNext2d, new int[] {kW, kH, inDepth, outW, outH, miniBatch}, true);
 
         //Calculate epsilonNext by doing im2col reduction.
@@ -222,7 +226,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         Convolution.col2im(eps6d, epsNext, strides[0], strides[1], pad[0], pad[1], inH, inW);
 
         Gradient retGradient = new DefaultGradient();
-        delta2d.sum(biasGradView, 1);   //biasGradView is initialized/zeroed first in sum op
+        delta2d.sum(biasGradView, 1); //biasGradView is initialized/zeroed first in sum op
 
         retGradient.setGradientFor(ConvolutionParamInitializer.BIAS_KEY, biasGradView);
         retGradient.setGradientFor(ConvolutionParamInitializer.WEIGHT_KEY, weightGradView, 'c');
@@ -235,7 +239,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
      * non-4d preOutput method, while overriding this to return 4d activations (for use in backprop) without modifying
      * the public API
      */
-    protected Pair<INDArray,INDArray> preOutput4d(boolean training, boolean forBackprop) {
+    protected Pair<INDArray, INDArray> preOutput4d(boolean training, boolean forBackprop) {
         return preOutput(training, forBackprop);
     }
 
@@ -253,7 +257,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
      *                    pair entry. Note that it may still be null in the case of CuDNN and the like.
      * @return            Pair of arrays: preOutput (activations) and optionally the im2col2d array
      */
-    protected Pair<INDArray,INDArray> preOutput(boolean training, boolean forBackprop){
+    protected Pair<INDArray, INDArray> preOutput(boolean training, boolean forBackprop) {
         INDArray weights = getParam(ConvolutionParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(ConvolutionParamInitializer.BIAS_KEY);
         if (conf.isUseDropConnect() && training && conf.getLayer().getDropOut() > 0) {
@@ -271,7 +275,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                             + "Expected rank 4 array with shape [minibatchSize, layerInputDepth, inputHeight, inputWidth]."
                             + (input.rank() == 2
                                             ? " (Wrong input type (see InputType.convolutionalFlat()) or wrong data type?)"
-                                            : "") + " "  + layerId());
+                                            : "")
+                            + " " + layerId());
         }
 
         int miniBatch = input.size(0);
@@ -310,11 +315,19 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
 
         if (helper != null) {
+            if (preOutput != null && forBackprop) {
+                return new Pair<>(preOutput, null);
+            }
+
             INDArray ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(),
                             layerConf().getCudnnFwdAlgo(), convolutionMode);
             if (ret != null) {
-                return new Pair<>(ret,null);
+                return new Pair<>(ret, null);
             }
+        }
+
+        if (preOutput != null && i2d != null && forBackprop) {
+            return new Pair<>(preOutput, i2d);
         }
 
         //im2col in the required order: want [outW,outH,miniBatch,depthIn,kH,kW], but need to input [miniBatch,depth,kH,kW,outH,outW] given the current im2col implementation
@@ -352,6 +365,16 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //Now, reshape to [outW,outH,miniBatch,outDepth], and permute to have correct output order: [miniBath,outDepth,outH,outW];
         z = Shape.newShapeNoCopy(z, new int[] {outW, outH, miniBatch, outDepth}, true);
         z = z.permute(2, 3, 1, 0);
+
+        if (cacheMode != CacheMode.NONE
+                        && Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceCache)) {
+
+            try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
+                            .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
+                i2d = im2col2d.unsafeDuplication();
+            }
+        }
+
         return new Pair<>(z, forBackprop ? im2col2d : null);
     }
 
@@ -360,14 +383,28 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if (input == null) {
             throw new IllegalArgumentException("Cannot perform forward pass with null input " + layerId());
         }
+
+        if (cacheMode == null)
+            cacheMode = CacheMode.NONE;
+
         applyDropOutIfNecessary(training);
 
         INDArray z = preOutput(training);
+
+        // we do cache only if cache workspace exists. Skip otherwise
+        if (training && cacheMode != CacheMode.NONE
+                        && Nd4j.getWorkspaceManager().checkIfWorkspaceExists(ComputationGraph.workspaceCache)) {
+            try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
+                            .getWorkspaceForCurrentThread(ComputationGraph.workspaceCache).notifyScopeBorrowed()) {
+                preOutput = z.unsafeDuplication();
+            }
+        }
+
         //String afn = conf.getLayer().getActivationFunction();
-        IActivation afn = conf.getLayer().getActivationFn();
+        IActivation afn = layerConf().getActivationFn();
 
         if (helper != null) {
-            INDArray ret = helper.activate(z, conf.getLayer().getActivationFn());
+            INDArray ret = helper.activate(z, layerConf().getActivationFn());
             if (ret != null) {
                 return ret;
             }

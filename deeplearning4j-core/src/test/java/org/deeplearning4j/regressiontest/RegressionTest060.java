@@ -71,7 +71,7 @@ public class RegressionTest060 {
 
         int numParams = net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
-        int updaterSize = (int)new Nesterovs().stateSize(numParams);
+        int updaterSize = (int) new Nesterovs().stateSize(numParams);
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
     }
 
@@ -123,7 +123,7 @@ public class RegressionTest060 {
 
         int numParams = net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
-        int updaterSize = (int)new RmsProp().stateSize(numParams);
+        int updaterSize = (int) new RmsProp().stateSize(numParams);
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
     }
 
@@ -162,7 +162,7 @@ public class RegressionTest060 {
         assertEquals(l1.getConvolutionMode(), ConvolutionMode.Truncate); //Pre-0.7.0: no ConvolutionMode. Want to default to truncate here if not set
 
         OutputLayer l2 = (OutputLayer) conf.getConf(2).getLayer();
-        assertEquals("sigmoid", l1.getActivationFn().toString());
+        assertEquals("sigmoid", l2.getActivationFn().toString());
         assertEquals(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD, l2.getLossFunction());
         assertTrue(l2.getLossFn() instanceof LossNegativeLogLikelihood); //TODO
         assertEquals(26 * 26 * 3, l2.getNIn());
@@ -176,7 +176,7 @@ public class RegressionTest060 {
 
         int numParams = net.numParams();
         assertEquals(Nd4j.linspace(1, numParams, numParams), net.params());
-        int updaterSize = (int)new RmsProp().stateSize(numParams);
+        int updaterSize = (int) new RmsProp().stateSize(numParams);
         assertEquals(Nd4j.linspace(1, updaterSize, updaterSize), net.getUpdater().getStateViewArray());
     }
 

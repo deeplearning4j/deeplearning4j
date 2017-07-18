@@ -195,7 +195,7 @@ public abstract class BasePretrainNetwork<LayerConfT extends org.deeplearning4j.
 
         if (params.length() != paramLength) {
             throw new IllegalArgumentException("Unable to set parameters: must be of length " + paramLength
-                    + ", got params of length " + params.length() + " " + layerId());
+                            + ", got params of length " + params.length() + " " + layerId());
         }
 
         // Set for backprop and only W & hb

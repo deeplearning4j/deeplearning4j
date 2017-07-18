@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.optimize.solvers;
 
+import lombok.Getter;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.exception.InvalidStepException;
 import org.deeplearning4j.nn.api.Layer;
@@ -33,6 +34,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.updater.UpdaterCreator;
 import org.deeplearning4j.nn.updater.graph.ComputationGraphUpdater;
 import org.deeplearning4j.optimize.api.*;
+import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.optimize.stepfunctions.NegativeDefaultStepFunction;
 import org.deeplearning4j.optimize.stepfunctions.NegativeGradientStepFunction;
 import org.deeplearning4j.optimize.terminations.EpsTermination;
@@ -54,6 +56,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     protected NeuralNetConfiguration conf;
     protected static final Logger log = LoggerFactory.getLogger(BaseOptimizer.class);
+    @Getter
     protected StepFunction stepFunction;
     protected Collection<IterationListener> iterationListeners = new ArrayList<>();
     protected Collection<TerminationCondition> terminationConditions = new ArrayList<>();
@@ -70,6 +73,9 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
     public final static String PARAMS_KEY = "params";
     public final static String SEARCH_DIR = "searchDirection";
     protected Map<String, Object> searchState = new ConcurrentHashMap<>();
+
+
+    protected GradientsAccumulator accumulator;
 
     /**
      *
@@ -103,9 +109,17 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         lineMaximizer = new BackTrackLineSearch(model, this.stepFunction, this);
         lineMaximizer.setStepMax(stepMax);
         lineMaximizer.setMaxIterations(conf.getMaxNumLineSearchIterations());
-
     }
 
+    @Override
+    public void setGradientsAccumulator(GradientsAccumulator accumulator) {
+        this.accumulator = accumulator;
+    }
+
+    @Override
+    public GradientsAccumulator getGradientsAccumulator() {
+        return accumulator;
+    }
 
     @Override
     public double score() {
@@ -160,9 +174,11 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         model.computeGradientAndScore();
 
         if (iterationListeners != null && iterationListeners.size() > 0) {
-            for (IterationListener l : iterationListeners) {
-                if (l instanceof TrainingListener) {
-                    ((TrainingListener) l).onGradientCalculation(model);
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                for (IterationListener l : iterationListeners) {
+                    if (l instanceof TrainingListener) {
+                        ((TrainingListener) l).onGradientCalculation(model);
+                    }
                 }
             }
         }
@@ -221,6 +237,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
             //Update parameters based on final/best step size returned by line search:
             if (step != 0.0) {
+                // TODO: inject accumulation use here
                 stepFunction.step(parameters, searchDirection, step); //Calculate params. given step size
                 model.setParams(parameters);
             } else {
@@ -234,7 +251,7 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
             //invoke listeners
             int iterationCount = BaseOptimizer.getIterationCount(model);
-            try(MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 for (IterationListener listener : iterationListeners)
                     listener.iterationDone(model, iterationCount);
             }
@@ -256,7 +273,8 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
         for (TerminationCondition condition : terminationConditions) {
             //log.info("terminations: {}", condition);
             if (condition.terminate(score, oldScore, new Object[] {gradient})) {
-                log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}", i, score, oldScore, condition);
+                log.debug("Hit termination condition on iteration {}: score={}, oldScore={}, condition={}", i, score,
+                                oldScore, condition);
                 if (condition instanceof EpsTermination && conf.getLayer() != null
                                 && conf.getLearningRatePolicy() == LearningRatePolicy.Score) {
                     model.applyLearningRateScoreDecay();

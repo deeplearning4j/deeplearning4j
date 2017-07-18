@@ -497,7 +497,8 @@ public class MultiLayerTest {
 
         assertEquals(layerNameList.get(0), net.getLayer(0).conf().getLayer().getLayerName());
         assertEquals(layerNameList, net.getLayerNames());
-        assertEquals("softmax", net.getLayer(layerNameList.get(2)).conf().getLayer().getActivationFn().toString());
+        BaseLayer b = (BaseLayer) net.getLayer(layerNameList.get(2)).conf().getLayer();
+        assertEquals("softmax", b.getActivationFn().toString());
     }
 
     @Test
@@ -926,8 +927,9 @@ public class MultiLayerTest {
         MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
         net2.init();
 
-        assertEquals(0.1, net2.getLayer(0).conf().getLayer().getL1Bias(), 1e-6);
-        assertEquals(0.2, net2.getLayer(0).conf().getLayer().getL2Bias(), 1e-6);
+        BaseLayer bl0 = (BaseLayer) net2.getLayer(0).conf().getLayer();
+        assertEquals(0.1, bl0.getL1Bias(), 1e-6);
+        assertEquals(0.2, bl0.getL2Bias(), 1e-6);
 
         INDArray features = Nd4j.rand(10, 10);
         INDArray labels = Nd4j.rand(10, 10);
@@ -1037,15 +1039,11 @@ public class MultiLayerTest {
 
 
     @Test
-    public void testComputeZ(){
+    public void testComputeZ() {
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.XAVIER)
-                .activation(Activation.TANH)
-                .list()
-                .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build())
-                .build();
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.XAVIER)
+                        .activation(Activation.TANH).list().layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build())
+                        .layer(1, new DenseLayer.Builder().nIn(10).nOut(10).build()).build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
@@ -1053,7 +1051,7 @@ public class MultiLayerTest {
         INDArray in = Nd4j.rand(10, 10);
         List<INDArray> preOuts = net.computeZ(in, false);
 
-        assertEquals(3, preOuts.size());    //Includes original input
+        assertEquals(3, preOuts.size()); //Includes original input
         assertEquals(in, preOuts.get(0));
 
         INDArray preOut0 = net.getLayer(0).preOutput(in);
@@ -1063,5 +1061,23 @@ public class MultiLayerTest {
         INDArray preOut1 = net.getLayer(1).preOutput(out0);
         INDArray out1 = net.getLayer(1).activate(out0);
         assertEquals(preOut1, preOuts.get(2));
+    }
+
+    @Test(expected = DL4JException.class)
+    public void testErrorNoOutputLayer() {
+
+        MultiLayerConfiguration c = new NeuralNetConfiguration.Builder().list()
+                        .layer(0, new DenseLayer.Builder().nIn(10).nOut(10).build()).build();
+
+        MultiLayerNetwork net = new MultiLayerNetwork(c);
+        net.init();
+
+        INDArray f = Nd4j.create(1, 10);
+        INDArray l = Nd4j.create(1, 10);
+
+        net.setInput(f);
+        net.setLabels(l);
+
+        net.computeGradientAndScore();
     }
 }

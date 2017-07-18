@@ -8,7 +8,6 @@ import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
 import org.deeplearning4j.nn.conf.graph.rnn.LastTimeStepVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToRnnPreProcessor;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -122,8 +121,8 @@ public class FlowIterationListenerTest {
                             .layer(7, new DenseLayer.Builder().name("ffn1").nOut(160).dropOut(0.5).build())
                             .layer(8, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                             .nOut(outputNum).activation(Activation.SOFTMAX).build())
-                            .backprop(true).pretrain(false);
-            new ConvolutionLayerSetup(builder, numRows, numColumns, nChannels);
+                            .backprop(true).pretrain(false)
+                            .setInputType(InputType.convolutional(numRows, numColumns, nChannels));
 
             network = new MultiLayerNetwork(builder.build());
             network.init();

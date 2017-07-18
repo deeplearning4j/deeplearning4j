@@ -52,16 +52,12 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
 
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(input);
-        //INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), z).derivative());
-        //        INDArray activationDerivative = conf().getLayer().getActivationFn().getGradient(z);
-        //        INDArray delta = epsilon.muli(activationDerivative);
-        INDArray delta = conf().getLayer().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
+        INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
 
         if (maskArray != null) {
             delta.muliColumnVector(maskArray);
         }
 
-        INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray weightGradients = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
         weightGradients.assign(0);
 
@@ -73,7 +69,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         }
 
         INDArray biasGradientsView = gradientViews.get(DefaultParamInitializer.BIAS_KEY);
-        delta.sum(biasGradientsView, 0);    //biasGradientView is initialized/zeroed first in sum op
+        delta.sum(biasGradientsView, 0); //biasGradientView is initialized/zeroed first in sum op
 
         Gradient ret = new DefaultGradient();
         ret.gradientForVariable().put(DefaultParamInitializer.WEIGHT_KEY, weightGradients);
@@ -88,8 +84,8 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
             //Assume shape is [numExamples,1], and each entry is an integer index
             throw new DL4JInvalidInputException(
                             "Cannot do forward pass for embedding layer with input more than one column. "
-                            + "Expected input shape: [numExamples,1] with each entry being an integer index "
-                            + layerId());
+                                            + "Expected input shape: [numExamples,1] with each entry being an integer index "
+                                            + layerId());
         }
 
         int[] indexes = new int[input.length()];
@@ -99,13 +95,6 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
 
-        //INDArray rows = weights.getRows(indexes);
-        /*        INDArray rows = Nd4j.createUninitialized(new int[]{indexes.length,weights.size(1)},'c');
-        
-        for( int i=0; i<indexes.length; i++ ){
-            rows.putRow(i,weights.getRow(indexes[i]));
-        }
-        */
         INDArray rows = Nd4j.pullRows(weights, 1, indexes);
         rows.addiRowVector(bias);
 
@@ -117,7 +106,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray rows = preOutput(training);
 
         //INDArray ret =  Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf.getLayer().getActivationFunction(), rows));
-        INDArray ret = conf.getLayer().getActivationFn().getActivation(rows, training);
+        INDArray ret = layerConf().getActivationFn().getActivation(rows, training);
         if (maskArray != null) {
             ret.muliColumnVector(maskArray);
         }

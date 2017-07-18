@@ -61,7 +61,7 @@ public class ParameterServerTrainerContext implements TrainerContext {
      */
     @Override
     public Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper,
-                    WorkspaceMode mode) {
+                    WorkspaceMode mode, int averagingFrequency) {
         return ParameterServerTrainer.builder().originalModel(model).parameterServerClient(ParameterServerClient
                         .builder().aeron(parameterServerNode.getAeron())
                         .ndarrayRetrieveUrl(
@@ -70,5 +70,15 @@ public class ParameterServerTrainerContext implements TrainerContext {
                         .subscriberHost("localhost").masterStatusHost("localhost").masterStatusPort(statusServerPort)
                         .subscriberPort(40625 + threadId).subscriberStream(12 + threadId).build())
                         .replicatedModel(model).threadId(threadId).parallelWrapper(wrapper).useMDS(useMDS).build();
+    }
+
+    @Override
+    public void finalizeRound(Model originalModel, Model... models) {
+        // no-op
+    }
+
+    @Override
+    public void finalizeTraining(Model originalModel, Model... models) {
+        // no-op
     }
 }

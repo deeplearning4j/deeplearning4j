@@ -1,9 +1,19 @@
 package org.deeplearning4j.eval;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.nd4j.linalg.api.ndarray.BaseNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastGreaterThan;
+import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.transforms.Not;
+import org.nd4j.linalg.api.ops.impl.transforms.comparison.GreaterThan;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorDeserializer;
+import org.nd4j.linalg.lossfunctions.serde.RowVectorSerializer;
+import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
+import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,7 +25,9 @@ import java.util.List;
  * Note that {@link ROCBinary} is also used internally to calculate AUC for each output, but only when using an
  * appropriate constructor, {@link #EvaluationBinary(int, Integer)}
  * <p>
- * Note that EvaluationBinary supports both per-example and per-output masking.
+ * Note that EvaluationBinary supports both per-example and per-output masking.<br>
+ * EvaluationBinary by default uses a decision threshold of 0.5, however decision thresholds can be set on a per-output
+ * basis using {@link #EvaluationBinary(INDArray)}.
  * <p>
  * The most common use case: multi-task networks, where each output is a binary value. This differs from {@link Evaluation}
  * in that {@link Evaluation} is for a single class (binary or non-binary) evaluation.
@@ -23,8 +35,11 @@ import java.util.List;
  * @author Alex Black
  */
 @NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
+@Data
 public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     public static final int DEFAULT_PRECISION = 4;
+    public static final double DEFAULT_EDGE_VALUE = 0.0;
 
     //Because we want evaluation to work for large numbers of examples - and with low precision (FP16), we won't
     //use INDArrays to store the counts
@@ -36,8 +51,34 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
     private List<String> labels;
 
-    public EvaluationBinary(int size) {
-        this(size, null);
+    @JsonSerialize(using = RowVectorSerializer.class)
+    @JsonDeserialize(using = RowVectorDeserializer.class)
+    private INDArray decisionThreshold;
+
+    /**
+     * Create an EvaulationBinary instance with an optional decision threshold array.
+     *
+     * @param decisionThreshold Decision threshold for each output; may be null. Should be a row vector with length
+     *                          equal to the number of outputs, with values in range 0 to 1. An array of 0.5 values is
+     *                          equivalent to the default (no manually specified decision threshold).
+     */
+    public EvaluationBinary(INDArray decisionThreshold) {
+        if (decisionThreshold != null) {
+            if (!decisionThreshold.isRowVector()) {
+                throw new IllegalArgumentException(
+                                "Decision threshold array must be a row vector; got array with shape "
+                                                + Arrays.toString(decisionThreshold.shape()));
+            }
+            if (decisionThreshold.minNumber().doubleValue() < 0.0) {
+                throw new IllegalArgumentException("Invalid decision threshold array: minimum value is less than 0");
+            }
+            if (decisionThreshold.maxNumber().doubleValue() > 1.0) {
+                throw new IllegalArgumentException(
+                                "invalid decision threshold array: maximum value is greater than 1.0");
+            }
+
+            this.decisionThreshold = decisionThreshold;
+        }
     }
 
     /**
@@ -45,7 +86,7 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
      * rocBinarySteps arg is non-null. See {@link ROCBinary} for more details
      *
      * @param size           Number of outputs
-     * @param rocBinarySteps Consructor arg for {@link ROCBinary#ROCBinary(int)}
+     * @param rocBinarySteps Constructor arg for {@link ROCBinary#ROCBinary(int)}
      */
     public EvaluationBinary(int size, Integer rocBinarySteps) {
         countTruePositive = new int[size];
@@ -92,9 +133,16 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
             return;
         }
 
-        //First: binarize the network prediction probabilities, threshold 0.5
+        //First: binarize the network prediction probabilities, threshold 0.5 unless otherwise specified
         //This gives us 3 binary arrays: labels, predictions, masks
-        INDArray classPredictions = networkPredictions.gt(0.5);
+        INDArray classPredictions;
+        if (decisionThreshold != null) {
+            classPredictions = Nd4j.createUninitialized(networkPredictions.shape());
+            Nd4j.getExecutioner()
+                            .exec(new BroadcastGreaterThan(networkPredictions, decisionThreshold, classPredictions, 1));
+        } else {
+            classPredictions = networkPredictions.gt(0.5);
+        }
 
         INDArray notLabels = Nd4j.getExecutioner().execAndReturn(new Not(labels.dup()));
         INDArray notClassPredictions = Nd4j.getExecutioner().execAndReturn(new Not(classPredictions.dup()));
@@ -210,6 +258,8 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
                         + countFalsePositive[outputNum];
     }
 
+
+
     /**
      * Get the true positives count for the specified output
      */
@@ -242,12 +292,32 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         return countFalseNegative[outputNum];
     }
 
+    public double averageAccuracy() {
+        double ret = 0.0;
+        for (int i = 0; i < numLabels(); i++) {
+            ret += accuracy(i);
+        }
+
+        ret /= (double) numLabels();
+        return ret;
+    }
+
     /**
      * Get the accuracy for the specified output
      */
     public double accuracy(int outputNum) {
         assertIndex(outputNum);
         return (countTruePositive[outputNum] + countTrueNegative[outputNum]) / (double) totalCount(outputNum);
+    }
+
+    public double averagePrecision() {
+        double ret = 0.0;
+        for (int i = 0; i < numLabels(); i++) {
+            ret += precision(i);
+        }
+
+        ret /= (double) numLabels();
+        return ret;
     }
 
     /**
@@ -259,6 +329,17 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         return countTruePositive[outputNum] / (double) (countTruePositive[outputNum] + countFalsePositive[outputNum]);
     }
 
+
+    public double averageRecall() {
+        double ret = 0.0;
+        for (int i = 0; i < numLabels(); i++) {
+            ret += recall(i);
+        }
+
+        ret /= (double) numLabels();
+        return ret;
+    }
+
     /**
      * Get the recall (tp / (tp + fn)) for the specified output
      */
@@ -267,16 +348,109 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         return countTruePositive[outputNum] / (double) (countTruePositive[outputNum] + countFalseNegative[outputNum]);
     }
 
+
+    public double averageF1() {
+        double ret = 0.0;
+        for (int i = 0; i < numLabels(); i++) {
+            ret += f1(i);
+        }
+
+        ret /= (double) numLabels();
+        return ret;
+    }
+
+    /**
+     * Calculate the F-beta value for the given output
+     *
+     * @param beta      Beta value to use
+     * @param outputNum Output number
+     * @return F-beta for the given output
+     */
+    public double fBeta(double beta, int outputNum) {
+        assertIndex(outputNum);
+        double precision = precision(outputNum);
+        double recall = recall(outputNum);
+        return EvaluationUtils.fBeta(beta, precision, recall);
+    }
+
     /**
      * Get the F1 score for the specified output
      */
     public double f1(int outputNum) {
+        return fBeta(1.0, outputNum);
+    }
+
+    /**
+     * Calculate the Matthews correlation coefficient for the specified output
+     *
+     * @param outputNum Output number
+     * @return Matthews correlation coefficient
+     */
+    public double matthewsCorrelation(int outputNum) {
         assertIndex(outputNum);
 
-        double precision = precision(outputNum);
-        double recall = recall(outputNum);
+        return EvaluationUtils.matthewsCorrelation(truePositives(outputNum), falsePositives(outputNum),
+                        falseNegatives(outputNum), trueNegatives(outputNum));
+    }
 
-        return 2.0 * (precision * recall) / (precision + recall);
+    /**
+     * Calculate the G-measure for the given output
+     *
+     * @param output The specified output
+     * @return The G-measure for the specified output
+     */
+    public double gMeasure(int output) {
+        double precision = precision(output);
+        double recall = recall(output);
+        return EvaluationUtils.gMeasure(precision, recall);
+    }
+
+    /**
+     * Returns the false positive rate for a given label
+     *
+     * @param classLabel the label
+     * @return fpr as a double
+     */
+    public double falsePositiveRate(int classLabel) {
+        return recall(classLabel);
+    }
+
+    /**
+     * Returns the false positive rate for a given label
+     *
+     * @param classLabel the label
+     * @param edgeCase   What to output in case of 0/0
+     * @return fpr as a double
+     */
+    public double falsePositiveRate(int classLabel, double edgeCase) {
+        double fpCount = falsePositives(classLabel);
+        double tnCount = trueNegatives(classLabel);
+
+        return EvaluationUtils.falsePositiveRate((long) fpCount, (long) tnCount, edgeCase);
+    }
+
+    /**
+     * Returns the false negative rate for a given label
+     *
+     * @param classLabel the label
+     * @return fnr as a double
+     */
+    public double falseNegativeRate(Integer classLabel) {
+        return falseNegativeRate(classLabel, DEFAULT_EDGE_VALUE);
+    }
+
+    /**
+     * Returns the false negative rate for a given label
+     *
+     * @param classLabel the label
+     * @param edgeCase   What to output in case of 0/0
+     * @return fnr as a double
+     */
+    public double falseNegativeRate(Integer classLabel, double edgeCase) {
+        double fnCount = falseNegatives(classLabel);
+        double tpCount = truePositives(classLabel);
+
+        return EvaluationUtils.falseNegativeRate((long) fnCount, (long) tpCount, edgeCase);
     }
 
     /**
@@ -292,7 +466,8 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
                             "EvaluationBinary does not have any stats: eval must be called first");
         }
         if (outputNum < 0 || outputNum >= countTruePositive.length) {
-            throw new IllegalArgumentException("Invalid input: output number must be between 0 and " + (outputNum - 1));
+            throw new IllegalArgumentException("Invalid input: output number must be between 0 and " + (outputNum - 1)
+                            + ". Got index: " + outputNum);
         }
     }
 
@@ -346,26 +521,47 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
         sb.append(header);
 
-        for (int i = 0; i < countTrueNegative.length; i++) {
-            int totalCount = totalCount(i);
+        if (countTrueNegative != null) {
 
-            double acc = accuracy(i);
-            double f1 = f1(i);
-            double precision = precision(i);
-            double recall = recall(i);
+            for (int i = 0; i < countTrueNegative.length; i++) {
+                int totalCount = totalCount(i);
 
-            String label = (labels == null ? String.valueOf(i) : labels.get(i));
+                double acc = accuracy(i);
+                double f1 = f1(i);
+                double precision = precision(i);
+                double recall = recall(i);
 
-            List<Object> args = Arrays.<Object>asList(label, acc, f1, precision, recall, totalCount, truePositives(i),
-                            trueNegatives(i), falsePositives(i), falseNegatives(i));
-            if (rocBinary != null) {
-                args = new ArrayList<>(args);
-                args.add(rocBinary.calculateAUC(i));
+                String label = (labels == null ? String.valueOf(i) : labels.get(i));
+
+                List<Object> args = Arrays.<Object>asList(label, acc, f1, precision, recall, totalCount,
+                                truePositives(i), trueNegatives(i), falsePositives(i), falseNegatives(i));
+                if (rocBinary != null) {
+                    args = new ArrayList<>(args);
+                    args.add(rocBinary.calculateAUC(i));
+                }
+
+                sb.append("\n").append(String.format(pattern, args.toArray()));
             }
 
-            sb.append("\n").append(String.format(pattern, args.toArray()));
+            if (decisionThreshold != null) {
+                sb.append("\nPer-output decision thresholds: ")
+                                .append(Arrays.toString(decisionThreshold.dup().data().asFloat()));
+            }
+        } else {
+            //Empty evaluation
+            sb.append("\n-- No Data --\n");
         }
 
         return sb.toString();
     }
+
+    public static EvaluationBinary fromJson(String json) {
+        return fromJson(json, EvaluationBinary.class);
+    }
+
+    public static EvaluationBinary fromYaml(String yaml) {
+        return fromYaml(yaml, EvaluationBinary.class);
+    }
+
+
 }

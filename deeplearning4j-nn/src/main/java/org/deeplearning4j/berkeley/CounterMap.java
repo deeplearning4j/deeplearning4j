@@ -39,13 +39,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class CounterMap<K, V> implements java.io.Serializable {
     private static final long serialVersionUID = 1L;
-    MapFactory<V, Double> mf;
+    MapFactory<V, Float> mf;
     Map<K, Counter<V>> counterMap;
-    double defltVal = 0.0;
+    Float defltVal = 0.0f;
     private static Logger log = LoggerFactory.getLogger(CounterMap.class);
 
     public interface CountFunction<V> {
-        double count(V v1, V v2);
+        Float count(V v1, V v2);
     }
 
     /**
@@ -88,10 +88,10 @@ public class CounterMap<K, V> implements java.io.Serializable {
                     V v = items.get(begin2);
                     V v2 = items.get(end2);
                     log.trace("Processing " + "(" + begin2 + "," + end2 + ")");
-                    //don't double count
+                    //don't Float count
                     if (count.getCount(v, v2) > 0)
                         return v;
-                    double cost = countFunction.count(v, v2);
+                    Float cost = countFunction.count(v, v2);
                     count.incrementCount(v, v2, cost);
                     count.incrementCount(v2, v, cost);
                     return v;
@@ -127,12 +127,12 @@ public class CounterMap<K, V> implements java.io.Serializable {
      * @return
      */
     public static <K, V> CounterMap<K, V> parallelCounterMap() {
-        MapFactory<K, Double> factory = new MapFactory<K, Double>() {
+        MapFactory<K, Float> factory = new MapFactory<K, Float>() {
 
             private static final long serialVersionUID = 5447027920163740307L;
 
             @Override
-            public Map<K, Double> buildMap() {
+            public Map<K, Float> buildMap() {
                 return new ConcurrentHashMap<>();
             }
 
@@ -159,7 +159,7 @@ public class CounterMap<K, V> implements java.io.Serializable {
     /**
      * @return
      */
-    protected Counter<V> buildCounter(MapFactory<V, Double> mf) {
+    protected Counter<V> buildCounter(MapFactory<V, Float> mf) {
         return new Counter<>(mf);
     }
 
@@ -173,7 +173,7 @@ public class CounterMap<K, V> implements java.io.Serializable {
     /**
      * Sets the count for a particular (key, value) pair.
      */
-    public void setCount(K key, V value, double count) {
+    public void setCount(K key, V value, Float count) {
         Counter<V> valueCounter = ensureCounter(key);
         valueCounter.setCount(value, count);
     }
@@ -185,7 +185,7 @@ public class CounterMap<K, V> implements java.io.Serializable {
     /**
      * Increments the count for a particular (key, value) pair.
      */
-    public void incrementCount(K key, V value, double count) {
+    public void incrementCount(K key, V value, Float count) {
         Counter<V> valueCounter = ensureCounter(key);
         valueCounter.incrementCount(value, count);
     }
@@ -194,7 +194,7 @@ public class CounterMap<K, V> implements java.io.Serializable {
      * Gets the count of the given (key, value) entry, or zero if that entry is
      * not present.  Does not createComplex any objects.
      */
-    public double getCount(K key, V value) {
+    public Float getCount(K key, V value) {
         Counter<V> valueCounter = counterMap.get(key);
         if (valueCounter == null)
             return defltVal;
@@ -212,7 +212,7 @@ public class CounterMap<K, V> implements java.io.Serializable {
         return ensureCounter(key);
     }
 
-    public void incrementAll(Map<K, V> map, double count) {
+    public void incrementAll(Map<K, V> map, Float count) {
         for (Map.Entry<K, V> entry : map.entrySet()) {
             incrementCount(entry.getKey(), entry.getValue(), count);
         }
@@ -222,7 +222,7 @@ public class CounterMap<K, V> implements java.io.Serializable {
         for (Map.Entry<K, Counter<V>> entry : cMap.counterMap.entrySet()) {
             K key = entry.getKey();
             Counter<V> innerCounter = entry.getValue();
-            for (Map.Entry<V, Double> innerEntry : innerCounter.entrySet()) {
+            for (Map.Entry<V, Float> innerEntry : innerCounter.entrySet()) {
                 V value = innerEntry.getKey();
                 incrementCount(key, value, innerEntry.getValue());
             }
@@ -233,10 +233,10 @@ public class CounterMap<K, V> implements java.io.Serializable {
      * Gets the total count of the given key, or zero if that key is
      * not present.  Does not createComplex any objects.
      */
-    public double getCount(K key) {
+    public Float getCount(K key) {
         Counter<V> valueCounter = counterMap.get(key);
         if (valueCounter == null)
-            return 0.0;
+            return 0.0f;
         return valueCounter.totalCount();
     }
 
@@ -244,8 +244,8 @@ public class CounterMap<K, V> implements java.io.Serializable {
      * Returns the total of all counts in sub-counters.  This implementation is
      * linear; it recalculates the total each time.
      */
-    public double totalCount() {
-        double total = 0.0;
+    public Float totalCount() {
+        Float total = 0.0f;
         for (Map.Entry<K, Counter<V>> entry : counterMap.entrySet()) {
             Counter<V> counter = entry.getValue();
             total += counter.totalCount();
@@ -288,7 +288,7 @@ public class CounterMap<K, V> implements java.io.Serializable {
      * @return a key with minumum count
      */
     public Pair<K, V> argMax() {
-        double maxCount = Double.NEGATIVE_INFINITY;
+        Float maxCount = Float.NEGATIVE_INFINITY;
         Pair<K, V> maxKey = null;
         for (Map.Entry<K, Counter<V>> entry : counterMap.entrySet()) {
             Counter<V> counter = entry.getValue();
@@ -359,7 +359,7 @@ public class CounterMap<K, V> implements java.io.Serializable {
 
 
 
-    public CounterMap(MapFactory<K, Counter<V>> outerMF, MapFactory<V, Double> innerMF) {
+    public CounterMap(MapFactory<K, Counter<V>> outerMF, MapFactory<V, Float> innerMF) {
         mf = innerMF;
         counterMap = outerMF.buildMap();
     }
@@ -367,23 +367,8 @@ public class CounterMap<K, V> implements java.io.Serializable {
     public CounterMap(boolean identityHashMap) {
         this(identityHashMap ? new MapFactory.IdentityHashMapFactory<K, Counter<V>>()
                         : new MapFactory.HashMapFactory<K, Counter<V>>(),
-                        identityHashMap ? new MapFactory.IdentityHashMapFactory<V, Double>()
-                                        : new MapFactory.HashMapFactory<V, Double>());
-    }
-
-    public static void main(String[] args) {
-        CounterMap<String, String> bigramCounterMap = new CounterMap<>();
-        bigramCounterMap.incrementCount("people", "run", 1);
-        bigramCounterMap.incrementCount("cats", "growl", 2);
-        bigramCounterMap.incrementCount("cats", "scamper", 3);
-        System.out.println(bigramCounterMap);
-        System.out.println("Entries for cats: " + bigramCounterMap.getCounter("cats"));
-        System.out.println("Entries for dogs: " + bigramCounterMap.getCounter("dogs"));
-        System.out.println("Count of cats scamper: " + bigramCounterMap.getCount("cats", "scamper"));
-        System.out.println("Count of snakes slither: " + bigramCounterMap.getCount("snakes", "slither"));
-        System.out.println("Total size: " + bigramCounterMap.totalSize());
-        System.out.println("Total count: " + bigramCounterMap.totalCount());
-        System.out.println(bigramCounterMap);
+                        identityHashMap ? new MapFactory.IdentityHashMapFactory<V, Float>()
+                                        : new MapFactory.HashMapFactory<V, Float>());
     }
 
     public void normalize() {
@@ -392,10 +377,10 @@ public class CounterMap<K, V> implements java.io.Serializable {
         }
     }
 
-    public void normalizeWithDiscount(double discount) {
+    public void normalizeWithDiscount(Float discount) {
         for (K key : keySet()) {
             Counter<V> ctr = getCounter(key);
-            double totalCount = ctr.totalCount();
+            Float totalCount = ctr.totalCount();
             for (V value : ctr.keySet()) {
                 ctr.setCount(value, (ctr.getCount(value) - discount) / totalCount);
             }
@@ -412,7 +397,7 @@ public class CounterMap<K, V> implements java.io.Serializable {
         for (K key : this.keySet()) {
             Counter<V> keyCounts = this.getCounter(key);
             for (V val : keyCounts.keySet()) {
-                double count = keyCounts.getCount(val);
+                Float count = keyCounts.getCount(val);
                 invertCounterMap.setCount(val, key, count);
             }
         }
@@ -424,7 +409,7 @@ public class CounterMap<K, V> implements java.io.Serializable {
      * by <code>scaleFactor</code>
      * @param scaleFactor
      */
-    public void scale(double scaleFactor) {
+    public void scale(Float scaleFactor) {
         for (K key : keySet()) {
             Counter<V> counts = getCounter(key);
             counts.scale(scaleFactor);
@@ -491,7 +476,7 @@ public class CounterMap<K, V> implements java.io.Serializable {
 
     }
 
-    public void setDefault(double defltVal) {
+    public void setDefault(Float defltVal) {
         this.defltVal = defltVal;
         for (Counter<V> vCounter : counterMap.values()) {
             vCounter.setDeflt(defltVal);

@@ -172,7 +172,7 @@ public class MergeVertex extends BaseGraphVertex {
         //Split the epsilons in the opposite way that the activations were merged
         INDArray[] out = new INDArray[forwardPassShapes.length];
         for (int i = 0; i < out.length; i++)
-            out[i] = Nd4j.create(forwardPassShapes[i]);
+            out[i] = Nd4j.createUninitialized(forwardPassShapes[i]);
 
         int cumulative = 0;
         switch (fwdPassRank) {

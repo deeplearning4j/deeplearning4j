@@ -13,8 +13,8 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
+import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
-import org.deeplearning4j.nn.conf.layers.setup.ConvolutionLayerSetup;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.IterationListener;
@@ -181,8 +181,8 @@ public class ManualTests {
                         .layer(7, new DenseLayer.Builder().name("ffn1").nOut(160).dropOut(0.5).build())
                         .layer(8, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).activation(Activation.SOFTMAX).build())
-                        .backprop(true).pretrain(false);
-        new ConvolutionLayerSetup(builder, numRows, numColumns, nChannels);
+                        .backprop(true).pretrain(false)
+                        .setInputType(InputType.convolutional(numRows, numColumns, nChannels));
 
         MultiLayerNetwork model = new MultiLayerNetwork(builder.build());
         model.init();
@@ -248,9 +248,8 @@ public class ManualTests {
                         .layer(4, new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build())
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).activation(Activation.SOFTMAX).build())
-                        .backprop(true).pretrain(false);
-        // The builder needs the dimensions of the image along with the number of channels. these are 28x28 images in one channel
-        new ConvolutionLayerSetup(builder, 28, 28, 1);
+                        .backprop(true).pretrain(false)
+                        .setInputType(InputType.convolutional(28, 28, nChannels));
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
@@ -371,9 +370,8 @@ public class ManualTests {
                         .layer(4, new DenseLayer.Builder().activation(Activation.RELU).nOut(500).build())
                         .layer(5, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
                                         .nOut(outputNum).activation(Activation.SOFTMAX).build())
-                        .backprop(true).pretrain(false);
-        // The builder needs the dimensions of the image along with the number of channels. these are 28x28 images in one channel
-        new ConvolutionLayerSetup(builder, 28, 28, 1);
+                        .backprop(true).pretrain(false)
+                        .setInputType(InputType.convolutional(28, 28, nChannels));
 
         MultiLayerConfiguration conf = builder.build();
         MultiLayerNetwork model = new MultiLayerNetwork(conf);

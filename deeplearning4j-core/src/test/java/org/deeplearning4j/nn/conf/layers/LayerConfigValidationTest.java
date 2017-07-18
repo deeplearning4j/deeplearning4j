@@ -242,12 +242,12 @@ public class LayerConfigValidationTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        Layer layerConf = net.getLayer(0).conf().getLayer();
+        BaseLayer layerConf = (BaseLayer) net.getLayer(0).conf().getLayer();
         assertEquals(expectedMomentum, layerConf.getMomentum(), 1e-3);
         assertEquals(expectedL1, layerConf.getL1(), 1e-3);
         assertEquals(0.5, layerConf.getL2(), 1e-3);
 
-        Layer layerConf1 = net.getLayer(1).conf().getLayer();
+        BaseLayer layerConf1 = (BaseLayer) net.getLayer(1).conf().getLayer();
         assertEquals(0.4, layerConf1.getMomentum(), 1e-3);
 
         // Adam Updater
@@ -258,11 +258,11 @@ public class LayerConfigValidationTest {
         net = new MultiLayerNetwork(conf);
         net.init();
 
-        layerConf = net.getLayer(0).conf().getLayer();
+        layerConf = (BaseLayer) net.getLayer(0).conf().getLayer();
         assertEquals(0.3, layerConf.getL1(), 1e-3);
         assertEquals(0.5, layerConf.getL2(), 1e-3);
 
-        layerConf1 = net.getLayer(1).conf().getLayer();
+        layerConf1 = (BaseLayer) net.getLayer(1).conf().getLayer();
         assertEquals(expectedAdamMeanDecay, layerConf1.getAdamMeanDecay(), 1e-3);
         assertEquals(expectedAdamVarDecay, layerConf1.getAdamVarDecay(), 1e-3);
         assertEquals(expectedDist, layerConf1.getDist());
@@ -277,12 +277,12 @@ public class LayerConfigValidationTest {
         net = new MultiLayerNetwork(conf);
         net.init();
 
-        layerConf = net.getLayer(0).conf().getLayer();
+        layerConf = (BaseLayer) net.getLayer(0).conf().getLayer();
         assertEquals(expectedRmsDecay, layerConf.getRmsDecay(), 1e-3);
         assertEquals(expectedL1, layerConf.getL1(), 1e-3);
         assertEquals(expectedL2, layerConf.getL2(), 1e-3);
 
-        layerConf1 = net.getLayer(1).conf().getLayer();
+        layerConf1 = (BaseLayer) net.getLayer(1).conf().getLayer();
         assertEquals(0.4, layerConf1.getRmsDecay(), 1e-3);
 
 

@@ -22,6 +22,9 @@ import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.layers.recurrent.LSTMHelpers;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.util.LayerValidation;
@@ -56,8 +59,7 @@ public class LSTM extends AbstractLSTM {
     public Layer instantiate(NeuralNetConfiguration conf, Collection<IterationListener> iterationListeners,
                     int layerIndex, INDArray layerParamsView, boolean initializeParams) {
         LayerValidation.assertNInNOutSet("LSTM", getLayerName(), layerIndex, getNIn(), getNOut());
-        org.deeplearning4j.nn.layers.recurrent.LSTM ret =
-                        new org.deeplearning4j.nn.layers.recurrent.LSTM(conf);
+        org.deeplearning4j.nn.layers.recurrent.LSTM ret = new org.deeplearning4j.nn.layers.recurrent.LSTM(conf);
         ret.setListeners(iterationListeners);
         ret.setIndex(layerIndex);
         ret.setParamsViewArray(layerParamsView);
@@ -70,6 +72,12 @@ public class LSTM extends AbstractLSTM {
     @Override
     public ParamInitializer initializer() {
         return LSTMParamInitializer.getInstance();
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        //TODO - CuDNN etc
+        return LSTMHelpers.getMemoryReport(this, inputType);
     }
 
     @AllArgsConstructor

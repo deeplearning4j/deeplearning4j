@@ -34,6 +34,8 @@ public class ParameterServerTrainer extends DefaultTrainer {
 
     @Override
     public void feedMultiDataSet(@NonNull MultiDataSet dataSet, long time) {
+        // FIXME: this is wrong, and should be fixed
+
         if (getModel() instanceof ComputationGraph) {
             ComputationGraph computationGraph = (ComputationGraph) getModel();
             computationGraph.fit(dataSet);
@@ -48,6 +50,8 @@ public class ParameterServerTrainer extends DefaultTrainer {
 
     @Override
     public void feedDataSet(@NonNull DataSet dataSet, long time) {
+        // FIXME: this is wrong, and should be fixed. Training should happen within run() loop
+
         if (getModel() instanceof ComputationGraph) {
             ComputationGraph computationGraph = (ComputationGraph) getModel();
             computationGraph.fit(dataSet);
@@ -133,6 +137,11 @@ public class ParameterServerTrainer extends DefaultTrainer {
         @Override
         public ParameterServerTrainerBuilder parallelWrapper(ParallelWrapper parallelWrapper) {
             return (ParameterServerTrainerBuilder) super.parallelWrapper(parallelWrapper);
+        }
+
+        @Override
+        public ParameterServerTrainerBuilder averagingFrequency(int frequency) {
+            return (ParameterServerTrainerBuilder) super.averagingFrequency(frequency);
         }
     }
 }

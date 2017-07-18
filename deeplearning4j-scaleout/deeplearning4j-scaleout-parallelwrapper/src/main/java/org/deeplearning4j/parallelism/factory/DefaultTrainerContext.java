@@ -40,14 +40,27 @@ public class DefaultTrainerContext implements TrainerContext {
      */
     @Override
     public Trainer create(int threadId, Model model, int rootDevice, boolean useMDS, ParallelWrapper wrapper,
-                    WorkspaceMode mode) {
+                    WorkspaceMode mode, int averagingFrequency) {
 
         DefaultTrainer trainer = DefaultTrainer.builder().originalModel(model).replicatedModel(model).threadId(threadId)
-                        .parallelWrapper(wrapper).workspaceMode(mode).useMDS(useMDS).build();
+                        .parallelWrapper(wrapper).workspaceMode(mode).useMDS(useMDS)
+                        .averagingFrequency(averagingFrequency).build();
 
         trainer.setName("DefaultTrainer thread " + threadId);
         trainer.setDaemon(true);
 
         return trainer;
+    }
+
+    @Override
+    public void finalizeRound(Model originalModel, Model... models) {
+        // apply averaging
+
+        // TODO: move averaging here
+    }
+
+    @Override
+    public void finalizeTraining(Model originalModel, Model... models) {
+        finalizeRound(originalModel, models);
     }
 }

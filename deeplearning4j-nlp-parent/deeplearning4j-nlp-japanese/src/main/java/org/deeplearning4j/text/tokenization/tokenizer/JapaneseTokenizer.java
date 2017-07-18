@@ -18,17 +18,14 @@
 
 package org.deeplearning4j.text.tokenization.tokenizer;
 
-import com.atilika.kuromoji.TokenizerBase;
 import com.atilika.kuromoji.ipadic.Token;
 import com.atilika.kuromoji.ipadic.Tokenizer;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
- * modified by kepricon on 16. 10. 28.
  * A thin wrapper for Japanese Morphological Analyzer Kuromoji (ver.0.9.0),
  * it tokenizes texts which is written in languages
  * that words are not separated by whitespaces.
@@ -39,52 +36,66 @@ import java.util.NoSuchElementException;
  */
 public class JapaneseTokenizer implements org.deeplearning4j.text.tokenization.tokenizer.Tokenizer {
 
-    private Iterator<String> tokenIter;
-    private List<String> tokens;
+    private final List<Token> tokens;
+    private final boolean useBaseForm;
+    private final int tokenCount;
+    private int currentToken;
+    private TokenPreProcess preProcessor;
 
-    private TokenPreProcess preProcess;
 
-    public JapaneseTokenizer(String toTokenize) {
-        Tokenizer tokenizer = new Tokenizer();
-        Iterator<Token> iter = tokenizer.tokenize(toTokenize).iterator();
-
-        tokens = new ArrayList<String>();
-
-        while (iter.hasNext()) {
-            //      tokens.add(iter.next().getBaseForm());
-            tokens.add(iter.next().getSurface());
-        }
-
-        tokenIter = this.tokens.iterator();
+    /**
+     * Tokenize the string with Kuromoji, optionally using baseForms.
+     *
+     * Note: It is safe to create new instances from multiple threads.
+     * @param kuromoji The kuromoji instance.
+     * @param toTokenize The string to tokenize.
+     * @param useBaseForm normalize conjugations "走った" -> "走る" instead of "走っ"
+     */
+    public JapaneseTokenizer(Tokenizer kuromoji, String toTokenize, boolean useBaseForm) {
+        this.useBaseForm = useBaseForm;
+        this.tokens = kuromoji.tokenize(toTokenize);
+        this.tokenCount = this.tokens.size();
+        this.currentToken = 0;
     }
 
     @Override
     public boolean hasMoreTokens() {
-        return tokenIter.hasNext();
+        return currentToken < tokenCount;
     }
 
     @Override
     public int countTokens() {
-        return tokens.size();
+        return tokenCount;
+    }
+
+    private String getToken(int i) {
+        Token t = tokens.get(i);
+        String ret = (useBaseForm) ? t.getBaseForm() : t.getSurface();
+        return (preProcessor == null) ? ret : preProcessor.preProcess(ret);
     }
 
     @Override
     public String nextToken() {
-        if (hasMoreTokens() == false) {
+        if (!hasMoreTokens()) {
             throw new NoSuchElementException();
         }
-        return this.preProcess != null ? this.preProcess.preProcess(tokenIter.next()) : tokenIter.next();
+        return getToken(currentToken++);
     }
 
     @Override
     public List<String> getTokens() {
-        return tokens;
+        List<String> ret = new ArrayList<String>(tokenCount);
+
+        for (int i = 0; i < tokenCount; i++) {
+            ret.add(getToken(i));
+        }
+
+        return ret;
     }
 
     @Override
     public void setTokenPreProcessor(TokenPreProcess tokenPreProcessor) {
-        this.preProcess = tokenPreProcessor;
+        this.preProcessor = tokenPreProcessor;
     }
-
 }
 

@@ -28,15 +28,14 @@ import org.deeplearning4j.datasets.iterator.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.SingletonMultiDataSetIterator;
 import org.deeplearning4j.eval.*;
+import org.deeplearning4j.exception.DL4JException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.api.layers.IOutputLayer;
 import org.deeplearning4j.nn.api.layers.RecurrentLayer;
-import org.deeplearning4j.nn.conf.BackpropType;
-import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.WorkspaceMode;
+import org.deeplearning4j.nn.conf.*;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
@@ -52,13 +51,11 @@ import org.deeplearning4j.optimize.Solver;
 import org.deeplearning4j.optimize.api.ConvexOptimizer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.optimize.solvers.accumulation.GradientsAccumulator;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
-import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
-import org.nd4j.linalg.api.memory.enums.LearningPolicy;
-import org.nd4j.linalg.api.memory.enums.ResetPolicy;
-import org.nd4j.linalg.api.memory.enums.SpillPolicy;
+import org.nd4j.linalg.api.memory.enums.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -78,6 +75,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A ComputationGraph network is a neural network with arbitrary (directed acyclic graph) connection structure.
@@ -85,7 +83,7 @@ import java.util.*;
  *
  * @author Alex Black
  */
-public class ComputationGraph implements Serializable, Model {
+public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     private static final Logger log = LoggerFactory.getLogger(ComputationGraph.class);
 
@@ -100,46 +98,35 @@ public class ComputationGraph implements Serializable, Model {
     @Setter
     private boolean initDone = false;
 
+    public final static String workspaceCache = "LOOP_CACHE";
     public final static String workspaceExternal = "LOOP_EXTERNAL";
     public final static String workspaceFeedForward = "LOOP_FF";
-    public final static String workspaceBackProp = "LOOP_BP";
     public final static String workspaceTBPTT = "LOOP_TBPTT";
     public final static String workspaceLSTM = "LOOP_LSTM";
 
     public final static WorkspaceConfiguration workspaceConfigurationFeedForward = WorkspaceConfiguration.builder()
-            .initialSize(0)
-            .overallocationLimit(0.2)
-            .policyReset(ResetPolicy.BLOCK_LEFT)
-            .policyAllocation(AllocationPolicy.OVERALLOCATE)
-            .policySpill(SpillPolicy.REALLOCATE)
-            .policyLearning(LearningPolicy.OVER_TIME)
-            .build();
+                    .initialSize(0).overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT)
+                    .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.REALLOCATE)
+                    .policyLearning(LearningPolicy.OVER_TIME).build();
 
     public final static WorkspaceConfiguration workspaceConfigurationTBPTT = WorkspaceConfiguration.builder()
-            .initialSize(0)
-            .overallocationLimit(0.2)
-            .policyReset(ResetPolicy.BLOCK_LEFT)
-            .policyAllocation(AllocationPolicy.OVERALLOCATE)
-            .policySpill(SpillPolicy.REALLOCATE)
-            .policyLearning(LearningPolicy.OVER_TIME)
-            .build();
+                    .initialSize(0).overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT)
+                    .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.REALLOCATE)
+                    .policyLearning(LearningPolicy.OVER_TIME).build();
 
     public final static WorkspaceConfiguration workspaceConfigurationLSTM = WorkspaceConfiguration.builder()
-            .initialSize(0)
-            .overallocationLimit(0.2)
-            .policyReset(ResetPolicy.BLOCK_LEFT)
-            .policyAllocation(AllocationPolicy.OVERALLOCATE)
-            .policySpill(SpillPolicy.REALLOCATE)
-            .policyLearning(LearningPolicy.FIRST_LOOP)
-            .build();
+                    .initialSize(0).overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT)
+                    .policyAllocation(AllocationPolicy.OVERALLOCATE).policySpill(SpillPolicy.REALLOCATE)
+                    .policyLearning(LearningPolicy.FIRST_LOOP).build();
 
     public final static WorkspaceConfiguration workspaceConfigurationExternal = WorkspaceConfiguration.builder()
-            .overallocationLimit(0.2)
-            .policyReset(ResetPolicy.BLOCK_LEFT)
-            .cyclesBeforeInitialization(3)
-            .policySpill(SpillPolicy.REALLOCATE)
-            .policyLearning(LearningPolicy.OVER_TIME)
-            .build();
+                    .overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT).cyclesBeforeInitialization(3)
+                    .policySpill(SpillPolicy.REALLOCATE).policyLearning(LearningPolicy.OVER_TIME).build();
+
+    public final static WorkspaceConfiguration workspaceConfigurationCache = WorkspaceConfiguration.builder()
+                    .overallocationLimit(0.2).policyReset(ResetPolicy.BLOCK_LEFT).cyclesBeforeInitialization(3)
+                    .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.REALLOCATE)
+                    .policyLearning(LearningPolicy.OVER_TIME).build();
 
     protected ThreadLocal<Long> lastEtlTime = new ThreadLocal<>();
 
@@ -193,15 +180,41 @@ public class ComputationGraph implements Serializable, Model {
         this.defaultConfiguration = configuration.getDefaultConfiguration();
     }
 
+    /**
+     * This method allows to set ETL field time, useful for performance tracking
+     * @param time
+     */
     public void setLastEtlTime(long time) {
         lastEtlTime.set(time);
     }
 
+    /**
+     * This method returns ETL time field value
+     * @return
+     */
     public long getLastEtlTime() {
         Long time = lastEtlTime.get();
         return time == null ? 0L : time;
     }
 
+    /**
+     * This method sets specified CacheMode for all layers within network
+     *
+     * @param mode
+     */
+    public void setCacheMode(CacheMode mode) {
+        if (mode == null)
+            mode = CacheMode.NONE;
+
+        for (Layer layer : layers) {
+            layer.setCacheMode(mode);
+        }
+    }
+
+    /**
+     * This method returns configuration of this ComputationGraph
+     * @return
+     */
     public ComputationGraphConfiguration getConfiguration() {
         return configuration;
     }
@@ -267,7 +280,7 @@ public class ComputationGraph implements Serializable, Model {
      * Set the specified input for the ComputationGraph
      */
     public void setInput(int inputNum, INDArray input) {
-        if(inputs == null){
+        if (inputs == null) {
             //May be null after clear()
             inputs = new INDArray[numInputArrays];
         }
@@ -334,6 +347,21 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     /**
+     * This method allows you to specificy GradientsAccumulator instance to be used with this model
+     *
+     * PLEASE NOTE: Do not use this method unless you understand how to use GradientsAccumulator & updates sharing.
+     * PLEASE NOTE: Do not use this method on standalone model
+     *
+     * @param accumulator
+     */
+    public void setGradientsAccumulator(GradientsAccumulator accumulator) {
+        if (!initCalled)
+            init();
+
+        solver.getOptimizer().setGradientsAccumulator(accumulator);
+    }
+
+    /**
      * Initialize the ComputationGraph network
      */
     public void init() {
@@ -351,6 +379,13 @@ public class ComputationGraph implements Serializable, Model {
     public void init(INDArray parameters, boolean cloneParametersArray) {
         if (initCalled)
             return;
+
+        log.info("Starting ComputationGraph with WorkspaceModes set to [training: {}; inference: {}]",
+                        configuration.getTrainingWorkspaceMode(), configuration.getInferenceWorkspaceMode());
+
+        if (configuration.getCacheMode() == CacheMode.HOST) {
+            workspaceConfigurationCache.setPolicyMirroring(MirroringPolicy.HOST_ONLY);
+        }
 
         //First: build topological ordering, based on configuration. Used for forward pass, backprop and order of parameters/gradients
         topologicalOrder = topologicalSortOrder();
@@ -409,6 +444,10 @@ public class ComputationGraph implements Serializable, Model {
             initializeParams = true;
         }
 
+        //Set RNG seed, for repeatability between initializations when set
+        if (initializeParams) {
+            Nd4j.getRandom().setSeed(conf().getSeed());
+        }
 
         //Given the topological ordering: work out the subset of the parameters array used for each layer
         // Then extract out for use when initializing the Layers
@@ -476,7 +515,7 @@ public class ComputationGraph implements Serializable, Model {
             for (String s : vertexInputNames) {
                 List<String> list = verticesOutputTo.get(s);
                 if (list == null) {
-                    list  = new ArrayList<>();
+                    list = new ArrayList<>();
                     verticesOutputTo.put(s, list);
                 }
                 list.add(vertexName); //Edge: s -> vertexName
@@ -540,6 +579,14 @@ public class ComputationGraph implements Serializable, Model {
             gv.setOutputVertices(outputIndices);
         }
 
+        // now we init solver & optimizer
+        if (solver == null) {
+            try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                solver.initOptimizer();
+            }
+        }
+
         initCalled = true;
     }
 
@@ -549,40 +596,41 @@ public class ComputationGraph implements Serializable, Model {
      * or fit(MultiDataSet) methods
      */
     public void initGradientsView() {
-        if (!initCalled)
-            init();
+        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            if (!initCalled)
+                init();
 
-        //Go through layers, and work out total number of parameters. Then allocate full parameters array
-        int numParams = 0;
-        int[] numParamsForVertex = new int[topologicalOrder.length];
-        int i = 0;
-        for (; i < configuration.getNetworkInputs().size(); i++) {
-            numParamsForVertex[i] = 0; //No parameters for input vertices
-        }
-        Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
-        for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap.entrySet()) {
-            org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
-            numParamsForVertex[i] = n.numParams(true);
-            numParams += numParamsForVertex[i];
-            i++;
-        }
-        flattenedGradients = Nd4j.create(1, numParams);
-
-        //Given the topological ordering: work out the subset of the gradient array used for each layer, and set it
-        int paramOffsetSoFar = 0;
-        i = 0;
-        for (int vertexIdx : topologicalOrder) {
-            int nParamsThisVertex = numParamsForVertex[vertexIdx];
-            if (nParamsThisVertex != 0) {
-                INDArray gradientView = flattenedGradients.get(NDArrayIndex.point(0),
-                                NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
-                vertices[vertexIdx].setBackpropGradientsViewArray(gradientView);
+            //Go through layers, and work out total number of parameters. Then allocate full parameters array
+            int numParams = 0;
+            int[] numParamsForVertex = new int[topologicalOrder.length];
+            int i = 0;
+            for (; i < configuration.getNetworkInputs().size(); i++) {
+                numParamsForVertex[i] = 0; //No parameters for input vertices
             }
-            i++;
-            paramOffsetSoFar += nParamsThisVertex;
+            Map<String, org.deeplearning4j.nn.conf.graph.GraphVertex> configVertexMap = configuration.getVertices();
+            for (Map.Entry<String, org.deeplearning4j.nn.conf.graph.GraphVertex> nodeEntry : configVertexMap
+                            .entrySet()) {
+                org.deeplearning4j.nn.conf.graph.GraphVertex n = nodeEntry.getValue();
+                numParamsForVertex[i] = n.numParams(true);
+                numParams += numParamsForVertex[i];
+                i++;
+            }
+            flattenedGradients = Nd4j.create(1, numParams);
+
+            //Given the topological ordering: work out the subset of the gradient array used for each layer, and set it
+            int paramOffsetSoFar = 0;
+            i = 0;
+            for (int vertexIdx : topologicalOrder) {
+                int nParamsThisVertex = numParamsForVertex[vertexIdx];
+                if (nParamsThisVertex != 0) {
+                    INDArray gradientView = flattenedGradients.get(NDArrayIndex.point(0),
+                                    NDArrayIndex.interval(paramOffsetSoFar, paramOffsetSoFar + nParamsThisVertex));
+                    vertices[vertexIdx].setBackpropGradientsViewArray(gradientView);
+                }
+                i++;
+                paramOffsetSoFar += nParamsThisVertex;
+            }
         }
-
-
     }
 
     /**
@@ -605,8 +653,9 @@ public class ComputationGraph implements Serializable, Model {
     public void pretrain(MultiDataSetIterator iter) {
         if (!configuration.isPretrain())
             return;
-        if (flattenedGradients == null)
+        if (flattenedGradients == null) {
             initGradientsView();
+        }
 
         //Assume here that all layers are pretrainable layers
         for (int i = 0; i < topologicalOrder.length; i++) {
@@ -645,8 +694,9 @@ public class ComputationGraph implements Serializable, Model {
     public void pretrainLayer(String layerName, MultiDataSetIterator iter) {
         if (!configuration.isPretrain())
             return;
-        if (flattenedGradients == null)
+        if (flattenedGradients == null) {
             initGradientsView();
+        }
 
         if (!verticesMap.containsKey(layerName)) {
             throw new IllegalStateException("Invalid vertex name: " + layerName);
@@ -767,8 +817,9 @@ public class ComputationGraph implements Serializable, Model {
      * Note that this method can only be used with ComputationGraphs with 1 input and 1 output
      */
     public void fit(DataSetIterator iterator) {
-        if (flattenedGradients == null)
+        if (flattenedGradients == null) {
             initGradientsView();
+        }
         if (numInputArrays != 1 || numOutputArrays != 1)
             throw new UnsupportedOperationException("Cannot train ComputationGraph network with "
                             + " multiple inputs or outputs using a DataSetIterator");
@@ -778,7 +829,9 @@ public class ComputationGraph implements Serializable, Model {
         DataSetIterator dataSetIterator;
         // we're wrapping all iterators into AsyncDataSetIterator to provide background prefetch - where appropriate
         if (iterator.asyncSupported()) {
-            dataSetIterator = new AsyncDataSetIterator(iterator, Math.min(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 4), configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE);
+            dataSetIterator = new AsyncDataSetIterator(iterator,
+                            Math.min(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 2),
+                            configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE);
             destructable = true;
         } else
             dataSetIterator = iterator;
@@ -793,7 +846,13 @@ public class ComputationGraph implements Serializable, Model {
             pretrain(dataSetIterator);
         }
 
-        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace workspace =
+                        configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                                                        workspaceConfigurationExternal, workspaceExternal);
+        MemoryWorkspace cache = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationCache,
+                                        workspaceCache);
 
         if (configuration.isBackprop()) {
             update(TaskUtils.buildTask(dataSetIterator));
@@ -809,21 +868,21 @@ public class ComputationGraph implements Serializable, Model {
                     break;
 
 
-                    //migrate(next);
+                //migrate(next);
 
                 boolean hasMaskArrays = next.hasMaskArrays();
                 if (hasMaskArrays) {
                     INDArray[] fMask = (next.getFeaturesMaskArray() != null
-                        ? new INDArray[]{next.getFeaturesMaskArray()} : null);
-                    INDArray[] lMask = (next.getLabelsMaskArray() != null ? new INDArray[]{next.getLabelsMaskArray()}
-                        : null);
+                                    ? new INDArray[] {next.getFeaturesMaskArray()} : null);
+                    INDArray[] lMask = (next.getLabelsMaskArray() != null ? new INDArray[] {next.getLabelsMaskArray()}
+                                    : null);
                     setLayerMaskArrays(fMask, lMask);
                 }
 
                 if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
-                    doTruncatedBPTT(new INDArray[]{next.getFeatures()}, new INDArray[]{next.getLabels()},
-                            (hasMaskArrays ? new INDArray[]{next.getFeaturesMaskArray()} : null),
-                            (hasMaskArrays ? new INDArray[]{next.getLabelsMaskArray()} : null));
+                    doTruncatedBPTT(new INDArray[] {next.getFeatures()}, new INDArray[] {next.getLabels()},
+                                    (hasMaskArrays ? new INDArray[] {next.getFeaturesMaskArray()} : null),
+                                    (hasMaskArrays ? new INDArray[] {next.getLabelsMaskArray()} : null));
                 } else {
                     setInput(0, next.getFeatures());
                     setLabel(0, next.getLabels());
@@ -834,8 +893,10 @@ public class ComputationGraph implements Serializable, Model {
                         }
                     }
 
-                    try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                        solver.optimize();
+                    try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
+                        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                            solver.optimize();
+                        }
                     }
                 }
 
@@ -876,14 +937,17 @@ public class ComputationGraph implements Serializable, Model {
      * Fit the ComputationGraph using a MultiDataSetIterator
      */
     public void fit(MultiDataSetIterator multi) {
-        if (flattenedGradients == null)
+        if (flattenedGradients == null) {
             initGradientsView();
+        }
 
         boolean destructable = false;
 
         MultiDataSetIterator multiDataSetIterator;
         if (multi.asyncSupported()) {
-            multiDataSetIterator = new AsyncMultiDataSetIterator(multi, Math.max(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 4), configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE);
+            multiDataSetIterator = new AsyncMultiDataSetIterator(multi,
+                            Math.max(Nd4j.getAffinityManager().getNumberOfDevices() * 2, 2),
+                            configuration.getTrainingWorkspaceMode() != WorkspaceMode.NONE);
             destructable = true;
         } else
             multiDataSetIterator = multi;
@@ -893,7 +957,14 @@ public class ComputationGraph implements Serializable, Model {
         }
 
 
-        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace workspace =
+                        configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                                                        workspaceConfigurationExternal, workspaceExternal);
+
+        MemoryWorkspace cache = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationCache,
+                                        workspaceCache);
 
         if (configuration.isBackprop()) {
 
@@ -908,11 +979,11 @@ public class ComputationGraph implements Serializable, Model {
                     break;
 
 
-                    //migrate(next);
+                //migrate(next);
 
                 if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
                     doTruncatedBPTT(next.getFeatures(), next.getLabels(), next.getFeaturesMaskArrays(),
-                                next.getLabelsMaskArrays());
+                                    next.getLabelsMaskArrays());
                 } else {
                     boolean hasMaskArrays = next.hasMaskArrays();
                     if (hasMaskArrays) {
@@ -923,13 +994,15 @@ public class ComputationGraph implements Serializable, Model {
                     setLabels(next.getLabels());
                     if (solver == null) {
                         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                            solver = new Solver.Builder().configure(defaultConfiguration).listeners(listeners).model(this)
-                                    .build();
+                            solver = new Solver.Builder().configure(defaultConfiguration).listeners(listeners)
+                                            .model(this).build();
                         }
                     }
 
-                    try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                        solver.optimize();
+                    try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
+                        try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                            solver.optimize();
+                        }
                     }
 
                     if (hasMaskArrays) {
@@ -1004,8 +1077,9 @@ public class ComputationGraph implements Serializable, Model {
      * @param labelMaskArrays   Mas arrays for the labels/outputs. Typically used for RNN training. May be null.
      */
     public void fit(INDArray[] inputs, INDArray[] labels, INDArray[] featureMaskArrays, INDArray[] labelMaskArrays) {
-        if (flattenedGradients == null)
+        if (flattenedGradients == null) {
             initGradientsView();
+        }
 
         setInputs(inputs);
         setLabels(labels);
@@ -1019,8 +1093,13 @@ public class ComputationGraph implements Serializable, Model {
             pretrain(iter);
         }
 
-        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
-
+        MemoryWorkspace workspace =
+                        configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                                                        workspaceConfigurationExternal, workspaceExternal);
+        MemoryWorkspace cache = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationCache,
+                                        workspaceCache);
 
         if (configuration.isBackprop()) {
             if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
@@ -1032,14 +1111,16 @@ public class ComputationGraph implements Serializable, Model {
                     }
                 }
 
-                try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
-                    solver.optimize();
+                try (MemoryWorkspace wsCache = cache.notifyScopeEntered()) {
+                    try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
+                        solver.optimize();
+                    }
                 }
             }
         }
 
         if (featureMaskArrays != null || labelMaskArrays != null) {
-                clearLayerMaskArrays();
+            clearLayerMaskArrays();
         }
 
         clearLayersStates();
@@ -1166,16 +1247,20 @@ public class ComputationGraph implements Serializable, Model {
         if (configuration.getBackpropType() == BackpropType.TruncatedBPTT) {
             Map<String, INDArray> activations = rnnActivateUsingStoredState(inputs, true, true);
             if (trainingListeners.size() > 0) {
-                for (TrainingListener tl : trainingListeners) {
-                    tl.onForwardPass(this, activations);
+                try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    for (TrainingListener tl : trainingListeners) {
+                        tl.onForwardPass(this, activations);
+                    }
                 }
             }
             calcBackpropGradients(true);
         } else {
             Map<String, INDArray> activations = feedForward(true, true, false, false);
             if (trainingListeners.size() > 0) {
-                for (TrainingListener tl : trainingListeners) {
-                    tl.onForwardPass(this, activations);
+                try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                    for (TrainingListener tl : trainingListeners) {
+                        tl.onForwardPass(this, activations);
+                    }
                 }
             }
             calcBackpropGradients(false);
@@ -1198,8 +1283,10 @@ public class ComputationGraph implements Serializable, Model {
 
         //Listeners
         if (trainingListeners.size() > 0) {
-            for (TrainingListener tl : trainingListeners) {
-                tl.onBackwardPass(this);
+            try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                for (TrainingListener tl : trainingListeners) {
+                    tl.onBackwardPass(this);
+                }
             }
         }
     }
@@ -1265,7 +1352,8 @@ public class ComputationGraph implements Serializable, Model {
      * @param includeNonLayerVertexActivations Include non-layer vertices in the output may?
      * @return Map of activations. Key: vertex name. Value: activations.
      */
-    public Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers, boolean includeNonLayerVertexActivations) {
+    public Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers,
+                    boolean includeNonLayerVertexActivations) {
         return feedForward(train, excludeOutputLayers, includeNonLayerVertexActivations, true);
     }
 
@@ -1278,12 +1366,16 @@ public class ComputationGraph implements Serializable, Model {
      * @param publicApi
      * @return
      */
-    protected Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers, boolean includeNonLayerVertexActivations, boolean publicApi) {
+    protected Map<String, INDArray> feedForward(boolean train, boolean excludeOutputLayers,
+                    boolean includeNonLayerVertexActivations, boolean publicApi) {
         Map<String, INDArray> layerActivations = new HashMap<>();
 
-        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() :
-                configuration.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
-                : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
+        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE
+                        ? new DummyWorkspace()
+                        : configuration.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE
+                                        ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
+                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                                                        workspaceConfigurationFeedForward, workspaceFeedForward);
 
         //Do forward pass according to the topological ordering of the network
         for (int i = 0; i < topologicalOrder.length; i++) {
@@ -1304,8 +1396,12 @@ public class ComputationGraph implements Serializable, Model {
                         //This input: the 'vIdxInputNum'th input to vertex 'vIdx'
                         // we're pushing input copies to outer workspace
                         // FIXME: do we REALLY need this dup()?
-                        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal) && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(ComputationGraph.workspaceExternal)) {
-                            try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
+                        if (Nd4j.getWorkspaceManager().checkIfWorkspaceExists(workspaceExternal)
+                                        && Nd4j.getMemoryManager().getCurrentWorkspace() != Nd4j.getWorkspaceManager()
+                                                        .getWorkspaceForCurrentThread(
+                                                                        ComputationGraph.workspaceExternal)) {
+                            try (MemoryWorkspace wsB = Nd4j.getWorkspaceManager()
+                                            .getWorkspaceForCurrentThread(workspaceExternal).notifyScopeBorrowed()) {
                                 // FIXME: we don't really want detach here
                                 vertices[vIdx].setInput(vIdxInputNum, input);
                             }
@@ -1401,7 +1497,10 @@ public class ComputationGraph implements Serializable, Model {
     public INDArray[] output(boolean train, INDArray... input) {
         WorkspaceMode cMode = configuration.getTrainingWorkspaceMode();
         configuration.setTrainingWorkspaceMode(configuration.getInferenceWorkspaceMode());
-        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal, workspaceExternal);
+        MemoryWorkspace workspace =
+                        configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                                                        workspaceConfigurationExternal, workspaceExternal);
 
         try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
             INDArray[] tmp = silentOutput(train, input);
@@ -1470,16 +1569,19 @@ public class ComputationGraph implements Serializable, Model {
      */
     protected void calcBackpropGradients(boolean truncatedBPTT, INDArray... externalEpsilons) {
         if (flattenedGradients == null) {
-            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                initGradientsView();
-            }
+            initGradientsView();
         }
 
 
-        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() :
-                configuration.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE ? Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceExternal)
-                         //: Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceBackProp);
-                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationFeedForward, workspaceFeedForward);
+        MemoryWorkspace workspace =
+                        configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                                        : configuration.getTrainingWorkspaceMode() == WorkspaceMode.SINGLE
+                                                        ? Nd4j.getWorkspaceManager()
+                                                                        .getWorkspaceForCurrentThread(workspaceExternal)
+                                                        //: Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(wsConf, workspaceBackProp);
+                                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                                                                        workspaceConfigurationFeedForward,
+                                                                        workspaceFeedForward);
 
 
         LinkedList<Triple<String, INDArray, Character>> gradients = new LinkedList<>();
@@ -1508,6 +1610,14 @@ public class ComputationGraph implements Serializable, Model {
                         INDArray currLabels = labels[thisOutputNumber];
                         outputLayer.setLabels(currLabels);
                     } else {
+                        if ((externalEpsilons == null || externalEpsilons.length == 0)
+                                        && labels[thisOutputNumber] != null) {
+                            throw new DL4JException("Layer \"" + current.getVertexName() + "\" of type "
+                                            + current.getLayer().getClass().getSimpleName()
+                                            + " is set as network output "
+                                            + "(but isn't an IOutputLayer). Only IOutputLayer layers can be fit via backprop with"
+                                            + " a labels array. ");
+                        }
                         current.setEpsilon(externalEpsilons[thisOutputNumber]);
                         setVertexEpsilon[topologicalOrder[i]] = true;
                     }
@@ -1672,6 +1782,30 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     /**
+     * This method ADDS additional IterationListener to existing listeners
+     *
+     * @param listener
+     */
+    @Override
+    public void addListeners(IterationListener... listeners) {
+        if (this.listeners == null) {
+            setListeners(listeners);
+            return;
+        }
+
+        for (IterationListener listener : listeners) {
+            this.listeners.add(listener);
+            if (listener instanceof TrainingListener) {
+                this.trainingListeners.add((TrainingListener) listener);
+            }
+        }
+
+        if (solver != null) {
+            solver.setListeners(this.listeners);
+        }
+    }
+
+    /**
      * Get the IterationListeners for the ComputationGraph
      */
     public Collection<IterationListener> getListeners() {
@@ -1700,7 +1834,8 @@ public class ComputationGraph implements Serializable, Model {
     }
 
     /**
-     * Get the specified output layer, by index. The index of the output layer may be 0 to {@link #getNumOutputArrays()}-1
+     * Get the specified output layer, by index. The index of the output
+     * layer may be 0 to {@link #getNumOutputArrays()}-1
      */
     public Layer getOutputLayer(int outputLayerIdx) {
         if (outputLayerIdx >= numOutputArrays)
@@ -1784,7 +1919,10 @@ public class ComputationGraph implements Serializable, Model {
         }
 
         double score = 0.0;
-        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace workspace =
+                        configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                                                        workspaceConfigurationExternal, workspaceExternal);
         try (MemoryWorkspace ws = workspace.notifyScopeEntered()) {
 
             feedForward(dataSet.getFeatures(), training);
@@ -1948,6 +2086,11 @@ public class ComputationGraph implements Serializable, Model {
     @Override
     public INDArray params() {
         return params(true);
+    }
+
+    @Override
+    public INDArray updaterState() {
+        return getUpdater() != null ? getUpdater().getUpdaterStateViewArray() : null;
     }
 
     @Override
@@ -2331,8 +2474,9 @@ public class ComputationGraph implements Serializable, Model {
      */
     protected void doTruncatedBPTT(INDArray[] inputs, INDArray[] labels, INDArray[] featureMasks,
                     INDArray[] labelMasks) {
-        if (flattenedGradients == null)
+        if (flattenedGradients == null) {
             initGradientsView();
+        }
 
         //Approach used here to implement truncated BPTT: if input is 3d, split it. Otherwise: input is unmodified
 
@@ -2373,10 +2517,16 @@ public class ComputationGraph implements Serializable, Model {
         workspaceConfigurationExternal.setCyclesBeforeInitialization(0);
         workspaceConfigurationExternal.setPolicyLearning(LearningPolicy.OVER_TIME);
 
-        MemoryWorkspace workspaceT = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationTBPTT, workspaceTBPTT);
-        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        MemoryWorkspace workspaceT =
+                        configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                                                        workspaceConfigurationTBPTT, workspaceTBPTT);
+        MemoryWorkspace workspace =
+                        configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                                                        workspaceConfigurationExternal, workspaceExternal);
 
-        try(MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
+        try (MemoryWorkspace wsT = workspaceT.notifyScopeEntered()) {
             for (int i = 0; i < nSubsets; i++) {
                 try (MemoryWorkspace wsE = workspace.notifyScopeEntered()) {
                     int startTimeIdx = i * fwdLen;
@@ -2389,7 +2539,7 @@ public class ComputationGraph implements Serializable, Model {
                             newInputs[j] = inputs[j];
                         else {
                             newInputs[j] = inputs[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
-                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                                            NDArrayIndex.interval(startTimeIdx, endTimeIdx));
                         }
                     }
                     for (int j = 0; j < labels.length; j++) {
@@ -2397,7 +2547,7 @@ public class ComputationGraph implements Serializable, Model {
                             newLabels[j] = labels[j];
                         else {
                             newLabels[j] = labels[j].get(NDArrayIndex.all(), NDArrayIndex.all(),
-                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                                            NDArrayIndex.interval(startTimeIdx, endTimeIdx));
                         }
                     }
                     if (featureMasks != null) {
@@ -2405,7 +2555,7 @@ public class ComputationGraph implements Serializable, Model {
                             if (featureMasks[j] == null)
                                 continue;
                             newFeatureMasks[j] = featureMasks[j].get(NDArrayIndex.all(),
-                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                                            NDArrayIndex.interval(startTimeIdx, endTimeIdx));
                         }
                     }
                     if (labelMasks != null) {
@@ -2413,7 +2563,7 @@ public class ComputationGraph implements Serializable, Model {
                             if (labelMasks[j] == null)
                                 continue;
                             newLabelMasks[j] = labelMasks[j].get(NDArrayIndex.all(),
-                                    NDArrayIndex.interval(startTimeIdx, endTimeIdx));
+                                            NDArrayIndex.interval(startTimeIdx, endTimeIdx));
                         }
                     }
 
@@ -2423,7 +2573,8 @@ public class ComputationGraph implements Serializable, Model {
 
                     if (solver == null) {
                         try (MemoryWorkspace wsO = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this).build();
+                            solver = new Solver.Builder().configure(conf()).listeners(getListeners()).model(this)
+                                            .build();
                         }
                     }
                     solver.optimize();
@@ -2793,12 +2944,18 @@ public class ComputationGraph implements Serializable, Model {
             throw new IllegalStateException("Cannot evaluate a model with > 1 output arrays from a DataSetIterator");
         }
 
-        if (!iterator.hasNext())
+        if (iterator.resetSupported() && !iterator.hasNext())
             iterator.reset();
 
         DataSetIterator iter = iterator.asyncSupported() ? new AsyncDataSetIterator(iterator, 2, true) : iterator;
 
-        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        WorkspaceMode cMode = configuration.getTrainingWorkspaceMode();
+        configuration.setTrainingWorkspaceMode(configuration.getInferenceWorkspaceMode());
+
+        MemoryWorkspace workspace =
+                        configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                                                        workspaceConfigurationExternal, workspaceExternal);
 
         while (iter.hasNext()) {
             DataSet next = iter.next();
@@ -2814,12 +2971,11 @@ public class ComputationGraph implements Serializable, Model {
                 INDArray labelMask = next.getLabelsMaskArray();
 
 
-                setLayerMaskArrays(
-                        featuresMask == null ? null : new INDArray[]{featuresMask},
-                        labelMask == null ? null : new INDArray[]{labelMask});
+                setLayerMaskArrays(featuresMask == null ? null : new INDArray[] {featuresMask},
+                                labelMask == null ? null : new INDArray[] {labelMask});
                 INDArray[] out = silentOutput(false, features);
 
-                for(T evaluation: evaluations)
+                for (T evaluation : evaluations)
                     evaluation.eval(labels, out[0], labelMask);
             }
 
@@ -2829,6 +2985,8 @@ public class ComputationGraph implements Serializable, Model {
         if (iterator.asyncSupported())
             ((AsyncDataSetIterator) iter).shutdown();
 
+        configuration.setTrainingWorkspaceMode(cMode);
+
         return evaluations;
     }
 
@@ -2836,7 +2994,7 @@ public class ComputationGraph implements Serializable, Model {
      * Perform evaluation on the given data (MultiDataSetIterator) with the given {@link IEvaluation} instance
      *
      * @param iterator   Test data to evaluate on
-     * @param evaluation IEvaluation insntance
+     * @param evaluations IEvaluation insntance
      * @param <T>        Type of the IEvaluation instance
      * @return           The input IEvaluation instance, after performing evaluation on the test data
      */
@@ -2849,13 +3007,19 @@ public class ComputationGraph implements Serializable, Model {
             throw new IllegalStateException("Cannot evaluate a model using this method with > 1 output arrays");
         }
 
-        if (!iterator.hasNext())
+        if (iterator.resetSupported() && !iterator.hasNext())
             iterator.reset();
 
-        MultiDataSetIterator iter = iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 2, true) : iterator;
+        MultiDataSetIterator iter =
+                        iterator.asyncSupported() ? new AsyncMultiDataSetIterator(iterator, 2, true) : iterator;
 
-        MemoryWorkspace workspace = configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace() : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(workspaceConfigurationExternal,workspaceExternal);
+        WorkspaceMode cMode = configuration.getTrainingWorkspaceMode();
+        configuration.setTrainingWorkspaceMode(configuration.getInferenceWorkspaceMode());
 
+        MemoryWorkspace workspace =
+                        configuration.getTrainingWorkspaceMode() == WorkspaceMode.NONE ? new DummyWorkspace()
+                                        : Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(
+                                                        workspaceConfigurationExternal, workspaceExternal);
 
         while (iter.hasNext()) {
             MultiDataSet next = iter.next();
@@ -2875,8 +3039,10 @@ public class ComputationGraph implements Serializable, Model {
                 setLayerMaskArrays(featuresMasks, labelMasks);
                 INDArray[] out = silentOutput(false, features);
 
-                for (T evaluation: evaluations)
-                    evaluation.eval(labels, out[0], labelMask);
+                try (MemoryWorkspace wsO = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                    for (T evaluation : evaluations)
+                        evaluation.eval(labels, out[0], labelMask);
+                }
             }
 
             clearLayerMaskArrays();
@@ -2884,6 +3050,8 @@ public class ComputationGraph implements Serializable, Model {
 
         if (iterator.asyncSupported())
             ((AsyncMultiDataSetIterator) iter).shutdown();
+
+        configuration.setTrainingWorkspaceMode(cMode);
 
         return evaluations;
     }
@@ -3018,9 +3186,9 @@ public class ComputationGraph implements Serializable, Model {
      */
     @Override
     public boolean equals(Object obj) {
-        if(obj == null)
+        if (obj == null)
             return false;
-        if(obj instanceof ComputationGraph) {
+        if (obj instanceof ComputationGraph) {
             ComputationGraph network = (ComputationGraph) obj;
             boolean paramsEquals = network.params().equals(params());
             boolean confEquals = getConfiguration().equals(network.getConfiguration());

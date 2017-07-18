@@ -7,6 +7,7 @@ import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageRouter;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
 import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
@@ -283,7 +284,11 @@ public class FlowIterationListener implements IterationListener {
         List<Double> lrs = new ArrayList<>();
         if (layers != null) {
             for (Layer layer : layers) {
-                lrs.add(layer.conf().getLayer().getLearningRate());
+                if (layer.conf().getLayer() instanceof BaseLayer) {
+                    lrs.add(((BaseLayer) layer.conf().getLayer()).getLearningRate());
+                } else {
+                    lrs.add(0.0);
+                }
             }
             modelState.setLearningRates(lrs);
         }
@@ -534,9 +539,15 @@ public class FlowIterationListener implements IterationListener {
             }
         }
 
-        subLine.append(" A: [").append(layer.conf().getLayer().getActivationFn().toString()).append("]");
-        fullLine.append("Activation function: ").append("<b>")
-                        .append(layer.conf().getLayer().getActivationFn().toString()).append("</b>").append("<br/>");
+        String afn;
+        if (layer.conf().getLayer() instanceof BaseLayer) {
+            afn = ((BaseLayer) layer.conf().getLayer()).getActivationFn().toString();
+        } else {
+            afn = "n/a";
+        }
+
+        subLine.append(" A: [").append(afn).append("]");
+        fullLine.append("Activation function: ").append("<b>").append(afn).append("</b>").append("<br/>");
 
         description.setMainLine(mainLine.toString());
         description.setSubLine(subLine.toString());
