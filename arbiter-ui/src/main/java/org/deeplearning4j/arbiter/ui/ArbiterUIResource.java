@@ -15,20 +15,22 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.arbiter.optimize.ui;
+package org.deeplearning4j.arbiter.ui;
 
 import io.dropwizard.views.View;
 
 import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.MediaType;
 
-public class ArbiterView extends View {
-
-    protected ArbiterView() {
-        super("arbiter.ftl");
-    }
+@Path("/arbiter")
+@Produces(MediaType.TEXT_HTML)
+public class ArbiterUIResource {
 
     @GET
-    public String get(){
-        return "test2";
+    public View get() {
+        return new ArbiterView();
     }
+
 }

@@ -15,21 +15,22 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.arbiter.optimize.ui;
+package org.deeplearning4j.arbiter.ui.misc;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.ext.ContextResolver;
 
-public class ClientProvider {
-
-    private static Client instance = ClientBuilder.newClient().register(JacksonJsonProvider.class);
-
-    private ClientProvider(){ }
-
-    public static Client getClient(){
-        return instance;
+public class ObjectMapperProvider implements ContextResolver<ObjectMapper> {
+    @Override
+    public ObjectMapper getContext(Class<?> type) {
+        final ObjectMapper result = new ObjectMapper();
+        result.registerModule(module());
+        return result;
     }
 
+    public static SimpleModule module() {
+        return new SimpleModule("module");
+    }
 }

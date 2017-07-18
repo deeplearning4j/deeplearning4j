@@ -15,7 +15,7 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.arbiter.optimize.ui.listener;
+package org.deeplearning4j.arbiter.ui.listener;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

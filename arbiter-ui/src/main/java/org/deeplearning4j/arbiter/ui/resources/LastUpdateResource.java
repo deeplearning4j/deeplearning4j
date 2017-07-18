@@ -15,42 +15,38 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.arbiter.optimize.ui.resources;
+package org.deeplearning4j.arbiter.ui.resources;
 
-import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
+import org.deeplearning4j.arbiter.ui.UpdateStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
-/** Results for the results table (non-expanded)*/
-@Path("/results")
+/** Update status: used to record when updates to each type of info were last posted. */
+@Path("/lastUpdate")
 @Produces(MediaType.APPLICATION_JSON)
-public class SummaryResultsResource {
-
-    public static final Logger log = LoggerFactory.getLogger(SummaryResultsResource.class);
-    private List<CandidateStatus> statusList = new ArrayList<>();
+public class LastUpdateResource {
+    public static final Logger log = LoggerFactory.getLogger(LastUpdateResource.class);
+    private UpdateStatus status = new UpdateStatus(0,0,0);
 
     @GET
-    public Response getCandidateStatus(){
-        log.trace("GET for candidate status with current status: {}",statusList);
-
-        return Response.ok(statusList).build();
+    public Response getStatus(){
+        log.trace("GET with update status: {}", status);
+        return Response.ok(status).build();
     }
 
     @POST
     @Path("/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response update(List<CandidateStatus> statusList){
-        log.trace("POST for results with new status: {}",statusList);
-        this.statusList = statusList;
-        return Response.ok(Collections.singletonMap("status","ok")).build();
+    public Response update(UpdateStatus updateStatus){
+        log.trace("POST with last update status: {}", updateStatus);
+        this.status = updateStatus;
+        return Response.ok(Collections.singletonMap("status", "ok")).build();
     }
 
 }

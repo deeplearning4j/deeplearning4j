@@ -15,7 +15,7 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.arbiter.optimize.ui;
+package org.deeplearning4j.arbiter.ui;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -31,7 +31,7 @@ import io.dropwizard.views.ViewBundle;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
-import org.deeplearning4j.arbiter.optimize.ui.resources.*;
+import org.deeplearning4j.arbiter.ui.resources.*;
 import org.deeplearning4j.arbiter.util.ClassPathResource;
 import org.deeplearning4j.arbiter.util.WebUtils;
 import org.deeplearning4j.ui.api.Component;

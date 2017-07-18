@@ -15,14 +15,20 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.arbiter.optimize.ui;
+package org.deeplearning4j.arbiter.ui;
 
-import io.dropwizard.Configuration;
+import io.dropwizard.views.View;
 
-/**
- * Dropwizard configuration for the Arbiter UI
- */
-public class ArbiterUIConfig extends Configuration {
+import javax.ws.rs.GET;
 
+public class ArbiterView extends View {
 
+    protected ArbiterView() {
+        super("arbiter.ftl");
+    }
+
+    @GET
+    public String get(){
+        return "test2";
+    }
 }

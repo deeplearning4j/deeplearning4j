@@ -15,22 +15,14 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.arbiter.optimize.ui;
+package org.deeplearning4j.arbiter.ui;
 
-import io.dropwizard.views.View;
+import io.dropwizard.Configuration;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+/**
+ * Dropwizard configuration for the Arbiter UI
+ */
+public class ArbiterUIConfig extends Configuration {
 
-@Path("/arbiter")
-@Produces(MediaType.TEXT_HTML)
-public class ArbiterUIResource {
-
-    @GET
-    public View get() {
-        return new ArbiterView();
-    }
 
 }
