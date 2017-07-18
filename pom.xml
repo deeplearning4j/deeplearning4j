@@ -415,7 +415,7 @@
         <module>nd4j-context</module>
         <module>nd4j-backends</module>
         <module>nd4j-parameter-server-parent</module>
-        <module>nd4j-autodiff</module>
+        <module>samediff</module>
         <module>nd4j-uberjar</module>
     </modules>
 
