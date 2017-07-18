@@ -429,13 +429,18 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
             numWorkers = network != null ? network.getSparkContext().defaultParallelism()
                             : graph.getSparkContext().defaultParallelism();
 
-        // set current box as controller, if field is unset
+        // set current box as controller, if field is unset - switch to next stop
         if (voidConfiguration.getControllerAddress() == null)
             voidConfiguration.setControllerAddress(System.getenv("SPARK_PUBLIC_DNS"));
 
+        // next step - is to get ip address that matches specific network mask
+        if (voidConfiguration.getControllerAddress() == null && voidConfiguration.getNetworkMask() != null) {
+
+        }
+
         if (voidConfiguration.getControllerAddress() == null)
             throw new DL4JInvalidConfigException(
-                            "Can't get Spark Master local address. Please specify it manually using VoidConfiguration.setControllerAddress(String) method");
+                            "Can't get Spark Master local address. Please specify it manually using VoidConfiguration.setControllerAddress(String) method or VoidConfiguration.setNetworkMask(String) method");
 
         // we're forcing proper defaults
         log.info("Setting controller address to {}:{}", voidConfiguration.getControllerAddress(),
