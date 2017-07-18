@@ -51,6 +51,7 @@ import org.nd4j.parameterserver.distributed.enums.TransportType;
 import org.nd4j.parameterserver.distributed.transport.MulticastTransport;
 import org.nd4j.parameterserver.distributed.transport.RoutedTransport;
 import org.nd4j.parameterserver.distributed.transport.Transport;
+import org.nd4j.parameterserver.distributed.util.NetworkOrganizer;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.PropertyAccessor;
 import org.nd4j.shade.jackson.core.JsonFactory;
@@ -435,7 +436,8 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
 
         // next step - is to get ip address that matches specific network mask
         if (voidConfiguration.getControllerAddress() == null && voidConfiguration.getNetworkMask() != null) {
-
+            NetworkOrganizer organizer = new NetworkOrganizer(voidConfiguration.getNetworkMask());
+            voidConfiguration.setControllerAddress(organizer.getMatchingAddress());
         }
 
         if (voidConfiguration.getControllerAddress() == null)
