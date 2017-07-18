@@ -54,10 +54,15 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
-    public INDArray createSparseCOO(DataBuffer data, DataBuffer indices, int[] sparseOffset, int[] fixed, int[] shape, char ordering) {
-        return new SparseNDArrayCOO(data, indices, sparseOffset, fixed, shape,  ordering);
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, int[] shape) {
+        return new SparseNDArrayCOO(values, indices, sparseOffsets, flags, hiddenDimensions, underlyingRank, shape);
     }
-//  TODO ->
+
+    @Override
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, int[] shape) {
+        return new SparseNDArrayCOO(values, indices, sparseInformation, shape);
+    }
+    //  TODO ->
 
     @Override
     public IComplexFloat createFloat(float real, float imag) {

@@ -29,6 +29,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     protected long length = -1;
     public static final boolean isSparse = true;
     protected transient volatile DataBuffer shapeInformation;
+    protected transient volatile DataBuffer sparseInformation;
     protected int[] javaShapeInformation;
     protected transient DataBuffer shape;
     protected transient DataBuffer stride;
@@ -95,23 +96,25 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public String shapeInfoToString() {
-        return null;
+        return Shape.shapeToString(this);
     }
 
     @Override
     public DataBuffer shapeInfoDataBuffer() {
-        return null;
+        return shapeInformation;
     }
+
+    @Override
+    public DataBuffer sparseInfoDataBuffer() {
+        return sparseInformation;
+    }
+
 
     @Override
     public IntBuffer shapeInfo() {
         return null;
     }
 
-    @Override
-    public boolean isView() {
-        return false;
-    }
 
     @Override
     public boolean isCompressed() {
@@ -137,6 +140,19 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     public int rank() {
         return Shape.rank(shapeInformation);
     }
+    @Override
+    public int[] flags() {
+        return Shape.flags(sparseInformation);
+    }
+    @Override
+    public int[] hiddenDimensions() {
+        return Shape.hiddenDimension(sparseInformation);
+    }
+    @Override
+    public int[] sparseOffsets() {
+        return Shape.sparseOffsets(sparseInformation);
+    }
+
 
     @Override
     public int stride(int dimension) {

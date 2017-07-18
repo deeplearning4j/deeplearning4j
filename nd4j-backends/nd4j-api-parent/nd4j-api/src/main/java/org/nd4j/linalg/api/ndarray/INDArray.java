@@ -50,6 +50,12 @@ public interface INDArray extends Serializable {
     DataBuffer shapeInfoDataBuffer();
 
     /**
+     * Sparse info
+     * @return
+     */
+    DataBuffer sparseInfoDataBuffer();
+
+    /**
      * Shape info
      * @return
      */
@@ -1759,6 +1765,7 @@ public interface INDArray extends Serializable {
      * @return the sub array based on the calculations from the resolution
      */
     INDArray subArray(ShapeOffsetResolution resolution);
+    //INDArray subArray(ShapeOffsetResolution resolution, ShapeOffsetResolution resolutionWithoutNewAxis);
 
     /**
      * @param offsets
@@ -2549,5 +2556,10 @@ public interface INDArray extends Serializable {
      * @see SparseFormat
      * */
     SparseFormat getFormat();
+    int[] flags();
+    int[] hiddenDimensions();
+    int[] sparseOffsets();
+    int underlyingRank();
+
 
 }

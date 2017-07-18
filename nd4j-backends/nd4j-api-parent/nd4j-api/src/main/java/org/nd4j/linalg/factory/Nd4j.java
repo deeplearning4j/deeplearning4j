@@ -115,6 +115,7 @@ public class Nd4j {
     public final static String RESOURCE_MANGER_ON = "resourcemanager_state";
     public final static String EXECUTION_MODE = "opexec.mode";
     public final static String SHAPEINFO_PROVIDER = "shapeinfoprovider";
+    public final static String SPARSEINFO_PROVIDER = "sparseinfoprovider";
     public final static String CONSTANT_PROVIDER = "constantsprovider";
     public final static String AFFINITY_MANAGER = "affinitymanager";
     //disable toString() on compressed arrays for debugging. Should be off by default.
@@ -162,6 +163,7 @@ public class Nd4j {
     protected static Class<? extends DistributionFactory> distributionFactoryClazz;
     protected static Class<? extends Instrumentation> instrumentationClazz;
     protected static Class<? extends BaseShapeInfoProvider> shapeInfoProviderClazz;
+    protected static Class<? extends BaseSparseInfoProvider> sparseInfoProviderClazz;
     protected static Class<? extends BasicConstantHandler> constantProviderClazz;
     protected static Class<? extends BasicAffinityManager> affinityManagerClazz;
     protected static Class<? extends BasicMemoryManager> memoryManagerClazz;
@@ -178,6 +180,7 @@ public class Nd4j {
     protected static OpFactory OP_FACTORY_INSTANCE;
     protected static Instrumentation instrumentation;
     protected static ShapeInfoProvider shapeInfoProvider;
+    protected static SparseInfoProvider sparseInfoProvider;
     protected static ConstantHandler constantHandler;
     protected static AffinityManager affinityManager;
     protected static MemoryManager memoryManager;
@@ -5222,18 +5225,31 @@ public class Nd4j {
 
         return matrix;
     }
+
+    /**
+     * @param values a DataBuffer with the sparse non-null values
+     * @param indices a DataBuffer with the indexes of the values
+     * @param sparseInformation a DataBuffer containing the sparse information (flags, offsets and hidden dimensions)
+     * @param shape
+     * @return a INDArray
+     * */
+    public static INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, int[] shape){
+        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(values, indices, sparseInformation, shape);
+        return matrix;
+    }
+
     /**
      * @param values a DataBuffer with the sparse non-null values
      * @param indices a DataBuffer with the indexes of the values
      * @param sparseOffsets the sparse
-     * @param fixed
+     * @param flags an array that define the inactive dimension
+     * @param hiddenDimensions an array containing the position of the hidden dimensions
+     * @param underlyingRank the rank of the original ndarray
      * @param shape
-     * @return ordering
      * @return a INDArray
      * */
-    public static INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] sparseOffsets, int[] fixed, int[] shape, char ordering) {
-        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(values, indices, sparseOffsets, fixed, shape, ordering);
-
+    public static INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] sparseOffsets, int[] flags, int[] shape, int[] hiddenDimensions, int underlyingRank){
+        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(values, indices, sparseOffsets, flags, hiddenDimensions, underlyingRank, shape);
         return matrix;
     }
 
@@ -5245,7 +5261,7 @@ public class Nd4j {
     /**
      * Creates a row vector with the specified number of columns
      *
-     * @param rows    the rows of the ndarray
+     * @param rows    the rows of the sndarray
      * @param columns the columns of the ndarray
      * @return the created ndarray
      */
@@ -6130,6 +6146,9 @@ public class Nd4j {
                     .forName(System.getProperty(DATA_BUFFER_OPS, defaultName));
             shapeInfoProviderClazz = (Class<? extends BaseShapeInfoProvider>) Class
                     .forName(System.getProperty(SHAPEINFO_PROVIDER, props.get(SHAPEINFO_PROVIDER).toString()));
+            sparseInfoProviderClazz = (Class<? extends BaseSparseInfoProvider>) Class
+                    .forName(System.getProperty(SPARSEINFO_PROVIDER, props.get(SPARSEINFO_PROVIDER).toString()));
+
             constantProviderClazz = (Class<? extends BasicConstantHandler>) Class
                     .forName(System.getProperty(CONSTANT_PROVIDER, props.get(CONSTANT_PROVIDER).toString()));
 
@@ -6162,6 +6181,7 @@ public class Nd4j {
             memoryManager = memoryManagerClazz.newInstance();
             constantHandler = constantProviderClazz.newInstance();
             shapeInfoProvider = shapeInfoProviderClazz.newInstance();
+            sparseInfoProvider = sparseInfoProviderClazz.newInstance();
             workspaceManager = workspaceManagerClazz.newInstance();
 
             opExecutionerClazz = (Class<? extends OpExecutioner>) Class
@@ -6257,6 +6277,13 @@ public class Nd4j {
      */
     public static ShapeInfoProvider getShapeInfoProvider() {
         return shapeInfoProvider;
+    }
+    /**
+     *
+     * @return
+     */
+    public static SparseInfoProvider getSparseInfoProvider() {
+        return sparseInfoProvider;
     }
 
     /**

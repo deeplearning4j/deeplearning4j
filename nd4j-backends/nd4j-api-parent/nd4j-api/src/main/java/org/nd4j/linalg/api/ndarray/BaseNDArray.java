@@ -4043,7 +4043,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             if (indexes[i] instanceof SpecifiedIndex)
                 numSpecifiedIndex++;
 
-
         if (shape != null && numSpecifiedIndex > 0) {
             Generator<List<List<Integer>>> gen = SpecifiedIndex.iterate(indexes);
             INDArray ret = Nd4j.create(shape, 'c');
@@ -5229,5 +5228,30 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public SparseFormat getFormat() {
         return SparseFormat.NONE;
+    }
+
+    @Override
+    public DataBuffer sparseInfoDataBuffer() {
+        throw new UnsupportedOperationException("Not a sparse ndarray");
+    }
+
+    @Override
+    public int[] flags() {
+        throw new UnsupportedOperationException("Not a sparse ndarray");
+    }
+
+    @Override
+    public int[] hiddenDimensions() {
+        throw new UnsupportedOperationException("Not a sparse ndarray");
+    }
+
+    @Override
+    public int[] sparseOffsets() {
+        throw new UnsupportedOperationException("Not a sparse ndarray");
+    }
+
+    @Override
+    public int underlyingRank() {
+        throw new UnsupportedOperationException("Not a sparse ndarray");
     }
 }

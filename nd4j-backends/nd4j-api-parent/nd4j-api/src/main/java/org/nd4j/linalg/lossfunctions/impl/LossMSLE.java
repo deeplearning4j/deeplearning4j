@@ -33,7 +33,7 @@ public class LossMSLE implements ILossFunction {
     }
 
     /**
-     * Mean Squared Logarithmic Error loss function where each the output is (optionally) weighted/scaled by a fixed scalar value.
+     * Mean Squared Logarithmic Error loss function where each the output is (optionally) weighted/scaled by a flags scalar value.
      * Note that the weights array must be a row vector, of length equal to the labels/output dimension 1 size.
      * A weight vector of 1s should give identical results to no weight vector.
      *

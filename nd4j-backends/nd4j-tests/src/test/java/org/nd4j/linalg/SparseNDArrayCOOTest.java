@@ -3,12 +3,10 @@ package org.nd4j.linalg;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.*;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndexAll;
-import org.nd4j.linalg.indexing.SpecifiedIndex;
+import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import javax.sound.midi.Soundbank;
@@ -229,7 +227,6 @@ public class SparseNDArrayCOOTest {
         assertArrayEquals(new int[]{0, 0, 0, 2, 0, 1}, newArray.getIndices().asInt());
     }
 
-
     /*
     @Test
     public void rdmTestWithDenseArray(){
@@ -256,9 +253,216 @@ public class SparseNDArrayCOOTest {
 
         System.out.println("v ");
         System.out.println(v.toString());
+    }
+
+    @Test
+    public void newAxisWithSparseArray(){
+        int[] shape = new int[]{4, 2, 3};
+        double[] values = new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9};
+        int[][] indices  = new int[][]{{0, 0, 2}, {0, 1, 1}, {1,0, 0}, {1, 0, 1}, {1, 1, 2},
+                {2, 0, 1}, {2, 1, 2}, {3, 0, 2}, {3, 1, 0}};
+        INDArray array = Nd4j.createSparseCOO(values, indices, shape);
+        INDArray v = array.get(NDArrayIndex.point(0), NDArrayIndex.newAxis());
+        System.out.println(v.shapeInfoDataBuffer());
+
+    }
+
+    @Test
+    public void nestedSparseViewWithNewAxis(){
+        int[] shape = new int[]{4, 2, 3};
+        double[] values = new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9};
+        int[][] indices  = new int[][]{{0, 0, 2}, {0, 1, 1}, {1,0, 0}, {1, 0, 1}, {1, 1, 2},
+                {2, 0, 1}, {2, 1, 2}, {3, 0, 2}, {3, 1, 0}};
+        INDArray array = Nd4j.createSparseCOO(values, indices, shape);
+
+        System.out.println("\nTaking view (all, point(1), all");
+        INDArray v = array.get(NDArrayIndex.all(), NDArrayIndex.point(1));
+        System.out.println(v.toString());
+        System.out.println(v.shapeInfoDataBuffer());
+        System.out.println("Fixed dimension "+ v.flags());
+        System.out.println("sparse offsets "+ v.sparseOffsets());
+        System.out.println("hidden dimensions "+ v.hiddenDimensions());
+        System.out.println("number of hidden dimensions "+((BaseSparseNDArrayCOO)v).getNumHiddenDimension());
+        // shape 4 x 3
+
+        System.out.println("\nTaking view (all new axis");
+        INDArray v1 = v.get(NDArrayIndex.all(), NDArrayIndex.newAxis());
+        System.out.println(v1.toString());
+        System.out.println(v1.shapeInfoDataBuffer());
+        System.out.println("Fixed dimension "+v1.flags());
+        System.out.println("sparse offsets "+ v1.sparseOffsets());
+        System.out.println("hidden dimensions "+v1.hiddenDimensions());
+        System.out.println("number of hidden dimensions "+((BaseSparseNDArrayCOO)v1).getNumHiddenDimension());
+        // shape 4 x 1 x 3
+
+        System.out.println("\nTaking view (all new axis");
+        v1 = v.get(NDArrayIndex.newAxis(), NDArrayIndex.all(), NDArrayIndex.newAxis());
+        System.out.println(v1.toString());
+        System.out.println(v1.shapeInfoDataBuffer());
+        System.out.println("Fixed dimension "+ v1.flags());
+        System.out.println("sparse offsets "+ v1.sparseOffsets());
+        System.out.println("hidden dimensions " + v1.hiddenDimensions());
+        System.out.println("number of hidden dimensions "+((BaseSparseNDArrayCOO)v1).getNumHiddenDimension());
+
+    }
 
 
+    @Test
+    public void nestedViewWithNewAxis(){
+        INDArray arr = Nd4j.rand(new int[]{4, 2, 3});
+        System.out.println(arr.toString());
+        System.out.println(arr.shapeInfoDataBuffer());
 
+        System.out.println("\nTaking view (all, point(1), all");
+        INDArray v = arr.get(NDArrayIndex.all(), NDArrayIndex.point(1));
+        System.out.println(v.toString());
+        System.out.println(v.shapeInfoDataBuffer());
+        // shape 4 x 3
+
+        System.out.println("\nTaking view (all new axis");
+        INDArray v1 = v.get(NDArrayIndex.all(), NDArrayIndex.newAxis());
+        System.out.println(v1.toString());
+        System.out.println(v1.shapeInfoDataBuffer());
+        // shape 4 x 1 x 3
+
+        System.out.println("\nTaking view (all new axis");
+        v1 = v1.get(NDArrayIndex.newAxis());
+        System.out.println(v1.toString());
+        System.out.println(v1.shapeInfoDataBuffer());
+        // shape 4 x 3
+
+    }
+
+    @Test
+    public void shouldTranslateViewIndexesToOriginal(){
+        int[] shape = new int[]{4, 2, 3};
+        double[] values = new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9};
+        int[][] indices  = new int[][]{{0, 0, 2}, {0, 1, 1}, {1,0, 0}, {1, 0, 1}, {1, 1, 2},
+                {2, 0, 1}, {2, 1, 2}, {3, 0, 2}, {3, 1, 0}};
+        INDArray original = Nd4j.createSparseCOO(values, indices, shape);
+        BaseSparseNDArrayCOO view = (BaseSparseNDArrayCOO) original.get(NDArrayIndex.all(), NDArrayIndex.point(1));
+        int[] originalIdx = view.translateToPhysical(new int[]{0, 0});
+        int[] exceptedIdx = new int[]{0 ,1, 0};
+        assertArrayEquals(exceptedIdx, originalIdx);
+
+
+    }
+
+    @Test
+    public void shouldTranslateViewWithPrependNewAxis(){
+        int[] shape = new int[]{4, 2, 3};
+        double[] values = new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9};
+        int[][] indices  = new int[][]{{0, 0, 2}, {0, 1, 1}, {1,0, 0}, {1, 0, 1}, {1, 1, 2},
+                {2, 0, 1}, {2, 1, 2}, {3, 0, 2}, {3, 1, 0}};
+        INDArray original = Nd4j.createSparseCOO(values, indices, shape);
+
+        BaseSparseNDArrayCOO view = (BaseSparseNDArrayCOO) original.get(NDArrayIndex.newAxis(), NDArrayIndex.all(), NDArrayIndex.point(1));
+        assertArrayEquals(new int[]{0, 1, 0}, view.translateToPhysical(new int[]{0, 0, 0}));
+
+        int[] originalIdx = view.translateToPhysical(new int[]{0, 1, 2});
+        int[] exceptedIdx = new int[]{1 ,0, 2};
+        assertArrayEquals(exceptedIdx, originalIdx);
+    }
+
+    @Test
+    public void sparseView(){
+        int[] shape = new int[]{4, 2, 3};
+        double[] values = new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9};
+        int[][] indices  = new int[][]{{0, 0, 2}, {0, 1, 1}, {1,0, 0}, {1, 0, 1}, {1, 1, 2},
+                {2, 0, 1}, {2, 1, 2}, {3, 0, 2}, {3, 1, 0}};
+        INDArray original = Nd4j.createSparseCOO(values, indices, shape);
+
+        BaseSparseNDArrayCOO view = (BaseSparseNDArrayCOO) original.get(NDArrayIndex.all(), NDArrayIndex.point(1));
+        assertArrayEquals(new int[]{0, 0}, view.translateToPhysical(new int[]{0, 0, 0}));
+
+        int[] originalIdx = view.translateToPhysical(new int[]{0, 1, 2});
+        int[] exceptedIdx = new int[]{1 ,0, 2};
+        assertArrayEquals(exceptedIdx, originalIdx);
+    }
+
+    @Test
+    public void testWithDense(){
+        INDArray arr = Nd4j.rand(new int[]{4, 2, 3});
+
+        INDArray view = arr.get(NDArrayIndex.all(), NDArrayIndex.point(1));
+        System.out.println(view.shapeInfoDataBuffer());
+        view = arr.get(NDArrayIndex.newAxis(), NDArrayIndex.all(), NDArrayIndex.point(1));
+
+        System.out.println(view.shapeInfoDataBuffer());
+    }
+
+    @Test
+    public void newAxisWithDenseArray(){
+        INDArray arr = Nd4j.rand(new int[]{4, 2, 3});
+        System.out.println(arr.toString());
+        System.out.println(arr.shapeInfoDataBuffer());
+
+        System.out.println("\npoint 0");
+        INDArray v = arr.get(NDArrayIndex.point(0));
+        System.out.println(v.shapeInfoDataBuffer());
+        // => shape 2 x 3
+
+        System.out.println("new axis, all, point 1");
+        v = arr.get(NDArrayIndex.newAxis(), NDArrayIndex.all(), NDArrayIndex.point(1));
+        //System.out.println(v.toString());
+
+        v = arr.get(NDArrayIndex.interval(1, 4), NDArrayIndex.point(0), NDArrayIndex.newAxis());
+        System.out.println(v.shapeInfoDataBuffer());
+        System.out.println(v.isView());
+        // => shape 1 x 2 x 3
+
+        System.out.println("\npoint 0, newaxis");
+        v = arr.get(NDArrayIndex.point(0), NDArrayIndex.newAxis());
+        System.out.println(v.shapeInfoDataBuffer());
+        System.out.println(v.isView());
+        // => shape 1 x 2 x 3
+
+        System.out.println("\n point 0, newaxis, newaxis");
+        v = arr.get(NDArrayIndex.point(0), NDArrayIndex.newAxis(), NDArrayIndex.newAxis());
+        System.out.println(v.shapeInfoDataBuffer());
+        // => shape 1 x 1 x 2 x 3
+
+        System.out.println("\n new axis, point 0, newaxis");
+        v = arr.get( NDArrayIndex.newAxis(), NDArrayIndex.point(0), NDArrayIndex.newAxis());
+        System.out.println(v.shapeInfoDataBuffer());
+        // => shape 1 x 1 x 2 x 3
+
+        System.out.println("\nget( new axis, point(0), point(0), new axis)");
+        v = arr.get(NDArrayIndex.newAxis(), NDArrayIndex.point(0), NDArrayIndex.point(0), NDArrayIndex.newAxis());
+        System.out.println(v.shapeInfoDataBuffer());
+        System.out.println(v.toString());
+        // => shape 1 x 1 x 3 x 1
+
+        System.out.println("\nget( specified(1), specified(0), new axis)");
+        v = arr.get(new SpecifiedIndex(1), NDArrayIndex.newAxis());
+        System.out.println(v.shapeInfoDataBuffer());
+        System.out.println(v.toString());
+        // => crash
+
+        System.out.println("\nget( new axis, point(0), new axis, point(0))");
+        v = arr.get( NDArrayIndex.newAxis(), NDArrayIndex.point(0), NDArrayIndex.newAxis(),  NDArrayIndex.point(0));
+        System.out.println(v.shapeInfoDataBuffer());
+        System.out.println(v.toString());
+        // => crash
+
+        System.out.println("\n interval(0, 2), newaxis");
+        v = arr.get(NDArrayIndex.interval(0, 2), NDArrayIndex.newAxis());
+        System.out.println(v.shapeInfoDataBuffer());
+        // => shape 1 x 2 x 2 x 3 - new axis is added at the first position
+
+        System.out.println("\n point 0 , all, new axis");
+        v = arr.get(
+                NDArrayIndex.point(0),
+                NDArrayIndex.all(),
+                NDArrayIndex.newAxis());
+        System.out.println(v.shapeInfoDataBuffer());
+        // => crash
+
+        //System.out.println(v.isView());
+
+        //System.out.println("v ");
+        //System.out.println(v.toString());
+        //System.out.println(v.shapeInfoDataBuffer());
 
 
     }

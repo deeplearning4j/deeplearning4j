@@ -21,10 +21,10 @@ import java.util.List;
  * @author Adam Gibson
  */
 @Data
-public class ShapeOffsetResolution implements Serializable {
+public class    ShapeOffsetResolution implements Serializable {
 
     private INDArray arr;
-    private int[] offsets, shapes, strides, fixed;
+    private int[] offsets, shapes, strides, fixed, prependAxis;
     private long offset = -1;
 
     /**
@@ -487,6 +487,11 @@ public class ShapeOffsetResolution implements Serializable {
             accumStrides.add(prependNewAxes.get(i) - numAdded, 0);
             numAdded++;
         }
+        for(int i = 0; i<newAxesPrepend ;i++){
+            prependNewAxes.add(0, i);
+        }
+
+        prependAxis = Ints.toArray(prependNewAxes);
 
         /**
          * Need to post process strides and offsets
@@ -600,16 +605,23 @@ public class ShapeOffsetResolution implements Serializable {
     }
 
     public void resolveFixedDimensions(INDArrayIndex... indexes){
+
         fixed = new int[arr.rank()];
+
+        int j = 0;
         for(int i = 0; i < indexes.length; i++){
             if(indexes[i] instanceof PointIndex){
-                fixed[i] = 1;
+                fixed[j] = 1;
+                j++;
             }
-            if(indexes[i] instanceof IntervalIndex || indexes[i] instanceof NDArrayIndexAll){
-                fixed[i] = 0;
+            if(indexes[i] instanceof IntervalIndex || indexes[i] instanceof NDArrayIndexAll
+                    || indexes[i] instanceof SpecifiedIndex){
+                fixed[j] = 0;
+                j++;
             }
-            // TODO specified indexes ?!?
-            // NewAxis
+            if(indexes[i] instanceof NewAxis){
+                //do nothing, skip the index
+            }
         }
     }
 

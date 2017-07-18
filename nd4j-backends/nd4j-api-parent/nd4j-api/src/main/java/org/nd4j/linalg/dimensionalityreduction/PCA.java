@@ -33,7 +33,7 @@ public class PCA {
 
 
     /**
-     * Calculates pca vectors of a matrix, for a fixed number of reduced features
+     * Calculates pca vectors of a matrix, for a flags number of reduced features
      * returns the reduced feature set
      * The return is a projection of A onto principal nDims components
      *
@@ -64,7 +64,7 @@ public class PCA {
 
 
     /**
-     * Calculates pca factors of a matrix, for a fixed number of reduced features
+     * Calculates pca factors of a matrix, for a flags number of reduced features
      * returns the factors to scale observations 
      *
      * The return is a factor matrix to reduce (normalized) feature sets

@@ -20,6 +20,7 @@
 package org.nd4j.linalg.api.shape;
 
 
+import com.google.common.primitives.Ints;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -31,6 +32,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import javax.xml.crypto.Data;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.IntBuffer;
@@ -1622,6 +1624,41 @@ public class Shape {
         return ret.slice();
     }
 
+    public static int[] flags(DataBuffer buffer) {
+        int length = buffer.getInt(0);
+        int[] ret =  new int[length];
+        for (int i = 0; i < ret.length; i++)
+            ret[i] = buffer.getInt(1 + i);
+        return ret;
+    }
+    public static int[] sparseOffsets(DataBuffer buffer) {
+        int flagsLength = buffer.getInt(0);
+        int offLength = buffer.getInt(flagsLength + 1);
+        int[] ret = new int[offLength];
+        for(int i = 0; i < offLength; i++){
+            ret[i] = buffer.getInt(i + flagsLength + 2);
+        }
+        return ret;
+    }
+    public static int[] hiddenDimension(DataBuffer buffer) {
+        int flagsLength = buffer.getInt(0);
+        int offLength = buffer.getInt(flagsLength + 1);
+        int hiddenDimLength = buffer.getInt(flagsLength + offLength + 2);
+
+        int[] ret = new int[hiddenDimLength];
+        for(int i = 0; i < hiddenDimLength; i++){
+            ret[i] = buffer.getInt(i + flagsLength + offLength + 3);
+        }
+        return ret;
+    }
+
+    public static int underlyingRank(DataBuffer buffer){
+        int flagsLength = buffer.getInt(0);
+        int offLength = buffer.getInt(flagsLength + 1);
+        int hiddenDimLength = buffer.getInt(flagsLength + offLength + 2);
+
+        return buffer.getInt(flagsLength + offLength + hiddenDimLength + 3);
+    }
 
     /**
      * Prints the shape
@@ -1846,6 +1883,32 @@ public class Shape {
         return ret;
     }
 
+    public static DataBuffer createSparseInformation(int[] flags, int[] sparseOffsets, int[] hiddenDimensions, int underlyingRank){
+        int flagLength = flags.length;
+        int offsetsLength = sparseOffsets.length;
+        int hiddenDimLength = hiddenDimensions.length;
+        int totalLength = flagLength + offsetsLength + hiddenDimLength + 4;
+
+
+        ArrayList<Integer> accu = new ArrayList<>(totalLength);
+        accu.add(flagLength);
+        for(int flag : flags){
+            accu.add(flag);
+        }
+        accu.add(offsetsLength);
+        for(int off : sparseOffsets){
+            accu.add(off);
+        }
+
+        accu.add(hiddenDimLength);
+
+        for(int dim : hiddenDimensions){
+            accu.add(dim);
+        }
+        accu.add(underlyingRank);
+
+        return Nd4j.createBuffer(Ints.toArray(accu));
+    }
 
     /**
      * Convert an array to a byte buffer

@@ -1254,7 +1254,12 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
     }
 
     @Override
-    public INDArray createSparseCOO(DataBuffer data, DataBuffer indices, int[] sparseOffsets, int[] fixed, int[] shape, char ordering) {
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, int[] shape) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, int[] shape) {
         throw new UnsupportedOperationException();
     }
 }

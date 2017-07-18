@@ -20,8 +20,6 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
     protected transient volatile DataBuffer pointerB;
     protected transient volatile DataBuffer pointerE;
 
-
-
     /**
      *
      *
@@ -344,5 +342,15 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
             return dense.equals(o);
         }
         return false;
+    }
+
+    @Override
+    public boolean isView() {
+        return false; //todo
+    }
+
+    @Override
+    public int underlyingRank() {
+        throw new UnsupportedOperationException("Not a COO array");
     }
 }
