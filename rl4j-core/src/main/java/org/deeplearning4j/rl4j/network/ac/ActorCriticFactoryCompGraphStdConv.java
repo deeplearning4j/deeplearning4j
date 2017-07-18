@@ -61,7 +61,7 @@ public class ActorCriticFactoryCompGraphStdConv implements ActorCriticFactoryCom
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).nOut(1).build(),
                         "2");
 
-        confB.addLayer("softmax", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX) //fixthat
+        confB.addLayer("softmax", new OutputLayer.Builder(new ActorCriticLoss()).activation(Activation.SOFTMAX) //fixthat
                         .nOut(numOutputs).build(), "2");
 
         confB.setOutputs("value", "softmax");

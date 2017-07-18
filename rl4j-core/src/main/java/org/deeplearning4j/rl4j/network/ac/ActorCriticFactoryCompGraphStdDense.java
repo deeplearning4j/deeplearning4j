@@ -57,7 +57,7 @@ public class ActorCriticFactoryCompGraphStdDense implements ActorCriticFactoryCo
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.IDENTITY).nOut(1).build(),
                         (getConf().getNumLayer() - 1) + "");
 
-        confB.addLayer("softmax", new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX) //fixthat
+        confB.addLayer("softmax", new OutputLayer.Builder(new ActorCriticLoss()).activation(Activation.SOFTMAX) //fixthat
                         .nOut(numOutputs).build(), (getConf().getNumLayer() - 1) + "");
 
         confB.setOutputs("value", "softmax");

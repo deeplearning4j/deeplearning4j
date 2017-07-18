@@ -22,8 +22,7 @@ import org.deeplearning4j.rl4j.util.DataManager;
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/23/16.
  * Training for A3C in the Discrete Domain
  *
- * At the time of leaving my intenrship, this does not seem to work correctly
- * although all methods are fully implemented as described in the
+ * All methods are fully implemented as described in the
  * https://arxiv.org/abs/1602.01783 paper.
  *
  */

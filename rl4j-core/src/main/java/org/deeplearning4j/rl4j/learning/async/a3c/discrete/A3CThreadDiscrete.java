@@ -70,7 +70,7 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
 
         INDArray input = Nd4j.create(nshape);
         INDArray targets = Nd4j.create(size, 1);
-        INDArray logSoftmax = Nd4j.create(size, mdp.getActionSpace().getSize());
+        INDArray logSoftmax = Nd4j.zeros(size, mdp.getActionSpace().getSize());
 
         double r = minTrans.getReward();
         for (int i = 0; i < size; i++) {
@@ -84,12 +84,9 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
             targets.putScalar(i, r);
 
             //the actor
-            INDArray row = minTrans.getOutput()[1];
-            double prevV = row.getDouble(minTrans.getAction());
             double expectedV = minTrans.getOutput()[0].getDouble(0);
             double advantage = r - expectedV;
-            row = row.putScalar(minTrans.getAction(), prevV + advantage);
-            logSoftmax.putRow(i, row);
+            logSoftmax.putScalar(i, minTrans.getAction(), advantage);
         }
 
         return iac.gradient(input, new INDArray[] {targets, logSoftmax});
