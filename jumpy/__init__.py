@@ -15,17 +15,11 @@ def get_classpath(base_path):
     :param base_path: the directory to get the classpath for
     :return:
     """
-
     ':'.join(os.path.join(base_path, y) for y in os.listdir(base_path))
 
 def _expand_directory(directory):
-        if directory.__contains__('*'):
-            # Get only the directory name (no wild card)
-            jars = get_classpath(directory[:-2])
-        else:
-            jars = get_classpath(directory)
-
-        return jars
+    # Get only the directory name (no wild card)
+    return get_classpath(directory.rstrip('*'))
 
 new_class_path = ''
 class_path_list = jnius_classpath.split(':')
