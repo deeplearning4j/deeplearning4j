@@ -281,13 +281,14 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
                 switch (linLayerID) {
                     case 0: data = iwGradientsOutData; position = 3; size = inputLayerSize; break; // input gate
                     case 1: data = iwGradientsOutData; position = 1; size = inputLayerSize; break; // forget gate
-                    case 2: data = iwGradientsOutData; position = 0; size = inputLayerSize; break; // new gate
+                    case 2: data = iwGradientsOutData; position = 0; size = inputLayerSize; break; // new gate (input modulation gate)
                     case 3: data = iwGradientsOutData; position = 2; size = inputLayerSize; break; // output gate
                     case 4: data = rwGradientsOutData; position = 3; size = hiddenLayerSize; break; // input gate
                     case 5: data = rwGradientsOutData; position = 1; size = hiddenLayerSize; break; // forget gate
-                    case 6: data = rwGradientsOutData; position = 0; size = hiddenLayerSize; break; // new gate
+                    case 6: data = rwGradientsOutData; position = 0; size = hiddenLayerSize; break; // new gate (input modulation gate)
                     case 7: data = rwGradientsOutData; position = 2; size = hiddenLayerSize; break; // output gate
-                    default: assert false;
+                    default:
+                        throw new RuntimeException();
                 }
                 checkCuda(cudaMemcpyAsync(data.position(position * size * hiddenLayerSize * dataTypeSize),
                                 linLayerMat, size * hiddenLayerSize * dataTypeSize, cudaMemcpyDeviceToDevice, stream));
@@ -332,6 +333,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         INDArray linInputWeights = inputWeights;//.reshape('f', inputLayerSize, hiddenLayerSize, 4).permute(0, 1, 2).dup('f');
         INDArray linRecurrentWeights = recurrentWeights;//.reshape('f', hiddenLayerSize, hiddenLayerSize, 4).permute(0, 1, 2).dup('f');
         INDArray linBiases = biases;//.reshape(4, hiddenLayerSize);
+
         INDArray prevAct = prevOutputActivations.dup('c');
         INDArray prevMemCell = prevMemCellState.dup('c');
 
@@ -494,7 +496,8 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
                     case 5: data = linRecurrentWeightsData; position = 1; size = hiddenLayerSize; break; // forget gate
                     case 6: data = linRecurrentWeightsData; position = 0; size = hiddenLayerSize; break; // new gate
                     case 7: data = linRecurrentWeightsData; position = 2; size = hiddenLayerSize; break; // output gate
-                    default: assert false;
+                    default:
+                        throw new RuntimeException();
                 }
                 checkCuda(cudaMemcpyAsync(linLayerMat, data.position(position * size * hiddenLayerSize * dataTypeSize),
                                 size * hiddenLayerSize * dataTypeSize, cudaMemcpyDeviceToDevice, stream));
