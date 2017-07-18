@@ -74,11 +74,22 @@ public class NetworkOrganizer {
         return list;
     }
 
-
+    /**
+     * This method returns local IP address that matches given network mask.
+     * To be used with single-argument constructor only.
+     *
+     * @return
+     */
     public String getMatchingAddress() {
+        if (informationCollection.size() > 1)
+            this.informationCollection = buildLocalInformation();
+
         List<String> list = getSubset(1);
         if (list.size() < 1)
             throw new ND4JIllegalStateException("Unable to find network interface matching requested mask: " + networkMask);
+
+        if (list.size() > 1)
+            log.warn("We have {} local IPs matching given netmask [{}]", list.size(), networkMask);
 
         return list.get(0);
     }

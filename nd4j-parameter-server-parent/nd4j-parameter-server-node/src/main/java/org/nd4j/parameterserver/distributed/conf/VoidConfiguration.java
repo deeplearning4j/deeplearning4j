@@ -63,22 +63,15 @@ public class VoidConfiguration implements Serializable {
         this.streamId = streamId;
     }
 
-    /**
-     * This option is very important: in shared network environment and yarn (like on EC2 etc),
-     * please set this to the network, which will be available on all boxes. I.e. 10.1.1.0/24 or 192.168.0.0/16
-     *
-     * @param netmask netmask to be used for IP address selection
-     */
-    public void setNetworkMask(@NonNull String netmask) {
+    protected void validateNetmask() {
         // micro-validaiton here
-        String[] chunks = netmask.split("\\.");
-        if (chunks.length == 1 || netmask.isEmpty())
+        String[] chunks = networkMask.split("\\.");
+        if (chunks.length == 1 || networkMask.isEmpty())
             throw new ND4JIllegalStateException("Provided netmask doesn't look like a legit one. Proper format is: 192.168.1.0/24 or 10.0.0.0/8");
 
 
         // TODO: add support for IPv6 eventually here
         if (chunks.length != 4) {
-            log.info("Chunks: {}", Arrays.toString(chunks));
             throw new ND4JIllegalStateException("4 octets expected here for network mask");
         }
 
@@ -97,11 +90,32 @@ public class VoidConfiguration implements Serializable {
             throw new ND4JIllegalStateException("First network mask octet should be non-zero. I.e. 10.0.0.0/8");
 
         // we enforce last octet to be 0/24 always
-        if (!netmask.contains("/") || !chunks[3].startsWith("\\0\\/")) {
+        if (!networkMask.contains("/") || !chunks[3].startsWith("\\0\\/")) {
             chunks[3] = "0/24";
         }
 
         this.networkMask = chunks[0] + "." + chunks[1] + "." + chunks[2] + "." + chunks[3];
+    }
+
+    /**
+     * This option is very important: in shared network environment and yarn (like on EC2 etc),
+     * please set this to the network, which will be available on all boxes. I.e. 10.1.1.0/24 or 192.168.0.0/16
+     *
+     * @param netmask netmask to be used for IP address selection
+     */
+    public void setNetworkMask(@NonNull String netmask) {
+        this.networkMask = netmask;
+        validateNetmask();
+    }
+
+    /**
+     * This method returns network mask
+     *
+     * @return
+     */
+    public String getNetworkMask() {
+        validateNetmask();
+        return this.networkMask;
     }
 
     public void setShardAddresses(List<String> addresses) {
