@@ -7,7 +7,39 @@
 #ifndef LIBND4J_SPECIALS_SPARSE_H
 #define LIBND4J_SPECIALS_SPARSE_H
 
+/**
+ * Just simple helper for debugging :)
+ *
+ * @param indices
+ * @param rank
+ * @param x
+ */
+void printIndex(int *indices, int rank, int x) {
+    printf(" [");
+    for (int e = 0; e < rank; e++) {
+        if (e > 0)
+            printf(", ");
 
+        printf("%i", indices[x * rank + e]);
+    }
+    printf("] ");
+}
+
+bool ltIndices(int *indices, int rank, Nd4jIndex x, Nd4jIndex y) {
+    for (int e = 0; e < rank; e++) {
+        int idxX = indices[x * rank + e];
+        int idxY = indices[y * rank + e];
+        // we're comparing indices one by one, starting from outer dimension
+        if (idxX < idxY) {
+            return true;
+        } else if (idxX == idxY) {
+            // do nothing, continue to next dimension
+        } else
+            return false;
+    }
+
+    return false;
+}
 
 /**
  * Returns true, if x > y, false otherwise
@@ -17,13 +49,19 @@
  * @param y
  * @return
  */
-bool compareIndices(int *indices, int rank, Nd4jIndex x, Nd4jIndex y) {
+
+bool gtIndices(int *indices, int rank, Nd4jIndex x, Nd4jIndex y) {
     for (int e = 0; e < rank; e++) {
         // we're comparing indices one by one, starting from outer dimension
-        if (indices[x + e] > indices[y + e])
+        int idxX = indices[x * rank + e];
+        int idxY = indices[y * rank + e];
+        if ( idxX > idxY) {
             return true;
+        } else if (idxX == idxY) {
+            // do nothing, continue to next dimension
+        } else
+            return false;
     }
-
     return false;
 }
 
@@ -31,9 +69,9 @@ template <typename T>
 void swapEverything(int *indices, T *array, int rank, Nd4jIndex x, Nd4jIndex y) {
     // swap indices
     for (int e = 0; e < rank; e++) {
-        int tmp = indices[x + e];
-        indices[x + e] = indices[y + e];
-        indices[y + e] = tmp;
+        int tmp = indices[x * rank + e];
+        indices[x * rank + e] = indices[y * rank + e];
+        indices[y * rank + e] = tmp;
     }
 
     // swap values
@@ -53,13 +91,12 @@ void coo_quickSort_parallel_internal(int *indices, T* array, Nd4jIndex left, Nd4
     {
         /* PARTITION PART */
         while (i <= j) {
-            //while (array[getPosition(xShapeInfo, i)] < pivot)
-            while (!compareIndices(indices, rank, i, pvt))
+            while (ltIndices(indices, rank, i, pvt))
                 i++;
 
-            //while (array[getPosition(xShapeInfo, j)] > pivot)
-            while (compareIndices(indices, rank, j, pvt))
-                    j--;
+            while (gtIndices(indices, rank, j, pvt))
+                j--;
+
 
             if (i <= j) {
                 swapEverything(indices, array, rank, i, j);
@@ -89,7 +126,7 @@ void coo_quickSort_parallel(int *indices, T* array, Nd4jIndex lenArray, int numT
 
     int cutoff = 1000;
 
-#pragma omp parallel num_threads(numThreads)
+#pragma omp parallel num_threads(numThreads) if (numThreads>1)
     {
 #pragma omp single nowait
         {
@@ -103,6 +140,7 @@ void coo_quickSort_parallel(int *indices, T* array, Nd4jIndex lenArray, int numT
 template <typename T>
 void sortCooIndicesGeneric(int *indices, T *values, Nd4jIndex length, int rank) {
     coo_quickSort_parallel<T>(indices, values, length, omp_get_max_threads(), rank);
+    //coo_quickSort_parallel<T>(indices, values, length, 1, rank);
 }
 
 #endif //LIBND4J_SPECIALS_SPARSE_H

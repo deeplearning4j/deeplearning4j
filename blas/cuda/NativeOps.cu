@@ -6685,3 +6685,12 @@ void NativeOps::sortTadDouble(Nd4jPointer *extraPointers, double *x, int *xShape
 void NativeOps::sortCooIndicesFloat(Nd4jPointer *extraPointers, int *indices, float *values, Nd4jIndex length, int rank) {
 
 }
+
+void NativeOps::sortCooIndicesDouble(Nd4jPointer *extraPointers, int *indices, double *values, Nd4jIndex length, int rank) {
+
+}
+
+void NativeOps::sortCooIndicesHalf(Nd4jPointer *extraPointers, int *indices, float16 *values, Nd4jIndex length, int rank) {
+
+}
+

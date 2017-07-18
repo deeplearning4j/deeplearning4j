@@ -2925,6 +2925,10 @@ public:
 
     // special sort impl for sorting out COO indices and values
     void sortCooIndicesFloat(Nd4jPointer *extraPointers, int *indices, float *values, Nd4jIndex length, int rank);
+
+    void sortCooIndicesDouble(Nd4jPointer *extraPointers, int *indices, double *values, Nd4jIndex length, int rank);
+
+    void sortCooIndicesHalf(Nd4jPointer *extraPointers, int *indices, float16 *values, Nd4jIndex length, int rank);
 };
 
 
