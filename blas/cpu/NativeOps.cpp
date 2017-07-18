@@ -2994,3 +2994,15 @@ void NativeOps::sortTadDouble(Nd4jPointer *extraPointers, double *x, int *xShape
 void NativeOps::sortTadHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
     //NativeOpExcutioner<float16>::execSort(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
 }
+
+void NativeOps::sortCooIndicesFloat(Nd4jPointer *extraPointers, int *indices, float *values, Nd4jIndex length, int rank) {
+    NativeOpExcutioner<float>::execSortCooIndices(indices, values, length, rank);
+}
+
+void NativeOps::sortCooIndicesDouble(Nd4jPointer *extraPointers, int *indices, double *values, Nd4jIndex length, int rank) {
+    NativeOpExcutioner<double >::execSortCooIndices(indices, values, length, rank);
+}
+
+void NativeOps::sortCooIndicesHalf(Nd4jPointer *extraPointers, int *indices, float16 *values, Nd4jIndex length, int rank) {
+ //   NativeOpExcutioner<float>::execSortCooIndices(indices, values, length, rank);
+}
