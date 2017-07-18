@@ -6681,3 +6681,7 @@ void NativeOps::sortTadDouble(Nd4jPointer *extraPointers, double *x, int *xShape
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
+
+void NativeOps::sortCooIndicesFloat(Nd4jPointer *extraPointers, int *indices, float *values, Nd4jIndex length, int rank) {
+
+}

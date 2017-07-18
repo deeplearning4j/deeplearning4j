@@ -17,6 +17,7 @@
 #include <loops/random.h>
 #include <pointercast.h>
 #include <ops/specials.h>
+#include <ops/specials_sparse.h>
 /**
  * Native op executioner:
  *
@@ -771,6 +772,11 @@ public:
     static void execSort(T *x, int *xShapeInfo, int *dimension, int dimensionLength, int *tadShapeInfo, int *tadOffsets, bool descending) {
         sortTadGeneric<T>(x, xShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
     }
+
+    static void execSortCooIndices(int *indices, T *values, Nd4jIndex length, int rank) {
+        sortCooIndicesGeneric<T>(indices, values, length, rank);
+    }
+
 };
 
 
