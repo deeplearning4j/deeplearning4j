@@ -4991,6 +4991,14 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native void sortCooIndicesFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, IntPointer indices, FloatPointer values, @Cast("Nd4jIndex") long length, int rank);
     public native void sortCooIndicesFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, IntBuffer indices, FloatBuffer values, @Cast("Nd4jIndex") long length, int rank);
     public native void sortCooIndicesFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, int[] indices, float[] values, @Cast("Nd4jIndex") long length, int rank);
+
+    public native void sortCooIndicesDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, IntPointer indices, DoublePointer values, @Cast("Nd4jIndex") long length, int rank);
+    public native void sortCooIndicesDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, IntBuffer indices, DoubleBuffer values, @Cast("Nd4jIndex") long length, int rank);
+    public native void sortCooIndicesDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, int[] indices, double[] values, @Cast("Nd4jIndex") long length, int rank);
+
+    public native void sortCooIndicesHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, IntPointer indices, @Cast("float16*") ShortPointer values, @Cast("Nd4jIndex") long length, int rank);
+    public native void sortCooIndicesHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, IntBuffer indices, @Cast("float16*") ShortBuffer values, @Cast("Nd4jIndex") long length, int rank);
+    public native void sortCooIndicesHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, int[] indices, @Cast("float16*") short[] values, @Cast("Nd4jIndex") long length, int rank);
 }
 
 
