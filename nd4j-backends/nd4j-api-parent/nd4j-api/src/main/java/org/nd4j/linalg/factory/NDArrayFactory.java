@@ -1844,6 +1844,8 @@ public interface NDArrayFactory {
 
     INDArray sort(INDArray x, boolean descending, int... dimensions);
 
+    INDArray sortCooIndices(INDArray x);
+
     // =========== Sparse methods ===========
 
     INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape);

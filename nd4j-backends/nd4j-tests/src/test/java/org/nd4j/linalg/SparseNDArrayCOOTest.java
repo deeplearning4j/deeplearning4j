@@ -467,5 +467,19 @@ public class SparseNDArrayCOOTest {
 
     }
 
+    @Test
+    public void shouldSortCOOIndices(){
+        int[] shape = new int[]{4, 3, 3};
+        double[] values = new double[]{1};
+        int[][] indices  = new int[][]{{0, 0, 0}};
+        INDArray original = Nd4j.createSparseCOO(values, indices, shape);
+        original.putScalar(2, 2, 2, 2);
+        original.putScalar(1, 1, 1, 1);
+        BaseSparseNDArrayCOO view = (BaseSparseNDArrayCOO) original.get(NDArrayIndex.all());
+        int[] expectedIdx = new int[]{0, 0, 0, 1, 1, 1, 2, 2, 2};
+        double[] expectedValues = new double[]{0, 1, 2};
+        assertArrayEquals(expectedIdx, view.getIndices().asInt());
+        assertArrayEquals(expectedValues, view.getValues().asDouble(), 1e-5);
+    }
 
 }

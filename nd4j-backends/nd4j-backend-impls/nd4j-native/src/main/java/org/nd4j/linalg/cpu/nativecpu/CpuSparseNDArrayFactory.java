@@ -1,19 +1,27 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
+import org.apache.commons.math3.util.Pair;
+import org.bytedeco.javacpp.DoublePointer;
+import org.bytedeco.javacpp.FloatPointer;
+import org.bytedeco.javacpp.IntPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexDouble;
 import org.nd4j.linalg.api.complex.IComplexFloat;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.ndarray.BaseSparseNDArrayCOO;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ndarray.ISparseNDArray;
+import org.nd4j.linalg.api.ndarray.SparseFormat;
 import org.nd4j.linalg.cpu.nativecpu.blas.*;
 import org.nd4j.linalg.factory.BaseNDArrayFactory;
 import org.nd4j.linalg.factory.BaseSparseNDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
@@ -422,11 +430,74 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
 
     @Override
     public INDArray sort(INDArray x, boolean descending) {
-            return null;
+        if (x.isScalar())
+            return x;
+
+        if (x.data().dataType() == DataBuffer.Type.FLOAT) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().sortFloat(null, (FloatPointer) x.data().addressPointer(), (IntPointer) x.shapeInfoDataBuffer().addressPointer(), descending);
+        } else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().sortDouble(null, (DoublePointer) x.data().addressPointer(), (IntPointer) x.shapeInfoDataBuffer().addressPointer(), descending);
+        } else {
+            throw new UnsupportedOperationException("Unknown dataype " + x.data().dataType());
+        }
+        return x;
     }
 
     @Override
-    public INDArray sort(INDArray x, boolean descending, int... dimensions) {
-        return null;
+    public INDArray sort(INDArray x, boolean descending, int... dimension) {
+        if (x.isScalar())
+            return x;
+
+        Arrays.sort(dimension);
+        Pair<DataBuffer, DataBuffer> tadBuffers = Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(x, dimension);
+
+        if (x.data().dataType() == DataBuffer.Type.FLOAT) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().sortTadFloat(null,
+                    (FloatPointer) x.data().addressPointer(),
+                    (IntPointer) x.shapeInfoDataBuffer().addressPointer(),
+                    new IntPointer(dimension),
+                    dimension.length,
+                    (IntPointer) tadBuffers.getFirst().addressPointer(),
+                    (IntPointer) tadBuffers.getSecond().addressPointer(),
+                    descending);
+        } else if (x.data().dataType() == DataBuffer.Type.DOUBLE) {
+            NativeOpsHolder.getInstance().getDeviceNativeOps().sortTadDouble(null,
+                    (DoublePointer) x.data().addressPointer(),
+                    (IntPointer) x.shapeInfoDataBuffer().addressPointer(),
+                    new IntPointer(dimension),
+                    dimension.length,
+                    (IntPointer) tadBuffers.getFirst().addressPointer(),
+                    (IntPointer) tadBuffers.getSecond().addressPointer(),
+                    descending);
+        } else {
+            throw new UnsupportedOperationException("Unknown datatype " + x.data().dataType());
+        }
+
+        return x;
+    }
+
+    @Override
+    public INDArray sortCooIndices(INDArray x) {
+
+        if(x.getFormat() != SparseFormat.COO){
+            throw new UnsupportedOperationException("Not a COO ndarray");
+        }
+        BaseSparseNDArrayCOO array = (BaseSparseNDArrayCOO) x;
+        DataBuffer val = array.getValues();
+        DataBuffer idx = array.getIndices();
+        long length = val.length();
+        int rank = array.rank();
+        switch(val.dataType()){
+            case FLOAT:
+                NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesFloat(null, (IntPointer) idx.addressPointer(), (FloatPointer) val.addressPointer(), length, rank);
+                break;
+            case DOUBLE:
+                NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesDouble(null, (IntPointer) idx.addressPointer(), (DoublePointer) val.addressPointer(), length, rank);
+                break;
+            default:
+                throw new UnsupportedOperationException("Unknown datatype " + x.data().dataType());
+        }
+
+        return array;
     }
 }

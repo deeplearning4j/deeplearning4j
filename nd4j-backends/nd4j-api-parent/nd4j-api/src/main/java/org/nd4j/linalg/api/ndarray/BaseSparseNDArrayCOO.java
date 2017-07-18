@@ -413,7 +413,8 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     public INDArray get(INDArrayIndex... indexes) {
 
         if(!isSorted){
-            // TODO - Sort !
+            Nd4j.sparseFactory().sortCooIndices(this);
+            isSorted = true;
         }
 
         if (indexes.length == 1 && indexes[0] instanceof NDArrayIndexAll || (indexes.length == 2 && (isRowVector()

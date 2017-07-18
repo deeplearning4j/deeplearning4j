@@ -1310,4 +1310,9 @@ public class CpuNDArrayFactory extends BaseNDArrayFactory {
 
         return x;
     }
+
+    @Override
+    public INDArray sortCooIndices(INDArray x) {
+        throw new UnsupportedOperationException("Not an COO ndarray");
+    }
 }
