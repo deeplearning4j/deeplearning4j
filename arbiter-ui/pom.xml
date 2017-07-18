@@ -13,12 +13,48 @@
     <artifactId>arbiter-ui_2.11</artifactId>
     <name>arbiter-ui</name>
 
+    <properties>
+        <java.compile.version>1.8</java.compile.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>arbiter-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.deeplearning4j</groupId>
+            <artifactId>deeplearning4j-ui_2.11</artifactId>
+            <version>${dl4j.version}</version>
+        </dependency>
     </dependencies>
+
+
+
+
+    <build>
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-http</artifactId>
+                <version>2.9</version>
+            </extension>
+        </extensions>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.5.1</version>
+                    <configuration>
+                        <source>${java.compile.version}</source>
+                        <target>${java.compile.version}</target>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 
 </project>

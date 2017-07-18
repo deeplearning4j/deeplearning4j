@@ -19,8 +19,6 @@ package org.deeplearning4j.arbiter.optimize.runner.listener.candidate;
 
 import org.deeplearning4j.arbiter.optimize.runner.Status;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
-import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
-import org.deeplearning4j.arbiter.optimize.ui.ClientProvider;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.LengthUnit;
 import org.deeplearning4j.ui.components.component.ComponentDiv;
@@ -28,9 +26,6 @@ import org.deeplearning4j.ui.components.component.style.StyleDiv;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class UICandidateStatusListenerImpl implements UICandidateStatusListener {
@@ -42,14 +37,14 @@ public class UICandidateStatusListenerImpl implements UICandidateStatusListener 
 
     private static final Logger log = LoggerFactory.getLogger(UICandidateStatusListener.class);
     private final int candidateNumber;
-    private WebTarget target;
+//    private WebTarget target;
 
     private static final int maxWarnCount = 10;
     private AtomicInteger warnCount = new AtomicInteger(0);
 
     public UICandidateStatusListenerImpl(int candidateNumber){
         this.candidateNumber = candidateNumber;
-        target = ClientProvider.getClient().target("http://localhost:" + ArbiterUIServer.getInstance().getPort() + "/modelResults/update/" + candidateNumber);
+//        target = ClientProvider.getClient().target("http://localhost:" + ArbiterUIServer.getInstance().getPort() + "/modelResults/update/" + candidateNumber);
     }
 
 
@@ -66,8 +61,8 @@ public class UICandidateStatusListenerImpl implements UICandidateStatusListener 
             }
         }
 
-        target.request(MediaType.APPLICATION_JSON).accept(MediaType.TEXT_PLAIN)
-                .post(Entity.entity(str, MediaType.TEXT_PLAIN));
+//        target.request(MediaType.APPLICATION_JSON).accept(MediaType.TEXT_PLAIN)
+//                .post(Entity.entity(str, MediaType.TEXT_PLAIN));
 
         log.trace("Update posted for candidate {}",candidateNumber);
     }
