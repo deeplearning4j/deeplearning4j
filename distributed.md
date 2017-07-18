@@ -27,6 +27,10 @@ As mentioned above, DeepLearning4j supports both Spark 1.x and Spark 2.x cluster
 ### Network Environment
 Gradients sharing heavily relies on the UDP protocol for communication between the Master and the Nodes during training. If you're running your cluster in a cloud environment like AWS or Azure, you need to allow one UDP port for Inbound/Outbound connections and specify that port in the `VoidConfiguration.unicastPort(int)` bean that is passed to `SharedTrainingMaster` constructor. 
 
+Another option to keep in mind, that in case of YARN (or any other resource manager that handles Spark networking) use, you'll have to specify network mask of the network, that'll be used for UDP communications. That could be done using something like this: `VoidConfiguration.setNetworkMask("10.1.1.0/24")`.
+
+And last-resort option for IP address selection is `DL4J_VOID_IP` environment variable. Set that variable on each node you're running, with local IP address to be used for comms.
+
 ### Example Configuration:
 
 Below is a snippet from an example project taken from [PASTE A LINK HERE]()  
