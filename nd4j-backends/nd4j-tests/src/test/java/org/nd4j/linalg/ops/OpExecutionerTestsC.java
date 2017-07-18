@@ -1026,6 +1026,12 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         double norm2 = array.norm2Number().doubleValue();
     }
 
+    /**
+     * This test fails, but that's ok.
+     * It's here only as reminder, that in some cases we can have EWS==1 for better performances.
+     *
+     * @throws Exception
+     */
     @Test
     public void testTadEws() throws Exception {
         INDArray array = Nd4j.create(32, 5, 10);

@@ -48,8 +48,9 @@ public class OpExecutionerUtil {
         return stridesSameAsInit;
     }
 
-    public static void checkForNaN(INDArray z){
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.NAN_PANIC && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+    public static void checkForNaN(INDArray z) {
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.NAN_PANIC
+                        && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
             return;
 
         int match = 0;
@@ -75,8 +76,9 @@ public class OpExecutionerUtil {
         checkForInf(z);
     }
 
-    public static void checkForInf(INDArray z){
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.INF_PANIC && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+    public static void checkForInf(INDArray z) {
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.INF_PANIC
+                        && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
             return;
 
         int match = 0;
@@ -98,8 +100,9 @@ public class OpExecutionerUtil {
 
     }
 
-    public static void checkForNaN(Op op){
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.NAN_PANIC && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+    public static void checkForNaN(Op op) {
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.NAN_PANIC
+                        && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
             return;
 
         if (op.z() != null && !(op instanceof MatchCondition)) {
@@ -107,8 +110,9 @@ public class OpExecutionerUtil {
         }
     }
 
-    public static void checkForInf(Op op){
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.INF_PANIC && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+    public static void checkForInf(Op op) {
+        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.INF_PANIC
+                        && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
             return;
 
         if (op.z() != null && !(op instanceof MatchCondition)) {

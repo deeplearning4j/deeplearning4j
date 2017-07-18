@@ -39,7 +39,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
         checkArgument(data.length == columnsPointers.length);
         checkArgument(pointerB.length == pointerE.length);
         // TODO
-        this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape);
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
         init(shape);
         int valuesSpace = (int) (data.length * THRESHOLD_MEMORY_ALLOCATION);
         this.values = Nd4j.getDataBufferFactory().createDouble(valuesSpace);
@@ -62,7 +62,7 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray{
 
     public BaseSparseNDArrayCSR(DataBuffer data, int[] columnsPointers, int[] pointerB, int[] pointerE, int[] shape){
         checkArgument(pointerB.length == pointerE.length);
-        this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape);
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
         init(shape);
         this.values = data;
         this.columnsPointers = Nd4j.getDataBufferFactory().createInt(data.length());

@@ -248,6 +248,18 @@ public abstract class NativeOps extends Pointer {
                                            IntPointer xShapeInfo, DoublePointer extraParamsVals, DoublePointer y, IntPointer yShapeInfo,
                                            DoublePointer result, IntPointer resultShapeInfoBuffer, IntPointer dimension, int dimensionLength);
 
+    public abstract void execReduce3AllDouble(PointerPointer extraPointers, int opNum, DoublePointer x,
+                                           IntPointer xShapeInfo, DoublePointer extraParamsVals, DoublePointer y, IntPointer yShapeInfo,
+                                           DoublePointer result, IntPointer resultShapeInfoBuffer, IntPointer dimension, int dimensionLength, IntPointer xTadShape, IntPointer xOffsets, IntPointer yTadShape, IntPointer yOffsets);
+
+    public abstract void execReduce3AllFloat(PointerPointer extraPointers, int opNum, FloatPointer x,
+                                              IntPointer xShapeInfo, FloatPointer extraParamsVals, FloatPointer y, IntPointer yShapeInfo,
+                                             FloatPointer result, IntPointer resultShapeInfoBuffer, IntPointer dimension, int dimensionLength, IntPointer xTadShape, IntPointer xOffsets, IntPointer yTadShape, IntPointer yOffsets);
+
+    public abstract void execReduce3AllHalf(PointerPointer extraPointers, int opNum, @Cast("float16*") ShortPointer x,
+                                              IntPointer xShapeInfo, @Cast("float16*") ShortPointer extraParamsVals, @Cast("float16*") ShortPointer y, IntPointer yShapeInfo,
+                                            @Cast("float16*") ShortPointer result, IntPointer resultShapeInfoBuffer, IntPointer dimension, int dimensionLength, IntPointer xTadShape, IntPointer xOffsets, IntPointer yTadShape, IntPointer yOffsets);
+
     /**
      *
      * @param opNum
@@ -1508,4 +1520,25 @@ public abstract class NativeOps extends Pointer {
     public abstract void decodeThresholdDouble(PointerPointer extraPointers, Pointer dx, long N, DoublePointer dz);
 
     public abstract void decodeThresholdHalf(PointerPointer extraPointers, Pointer dx, long N, @Cast("float16*") ShortPointer dz);
+
+
+    public abstract void sortFloat(PointerPointer extraPointers, FloatPointer dx, IntPointer xShapeInfo, boolean descending);
+
+    public abstract void sortDouble(PointerPointer extraPointers, DoublePointer dx, IntPointer xShapeInfo, boolean descending);
+
+    public abstract void sortHalf(PointerPointer extraPointers, @Cast("float16*") ShortPointer dx, IntPointer xShapeInfo, boolean descending);
+
+
+
+    public abstract void sortTadFloat(PointerPointer extraPointers, FloatPointer dx, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, IntPointer tadOffsets, boolean descending);
+
+    public abstract void sortTadDouble(PointerPointer extraPointers, DoublePointer dx, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, IntPointer tadOffsets, boolean descending);
+
+    public abstract void sortTadHalf(PointerPointer extraPointers, @Cast("float16*") ShortPointer dx, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, IntPointer tadOffsets, boolean descending);
+
+    public abstract void sortCooIndicesFloat(PointerPointer extraPointers, IntPointer indices, FloatPointer values, long length, int rank);
+
+    public abstract void sortCooIndicesDouble(PointerPointer extraPointers, IntPointer indices, DoublePointer values, long length, int rank);
+
+    public abstract void sortCooIndicesHalf(PointerPointer extraPointers, IntPointer indices, @Cast("float16*") ShortPointer values, long length, int rank);
 }

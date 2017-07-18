@@ -61,6 +61,16 @@ public class EuclideanDistance extends BaseAccumulation {
         extraArgs[1] = 0.0f;
     }
 
+    public EuclideanDistance(INDArray x, INDArray y, boolean allDistances) {
+        this(x, y);
+        this.isComplex = allDistances;
+    }
+
+    public EuclideanDistance(INDArray x, INDArray y, INDArray z, boolean allDistances) {
+        this(x, y, z, x.lengthLong());
+        this.isComplex = allDistances;
+    }
+
     @Override
     public double update(double accum, double x) {
         return accum + (x * x);

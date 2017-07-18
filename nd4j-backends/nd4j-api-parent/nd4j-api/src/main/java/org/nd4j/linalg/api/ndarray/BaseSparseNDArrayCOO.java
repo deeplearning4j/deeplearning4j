@@ -76,7 +76,8 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
             this.length = values.length;
         }
 
-        this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape);
+
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
         init(shape);
         int[] flags = new int[rank()];
         int[] sparseOffsets = new int[rank()];
@@ -91,7 +92,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
         this.values =  Nd4j.createBuffer(values, 0, values.length());
         this.indices = indices;
-        this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape);
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
         init(shape);
         this.length = values.length();
         int[] flags = new int[rank()];
@@ -106,7 +107,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
         this.values = Nd4j.createBuffer(values);
         this.indices = Nd4j.createBuffer(ArrayUtil.flatten(indices));
-        this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape);
+        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape));
         init(shape);
         this.length = values.length;
         int[] flags = new int[rank()];

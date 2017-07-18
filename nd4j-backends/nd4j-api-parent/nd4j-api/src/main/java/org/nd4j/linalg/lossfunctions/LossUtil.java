@@ -53,21 +53,21 @@ public class LossUtil {
         return a.muli(dlda.subiColumnVector(x));
     }
 
-    public static boolean isPerOutputMasking(INDArray to, INDArray mask){
-        return !mask.isColumnVector() ||  Arrays.equals(to.shape(), mask.shape());
+    public static boolean isPerOutputMasking(INDArray to, INDArray mask) {
+        return !mask.isColumnVector() || Arrays.equals(to.shape(), mask.shape());
     }
 
-    public static void applyMask(INDArray to, INDArray mask){
+    public static void applyMask(INDArray to, INDArray mask) {
         //Two possibilities exist: it's *per example* masking, or it's *per output* masking
         //These cases have different mask shapes. Per example: column vector. Per output: same shape as score array
-        if(mask.isColumnVector()) {
+        if (mask.isColumnVector()) {
             to.muliColumnVector(mask);
-        } else if(Arrays.equals(to.shape(), mask.shape())){
+        } else if (Arrays.equals(to.shape(), mask.shape())) {
             to.muli(mask);
         } else {
             throw new IllegalStateException("Invalid mask array: per-example masking should be a column vector, "
-                    + "per output masking arrays should be the same shape as the labels array. Mask shape: "
-                    + Arrays.toString(mask.shape()) + ", output shape: " + Arrays.toString(to.shape()));
+                            + "per output masking arrays should be the same shape as the labels array. Mask shape: "
+                            + Arrays.toString(mask.shape()) + ", output shape: " + Arrays.toString(to.shape()));
         }
     }
 }

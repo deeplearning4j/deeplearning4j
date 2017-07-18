@@ -26,6 +26,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.LineIterator;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.IntPointer;
@@ -52,6 +53,7 @@ import org.nd4j.linalg.api.ops.factory.DefaultOpFactory;
 import org.nd4j.linalg.api.ops.factory.OpFactory;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.transforms.ReplaceNans;
+import org.nd4j.linalg.api.ops.impl.transforms.Reverse;
 import org.nd4j.linalg.api.ops.random.impl.Choice;
 import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
 import org.nd4j.linalg.api.ops.random.impl.Linspace;
@@ -1701,6 +1703,11 @@ public class Nd4j {
         return ndarray;
     }
 
+
+    public static INDArray sort(INDArray ndarray, boolean ascending) {
+        return getNDArrayFactory().sort(ndarray, !ascending);
+    }
+
     /**
      * Sort an ndarray along a particular dimension
      *
@@ -1709,6 +1716,8 @@ public class Nd4j {
      * @return the sorted ndarray
      */
     public static INDArray sort(INDArray ndarray, int dimension, boolean ascending) {
+        return getNDArrayFactory().sort(ndarray, !ascending, dimension);
+        /*
         for (int i = 0; i < ndarray.vectorsAlongDimension(dimension); i++) {
             INDArray vec = ndarray.vectorAlongDimension(i, dimension);
             double[] data = new double[vec.length()];
@@ -1730,7 +1739,7 @@ public class Nd4j {
 
         }
 
-        return ndarray;
+        return ndarray;*/
     }
 
     /**Sort (shuffle) the rows of a 2d array according to the value at a specified column.
@@ -2438,6 +2447,24 @@ public class Nd4j {
         return result;
     }
 
+    /**
+     *
+     * @param data
+     * @param shapeInfo
+     * @return
+     */
+    public static INDArray createArrayFromShapeBuffer(DataBuffer data, Pair<DataBuffer, int[]> shapeInfo) {
+        int rank = Shape.rank(shapeInfo.getFirst());
+        int offset = Shape.offset(shapeInfo.getFirst());
+        INDArray result = Nd4j.create(data, toIntArray(rank, Shape.shapeOf(shapeInfo.getFirst())),
+                toIntArray(rank, Shape.stride(shapeInfo.getFirst())), offset, Shape.order(shapeInfo.getFirst()));
+        if (data instanceof CompressedDataBuffer)
+            result.markAsCompressed(true);
+
+        return result;
+    }
+
+
 
     /**
      * Read in an ndarray from a data input stream
@@ -2589,9 +2616,9 @@ public class Nd4j {
      * @return the reversed matrix
      */
     public static INDArray reverse(INDArray reverse) {
-        INDArray ret = INSTANCE.reverse(reverse);
-        logCreationIfNecessary(ret);
-        return ret;
+        //INDArray ret = INSTANCE.reverse(reverse);
+        //logCreationIfNecessary(ret);
+        return Nd4j.getExecutioner().exec(new Reverse(reverse)).z();
     }
 
     /**
@@ -6408,9 +6435,16 @@ public class Nd4j {
         int[] shape = arrays[0].shape();
         int[] newShape = ArrayUtils.add(shape, 0, 1);
 
+        boolean shouldReshape = true;
+        if (arrays[0].size(0) == 1)
+            shouldReshape = false;
+
         List<INDArray> reshaped = new ArrayList<>();
         for(INDArray array: arrays) {
-            reshaped.add(array.reshape(array.ordering(), newShape));
+            if (!shouldReshape)
+                reshaped.add(array);
+            else
+                reshaped.add(array.reshape(array.ordering(), newShape));
         }
 
         return Nd4j.vstack(reshaped);

@@ -36,6 +36,7 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     protected Number finalResult;
     protected IComplexNumber finalResultComplex;
     protected boolean applyFinalTransform = true;
+    protected boolean isComplex = false;
 
     public BaseAccumulation() {}
 
@@ -53,8 +54,8 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     public BaseAccumulation(INDArray x, INDArray y, INDArray z, long n) {
         super(x, y, z, n);
         init();
-        if (y != null)
-            LinAlgExceptions.assertSameLength(x, y);
+  //      if (y != null)
+//            LinAlgExceptions.assertSameLength(x, y);
         //LinAlgExceptions.assertSameLength(x, z);
 
     }
@@ -69,8 +70,8 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
 
     public BaseAccumulation(INDArray x, INDArray y) {
         this(x, y, x, x.lengthLong());
-        if (y != null)
-            LinAlgExceptions.assertSameLength(x, y);
+        //if (y != null)
+        //    LinAlgExceptions.assertSameLength(x, y);
     }
 
     private void init() {
@@ -250,5 +251,13 @@ public abstract class BaseAccumulation extends BaseOp implements Accumulation {
     @Override
     public IComplexNumber getFinalResultComplex() {
         return finalResultComplex;
+    }
+
+    /**
+     * This method is only used for Distance functions
+     * @return
+     */
+    public boolean isComplexAccumulation() {
+        return isComplex;
     }
 }

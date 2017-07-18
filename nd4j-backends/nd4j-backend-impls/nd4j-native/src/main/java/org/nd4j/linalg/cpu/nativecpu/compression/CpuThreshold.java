@@ -91,14 +91,14 @@ public class CpuThreshold extends AbstractCompressor {
 
     @Override
     public DataBuffer compress(DataBuffer buffer) {
-        INDArray temp = Nd4j.createArrayFromShapeBuffer(buffer, Nd4j.getShapeInfoProvider().createShapeInformation(new int[]{1, (int) buffer.length()}));
+        INDArray temp = Nd4j.createArrayFromShapeBuffer(buffer, Nd4j.getShapeInfoProvider().createShapeInformation(new int[]{1, (int) buffer.length()}).getFirst());
         MatchCondition condition = new MatchCondition(temp, Conditions.absGreaterThanOrEqual(threshold));
         int cntAbs = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
 
 
         //log.info("density ratio: {}", String.format("%.2f", cntAbs * 100.0f / buffer.length()));
 
-        if (cntAbs == 0)
+        if (cntAbs < 2)
             return null;
 
         long originalLength = buffer.length() * Nd4j.sizeOfDataType(buffer.dataType());

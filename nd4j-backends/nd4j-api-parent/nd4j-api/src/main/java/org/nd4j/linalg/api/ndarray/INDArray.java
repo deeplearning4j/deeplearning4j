@@ -1735,6 +1735,42 @@ public interface INDArray extends Serializable {
     Number sumNumber();
 
     /**
+     * Returns entropy value for this INDArray
+     * @return
+     */
+    Number entropyNumber();
+
+    /**
+     * Returns non-normalized Shannon entropy value for this INDArray
+     * @return
+     */
+    Number shannonEntropyNumber();
+
+    /**
+     * Returns log entropy value for this INDArray
+     * @return
+     */
+    Number logEntropyNumber();
+
+    /**
+     * Returns entropy value for this INDArray along specified dimension(s)
+     * @return
+     */
+    INDArray entropy(int... dimension);
+
+    /**
+     * Returns entropy value for this INDArray along specified dimension(s)
+     * @return
+     */
+    INDArray shannonEntropy(int... dimension);
+
+    /**
+     * Returns entropy value for this INDArray along specified dimension(s)
+     * @return
+     */
+    INDArray logEntropy(int... dimension);
+
+    /**
      * Sum the entire array
      * @return
      */
@@ -2528,6 +2564,36 @@ public interface INDArray extends Serializable {
     INDArray migrate();
 
     /**
+       * This method returns percentile value for this INDArray
+       *
+       * @param percentile target percentile in range of 0..100
+       * @return
+       */
+    Number percentileNumber(Number percentile);
+
+    /**
+     * This method returns median value for this INDArray
+     *
+     * @return
+     */
+    Number medianNumber();
+
+    /**
+     * This method returns median along given dimension(s)
+     * @param dimension
+     * @return
+     */
+    INDArray median(int... dimension);
+
+    /**
+     * This method returns median along given dimension(s)
+     * @param percentile target percentile in range of 0..100
+     * @param dimension
+     * @return
+     */
+    INDArray percentile(Number percentile, int... dimension);
+
+    /**
      * ------------ Sparse methods ------------
      */
 
@@ -2560,6 +2626,7 @@ public interface INDArray extends Serializable {
     int[] hiddenDimensions();
     int[] sparseOffsets();
     int underlyingRank();
+
 
 
 }

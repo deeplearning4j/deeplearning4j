@@ -1840,6 +1840,10 @@ public interface NDArrayFactory {
 
     INDArray[] tear(INDArray tensor, int... dimensions);
 
+    INDArray sort(INDArray x, boolean descending);
+
+    INDArray sort(INDArray x, boolean descending, int... dimensions);
+
     // =========== Sparse methods ===========
 
     INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, int[] shape);
@@ -1851,4 +1855,4 @@ public interface NDArrayFactory {
     INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, int[] shape);
     INDArray createSparseCOO(DataBuffer values, DataBuffer indices, int[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, int[] shape);
 
-    }
+}

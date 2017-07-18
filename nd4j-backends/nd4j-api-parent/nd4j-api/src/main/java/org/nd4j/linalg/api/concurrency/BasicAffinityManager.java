@@ -95,4 +95,9 @@ public abstract class BasicAffinityManager implements AffinityManager {
     public void allowCrossDeviceAccess(boolean reallyAllow) {
         // no-op
     }
+
+    @Override
+    public Location getActiveLocation(INDArray array) {
+        return Location.EVERYWHERE;
+    }
 }

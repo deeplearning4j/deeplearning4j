@@ -32,35 +32,20 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     DataBuffer.Type initialType;
 
     private static final WorkspaceConfiguration basicConfig = WorkspaceConfiguration.builder()
-            .initialSize(10 * 1024 * 1024)
-            .maxSize(10 * 1024 * 1024)
-            .overallocationLimit(0.1)
-            .policyAllocation(AllocationPolicy.STRICT)
-            .policyLearning(LearningPolicy.FIRST_LOOP)
-            .policyMirroring(MirroringPolicy.FULL)
-            .policySpill(SpillPolicy.EXTERNAL)
-            .build();
+                    .initialSize(10 * 1024 * 1024).maxSize(10 * 1024 * 1024).overallocationLimit(0.1)
+                    .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.FIRST_LOOP)
+                    .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.EXTERNAL).build();
 
-    private static final WorkspaceConfiguration loopOverTimeConfig = WorkspaceConfiguration.builder()
-            .initialSize(0)
-            .maxSize(10 * 1024 * 1024)
-            .overallocationLimit(0.1)
-            .policyAllocation(AllocationPolicy.STRICT)
-            .policyLearning(LearningPolicy.OVER_TIME)
-            .policyMirroring(MirroringPolicy.FULL)
-            .policySpill(SpillPolicy.EXTERNAL)
-            .build();
+    private static final WorkspaceConfiguration loopOverTimeConfig =
+                    WorkspaceConfiguration.builder().initialSize(0).maxSize(10 * 1024 * 1024).overallocationLimit(0.1)
+                                    .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.OVER_TIME)
+                                    .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.EXTERNAL).build();
 
 
-    private static final WorkspaceConfiguration loopFirstConfig = WorkspaceConfiguration.builder()
-            .initialSize(0)
-            .maxSize(10 * 1024 * 1024)
-            .overallocationLimit(0.1)
-            .policyAllocation(AllocationPolicy.STRICT)
-            .policyLearning(LearningPolicy.FIRST_LOOP)
-            .policyMirroring(MirroringPolicy.FULL)
-            .policySpill(SpillPolicy.EXTERNAL)
-            .build();
+    private static final WorkspaceConfiguration loopFirstConfig =
+                    WorkspaceConfiguration.builder().initialSize(0).maxSize(10 * 1024 * 1024).overallocationLimit(0.1)
+                                    .policyAllocation(AllocationPolicy.STRICT).policyLearning(LearningPolicy.FIRST_LOOP)
+                                    .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.EXTERNAL).build();
 
     public BasicWorkspaceTests(Nd4jBackend backend) {
         super(backend);
@@ -90,22 +75,18 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testMinSize1() throws Exception {
-        WorkspaceConfiguration conf = WorkspaceConfiguration.builder()
-                .minSize(10 * 1024 * 1024)
-                .overallocationLimit(1.0)
-                .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .policyMirroring(MirroringPolicy.FULL)
-                .policySpill(SpillPolicy.EXTERNAL)
-                .build();
+        WorkspaceConfiguration conf = WorkspaceConfiguration.builder().minSize(10 * 1024 * 1024)
+                        .overallocationLimit(1.0).policyAllocation(AllocationPolicy.OVERALLOCATE)
+                        .policyLearning(LearningPolicy.FIRST_LOOP).policyMirroring(MirroringPolicy.FULL)
+                        .policySpill(SpillPolicy.EXTERNAL).build();
 
-        try(Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, "WT")) {
+        try (Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, "WT")) {
             INDArray array = Nd4j.create(100);
 
             assertEquals(0, workspace.getCurrentSize());
         }
 
-        try(Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, "WT")) {
+        try (Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(conf, "WT")) {
             INDArray array = Nd4j.create(100);
 
             assertEquals(10 * 1024 * 1024, workspace.getCurrentSize());
@@ -138,7 +119,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     private INDArray outScope2() {
         try {
-            try (Nd4jWorkspace wsOne = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
+            try (Nd4jWorkspace wsOne =
+                            (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
                 throw new RuntimeException();
             }
         } catch (Exception e) {
@@ -147,16 +129,19 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     }
 
     private INDArray outScope1() {
-        try (Nd4jWorkspace wsOne = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
-         return Nd4j.create(10);
+        try (Nd4jWorkspace wsOne =
+                        (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
+            return Nd4j.create(10);
         }
     }
 
     @Test
     public void testLeverage3() throws Exception {
-        try (Nd4jWorkspace wsOne = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
+        try (Nd4jWorkspace wsOne =
+                        (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
             INDArray array = null;
-            try (Nd4jWorkspace wsTwo = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "INT")) {
+            try (Nd4jWorkspace wsTwo =
+                            (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "INT")) {
                 INDArray matrix = Nd4j.create(32, 1, 40);
 
                 INDArray view = matrix.tensorAlongDimension(0, 1, 2);
@@ -173,12 +158,14 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testLeverageTo2() throws Exception {
-        try (Nd4jWorkspace wsOne = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopOverTimeConfig, "EXT")) {
-            INDArray array1 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+        try (Nd4jWorkspace wsOne =
+                        (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopOverTimeConfig, "EXT")) {
+            INDArray array1 = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
             INDArray array3 = null;
 
-            try (Nd4jWorkspace wsTwo = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "INT")) {
-                INDArray array2 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+            try (Nd4jWorkspace wsTwo =
+                            (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "INT")) {
+                INDArray array2 = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
                 long reqMemory = 5 * Nd4j.sizeOfDataType();
 
@@ -189,7 +176,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
                 assertEquals(15f, array3.sumNumber().floatValue(), 0.01f);
             }
 
-            try (Nd4jWorkspace wsTwo = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "INT")) {
+            try (Nd4jWorkspace wsTwo =
+                            (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "INT")) {
                 INDArray array2 = Nd4j.create(100);
             }
 
@@ -199,11 +187,13 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testLeverageTo1() throws Exception {
-        try (Nd4jWorkspace wsOne = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
+        try (Nd4jWorkspace wsOne =
+                        (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
             INDArray array1 = Nd4j.create(5);
 
-            try (Nd4jWorkspace wsTwo = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "INT")) {
-                INDArray array2 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+            try (Nd4jWorkspace wsTwo =
+                            (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "INT")) {
+                INDArray array2 = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
                 long reqMemory = 5 * Nd4j.sizeOfDataType();
                 assertEquals(reqMemory + reqMemory % 8, wsOne.getHostOffset());
@@ -217,8 +207,9 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testOutOfScope1() throws Exception {
-        try (Nd4jWorkspace wsOne = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
-            INDArray array1 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+        try (Nd4jWorkspace wsOne =
+                        (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
+            INDArray array1 = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
             long reqMemory = 5 * Nd4j.sizeOfDataType();
             assertEquals(reqMemory + reqMemory % 8, wsOne.getHostOffset());
@@ -226,14 +217,14 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
             INDArray array2;
 
             try (MemoryWorkspace workspace = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                array2 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+                array2 = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
             }
             assertFalse(array2.isAttached());
 
             log.info("Current workspace: {}", Nd4j.getMemoryManager().getCurrentWorkspace());
             assertTrue(wsOne == Nd4j.getMemoryManager().getCurrentWorkspace());
 
-            INDArray array3 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+            INDArray array3 = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
             reqMemory = 5 * Nd4j.sizeOfDataType();
             assertEquals((reqMemory + reqMemory % 8) * 2, wsOne.getHostOffset());
@@ -246,13 +237,15 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testLeverage1() throws Exception {
-        try (Nd4jWorkspace wsOne = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
+        try (Nd4jWorkspace wsOne =
+                        (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "EXT")) {
 
             assertEquals(0, wsOne.getHostOffset());
 
-            try (Nd4jWorkspace wsTwo = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "INT")) {
+            try (Nd4jWorkspace wsTwo =
+                            (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "INT")) {
 
-                INDArray array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+                INDArray array = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
                 assertEquals(0, wsOne.getHostOffset());
 
@@ -280,14 +273,15 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         int outH = 8;
         int outW = 8;
 
-        try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "ITER")) {
-            INDArray delta = Nd4j.create(new int[]{50, 64, 8, 8}, new int[]{64, 3200, 8, 1}, 'c');
+        try (Nd4jWorkspace wsI =
+                        (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "ITER")) {
+            INDArray delta = Nd4j.create(new int[] {50, 64, 8, 8}, new int[] {64, 3200, 8, 1}, 'c');
             delta = delta.permute(1, 0, 2, 3);
 
-            assertArrayEquals(new int[]{64, 50, 8, 8}, delta.shape());
-            assertArrayEquals(new int[]{3200, 64, 8, 1}, delta.stride());
+            assertArrayEquals(new int[] {64, 50, 8, 8}, delta.shape());
+            assertArrayEquals(new int[] {3200, 64, 8, 1}, delta.stride());
 
-            INDArray delta2d = Shape.newShapeNoCopy(delta, new int[]{outDepth, miniBatch * outH * outW}, false);
+            INDArray delta2d = Shape.newShapeNoCopy(delta, new int[] {outDepth, miniBatch * outH * outW}, false);
 
             assertNotNull(delta2d);
         }
@@ -295,9 +289,10 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testCreateDetached1() throws Exception {
-        try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "ITER")) {
+        try (Nd4jWorkspace wsI =
+                        (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "ITER")) {
 
-            INDArray array1 = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+            INDArray array1 = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
             INDArray array2 = Nd4j.createUninitializedDetached(5);
 
@@ -314,8 +309,9 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     public void testDetach1() throws Exception {
         INDArray array = null;
         INDArray copy = null;
-        try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "ITER")) {
-            array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+        try (Nd4jWorkspace wsI =
+                        (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "ITER")) {
+            array = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
             // despite we're allocating this array in workspace, it's empty yet, so it's external allocation
             assertTrue(array.isInScope());
@@ -341,7 +337,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     @Test
     public void testScope2() throws Exception {
         INDArray array = null;
-        try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopFirstConfig, "ITER")) {
+        try (Nd4jWorkspace wsI =
+                        (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopFirstConfig, "ITER")) {
             array = Nd4j.create(100);
 
             // despite we're allocating this array in workspace, it's empty yet, so it's external allocation
@@ -350,7 +347,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         }
 
 
-        try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopFirstConfig, "ITER")) {
+        try (Nd4jWorkspace wsI =
+                        (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopFirstConfig, "ITER")) {
             array = Nd4j.create(100);
 
             assertTrue(array.isInScope());
@@ -363,7 +361,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     @Test
     public void testScope1() throws Exception {
         INDArray array = null;
-        try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "ITER")) {
+        try (Nd4jWorkspace wsI =
+                        (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "ITER")) {
             array = Nd4j.create(100);
 
             assertTrue(array.isInScope());
@@ -375,7 +374,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     @Test
     public void testIsAttached3() {
         INDArray array = Nd4j.create(100);
-        try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "ITER")) {
+        try (Nd4jWorkspace wsI =
+                        (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "ITER")) {
             INDArray arrayL = array.leverageTo("ITER");
 
             assertFalse(array.isAttached());
@@ -392,7 +392,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     @Test
     public void testIsAttached2() {
         INDArray array = Nd4j.create(100);
-        try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopFirstConfig, "ITER")) {
+        try (Nd4jWorkspace wsI =
+                        (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopFirstConfig, "ITER")) {
             INDArray arrayL = array.leverageTo("ITER");
 
             assertFalse(array.isAttached());
@@ -408,7 +409,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
     @Test
     public void testIsAttached1() {
 
-        try (Nd4jWorkspace wsI = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopFirstConfig, "ITER")) {
+        try (Nd4jWorkspace wsI =
+                        (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(loopFirstConfig, "ITER")) {
             INDArray array = Nd4j.create(100);
 
             assertTrue(array.isAttached());
@@ -421,15 +423,10 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testOverallocation3() throws Exception {
-        WorkspaceConfiguration overallocationConfig = WorkspaceConfiguration.builder()
-                .initialSize(0)
-                .maxSize(10 * 1024 * 1024)
-                .overallocationLimit(1.0)
-                .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                .policyLearning(LearningPolicy.OVER_TIME)
-                .policyMirroring(MirroringPolicy.FULL)
-                .policySpill(SpillPolicy.EXTERNAL)
-                .build();
+        WorkspaceConfiguration overallocationConfig = WorkspaceConfiguration.builder().initialSize(0)
+                        .maxSize(10 * 1024 * 1024).overallocationLimit(1.0)
+                        .policyAllocation(AllocationPolicy.OVERALLOCATE).policyLearning(LearningPolicy.OVER_TIME)
+                        .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.EXTERNAL).build();
 
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(overallocationConfig);
 
@@ -437,7 +434,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         assertEquals(0, workspace.getCurrentSize());
 
-        for (int x = 10; x <= 100; x+=10) {
+        for (int x = 10; x <= 100; x += 10) {
             try (MemoryWorkspace cW = workspace.notifyScopeEntered()) {
                 INDArray array = Nd4j.create(x);
             }
@@ -454,15 +451,10 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testOverallocation2() throws Exception {
-        WorkspaceConfiguration overallocationConfig = WorkspaceConfiguration.builder()
-                .initialSize(0)
-                .maxSize(10 * 1024 * 1024)
-                .overallocationLimit(1.0)
-                .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .policyMirroring(MirroringPolicy.FULL)
-                .policySpill(SpillPolicy.EXTERNAL)
-                .build();
+        WorkspaceConfiguration overallocationConfig = WorkspaceConfiguration.builder().initialSize(0)
+                        .maxSize(10 * 1024 * 1024).overallocationLimit(1.0)
+                        .policyAllocation(AllocationPolicy.OVERALLOCATE).policyLearning(LearningPolicy.FIRST_LOOP)
+                        .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.EXTERNAL).build();
 
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(overallocationConfig);
 
@@ -470,7 +462,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         assertEquals(0, workspace.getCurrentSize());
 
-        try(MemoryWorkspace cW = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace cW = workspace.notifyScopeEntered()) {
             INDArray array = Nd4j.create(100);
         }
 
@@ -480,15 +472,10 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testOverallocation1() throws Exception {
-        WorkspaceConfiguration overallocationConfig = WorkspaceConfiguration.builder()
-                .initialSize(1024)
-                .maxSize(10 * 1024 * 1024)
-                .overallocationLimit(1.0)
-                .policyAllocation(AllocationPolicy.OVERALLOCATE)
-                .policyLearning(LearningPolicy.NONE)
-                .policyMirroring(MirroringPolicy.FULL)
-                .policySpill(SpillPolicy.EXTERNAL)
-                .build();
+        WorkspaceConfiguration overallocationConfig = WorkspaceConfiguration.builder().initialSize(1024)
+                        .maxSize(10 * 1024 * 1024).overallocationLimit(1.0)
+                        .policyAllocation(AllocationPolicy.OVERALLOCATE).policyLearning(LearningPolicy.NONE)
+                        .policyMirroring(MirroringPolicy.FULL).policySpill(SpillPolicy.EXTERNAL).build();
 
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(overallocationConfig);
 
@@ -505,7 +492,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         assertEquals(0, workspace.getHostOffset());
 
-        try(MemoryWorkspace cW = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace cW = workspace.notifyScopeEntered()) {
             INDArray array1 = Nd4j.create(100);
 
             cW.toggleWorkspaceUse(false);
@@ -527,7 +514,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         log.info("--------------------------");
 
-        try(MemoryWorkspace cW = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace cW = workspace.notifyScopeEntered()) {
             INDArray array1 = Nd4j.create(100);
 
             cW.toggleWorkspaceUse(false);
@@ -559,7 +546,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         assertEquals(0, workspace.getHostOffset());
 
-        try(MemoryWorkspace cW = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace cW = workspace.notifyScopeEntered()) {
             INDArray array1 = Nd4j.create(100);
             INDArray array2 = Nd4j.create(100);
         }
@@ -567,7 +554,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
         assertEquals(0, workspace.getHostOffset());
         assertEquals(200 * Nd4j.sizeOfDataType(), workspace.getCurrentSize());
 
-        try(MemoryWorkspace cW = workspace.notifyScopeEntered()) {
+        try (MemoryWorkspace cW = workspace.notifyScopeEntered()) {
             INDArray array1 = Nd4j.create(100);
 
             assertEquals(100 * Nd4j.sizeOfDataType(), workspace.getHostOffset());
@@ -681,13 +668,13 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
             long reqMem = 10 * Nd4j.sizeOfDataType();
 
-            assertEquals( reqMem + reqMem % 8, workspace.getHostOffset());
+            assertEquals(reqMem + reqMem % 8, workspace.getHostOffset());
 
             array.addi(1.0f);
 
             assertEquals(reqMem + reqMem % 8, workspace.getHostOffset());
 
-            assertEquals("Failed on iteration " + x,10, array.sumNumber().doubleValue(), 0.01);
+            assertEquals("Failed on iteration " + x, 10, array.sumNumber().doubleValue(), 0.01);
 
             workspace.notifyScopeLeft();
 
@@ -727,7 +714,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         assertEquals(0, workspace.getHostOffset());
 
-        INDArray array = Nd4j.create(new int[] {1,5}, 'c');
+        INDArray array = Nd4j.create(new int[] {1, 5}, 'c');
 
         // checking if allocation actually happened
         long reqMemory = 5 * Nd4j.sizeOfDataType();
@@ -745,15 +732,10 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testAllocation4() throws Exception {
-        WorkspaceConfiguration failConfig = WorkspaceConfiguration.builder()
-                .initialSize(1024 * 1024)
-                .maxSize(1024 * 1024)
-                .overallocationLimit(0.1)
-                .policyAllocation(AllocationPolicy.STRICT)
-                .policyLearning(LearningPolicy.FIRST_LOOP)
-                .policyMirroring(MirroringPolicy.FULL)
-                .policySpill(SpillPolicy.FAIL)
-                .build();
+        WorkspaceConfiguration failConfig = WorkspaceConfiguration.builder().initialSize(1024 * 1024)
+                        .maxSize(1024 * 1024).overallocationLimit(0.1).policyAllocation(AllocationPolicy.STRICT)
+                        .policyLearning(LearningPolicy.FIRST_LOOP).policyMirroring(MirroringPolicy.FULL)
+                        .policySpill(SpillPolicy.FAIL).build();
 
 
         Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().createNewWorkspace(failConfig);
@@ -764,7 +746,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         assertEquals(0, workspace.getHostOffset());
 
-        INDArray array = Nd4j.create(new int[] {1,5}, 'c');
+        INDArray array = Nd4j.create(new int[] {1, 5}, 'c');
 
         // checking if allocation actually happened
         long reqMem = 5 * Nd4j.sizeOfDataType();
@@ -779,14 +761,15 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         assertEquals(reqMem + reqMem % 8, workspace.getHostOffset());
 
-        INDArray array2 = Nd4j.create(new int[] {1,5}, 'c');
+        INDArray array2 = Nd4j.create(new int[] {1, 5}, 'c');
 
         assertEquals((reqMem + reqMem % 8) * 2, workspace.getHostOffset());
     }
 
     @Test
     public void testAllocation3() throws Exception {
-        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfig, MemoryWorkspace.DEFAULT_ID);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfig,
+                        MemoryWorkspace.DEFAULT_ID);
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
@@ -794,7 +777,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         assertEquals(0, workspace.getHostOffset());
 
-        INDArray array = Nd4j.create(new int[] {1,5}, 'c');
+        INDArray array = Nd4j.create(new int[] {1, 5}, 'c');
 
         // checking if allocation actually happened
         long reqMem = 5 * Nd4j.sizeOfDataType();
@@ -807,7 +790,8 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testAllocation2() throws Exception {
-        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfig, MemoryWorkspace.DEFAULT_ID);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfig,
+                        MemoryWorkspace.DEFAULT_ID);
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
@@ -828,15 +812,16 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
     @Test
     public void testAllocation1() throws Exception {
-        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfig, MemoryWorkspace.DEFAULT_ID);
+        Nd4jWorkspace workspace = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getWorkspaceForCurrentThread(basicConfig,
+                        MemoryWorkspace.DEFAULT_ID);
 
-        INDArray exp = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+        INDArray exp = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
 
         assertNotEquals(null, Nd4j.getMemoryManager().getCurrentWorkspace());
 
-        INDArray array = Nd4j.create(new float[]{1f, 2f, 3f, 4f, 5f});
+        INDArray array = Nd4j.create(new float[] {1f, 2f, 3f, 4f, 5f});
 
         // checking if allocation actually happened
         long reqMem = 5 * Nd4j.sizeOfDataType();
@@ -866,7 +851,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
         // checking workspace memory space
 
-        INDArray array2 = Nd4j.create(new float[]{5f, 4f, 3f, 2f, 1f});
+        INDArray array2 = Nd4j.create(new float[] {5f, 4f, 3f, 2f, 1f});
 
         sum = array2.sumNumber().doubleValue();
         assertEquals(15.0, sum, 0.01);

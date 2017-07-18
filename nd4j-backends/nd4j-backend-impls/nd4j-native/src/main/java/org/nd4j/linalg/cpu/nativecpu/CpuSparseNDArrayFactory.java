@@ -419,4 +419,14 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     public INDArray[] tear(INDArray tensor, int... dimensions) {
         return new INDArray[0];
     }
+
+    @Override
+    public INDArray sort(INDArray x, boolean descending) {
+            return null;
+    }
+
+    @Override
+    public INDArray sort(INDArray x, boolean descending, int... dimensions) {
+        return null;
+    }
 }

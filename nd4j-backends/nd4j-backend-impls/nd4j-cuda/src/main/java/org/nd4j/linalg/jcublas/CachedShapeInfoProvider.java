@@ -1,5 +1,6 @@
 package org.nd4j.linalg.jcublas;
 
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.jita.constant.ProtectedCudaShapeInfoProvider;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.BaseShapeInfoProvider;
@@ -20,8 +21,8 @@ public class CachedShapeInfoProvider extends BaseShapeInfoProvider {
     }
 
     @Override
-    public DataBuffer createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride,
-                    char order) {
+    public Pair<DataBuffer, int[]> createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride,
+                                                          char order) {
         return provider.createShapeInformation(shape, stride, offset, elementWiseStride, order);
     }
 

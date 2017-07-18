@@ -221,7 +221,7 @@ public class JcublasLapack extends BaseLapack {
             r = R.dup('f');
 
         INDArray tau = Nd4j.createArrayFromShapeBuffer(Nd4j.getDataBufferFactory().createFloat(N),
-                Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, N}));
+                Nd4j.getShapeInfoProvider().createShapeInformation(new int[] {1, N}).getFirst());
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();

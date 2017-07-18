@@ -22,6 +22,8 @@ package org.nd4j.linalg;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.math3.stat.descriptive.rank.Percentile;
+import org.apache.commons.math3.util.FastMath;
 import org.apache.commons.math3.util.Pair;
 import org.junit.After;
 import org.junit.Before;
@@ -44,10 +46,11 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
 import org.nd4j.linalg.api.ops.impl.accum.Norm1;
 import org.nd4j.linalg.api.ops.impl.accum.Norm2;
 import org.nd4j.linalg.api.ops.impl.accum.Sum;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
-import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
+import org.nd4j.linalg.api.ops.impl.accum.distances.EuclideanDistance;
+import org.nd4j.linalg.api.ops.impl.accum.distances.ManhattanDistance;
+import org.nd4j.linalg.api.ops.impl.broadcast.*;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IAMin;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
@@ -58,6 +61,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.Eps;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -66,6 +70,7 @@ import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.MathUtils;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -96,7 +101,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Before
     public void before() throws Exception {
         super.before();
-        DataTypeUtil.setDTypeForContext(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataBuffer.Type.FLOAT);
         Nd4j.getRandom().setSeed(123);
 
     }
@@ -104,7 +109,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @After
     public void after() throws Exception {
         super.after();
-        DataTypeUtil.setDTypeForContext(initialType);
+        Nd4j.setDataType(initialType);
     }
 
 
@@ -3303,7 +3308,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         Nd4j.getExecutioner().commit();
 
-
         Nd4j.getExecutioner().exec(new Set(arr3f, arr, arr3c, arr3c.length()));
 
         INDArray exp = Nd4j.linspace(1, length, length).reshape('c', shape3);
@@ -4216,6 +4220,834 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray array = Nd4j.create(new double[]{-2, 0.0, 2, 2});
 
         assertEquals(3, array.scan(Conditions.absGreaterThan(0.0)).intValue());
+    }
+
+    @Test
+    public void testNewBroadcastComparison1() throws Exception {
+        INDArray initial = Nd4j.create(3, 5);
+        INDArray mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
+        INDArray exp = Nd4j.create(new double[] {1, 1, 1, 0, 0});
+
+        for (int i = 0; i < initial.columns(); i++) {
+            initial.getColumn(i).assign(i);
+        }
+
+        Nd4j.getExecutioner().commit();
+
+
+        Nd4j.getExecutioner().exec(new BroadcastLessThan(initial, mask, initial, 1 ));
+
+
+
+        for (int i = 0; i < initial.rows(); i++) {
+            assertEquals(exp, initial.getRow(i));
+        }
+    }
+
+
+
+    @Test
+    public void testNewBroadcastComparison2() throws Exception {
+        INDArray initial = Nd4j.create(3, 5);
+        INDArray mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
+        INDArray exp = Nd4j.create(new double[] {0, 0, 0, 1, 1});
+
+        for (int i = 0; i < initial.columns(); i++) {
+            initial.getColumn(i).assign(i);
+        }
+
+        Nd4j.getExecutioner().commit();
+
+
+        Nd4j.getExecutioner().exec(new BroadcastGreaterThan(initial, mask, initial, 1 ));
+
+
+
+        for (int i = 0; i < initial.rows(); i++) {
+            assertEquals(exp, initial.getRow(i));
+        }
+    }
+
+
+    @Test
+    public void testNewBroadcastComparison3() throws Exception {
+        INDArray initial = Nd4j.create(3, 5);
+        INDArray mask = Nd4j.create(new double[] {5, 4, 3, 2, 1});
+        INDArray exp = Nd4j.create(new double[] {0, 0, 1, 1, 1});
+
+        for (int i = 0; i < initial.columns(); i++) {
+            initial.getColumn(i).assign(i+1);
+        }
+
+        Nd4j.getExecutioner().commit();
+
+
+        Nd4j.getExecutioner().exec(new BroadcastGreaterThanOrEqual(initial, mask, initial, 1 ));
+
+
+        for (int i = 0; i < initial.rows(); i++) {
+            assertEquals(exp, initial.getRow(i));
+        }
+    }
+
+    @Test
+    public void testTadReduce3_0() throws Exception {
+        INDArray haystack = Nd4j.create(new double[]{-0.84443557262, -0.06822254508, 0.74266910552, 0.61765557527, -0.77555125951, -0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673, 0.62955373525, -0.31357592344, 1.03362500667, -0.59279078245, 1.1914824247}).reshape(3, 5);
+        INDArray needle = Nd4j.create(new double[]{-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673});
+
+        INDArray reduced = Nd4j.getExecutioner().exec(new CosineDistance(haystack, needle), 1);
+        log.info("Reduced: {}", reduced);
+
+
+        INDArray exp = Nd4j.create(new double[]{0.577452, 0.0, 1.80182});
+        assertEquals(exp, reduced);
+
+        for (int i = 0; i < haystack.rows(); i++) {
+            double res = Nd4j.getExecutioner().execAndReturn(new CosineDistance(haystack.getRow(i).dup(), needle)).getFinalResult().doubleValue();
+            assertEquals("Failed at " + i, reduced.getDouble(i), res, 0.001);
+        }
+        //cosinedistance([-0.84443557262, -0.06822254508, 0.74266910552, 0.61765557527, -0.77555125951], [-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673)
+        //cosinedistance([.62955373525, -0.31357592344, 1.03362500667, -0.59279078245, 1.1914824247], [-0.99536740779, -0.0257304441183, -0.6512106060, -0.345789492130, -1.25485503673)
+
+    }
+
+    @Test
+    public void testTadReduce3_1() throws Exception {
+        INDArray initial = Nd4j.create(5, 10);
+        for (int i = 0; i < initial.rows(); i++) {
+            initial.getRow(i).assign(i+1);
+        }
+        INDArray needle = Nd4j.create(new double[]{0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9});
+        INDArray reduced = Nd4j.getExecutioner().exec(new CosineSimilarity(initial, needle), 1);
+
+        log.warn("Reduced: {}", reduced);
+
+        for (int i = 0; i < initial.rows(); i++) {
+            double res = Nd4j.getExecutioner().execAndReturn(new CosineSimilarity(initial.getRow(i).dup(), needle)).getFinalResult().doubleValue();
+            assertEquals("Failed at " + i, reduced.getDouble(i), res, 0.001);
+        }
+    }
+
+    @Test
+    public void testTadReduce3_2() throws Exception {
+        INDArray initial = Nd4j.create(5, 10);
+        for (int i = 0; i < initial.rows(); i++) {
+            initial.getRow(i).assign(i+1);
+        }
+        INDArray needle = Nd4j.create(10).assign(1.0);
+        INDArray reduced = Nd4j.getExecutioner().exec(new ManhattanDistance(initial, needle), 1);
+
+        log.warn("Reduced: {}", reduced);
+
+        for (int i = 0; i < initial.rows(); i++) {
+            double res = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(initial.getRow(i).dup(), needle)).getFinalResult().doubleValue();
+            assertEquals("Failed at " + i, reduced.getDouble(i), res, 0.001);
+        }
+    }
+
+    @Test
+    public void testTadReduce3_3() throws Exception {
+        INDArray initial = Nd4j.create(5, 10);
+        for (int i = 0; i < initial.rows(); i++) {
+            initial.getRow(i).assign(i+1);
+        }
+        INDArray needle = Nd4j.create(10).assign(1.0);
+        INDArray reduced = Nd4j.getExecutioner().exec(new EuclideanDistance(initial, needle), 1);
+
+        log.warn("Reduced: {}", reduced);
+
+        for (int i = 0; i < initial.rows(); i++) {
+            INDArray x = initial.getRow(i).dup();
+            double res = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(x, needle)).getFinalResult().doubleValue();
+            assertEquals("Failed at " + i, reduced.getDouble(i), res, 0.001);
+
+            log.info("Euclidean: {} vs {} is {}", x, needle, res);
+        }
+    }
+
+    @Test(expected = ND4JIllegalStateException.class)
+    public void testTadReduce3_5() throws Exception {
+        INDArray initial = Nd4j.create(5, 10);
+        for (int i = 0; i < initial.rows(); i++) {
+            initial.getRow(i).assign(i+1);
+        }
+        INDArray needle = Nd4j.create(2, 10).assign(1.0);
+        INDArray reduced = Nd4j.getExecutioner().exec(new EuclideanDistance(initial, needle), 1);
+
+    }
+
+    @Test
+    public void testTadReduce3_4() throws Exception {
+        INDArray initial = Nd4j.create(5, 6, 7);
+        for (int i = 0; i < 5; i++) {
+            initial.tensorAlongDimension(i, 1,2).assign(i+1);
+        }
+        INDArray needle = Nd4j.create(6, 7).assign(1.0);
+        INDArray reduced = Nd4j.getExecutioner().exec(new ManhattanDistance(initial, needle), 1, 2);
+
+        log.warn("Reduced: {}", reduced);
+
+        for (int i = 0; i < 5; i++) {
+            double res = Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(initial.tensorAlongDimension(i, 1, 2).dup(), needle)).getFinalResult().doubleValue();
+            assertEquals("Failed at " + i, reduced.getDouble(i), res, 0.001);
+        }
+    }
+
+
+    @Test
+    public void testAtan2_1() throws Exception {
+        INDArray x = Nd4j.create(10).assign(-1.0);
+        INDArray y = Nd4j.create(10).assign(0.0);
+        INDArray exp = Nd4j.create(10).assign(Math.PI);
+
+        INDArray z = Transforms.atan2(x, y);
+
+        assertEquals(exp, z);
+    }
+
+
+    @Test
+    public void testAtan2_2() throws Exception {
+        INDArray x = Nd4j.create(10).assign(1.0);
+        INDArray y = Nd4j.create(10).assign(0.0);
+        INDArray exp = Nd4j.create(10).assign(0.0);
+
+        INDArray z = Transforms.atan2(x, y);
+
+        assertEquals(exp, z);
+    }
+
+
+    @Test
+    public void testAllDistances1() throws Exception {
+        INDArray initialX = Nd4j.create(5, 10);
+        INDArray initialY = Nd4j.create(7, 10);
+        for (int i = 0; i < initialX.rows(); i++) {
+            initialX.getRow(i).assign(i+1);
+        }
+
+        for (int i = 0; i < initialY.rows(); i++) {
+            initialY.getRow(i).assign(i+101);
+        }
+
+        INDArray result = Transforms.allEuclideanDistances(initialX, initialY, 1);
+
+        Nd4j.getExecutioner().commit();
+
+        assertEquals(5 * 7, result.length());
+
+        for (int x = 0; x < initialX.rows(); x++) {
+
+            INDArray rowX = initialX.getRow(x).dup();
+
+            for (int y = 0; y < initialY.rows(); y++) {
+
+                double res = result.getDouble(x, y);
+                double exp = Transforms.euclideanDistance(rowX, initialY.getRow(y).dup());
+
+                assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
+            }
+        }
+    }
+
+
+    @Test
+    public void testAllDistances2() throws Exception {
+        INDArray initialX = Nd4j.create(5, 10);
+        INDArray initialY = Nd4j.create(7, 10);
+        for (int i = 0; i < initialX.rows(); i++) {
+            initialX.getRow(i).assign(i+1);
+        }
+
+        for (int i = 0; i < initialY.rows(); i++) {
+            initialY.getRow(i).assign(i+101);
+        }
+
+        INDArray result = Transforms.allManhattanDistances(initialX, initialY, 1);
+
+        assertEquals(5 * 7, result.length());
+
+        for (int x = 0; x < initialX.rows(); x++) {
+
+            INDArray rowX = initialX.getRow(x).dup();
+
+            for (int y = 0; y < initialY.rows(); y++) {
+
+                double res = result.getDouble(x, y);
+                double exp = Transforms.manhattanDistance(rowX, initialY.getRow(y).dup());
+
+                assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
+            }
+        }
+    }
+
+    @Test
+    public void testAllDistances2_Large() throws Exception {
+        INDArray initialX = Nd4j.create(5, 2000);
+        INDArray initialY = Nd4j.create(7, 2000);
+        for (int i = 0; i < initialX.rows(); i++) {
+            initialX.getRow(i).assign(i+1);
+        }
+
+        for (int i = 0; i < initialY.rows(); i++) {
+            initialY.getRow(i).assign(i+101);
+        }
+
+        INDArray result = Transforms.allManhattanDistances(initialX, initialY, 1);
+
+        assertEquals(5 * 7, result.length());
+
+        for (int x = 0; x < initialX.rows(); x++) {
+
+            INDArray rowX = initialX.getRow(x).dup();
+
+            for (int y = 0; y < initialY.rows(); y++) {
+
+                double res = result.getDouble(x, y);
+                double exp = Transforms.manhattanDistance(rowX, initialY.getRow(y).dup());
+
+                assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
+            }
+        }
+    }
+
+
+    @Test
+    public void testAllDistances3_Large() throws Exception {
+        INDArray initialX = Nd4j.create(5, 2000);
+        INDArray initialY = Nd4j.create(7, 2000);
+        for (int i = 0; i < initialX.rows(); i++) {
+            initialX.getRow(i).assign(i+1);
+        }
+
+        for (int i = 0; i < initialY.rows(); i++) {
+            initialY.getRow(i).assign(i+101);
+        }
+
+        INDArray result = Transforms.allEuclideanDistances(initialX, initialY, 1);
+
+        assertEquals(5 * 7, result.length());
+
+        for (int x = 0; x < initialX.rows(); x++) {
+
+            INDArray rowX = initialX.getRow(x).dup();
+
+            for (int y = 0; y < initialY.rows(); y++) {
+
+                double res = result.getDouble(x, y);
+                double exp = Transforms.euclideanDistance(rowX, initialY.getRow(y).dup());
+
+                assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
+            }
+        }
+    }
+
+
+    @Test
+    public void testAllDistances3_Large_Columns() throws Exception {
+        INDArray initialX = Nd4j.create(2000, 5);
+        INDArray initialY = Nd4j.create(2000, 7);
+        for (int i = 0; i < initialX.columns(); i++) {
+            initialX.getColumn(i).assign(i+1);
+        }
+
+        for (int i = 0; i < initialY.columns(); i++) {
+            initialY.getColumn(i).assign(i+101);
+        }
+
+        INDArray result = Transforms.allEuclideanDistances(initialX, initialY, 0);
+
+        assertEquals(5 * 7, result.length());
+
+        for (int x = 0; x < initialX.columns(); x++) {
+
+            INDArray colX = initialX.getColumn(x).dup();
+
+            for (int y = 0; y < initialY.columns(); y++) {
+
+                double res = result.getDouble(x, y);
+                double exp = Transforms.euclideanDistance(colX, initialY.getColumn(y).dup());
+
+                assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
+            }
+        }
+    }
+
+
+    @Test
+    public void testAllDistances4_Large_Columns() throws Exception {
+        INDArray initialX = Nd4j.create(2000, 5);
+        INDArray initialY = Nd4j.create(2000, 7);
+        for (int i = 0; i < initialX.columns(); i++) {
+            initialX.getColumn(i).assign(i+1);
+        }
+
+        for (int i = 0; i < initialY.columns(); i++) {
+            initialY.getColumn(i).assign(i+101);
+        }
+
+        INDArray result = Transforms.allManhattanDistances(initialX, initialY, 0);
+
+        assertEquals(5 * 7, result.length());
+
+        for (int x = 0; x < initialX.columns(); x++) {
+
+            INDArray colX = initialX.getColumn(x).dup();
+
+            for (int y = 0; y < initialY.columns(); y++) {
+
+                double res = result.getDouble(x, y);
+                double exp = Transforms.manhattanDistance(colX, initialY.getColumn(y).dup());
+
+                assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
+            }
+        }
+    }
+
+    @Test
+    public void testAllDistances5_Large_Columns() throws Exception {
+        INDArray initialX = Nd4j.create(2000, 5);
+        INDArray initialY = Nd4j.create(2000, 7);
+        for (int i = 0; i < initialX.columns(); i++) {
+            initialX.getColumn(i).assign(i+1);
+        }
+
+        for (int i = 0; i < initialY.columns(); i++) {
+            initialY.getColumn(i).assign(i+101);
+        }
+
+        INDArray result = Transforms.allCosineDistances(initialX, initialY, 0);
+
+        assertEquals(5 * 7, result.length());
+
+        for (int x = 0; x < initialX.columns(); x++) {
+
+            INDArray colX = initialX.getColumn(x).dup();
+
+            for (int y = 0; y < initialY.columns(); y++) {
+
+                double res = result.getDouble(x, y);
+                double exp = Transforms.cosineDistance(colX, initialY.getColumn(y).dup());
+
+                assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
+            }
+        }
+    }
+
+    @Test
+    public void testAllDistances3_Small_Columns() throws Exception {
+        INDArray initialX = Nd4j.create(200, 5);
+        INDArray initialY = Nd4j.create(200, 7);
+        for (int i = 0; i < initialX.columns(); i++) {
+            initialX.getColumn(i).assign(i+1);
+        }
+
+        for (int i = 0; i < initialY.columns(); i++) {
+            initialY.getColumn(i).assign(i+101);
+        }
+
+        INDArray result = Transforms.allManhattanDistances(initialX, initialY, 0);
+
+        assertEquals(5 * 7, result.length());
+
+        for (int x = 0; x < initialX.columns(); x++) {
+            INDArray colX = initialX.getColumn(x).dup();
+
+            for (int y = 0; y < initialY.columns(); y++) {
+
+                double res = result.getDouble(x, y);
+                double exp = Transforms.manhattanDistance(colX, initialY.getColumn(y).dup());
+
+                assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
+            }
+        }
+    }
+
+
+
+
+
+    @Test
+    public void testAllDistances3() throws Exception {
+        Nd4j.getRandom().setSeed(123);
+
+        INDArray initialX = Nd4j.rand(5, 10);
+        INDArray initialY = initialX.mul(-1);
+
+        INDArray result = Transforms.allCosineSimilarities(initialX, initialY, 1);
+
+        assertEquals(5 * 5, result.length());
+
+        for (int x = 0; x < initialX.rows(); x++) {
+
+            INDArray rowX = initialX.getRow(x).dup();
+
+            for (int y = 0; y < initialY.rows(); y++) {
+
+                double res = result.getDouble(x, y);
+                double exp = Transforms.cosineSim(rowX, initialY.getRow(y).dup());
+
+                assertEquals("Failed for [" + x + ", " + y +"]", exp, res, 0.001);
+            }
+        }
+    }
+
+
+    @Test
+    public void testStridedTransforms1() throws Exception{
+        //output: Rank: 2,Offset: 0
+        //Order: c Shape: [5,2],  stride: [2,1]
+        //output: [0.5086864, 0.49131358, 0.50720876, 0.4927912, 0.46074104, 0.53925896, 0.49314, 0.50686, 0.5217741, 0.4782259]
+
+        double[] d = {0.5086864, 0.49131358, 0.50720876, 0.4927912, 0.46074104, 0.53925896, 0.49314, 0.50686, 0.5217741, 0.4782259};
+
+        INDArray in = Nd4j.create(d, new int[]{5,2}, 'c');
+
+        INDArray col0 = in.getColumn(0);
+        INDArray col1 = in.getColumn(1);
+
+        float[] exp0 = new float[d.length/2];
+        float[] exp1 = new float[d.length/2];
+        for( int i=0; i<col0.length(); i++ ){
+            exp0[i] = (float)Math.log(col0.getDouble(i));
+            exp1[i] = (float)Math.log(col1.getDouble(i));
+        }
+
+        INDArray out0 = Transforms.log(col0, true);
+        INDArray out1 = Transforms.log(col1, true);
+
+        assertArrayEquals(exp0, out0.data().asFloat(), 1e-4f);
+        assertArrayEquals(exp1, out1.data().asFloat(), 1e-4f);
+    }
+
+    @Test
+    public void testEntropy1() throws Exception {
+        INDArray x = Nd4j.rand(1, 100);
+
+        double exp = MathUtils.entropy(x.data().asDouble());
+        double res = x.entropyNumber().doubleValue();
+
+        assertEquals(exp, res, 1e-5);
+    }
+
+    @Test
+    public void testEntropy2() throws Exception {
+        INDArray x = Nd4j.rand(10, 100);
+
+        INDArray res = x.entropy(1);
+
+        assertEquals(10, res.lengthLong());
+
+        for (int t = 0; t < x.rows(); t++) {
+            double exp = MathUtils.entropy(x.getRow(t).dup().data().asDouble());
+
+            assertEquals(exp, res.getDouble(t), 1e-5);
+        }
+    }
+
+
+    @Test
+    public void testEntropy3() throws Exception {
+        INDArray x = Nd4j.rand(1, 100);
+
+        double exp = getShannonEntropy(x.data().asDouble());
+        double res = x.shannonEntropyNumber().doubleValue();
+
+        assertEquals(exp, res, 1e-5);
+    }
+
+    @Test
+    public void testEntropy4() throws Exception {
+        INDArray x = Nd4j.rand(1, 100);
+
+        double exp = getLogEntropy(x.data().asDouble());
+        double res = x.logEntropyNumber().doubleValue();
+
+        assertEquals(exp, res, 1e-5);
+    }
+
+
+    protected double getShannonEntropy(double[] array) {
+        double ret = 0;
+        for (double x: array) {
+            ret += FastMath.pow(x, 2) * FastMath.log(FastMath.pow(x, 2));
+        }
+
+        return -ret;
+    }
+
+
+    protected double getLogEntropy(double[] array) {
+        double ret = 0;
+        for (double x: array) {
+            ret += FastMath.log(FastMath.pow(x, 2));
+        }
+
+        return ret;
+    }
+
+
+    @Test
+    public void testReverse1() throws Exception {
+        INDArray array =  Nd4j.create(new double[] {9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
+        INDArray exp = Nd4j.create(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+
+        INDArray rev = Nd4j.reverse(array);
+
+        assertEquals(exp, rev);
+    }
+
+    @Test
+    public void testReverse2() throws Exception {
+        INDArray array =  Nd4j.create(new double[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
+        INDArray exp = Nd4j.create(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+
+        INDArray rev = Nd4j.reverse(array);
+
+        assertEquals(exp, rev);
+    }
+
+    @Test
+    public void testReverse3() throws Exception {
+        INDArray array =  Nd4j.create(new double[] {9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
+        INDArray exp = Nd4j.create(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+
+        INDArray rev = Nd4j.getExecutioner().exec(new Reverse(array, Nd4j.createUninitialized(array.length()))).z();
+
+        assertEquals(exp, rev);
+    }
+
+    @Test
+    public void testReverse4() throws Exception {
+        INDArray array =  Nd4j.create(new double[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
+        INDArray exp = Nd4j.create(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+
+        INDArray rev = Nd4j.getExecutioner().exec(new Reverse(array, Nd4j.createUninitialized(array.length()))).z();
+
+        assertEquals(exp, rev);
+    }
+
+    @Test
+    public void testReverse5() throws Exception {
+        INDArray array =  Nd4j.create(new double[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
+        INDArray exp = Nd4j.create(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+
+        INDArray rev = Transforms.reverse(array, true);
+
+        assertEquals(exp, rev);
+        assertFalse(rev == array);
+    }
+
+
+    @Test
+    public void testReverse6() throws Exception {
+        INDArray array =  Nd4j.create(new double[] {10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
+        INDArray exp = Nd4j.create(new double[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+
+        INDArray rev = Transforms.reverse(array, false);
+
+        assertEquals(exp, rev);
+        assertTrue(rev == array);
+    }
+
+
+    @Test
+    public void testNativeSortView1() {
+        INDArray matrix = Nd4j.create(10, 10);
+        INDArray exp = Nd4j.linspace(0, 9, 10);
+        int cnt = 0;
+        for (int i = matrix.rows() - 1; i >=0; i--) {
+            matrix.getRow(i).assign(cnt);
+            cnt++;
+        }
+
+        Nd4j.sort(matrix.getColumn(0), true);
+
+
+        log.info("Matrix: {}", matrix);
+
+        assertEquals(exp, matrix.getColumn(0));
+    }
+
+    @Test
+    public void testNativeSort1() throws Exception {
+        INDArray array = Nd4j.create(new double[]{ 9, 2, 1, 7, 6, 5, 4, 3, 8, 0});
+        INDArray exp1 =  Nd4j.create(new double[] {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+        INDArray exp2 =  Nd4j.create(new double[] {9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
+
+        INDArray res = Nd4j.sort(array, true);
+
+        assertEquals(exp1, res);
+
+        res = Nd4j.sort(res, false);
+
+        assertEquals(exp2, res);
+    }
+
+    @Test
+    public void testNativeSort2() throws Exception {
+        INDArray array = Nd4j.rand(1, 10000);
+
+        INDArray res = Nd4j.sort(array, true);
+        INDArray exp = res.dup();
+
+        res = Nd4j.sort(res, false);
+        res = Nd4j.sort(res, true);
+
+        assertEquals(exp, res);
+    }
+
+    @Test
+    public void testNativeSort3() throws Exception {
+        INDArray array = Nd4j.linspace(1, 1048576, 1048576);
+        INDArray exp = array.dup();
+        Nd4j.shuffle(array, 0);
+
+        long time1 = System.currentTimeMillis();
+        INDArray res = Nd4j.sort(array, true);
+        long time2 = System.currentTimeMillis();
+        log.info("Time spent: {} ms", time2 - time1);
+
+        assertEquals(exp, res);
+    }
+
+    @Test
+    public void testNativeSort3_1() throws Exception {
+        INDArray array = Nd4j.linspace(1, 2017152, 2017152);
+        INDArray exp = array.dup();
+        Transforms.reverse(array, false);
+
+
+        long time1 = System.currentTimeMillis();
+        INDArray res = Nd4j.sort(array, true);
+        long time2 = System.currentTimeMillis();
+        log.info("Time spent: {} ms", time2 - time1);
+
+        assertEquals(exp, res);
+    }
+
+    @Test
+    public void testNativeSortAlongDimension1() throws Exception {
+        INDArray array = Nd4j.create(1000, 1000);
+        INDArray exp1 =  Nd4j.linspace(1, 1000, 1000);
+        INDArray dps = exp1.dup();
+        Nd4j.shuffle(dps, 0);
+
+        assertNotEquals(exp1, dps);
+
+
+        for (int r = 0; r < array.rows(); r++) {
+            array.getRow(r).assign(dps);
+        }
+
+        long time1 = System.currentTimeMillis();
+        INDArray res = Nd4j.sort(array,1, true);
+        long time2 = System.currentTimeMillis();
+
+        log.info("Time spent: {} ms", time2 - time1);
+
+        for (int r = 0; r < array.rows(); r++) {
+            assertEquals("Failed at " + r, exp1, res.getRow(r).dup());
+        }
+    }
+
+    @Test
+    public void testNativeSortAlongDimension3() throws Exception {
+        INDArray array = Nd4j.create(2000, 2000);
+        INDArray exp1 =  Nd4j.linspace(1, 2000, 2000);
+        INDArray dps = exp1.dup();
+
+        Nd4j.getExecutioner().commit();
+        Nd4j.shuffle(dps, 0);
+
+        assertNotEquals(exp1, dps);
+
+
+        for (int r = 0; r < array.rows(); r++) {
+            array.getRow(r).assign(dps);
+        }
+
+        long time1 = System.currentTimeMillis();
+        INDArray res = Nd4j.sort(array,1, true);
+        long time2 = System.currentTimeMillis();
+
+        log.info("Time spent: {} ms", time2 - time1);
+
+        for (int r = 0; r < array.rows(); r++) {
+            assertEquals("Failed at " + r, exp1, res.getRow(r));
+            //assertArrayEquals("Failed at " + r, exp1.data().asDouble(), res.getRow(r).dup().data().asDouble(), 1e-5);
+        }
+    }
+
+    @Test
+    public void testNativeSortAlongDimension2() throws Exception {
+        INDArray array = Nd4j.create(100, 10);
+        INDArray exp1 =  Nd4j.create(new double[] {9, 8, 7, 6, 5, 4, 3, 2, 1, 0});
+
+        for (int r = 0; r < array.rows(); r++) {
+            array.getRow(r).assign(Nd4j.create(new double[]{ 3, 8, 2, 7, 5, 6, 4, 9, 1, 0}));
+        }
+
+        INDArray res = Nd4j.sort(array,1, false);
+
+        for (int r = 0; r < array.rows(); r++) {
+            assertEquals("Failed at " + r, exp1, res.getRow(r).dup());
+        }
+    }
+
+
+    @Test
+    public void testPercentile1() throws Exception {
+        INDArray array = Nd4j.linspace(1, 10, 10);
+        Percentile percentile = new Percentile(50);
+        double exp = percentile.evaluate(array.data().asDouble());
+
+        assertEquals(exp, array.percentileNumber(50));
+    }
+
+    @Test
+    public void testPercentile2() throws Exception {
+        INDArray array = Nd4j.linspace(1, 9, 9);
+        Percentile percentile = new Percentile(50);
+        double exp = percentile.evaluate(array.data().asDouble());
+
+        assertEquals(exp, array.percentileNumber(50));
+    }
+
+
+    @Test
+    public void testPercentile3() throws Exception {
+        INDArray array = Nd4j.linspace(1, 9, 9);
+        Percentile percentile = new Percentile(75);
+        double exp = percentile.evaluate(array.data().asDouble());
+
+        assertEquals(exp, array.percentileNumber(75));
+    }
+
+    @Test
+    public void testPercentile4() throws Exception {
+        INDArray array = Nd4j.linspace(1, 10, 10);
+        Percentile percentile = new Percentile(75);
+        double exp = percentile.evaluate(array.data().asDouble());
+
+        assertEquals(exp, array.percentileNumber(75));
+    }
+
+    @Test
+    public void testTadPercentile1() throws Exception {
+        INDArray array = Nd4j.linspace(1, 10, 10);
+        Transforms.reverse(array, false);
+        Percentile percentile = new Percentile(75);
+        double exp = percentile.evaluate(array.data().asDouble());
+
+        INDArray matrix = Nd4j.create(10, 10);
+        for (int i = 0; i < matrix.rows(); i++)
+            matrix.getRow(i).assign(array);
+
+        INDArray res = matrix.percentile(75, 1);
+
+        for (int i = 0; i < matrix.rows(); i++)
+            assertEquals(exp, res.getDouble(i), 1e-5);
     }
 
     @Override

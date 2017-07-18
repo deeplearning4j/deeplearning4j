@@ -529,6 +529,149 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
                                  int[] resultShapeInfoBuffer,
                                  int[] dimension,
                                  int dimensionLength);
+
+    public native void execReduce3AllDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                 int opNum,
+                                 DoublePointer x,
+                                 IntPointer xInfo,
+                                 DoublePointer extraParamsVals,
+                                 DoublePointer y,
+                                 IntPointer yInfo,
+                                 DoublePointer result,
+                                 IntPointer resultShapeInfoBuffer,
+                                 IntPointer dimension,
+                                 int dimensionLength,
+                                 IntPointer xTadShapeInfo,
+                                 IntPointer xOffsets,
+                                 IntPointer yTadShapeInfo,
+                                 IntPointer yOffsets);
+    public native void execReduce3AllDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                 int opNum,
+                                 DoubleBuffer x,
+                                 IntBuffer xInfo,
+                                 DoubleBuffer extraParamsVals,
+                                 DoubleBuffer y,
+                                 IntBuffer yInfo,
+                                 DoubleBuffer result,
+                                 IntBuffer resultShapeInfoBuffer,
+                                 IntBuffer dimension,
+                                 int dimensionLength,
+                                 IntBuffer xTadShapeInfo,
+                                 IntBuffer xOffsets,
+                                 IntBuffer yTadShapeInfo,
+                                 IntBuffer yOffsets);
+    public native void execReduce3AllDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                 int opNum,
+                                 double[] x,
+                                 int[] xInfo,
+                                 double[] extraParamsVals,
+                                 double[] y,
+                                 int[] yInfo,
+                                 double[] result,
+                                 int[] resultShapeInfoBuffer,
+                                 int[] dimension,
+                                 int dimensionLength,
+                                 int[] xTadShapeInfo,
+                                 int[] xOffsets,
+                                 int[] yTadShapeInfo,
+                                 int[] yOffsets);
+
+    public native void execReduce3AllFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                  int opNum,
+                                  FloatPointer x,
+                                  IntPointer xInfo,
+                                  FloatPointer extraParamsVals,
+                                  FloatPointer y,
+                                  IntPointer yInfo,
+                                  FloatPointer result,
+                                  IntPointer resultShapeInfoBuffer,
+                                  IntPointer dimension,
+                                  int dimensionLength,
+                                  IntPointer xTadShapeInfo,
+                                  IntPointer xOffsets,
+                                  IntPointer yTadShapeInfo,
+                                  IntPointer yOffsets);
+    public native void execReduce3AllFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                  int opNum,
+                                  FloatBuffer x,
+                                  IntBuffer xInfo,
+                                  FloatBuffer extraParamsVals,
+                                  FloatBuffer y,
+                                  IntBuffer yInfo,
+                                  FloatBuffer result,
+                                  IntBuffer resultShapeInfoBuffer,
+                                  IntBuffer dimension,
+                                  int dimensionLength,
+                                  IntBuffer xTadShapeInfo,
+                                  IntBuffer xOffsets,
+                                  IntBuffer yTadShapeInfo,
+                                  IntBuffer yOffsets);
+    public native void execReduce3AllFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                  int opNum,
+                                  float[] x,
+                                  int[] xInfo,
+                                  float[] extraParamsVals,
+                                  float[] y,
+                                  int[] yInfo,
+                                  float[] result,
+                                  int[] resultShapeInfoBuffer,
+                                  int[] dimension,
+                                  int dimensionLength,
+                                  int[] xTadShapeInfo,
+                                  int[] xOffsets,
+                                  int[] yTadShapeInfo,
+                                  int[] yOffsets);
+
+    public native void execReduce3AllHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                  int opNum,
+                                  @Cast("float16*") ShortPointer x,
+                                  IntPointer xInfo,
+                                  @Cast("float16*") ShortPointer extraParamsVals,
+                                  @Cast("float16*") ShortPointer y,
+                                  IntPointer yInfo,
+                                  @Cast("float16*") ShortPointer result,
+                                  IntPointer resultShapeInfoBuffer,
+                                  IntPointer dimension,
+                                  int dimensionLength,
+                                  IntPointer xTadShapeInfo,
+                                  IntPointer xOffsets,
+                                  IntPointer yTadShapeInfo,
+                                  IntPointer yOffsets);
+    public native void execReduce3AllHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                  int opNum,
+                                  @Cast("float16*") ShortBuffer x,
+                                  IntBuffer xInfo,
+                                  @Cast("float16*") ShortBuffer extraParamsVals,
+                                  @Cast("float16*") ShortBuffer y,
+                                  IntBuffer yInfo,
+                                  @Cast("float16*") ShortBuffer result,
+                                  IntBuffer resultShapeInfoBuffer,
+                                  IntBuffer dimension,
+                                  int dimensionLength,
+                                  IntBuffer xTadShapeInfo,
+                                  IntBuffer xOffsets,
+                                  IntBuffer yTadShapeInfo,
+                                  IntBuffer yOffsets);
+    public native void execReduce3AllHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers,
+                                  int opNum,
+                                  @Cast("float16*") short[] x,
+                                  int[] xInfo,
+                                  @Cast("float16*") short[] extraParamsVals,
+                                  @Cast("float16*") short[] y,
+                                  int[] yInfo,
+                                  @Cast("float16*") short[] result,
+                                  int[] resultShapeInfoBuffer,
+                                  int[] dimension,
+                                  int dimensionLength,
+                                  int[] xTadShapeInfo,
+                                  int[] xOffsets,
+                                  int[] yTadShapeInfo,
+                                  int[] yOffsets);
+
+
+
+
+
     /**
      *
      * @param opNum
@@ -4814,6 +4957,34 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native void decodeThresholdHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jIndex") long N, @Cast("float16*") ShortPointer dz);
     public native void decodeThresholdHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jIndex") long N, @Cast("float16*") ShortBuffer dz);
     public native void decodeThresholdHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jIndex") long N, @Cast("float16*") short[] dz);
+
+
+
+    public native void sortFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatPointer x, IntPointer xShapeInfo, @Cast("bool") boolean descending);
+    public native void sortFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatBuffer x, IntBuffer xShapeInfo, @Cast("bool") boolean descending);
+    public native void sortFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, float[] x, int[] xShapeInfo, @Cast("bool") boolean descending);
+
+    public native void sortDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoublePointer x, IntPointer xShapeInfo, @Cast("bool") boolean descending);
+    public native void sortDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoubleBuffer x, IntBuffer xShapeInfo, @Cast("bool") boolean descending);
+    public native void sortDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, double[] x, int[] xShapeInfo, @Cast("bool") boolean descending);
+
+    public native void sortHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortPointer x, IntPointer xShapeInfo, @Cast("bool") boolean descending);
+    public native void sortHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortBuffer x, IntBuffer xShapeInfo, @Cast("bool") boolean descending);
+    public native void sortHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") short[] x, int[] xShapeInfo, @Cast("bool") boolean descending);
+
+
+
+    public native void sortTadFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatPointer x, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, IntPointer tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatBuffer x, IntBuffer xShapeInfo, IntBuffer dimension, int dimensionLength, IntBuffer tadShapeInfo, IntBuffer tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, float[] x, int[] xShapeInfo, int[] dimension, int dimensionLength, int[] tadShapeInfo, int[] tadOffsets, @Cast("bool") boolean descending);
+
+    public native void sortTadDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoublePointer x, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, IntPointer tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, DoubleBuffer x, IntBuffer xShapeInfo, IntBuffer dimension, int dimensionLength, IntBuffer tadShapeInfo, IntBuffer tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadDouble(@Cast("Nd4jPointer*") PointerPointer extraPointers, double[] x, int[] xShapeInfo, int[] dimension, int dimensionLength, int[] tadShapeInfo, int[] tadOffsets, @Cast("bool") boolean descending);
+
+    public native void sortTadHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortPointer x, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, IntPointer tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortBuffer x, IntBuffer xShapeInfo, IntBuffer dimension, int dimensionLength, IntBuffer tadShapeInfo, IntBuffer tadOffsets, @Cast("bool") boolean descending);
+    public native void sortTadHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") short[] x, int[] xShapeInfo, int[] dimension, int dimensionLength, int[] tadShapeInfo, int[] tadOffsets, @Cast("bool") boolean descending);
 }
 
 

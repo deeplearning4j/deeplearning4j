@@ -272,17 +272,30 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
          */
         INDArray ret;
         if (op.z() == null || op.z() == op.x()) {
+            if (op.isComplexAccumulation()) {
+                int xT = op.x().tensorssAlongDimension(dimension);
+                int yT = op.y().tensorssAlongDimension(dimension);
 
-            if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
-                ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
-            else
-                ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
+                ret = Nd4j.create(xT, yT);
+            } else {
+                if (op.x().data().dataType() == DataBuffer.Type.DOUBLE)
+                    ret = Nd4j.valueArrayOf(retShape, op.zeroDouble());
+                else
+                    ret = Nd4j.valueArrayOf(retShape, op.zeroFloat());
 
+            }
             op.setZ(ret);
         } else {
             // compare length
-            if (op.z().lengthLong() != ArrayUtil.prodLong(retShape))
+            if (!op.isComplexAccumulation() && op.z().lengthLong() != ArrayUtil.prodLong(retShape))
                 throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
+            else if (op.isComplexAccumulation()) {
+                int xT = op.x().tensorssAlongDimension(dimension);
+                int yT = op.y().tensorssAlongDimension(dimension);
+
+                if (op.z().lengthLong() != xT * yT)
+                    throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + (xT * yT) + "]");
+            }
 
             if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
                 op.z().assign(op.zeroDouble());
@@ -299,6 +312,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
          * The first item is the shape information. The second one is the offsets.
          */
         Pair<DataBuffer, DataBuffer> tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
+        Pair<DataBuffer, DataBuffer> yTadBuffers = null;
         /**
          * Note that we use addresses in libnd4j.
          * We use reinterpret cast in c to take the long
@@ -309,10 +323,30 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         DataBuffer offsets = tadBuffers.getSecond();
         Pointer hostTadOffsets = offsets == null ? null : offsets.addressPointer();
 
+        // we're going to check, if that's TAD vs TAD comparison or TAD vs full array. if later - we're going slightly different route
+        boolean tvf = false;
+        if (op.y() != null) {
+            if (op.x().tensorAlongDimension(0, dimension).lengthLong() == op.y().lengthLong()) {
+                tvf = true;
+            } else if (op.y().lengthLong() != op.x().lengthLong()) {
+                if (!op.isComplexAccumulation())
+                    throw new ND4JIllegalStateException("Op.X [" + op.x().lengthLong() + "] and Op.Y [" + op.y().lengthLong() + "] lengths should match");
+            }
+        }
+
+        if (op.isComplexAccumulation()) {
+            yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
+
+            if (op.x().tensorAlongDimension(0, dimension).lengthLong() != op.y().tensorAlongDimension(0, dimension).lengthLong())
+                throw new ND4JIllegalStateException("Impossible to issue AllDistances operation: TAD lengths mismatch along given dimension");
+        }
+
+
         /**
          * This is a pointer to a pointer in c.
          */
-        PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets);
+        //  FIXME: we need something better then 3rd element being non-null here...
+        PointerPointer dummy = extraz.get().put(hostTadShapeInfo, hostTadOffsets, tvf ? hostTadOffsets : null);
 
         long st = profilingHookIn(op, tadBuffers.getFirst());
 
@@ -323,6 +357,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
          * This gives us a pointer which is passed around in libnd4j.
          */
         Pointer dimensionAddress = constantHandler.getConstantBuffer(dimension).addressPointer();
+
 
         if (op.x().data().dataType() == DataBuffer.Type.DOUBLE) {
             if (op instanceof Variance) {
@@ -344,7 +379,21 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
             //pairwise reduction like similarity of two arrays
             else if (op.y() != null) {
-                if (ret.isScalar()) {
+                if (op.isComplexAccumulation()) {
+                    loop.execReduce3AllDouble(dummy, op.opNum(), (DoublePointer) op.x().data().addressPointer(),
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) getPointerForExtraArgs(op),
+                            (DoublePointer) op.y().data().addressPointer(),
+                            (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                            (DoublePointer) op.z().data().addressPointer(),
+                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                            (IntPointer) dimensionAddress, dimension.length,
+                            (IntPointer) tadBuffers.getFirst().addressPointer(),
+                            (IntPointer) tadBuffers.getSecond().addressPointer(),
+                            (IntPointer) yTadBuffers.getFirst().addressPointer(),
+                            (IntPointer) yTadBuffers.getSecond().addressPointer()
+                            );
+                } else if (ret.isScalar()) {
                     ret.putScalar(0, loop.execReduce3ScalarDouble(dummy, op.opNum(),
                                     (DoublePointer) op.x().data().addressPointer(),
                                     (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
@@ -398,7 +447,22 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
 
             else if (op.y() != null) {
-                if (ret.isScalar()) {
+                if (op.isComplexAccumulation()) {
+                    loop.execReduce3AllFloat(dummy, op.opNum(),
+                            (FloatPointer) op.x().data().addressPointer(),
+                            (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) getPointerForExtraArgs(op),
+                            (FloatPointer) op.y().data().addressPointer(),
+                            (IntPointer) op.y().shapeInfoDataBuffer().addressPointer(),
+                            (FloatPointer) op.z().data().addressPointer(),
+                            (IntPointer) op.z().shapeInfoDataBuffer().addressPointer(),
+                            (IntPointer) dimensionAddress, dimension.length,
+                            (IntPointer) tadBuffers.getFirst().addressPointer(),
+                            (IntPointer) tadBuffers.getSecond().addressPointer(),
+                            (IntPointer) yTadBuffers.getFirst().addressPointer(),
+                            (IntPointer) yTadBuffers.getSecond().addressPointer()
+                    );
+                } else if (ret.isScalar()) {
                     ret.putScalar(0, loop.execReduce3ScalarFloat(dummy, op.opNum(),
                                     (FloatPointer) op.x().data().addressPointer(),
                                     (IntPointer) op.x().shapeInfoDataBuffer().addressPointer(),
@@ -655,7 +719,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
                 if ((xEWS >= 1 && yEWS >= 1
                                 && xEWS == yEWS && !op.isExecSpecial()
-                                && op.x().ordering() == op.y().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
+                                && op.x().ordering() == op.y().ordering() && op.x().ordering() == op.z().ordering()) || (xEWS >= 1 && yEWS == xEWS && zEWS == xEWS && xRow && yRow && zRow)) {
                     loop.execPairwiseTransformFloat(dummy, op.opNum(), (FloatPointer) op.x().data().addressPointer(),
                                     xEWS, (FloatPointer) op.y().data().addressPointer(),
                                     yEWS, (FloatPointer) op.z().data().addressPointer(),
@@ -1247,7 +1311,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         MatchCondition condition = new MatchCondition(input, Conditions.absGreaterThanOrEqual(threshold));
         int cntAbs = Nd4j.getExecutioner().exec(condition, Integer.MAX_VALUE).getInt(0);
 
-        if (cntAbs == 0)
+        if (cntAbs < 2)
             return null;
 
         if (boundary != null)
@@ -1295,7 +1359,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         float threshold = buffer.getInt(2);
 
         if (target.lengthLong() != originalLength)
-            throw new ND4JIllegalStateException("originalLength stored in encoded array doesn't match target length");
+            throw new ND4JIllegalStateException("originalLength ["+ originalLength+"] stored in encoded array doesn't match target length ["+ target.lengthLong()+"]");
 
         DataBuffer.TypeEx typeDst = AbstractCompressor.getBufferTypeEx(target.data());
 

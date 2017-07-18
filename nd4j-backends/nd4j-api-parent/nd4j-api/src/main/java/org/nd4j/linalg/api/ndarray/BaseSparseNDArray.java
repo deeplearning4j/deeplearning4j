@@ -1,10 +1,16 @@
 package org.nd4j.linalg.api.ndarray;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.math3.util.FastMath;
+import org.apache.commons.math3.util.Pair;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.complex.IComplexNDArray;
 import org.nd4j.linalg.api.complex.IComplexNumber;
+import org.nd4j.linalg.api.ops.impl.accum.Entropy;
+import org.nd4j.linalg.api.ops.impl.accum.LogEntropy;
+import org.nd4j.linalg.api.ops.impl.accum.ShannonEntropy;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.ShapeOffsetResolution;
@@ -29,8 +35,8 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     protected long length = -1;
     public static final boolean isSparse = true;
     protected transient volatile DataBuffer shapeInformation;
+    protected transient volatile int[] javaShapeInformation;
     protected transient volatile DataBuffer sparseInformation;
-    protected int[] javaShapeInformation;
     protected transient DataBuffer shape;
     protected transient DataBuffer stride;
 
@@ -1421,9 +1427,9 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return shapeOf().getInt(dimension);
     }
 
-    protected void setShapeInformation(DataBuffer shapeInfo) {
-        this.shapeInformation = shapeInfo;
-        this.javaShapeInformation = shapeInfo.asInt();
+    protected void setShapeInformation(Pair<DataBuffer, int[]> shapeInfo) {
+        this.shapeInformation = shapeInfo.getFirst();
+        this.javaShapeInformation = shapeInfo.getSecond();
     }
 
     @Override
@@ -1737,4 +1743,122 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return null;
     }
 
+    /**
+     * Returns entropy value for this INDArray
+     * @return
+     */
+    @Override
+    public Number entropyNumber() {
+        return entropy(Integer.MAX_VALUE).getDouble(0);
+    }
+
+    /**
+     * Returns non-normalized Shannon entropy value for this INDArray
+     * @return
+     */
+    @Override
+    public Number shannonEntropyNumber() {
+        return shannonEntropy(Integer.MAX_VALUE).getDouble(0);
+    }
+
+
+    /**
+     * Returns log entropy value for this INDArray
+     * @return
+     */
+    @Override
+    public Number logEntropyNumber() {
+        return logEntropy(Integer.MAX_VALUE).getDouble(0);
+    }
+    /**
+     * Returns entropy along dimension
+     * @param dimension
+     * @return
+     */
+    @Override
+    public INDArray entropy(int... dimension) {
+        return Nd4j.getExecutioner().exec(new Entropy(this), dimension);
+    }
+
+    /**
+     * Returns non-normalized Shannon entropy along dimension
+     * @param dimension
+     * @return
+     */
+    @Override
+    public INDArray shannonEntropy(int... dimension) {
+        return Nd4j.getExecutioner().exec(new ShannonEntropy(this), dimension);
+    }
+
+    /**
+     * Returns log entropy along dimension
+     * @param dimension
+     * @return
+     */
+    @Override
+    public INDArray logEntropy(int... dimension) {
+        return Nd4j.getExecutioner().exec(new LogEntropy(this), dimension);
+    }
+
+    @Override
+    public Number percentileNumber(Number quantile) {
+        if (quantile.intValue() < 0 || quantile.intValue() > 100)
+            throw new ND4JIllegalStateException("Percentile value should be in 0...100 range");
+
+        if (isScalar())
+            return this.getDouble(0);
+
+        INDArray sorted = Nd4j.sort(this.dup(this.ordering()), true);
+
+        return getPercentile(quantile, sorted);
+    }
+
+    @Override
+    public Number medianNumber() {
+        return percentileNumber(50);
+    }
+
+    @Override
+    public INDArray median(int... dimension) {
+        return percentile(50, dimension);
+    }
+
+    protected double getPercentile(Number quantile, INDArray sorted) {
+        if (quantile.intValue() == 0)
+            return sorted.getDouble(0);
+        else if (quantile.intValue() == 100)
+            return sorted.getDouble(sorted.length() - 1);
+
+        double pos = (quantile.doubleValue() / 100.0) * (double) (sorted.length() + 1);
+
+        double fposition = FastMath.floor(pos);
+        int position = (int)fposition;
+
+        double diff = pos - fposition;
+
+        double lower = sorted.getDouble(position-1);
+        double upper = sorted.getDouble(position);
+
+        return lower + diff * (upper - lower);
+    }
+
+    @Override
+    public INDArray percentile(Number quantile, int... dimension) {
+        if (quantile.doubleValue() < 0 || quantile.doubleValue() > 100)
+            throw new ND4JIllegalStateException("Percentile value should be in 0...100 range");
+
+        if (isScalar())
+            return Nd4j.scalar(this.getDouble(0));
+
+        INDArray sorted = Nd4j.getNDArrayFactory().sort(this.dup(this.ordering()), false, dimension);
+
+        // there's no practical sense doing this on GPU, stride will be just size of TAD.
+        INDArray ret = Nd4j.createUninitialized(sorted.tensorssAlongDimension(dimension));
+        for (int i = 0; i < ret.length(); i++) {
+            ret.putScalar(i, getPercentile(quantile, sorted.tensorAlongDimension(i, dimension)));
+        }
+
+        return ret;
+
+    }
 }

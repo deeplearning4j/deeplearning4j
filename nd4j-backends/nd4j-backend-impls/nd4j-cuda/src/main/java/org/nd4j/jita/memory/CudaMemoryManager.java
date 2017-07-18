@@ -203,4 +203,35 @@ public class CudaMemoryManager extends BasicMemoryManager {
         super.setAutoGcWindow(windowMillis);
         CudaEnvironment.getInstance().getConfiguration().setNoGcWindowMs(windowMillis);
     }
+
+    @Override
+    public void memset(INDArray array) {
+        if (array.isView()) {
+            array.assign(0.0);
+
+            // we don't want any mGRID activations here
+            Nd4j.getExecutioner().commit();
+            return;
+        }
+
+        // we want to be sure we have no trails left in mGRID
+        Nd4j.getExecutioner().push();
+
+        AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(array);
+
+        if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
+            CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+            NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(AtomicAllocator.getInstance().getPointer(array, context),0, array.data().length() * Nd4j.sizeOfDataType(array.data().dataType()),0, context.getOldStream());
+
+            // better be safe then sorry
+            context.getOldStream().synchronize();
+            point.tickDeviceWrite();
+        } else if (point.getAllocationStatus() == AllocationStatus.HOST) {
+            Nd4j.getExecutioner().commit();
+
+            // just casual memset
+            Pointer.memset(AtomicAllocator.getInstance().getHostPointer(array), 0, array.data().length() * Nd4j.sizeOfDataType(array.data().dataType()));
+            point.tickHostWrite();
+        }
+    }
 }

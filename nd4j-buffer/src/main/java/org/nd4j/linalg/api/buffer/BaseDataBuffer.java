@@ -460,7 +460,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public Pointer pointer() {
-        return underlyingDataBuffer() != null ? underlyingDataBuffer().pointer() : pointer;
+        return underlyingDataBuffer() != null  && underlyingDataBuffer() != this ? underlyingDataBuffer().pointer() : pointer;
     }
 
     @Override

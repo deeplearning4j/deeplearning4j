@@ -102,7 +102,7 @@ public class SkipGramTrainer extends BaseTrainer<SkipGramRequestMessage> {
 
         if (voidConfiguration.getExecutionMode() == ExecutionMode.AVERAGING) {
             transport.putMessage(ddm);
-        } else if (voidConfiguration.getExecutionMode() == ExecutionMode.DISTRIBUTED) {
+        } else if (voidConfiguration.getExecutionMode() == ExecutionMode.SHARDED) {
             transport.sendMessage(ddm);
         }
 
