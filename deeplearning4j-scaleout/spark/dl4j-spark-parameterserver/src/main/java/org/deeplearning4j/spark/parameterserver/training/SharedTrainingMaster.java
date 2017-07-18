@@ -441,6 +441,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         }
 
         if (voidConfiguration.getControllerAddress() == null)
+            voidConfiguration.setControllerAddress(System.getenv("DL4J_VOID_IP"));
+
+        if (voidConfiguration.getControllerAddress() == null)
             throw new DL4JInvalidConfigException(
                             "Can't get Spark Master local address. Please specify it manually using VoidConfiguration.setControllerAddress(String) method or VoidConfiguration.setNetworkMask(String) method");
 

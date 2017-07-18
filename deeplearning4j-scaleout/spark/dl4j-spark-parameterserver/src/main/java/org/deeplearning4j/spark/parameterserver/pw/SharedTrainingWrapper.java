@@ -217,6 +217,10 @@ public class SharedTrainingWrapper {
                         localIP = organizer.getMatchingAddress();
                     }
 
+                    // last resort here...
+                    if (localIP == null)
+                        localIP = System.getenv("DL4J_VOID_IP");
+
                     // set it to localhost, and hope for BroadcastTransport used
                     if (localIP == null) {
                         localIP = "127.0.0.1";
