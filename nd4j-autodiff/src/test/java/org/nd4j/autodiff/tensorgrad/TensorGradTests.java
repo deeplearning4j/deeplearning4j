@@ -281,6 +281,7 @@ public class TensorGradTests {
             TensorGradVariable update = preUpdate.mul(learningRate);
             w = w.sub(update);
         }
+        
         List<Op> ops = tensorGrad.exec();
         System.out.println(ops);
     }

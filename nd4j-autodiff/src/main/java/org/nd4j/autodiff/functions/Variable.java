@@ -110,6 +110,15 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     }
 
 
+    /**
+     * Get the result shape for this function
+     * @return
+     */
+    @Override
+    public int[] getResultShape() {
+        ArrayField arrayField = (ArrayField) m_x;
+        return arrayField.getInput().getShape();
+    }
 
 
     @Override
