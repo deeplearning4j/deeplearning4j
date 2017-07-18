@@ -18,21 +18,12 @@ def get_classpath(base_path):
     :param base_path: the directory to get the classpath for
     :return:
     """
-
-    ret = ''
-    for jar_file in os.listdir(base_path):
-        ret += base_path + '/' + jar_file + ':'
-    return ret
-
+    ':'.join(os.path.join(base_path, y) for y in os.listdir(base_path))
 
 def _expand_directory(directory):
-    if directory.__contains__('*'):
-        # Get only the directory name (no wild card)
-        jars = get_classpath(directory[:-2])
-    else:
-        jars = get_classpath(directory)
+    # Get only the directory name (no wild card)
+    return get_classpath(directory.rstrip('*'))
 
-    return jars
 
 
 new_class_path = ''
@@ -417,4 +408,4 @@ def from_np(np_arr):
     strides = map(lambda x: x / data_buffer.getElementSize(), np_arr.strides)
     arr_shape = np_arr.shape
     return Nd4jArray(nd4j_array=nd4j.create(data_buffer, arr_shape, strides, 0),
-                     numpy_array=_get_numpy_buffer_reference(np_arr))
+
