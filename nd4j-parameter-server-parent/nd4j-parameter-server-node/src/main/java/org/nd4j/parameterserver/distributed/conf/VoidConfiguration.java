@@ -10,6 +10,7 @@ import org.nd4j.parameterserver.distributed.enums.TransportType;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -62,6 +63,46 @@ public class VoidConfiguration implements Serializable {
         this.streamId = streamId;
     }
 
+    /**
+     * This option is very important: in shared network environment and yarn (like on EC2 etc),
+     * please set this to the network, which will be available on all boxes. I.e. 10.1.1.0/24 or 192.168.0.0/16
+     *
+     * @param netmask netmask to be used for IP address selection
+     */
+    public void setNetworkMask(@NonNull String netmask) {
+        // micro-validaiton here
+        String[] chunks = netmask.split("\\.");
+        if (chunks.length == 1 || netmask.isEmpty())
+            throw new ND4JIllegalStateException("Provided netmask doesn't look like a legit one. Proper format is: 192.168.1.0/24 or 10.0.0.0/8");
+
+
+        // TODO: add support for IPv6 eventually here
+        if (chunks.length != 4) {
+            log.info("Chunks: {}", Arrays.toString(chunks));
+            throw new ND4JIllegalStateException("4 octets expected here for network mask");
+        }
+
+        for (int i = 0; i < 3; i++) {
+            String curr = chunks[i];
+            try {
+                int conv = Integer.valueOf(curr);
+                if (conv < 0 || conv > 255)
+                    throw new ND4JIllegalStateException();
+            } catch (Exception e) {
+                throw new ND4JIllegalStateException("All IP address octets should be in range of 0...255");
+            }
+        }
+
+        if (Integer.valueOf(chunks[0]) == 0)
+            throw new ND4JIllegalStateException("First network mask octet should be non-zero. I.e. 10.0.0.0/8");
+
+        // we enforce last octet to be 0/24 always
+        if (!netmask.contains("/") || !chunks[3].startsWith("\\0\\/")) {
+            chunks[3] = "0/24";
+        }
+
+        this.networkMask = chunks[0] + "." + chunks[1] + "." + chunks[2] + "." + chunks[3];
+    }
 
     public void setShardAddresses(List<String> addresses) {
         this.shardAddresses = addresses;
