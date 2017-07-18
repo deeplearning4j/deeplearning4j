@@ -202,7 +202,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         //Calculate epsilons for layer below, in 2d format (note: this is in 'image patch' format before col2im reduction)
         //Note: cc -> f mmul here, then reshape to 6d in f order
-        INDArray epsNext2d = w2d.mmul(delta2d);
+        INDArray epsNext2d = w2d.mmul(delta2d);     //TODO can we reuse im2col array instead of allocating new result array?
         INDArray eps6d = Shape.newShapeNoCopy(epsNext2d, new int[] {kW, kH, inDepth, outW, outH, miniBatch}, true);
 
         //Calculate epsilonNext by doing im2col reduction.

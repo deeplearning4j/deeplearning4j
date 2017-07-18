@@ -22,6 +22,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -36,7 +38,7 @@ import java.util.Arrays;
 @Data
 public class ReshapeVertex extends GraphVertex {
 
-    public ReshapeVertex(@JsonProperty("newShape") int[] newShape) {
+    public ReshapeVertex(@JsonProperty("newShape") int... newShape) {
         this.newShape = newShape;
     }
 
@@ -125,5 +127,16 @@ public class ReshapeVertex extends GraphVertex {
             }
         }
         return first; //Same output shape/size as
+    }
+
+    @Override
+    public MemoryReport getMemoryReport(InputType... inputTypes) {
+        //Assume it's a reshape-with-copy op. In this case: memory use is accounted for in activations
+        InputType outputType = getOutputType(-1, inputTypes);
+        return new LayerMemoryReport.Builder(null, ReshapeVertex.class, inputTypes[0], outputType )
+                .standardMemory(0, 0)   //No params
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(0, 0)  //No caching
+                .build();
     }
 }

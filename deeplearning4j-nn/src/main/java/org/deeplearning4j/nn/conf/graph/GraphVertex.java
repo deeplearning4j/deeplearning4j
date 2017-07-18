@@ -18,6 +18,7 @@
 
 package org.deeplearning4j.nn.conf.graph;
 
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
@@ -96,5 +97,13 @@ public abstract class GraphVertex implements Cloneable, Serializable {
      * @throws InvalidInputTypeException If the input type is invalid for this type of GraphVertex
      */
     public abstract InputType getOutputType(int layerIndex, InputType... vertexInputs) throws InvalidInputTypeException;
+
+    /**
+     * This is a report of the estimated memory consumption for the given vertex
+     *
+     * @param inputTypes Input types to the vertex. Memory consumption is often a function of the input type
+     * @return Memory report for the vertex
+     */
+    public abstract MemoryReport getMemoryReport(InputType... inputTypes);
 
 }

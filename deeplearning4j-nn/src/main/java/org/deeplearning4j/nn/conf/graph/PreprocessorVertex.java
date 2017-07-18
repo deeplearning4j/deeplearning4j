@@ -25,6 +25,8 @@ import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -34,7 +36,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 @NoArgsConstructor
 @Data
-@EqualsAndHashCode(callSuper = false)
 public class PreprocessorVertex extends GraphVertex {
 
     private InputPreProcessor preProcessor;
@@ -90,5 +91,17 @@ public class PreprocessorVertex extends GraphVertex {
             throw new InvalidInputTypeException("Invalid input: Preprocessor vertex expects " + "exactly one input");
 
         return preProcessor.getOutputType(vertexInputs[0]);
+    }
+
+    @Override
+    public MemoryReport getMemoryReport(InputType... inputTypes) {
+        //TODO: eventually account for preprocessor memory use
+
+        InputType outputType = getOutputType(-1, inputTypes);
+        return new LayerMemoryReport.Builder(null, PreprocessorVertex.class, inputTypes[0], outputType )
+                .standardMemory(0, 0)   //No params
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(0, 0)  //No caching
+                .build();
     }
 }

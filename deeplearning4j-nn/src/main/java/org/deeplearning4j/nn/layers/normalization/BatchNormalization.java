@@ -1,5 +1,6 @@
 package org.deeplearning4j.nn.layers.normalization;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -36,8 +37,8 @@ import java.util.List;
  *
  * ideal to apply this between linear and non-linear transformations in layers it follows
  **/
+@Slf4j
 public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.layers.BatchNormalization> {
-    protected static final Logger log = LoggerFactory.getLogger(BatchNormalization.class);
 
     BatchNormalizationHelper helper = null;
     protected int index = 0;

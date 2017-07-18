@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.spark.impl.customlayer.layer;
 
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -78,5 +79,10 @@ public class CustomLayer extends FeedForwardLayer {
     @Override
     public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
         return null;
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        throw new UnsupportedOperationException();
     }
 }

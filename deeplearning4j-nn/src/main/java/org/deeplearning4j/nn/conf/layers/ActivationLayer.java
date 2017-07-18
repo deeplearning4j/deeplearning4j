@@ -3,9 +3,12 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
 import org.nd4j.linalg.activations.Activation;
@@ -13,6 +16,7 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -82,6 +86,19 @@ public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
     @Override
     public boolean isPretrainParam(String paramName) {
         throw new UnsupportedOperationException("Activation layer does not contain parameters");
+    }
+
+    @Override
+    public LayerMemoryReport getMemoryReport(InputType inputType) {
+        int actElementsPerEx = inputType.arrayElementsPerExample();
+
+        return new LayerMemoryReport.Builder(layerName, ActivationLayer.class, inputType, inputType)
+                .standardMemory(0, 0)   //No params
+                //During inference: modify input activation in-place
+                //During  backprop: dup the input for later re-use
+                .workingMemory(0, 0, 0, actElementsPerEx)
+                .cacheMemory(MemoryReport.CACHE_MODE_ALL_ZEROS, MemoryReport.CACHE_MODE_ALL_ZEROS)  //No caching
+                .build();
     }
 
     @Override

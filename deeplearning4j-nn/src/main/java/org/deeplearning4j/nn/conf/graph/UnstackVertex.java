@@ -23,6 +23,8 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -180,5 +182,17 @@ public class UnstackVertex extends GraphVertex {
 
             return InputType.convolutional(fh, fw, depthSum);
         }
+    }
+
+    @Override
+    public MemoryReport getMemoryReport(InputType... inputTypes) {
+        //Get op with dup - accounted for in activations size (no working memory)
+        //Do one dup on the forward pass (output activations). Accounted for in output activations.
+        InputType outputType = getOutputType(-1, inputTypes);
+        return new LayerMemoryReport.Builder(null, UnstackVertex.class, inputTypes[0], outputType )
+                .standardMemory(0, 0)   //No params
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(0, 0)  //No caching
+                .build();
     }
 }

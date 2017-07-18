@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.nn.conf.graph.rnn;
 
+import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
+import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -103,6 +105,16 @@ public class LastTimeStepVertex extends GraphVertex {
         }
 
         return InputType.feedForward(((InputType.InputTypeRecurrent) vertexInputs[0]).getSize());
+    }
+
+    @Override
+    public MemoryReport getMemoryReport(InputType... inputTypes) {
+        //No additional working memory (beyond activations/epsilons)
+        return new LayerMemoryReport.Builder(null, LastTimeStepVertex.class, inputTypes[0], getOutputType(-1, inputTypes))
+                .standardMemory(0, 0)
+                .workingMemory(0, 0, 0, 0)
+                .cacheMemory(0, 0)
+                .build();
     }
 
     @Override

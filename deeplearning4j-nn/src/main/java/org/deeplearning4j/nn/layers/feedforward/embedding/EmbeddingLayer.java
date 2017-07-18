@@ -52,16 +52,12 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
 
         //If this layer is layer L, then epsilon is (w^(L+1)*(d^(L+1))^T) (or equivalent)
         INDArray z = preOutput(input);
-        //INDArray activationDerivative = Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform(conf().getLayer().getActivationFunction(), z).derivative());
-        //        INDArray activationDerivative = conf().getLayer().getActivationFn().getGradient(z);
-        //        INDArray delta = epsilon.muli(activationDerivative);
         INDArray delta = layerConf().getActivationFn().backprop(z, epsilon).getFirst(); //TODO handle activation function params
 
         if (maskArray != null) {
             delta.muliColumnVector(maskArray);
         }
 
-        INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray weightGradients = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
         weightGradients.assign(0);
 
@@ -99,13 +95,6 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray weights = getParam(DefaultParamInitializer.WEIGHT_KEY);
         INDArray bias = getParam(DefaultParamInitializer.BIAS_KEY);
 
-        //INDArray rows = weights.getRows(indexes);
-        /*        INDArray rows = Nd4j.createUninitialized(new int[]{indexes.length,weights.size(1)},'c');
-        
-        for( int i=0; i<indexes.length; i++ ){
-            rows.putRow(i,weights.getRow(indexes[i]));
-        }
-        */
         INDArray rows = Nd4j.pullRows(weights, 1, indexes);
         rows.addiRowVector(bias);
 
