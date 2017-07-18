@@ -22,6 +22,7 @@ import java.util.List;
 @Slf4j
 @Data
 public class VoidConfiguration implements Serializable {
+
     @Builder.Default private int streamId = 119;
     @Builder.Default private int unicastPort = 49876;
     @Builder.Default private int multicastPort = 59876;
