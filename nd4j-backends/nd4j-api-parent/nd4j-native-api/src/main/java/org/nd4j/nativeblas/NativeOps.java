@@ -1535,4 +1535,10 @@ public abstract class NativeOps extends Pointer {
     public abstract void sortTadDouble(PointerPointer extraPointers, DoublePointer dx, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, IntPointer tadOffsets, boolean descending);
 
     public abstract void sortTadHalf(PointerPointer extraPointers, @Cast("float16*") ShortPointer dx, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, IntPointer tadOffsets, boolean descending);
+
+    public abstract void sortCooIndicesFloat(PointerPointer extraPointers, IntPointer indices, FloatPointer values, long length, int rank);
+
+    public abstract void sortCooIndicesDouble(PointerPointer extraPointers, IntPointer indices, DoublePointer values, long length, int rank);
+
+    public abstract void sortCooIndicesHalf(PointerPointer extraPointers, IntPointer indices, @Cast("float16*") ShortPointer values, long length, int rank);
 }
