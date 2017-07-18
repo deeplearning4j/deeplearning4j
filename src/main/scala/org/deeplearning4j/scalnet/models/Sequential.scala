@@ -52,6 +52,8 @@ class Sequential(val rngSeed: Long = 0) extends Model {
 
   def inputShape: List[Int] = _inputShape
 
+  def getPreprocessors: Map[Int, Node] = preprocessors
+
   private val noLayers = inputShape.isEmpty && layers.isEmpty && preprocessors.isEmpty
 
   private def emptyShape(layer: Node): Boolean = {
@@ -71,7 +73,6 @@ class Sequential(val rngSeed: Long = 0) extends Model {
       throw new IllegalArgumentException("Input layer must have non-empty inputShape")
     } else if (noLayers) {
       _inputShape = layer.inputShape
-      log.info(_inputShape.toString())
     }
   }
 
