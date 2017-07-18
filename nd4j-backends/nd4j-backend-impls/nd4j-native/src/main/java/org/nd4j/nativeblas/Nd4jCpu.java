@@ -4985,6 +4985,12 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native void sortTadHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortPointer x, IntPointer xShapeInfo, IntPointer dimension, int dimensionLength, IntPointer tadShapeInfo, IntPointer tadOffsets, @Cast("bool") boolean descending);
     public native void sortTadHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") ShortBuffer x, IntBuffer xShapeInfo, IntBuffer dimension, int dimensionLength, IntBuffer tadShapeInfo, IntBuffer tadOffsets, @Cast("bool") boolean descending);
     public native void sortTadHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") short[] x, int[] xShapeInfo, int[] dimension, int dimensionLength, int[] tadShapeInfo, int[] tadOffsets, @Cast("bool") boolean descending);
+
+
+    // special sort impl for sorting out COO indices and values
+    public native void sortCooIndicesFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, IntPointer indices, FloatPointer values, @Cast("Nd4jIndex") long length, int rank);
+    public native void sortCooIndicesFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, IntBuffer indices, FloatBuffer values, @Cast("Nd4jIndex") long length, int rank);
+    public native void sortCooIndicesFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, int[] indices, float[] values, @Cast("Nd4jIndex") long length, int rank);
 }
 
 
