@@ -16,11 +16,7 @@ def get_classpath(base_path):
     :return:
     """
 
-    ret = ''
-    for jar_file in os.listdir(base_path):
-        ret += base_path + '/' + jar_file + ':'
-    return ret
-
+    ':'.join(os.path.join(base_path, y) for y in os.listdir(base_path))
 
 def _expand_directory(directory):
         if directory.__contains__('*'):
@@ -126,5 +122,3 @@ def from_np(np_arr):
     #   note here we divide the strides by 8 for numpy
     # the reason we do this is because numpy's strides are based on bytes rather than words
     return nd4j.create(data_buffer, np_arr.shape, map(lambda x: x / 8, np_arr.strides), 0)
-
-
