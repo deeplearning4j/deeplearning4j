@@ -270,6 +270,7 @@ public class ParallelInference {
 
             this.setDaemon(true);
             this.setName("InferenceThread-" + id);
+
         }
 
         protected long getCounterValue() {
