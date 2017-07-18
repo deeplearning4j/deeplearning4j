@@ -77,13 +77,14 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
             preEpoch();
             while (!getAsyncGlobal().isTrainingComplete() && getAsyncGlobal().isRunning()) {
-                SubEpochReturn<O> subEpochReturn = trainSubEpoch(obs, getConf().getNstep());
+                int maxSteps = Math.min(getConf().getNstep(), getConf().getMaxEpochStep() - length);
+                SubEpochReturn<O> subEpochReturn = trainSubEpoch(obs, maxSteps);
                 obs = subEpochReturn.getLastObs();
                 stepCounter += subEpochReturn.getSteps();
                 length += subEpochReturn.getSteps();
                 rewards += subEpochReturn.getReward();
                 double score = subEpochReturn.getScore();
-                if (getMdp().isDone()) {
+                if (length >= getConf().getMaxEpochStep() || getMdp().isDone()) {
                     postEpoch();
 
                     DataManager.StatEntry statEntry = new AsyncStatEntry(getStepCounter(), epochCounter, rewards, length, score);

@@ -96,7 +96,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
             hp.record(input);
         }
 
-        if (getMdp().isDone())
+        if (getMdp().isDone() && i < nstep * skipFrame)
             rewards.add(new MiniTrans(hstack, null, null, 0));
         else {
             INDArray[] output = null;
