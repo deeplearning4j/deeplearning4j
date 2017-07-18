@@ -49,8 +49,11 @@ class Sequential(val rngSeed: Long = 0) extends Model {
   private var preprocessors: Map[Int, Node] = Map()
   private var _inputShape: List[Int] = List()
   private val seed: Long = rngSeed
+
   def inputShape: List[Int] = _inputShape
+
   private val noLayers = inputShape.isEmpty && layers.isEmpty && preprocessors.isEmpty
+
   private def emptyShape(layer: Node): Boolean = {
     !(preprocessors.contains(layers.length) || layers.nonEmpty) &&
       layer.inputShape.length == 1 && layer.inputShape.head == 0
@@ -60,7 +63,7 @@ class Sequential(val rngSeed: Long = 0) extends Model {
     if (preprocessors.contains(layers.length)) {
       preprocessors(layers.length).outputShape
     }
-    layers.lastOption.map(_.outputShape).getOrElse(layer.inputShape)
+    else layers.lastOption.map(_.outputShape).getOrElse(layer.inputShape)
   }
 
   def checkShape(layer: Node): Unit = {
@@ -68,6 +71,7 @@ class Sequential(val rngSeed: Long = 0) extends Model {
       throw new IllegalArgumentException("Input layer must have non-empty inputShape")
     } else if (noLayers) {
       _inputShape = layer.inputShape
+      log.info(_inputShape.toString())
     }
   }
 

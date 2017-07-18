@@ -67,7 +67,7 @@ abstract class Model {
 
 
   def buildOutput(lossFunction: LossFunction): Unit = {
-    layers.lastOption match {
+    layers.last match {
       case l if !l.isInstanceOf[OutputLayer] =>
         throw new IllegalArgumentException("Last layer must have Output trait")
       case l if !l.asInstanceOf[OutputLayer].output.isOutput => {

@@ -35,7 +35,7 @@ class SequentialTest extends FunSpec {
     describe("without layers") {
       val model: Sequential = new Sequential
       it("should produce NoSuchElementException when compiled") {
-        assertThrows[NoSuchElementException] {
+        assertThrows[scala.MatchError] {
           model.compile(null)
         }
       }
