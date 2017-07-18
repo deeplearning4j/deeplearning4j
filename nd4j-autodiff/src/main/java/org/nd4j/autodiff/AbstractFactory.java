@@ -47,6 +47,8 @@ public interface AbstractFactory<X extends Field<X>>
     X normmax(X i_x,int...dimensions);
 
 
+    X neg(X i_x);
+
     X transpose(X i_x);
 
     X reshape(X i_x, int[] shape);

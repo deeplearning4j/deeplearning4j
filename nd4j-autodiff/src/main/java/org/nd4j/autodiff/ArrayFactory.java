@@ -153,6 +153,11 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     @Override
+    public ArrayField neg(ArrayField i_x) {
+        return i_x.negate();
+    }
+
+    @Override
     public ArrayField transpose(ArrayField i_x) {
         return i_x.transpose();
     }

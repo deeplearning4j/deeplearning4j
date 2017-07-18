@@ -16,6 +16,7 @@ import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
+import org.nd4j.linalg.api.ops.impl.transforms.Negative;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -452,6 +453,34 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public String functionName() {
                 return new Abs().name();
+            }
+        };
+    }
+
+
+    @Override
+    public DifferentialFunction<X> neg(DifferentialFunction<X> iX) {
+        return new AbstractUnaryFunction<X>(mFactory.graph(),iX,null) {
+
+            @Override
+            public X doGetValue() {
+                return mFactory.neg(arg().getValue());
+            }
+
+            @Override
+            public double getReal() {
+                return -arg().getReal();
+            }
+
+            @Override
+            public DifferentialFunction<X> diff(Variable<X> i_v) {
+                return i_v.negate();
+            }
+
+
+            @Override
+            public String functionName() {
+                return new Negative().name();
             }
         };
     }

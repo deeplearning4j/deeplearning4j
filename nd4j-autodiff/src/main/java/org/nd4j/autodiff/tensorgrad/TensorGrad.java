@@ -229,11 +229,9 @@ public class TensorGrad {
      * @return
      */
     public TensorGradVariable grad(TensorGradVariable iX,TensorGradVariable wrt) {
-        DifferentialFunction<ArrayField> arrField = iX .getArrayField() != null ?
-               getFunctionInput(iX).diff(wrt.getArrayField()) :
-                iX.getDifferentialFunction().diff(wrt.getArrayField());
+        DifferentialFunction<ArrayField> arrField = getFunctionInput(iX).diff(wrt.getArrayField());
         TensorGradVariable ret = TensorGradVariable.builder()
-                .arr(null).shape(iX.getShape())
+                .arr(null).shape(wrt.getShape())
                 .differentialFunction(arrField)
                 .varName("grad(" + iX.getVarName() + ")").tensorGrad(this)
                 .build();
@@ -285,6 +283,22 @@ public class TensorGrad {
         addVariable(ret);
         return ret;
     }
+
+    /**
+     *
+     * @param iX
+     * @return
+     */
+    public TensorGradVariable neg(TensorGradVariable iX) {
+        TensorGradVariable ret = TensorGradVariable.builder()
+                .arr(null).shape(iX.getShape())
+                .differentialFunction(arrayFieldDifferentialFunctionFactory.neg(getFunctionInput(iX)))
+                .varName("neg(" + iX.getVarName() + ")").tensorGrad(this)
+                .build();
+        addVariable(ret);
+        return ret;
+    }
+
 
     /**
      *
@@ -635,7 +649,7 @@ public class TensorGrad {
     }
 
     private DifferentialFunction<ArrayField> getFunctionInput(TensorGradVariable iX) {
-        return iX.getArrayField() == null ?
+        return iX.getDifferentialFunction() != null ?
                 iX.getDifferentialFunction() : iX.getArrayField();
     }
 

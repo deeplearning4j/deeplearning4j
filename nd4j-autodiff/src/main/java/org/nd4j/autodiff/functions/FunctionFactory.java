@@ -54,6 +54,8 @@ public interface FunctionFactory<X extends Field<X>> {
 
     DifferentialFunction<X> abs(DifferentialFunction<X> iX);
 
+    DifferentialFunction<X> neg(DifferentialFunction<X> iX);
+
     DifferentialFunction<X> cos(DifferentialFunction<X> iX);
 
     DifferentialFunction<X> sin(DifferentialFunction<X> iX);

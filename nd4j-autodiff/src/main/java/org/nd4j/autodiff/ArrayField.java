@@ -381,7 +381,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new Sum().name(),
                 dimensions,
-                ArrayUtil.removeIndex(input.getShape(),dimensions),
+                Shape.getReducedShape(input.getShape(),dimensions),
                 null,
                 OpState.OpType.ACCUMULATION);
     }
@@ -390,7 +390,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new Prod().name(),
                 dimensions,
-                ArrayUtil.removeIndex(input.getShape(),dimensions),
+                Shape.getReducedShape(input.getShape(),dimensions),
                 null,
                 OpState.OpType.ACCUMULATION);
     }
@@ -399,7 +399,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new Mean().name(),
                 dimensions,
-                ArrayUtil.removeIndex(input.getShape(),dimensions),
+                Shape.getReducedShape(input.getShape(),dimensions),
                 null,
                 OpState.OpType.ACCUMULATION);
     }
@@ -409,7 +409,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new StandardDeviation().name()
                 ,dimensions,
-                ArrayUtil.removeIndex(input.getShape(),dimensions),
+                Shape.getReducedShape(input.getShape(),dimensions),
                 new Object[]{biasCorrected},
                 OpState.OpType.ACCUMULATION);
     }
@@ -418,7 +418,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new Variance().name(),
                 dimensions,
-                ArrayUtil.removeIndex(input.getShape(),dimensions),
+                Shape.getReducedShape(input.getShape(),dimensions),
                 new Object[]{biasCorrected},
                 OpState.OpType.ACCUMULATION);
     }
@@ -435,7 +435,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new Max().name(),
                 dimensions,
-                ArrayUtil.removeIndex(input.getShape(),dimensions),
+                Shape.getReducedShape(input.getShape(),dimensions),
                 null,
                 OpState.OpType.ACCUMULATION);
     }
@@ -444,7 +444,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new Min().name(),
                 dimensions,
-                ArrayUtil.removeIndex(input.getShape(),dimensions),
+                Shape.getReducedShape(input.getShape(),dimensions),
                 null,
                 OpState.OpType.ACCUMULATION);
     }
@@ -453,7 +453,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new Norm1().name(),
                 dimensions,
-                ArrayUtil.removeIndex(input.getShape(),dimensions),
+                Shape.getReducedShape(input.getShape(),dimensions),
                 null,
                 OpState.OpType.ACCUMULATION);
     }
@@ -462,7 +462,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new Norm2().name(),
                 dimensions,
-                ArrayUtil.removeIndex(input.getShape(),dimensions),
+                Shape.getReducedShape(input.getShape(),dimensions),
                 null,
                 OpState.OpType.ACCUMULATION);
     }
@@ -471,7 +471,7 @@ public class ArrayField implements Field<ArrayField> {
         return addArrayOp(
                 new NormMax().name(),
                 dimensions,
-                ArrayUtil.removeIndex(input.getShape(),dimensions),
+                Shape.getReducedShape(input.getShape(),dimensions),
                 null,
                 OpState.OpType.ACCUMULATION);
     }
@@ -635,7 +635,7 @@ public class ArrayField implements Field<ArrayField> {
     private ArrayField addPairReduceOp(String name,ArrayField i_v,
                                        int[] dimensions,
                                        Object[] extraArgs) {
-        return addPairReduceOp(name,i_v,dimensions,ArrayUtil.removeIndex(input.getShape(),dimensions),extraArgs);
+        return addPairReduceOp(name,i_v,dimensions,Shape.getReducedShape(input.getShape(),dimensions),extraArgs);
     }
 
     private ArrayField addPairReduceOp(String name,ArrayField i_v,

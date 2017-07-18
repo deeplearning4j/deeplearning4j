@@ -271,7 +271,11 @@ public class TensorGradTests {
         TensorGradVariable outputTimesY = outputs.mul(y);
         TensorGradVariable oneMinusOutput = outputs.rsub(tensorGrad.scalar("one",1.0));
         TensorGradVariable probs = outputTimesY.add(oneMinusOutput.mul(y.rsub(tensorGrad.scalar("onetwo",1.0))));
-        TensorGradVariable outputGrad = tensorGrad.grad(probs,x);
+        TensorGradVariable logProbs = tensorGrad.log(probs);
+        TensorGradVariable sum = tensorGrad.sum(logProbs,Integer.MAX_VALUE);
+        TensorGradVariable negSum = tensorGrad.neg(sum);
+        TensorGradVariable outputGrad = tensorGrad.grad(negSum,w);
+        assertArrayEquals(new int[]{3,1},outputGrad.getShape());
         for(int i = 0; i < 1; i++) {
             TensorGradVariable preUpdate = w.mul(outputGrad);
             TensorGradVariable update = preUpdate.mul(learningRate);

@@ -8,6 +8,7 @@ import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.tensorgrad.TensorGradGraph;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
@@ -71,7 +72,7 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
                     .opName(opName).axes(dimensions)
                     .id(opName + "(" + v1.getInput().getId() + " -> " + newVertex.getValue().getId() + ")")
                     .vertexIds(new String[]{String.valueOf(v1.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
-                    .n(ArrayUtil.prod(ArrayUtil.removeIndex(v1.getInput().getShape(),dimensions)))
+                    .n(ArrayUtil.prod(Shape.getReducedShape(v1.getInput().getShape(),dimensions)))
                     .build();
             newVertex.setOpState(opState);
             graph.addEdge(v1.getVertex().vertexID(),newVertex.vertexID(),opState
