@@ -25,7 +25,11 @@ Basically all you need to run training is Spark 1.x/2.x cluster, and at least on
 As mentioned above, DeepLearning4j supports both Spark 1.x and Spark 2.x clusters, however this particular implementation also requires Java 8+ to run. If your cluster is running Java 7, you'll either have to upgrade, or use [Parameters Averaging training mode](https://deeplearning4j.org/spark).
 
 ### Network environment
-Gradients sharing heavily relies on UDP protocol for communication between Master and Nodes during training, so if you're running your cluster in cloud environment like AWS or Azure you need to allow one UDP port for Inbound/Outbound connections, and specify that port in `VoidConfiguration.unicastPort(int)` bean, that is passed to `SharedTrainingMaster` constructor 
+Gradients sharing heavily relies on UDP protocol for communication between Master and Nodes during training, so if you're running your cluster in cloud environment like AWS or Azure you need to allow one UDP port for Inbound/Outbound connections, and specify that port in `VoidConfiguration.unicastPort(int)` bean, that is passed to `SharedTrainingMaster` constructor. 
+
+Another option to keep in mind, that in case of YARN (or any other resource manager that handles Spark networking) use, you'll have to specify network mask of the network, that'll be used for UDP communications. That could be done using something like this: `VoidConfiguration.setNetworkMask("10.1.1.0/24")`.
+
+And last-resort option for IP address selection is `DL4J_VOID_IP` environment variable. Set that variable on each node you're running, with local IP address to be used for comms.
 
 ### Example configuration:
 
