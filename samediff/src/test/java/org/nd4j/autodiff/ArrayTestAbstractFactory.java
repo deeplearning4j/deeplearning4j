@@ -12,8 +12,8 @@ import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpExecOrder;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.SameDiffGraph;
-import org.nd4j.autodiff.samediff.impl.SameDiffVariable;
+import org.nd4j.autodiff.samediff.SDGraph;
+import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -40,7 +40,7 @@ public class ArrayTestAbstractFactory
 
     @Test
     public void testAutoDiff() {
-        SameDiffGraph graph = new SameDiffGraph();
+        SDGraph graph = new SDGraph();
         ArrayFactory arrayFactory = new ArrayFactory(graph);
         DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph, arrayFactory);
         NDArrayInformation xInfo = NDArrayInformation.
@@ -70,7 +70,7 @@ public class ArrayTestAbstractFactory
 
     @Test
     public void testVariables() {
-       SameDiffGraph graph = new SameDiffGraph();
+       SDGraph graph = new SDGraph();
         ArrayFactory arrayFactory = new ArrayFactory(graph);
         DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
         NDArrayInformation xInfo = NDArrayInformation.
@@ -88,7 +88,7 @@ public class ArrayTestAbstractFactory
 
     @Test
     public void testPairWiseOp() throws Exception {
-       SameDiffGraph graph = new SameDiffGraph();
+       SDGraph graph = new SDGraph();
         ArrayFactory arrayFactory = new ArrayFactory(graph);
 
         DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
@@ -116,7 +116,7 @@ public class ArrayTestAbstractFactory
 
     @Test
     public void testConstant() {
-        SameDiffGraph graph = new SameDiffGraph();
+        SDGraph graph = new SDGraph();
         ArrayFactory arrayFactory = new ArrayFactory(graph);
 
         DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
@@ -137,9 +137,9 @@ public class ArrayTestAbstractFactory
     @Test
     public void testGrad() throws Exception {
         SameDiff sameDiff = SameDiff.create();
-        SameDiffVariable var = sameDiff.var("x", Nd4j.valueArrayOf(1,2.0));
-        SameDiffVariable xTimesX = var.mul(var);
-        SameDiffVariable grad = sameDiff.grad(xTimesX,var);
+        SDVariable var = sameDiff.var("x", Nd4j.valueArrayOf(1,2.0));
+        SDVariable xTimesX = var.mul(var);
+        SDVariable grad = sameDiff.grad(xTimesX,var);
         assertEquals("( 2.0 * Math.pow(x,1)", grad.getFormula());
         OpExecOrder opExecOrder = sameDiff.graph().getOpOrder();
         List<OpState> opStates = opExecOrder.opStates();
@@ -153,7 +153,7 @@ public class ArrayTestAbstractFactory
 
     @Test
     public void testSingleTransformOp() throws Exception {
-       SameDiffGraph graph = new SameDiffGraph();
+       SDGraph graph = new SDGraph();
         ArrayFactory arrayFactory = new ArrayFactory(graph);
 
         DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
@@ -183,7 +183,7 @@ public class ArrayTestAbstractFactory
 
     @Test
     public void testAutoDiffSimple() throws Exception {
-       SameDiffGraph graph = new SameDiffGraph();
+       SDGraph graph = new SDGraph();
         ArrayFactory arrayFactory = new ArrayFactory(graph);
 
         DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);

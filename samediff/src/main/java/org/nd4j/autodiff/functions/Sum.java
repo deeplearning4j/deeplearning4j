@@ -3,13 +3,13 @@ package org.nd4j.autodiff.functions;
 import java.util.List;
 
 import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.samediff.SameDiffGraph;
+import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.AddOp;
 
 
 public class Sum<X extends Field<X>> extends AbstractBinaryFunction<X> {
 
-    public Sum(SameDiffGraph graph, DifferentialFunction<X> i_v1, DifferentialFunction<X> i_v2) {
+    public Sum(SDGraph graph, DifferentialFunction<X> i_v1, DifferentialFunction<X> i_v2) {
         super(graph,i_v1, i_v2);
     }
 

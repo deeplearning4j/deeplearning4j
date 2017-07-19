@@ -3,7 +3,7 @@ package org.nd4j.autodiff.functions;
 import java.util.List;
 
 import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.samediff.SameDiffGraph;
+import org.nd4j.autodiff.samediff.SDGraph;
 
 /**
  *
@@ -14,7 +14,7 @@ public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X>
     protected double m_scale;
     protected int m_exponent;
 
-    public PolynomialTerm(SameDiffGraph graph,
+    public PolynomialTerm(SDGraph graph,
                           double i_scale,
                           DifferentialFunction<X> i_v,
                           int i_exponent) {

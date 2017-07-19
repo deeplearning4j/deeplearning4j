@@ -4,7 +4,7 @@ import org.nd4j.autodiff.AbstractIdentityFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SameDiffGraph;
+import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 
 
@@ -16,7 +16,7 @@ public class Scalar<X extends Field<X>> extends Constant<X> {
 
     protected double value;
 
-    public Scalar(SameDiffGraph graph,
+    public Scalar(SDGraph graph,
                   double value,
                   AbstractIdentityFactory<X> i_factory) {
         super(graph,i_factory.scalar(value),new int[]{1,1} ,i_factory);

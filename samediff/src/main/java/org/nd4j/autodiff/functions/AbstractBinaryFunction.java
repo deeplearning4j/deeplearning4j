@@ -2,7 +2,7 @@ package org.nd4j.autodiff.functions;
 
 import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.samediff.SameDiffGraph;
+import org.nd4j.autodiff.samediff.SDGraph;
 
 @NoArgsConstructor
 public abstract class AbstractBinaryFunction<X extends Field<X>> extends DifferentialFunction<X> {
@@ -10,7 +10,7 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
     protected DifferentialFunction<X> m_x1;
     protected DifferentialFunction<X> m_x2;
 
-    public AbstractBinaryFunction(SameDiffGraph graph,
+    public AbstractBinaryFunction(SDGraph graph,
                                   DifferentialFunction<X> i_v1,
                                   DifferentialFunction<X> i_v2) {
         super(graph,new Object[] {i_v2});
@@ -25,7 +25,7 @@ public abstract class AbstractBinaryFunction<X extends Field<X>> extends Differe
         }
     }
 
-    public AbstractBinaryFunction(SameDiffGraph graph) {
+    public AbstractBinaryFunction(SDGraph graph) {
         this.graph = graph;
     }
 

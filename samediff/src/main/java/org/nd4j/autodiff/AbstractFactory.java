@@ -2,7 +2,7 @@ package org.nd4j.autodiff;
 
 
 import org.nd4j.autodiff.functions.DifferentialFunction;
-import org.nd4j.autodiff.samediff.SameDiffGraph;
+import org.nd4j.autodiff.samediff.SDGraph;
 
 import java.util.List;
 
@@ -10,7 +10,7 @@ public interface AbstractFactory<X extends Field<X>>
         extends AbstractIdentityFactory<X> {
 
 
-    SameDiffGraph graph();
+    SDGraph graph();
 
     List<String> methodNames();
 

@@ -4,14 +4,14 @@ import org.nd4j.autodiff.AbstractIdentityFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SameDiffGraph;
+import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.linalg.api.ops.impl.transforms.arithmetic.MulOp;
 
 
 public class One<X extends Field<X>> extends Constant<X> {
 
 
-    public One(SameDiffGraph graph,
+    public One(SDGraph graph,
                int[] shape,
                AbstractIdentityFactory<X> i_factory) {
         super(graph,i_factory.one(shape),shape, i_factory);

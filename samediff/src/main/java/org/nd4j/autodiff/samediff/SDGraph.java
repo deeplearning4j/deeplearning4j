@@ -20,11 +20,11 @@ import java.util.*;
  */
 @NoArgsConstructor
 @Data
-public class SameDiffGraph extends Graph<NDArrayInformation,OpState> {
+public class SDGraph extends Graph<NDArrayInformation,OpState> {
 
     protected SameDiff sameDiff;
 
-    public SameDiffGraph(SameDiffGraph gradGraph) {
+    public SDGraph(SDGraph gradGraph) {
         setEdges(gradGraph.getEdges());
         setVertices(gradGraph.getVertices());
         setFrozen(gradGraph.isFrozen());
@@ -33,12 +33,12 @@ public class SameDiffGraph extends Graph<NDArrayInformation,OpState> {
     }
 
     @Builder
-    private SameDiffGraph(boolean allowMultipleEdges,
-                          Map<Integer, List<Edge<OpState>>> edges,
-                          Map<Integer, Vertex<NDArrayInformation>> vertices,
-                          boolean frozen,
-                          Map<Integer, List<Edge<OpState>>> incomingEdges,
-                          SameDiff sameDiff) {
+    private SDGraph(boolean allowMultipleEdges,
+                    Map<Integer, List<Edge<OpState>>> edges,
+                    Map<Integer, Vertex<NDArrayInformation>> vertices,
+                    boolean frozen,
+                    Map<Integer, List<Edge<OpState>>> incomingEdges,
+                    SameDiff sameDiff) {
         super(allowMultipleEdges, edges, vertices, frozen, incomingEdges);
         this.sameDiff = sameDiff;
     }
@@ -79,7 +79,7 @@ public class SameDiffGraph extends Graph<NDArrayInformation,OpState> {
     }
 
 
-    public SameDiffGraph optimize() {
+    public SDGraph optimize() {
         OpExecOrder opOrder = getOpOrder();
 
         for (OpExecAction opExecAction : opOrder.getActions()) {

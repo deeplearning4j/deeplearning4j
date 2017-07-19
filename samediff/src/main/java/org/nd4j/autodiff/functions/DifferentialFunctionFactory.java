@@ -12,7 +12,7 @@ import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.functions.mmul.Mmul;
 import org.nd4j.autodiff.functions.mmul.TensorMmul;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SameDiffGraph;
+import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.linalg.api.ops.impl.accum.*;
 import org.nd4j.linalg.api.ops.impl.accum.distances.CosineSimilarity;
 import org.nd4j.linalg.api.ops.impl.transforms.*;
@@ -28,10 +28,10 @@ import org.nd4j.linalg.util.ArrayUtil;
 public class DifferentialFunctionFactory<X extends Field<X>> implements FunctionFactory<X> {
 
     protected AbstractFactory<X> mFactory;
-    protected SameDiffGraph graph;
+    protected SDGraph graph;
     private Map<String,Method> methodNames;
 
-    public DifferentialFunctionFactory(SameDiffGraph graph,
+    public DifferentialFunctionFactory(SDGraph graph,
                                        AbstractFactory<X> mFactory) {
         if (mFactory != null) {
             this.mFactory = mFactory;

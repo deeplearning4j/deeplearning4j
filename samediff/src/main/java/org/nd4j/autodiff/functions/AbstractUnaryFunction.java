@@ -9,7 +9,7 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SameDiffGraph;
+import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.List;
@@ -22,7 +22,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
     protected int[] shape;
     protected OpState.OpType opType;
 
-    public AbstractUnaryFunction(SameDiffGraph graph,
+    public AbstractUnaryFunction(SDGraph graph,
                                  DifferentialFunction<X> i_v,
                                  int[] shape,
                                  OpState.OpType opType,
@@ -38,7 +38,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
         }
     }
 
-    public AbstractUnaryFunction(SameDiffGraph graph,
+    public AbstractUnaryFunction(SDGraph graph,
                                  DifferentialFunction<X> i_v,
                                  int[] shape,
                                  Object[] extraArgs) {
@@ -46,7 +46,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
     }
 
 
-    public AbstractUnaryFunction(SameDiffGraph graph,
+    public AbstractUnaryFunction(SDGraph graph,
                                  DifferentialFunction<X> i_v,
                                  Object[] extraArgs) {
         super(graph,extraArgs);

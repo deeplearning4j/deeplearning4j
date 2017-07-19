@@ -5,7 +5,7 @@ import lombok.Data;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
-import org.nd4j.autodiff.samediff.SameDiffGraph;
+import org.nd4j.autodiff.samediff.SDGraph;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -17,10 +17,10 @@ import java.util.Map;
 @Data
 public class ArrayFactory implements AbstractFactory<ArrayField> {
 
-    private SameDiffGraph graph;
+    private SDGraph graph;
     private Map<String,Method> methodNames;
 
-    public ArrayFactory(SameDiffGraph graph) {
+    public ArrayFactory(SDGraph graph) {
         this.graph = graph;
         methodNames = new HashMap<>();
         Method[] methods = getClass().getDeclaredMethods();
@@ -29,12 +29,12 @@ public class ArrayFactory implements AbstractFactory<ArrayField> {
     }
 
     public ArrayFactory() {
-        this(new SameDiffGraph());
+        this(new SDGraph());
     }
 
 
     @Override
-    public SameDiffGraph graph() {
+    public SDGraph graph() {
         return graph;
     }
 

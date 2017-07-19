@@ -6,7 +6,7 @@ import lombok.Data;
 import org.nd4j.autodiff.AbstractIdentityFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.samediff.SameDiffGraph;
+import org.nd4j.autodiff.samediff.SDGraph;
 
 @Data
 public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
@@ -16,14 +16,14 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
     private String m_name;
     private PreEvaluator<X> preEvaluator;
 
-    protected Variable(SameDiffGraph graph,
+    protected Variable(SDGraph graph,
                        String i_name,
                        X i_v,
                        AbstractIdentityFactory<X> i_factory) {
         this(graph,i_name, i_v, i_factory, null);
     }
 
-    protected Variable(SameDiffGraph graph,
+    protected Variable(SDGraph graph,
                        String i_name,
                        X i_v,
                        AbstractIdentityFactory<X> i_factory,

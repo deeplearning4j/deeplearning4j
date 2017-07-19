@@ -2,8 +2,8 @@ package org.nd4j.autodiff.gradcheck;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.SameDiffGraph;
-import org.nd4j.autodiff.samediff.impl.SameDiffVariable;
+import org.nd4j.autodiff.samediff.SDGraph;
+import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -31,8 +31,8 @@ public class GradCheckUtil {
      * @return
      */
     public static boolean checkGradients(
-                                         SameDiffVariable function,
-                                         SameDiffVariable wrt,
+                                         SDVariable function,
+                                         SDVariable wrt,
                                          double epsilon,
                                          double maxRelError,
                                          boolean print,
@@ -60,9 +60,9 @@ public class GradCheckUtil {
          */
 
 
-        SameDiff sameDiff = function.getTensorGrad();
+        SameDiff sameDiff = function.getSameDiff();
         //get just the subgraph for the graph
-        SameDiffGraph gradGraph = new SameDiffGraph();
+        SDGraph gradGraph = new SDGraph();
         sameDiff.graph().setGraphApply(gradGraph);
         //set the graph back to normal
         sameDiff.graph().setGraphApply(null);

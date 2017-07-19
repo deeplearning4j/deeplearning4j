@@ -2,8 +2,7 @@ package org.nd4j.autodiff.gradcheck;
 
 import org.junit.Test;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.impl.SameDiffVariable;
+import org.nd4j.autodiff.samediff.impl.SDVariable;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -25,8 +24,8 @@ public class GradCheckUtilTest {
         DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
         SameDiff sameDiff = SameDiff.create();
         INDArray scalar = Nd4j.ones(1);
-        SameDiffVariable var = sameDiff.var("x",scalar);
-        SameDiffVariable sigmooid = sameDiff.sigmoid(var);
+        SDVariable var = sameDiff.var("x",scalar);
+        SDVariable sigmooid = sameDiff.sigmoid(var);
         assertTrue(GradCheckUtil.checkGradients(sigmooid,var,1e-6,1e-6,false,
                 Collections.singletonMap("x",scalar)));
 

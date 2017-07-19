@@ -6,7 +6,7 @@ import lombok.Data;
 import org.nd4j.autodiff.AbstractIdentityFactory;
 import org.nd4j.autodiff.ArrayField;
 import org.nd4j.autodiff.Field;
-import org.nd4j.autodiff.samediff.SameDiffGraph;
+import org.nd4j.autodiff.samediff.SDGraph;
 
 @Data
 public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
@@ -15,7 +15,7 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
     protected AbstractIdentityFactory<X> m_factory;
     protected int[] shape;
 
-    protected Constant(SameDiffGraph graph,
+    protected Constant(SDGraph graph,
                        X i_v,
                        int[] shape,
                        AbstractIdentityFactory<X> i_factory) {

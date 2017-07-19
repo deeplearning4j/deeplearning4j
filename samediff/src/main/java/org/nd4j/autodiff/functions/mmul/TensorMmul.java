@@ -11,7 +11,7 @@ import org.nd4j.autodiff.functions.Variable;
 import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SameDiffGraph;
+import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
@@ -27,7 +27,7 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
     private DifferentialFunctionFactory<X> differentialFunctionFactory;
     private boolean addedEdges = false;
 
-    public TensorMmul(SameDiffGraph graph,
+    public TensorMmul(SDGraph graph,
                       DifferentialFunction<X> i_v1,
                       DifferentialFunction<X> i_v2,
                       DifferentialFunctionFactory<X> differentialFunctionFactory,

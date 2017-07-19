@@ -13,7 +13,7 @@ import org.nd4j.autodiff.graph.Graph;
 import org.nd4j.autodiff.opstate.NDArrayInformation;
 import org.nd4j.autodiff.opstate.NDArrayVertex;
 import org.nd4j.autodiff.opstate.OpState;
-import org.nd4j.autodiff.samediff.SameDiffGraph;
+import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.util.ArrayUtil;
 
@@ -25,14 +25,14 @@ public abstract class DifferentialFunction<X extends Field<X>>
         implements Field<DifferentialFunction<X>>,
         Differential<X, DifferentialFunction<X>> {
 
-    protected SameDiffGraph graph;
+    protected SDGraph graph;
     @Getter
     protected OpState opState;
     protected int vertexId;
     protected Object[] extraArgs;
 
 
-    public DifferentialFunction(SameDiffGraph graph, Object[] extraArgs) {
+    public DifferentialFunction(SDGraph graph, Object[] extraArgs) {
         this.graph = graph;
         this.extraArgs = extraArgs;
     }
