@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.rl4j.util.Constants;
 import org.nd4j.linalg.activations.Activation;
@@ -57,7 +58,11 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
         MultiLayerConfiguration mlnconf2 = confB.pretrain(false).backprop(true).build();
         MultiLayerNetwork model = new MultiLayerNetwork(mlnconf2);
         model.init();
-        model.setListeners(new ScoreIterationListener(Constants.NEURAL_NET_ITERATION_LISTENER));
+        if (conf.getListeners() != null) {
+            model.setListeners(conf.getListeners());
+        } else {
+            model.setListeners(new ScoreIterationListener(Constants.NEURAL_NET_ITERATION_LISTENER));
+        }
 
         NeuralNetConfiguration.ListBuilder confB2 = new NeuralNetConfiguration.Builder().seed(Constants.NEURAL_NET_SEED)
                         .iterations(1).optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
@@ -84,7 +89,11 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
         MultiLayerConfiguration mlnconf = confB2.pretrain(false).backprop(true).build();
         MultiLayerNetwork model2 = new MultiLayerNetwork(mlnconf);
         model2.init();
-        model2.setListeners(new ScoreIterationListener(Constants.NEURAL_NET_ITERATION_LISTENER));
+        if (conf.getListeners() != null) {
+            model2.setListeners(conf.getListeners());
+        } else {
+            model2.setListeners(new ScoreIterationListener(Constants.NEURAL_NET_ITERATION_LISTENER));
+        }
 
 
         return new ActorCriticSeparate(model, model2);
@@ -100,6 +109,7 @@ public class ActorCriticFactorySeparateStdDense implements ActorCriticFactorySep
         double learningRate;
         double l2;
         IUpdater updater;
+        IterationListener[] listeners;
 
     }
 

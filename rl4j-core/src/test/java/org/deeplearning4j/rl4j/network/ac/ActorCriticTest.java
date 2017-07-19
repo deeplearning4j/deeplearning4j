@@ -36,7 +36,7 @@ public class ActorCriticTest {
                     32,        //number of hidden nodes
                     0.0005,    //learning rate
                     0.001,     //l2 regularization
-                    new RmsProp()
+                    new RmsProp(), null
             );
 
     public static ActorCriticFactoryCompGraphStdDense.Configuration NET_CONF_CG =
@@ -45,7 +45,7 @@ public class ActorCriticTest {
                     128,       //number of hidden nodes
                     0.005,     //learning rate
                     0.00001,   //l2 regularization
-                    new RmsProp()
+                    new RmsProp(), null
             );
 
     @Test

@@ -12,6 +12,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.optimize.api.IterationListener;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.deeplearning4j.rl4j.util.Constants;
 import org.nd4j.linalg.activations.Activation;
@@ -58,7 +59,11 @@ public class DQNFactoryStdConv implements DQNFactory {
         MultiLayerConfiguration mlnconf = confB.pretrain(false).backprop(true).build();
         MultiLayerNetwork model = new MultiLayerNetwork(mlnconf);
         model.init();
-        model.setListeners(new ScoreIterationListener(Constants.NEURAL_NET_ITERATION_LISTENER));
+        if (conf.getListeners() != null) {
+            model.setListeners(conf.getListeners());
+        } else {
+            model.setListeners(new ScoreIterationListener(Constants.NEURAL_NET_ITERATION_LISTENER));
+        }
 
         return new DQN(model);
     }
@@ -72,6 +77,7 @@ public class DQNFactoryStdConv implements DQNFactory {
         double learningRate;
         double l2;
         IUpdater updater;
+        IterationListener[] listeners;
     }
 
 }

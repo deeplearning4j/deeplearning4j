@@ -36,7 +36,7 @@ public class DQNTest {
                     16,        //number of hidden nodes
                     0.0005,    //learning rate
                     0.001,     //l2 regularization
-                    new RmsProp()
+                    new RmsProp(), null
             );
 
     @Test
