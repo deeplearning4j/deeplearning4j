@@ -46,24 +46,22 @@ class Sequential(val rngSeed: Long = 0) extends Model {
 
   private val log: Logger = LoggerFactory.getLogger(this.getClass)
 
-  private var preprocessors: Map[Int, Node] = Map()
+  private var _preprocessors: Map[Int, Node] = Map()
   private var _inputShape: List[Int] = List()
   private val seed: Long = rngSeed
 
   def inputShape: List[Int] = _inputShape
+  def getPreprocessors: Map[Int, Node] = _preprocessors
 
-  def getPreprocessors: Map[Int, Node] = preprocessors
-
-  private val noLayers = inputShape.isEmpty && layers.isEmpty && preprocessors.isEmpty
-
+  private val noLayers = inputShape.isEmpty && layers.isEmpty && _preprocessors.isEmpty
   private def emptyShape(layer: Node): Boolean = {
-    !(preprocessors.contains(layers.length) || layers.nonEmpty) &&
+    !(_preprocessors.contains(layers.length) || layers.nonEmpty) &&
       layer.inputShape.length == 1 && layer.inputShape.head == 0
   }
 
   def inferInputShape(layer: Node): List[Int] = {
-    if (preprocessors.contains(layers.length)) {
-      preprocessors(layers.length).outputShape
+    if (_preprocessors.contains(layers.length)) {
+      _preprocessors(layers.length).outputShape
     }
     else layers.lastOption.map(_.outputShape).getOrElse(layer.inputShape)
   }
@@ -76,14 +74,13 @@ class Sequential(val rngSeed: Long = 0) extends Model {
     }
   }
 
-
   def add(layer: Node): Unit = {
     val inferredInput: List[Int] = inferInputShape(layer)
     checkShape(layer)
     val inferredLayer = layer.reshapeInput(inferredInput)
     inferredLayer match {
       case _: Preprocessor =>
-        preprocessors = preprocessors + (layers.length -> inferredLayer)
+        _preprocessors = _preprocessors + (layers.length -> inferredLayer)
       case _ =>
         layers = layers :+ inferredLayer
     }
@@ -99,7 +96,7 @@ class Sequential(val rngSeed: Long = 0) extends Model {
       log.info(" size: " + layer.describe())
       listBuilder.layer(layerIndex, layer.asInstanceOf[Layer].compile)
     }
-    for ((layerIndex, preprocessor) <- preprocessors) {
+    for ((layerIndex, preprocessor) <- _preprocessors) {
       log.info("Preprocessor " + layerIndex + ": " + preprocessor.getClass.getSimpleName)
       log.info(" size: " + preprocessor.describe())
       listBuilder.inputPreProcessor(layerIndex, preprocessor.asInstanceOf[Preprocessor].compile)
@@ -116,15 +113,6 @@ class Sequential(val rngSeed: Long = 0) extends Model {
       model.fit(iter)
   }
 
-  override def predict(x: INDArray): INDArray = model.output(x, false)
-
-  override def toString: String = model.getLayerWiseConfigurations.toString
-
-  override def toJson: String = model.getLayerWiseConfigurations.toJson
-
-  override def toYaml: String = model.getLayerWiseConfigurations.toYaml
-
-  def getNetwork: MultiLayerNetwork = model
 }
 
 object Sequential {

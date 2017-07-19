@@ -45,6 +45,13 @@ abstract class Model {
 
   def getLayers: List[Node] = layers
 
+  /**
+    * Build model configuration from optimizer and seed.
+    *
+    * @param optimizer optimization algorithm to use in model
+    * @param seed seed to use
+    * @return NeuralNetConfiguration.Builder
+    */
   def buildModelConfig(optimizer: Optimizer, seed: Long): NeuralNetConfiguration.Builder = {
     var builder: NeuralNetConfiguration.Builder = new NeuralNetConfiguration.Builder()
     if (seed != 0) {
@@ -65,7 +72,12 @@ abstract class Model {
     builder
   }
 
-
+  /**
+    * Make last layer of architecture an output layer using
+    * the provided loss function.
+    *
+    * @param lossFunction loss function to use
+    */
   def buildOutput(lossFunction: LossFunction): Unit = {
     layers.last match {
       case l if !l.isInstanceOf[OutputLayer] =>
@@ -102,7 +114,7 @@ abstract class Model {
     *
     * @param x input represented as INDArray
     */
-  def predict(x: INDArray): INDArray
+  def predict(x: INDArray): INDArray = model.output(x, false)
 
   /**
     * Use neural net to make prediction on input x.
@@ -111,9 +123,11 @@ abstract class Model {
     */
   def predict(x: DataSet): INDArray = predict(x.getFeatureMatrix)
 
-  def toString: String
+  override def toString: String = model.getLayerWiseConfigurations.toString
 
-  def toJson: String
+  def toJson: String = model.getLayerWiseConfigurations.toJson
 
-  def toYaml: String
+  def toYaml: String = model.getLayerWiseConfigurations.toYaml
+
+  def getNetwork: MultiLayerNetwork = model
 }

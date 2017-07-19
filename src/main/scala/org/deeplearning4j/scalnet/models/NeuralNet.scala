@@ -75,18 +75,7 @@ class NeuralNet(val inputType: Option[InputType] = None, val rngSeed: Long = 0) 
       log.info("Epoch " + epoch)
       model.fit(iter)
     }
-
   }
-
-  override def predict(x: INDArray): INDArray = model.output(x, false)
-
-  override def toString: String = model.getLayerWiseConfigurations.toString
-
-  override def toJson: String = model.getLayerWiseConfigurations.toJson
-
-  override def toYaml: String = model.getLayerWiseConfigurations.toYaml
-
-  def getNetwork: MultiLayerNetwork = model
 }
 
 object NeuralNet {

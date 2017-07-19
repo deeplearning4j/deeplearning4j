@@ -44,14 +44,13 @@ class SequentialTest extends FunSpec with BeforeAndAfter {
   val learningRate: Double = 0.01
 
   before {
-    model = new Sequential()
+    model = Sequential()
   }
 
   describe("A Sequential network") {
 
     it("without layers should produce a MatchError when compiled") {
       assertThrows[scala.MatchError] {
-        model = new Sequential()
         model.compile(null)
       }
     }
