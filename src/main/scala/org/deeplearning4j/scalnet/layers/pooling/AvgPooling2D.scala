@@ -55,7 +55,7 @@ object AvgPooling2D {
   def apply(kernelSize: List[Int],
             stride: List[Int] = List(1, 1),
             padding: List[Int] = List(0, 0),
-            nIn: Option[List[Int]],
+            nIn: Option[List[Int]] = None,
             name: String = null): AvgPooling2D = {
     new AvgPooling2D(kernelSize, stride, padding, nIn, name)
   }
