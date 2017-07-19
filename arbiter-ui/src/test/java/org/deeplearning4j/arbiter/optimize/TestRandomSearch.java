@@ -31,8 +31,7 @@ import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.Status;
 import org.deeplearning4j.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
-import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
-import org.deeplearning4j.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
+import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.components.text.ComponentText;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -68,8 +67,8 @@ public class TestRandomSearch {
                 = new LocalOptimizationRunner<>(configuration, new BraninTaskCreator());
 //        runner.addListeners(new LoggingOptimizationRunnerStatusListener());
 
-        ArbiterUIServer server = ArbiterUIServer.getInstance();
-        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
+        UIServer server = UIServer.getInstance();
+//        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
         runner.execute();
 
 

@@ -34,8 +34,8 @@ import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterS
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
-import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
-import org.deeplearning4j.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
+//import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
+//import org.deeplearning4j.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
 import org.deeplearning4j.arbiter.saver.local.multilayer.LocalMultiLayerNetworkSaver;
 import org.deeplearning4j.arbiter.scoring.multilayer.TestSetLossScoreFunction;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
@@ -122,8 +122,8 @@ public class MNISTOptimizationTest {
         IOptimizationRunner<DL4JConfiguration,MultiLayerNetwork,Evaluation> runner
                 = new LocalOptimizationRunner<>(configuration, new MultiLayerNetworkTaskCreator<Evaluation>());
 
-        ArbiterUIServer server = ArbiterUIServer.getInstance();
-        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
+//        ArbiterUIServer server = ArbiterUIServer.getInstance();
+//        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
 
         runner.execute();
 

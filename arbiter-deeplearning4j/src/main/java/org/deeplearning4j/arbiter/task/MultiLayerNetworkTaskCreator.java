@@ -31,7 +31,6 @@ import org.deeplearning4j.arbiter.optimize.api.evaluation.ModelEvaluator;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.runner.Status;
 import org.deeplearning4j.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
-import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
 import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
@@ -84,7 +83,7 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
             this.scoreFunction = scoreFunction;
             this.modelEvaluator = modelEvaluator;
 
-            dl4jListener = (ArbiterUIServer.isRunning() ? new UIStatusReportingListener(listener) : null);
+            dl4jListener = null;    //(ArbiterUIServer.isRunning() ? new UIStatusReportingListener(listener) : null);
         }
 
 

@@ -35,8 +35,8 @@ import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterS
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
-import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
-import org.deeplearning4j.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
+//import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
+//import org.deeplearning4j.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
 import org.deeplearning4j.arbiter.saver.local.graph.LocalComputationGraphSaver;
 import org.deeplearning4j.arbiter.scoring.ScoreFunctions;
 import org.deeplearning4j.arbiter.task.ComputationGraphTaskCreator;
@@ -110,8 +110,8 @@ public class TestGraphLocalExecution {
                 = new LocalOptimizationRunner<>(configuration,
                 new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()));
 
-        ArbiterUIServer server = ArbiterUIServer.getInstance();
-        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
+//        UIServer server = UIServer.getInstance();
+//        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
 
         runner.execute();
 
@@ -174,8 +174,8 @@ public class TestGraphLocalExecution {
         IOptimizationRunner<GraphConfiguration,ComputationGraph,Evaluation> runner
                 = new LocalOptimizationRunner<>(configuration, new ComputationGraphTaskCreator<>(new GraphClassificationDataSetEvaluator()));
 
-        ArbiterUIServer server = ArbiterUIServer.getInstance();
-        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
+//        ArbiterUIServer server = ArbiterUIServer.getInstance();
+//        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
 
         runner.execute();
 

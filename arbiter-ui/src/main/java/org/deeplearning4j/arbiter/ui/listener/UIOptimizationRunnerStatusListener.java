@@ -27,7 +27,6 @@ import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.Status;
 import org.deeplearning4j.arbiter.optimize.runner.listener.runner.OptimizationRunnerStatusListener;
-import org.deeplearning4j.arbiter.ui.ArbiterUIServer;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.LengthUnit;
 import org.deeplearning4j.ui.components.chart.ChartLine;
@@ -49,7 +48,7 @@ import java.util.List;
  */
 public class UIOptimizationRunnerStatusListener implements OptimizationRunnerStatusListener {
 
-    private ArbiterUIServer server;
+    private Object server;
     private long startTime;
     private List<Double> bestScores = new ArrayList<>();
     private List<Long> bestScoreStartTimes = new ArrayList<>();
@@ -76,7 +75,7 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
             .width(100,LengthUnit.Percent)
             .build();
 
-    public UIOptimizationRunnerStatusListener(ArbiterUIServer server) {
+    public UIOptimizationRunnerStatusListener(Object server) {
         this.server = server;
     }
 
@@ -103,7 +102,7 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
                 .content(table)
                 .build();
 
-        server.updateOptimizationSettings(ct);
+//        server.updateOptimizationSettings(ct);
     }
 
     @Override
@@ -216,9 +215,8 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
         components.add(allCandidateScores);
 
         ComponentDiv cd = new ComponentDiv(sd, components.toArray(new Component[components.size()]));
-        server.updateStatus(cd);
-
-        server.updateResults(runner.getCandidateStatus());
+//        server.updateStatus(cd);
+//        server.updateResults(runner.getCandidateStatus());
     }
 
     /** Convert timestamp to String */

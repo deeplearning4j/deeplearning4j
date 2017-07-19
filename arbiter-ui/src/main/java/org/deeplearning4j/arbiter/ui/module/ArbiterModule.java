@@ -12,6 +12,7 @@ import play.mvc.Results;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -20,22 +21,21 @@ import java.util.List;
 public class ArbiterModule implements UIModule {
     @Override
     public List<String> getCallbackTypeIDs() {
-        return null;
+        return Collections.emptyList();
     }
 
     @Override
     public List<Route> getRoutes() {
-        Route r1 = new Route("/arbiter", HttpMethod.GET, FunctionType.Function, this::getMainArbiterPage);
-        Route r2 = new Route("/arbiter/modelResults/:id", HttpMethod.GET, FunctionType.Supplier, this::getModelResult);
-        Route r3 = new Route("/arbiter/lastUpdate", HttpMethod.GET, FunctionType.Function, this::getLastUpdateTime);
-        Route r4 = new Route("/arbiter/lastUpdate/:ids", HttpMethod.GET, FunctionType.Supplier, this::getModelLastUpdateTimes);
-        Route r5 = new Route("/arbiter/update/:id", HttpMethod.GET, FunctionType.Supplier, this::getUpdate);
-
+        Route r1 = new Route("/arbiter", HttpMethod.GET, FunctionType.Supplier, this::getMainArbiterPage);
+        Route r2 = new Route("/arbiter/modelResults/:id", HttpMethod.GET, FunctionType.Function, this::getModelResult);
+        Route r3 = new Route("/arbiter/lastUpdate", HttpMethod.GET, FunctionType.Supplier, this::getLastUpdateTime);
+        Route r4 = new Route("/arbiter/lastUpdate/:ids", HttpMethod.GET, FunctionType.Function, this::getModelLastUpdateTimes);
+        Route r5 = new Route("/arbiter/update/:id", HttpMethod.GET, FunctionType.Function, this::getUpdate);
         Route r6 = new Route("/arbiter/config", HttpMethod.GET, FunctionType.Supplier, this::getOptimizationConfig);
         Route r7 = new Route("/arbiter/results", HttpMethod.GET, FunctionType.Supplier, this::getSummaryResults);
         Route r8 = new Route("/arbiter/summaryStatus", HttpMethod.GET, FunctionType.Supplier, this::getSummaryStatus);
 
-        return Arrays.asList(r1, r2, r3, r4, r5, r6, r7);
+        return Arrays.asList(r1, r2, r3, r4, r5, r6, r7, r8);
     }
 
     @Override
