@@ -38,7 +38,7 @@ import java.util.List;
 public class JCublasComplexNDArray extends BaseComplexNDArray {
 
 
-    public JCublasComplexNDArray(int[] shape, int offset, char ordering) {
+    public JCublasComplexNDArray(int[] shape, long offset, char ordering) {
 
         super(shape, offset, ordering);
 
@@ -149,7 +149,7 @@ public class JCublasComplexNDArray extends BaseComplexNDArray {
 
     }
 
-    public JCublasComplexNDArray(float[] data, int[] shape, int[] stride, int offset, Character order) {
+    public JCublasComplexNDArray(float[] data, int[] shape, int[] stride, long offset, Character order) {
         super(data, shape, stride, offset, order);
     }
 
@@ -243,7 +243,7 @@ public class JCublasComplexNDArray extends BaseComplexNDArray {
      * @param stride the stride of the ndarray
      * @param offset the desired offset
      */
-    public JCublasComplexNDArray(int[] shape, int[] stride, int offset) {
+    public JCublasComplexNDArray(int[] shape, int[] stride, long offset) {
 
         super(shape, stride, offset);
 
@@ -258,7 +258,7 @@ public class JCublasComplexNDArray extends BaseComplexNDArray {
      * @param offset   the desired offset
      * @param ordering the ordering for the ndarray
      */
-    public JCublasComplexNDArray(int[] shape, int[] stride, int offset, char ordering) {
+    public JCublasComplexNDArray(int[] shape, int[] stride, long offset, char ordering) {
         super(shape, stride, offset, ordering);
 
     }
@@ -293,7 +293,7 @@ public class JCublasComplexNDArray extends BaseComplexNDArray {
      * @param shape
      * @param offset
      */
-    public JCublasComplexNDArray(int[] shape, int offset) {
+    public JCublasComplexNDArray(int[] shape, long offset) {
 
         super(shape, offset);
 
@@ -333,34 +333,34 @@ public class JCublasComplexNDArray extends BaseComplexNDArray {
      * @param offset   the offset of the ndarray
      * @param ordering the ordering for the ndarrayg
      */
-    public JCublasComplexNDArray(float[] data, int[] shape, int[] stride, int offset, char ordering) {
+    public JCublasComplexNDArray(float[] data, int[] shape, int[] stride, long offset, char ordering) {
         super(data, shape, stride, offset, ordering);
 
     }
 
-    public JCublasComplexNDArray(float[] data, int[] shape, int[] stride, int offset) {
+    public JCublasComplexNDArray(float[] data, int[] shape, int[] stride, long offset) {
         super(data, shape, stride, offset);
 
     }
 
 
-    public JCublasComplexNDArray(float[] floats, int[] shape, int offset, char ordering) {
+    public JCublasComplexNDArray(float[] floats, int[] shape, long offset, char ordering) {
         super(floats, shape, offset, ordering);
 
     }
 
-    public JCublasComplexNDArray(float[] floats, int[] shape, int offset) {
+    public JCublasComplexNDArray(float[] floats, int[] shape, long offset) {
 
         super(floats, shape, offset);
 
     }
 
 
-    public JCublasComplexNDArray(DataBuffer data, int[] shape, int[] stride, int offset) {
+    public JCublasComplexNDArray(DataBuffer data, int[] shape, int[] stride, long offset) {
         super(data, shape, stride, offset);
     }
 
-    public JCublasComplexNDArray(IComplexNumber[] data, int[] shape, int[] stride, int offset, char ordering) {
+    public JCublasComplexNDArray(IComplexNumber[] data, int[] shape, int[] stride, long offset, char ordering) {
         super(data, shape, stride, offset, ordering);
     }
 
@@ -368,19 +368,19 @@ public class JCublasComplexNDArray extends BaseComplexNDArray {
         super(data, shape);
     }
 
-    public JCublasComplexNDArray(IComplexNumber[] data, int[] shape, int[] stride, int offset) {
+    public JCublasComplexNDArray(IComplexNumber[] data, int[] shape, int[] stride, long offset) {
         super(data, shape, stride, offset);
     }
 
-    public JCublasComplexNDArray(IComplexNumber[] data, int[] shape, int offset, char ordering) {
+    public JCublasComplexNDArray(IComplexNumber[] data, int[] shape, long offset, char ordering) {
         super(data, shape, offset, ordering);
     }
 
-    public JCublasComplexNDArray(DataBuffer buffer, int[] shape, int offset, char ordering) {
+    public JCublasComplexNDArray(DataBuffer buffer, int[] shape, long offset, char ordering) {
         super(buffer, shape, offset, ordering);
     }
 
-    public JCublasComplexNDArray(DataBuffer buffer, int[] shape, int offset) {
+    public JCublasComplexNDArray(DataBuffer buffer, int[] shape, long offset) {
         super(buffer, shape, offset);
     }
 
@@ -394,7 +394,7 @@ public class JCublasComplexNDArray extends BaseComplexNDArray {
         super(data);
     }
 
-    public JCublasComplexNDArray(DataBuffer buffer, int[] shape, int[] stride, int offset, char ordering) {
+    public JCublasComplexNDArray(DataBuffer buffer, int[] shape, int[] stride, long offset, char ordering) {
         super(buffer, shape, stride, offset, ordering);
     }
 

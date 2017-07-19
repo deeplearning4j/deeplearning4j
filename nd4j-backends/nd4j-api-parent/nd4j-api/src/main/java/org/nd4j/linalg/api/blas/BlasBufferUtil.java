@@ -19,7 +19,8 @@ public class BlasBufferUtil {
      * @return the blas stride
      */
     public static int getBlasOffset(INDArray arr) {
-        return arr.offset();
+        // FIXME: LONG
+        return (int) arr.offset();
     }
 
     /**
@@ -241,7 +242,8 @@ public class BlasBufferUtil {
                     int count = 0;
                     //need to do strided access with offset
                     for (int i = 0; i < data.length; i++) {
-                        int dIndex = toSet.offset() + (i * toSet.majorStride());
+                        // FIXME: LONG
+                        int dIndex = (int) toSet.offset() + (i * toSet.majorStride());
                         d[dIndex] = data[count++];
                     }
                 }
@@ -257,7 +259,8 @@ public class BlasBufferUtil {
                 int count = 0;
                 //need to do strided access with offset
                 for (int i = 0; i < data.length; i++) {
-                    int dIndex = toSet.offset() + (i * toSet.majorStride());
+                    // FIXME: LONG
+                    int dIndex = (int) toSet.offset() + (i * toSet.majorStride());
                     underlyingData.put(dIndex, data[count++]);
                 }
             }
@@ -304,7 +307,8 @@ public class BlasBufferUtil {
                     int count = 0;
                     //need to do strided access with offset
                     for (int i = 0; i < data.length; i++) {
-                        int dIndex = toSet.offset() + (i * toSet.majorStride());
+                        // FIXME: LONG
+                        int dIndex = (int) toSet.offset() + (i * toSet.majorStride());
                         d[dIndex] = data[count++];
                     }
                 }
@@ -320,7 +324,8 @@ public class BlasBufferUtil {
                 int count = 0;
                 //need to do strided access with offset
                 for (int i = 0; i < data.length; i++) {
-                    int dIndex = toSet.offset() + (i * toSet.majorStride());
+                    // FIXME: LONG
+                    int dIndex = (int) toSet.offset() + (i * toSet.majorStride());
                     underlyingData.put(dIndex, data[count++]);
                 }
             }

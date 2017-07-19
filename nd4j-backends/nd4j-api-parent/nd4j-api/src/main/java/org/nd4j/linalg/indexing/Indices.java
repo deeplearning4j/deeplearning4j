@@ -83,12 +83,12 @@ public class Indices {
      * @param arr the array
      * @return the linear offset
      */
-    public static int linearOffset(int index, INDArray arr) {
+    public static long linearOffset(int index, INDArray arr) {
         if (arr.ordering() == NDArrayFactory.C) {
             double otherTest = ((double) index) % arr.size(-1);
             int test = (int) Math.floor(otherTest);
             INDArray vec = arr.vectorAlongDimension(test, -1);
-            int otherDim = arr.vectorAlongDimension(test, -1).offset() + index;
+            long otherDim = arr.vectorAlongDimension(test, -1).offset() + index;
             return otherDim;
         } else {
             int majorStride = arr.stride(-2);
@@ -99,7 +99,7 @@ public class Indices {
             INDArray arrVector = arr.vectorAlongDimension(floor, -1);
 
             int columnIndex = index % arr.size(-1);
-            int retOffset = arrVector.linearIndex(columnIndex);
+            long retOffset = arrVector.linearIndex(columnIndex);
             return retOffset;
 
 
