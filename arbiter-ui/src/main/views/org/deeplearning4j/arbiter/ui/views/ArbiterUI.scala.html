@@ -192,7 +192,7 @@
     //Set basic interval function to do updates
     setInterval(function(){
         //Get the update status, and do something with it:
-        $.get("/lastUpdate",function(data){
+        $.get("/arbiter/lastUpdate",function(data){
             //Encoding: matches names in UpdateStatus class
             var jsonObj = JSON.parse(JSON.stringify(data));
             var statusTime = jsonObj['statusUpdateTime'];
@@ -204,7 +204,7 @@
             //First section: summary status
             if(lastStatusUpdateTime != statusTime){
                 //Get JSON: address set by SummaryStatusResource
-                $.get("/summary",function(data){
+                $.get("/arbiter/summary",function(data){
                     var summaryStatusDiv = $('#statusdiv');
                     summaryStatusDiv.html('');
 

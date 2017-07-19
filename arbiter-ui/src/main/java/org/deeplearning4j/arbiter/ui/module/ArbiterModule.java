@@ -1,24 +1,36 @@
 package org.deeplearning4j.arbiter.ui.module;
 
+import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
+import org.deeplearning4j.arbiter.ui.views.html.ArbiterUI;
 import org.deeplearning4j.ui.api.FunctionType;
 import org.deeplearning4j.ui.api.HttpMethod;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
+import org.deeplearning4j.ui.stats.StatsListener;
+import play.libs.Json;
 import play.mvc.Result;
-import play.mvc.Results;
 
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import static play.mvc.Results.ok;
 
 /**
  * Created by Alex on 18/07/2017.
  */
+@Slf4j
 public class ArbiterModule implements UIModule {
+
+    public static final String ARBITER_UI_TYPE_ID = "ArbiterUI";
+
+    private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
+    private String currentSessionID;
+
+    private AtomicLong lastUpdateTime = new AtomicLong(-1);
+
     @Override
     public List<String> getCallbackTypeIDs() {
         return Collections.emptyList();
@@ -44,23 +56,72 @@ public class ArbiterModule implements UIModule {
     }
 
     @Override
-    public void onAttach(StatsStorage statsStorage) {
+    public synchronized void onAttach(StatsStorage statsStorage) {
+        for (String sessionID : statsStorage.listSessionIDs()) {
+            for (String typeID : statsStorage.listTypeIDsForSession(sessionID)) {
+                if (!StatsListener.TYPE_ID.equals(typeID))
+                    continue;
+                knownSessionIDs.put(sessionID, statsStorage);
+            }
+        }
 
+        if (currentSessionID == null)
+            getDefaultSession();
+    }
+
+    private void getDefaultSession() {
+        if (currentSessionID != null)
+            return;
+
+        long mostRecentTime = Long.MIN_VALUE;
+        String sessionID = null;
+        for (Map.Entry<String, StatsStorage> entry : knownSessionIDs.entrySet()) {
+            List<Persistable> staticInfos = entry.getValue().getAllStaticInfos(entry.getKey(), StatsListener.TYPE_ID);
+            if (staticInfos == null || staticInfos.size() == 0)
+                continue;
+            Persistable p = staticInfos.get(0);
+            long thisTime = p.getTimeStamp();
+            if (thisTime > mostRecentTime) {
+                mostRecentTime = thisTime;
+                sessionID = entry.getKey();
+            }
+        }
+
+        if (sessionID != null) {
+            currentSessionID = sessionID;
+        }
     }
 
     @Override
     public void onDetach(StatsStorage statsStorage) {
-
+        for (String s : knownSessionIDs.keySet()) {
+            if (knownSessionIDs.get(s) == statsStorage) {
+                knownSessionIDs.remove(s);
+            }
+        }
     }
 
 
     private Result getMainArbiterPage(){
 
 
-        return Results.ok("Main Arbiter page here");
+//        return Results.ok("Main Arbiter page here");
+        return ok(ArbiterUI.apply());
     }
 
     private Result getModelResult(String id){
+
+        if(currentSessionID == null){
+            return ok();
+        }
+
+        StatsStorage ss = knownSessionIDs.get(currentSessionID);
+        if(ss == null){
+            log.warn("Session ID is unknown: {}", currentSessionID);
+            return ok();
+        }
+
+        return ok("Result for model " + id + " goes here");
 
         /*
         private Map<Integer,Component> map = new ConcurrentHashMap<>();
@@ -83,8 +144,6 @@ public class ArbiterModule implements UIModule {
             return Response.ok(str).build();
         }
          */
-
-        return Results.ok("Result goes here");
     }
 
     private Result getLastUpdateTime(){
@@ -109,15 +168,44 @@ public class ArbiterModule implements UIModule {
             }
          */
 
-        return Results.ok("Last update time goes here");
+        return ok(String.valueOf(lastUpdateTime.get()));
     }
 
     private Result getModelLastUpdateTimes(String modelIDs){
 
-        return Results.ok("Last update times by model go here");
+        if(currentSessionID == null){
+            return ok();
+        }
+
+        StatsStorage ss = knownSessionIDs.get(currentSessionID);
+        if(ss == null){
+            log.warn("getModelLastUpdateTimes(): Session ID is unknown: {}", currentSessionID);
+            return ok("-1");
+        }
+
+        String[] split = modelIDs.split(",");
+
+        long[] lastUpdateTimes = new long[split.length];
+        for( int i=0; i<split.length; i++ ){
+            String s = split[i];
+            Persistable p = ss.getLatestUpdate(currentSessionID, ARBITER_UI_TYPE_ID, s);
+            if(p != null){
+                lastUpdateTimes[i] = p.getTimeStamp();
+            }
+        }
+
+        return ok(Json.toJson(lastUpdateTimes));
     }
 
     private Result getUpdate(String candidateId){
+
+        StatsStorage ss = knownSessionIDs.get(currentSessionID);
+        if(ss == null){
+            log.warn("getModelLastUpdateTimes(): Session ID is unknown: {}", currentSessionID);
+            return ok();
+        }
+
+
 
         /*
             private Map<Integer,Component> map = new ConcurrentHashMap<>();
@@ -147,7 +235,7 @@ public class ArbiterModule implements UIModule {
             }
          */
 
-        return Results.ok("Candidate results goes here");
+        return ok("Candidate results goes here");
     }
 
     private Result getOptimizationConfig(){
@@ -174,7 +262,7 @@ public class ArbiterModule implements UIModule {
         }
          */
 
-        return Results.ok("Optimization config goes here");
+        return ok("Optimization config goes here");
     }
 
     private Result getSummaryResults(){
@@ -189,7 +277,7 @@ public class ArbiterModule implements UIModule {
             }
          */
 
-        return Results.ok("Summary results go here");
+        return ok("Summary results go here");
     }
 
     private Result getSummaryStatus(){
@@ -212,7 +300,7 @@ public class ArbiterModule implements UIModule {
             }
          */
 
-        return Results.ok("Summary results go here");
+        return ok("Summary results go here");
     }
 
 }
