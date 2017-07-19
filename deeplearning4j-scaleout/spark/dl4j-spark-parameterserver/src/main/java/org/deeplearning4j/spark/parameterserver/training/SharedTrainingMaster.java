@@ -951,7 +951,7 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
         public Builder(double threshold, int rddDataSetNumExamples) {
             this(VoidConfiguration.builder().executionMode(ExecutionMode.MANAGED).forcedRole(NodeRole.SHARD)
 
-                            // we're setting controller to Spark Master
+                            // we're setting controller to Spark Master, if it's null - that's ok for now.
                             .controllerAddress(System.getenv("SPARK_PUBLIC_DNS")).build(), null, threshold,
                             rddDataSetNumExamples);
         }
@@ -971,6 +971,9 @@ public class SharedTrainingMaster extends BaseTrainingMaster<SharedTrainingResul
                         int rddDataSetNumExamples) {
             this.threshold = threshold;
             this.voidConfiguration = voidConfiguration;
+
+            // we're enforcing managed mode in all cases here
+            this.voidConfiguration.setExecutionMode(ExecutionMode.MANAGED);
         }
 
         /**
