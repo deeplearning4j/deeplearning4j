@@ -1,5 +1,6 @@
 package org.nd4j.linalg.cpu.nativecpu;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.util.Pair;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
@@ -29,6 +30,7 @@ import java.util.Random;
 /**
  * @author Audrey Loeffel
  */
+@Slf4j
 public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
 
     public CpuSparseNDArrayFactory(){}

@@ -1,22 +1,20 @@
 package org.nd4j.linalg;
 
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.*;
-import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import javax.sound.midi.Soundbank;
-import java.sql.DatabaseMetaData;
+import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
 /**
  * @author Audrey Loeffel
  */
+@Slf4j
 public class SparseNDArrayCOOTest {
 
     double[] data = {10,1,2,3,4,5};
@@ -475,6 +473,7 @@ public class SparseNDArrayCOOTest {
         INDArray original = Nd4j.createSparseCOO(values, indices, shape);
         original.putScalar(2, 2, 2, 2);
         original.putScalar(1, 1, 1, 1);
+
         BaseSparseNDArrayCOO view = (BaseSparseNDArrayCOO) original.get(NDArrayIndex.all());
         int[] expectedIdx = new int[]{0, 0, 0, 1, 1, 1, 2, 2, 2};
         double[] expectedValues = new double[]{0, 1, 2};
