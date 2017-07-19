@@ -5,13 +5,6 @@ from itertools import chain
 
 import numpy as np
 
-jnius_config.add_options('-Dorg.bytedeco.javacpp.nopointergc=true')
-
-try:
-    jnius_classpath = os.environ['JUMPY_CLASS_PATH']
-except KeyError:
-    raise 'Please specify a jar or directory for JUMPY_CLASS_PATH in the environment'
-
 def _expand_directory(path):
     if not path.endswith('*'):
         return [path,]
@@ -28,42 +21,79 @@ def get_classpath(base_path):
     """
     return ':'.join(chain.from_iterable(map(lambda x: _expand_directory(x), base_path.split(':'))))
 
-jnius_config.set_classpath(get_classpath(jnius_classpath))
+if __name__ == "__main__":
+    init()
 
-# after jnius is initialized with proper class path *then* we setup nd4j
+def init():
+    jnius_config.add_options('-Dorg.bytedeco.javacpp.nopointergc=true')
 
-from jnius import autoclass
+    try:
+        jnius_classpath = os.environ['JUMPY_CLASS_PATH']
+    except KeyError:
+        raise Exception('Please specify a jar or directory for JUMPY_CLASS_PATH in the environment')
+    jnius_config.set_classpath(get_classpath(jnius_classpath))
 
-nd4j = autoclass('org.nd4j.linalg.factory.Nd4j')
-INDArray = autoclass('org.nd4j.linalg.api.ndarray.INDArray')
-transforms = autoclass('org.nd4j.linalg.ops.transforms.Transforms')
-indexing = autoclass('org.nd4j.linalg.indexing.NDArrayIndex')
+    # after jnius is initialized with proper class path *then* we setup nd4j
 
-DataBuffer = autoclass('org.nd4j.linalg.api.buffer.DataBuffer')
+    from jnius import autoclass
 
-system = autoclass('java.lang.System')
-system.out.println(system.getProperty('org.bytedeco.javacpp.nopointergc'))
-Integer = autoclass('java.lang.Integer')
-Float = autoclass('java.lang.Float')
-Double = autoclass('java.lang.Double')
+    global nd4j
+    nd4j = autoclass('org.nd4j.linalg.factory.Nd4j')
+    global INDArray
+    INDArray = autoclass('org.nd4j.linalg.api.ndarray.INDArray')
+    global transforms
+    transforms = autoclass('org.nd4j.linalg.ops.transforms.Transforms')
+    global indexing
+    indexing = autoclass('org.nd4j.linalg.indexing.NDArrayIndex')
 
-nd4j_index = autoclass('org.nd4j.linalg.indexing.NDArrayIndex')
+    global DataBuffer
+    DataBuffer = autoclass('org.nd4j.linalg.api.buffer.DataBuffer')
 
-shape = autoclass('org.nd4j.linalg.api.shape.Shape')
+    global system
+    system = autoclass('java.lang.System')
+    system.out.println(system.getProperty('org.bytedeco.javacpp.nopointergc'))
+    global Integer
+    Integer = autoclass('java.lang.Integer')
+    global Float
+    Float = autoclass('java.lang.Float')
+    global Double
+    Double = autoclass('java.lang.Double')
 
-serde = autoclass('org.nd4j.serde.binary.BinarySerde')
+    global nd4j_index
+    nd4j_index = autoclass('org.nd4j.linalg.indexing.NDArrayIndex')
 
-native_ops_holder = autoclass('org.nd4j.nativeblas.NativeOpsHolder')
-native_ops = native_ops_holder.getInstance().getDeviceNativeOps()
+    global shape
+    shape = autoclass('org.nd4j.linalg.api.shape.Shape')
 
-DoublePointer = autoclass('org.bytedeco.javacpp.DoublePointer')
-FloatPointer = autoclass('org.bytedeco.javacpp.FloatPointer')
-IntPointer = autoclass('org.bytedeco.javacpp.IntPointer')
+    global serde
+    serde = autoclass('org.nd4j.serde.binary.BinarySerde')
 
-DataTypeUtil = autoclass('org.nd4j.linalg.api.buffer.util.DataTypeUtil')
+    global native_ops_holder
+    native_ops_holder = autoclass('org.nd4j.nativeblas.NativeOpsHolder')
+    global native_ops
+    native_ops = native_ops_holder.getInstance().getDeviceNativeOps()
 
-MemoryManager = autoclass('org.nd4j.linalg.memory.MemoryManager')
-memory_manager = nd4j.getMemoryManager()
+    global DoublePointer
+    DoublePointer = autoclass('org.bytedeco.javacpp.DoublePointer')
+    global FloatPointer
+    FloatPointer = autoclass('org.bytedeco.javacpp.FloatPointer')
+    global IntPointer
+    IntPointer = autoclass('org.bytedeco.javacpp.IntPointer')
+
+    global DataTypeUtil
+    DataTypeUtil = autoclass('org.nd4j.linalg.api.buffer.util.DataTypeUtil')
+
+    global MemoryManager
+    MemoryManager = autoclass('org.nd4j.linalg.memory.MemoryManager')
+    global memory_manager
+    memory_manager = nd4j.getMemoryManager()
+    global methods
+    methods = inspect.getmembers(INDArray, predicate=inspect.ismethod)
+    for name, method in methods:
+        Nd4jArray.name = method
+    methods = inspect.getmembers(DataBuffer, predicate=inspect.ismethod)
+    for name, method in methods:
+        Nd4jBuffer.name = method
 
 
 def disable_gc():
@@ -261,11 +291,6 @@ class Nd4jArray(object):
         return self.array.data()
 
 
-methods = inspect.getmembers(INDArray, predicate=inspect.ismethod)
-for name, method in methods:
-    Nd4jArray.name = method
-
-
 class Nd4jBuffer(object):
     def __init__(self, data_buffer=None, numpy_pointer=None):
         self.data_buffer = data_buffer
@@ -289,12 +314,6 @@ class Nd4jBuffer(object):
 
     def element_size(self):
         return self.data_buffer.getElementSize()
-
-
-methods = inspect.getmembers(DataBuffer, predicate=inspect.ismethod)
-for name, method in methods:
-    Nd4jBuffer.name = method
-
 
 def _nd4j_datatype_from_np(np_datatype_name):
     """
