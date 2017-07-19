@@ -12,7 +12,7 @@ import java.io.OutputStream;
  * Factorisation between ActorCritic and DQN neural net.
  * Useful for AsyncLearning and Thread code.
  */
-public interface NeuralNet {
+public interface NeuralNet<NN extends NeuralNet> {
 
     /**
      * @param batch batch to evaluate
@@ -24,7 +24,13 @@ public interface NeuralNet {
      * clone the Neural Net with the same paramaeters
      * @return the cloned neural net
      */
-    NeuralNet clone();
+    NN clone();
+
+    /**
+     * copy the parameters from a neural net
+     * @param from where to copy parameters
+     */
+    void copy(NN from);
 
     /**
      * Calculate the gradients from input and label (target) of all outputs

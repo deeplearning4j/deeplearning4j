@@ -35,7 +35,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class PolicyTest {
 
-    public static class DummyAC implements IActorCritic {
+    public static class DummyAC<NN extends DummyAC> implements IActorCritic<NN> {
 
         @Override
         public void fit(INDArray input, INDArray[] labels) {
@@ -48,7 +48,12 @@ public class PolicyTest {
         }
 
         @Override
-        public IActorCritic clone() {
+        public NN clone() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void copy(NN from) {
             throw new UnsupportedOperationException();
         }
 

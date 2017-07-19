@@ -12,7 +12,7 @@ import java.io.OutputStream;
  * This neural net quantify the value of each action given a state
  *
  */
-public interface IDQN extends NeuralNet {
+public interface IDQN<NN extends IDQN> extends NeuralNet<NN> {
 
     void fit(INDArray input, INDArray labels);
 
@@ -22,7 +22,9 @@ public interface IDQN extends NeuralNet {
 
     INDArray[] outputAll(INDArray batch);
 
-    IDQN clone();
+    NN clone();
+
+    void copy(NN from);
 
     Gradient[] gradient(INDArray input, INDArray label);
 

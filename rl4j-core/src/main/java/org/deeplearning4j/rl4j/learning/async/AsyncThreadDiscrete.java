@@ -23,8 +23,13 @@ import java.util.Stack;
 public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends NeuralNet>
                 extends AsyncThread<O, Integer, DiscreteSpace, NN> {
 
+    private NN current;
+
     public AsyncThreadDiscrete(AsyncGlobal<NN> asyncGlobal, int threadNumber) {
         super(asyncGlobal, threadNumber);
+        synchronized (asyncGlobal) {
+            current = (NN)asyncGlobal.getCurrent().clone();
+        }
     }
 
     /**
@@ -37,7 +42,9 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
      */
     public SubEpochReturn<O> trainSubEpoch(O sObs, int nstep) {
 
-        NN current = getAsyncGlobal().cloneCurrent();
+        synchronized (getAsyncGlobal()) {
+            current.copy(getAsyncGlobal().getCurrent());
+        }
         Stack<MiniTrans<Integer>> rewards = new Stack<>();
 
         O obs = sObs;
@@ -102,8 +109,9 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
             INDArray[] output = null;
             if (getConf().getTargetDqnUpdateFreq() == -1)
                 output = current.outputAll(hstack);
-            else
-                output = getAsyncGlobal().cloneTarget().outputAll(hstack);
+            else synchronized (getAsyncGlobal()) {
+                output = getAsyncGlobal().getTarget().outputAll(hstack);
+            }
             double maxQ = Nd4j.max(output[0]).getDouble(0);
             rewards.add(new MiniTrans(hstack, null, output, maxQ));
         }

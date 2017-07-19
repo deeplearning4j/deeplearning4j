@@ -15,14 +15,16 @@ import java.io.OutputStream;
  * The first output quantify the advantage provided by getting to one state
  * while the other choose among a set of action which is the best one.
  */
-public interface IActorCritic extends NeuralNet {
+public interface IActorCritic<NN extends IActorCritic> extends NeuralNet<NN> {
 
     void fit(INDArray input, INDArray[] labels);
 
     //FIRST SHOULD BE VALUE AND SECOND IS SOFTMAX POLICY. DONT MESS THIS UP OR ELSE ASYNC THREAD IS BROKEN (maxQ) !
     INDArray[] outputAll(INDArray batch);
 
-    IActorCritic clone();
+    NN clone();
+
+    void copy(NN from);
 
     Gradient[] gradient(INDArray input, INDArray[] labels);
 

@@ -1,9 +1,7 @@
 package org.deeplearning4j.rl4j.network.ac;
 
-import org.apache.commons.lang3.NotImplementedException;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -14,7 +12,7 @@ import java.io.OutputStream;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/23/16.
  */
-public class ActorCriticSeparate implements IActorCritic {
+public class ActorCriticSeparate<NN extends ActorCriticSeparate> implements IActorCritic<NN> {
 
     final protected MultiLayerNetwork valueNet;
     final protected MultiLayerNetwork policyNet;
@@ -42,8 +40,13 @@ public class ActorCriticSeparate implements IActorCritic {
         return new INDArray[] {valueNet.output(batch), policyNet.output(batch)};
     }
 
-    public ActorCriticSeparate clone() {
-        return new ActorCriticSeparate(valueNet.clone(), policyNet.clone());
+    public NN clone() {
+        return (NN)new ActorCriticSeparate(valueNet.clone(), policyNet.clone());
+    }
+
+    public void copy(NN from) {
+        valueNet.setParams(from.valueNet.params());
+        policyNet.setParams(from.policyNet.params());
     }
 
     public Gradient[] gradient(INDArray input, INDArray[] labels) {

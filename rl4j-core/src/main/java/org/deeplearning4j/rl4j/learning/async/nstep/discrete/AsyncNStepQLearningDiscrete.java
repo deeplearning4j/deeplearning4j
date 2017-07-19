@@ -50,7 +50,7 @@ public abstract class AsyncNStepQLearningDiscrete<O extends Encodable>
     }
 
     public IDQN getNeuralNet() {
-        return asyncGlobal.cloneCurrent();
+        return asyncGlobal.getCurrent();
     }
 
     public Policy<O, Integer> getPolicy() {

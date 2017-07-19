@@ -12,7 +12,7 @@ import java.io.OutputStream;
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/25/16.
  */
-public class DQN implements IDQN {
+public class DQN<NN extends DQN> implements IDQN<NN> {
 
     final protected MultiLayerNetwork mln;
 
@@ -42,8 +42,12 @@ public class DQN implements IDQN {
         return new INDArray[] {output(batch)};
     }
 
-    public DQN clone() {
-        return new DQN(mln.clone());
+    public NN clone() {
+        return (NN)new DQN(mln.clone());
+    }
+
+    public void copy(NN from) {
+        mln.setParams(from.mln.params());
     }
 
     public Gradient[] gradient(INDArray input, INDArray labels) {

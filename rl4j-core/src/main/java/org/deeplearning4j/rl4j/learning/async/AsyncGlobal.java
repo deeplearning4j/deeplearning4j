@@ -38,16 +38,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class AsyncGlobal<NN extends NeuralNet> extends Thread {
 
+    @Getter
     final private NN current;
     final private ConcurrentLinkedQueue<Pair<Gradient[], Integer>> queue;
     final private AsyncConfiguration a3cc;
     @Getter
     private AtomicInteger T = new AtomicInteger(0);
+    @Getter
     private NN target;
     @Getter
     @Setter
     private boolean running = true;
-
 
     public AsyncGlobal(NN initial, AsyncConfiguration a3cc) {
         this.current = initial;
@@ -56,22 +57,9 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread {
         queue = new ConcurrentLinkedQueue<>();
     }
 
-
-
     public boolean isTrainingComplete() {
         return T.get() >= a3cc.getMaxStep();
     }
-
-
-    synchronized public NN cloneCurrent() {
-        return (NN) current.clone();
-    }
-
-    synchronized public NN cloneTarget() {
-        return (NN) target.clone();
-    }
-
-
 
     public void enqueue(Gradient[] gradient, Integer nstep) {
         queue.add(new Pair<>(gradient, nstep));
@@ -93,7 +81,7 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread {
                                                 / a3cc.getTargetDqnUpdateFreq()) {
                     log.info("TARGET UPDATE at T = " + T.get());
                     synchronized (this) {
-                        target = (NN) current.clone();
+                        target.copy(current);
                     }
                 }
             }
