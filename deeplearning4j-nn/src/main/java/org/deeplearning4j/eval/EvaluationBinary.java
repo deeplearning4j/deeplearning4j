@@ -138,7 +138,8 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         INDArray classPredictions;
         if (decisionThreshold != null) {
             classPredictions = Nd4j.createUninitialized(networkPredictions.shape());
-            Nd4j.getExecutioner().exec(new BroadcastGreaterThan(networkPredictions, decisionThreshold, classPredictions, 1));
+            Nd4j.getExecutioner()
+                            .exec(new BroadcastGreaterThan(networkPredictions, decisionThreshold, classPredictions, 1));
         } else {
             classPredictions = networkPredictions.gt(0.5);
         }

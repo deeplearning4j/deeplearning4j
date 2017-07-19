@@ -6,6 +6,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -41,7 +42,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
  * Created by nyghtowl on 10/29/15.
  */
 public class LocalResponseNormalization
-                extends BaseLayer<org.deeplearning4j.nn.conf.layers.LocalResponseNormalization> {
+                extends AbstractLayer<org.deeplearning4j.nn.conf.layers.LocalResponseNormalization> {
     protected static final Logger log =
                     LoggerFactory.getLogger(org.deeplearning4j.nn.conf.layers.LocalResponseNormalization.class);
 
@@ -57,6 +58,11 @@ public class LocalResponseNormalization
     public LocalResponseNormalization(NeuralNetConfiguration conf, INDArray input) {
         super(conf, input);
         initializeHelper();
+    }
+
+    @Override
+    public Layer clone() {
+        return new LocalResponseNormalization(conf.clone());
     }
 
     public LocalResponseNormalization(NeuralNetConfiguration conf) {
@@ -195,6 +201,11 @@ public class LocalResponseNormalization
     }
 
     @Override
+    public INDArray activationMean() {
+        return activate(false);
+    }
+
+    @Override
     public INDArray params() {
         return null;
     }
@@ -207,6 +218,11 @@ public class LocalResponseNormalization
     @Override
     public void setParams(INDArray params) {
 
+    }
+
+    @Override
+    public INDArray preOutput(boolean training) {
+        return activate(training);
     }
 
 

@@ -106,7 +106,7 @@ public class ZeroPaddingLayer extends Layer {
 
     @Override
     public double getLearningRateByParam(String paramName) {
-        return learningRate;
+        return 0;
     }
 
     @Override

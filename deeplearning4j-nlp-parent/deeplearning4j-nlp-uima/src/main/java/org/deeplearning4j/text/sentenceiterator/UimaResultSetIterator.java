@@ -41,7 +41,8 @@ public class UimaResultSetIterator extends BasicResultSetIterator {
      * @throws ResourceInitializationException
      */
     public UimaResultSetIterator(ResultSet rs, String columnName) throws ResourceInitializationException {
-        this(rs, columnName, new UimaResource(AnalysisEngineFactory.createEngine(AnalysisEngineFactory
+        this(rs, columnName,
+                        new UimaResource(AnalysisEngineFactory.createEngine(AnalysisEngineFactory
                                         .createEngineDescription(TokenizerAnnotator.getDescription(),
                                                         SentenceAnnotator.getDescription()))));
     }
@@ -65,26 +66,27 @@ public class UimaResultSetIterator extends BasicResultSetIterator {
             try {
                 String text = super.nextSentence();
 
-                if (text == null) return "";
+                if (text == null)
+                    return "";
 
                 CAS cas = resource.retrieve();
                 cas.setDocumentText(text);
-//                log.info("Document text: " + text);
+                //                log.info("Document text: " + text);
 
-                    resource.getAnalysisEngine().process(cas);
+                resource.getAnalysisEngine().process(cas);
 
-                    List<String> list = new ArrayList<>();
-                    for (Sentence sentence : JCasUtil.select(cas.getJCas(), Sentence.class)) {
-                        list.add(sentence.getCoveredText());
-                    }
+                List<String> list = new ArrayList<>();
+                for (Sentence sentence : JCasUtil.select(cas.getJCas(), Sentence.class)) {
+                    list.add(sentence.getCoveredText());
+                }
 
-                    sentences = list.iterator();
+                sentences = list.iterator();
 
-                    String ret = sentences.next();
-                    if (this.getPreProcessor() != null)
-                        ret = this.getPreProcessor().preProcess(ret);
-//                    log.info("Sentence text: " + ret);
-                    return ret;
+                String ret = sentences.next();
+                if (this.getPreProcessor() != null)
+                    ret = this.getPreProcessor().preProcess(ret);
+                //                    log.info("Sentence text: " + ret);
+                return ret;
 
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -94,7 +96,7 @@ public class UimaResultSetIterator extends BasicResultSetIterator {
             String ret = sentences.next();
             if (this.getPreProcessor() != null)
                 ret = this.getPreProcessor().preProcess(ret);
-//            log.info("Sentence text: " + ret);
+            //            log.info("Sentence text: " + ret);
             return ret;
         }
     }
@@ -102,7 +104,8 @@ public class UimaResultSetIterator extends BasicResultSetIterator {
     @Override
     public synchronized boolean hasNext() {
         try {
-            if (sentences != null && sentences.hasNext()) return true;
+            if (sentences != null && sentences.hasNext())
+                return true;
             return super.hasNext();
         } catch (Exception e) {
             throw new RuntimeException(e);

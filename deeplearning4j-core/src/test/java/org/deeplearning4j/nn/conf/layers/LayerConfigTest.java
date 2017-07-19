@@ -31,8 +31,8 @@ public class LayerConfigTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(name1, conf.getConf(0).getLayer().getLayerName().toString());
-        assertEquals(name2, conf.getConf(1).getLayer().getLayerName().toString());
+        assertEquals(name1, conf.getConf(0).getLayer().getLayerName());
+        assertEquals(name2, conf.getConf(1).getLayer().getLayerName());
 
     }
 
@@ -45,8 +45,8 @@ public class LayerConfigTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals("relu", conf.getConf(0).getLayer().getActivationFn().toString());
-        assertEquals("relu", conf.getConf(1).getLayer().getActivationFn().toString());
+        assertEquals("relu", ((BaseLayer) conf.getConf(0).getLayer()).getActivationFn().toString());
+        assertEquals("relu", ((BaseLayer) conf.getConf(1).getLayer()).getActivationFn().toString());
 
         //With
         conf = new NeuralNetConfiguration.Builder().activation(Activation.RELU).list()
@@ -56,8 +56,8 @@ public class LayerConfigTest {
         net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals("relu", conf.getConf(0).getLayer().getActivationFn().toString());
-        assertEquals("tanh", conf.getConf(1).getLayer().getActivationFn().toString());
+        assertEquals("relu", ((BaseLayer) conf.getConf(0).getLayer()).getActivationFn().toString());
+        assertEquals("tanh", ((BaseLayer) conf.getConf(1).getLayer()).getActivationFn().toString());
     }
 
 
@@ -71,12 +71,14 @@ public class LayerConfigTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(WeightInit.DISTRIBUTION, conf.getConf(0).getLayer().getWeightInit());
-        assertEquals(WeightInit.DISTRIBUTION, conf.getConf(1).getLayer().getWeightInit());
-        assertEquals("NormalDistribution{mean=0.0, std=1.0}", conf.getConf(0).getLayer().getDist().toString());
-        assertEquals("NormalDistribution{mean=0.0, std=1.0}", conf.getConf(1).getLayer().getDist().toString());
-        assertEquals(1, conf.getConf(0).getLayer().getBiasInit(), 0.0);
-        assertEquals(1, conf.getConf(1).getLayer().getBiasInit(), 0.0);
+        assertEquals(WeightInit.DISTRIBUTION, ((BaseLayer) conf.getConf(0).getLayer()).getWeightInit());
+        assertEquals(WeightInit.DISTRIBUTION, ((BaseLayer) conf.getConf(1).getLayer()).getWeightInit());
+        assertEquals("NormalDistribution{mean=0.0, std=1.0}",
+                        ((BaseLayer) conf.getConf(0).getLayer()).getDist().toString());
+        assertEquals("NormalDistribution{mean=0.0, std=1.0}",
+                        ((BaseLayer) conf.getConf(1).getLayer()).getDist().toString());
+        assertEquals(1, ((BaseLayer) conf.getConf(0).getLayer()).getBiasInit(), 0.0);
+        assertEquals(1, ((BaseLayer) conf.getConf(1).getLayer()).getBiasInit(), 0.0);
 
         //With:
         conf = new NeuralNetConfiguration.Builder().weightInit(WeightInit.DISTRIBUTION)
@@ -89,12 +91,14 @@ public class LayerConfigTest {
         net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(WeightInit.DISTRIBUTION, conf.getConf(0).getLayer().getWeightInit());
-        assertEquals(WeightInit.DISTRIBUTION, conf.getConf(1).getLayer().getWeightInit());
-        assertEquals("NormalDistribution{mean=0.0, std=1.0}", conf.getConf(0).getLayer().getDist().toString());
-        assertEquals("UniformDistribution{lower=0.0, upper=1.0}", conf.getConf(1).getLayer().getDist().toString());
-        assertEquals(1, conf.getConf(0).getLayer().getBiasInit(), 0.0);
-        assertEquals(0, conf.getConf(1).getLayer().getBiasInit(), 0.0);
+        assertEquals(WeightInit.DISTRIBUTION, ((BaseLayer) conf.getConf(0).getLayer()).getWeightInit());
+        assertEquals(WeightInit.DISTRIBUTION, ((BaseLayer) conf.getConf(1).getLayer()).getWeightInit());
+        assertEquals("NormalDistribution{mean=0.0, std=1.0}",
+                        ((BaseLayer) conf.getConf(0).getLayer()).getDist().toString());
+        assertEquals("UniformDistribution{lower=0.0, upper=1.0}",
+                        ((BaseLayer) conf.getConf(1).getLayer()).getDist().toString());
+        assertEquals(1, ((BaseLayer) conf.getConf(0).getLayer()).getBiasInit(), 0.0);
+        assertEquals(0, ((BaseLayer) conf.getConf(1).getLayer()).getBiasInit(), 0.0);
     }
 
     @Test
@@ -109,8 +113,8 @@ public class LayerConfigTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(0.3, conf.getConf(0).getLayer().getLearningRate(), 0.0);
-        assertEquals(0.3, conf.getConf(1).getLayer().getLearningRate(), 0.0);
+        assertEquals(0.3, ((BaseLayer) conf.getConf(0).getLayer()).getLearningRate(), 0.0);
+        assertEquals(0.3, ((BaseLayer) conf.getConf(1).getLayer()).getLearningRate(), 0.0);
 
         //With:
         conf = new NeuralNetConfiguration.Builder().learningRate(0.3).list()
@@ -120,8 +124,8 @@ public class LayerConfigTest {
         net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(0.3, conf.getConf(0).getLayer().getLearningRate(), 0.0);
-        assertEquals(0.2, conf.getConf(1).getLayer().getLearningRate(), 0.0);
+        assertEquals(0.3, ((BaseLayer) conf.getConf(0).getLayer()).getLearningRate(), 0.0);
+        assertEquals(0.2, ((BaseLayer) conf.getConf(1).getLayer()).getLearningRate(), 0.0);
 
         //L1 and L2 without layerwise override:
         conf = new NeuralNetConfiguration.Builder().regularization(true).l1(0.1).l2(0.2).list()
@@ -130,10 +134,10 @@ public class LayerConfigTest {
         net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(0.1, conf.getConf(0).getLayer().getL1(), 0.0);
-        assertEquals(0.1, conf.getConf(1).getLayer().getL1(), 0.0);
-        assertEquals(0.2, conf.getConf(0).getLayer().getL2(), 0.0);
-        assertEquals(0.2, conf.getConf(1).getLayer().getL2(), 0.0);
+        assertEquals(0.1, ((BaseLayer) conf.getConf(0).getLayer()).getL1(), 0.0);
+        assertEquals(0.1, ((BaseLayer) conf.getConf(1).getLayer()).getL1(), 0.0);
+        assertEquals(0.2, ((BaseLayer) conf.getConf(0).getLayer()).getL2(), 0.0);
+        assertEquals(0.2, ((BaseLayer) conf.getConf(1).getLayer()).getL2(), 0.0);
 
         //L1 and L2 with layerwise override:
         conf = new NeuralNetConfiguration.Builder().regularization(true).l1(0.1).l2(0.2).list()
@@ -142,10 +146,10 @@ public class LayerConfigTest {
         net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(0.9, conf.getConf(0).getLayer().getL1(), 0.0);
-        assertEquals(0.1, conf.getConf(1).getLayer().getL1(), 0.0);
-        assertEquals(0.2, conf.getConf(0).getLayer().getL2(), 0.0);
-        assertEquals(0.8, conf.getConf(1).getLayer().getL2(), 0.0);
+        assertEquals(0.9, ((BaseLayer) conf.getConf(0).getLayer()).getL1(), 0.0);
+        assertEquals(0.1, ((BaseLayer) conf.getConf(1).getLayer()).getL1(), 0.0);
+        assertEquals(0.2, ((BaseLayer) conf.getConf(0).getLayer()).getL2(), 0.0);
+        assertEquals(0.8, ((BaseLayer) conf.getConf(1).getLayer()).getL2(), 0.0);
     }
 
 
@@ -184,10 +188,10 @@ public class LayerConfigTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(1.0, conf.getConf(0).getLayer().getMomentum(), 0.0);
-        assertEquals(1.0, conf.getConf(1).getLayer().getMomentum(), 0.0);
-        assertEquals(0.1, conf.getConf(0).getLayer().getMomentumSchedule().get(0), 0.0);
-        assertEquals(0.1, conf.getConf(1).getLayer().getMomentumSchedule().get(0), 0.0);
+        assertEquals(1.0, ((BaseLayer) conf.getConf(0).getLayer()).getMomentum(), 0.0);
+        assertEquals(1.0, ((BaseLayer) conf.getConf(1).getLayer()).getMomentum(), 0.0);
+        assertEquals(0.1, ((BaseLayer) conf.getConf(0).getLayer()).getMomentumSchedule().get(0), 0.0);
+        assertEquals(0.1, ((BaseLayer) conf.getConf(1).getLayer()).getMomentumSchedule().get(0), 0.0);
 
         Map<Integer, Double> testMomentumAfter2 = new HashMap<>();
         testMomentumAfter2.put(0, 0.2);
@@ -201,14 +205,16 @@ public class LayerConfigTest {
         net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals(1.0, conf.getConf(0).getLayer().getMomentum(), 0.0);
-        assertEquals(2.0, conf.getConf(1).getLayer().getMomentum(), 0.0);
-        assertEquals(1.0, ((Nesterovs) conf.getConf(0).getLayer().getIUpdater()).getMomentum(), 0.0);
-        assertEquals(2.0, ((Nesterovs) conf.getConf(1).getLayer().getIUpdater()).getMomentum(), 0.0);
-        assertEquals(0.1, conf.getConf(0).getLayer().getMomentumSchedule().get(0), 0.0);
-        assertEquals(0.2, conf.getConf(1).getLayer().getMomentumSchedule().get(0), 0.0);
-        assertEquals(0.1, ((Nesterovs) conf.getConf(0).getLayer().getIUpdater()).getMomentumSchedule().get(0), 0.0);
-        assertEquals(0.2, ((Nesterovs) conf.getConf(1).getLayer().getIUpdater()).getMomentumSchedule().get(0), 0.0);
+        assertEquals(1.0, ((BaseLayer) conf.getConf(0).getLayer()).getMomentum(), 0.0);
+        assertEquals(2.0, ((BaseLayer) conf.getConf(1).getLayer()).getMomentum(), 0.0);
+        assertEquals(1.0, ((Nesterovs) ((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getMomentum(), 0.0);
+        assertEquals(2.0, ((Nesterovs) ((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getMomentum(), 0.0);
+        assertEquals(0.1, ((BaseLayer) conf.getConf(0).getLayer()).getMomentumSchedule().get(0), 0.0);
+        assertEquals(0.2, ((BaseLayer) conf.getConf(1).getLayer()).getMomentumSchedule().get(0), 0.0);
+        assertEquals(0.1, ((Nesterovs) ((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getMomentumSchedule()
+                        .get(0), 0.0);
+        assertEquals(0.2, ((Nesterovs) ((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getMomentumSchedule()
+                        .get(0), 0.0);
 
     }
 
@@ -220,10 +226,10 @@ public class LayerConfigTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals("ADADELTA", conf.getConf(0).getLayer().getUpdater().toString());
-        assertEquals("ADADELTA", conf.getConf(1).getLayer().getUpdater().toString());
-        assertEquals(0.5, conf.getConf(0).getLayer().getRho(), 0.0);
-        assertEquals(0.01, conf.getConf(1).getLayer().getRho(), 0.0);
+        assertEquals("ADADELTA", ((BaseLayer) conf.getConf(0).getLayer()).getUpdater().toString());
+        assertEquals("ADADELTA", ((BaseLayer) conf.getConf(1).getLayer()).getUpdater().toString());
+        assertEquals(0.5, ((BaseLayer) conf.getConf(0).getLayer()).getRho(), 0.0);
+        assertEquals(0.01, ((BaseLayer) conf.getConf(1).getLayer()).getRho(), 0.0);
 
         conf = new NeuralNetConfiguration.Builder().updater(Updater.RMSPROP).rmsDecay(2.0).list()
                         .layer(0, new DenseLayer.Builder().nIn(2).nOut(2).rmsDecay(1.0).build())
@@ -233,12 +239,12 @@ public class LayerConfigTest {
         net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals("RMSPROP", conf.getConf(0).getLayer().getUpdater().toString());
-        assertEquals("ADADELTA", conf.getConf(1).getLayer().getUpdater().toString());
-        assertEquals(1.0, conf.getConf(0).getLayer().getRmsDecay(), 0.0);
-        assertEquals(0.5, conf.getConf(1).getLayer().getRho(), 0.0);
-        assertEquals(1.0, ((RmsProp) conf.getConf(0).getLayer().getIUpdater()).getRmsDecay(), 0.0);
-        assertEquals(0.5, ((AdaDelta) conf.getConf(1).getLayer().getIUpdater()).getRho(), 0.0);
+        assertEquals("RMSPROP", ((BaseLayer) conf.getConf(0).getLayer()).getUpdater().toString());
+        assertEquals("ADADELTA", ((BaseLayer) conf.getConf(1).getLayer()).getUpdater().toString());
+        assertEquals(1.0, ((BaseLayer) conf.getConf(0).getLayer()).getRmsDecay(), 0.0);
+        assertEquals(0.5, ((BaseLayer) conf.getConf(1).getLayer()).getRho(), 0.0);
+        assertEquals(1.0, ((RmsProp) ((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getRmsDecay(), 0.0);
+        assertEquals(0.5, ((AdaDelta) ((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getRho(), 0.0);
     }
 
 
@@ -251,17 +257,17 @@ public class LayerConfigTest {
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
         net.init();
 
-        assertEquals("ADAM", conf.getConf(0).getLayer().getUpdater().toString());
-        assertEquals("ADAM", conf.getConf(1).getLayer().getUpdater().toString(), "ADAM");
-        assertEquals(0.5, conf.getConf(0).getLayer().getAdamMeanDecay(), 0.0);
-        assertEquals(0.6, conf.getConf(1).getLayer().getAdamMeanDecay(), 0.0);
-        assertEquals(0.5, conf.getConf(0).getLayer().getAdamVarDecay(), 0.0);
-        assertEquals(0.7, conf.getConf(1).getLayer().getAdamVarDecay(), 0.0);
+        assertEquals("ADAM", ((BaseLayer) conf.getConf(0).getLayer()).getUpdater().toString());
+        assertEquals("ADAM", ((BaseLayer) conf.getConf(1).getLayer()).getUpdater().toString(), "ADAM");
+        assertEquals(0.5, ((BaseLayer) conf.getConf(0).getLayer()).getAdamMeanDecay(), 0.0);
+        assertEquals(0.6, ((BaseLayer) conf.getConf(1).getLayer()).getAdamMeanDecay(), 0.0);
+        assertEquals(0.5, ((BaseLayer) conf.getConf(0).getLayer()).getAdamVarDecay(), 0.0);
+        assertEquals(0.7, ((BaseLayer) conf.getConf(1).getLayer()).getAdamVarDecay(), 0.0);
 
-        assertEquals(0.5, ((Adam) conf.getConf(0).getLayer().getIUpdater()).getBeta1(), 0.0);
-        assertEquals(0.6, ((Adam) conf.getConf(1).getLayer().getIUpdater()).getBeta1(), 0.0);
-        assertEquals(0.5, ((Adam) conf.getConf(0).getLayer().getIUpdater()).getBeta2(), 0.0);
-        assertEquals(0.7, ((Adam) conf.getConf(1).getLayer().getIUpdater()).getBeta2(), 0.0);
+        assertEquals(0.5, ((Adam) ((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getBeta1(), 0.0);
+        assertEquals(0.6, ((Adam) ((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getBeta1(), 0.0);
+        assertEquals(0.5, ((Adam) ((BaseLayer) conf.getConf(0).getLayer()).getIUpdater()).getBeta2(), 0.0);
+        assertEquals(0.7, ((Adam) ((BaseLayer) conf.getConf(1).getLayer()).getIUpdater()).getBeta2(), 0.0);
     }
 
     @Test
@@ -277,11 +283,11 @@ public class LayerConfigTest {
         net.init();
 
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue,
-                        conf.getConf(0).getLayer().getGradientNormalization());
+                        ((BaseLayer) conf.getConf(0).getLayer()).getGradientNormalization());
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue,
-                        conf.getConf(1).getLayer().getGradientNormalization());
-        assertEquals(10, conf.getConf(0).getLayer().getGradientNormalizationThreshold(), 0.0);
-        assertEquals(10, conf.getConf(1).getLayer().getGradientNormalizationThreshold(), 0.0);
+                        ((BaseLayer) conf.getConf(1).getLayer()).getGradientNormalization());
+        assertEquals(10, ((BaseLayer) conf.getConf(0).getLayer()).getGradientNormalizationThreshold(), 0.0);
+        assertEquals(10, ((BaseLayer) conf.getConf(1).getLayer()).getGradientNormalizationThreshold(), 0.0);
 
         //With:
         conf = new NeuralNetConfiguration.Builder()
@@ -297,10 +303,10 @@ public class LayerConfigTest {
         net.init();
 
         assertEquals(GradientNormalization.ClipElementWiseAbsoluteValue,
-                        conf.getConf(0).getLayer().getGradientNormalization());
-        assertEquals(GradientNormalization.None, conf.getConf(1).getLayer().getGradientNormalization());
-        assertEquals(10, conf.getConf(0).getLayer().getGradientNormalizationThreshold(), 0.0);
-        assertEquals(2.5, conf.getConf(1).getLayer().getGradientNormalizationThreshold(), 0.0);
+                        ((BaseLayer) conf.getConf(0).getLayer()).getGradientNormalization());
+        assertEquals(GradientNormalization.None, ((BaseLayer) conf.getConf(1).getLayer()).getGradientNormalization());
+        assertEquals(10, ((BaseLayer) conf.getConf(0).getLayer()).getGradientNormalizationThreshold(), 0.0);
+        assertEquals(2.5, ((BaseLayer) conf.getConf(1).getLayer()).getGradientNormalizationThreshold(), 0.0);
     }
 
     @Test

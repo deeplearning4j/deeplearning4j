@@ -5,6 +5,7 @@ import lombok.Data;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.LearningRatePolicy;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -133,8 +134,13 @@ public class UpdaterBlock {
         //Second: apply learning rate policy. Note that by definition we have the same LR policy for every single
         // variable in the block
         Layer l0 = layersAndVariablesInBlock.get(0).getLayer();
+        if (!(l0.conf().getLayer() instanceof BaseLayer)) {
+            //No params for this layer
+            return;
+        }
+        BaseLayer baseLayer = (BaseLayer) l0.conf().getLayer();
         LearningRatePolicy lrPolicy = l0.conf().getLearningRatePolicy();
-        if (lrPolicy != LearningRatePolicy.None || l0.conf().getLayer().getIUpdater() instanceof Nesterovs) {
+        if (lrPolicy != LearningRatePolicy.None || baseLayer.getIUpdater() instanceof Nesterovs) {
             applyLrDecayPolicy(lrPolicy, iteration);
         }
 
@@ -199,6 +205,13 @@ public class UpdaterBlock {
         double decayRate = layer.conf().getLrPolicyDecayRate();
         double lr = conf.getLearningRateByParam(variable);
 
+        if (!(conf.getLayer() instanceof BaseLayer)) {
+            //No params
+            return;
+        }
+
+        BaseLayer baseLayer = (BaseLayer) conf.getLayer();
+
         double newLr;
         switch (decay) {
             case Exponential:
@@ -224,8 +237,8 @@ public class UpdaterBlock {
                 newLr = lr / (1 + Math.exp(-decayRate * (iteration - conf.getLrPolicySteps())));
                 break;
             case Schedule:
-                if (conf.getLayer().getLearningRateSchedule().containsKey(iteration)) {
-                    newLr = conf.getLayer().getLearningRateSchedule().get(iteration);
+                if (baseLayer.getLearningRateSchedule().containsKey(iteration)) {
+                    newLr = baseLayer.getLearningRateSchedule().get(iteration);
                 } else {
                     newLr = lr;
                 }
@@ -240,12 +253,11 @@ public class UpdaterBlock {
 
         //Handle momentum schedules. Given the new updater design, this change is purely cosmetic
         double newMomentum = 0.0;
-        if (layer.conf().getLayer().getIUpdater() instanceof Nesterovs) {
-            if (conf.getLayer().getMomentumSchedule() != null
-                            && conf.getLayer().getMomentumSchedule().containsKey(iteration)) {
-                newMomentum = conf.getLayer().getMomentumSchedule().get(iteration);
+        if (baseLayer.getIUpdater() instanceof Nesterovs) {
+            if (baseLayer.getMomentumSchedule() != null && baseLayer.getMomentumSchedule().containsKey(iteration)) {
+                newMomentum = baseLayer.getMomentumSchedule().get(iteration);
             } else {
-                newMomentum = conf.getLayer().getMomentum();
+                newMomentum = baseLayer.getMomentum();
             }
         }
 
@@ -253,8 +265,8 @@ public class UpdaterBlock {
         // same block) share the same LR schedule
         for (ParamState vs : layersAndVariablesInBlock) {
             vs.getLayer().conf().setLearningRateByParam(vs.getParamName(), newLr);
-            if (layer.conf().getLayer().getIUpdater() instanceof Nesterovs) {
-                vs.getLayer().conf().getLayer().setMomentum(newMomentum);
+            if (((BaseLayer) layer.conf().getLayer()).getIUpdater() instanceof Nesterovs) {
+                ((BaseLayer) vs.getLayer().conf().getLayer()).setMomentum(newMomentum);
             }
         }
 

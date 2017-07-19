@@ -17,7 +17,7 @@ import org.deeplearning4j.nn.params.DefaultParamInitializer;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public abstract class FeedForwardLayer extends Layer {
+public abstract class FeedForwardLayer extends BaseLayer {
     protected int nIn;
     protected int nOut;
 
@@ -128,7 +128,7 @@ public abstract class FeedForwardLayer extends Layer {
         return false; //No pretrain params in standard FF layers
     }
 
-    public abstract static class Builder<T extends Builder<T>> extends Layer.Builder<T> {
+    public abstract static class Builder<T extends Builder<T>> extends BaseLayer.Builder<T> {
         protected int nIn = 0;
         protected int nOut = 0;
 

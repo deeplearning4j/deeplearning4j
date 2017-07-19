@@ -49,8 +49,7 @@ public class UimaResultSetIteratorTest {
 
         // when .next() is called, first time true, then false
         when(resultSetMock.next()).thenReturn(true).thenReturn(false);
-        when(resultSetMock.getString("line"))
-                .thenReturn("The quick brown fox. The lazy dog. Over a fence.");
+        when(resultSetMock.getString("line")).thenReturn("The quick brown fox. The lazy dog. Over a fence.");
 
         UimaResultSetIterator iterator = new UimaResultSetIterator(resultSetMock, "line");
 
@@ -73,7 +72,7 @@ public class UimaResultSetIteratorTest {
         // when .next() is called, first time true, then false
         when(resultSetMock.next()).thenReturn(true).thenReturn(true).thenReturn(false);
         when(resultSetMock.getString("line")).thenReturn("The quick brown fox.")
-                .thenReturn("The lazy dog. Over a fence.");
+                        .thenReturn("The lazy dog. Over a fence.");
 
         UimaResultSetIterator iterator = new UimaResultSetIterator(resultSetMock, "line");
 
@@ -94,12 +93,11 @@ public class UimaResultSetIteratorTest {
         ResultSet resultSetMock = mock(ResultSet.class);
 
         // when .next() is called, first time true, then false
-        when(resultSetMock.next()).thenReturn(true).thenReturn(true).thenReturn(false)
-                .thenReturn(true).thenReturn(true).thenReturn(false);
+        when(resultSetMock.next()).thenReturn(true).thenReturn(true).thenReturn(false).thenReturn(true).thenReturn(true)
+                        .thenReturn(false);
         when(resultSetMock.getString("line")).thenReturn("The quick brown fox.")
-                .thenReturn("The lazy dog. Over a fence.")
-                .thenReturn("The quick brown fox.")
-                .thenReturn("The lazy dog. Over a fence.");
+                        .thenReturn("The lazy dog. Over a fence.").thenReturn("The quick brown fox.")
+                        .thenReturn("The lazy dog. Over a fence.");
 
         UimaResultSetIterator iterator = new UimaResultSetIterator(resultSetMock, "line");
 

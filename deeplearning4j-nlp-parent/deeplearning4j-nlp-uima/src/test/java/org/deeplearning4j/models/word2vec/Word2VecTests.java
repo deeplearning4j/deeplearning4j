@@ -178,9 +178,9 @@ public class Word2VecTests {
         t.setTokenPreProcessor(new CommonPreprocessor());
 
         Word2Vec vec = new Word2Vec.Builder().minWordFrequency(1).iterations(5).learningRate(0.025).layerSize(150)
-                .seed(42).sampling(0).negativeSample(0).useHierarchicSoftmax(true).windowSize(5).epochs(3)
-                .modelUtils(new BasicModelUtils<VocabWord>()).useAdaGrad(false).iterate(iter).workers(8)
-                .tokenizerFactory(t).elementsLearningAlgorithm(new CBOW<VocabWord>()).build();
+                        .seed(42).sampling(0).negativeSample(0).useHierarchicSoftmax(true).windowSize(5).epochs(3)
+                        .modelUtils(new BasicModelUtils<VocabWord>()).useAdaGrad(false).iterate(iter).workers(8)
+                        .tokenizerFactory(t).elementsLearningAlgorithm(new CBOW<VocabWord>()).build();
 
         vec.fit();
 

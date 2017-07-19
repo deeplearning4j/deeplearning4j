@@ -2,11 +2,13 @@ package org.deeplearning4j.nn.layers.pooling;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
+import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.util.MaskedReductionUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -38,7 +40,7 @@ import java.util.Arrays;
  *
  * @author Alex Black
  */
-public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer> {
+public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.layers.GlobalPoolingLayer> {
 
     private static final int[] DEFAULT_TIMESERIES_POOL_DIMS = new int[] {2};
     private static final int[] DEFAULT_CNN_POOL_DIMS = new int[] {2, 3};
@@ -59,6 +61,11 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
         collapseDimensions = layerConf.isCollapseDimensions();
         poolingType = layerConf.getPoolingType();
         pNorm = layerConf.getPnorm();
+    }
+
+    @Override
+    public INDArray preOutput(boolean training) {
+        return activate(training);
     }
 
     @Override
@@ -183,6 +190,11 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
         }
     }
 
+    @Override
+    public Layer clone() {
+        return new GlobalPoolingLayer(conf);
+    }
+
     private INDArray activateHelperFullArray(INDArray inputArray, int[] poolDim) {
         switch (poolingType) {
             case MAX:
@@ -259,6 +271,11 @@ public class GlobalPoolingLayer extends BaseLayer<org.deeplearning4j.nn.conf.lay
         }
 
         return new Pair<>(retGradient, epsilonNd);
+    }
+
+    @Override
+    public INDArray activationMean() {
+        throw new UnsupportedOperationException("Not supported");
     }
 
     private INDArray epsilonHelperFullArray(INDArray inputArray, INDArray epsilon, int[] poolDim) {

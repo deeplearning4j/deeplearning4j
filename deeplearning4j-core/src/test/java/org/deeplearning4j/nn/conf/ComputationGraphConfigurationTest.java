@@ -10,10 +10,7 @@ import org.deeplearning4j.nn.conf.distribution.NormalDistribution;
 import org.deeplearning4j.nn.conf.graph.*;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.misc.TestGraphVertex;
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.conf.preprocessor.FeedForwardToCnnPreProcessor;
@@ -248,14 +245,14 @@ public class ComputationGraphConfigurationTest {
                                         "2")
                         .setOutputs("3").setInputTypes(InputType.convolutional(28, 28, 1)).build();
 
-        org.deeplearning4j.nn.conf.layers.Layer l0 =
-                        ((LayerVertex) conf.getVertices().get("0")).getLayerConf().getLayer();
-        org.deeplearning4j.nn.conf.layers.Layer l1 =
-                        ((LayerVertex) conf.getVertices().get("1")).getLayerConf().getLayer();
-        org.deeplearning4j.nn.conf.layers.Layer l2 =
-                        ((LayerVertex) conf.getVertices().get("2")).getLayerConf().getLayer();
-        org.deeplearning4j.nn.conf.layers.Layer l3 =
-                        ((LayerVertex) conf.getVertices().get("3")).getLayerConf().getLayer();
+        org.deeplearning4j.nn.conf.layers.BaseLayer l0 =
+                        (BaseLayer) ((LayerVertex) conf.getVertices().get("0")).getLayerConf().getLayer();
+        org.deeplearning4j.nn.conf.layers.BaseLayer l1 =
+                        (BaseLayer) ((LayerVertex) conf.getVertices().get("1")).getLayerConf().getLayer();
+        org.deeplearning4j.nn.conf.layers.BaseLayer l2 =
+                        (BaseLayer) ((LayerVertex) conf.getVertices().get("2")).getLayerConf().getLayer();
+        org.deeplearning4j.nn.conf.layers.BaseLayer l3 =
+                        (BaseLayer) ((LayerVertex) conf.getVertices().get("3")).getLayerConf().getLayer();
 
         assertEquals(0.5, l0.getBiasLearningRate(), 1e-6);
         assertEquals(1e-2, l0.getLearningRate(), 1e-6);

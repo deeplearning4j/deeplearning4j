@@ -8,6 +8,8 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.params.EmptyParamInitializer;
 import org.deeplearning4j.optimize.api.IterationListener;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Collection;
@@ -19,11 +21,13 @@ import java.util.Map;
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
-public class ActivationLayer extends FeedForwardLayer {
+public class ActivationLayer extends org.deeplearning4j.nn.conf.layers.Layer {
 
+    protected IActivation activationFn;
 
-    private ActivationLayer(Builder builder) {
+    protected ActivationLayer(Builder builder) {
         super(builder);
+        this.activationFn = builder.activationFn;
     }
 
     @Override
@@ -92,7 +96,31 @@ public class ActivationLayer extends FeedForwardLayer {
     }
 
     @AllArgsConstructor
-    public static class Builder extends FeedForwardLayer.Builder<Builder> {
+    @NoArgsConstructor
+    public static class Builder extends org.deeplearning4j.nn.conf.layers.Layer.Builder<Builder> {
+
+        private IActivation activationFn = null;
+
+        /**
+         * Layer activation function.
+         * Typical values include:<br>
+         * "relu" (rectified linear), "tanh", "sigmoid", "softmax",
+         * "hardtanh", "leakyrelu", "maxout", "softsign", "softplus"
+         * @deprecated Use {@link #activation(Activation)} or {@link @activation(IActivation)}
+         */
+        @Deprecated
+        public Builder activation(String activationFunction) {
+            return activation(Activation.fromString(activationFunction));
+        }
+
+        public Builder activation(IActivation activationFunction) {
+            this.activationFn = activationFunction;
+            return this;
+        }
+
+        public Builder activation(Activation activation) {
+            return activation(activation.getActivationFunction());
+        }
 
         @Override
         @SuppressWarnings("unchecked")

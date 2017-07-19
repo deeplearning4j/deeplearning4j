@@ -15,10 +15,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
-import org.deeplearning4j.nn.conf.layers.FeedForwardLayer;
-import org.deeplearning4j.nn.conf.layers.Layer;
-import org.deeplearning4j.nn.conf.layers.SubsamplingLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.ui.api.*;
 import org.deeplearning4j.ui.i18n.I18NProvider;
@@ -913,26 +910,29 @@ public class TrainModule implements UIModule {
                                         String.valueOf(ffl.getNIn())});
                         layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerSize"),
                                         String.valueOf(ffl.getNOut())});
-                        activationFn = layer.getActivationFn().toString();
                     }
-                    int nParams = layer.initializer().numParams(nnc);
-                    layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerNParams"),
-                                    String.valueOf(nParams)});
-                    if (nParams > 0) {
-                        WeightInit wi = layer.getWeightInit();
-                        String str = wi.toString();
-                        if (wi == WeightInit.DISTRIBUTION) {
-                            str += layer.getDist();
+                    if (layer instanceof BaseLayer) {
+                        BaseLayer bl = (BaseLayer) layer;
+                        activationFn = bl.getActivationFn().toString();
+                        int nParams = layer.initializer().numParams(nnc);
+                        layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerNParams"),
+                                        String.valueOf(nParams)});
+                        if (nParams > 0) {
+                            WeightInit wi = bl.getWeightInit();
+                            String str = wi.toString();
+                            if (wi == WeightInit.DISTRIBUTION) {
+                                str += bl.getDist();
+                            }
+                            layerInfoRows.add(new String[] {
+                                            i18N.getMessage("train.model.layerinfotable.layerWeightInit"), str});
+
+                            IUpdater u = bl.getIUpdater();
+                            String us = (u == null ? "" : u.getClass().getSimpleName());
+                            layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerUpdater"),
+                                            us});
+
+                            //TODO: Maybe L1/L2, dropout, updater-specific values etc
                         }
-                        layerInfoRows.add(new String[] {i18N.getMessage("train.model.layerinfotable.layerWeightInit"),
-                                        str});
-
-                        IUpdater u = layer.getIUpdater();
-                        String us = (u == null ? "" : u.getClass().getSimpleName());
-                        layerInfoRows.add(
-                                        new String[] {i18N.getMessage("train.model.layerinfotable.layerUpdater"), us});
-
-                        //TODO: Maybe L1/L2, dropout, updater-specific values etc
                     }
 
                     if (layer instanceof ConvolutionLayer || layer instanceof SubsamplingLayer) {

@@ -92,6 +92,10 @@ public class VariationalAutoencoder implements Layer {
                         .getNumSamples();
     }
 
+    protected org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder layerConf() {
+        return (org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder) conf().getLayer();
+    }
+
     @Override
     public void setCacheMode(CacheMode mode) {
         if (mode == null)
@@ -132,7 +136,7 @@ public class VariationalAutoencoder implements Layer {
     public void computeGradientAndScore() {
         //Forward pass through the encoder and mean for P(Z|X)
         VAEFwdHelper fwd = doForward(true, true);
-        IActivation afn = conf().getLayer().getActivationFn();
+        IActivation afn = layerConf().getActivationFn();
 
         //Forward pass through logStd^2 for P(Z|X)
         INDArray pzxLogStd2W = params.get(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_W);
@@ -670,7 +674,7 @@ public class VariationalAutoencoder implements Layer {
 
         int nEncoderLayers = encoderLayerSizes.length;
 
-        IActivation afn = conf().getLayer().getActivationFn();
+        IActivation afn = layerConf().getActivationFn();
         for (int i = nEncoderLayers - 1; i >= 0; i--) {
             String wKey = "e" + i + WEIGHT_KEY_SUFFIX;
             String bKey = "e" + i + BIAS_KEY_SUFFIX;
@@ -765,7 +769,7 @@ public class VariationalAutoencoder implements Layer {
             if (forBackprop) {
                 encoderPreOuts[i] = current.dup();
             }
-            conf.getLayer().getActivationFn().getActivation(current, training);
+            layerConf().getActivationFn().getActivation(current, training);
             encoderActivations[i] = current;
         }
 
@@ -933,7 +937,7 @@ public class VariationalAutoencoder implements Layer {
             solver = new Solver.Builder().model(this).configure(conf()).listeners(getListeners()).build();
             //Set the updater state view array. For MLN and CG, this is done by MultiLayerUpdater and ComputationGraphUpdater respectively
             Updater updater = solver.getOptimizer().getUpdater();
-            int updaterStateSize = (int) conf().getLayer().getIUpdater().stateSize(numParams());
+            int updaterStateSize = (int) layerConf().getIUpdater().stateSize(numParams());
             if (updaterStateSize > 0) {
                 updater.setStateViewArray(this, Nd4j.createUninitialized(new int[] {1, updaterStateSize}, Nd4j.order()),
                                 true);
@@ -991,7 +995,7 @@ public class VariationalAutoencoder implements Layer {
         //Forward pass through the encoder and mean for P(Z|X)
         setInput(data);
         VAEFwdHelper fwd = doForward(true, true);
-        IActivation afn = conf().getLayer().getActivationFn();
+        IActivation afn = layerConf().getActivationFn();
 
         //Forward pass through logStd^2 for P(Z|X)
         INDArray pzxLogStd2W = params.get(VariationalAutoencoderParamInitializer.PZX_LOGSTD2_W);
@@ -1087,7 +1091,7 @@ public class VariationalAutoencoder implements Layer {
 
         int nDecoderLayers = decoderLayerSizes.length;
         INDArray currentActivations = latentSpaceValues;
-        IActivation afn = conf().getLayer().getActivationFn();
+        IActivation afn = layerConf().getActivationFn();
 
         for (int i = 0; i < nDecoderLayers; i++) {
             String wKey = "d" + i + WEIGHT_KEY_SUFFIX;
