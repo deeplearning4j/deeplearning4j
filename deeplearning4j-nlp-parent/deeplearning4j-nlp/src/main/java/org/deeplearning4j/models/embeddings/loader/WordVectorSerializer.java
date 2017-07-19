@@ -24,6 +24,7 @@ import org.deeplearning4j.models.embeddings.learning.impl.elements.SkipGram;
 import org.deeplearning4j.models.word2vec.StaticWord2Vec;
 import org.deeplearning4j.text.tokenization.tokenizer.TokenPreProcess;
 import org.deeplearning4j.text.tokenization.tokenizerfactory.TokenizerFactory;
+import org.deeplearning4j.util.OneTimeLogger;
 import org.nd4j.compression.impl.NoOp;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
@@ -2823,7 +2824,7 @@ public class WordVectorSerializer {
             value = memSize / 1024 / 1024 / 1024;
         }
 
-        log.info("Projected memory use for model: [{} {}]", String.format("%.2f", value), sfx);
+        OneTimeLogger.info(log,"Projected memory use for model: [{} {}]", String.format("%.2f", value), sfx);
 
     }
 }
