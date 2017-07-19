@@ -407,5 +407,4 @@ def from_np(np_arr):
     # the reason we do this is because numpy's strides are based on bytes rather than words
     strides = map(lambda x: x / data_buffer.getElementSize(), np_arr.strides)
     arr_shape = np_arr.shape
-    return Nd4jArray(nd4j_array=nd4j.create(data_buffer, arr_shape, strides, 0),
-
+    return Nd4jArray(nd4j_array=nd4j.create(data_buffer, arr_shape, strides, 0))
