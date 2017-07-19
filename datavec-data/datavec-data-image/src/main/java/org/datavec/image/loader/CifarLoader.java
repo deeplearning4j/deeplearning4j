@@ -200,11 +200,11 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         }
         try {
             Collection<File> subFiles = FileUtils.listFiles(fullDir, new String[] {"bin"}, true);
-            Iterator trainIter = subFiles.iterator();
-            trainInputStream = new SequenceInputStream(new FileInputStream((File) trainIter.next()),
-                            new FileInputStream((File) trainIter.next()));
+            Iterator<File> trainIter = subFiles.iterator();
+            trainInputStream = new SequenceInputStream(new FileInputStream(trainIter.next()),
+                            new FileInputStream(trainIter.next()));
             while (trainIter.hasNext()) {
-                File nextFile = (File) trainIter.next();
+                File nextFile = trainIter.next();
                 if (!TESTFILENAME.equals(nextFile.getName()))
                     trainInputStream = new SequenceInputStream(trainInputStream, new FileInputStream(nextFile));
             }
@@ -349,12 +349,14 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
         byte[] byteFeature = new byte[BYTEFILELEN];
 
         try {
-            while (inputStream.read(byteFeature) != -1 && batchNumCount != num) {
+//            while (inputStream.read(byteFeature) != -1 && batchNumCount != num) {
+            while (batchNumCount != num && inputStream.read(byteFeature) != -1 ) {
                 matConversion = convertMat(byteFeature);
                 try {
                     dataSets.add(new DataSet(asMatrix(matConversion.getSecond()), matConversion.getFirst()));
                     batchNumCount++;
                 } catch (Exception e) {
+                    e.printStackTrace();
                     break;
                 }
             }
@@ -362,12 +364,12 @@ public class CifarLoader extends NativeImageLoader implements Serializable {
             e.printStackTrace();
         }
 
-        DataSet result = new DataSet();
-        try {
-            result = result.merge(dataSets);
-        } catch (IllegalArgumentException e) {
-            return result;
+        if(dataSets.size() == 0){
+            return new DataSet();
         }
+
+        DataSet result = DataSet.merge(dataSets);
+
         double uTempMean, vTempMean;
         for (DataSet data : result) {
             try {

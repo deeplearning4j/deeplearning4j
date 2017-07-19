@@ -16,6 +16,7 @@
 
 package org.datavec.image.loader;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.datavec.api.io.filters.BalancedPathFilter;
 import org.datavec.api.records.reader.RecordReader;
@@ -29,10 +30,14 @@ import org.nd4j.linalg.dataset.DataSet;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.io.SequenceInputStream;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -182,4 +187,31 @@ public class LoaderTests {
         assertEquals(result.getFeatureMatrix().length(), 32 * 32 * 3, 0.0);
     }
 
+
+
+    @Test
+    public void testCifarLoaderExpNumExamples() throws Exception {
+        boolean train = true;
+        boolean preProcessCifar = false;
+        int numExamples = 10;
+        int row = 28;
+        int col = 28;
+        int channels = 1;
+        CifarLoader loader = new CifarLoader(row, col, channels, train, preProcessCifar);
+
+        int minibatch = 100;
+        int nMinibatches = 50000 / minibatch;
+
+        for( int i=0; i<nMinibatches; i++ ){
+            DataSet ds = loader.next(minibatch);
+            String s = String.valueOf(i);
+            assertNotNull(s, ds.getFeatures());
+            assertNotNull(s, ds.getLabels());
+
+            assertEquals(s, minibatch, ds.getFeatures().size(0));
+            assertEquals(s, minibatch, ds.getLabels().size(0));
+            assertEquals(s, 10, ds.getLabels().size(1));
+        }
+
+    }
 }
