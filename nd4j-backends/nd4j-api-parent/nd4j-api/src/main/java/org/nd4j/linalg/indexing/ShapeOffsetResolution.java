@@ -1,6 +1,7 @@
 package org.nd4j.linalg.indexing;
 
 import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
@@ -24,7 +25,8 @@ import java.util.List;
 public class ShapeOffsetResolution implements Serializable {
 
     private INDArray arr;
-    private int[] offsets, shapes, strides;
+    private long[] offsets;
+    private int[] shapes, strides;
     private long offset = -1;
 
     /**
@@ -66,7 +68,7 @@ public class ShapeOffsetResolution implements Serializable {
                 offset = 0;
                 this.shapes = arr.shape();
                 this.strides = arr.stride();
-                this.offsets = new int[arr.rank()];
+                this.offsets = new long[arr.rank()];
                 return true;
             } else if (indexes[0] instanceof PointIndex && indexes[1] instanceof NDArrayIndexAll) {
                 this.shapes = new int[2];
@@ -76,7 +78,7 @@ public class ShapeOffsetResolution implements Serializable {
                     strides[i] = 1;
                 }
 
-                this.offsets = new int[arr.rank()];
+                this.offsets = new long[arr.rank()];
                 this.offset = indexes[0].offset();
 
                 return true;
@@ -103,7 +105,7 @@ public class ShapeOffsetResolution implements Serializable {
                         this.strides = new int[2];
                         strides[0] = 0;
                         strides[1] = indexes[1].stride();
-                        this.offsets = new int[2];
+                        this.offsets = new long[2];
                         return true;
                     }
                 } else if (indexes[0] instanceof IntervalIndex) {
@@ -122,7 +124,7 @@ public class ShapeOffsetResolution implements Serializable {
                         this.strides = new int[2];
                         strides[1] = 0;
                         strides[0] = indexes[1].stride();
-                        this.offsets = new int[2];
+                        this.offsets = new long[2];
                         return true;
                     }
                 } else if (indexes[0] instanceof IntervalIndex) {
@@ -137,7 +139,7 @@ public class ShapeOffsetResolution implements Serializable {
         if (numSpecified > 0 && interval < 1 && newAxis < 1 && numAll > 0 && pointIndex < 1 && arr.rank() == 2) {
             shapes = new int[arr.rank()];
             strides = new int[arr.rank()];
-            offsets = new int[arr.rank()];
+            offsets = new long[arr.rank()];
             offset = 0;
             boolean allSpecified = true;
             for (int i = 0; i < 2; i++) {
@@ -175,7 +177,7 @@ public class ShapeOffsetResolution implements Serializable {
             Arrays.fill(shape, 1);
             int[] stride = new int[minDimensions];
             Arrays.fill(stride, arr.elementStride());
-            int[] offsets = new int[minDimensions];
+            long[] offsets = new long[minDimensions];
             long offset = 0;
             //used for filling in elements of the actual shape stride and offsets
             int currIndex = 0;
@@ -223,7 +225,7 @@ public class ShapeOffsetResolution implements Serializable {
             Arrays.fill(shape, 1);
             int[] stride = new int[minDimensions];
             Arrays.fill(stride, arr.elementStride());
-            int[] offsets = new int[minDimensions];
+            long[] offsets = new long[minDimensions];
 
             for (int i = 0; i < shape.length; i++) {
                 if (indexes[i] instanceof NDArrayIndexAll) {
@@ -255,7 +257,7 @@ public class ShapeOffsetResolution implements Serializable {
             Arrays.fill(shape, 1);
             int[] stride = new int[minDimensions];
             Arrays.fill(stride, arr.elementStride());
-            int[] offsets = new int[minDimensions];
+            long[] offsets = new long[minDimensions];
             int prependNewAxes = 0;
             boolean allFirst = false;
             int shapeAxis = 0;
@@ -332,7 +334,7 @@ public class ShapeOffsetResolution implements Serializable {
         //accumulate the results
         List<Integer> accumShape = new ArrayList<>();
         List<Integer> accumStrides = new ArrayList<>();
-        List<Integer> accumOffsets = new ArrayList<>();
+        List<Long> accumOffsets = new ArrayList<>();
         List<Integer> intervalStrides = new ArrayList<>();
 
         //collect the indexes of the points that get removed
@@ -396,9 +398,11 @@ public class ShapeOffsetResolution implements Serializable {
                 //the stride stays the same
                 //add the offset for the index
                 if (idx instanceof IntervalIndex) {
-                    accumOffsets.add(idx.offset());
+                    // FIXME: LONG
+                    accumOffsets.add((long)idx.offset());
                 } else
-                    accumOffsets.add(idx.offset());
+                    // FIXME: LONG
+                    accumOffsets.add((long)idx.offset());
 
                 shapeIndex++;
                 strideIndex++;
@@ -414,7 +418,8 @@ public class ShapeOffsetResolution implements Serializable {
             accumStrides.add(arr.stride(strideIndex++));
 
             //default offsets are zero
-            accumOffsets.add(idx.offset());
+            // FIXME: LONG
+            accumOffsets.add((long)idx.offset());
 
         }
 
@@ -433,7 +438,7 @@ public class ShapeOffsetResolution implements Serializable {
         int delta = (shape.length <= 2 ? shape.length : shape.length - numPointIndexes);
         boolean needsFilledIn = accumShape.size() != accumStrides.size() && accumOffsets.size() != accumShape.size();
         while (accumOffsets.size() < delta && needsFilledIn)
-            accumOffsets.add(0);
+            accumOffsets.add(0L);
 
 
         while (accumShape.size() < 2) {
@@ -456,7 +461,7 @@ public class ShapeOffsetResolution implements Serializable {
                 //strides for new axis are 0
                 accumStrides.add(0, 0);
                 //prepend offset zero to match the stride and shapes
-                accumOffsets.add(0, 0);
+                accumOffsets.add(0, 0L);
             }
         }
 
@@ -500,9 +505,9 @@ public class ShapeOffsetResolution implements Serializable {
             accumStrides.addAll(pointStrides);
         while (accumOffsets.size() < accumShape.size()) {
             if (Shape.isRowVectorShape(arr.shape()))
-                accumOffsets.add(0, 0);
+                accumOffsets.add(0, 0L);
             else
-                accumOffsets.add(0);
+                accumOffsets.add(0L);
         }
 
 
@@ -532,7 +537,7 @@ public class ShapeOffsetResolution implements Serializable {
 
 
         this.strides = Ints.toArray(accumStrides);
-        this.offsets = Ints.toArray(accumOffsets);
+        this.offsets = Longs.toArray(accumOffsets);
 
         //compute point offsets differently
         /**
@@ -584,14 +589,16 @@ public class ShapeOffsetResolution implements Serializable {
         }
         if (numIntervals > 0 && arr.rank() > 2) {
             if (encounteredAll && arr.size(0) != 1)
-                this.offset += ArrayUtil.dotProductLong(accumOffsets, accumStrides);
+                // FIXME: LONG
+                this.offset += ArrayUtil.dotProductLong2(accumOffsets, accumStrides);
             else
-                this.offset += ArrayUtil.dotProductLong(accumOffsets, accumStrides) / Math.max(1, numIntervals);
+                // FIXME: LONG
+                this.offset += ArrayUtil.dotProductLong2(accumOffsets, accumStrides) / Math.max(1, numIntervals);
 
         } else if (numIntervals > 0 && anyHaveStrideOne(indexes))
-            this.offset += ArrayUtil.calcOffsetLong(accumShape, accumOffsets, accumStrides);
+            this.offset += ArrayUtil.calcOffsetLong2(accumShape, accumOffsets, accumStrides);
         else
-            this.offset += ArrayUtil.calcOffsetLong(accumShape, accumOffsets, accumStrides) / Math.max(1, numIntervals);
+            this.offset += ArrayUtil.calcOffsetLong2(accumShape, accumOffsets, accumStrides) / Math.max(1, numIntervals);
 
     }
 

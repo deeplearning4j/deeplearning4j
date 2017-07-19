@@ -2087,7 +2087,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray subArray(ShapeOffsetResolution resolution) {
-        int[] offsets = resolution.getOffsets();
+        long[] offsets = resolution.getOffsets();
         int[] shape = resolution.getShapes();
         int[] stride = resolution.getStrides();
 

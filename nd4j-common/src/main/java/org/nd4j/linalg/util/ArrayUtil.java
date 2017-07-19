@@ -310,6 +310,14 @@ public class ArrayUtil {
         return false;
     }
 
+    public static boolean isZero(long[] as) {
+        for (int i = 0; i < as.length; i++) {
+            if (as[i] == 0L)
+                return true;
+        }
+        return false;
+    }
+
     public static boolean anyMore(int[] target, int[] test) {
         assert target.length == test.length : "Unable to compare: different sizes";
         for (int i = 0; i < target.length; i++) {
@@ -386,6 +394,23 @@ public class ArrayUtil {
      * @return the offset for the given shape,offset,and strides
      */
     public static long calcOffsetLong(List<Integer> shape, List<Integer> offsets, List<Integer> strides) {
+        if (shape.size() != offsets.size() || shape.size() != strides.size())
+            throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
+        long ret = 0;
+        for (int i = 0; i < offsets.size(); i++) {
+            //we should only do this in the general case, not on vectors
+            //the reason for this is we force everything including scalars
+            //to be 2d
+            if (shape.get(i) == 1 && offsets.size() > 2 && i > 0)
+                continue;
+            ret += (long) offsets.get(i) * strides.get(i);
+        }
+
+        return ret;
+    }
+
+
+    public static long calcOffsetLong2(List<Integer> shape, List<Long> offsets, List<Integer> strides) {
         if (shape.size() != offsets.size() || shape.size() != strides.size())
             throw new IllegalArgumentException("Shapes,strides, and offsets must be the same size");
         long ret = 0;
@@ -487,6 +512,25 @@ public class ArrayUtil {
      * @param ys
      * @return
      */
+    public static long dotProductLong2(List<Long> xs, List<Integer> ys) {
+        long result = 0;
+        int n = xs.size();
+
+        if (ys.size() != n)
+            throw new IllegalArgumentException("Different array sizes");
+
+        for (int i = 0; i < n; i++) {
+            result += (long) xs.get(i) * ys.get(i);
+        }
+        return result;
+    }
+
+    /**
+     *
+     * @param xs
+     * @param ys
+     * @return
+     */
     public static long dotProductLong(int[] xs, int[] ys) {
         long result = 0;
         int n = xs.length;
@@ -512,6 +556,12 @@ public class ArrayUtil {
 
     public static int[] copy(int[] copy) {
         int[] ret = new int[copy.length];
+        System.arraycopy(copy, 0, ret, 0, ret.length);
+        return ret;
+    }
+
+    public static long[] copy(long[] copy) {
+        long[] ret = new long[copy.length];
         System.arraycopy(copy, 0, ret, 0, ret.length);
         return ret;
     }
