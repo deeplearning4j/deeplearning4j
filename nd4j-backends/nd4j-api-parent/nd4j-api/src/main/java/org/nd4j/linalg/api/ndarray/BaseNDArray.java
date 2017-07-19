@@ -3012,6 +3012,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return other.divi(getDouble(0), result);
         }
 
+        LinAlgExceptions.assertSameShape(other, result);
         Nd4j.getExecutioner().exec(new DivOp(this, other, result, length()));
 
         if (Nd4j.ENFORCE_NUMERICAL_STABILITY)
