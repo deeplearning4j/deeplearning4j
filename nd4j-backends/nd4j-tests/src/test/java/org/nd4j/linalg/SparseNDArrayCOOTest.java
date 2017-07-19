@@ -7,8 +7,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.util.Arrays;
-
 import static org.junit.Assert.*;
 
 /**
@@ -86,8 +84,8 @@ public class SparseNDArrayCOOTest {
 
         BaseSparseNDArrayCOO sparseView = (BaseSparseNDArrayCOO) sparseNDArray.get(NDArrayIndex.interval(2,5), NDArrayIndex.interval(0, 2));
         assertEquals(1, sparseView.nnz());
-        assertArrayEquals(new double[]{3}, sparseView.getValues().asDouble(), 1e-1);
-        assertArrayEquals(new int[]{0,1}, sparseView.getIndices().asInt());
+        assertArrayEquals(new double[]{3}, sparseView.getIncludedValues().asDouble(), 1e-1);
+        assertArrayEquals(new int[]{0,1}, sparseView.getIncludedIndices().asInt());
     }
 
     @Test
@@ -98,8 +96,8 @@ public class SparseNDArrayCOOTest {
         INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new int[]{5, 5});
         BaseSparseNDArrayCOO sparseView = (BaseSparseNDArrayCOO) sparseNDArray.get(NDArrayIndex.interval(0,2), NDArrayIndex.interval(2, 5));
         assertEquals(2, sparseView.nnz());
-        assertArrayEquals(new double[]{1, 2}, sparseView.getValues().asDouble(), 1e-1);
-        assertArrayEquals(new int[]{0, 1, 1, 0}, sparseView.getIndices().asInt());
+        assertArrayEquals(new double[]{1, 2}, sparseView.getIncludedValues().asDouble(), 1e-1);
+        assertArrayEquals(new int[]{0, 1, 1, 0}, sparseView.getIncludedIndices().asInt());
 
     }
 
@@ -110,8 +108,8 @@ public class SparseNDArrayCOOTest {
         INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new int[]{5, 5});
         BaseSparseNDArrayCOO sparseView = (BaseSparseNDArrayCOO) sparseNDArray.get(NDArrayIndex.interval(1,3), NDArrayIndex.interval(1, 3));
         assertEquals(2, sparseView.nnz());
-        assertArrayEquals(new double[]{2, 3}, sparseView.getValues().asDouble(), 1e-1);
-        assertArrayEquals(new int[]{0, 1, 1, 0}, sparseView.getIndices().asInt());
+        assertArrayEquals(new double[]{2, 3}, sparseView.getIncludedValues().asDouble(), 1e-1);
+        assertArrayEquals(new int[]{0, 1, 1, 0}, sparseView.getIncludedIndices().asInt());
 
     }
     @Test
@@ -130,8 +128,8 @@ public class SparseNDArrayCOOTest {
         INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new int[]{5, 5});
         BaseSparseNDArrayCOO sparseView = (BaseSparseNDArrayCOO) sparseNDArray.get(NDArrayIndex.point(2), NDArrayIndex.all());
         assertEquals(1, sparseView.nnz());
-        assertArrayEquals(new int[]{0, 1}, sparseView.getIndices().asInt());
-        assertArrayEquals(new double[]{3}, sparseView.getValues().asDouble(), 1e-1);
+        assertArrayEquals(new int[]{0, 1}, sparseView.getIncludedIndices().asInt());
+        assertArrayEquals(new double[]{3}, sparseView.getIncludedValues().asDouble(), 1e-1);
 
     }
 
@@ -142,8 +140,8 @@ public class SparseNDArrayCOOTest {
         INDArray sparseNDArray = Nd4j.createSparseCOO(values, indices, new int[]{5, 5});
         BaseSparseNDArrayCOO sparseView = (BaseSparseNDArrayCOO) sparseNDArray.get(NDArrayIndex.point(2), NDArrayIndex.point(1));
         assertEquals(1, sparseView.nnz());
-        assertArrayEquals(new int[]{0, 0}, sparseView.getIndices().asInt());
-        assertArrayEquals(new double[]{3}, sparseView.getValues().asDouble(), 1e-1);
+        assertArrayEquals(new int[]{0, 0}, sparseView.getIncludedIndices().asInt());
+        assertArrayEquals(new double[]{3}, sparseView.getIncludedValues().asDouble(), 1e-1);
         assertTrue(sparseView.isScalar());
     }
 
@@ -157,8 +155,8 @@ public class SparseNDArrayCOOTest {
         BaseSparseNDArrayCOO view = (BaseSparseNDArrayCOO) array.get(NDArrayIndex.all(), NDArrayIndex.point(0), NDArrayIndex.all());
         assertEquals(2, view.nnz());
         assertArrayEquals(new int[]{2, 2}, view.shape());
-        assertArrayEquals(new int[]{0, 0, 1, 1}, view.getIndices().asInt());
-        assertArrayEquals(new double[]{2, 1}, view.getValues().asDouble(), 1e-1);
+        assertArrayEquals(new int[]{0, 0, 1, 1}, view.getIncludedIndices().asInt());
+        assertArrayEquals(new double[]{2, 1}, view.getIncludedValues().asDouble(), 1e-1);
     }
 
     @Test
@@ -172,8 +170,8 @@ public class SparseNDArrayCOOTest {
         BaseSparseNDArrayCOO view = (BaseSparseNDArrayCOO) baseView.get(NDArrayIndex.point(1), NDArrayIndex.all());
         assertEquals(1, view.nnz());
         assertArrayEquals(new int[]{1, 2}, view.shape());
-        assertArrayEquals(new int[]{0, 1}, view.getIndices().asInt());
-        assertArrayEquals(new double[]{1}, view.getValues().asDouble(), 1e-1);
+        assertArrayEquals(new int[]{0, 1}, view.getIncludedIndices().asInt());
+        assertArrayEquals(new double[]{1}, view.getIncludedValues().asDouble(), 1e-1);
     }
 
     @Test
@@ -188,8 +186,8 @@ public class SparseNDArrayCOOTest {
         BaseSparseNDArrayCOO view = (BaseSparseNDArrayCOO) baseView.get(NDArrayIndex.all(), NDArrayIndex.point(2));
         assertEquals(2, view.nnz());
         assertArrayEquals(new int[]{3, 1}, view.shape());
-        assertArrayEquals(new int[]{0, 0, 1, 0}, view.getIndices().asInt());
-        assertArrayEquals(new double[]{5, 7}, view.getValues().asDouble(), 1e-1);
+        assertArrayEquals(new int[]{0, 0, 1, 0}, view.getIncludedIndices().asInt());
+        assertArrayEquals(new double[]{5, 7}, view.getIncludedValues().asDouble(), 1e-1);
         assertTrue(view.isColumnVector());
     }
 
@@ -205,8 +203,8 @@ public class SparseNDArrayCOOTest {
                 NDArrayIndex.all(),
                 NDArrayIndex.all());
         assertEquals(4, newArray.nnz());
-        assertArrayEquals(new double[]{1, 2, 8, 9}, newArray.getValues().asDouble(), 1e-1);
-        assertArrayEquals(new int[]{0, 0, 2, 0, 1, 1, 1, 0, 1, 1, 1, 0}, newArray.getIndices().asInt());
+        assertArrayEquals(new double[]{1, 2, 8, 9}, newArray.getIncludedValues().asDouble(), 1e-1);
+        assertArrayEquals(new int[]{0, 0, 2, 0, 1, 1, 1, 0, 1, 1, 1, 0}, newArray.getIncludedIndices().asInt());
     }
 
     @Test
@@ -221,8 +219,8 @@ public class SparseNDArrayCOOTest {
                 new SpecifiedIndex(new int[]{0}),
                 new SpecifiedIndex(new int[]{0, 2}));
         assertEquals(2, newArray.nnz());
-        assertArrayEquals(new double[]{3, 8}, newArray.getValues().asDouble(), 1e-1);
-        assertArrayEquals(new int[]{0, 0, 0, 2, 0, 1}, newArray.getIndices().asInt());
+        assertArrayEquals(new double[]{3, 8}, newArray.getIncludedValues().asDouble(), 1e-1);
+        assertArrayEquals(new int[]{0, 0, 0, 2, 0, 1}, newArray.getIncludedIndices().asInt());
     }
 
     /*
@@ -456,12 +454,6 @@ public class SparseNDArrayCOOTest {
         System.out.println(v.shapeInfoDataBuffer());
         // => crash
 
-        //System.out.println(v.isView());
-
-        //System.out.println("v ");
-        //System.out.println(v.toString());
-        //System.out.println(v.shapeInfoDataBuffer());
-
 
     }
 
@@ -471,14 +463,15 @@ public class SparseNDArrayCOOTest {
         double[] values = new double[]{1};
         int[][] indices  = new int[][]{{0, 0, 0}};
         INDArray original = Nd4j.createSparseCOO(values, indices, shape);
-        original.putScalar(2, 2, 2, 2);
-        original.putScalar(1, 1, 1, 1);
+        original.putScalar(2, 2, 2, 3);
+        original.putScalar(1, 1, 1, 2);
 
         BaseSparseNDArrayCOO view = (BaseSparseNDArrayCOO) original.get(NDArrayIndex.all());
         int[] expectedIdx = new int[]{0, 0, 0, 1, 1, 1, 2, 2, 2};
-        double[] expectedValues = new double[]{0, 1, 2};
-        assertArrayEquals(expectedIdx, view.getIndices().asInt());
-        assertArrayEquals(expectedValues, view.getValues().asDouble(), 1e-5);
+        double[] expectedValues = new double[]{1, 2, 3};
+        assertArrayEquals(expectedIdx, view.getIncludedIndices().asInt());
+        assertArrayEquals(expectedValues, view.getIncludedValues().asDouble(), 1e-5);
+        assertTrue(view == original);
     }
 
 }

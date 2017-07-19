@@ -591,7 +591,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     * Change this DataBuffer won't change the ndarray!
     * TODO (used for tests, does it have another usecase?)
     *  */
-    public DataBuffer getIndices(){
+    public DataBuffer getIncludedIndices(){
 
         if(isScalar()){
             return Nd4j.createBuffer(new int[]{0, 0});
@@ -644,7 +644,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     /*
     * TODO Same as get Indices - another usecase than tests?
     * */
-    public DataBuffer getValues(){
+    public DataBuffer getIncludedValues(){
         List<Double> val = new ArrayList<>();
 
         for(int i = 0; i< values.length(); i++) {
@@ -971,5 +971,13 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
 
     public boolean isSorted() {
         return isSorted;
+    }
+
+    public DataBuffer getValues() {
+        return values;
+    }
+
+    public DataBuffer getIndices() {
+        return indices;
     }
 }
