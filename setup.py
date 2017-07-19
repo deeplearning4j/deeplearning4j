@@ -14,6 +14,6 @@ setup(name='jumpy',
           'visualize': ['pydot-ng'],
           'tests': ['pytest',
                     'pytest-pep8',
-                    'pytest-xdist'],
+                    'mock'],
       },
       packages=find_packages())
