@@ -13,7 +13,7 @@ public class TestBasic {
 
         UIServer.getInstance();
 
-        Thread.sleep(100000);
+        Thread.sleep(1000000);
     }
 
 }

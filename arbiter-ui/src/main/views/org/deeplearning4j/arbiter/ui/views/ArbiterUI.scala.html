@@ -119,7 +119,7 @@
             padding-bottom: 20px;
         }
 
-        #accordion .ui-accordion-header, #accordion2 .ui-accordion-header {
+        #accordion .ui-accordion-header, #accordion2 .ui-accordion-header, #accordion3 .ui-accordion-header {
             background-color: /*headingbgcolor*/#063E53;      /*Color when collapsed*/
             color: /*headingtextcolor*/white;
             font-family: Georgia, Times, 'Times New Roman', serif;
@@ -219,7 +219,7 @@
             //Second section: Optimization settings
             if(lastSettingsUpdateTime != settingsTime){
                 //Get JSON: address set by ConfigResource
-                $.get("/config",function(data){
+                $.get("/arbiter/config",function(data){
                     var str = JSON.stringify(data);
 
                     var configDiv = $('#settingsdiv');
@@ -236,7 +236,7 @@
             if(lastResultsUpdateTime != resultsTime){
 
                 //Get JSON; address set by SummaryResultsResource
-                $.get("/results",function(data){
+                $.get("/arbiter/results",function(data){
                     //Expect an array of CandidateStatus type objects here
                     resultsTableContent = data;
                     drawResultTable();
@@ -246,32 +246,6 @@
             }
         })
     },2000);    //Loop every 2 seconds
-
-    function createAndAddComponent(renderableComponent, appendTo){
-        var key = Object.keys(renderableComponent)[0];
-        var type = renderableComponent[key]['componentType'];
-
-        switch(type){
-            case "string":
-                var s = renderableComponent[key]['string'];
-                appendTo.append(s);
-                break;
-            case "simpletable":
-                createTable(renderableComponent[key],null,appendTo);
-                break;
-            case "linechart":
-                createLineChart(renderableComponent[key],appendTo);
-                break;
-            case "scatterplot":
-                createScatterPlot(renderableComponent[key],appendTo);
-                break;
-            case "accordion":
-                createAccordion(renderableComponent[key],appendTo);
-                break;
-            default:
-                return "(Error rendering component: Unknown object)";
-        }
-    }
 
     function createTable(tableObj,tableId,appendTo){
         //Expect RenderableComponentTable
@@ -314,284 +288,6 @@
         appendTo.append(table);
     }
 
-    /** Create + add line chart with multiple lines, (optional) title, (optional) series names.
-     * appendTo: jquery selector of object to append to. MUST HAVE ID
-     * */
-    function createLineChart(chartObj, appendTo){
-        //Expect: RenderableComponentLineChart
-        var title = chartObj['title'];
-        var xData = chartObj['x'];
-        var yData = chartObj['y'];
-        var seriesNames = chartObj['seriesNames'];
-        var nSeries = (!xData ? 0 : xData.length);
-        var title = chartObj['title'];
-
-        // Set the dimensions of the canvas / graph
-        var margin = {top: 60, right: 20, bottom: 60, left: 50},
-                width = 650 - margin.left - margin.right,
-                height = 350 - margin.top - margin.bottom;
-
-        // Set the ranges
-        var xScale = d3.scale.linear().range([0, width]);
-        var yScale = d3.scale.linear().range([height, 0]);
-
-        // Define the axes
-        var xAxis = d3.svg.axis().scale(xScale)
-                .innerTickSize(-height)     //used as grid line
-                .orient("bottom").ticks(5);
-
-        var yAxis = d3.svg.axis().scale(yScale)
-                .innerTickSize(-width)      //used as grid line
-                .orient("left").ticks(5);
-
-        // Define the line
-        var valueline = d3.svg.line()
-                .x(function(d) { return xScale(d.xPos); })
-                .y(function(d) { return yScale(d.yPos); });
-
-        // Adds the svg canvas
-        var svg = d3.select("#" + appendTo.attr("id"))
-                .append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-                .attr("padding", "20px")
-                .append("g")
-                .attr("transform",
-                        "translate(" + margin.left + "," + margin.top + ")");
-
-        // Scale the range of the chart
-        var xMax = -Number.MAX_VALUE;
-        var yMax = -Number.MAX_VALUE;
-        var yMin = Number.MAX_VALUE;
-        for( var i=0; i<nSeries; i++){
-            var xV = xData[i];
-            var yV = yData[i];
-            var thisMax = d3.max(xV);
-            var thisMaxY = d3.max(yV);
-            var thisMinY = d3.min(yV);
-            if(thisMax > xMax) xMax = thisMax;
-            if(thisMaxY > yMax) yMax = thisMaxY;
-            if(thisMinY < yMin) yMin = thisMinY;
-        }
-        if(yMin > 0) yMin = 0;
-        xScale.domain([0, xMax]);
-        yScale.domain([yMin, yMax]);
-
-        // Add the valueline path.
-        var color = d3.scale.category10();
-        for( var i=0; i<nSeries; i++){
-            var xVals = xData[i];
-            var yVals = yData[i];
-
-            var data = xVals.map(function(d, i){
-                return { 'xPos' : xVals[i], 'yPos' : yVals[i] };
-            });
-            svg.append("path")
-                    .attr("class", "line")
-                    .style("stroke", color(i))
-                    .attr("d", valueline(data));
-        }
-
-        // Add the X Axis
-        svg.append("g")
-                .attr("class", "x axis")
-                .attr("transform", "translate(0," + height + ")")
-                .call(xAxis);
-
-        // Add the Y Axis
-        svg.append("g")
-                .attr("class", "y axis")
-                .call(yAxis);
-
-        //Add legend (if present)
-        if(seriesNames) {
-            var legendSpace = width / i;
-            for (var i = 0; i < nSeries; i++) {
-                var values = xData[i];
-                var yValues = yData[i];
-                var lastX = values[values.length - 1];
-                var lastY = yValues[yValues.length - 1];
-                var toDisplay;
-                if(!lastX || !lastY) toDisplay = seriesNames[i] + " (no data)";
-                else toDisplay = seriesNames[i] + " (" + lastX.toPrecision(5) + "," + lastY.toPrecision(5) + ")";
-                svg.append("text")
-                        .attr("x", (legendSpace / 2) + i * legendSpace) // spacing
-                        .attr("y", height + (margin.bottom / 2) + 5)
-                        .attr("class", "legend")    // style the legend
-                        .style("fill", color(i))
-                        .text(toDisplay);
-
-            }
-        }
-
-        //Add title (if present)
-        if(title){
-            svg.append("text")
-                    .attr("x", (width / 2))
-                    .attr("y", 0 - ((margin.top-30) / 2))
-                    .attr("text-anchor", "middle")
-                    .style("font-size", "13px")
-                    .style("text-decoration", "underline")
-                    .text(title);
-        }
-    }
-
-    /** Create + add scatter plot chart with multiple different types of points, (optional) title, (optional) series names.
-     * appendTo: jquery selector of object to append to. MUST HAVE ID
-     * */
-    function createScatterPlot(chartObj, appendTo){
-        //TODO modify this to do scatter plot, not line chart
-        //Expect: RenderableComponentLineChart
-        var title = chartObj['title'];
-        var xData = chartObj['x'];
-        var yData = chartObj['y'];
-        var seriesNames = chartObj['seriesNames'];
-        var nSeries = (!xData ? 0 : xData.length);
-        var title = chartObj['title'];
-
-        // Set the dimensions of the canvas / graph
-        var margin = {top: 60, right: 20, bottom: 60, left: 50},
-                width = 650 - margin.left - margin.right,
-                height = 350 - margin.top - margin.bottom;
-
-        // Set the ranges
-        var xScale = d3.scale.linear().range([0, width]);
-        var yScale = d3.scale.linear().range([height, 0]);
-
-        // Define the axes
-        var xAxis = d3.svg.axis().scale(xScale)
-                .innerTickSize(-height)     //used as grid line
-                .orient("bottom").ticks(5);
-
-        var yAxis = d3.svg.axis().scale(yScale)
-                .innerTickSize(-width)      //used as grid line
-                .orient("left").ticks(5);
-
-        // Define the line
-        var valueline = d3.svg.line()
-                .x(function(d) { return xScale(d.xPos); })
-                .y(function(d) { return yScale(d.yPos); });
-
-        // Adds the svg canvas
-        var svg = d3.select("#" + appendTo.attr("id"))
-                .append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-                .attr("padding", "20px")
-                .append("g")
-                .attr("transform",
-                        "translate(" + margin.left + "," + margin.top + ")");
-
-        // Scale the range of the chart
-        var xMax = -Number.MAX_VALUE;
-        var yMax = -Number.MAX_VALUE;
-        var yMin = Number.MAX_VALUE;
-        for( var i=0; i<nSeries; i++){
-            var xV = xData[i];
-            var yV = yData[i];
-            var thisMax = d3.max(xV);
-            var thisMaxY = d3.max(yV);
-            var thisMinY = d3.min(yV);
-            if(thisMax > xMax) xMax = thisMax;
-            if(thisMaxY > yMax) yMax = thisMaxY;
-            if(thisMinY < yMin) yMin = thisMinY;
-        }
-        if(yMin > 0) yMin = 0;
-        xScale.domain([0, xMax]);
-        yScale.domain([yMin, yMax]);
-
-        // Add the valueline path.
-        var color = d3.scale.category10();
-        for( var i=0; i<nSeries; i++){
-            var xVals = xData[i];
-            var yVals = yData[i];
-
-            var data = xVals.map(function(d, i){
-                return { 'xPos' : xVals[i], 'yPos' : yVals[i] };
-            });
-
-            svg.selectAll("circle")
-                    .data(data)
-                    .enter()
-                    .append("circle")
-                    .style("fill", function(d){ return color(i)})
-                    .attr("r",3.0)
-                    .attr("cx", function(d){ return xScale(d['xPos']); })
-                    .attr("cy", function(d){ return yScale(d['yPos']); });
-        }
-
-        // Add the X Axis
-        svg.append("g")
-                .attr("class", "x axis")
-                .attr("transform", "translate(0," + height + ")")
-                .call(xAxis);
-
-        // Add the Y Axis
-        svg.append("g")
-                .attr("class", "y axis")
-                .call(yAxis);
-
-        //Add legend (if present)
-        if(seriesNames) {
-            var legendSpace = width / i;
-            for (var i = 0; i < nSeries; i++) {
-                var values = xData[i];
-                var yValues = yData[i];
-                var lastX = values[values.length - 1];
-                var lastY = yValues[yValues.length - 1];
-                var toDisplay;
-                if(!lastX || !lastY) toDisplay = seriesNames[i] + " (no data)";
-                else toDisplay = seriesNames[i] + " (" + lastX.toPrecision(5) + "," + lastY.toPrecision(5) + ")";
-                svg.append("text")
-                        .attr("x", (legendSpace / 2) + i * legendSpace) // spacing
-                        .attr("y", height + (margin.bottom / 2) + 5)
-                        .attr("class", "legend")    // style the legend
-                        .style("fill", color(i))
-                        .text(toDisplay);
-
-            }
-        }
-
-        //Add title (if present)
-        if(title){
-            svg.append("text")
-                    .attr("x", (width / 2))
-                    .attr("y", 0 - ((margin.top-30) / 2))
-                    .attr("text-anchor", "middle")
-                    .style("font-size", "13px")
-                    .style("text-decoration", "underline")
-                    .text(title);
-        }
-    }
-
-    function createAccordion(accordionObj, appendTo) {
-        var title = accordionObj['title'];
-        var defaultCollapsed = accordionObj['defaultCollapsed'];
-
-        var tempDivOuter = $('<div><h3>' + title + '</h3></div>');
-        tempDivOuter.uniqueId();
-        var generatedIDOuter = tempDivOuter.attr('id');
-        var tempDivInner = $('<div></div>');
-        tempDivInner.uniqueId();
-        var generatedIDInner = tempDivInner.attr('id');
-        tempDivOuter.append(tempDivInner);
-        appendTo.append(tempDivOuter);
-
-        if (defaultCollapsed == true) {
-            $("#" + generatedIDOuter).accordion({collapsible: true, heightStyle: "content", active: false});
-        } else {
-            $("#" + generatedIDOuter).accordion({collapsible: true, heightStyle: "content"});
-        }
-
-        //Add the inner components:
-        var innerComponents = accordionObj['innerComponents'];
-        var len = (!innerComponents ? 0 : innerComponents.length);
-        for( var i=0; i<len; i++ ){
-            var component = innerComponents[i];
-            createAndAddComponent(component,$("#"+generatedIDInner));
-        }
-    }
-
     function drawResultTable(){
 
         //Remove all elements from the table body
@@ -621,28 +317,28 @@
         var len = (!resultsTableContent ? 0 : resultsTableContent.length);
         for(var i=0; i<len; i++){
             var row = $('<tr class="resultTableRow" id="resultTableRow-' + sorted[i].index + '"/>');
-            row.append($("<td>" + sorted[i].index + "</td>"));
-            var score = sorted[i].score;
+            row.append($("<td>" + sorted[i][0] + "</td>"));
+            var score = sorted[i][1];
             row.append($("<td>" + ((!score || score == "null") ? "-" : score) + "</td>"));
-            row.append($("<td>" + sorted[i].status + "</td>"));
+            row.append($("<td>" + sorted[i][2] + "</td>"));
             tableBody.append(row);
 
             //Create hidden row for expanding:
-            var rowID = 'resultTableRow-' + sorted[i].index + '-content';
+            var rowID = 'resultTableRow-' + sorted[i][0] + '-content';
             var contentRow = $('<tr id="' + rowID + '" class="resultTableRowContent"/>');
             var td3 = $("<td colspan=3 id=" + rowID + "-td></td>");
             td3.append("(Result status - loading)");
             contentRow.append(td3);
 
             tableBody.append(contentRow);
-            if(expandedRowsCandidateIDs.indexOf(sorted[i].index) == -1 ){
+            if(expandedRowsCandidateIDs.indexOf(sorted[i][0]) == -1 ){
                 contentRow.hide();
 
             } else {
                 //Load info. TODO: make this more efficient (stored info, check for updates, etc)
                 td3.empty();
 
-                var path = "/modelResults/" + sorted[i].index;
+                var path = "/modelResults/" + sorted[i][0];
                 loadCandidateDetails(path, td3);
 
                 contentRow.show();
@@ -652,36 +348,28 @@
 
     //Compare function for results, based on sort order
     function compareResultsIndex(a, b){
-        return (resultTableSortOrder == "ascending" ? a.index - b.index : b.index - a.index);
+        return (resultTableSortOrder == "ascending" ? a[0] - b[0] : b[0] - a[0]);
     }
     function compareScores(a,b){
         //TODO Not always numbers...
         if(resultTableSortOrder == "ascending"){
-            return a.score - b.score;
+            return a[1] - b[1];
         } else {
-            return b.score - a.score;
+            return b[1] - a[1];
         }
     }
     function compareStatus(a,b){
         //TODO: secondary sort on... score? index?
         if(resultTableSortOrder == "ascending"){
-            return (a.status < b.status ? -1 : (a.status > b.status ? 1 : 0));
+            return (a[2] < b[2] ? -1 : (a[2] > b[2] ? 1 : 0));
         } else {
-            return (a.status < b.status ? 1 : (a.status > b.status ? -1 : 0));
+            return (a[2] < b[2] ? 1 : (a[2] > b[2] ? -1 : 0));
         }
     }
 
     //Do a HTTP request on the specified path, parse and insert into the provided element
     function loadCandidateDetails(path, elementToAppendTo){
         $.get(path, function (data) {
-//            var jsonObj = JSON.parse(JSON.stringify(data));
-//            var components = jsonObj['renderableComponents'];
-//            var len = (!components ? 0 : components.length);
-//            for (var i = 0; i < len; i++) {
-//                var c = components[i];
-//                var temp = createAndAddComponent(c,elementToAppendTo);
-//            }
-
             var str = JSON.stringify(data);
             var component = Component.getComponent(str);
             component.render(elementToAppendTo);
@@ -744,31 +432,43 @@
     });
 
 </script>
-        <script>
-    $(function() {
-        $( "#accordion" ).accordion({
+<script>
+    $(function () {
+        $("#accordion").accordion({
             collapsible: true,
             heightStyle: "content"
         });
     });
-    $(function() {
-        $( "#accordion2" ).accordion({
+    $(function () {
+        $("#accordion2").accordion({
             collapsible: true,
             heightStyle: "content"
         });
     });
-
+    $(function () {
+        $("#accordion3").accordion({
+            collapsible: true,
+            heightStyle: "content"
+        });
+    });
 </script>
-
-        <table style="width: 100%; padding: 5px;" class="hd">
+        <table style="width: 100%;
+            padding: 5px;" class="hd">
             <tbody>
-                <tr style="height:40px">
-                    <td> <div style="width:40px; height:40px; float:left"></div><div style="height:40px; float:left; margin-top: 12px">Arbiter UI</div></td>
+                <tr style="height: 40px">
+                    <td> <div style="width: 40px;
+                        height: 40px;
+                        float: left"></div>
+                        <div style="height: 40px;
+                            float: left;
+                            margin-top: 12px">Arbiter UI</div></td>
                 </tr>
             </tbody>
         </table>
 
-        <div style="width:1400px; margin-left:auto; margin-right:auto;">
+        <div style="width: 1400px;
+            margin-left: auto;
+            margin-right: auto;">
             <div class="outerelements" id="status">
                 <div id="accordion" class="hcol2">
                     <h3 class="hcol2 headingcolor ui-accordion-header">Summary</h3>
@@ -780,8 +480,7 @@
             <div class="outerelements" id="settings">
                 <div id="accordion2">
                     <h3 class="ui-accordion-header headingcolor">Optimization Settings</h3>
-                    <div class="settingsdiv" id="settingsdiv">
-            </div>
+                    <div class="settingsdiv" id="settingsdiv"></div>
                 </div>
             </div>
 
@@ -789,7 +488,7 @@
             <div class="outerelements" id="results">
                 <div class="resultsHeadingDiv">Results</div>
                 <div class="resultsdiv" id="resultsdiv">
-                    <table style="width:100%" id="resultsTable" class="resultsTable">
+                    <table style="width: 100%" id="resultsTable" class="resultsTable">
                         <col width="33%">
                         <col width="33%">
                         <col width="34%">
@@ -799,11 +498,12 @@
                 </div>
             </div>
 
+            <div class="outerelements" id="resultview">
+                <div id="accordion3">
+                    <h3 class="ui-accordion-header headingcolor">Selected Result</h3>
+                    <div class="resultsviewdiv" id="resultsviewdiv"></div>
+                </div>
+            </div>
         </div>
-
-
-
-
-
     </body>
 </html>

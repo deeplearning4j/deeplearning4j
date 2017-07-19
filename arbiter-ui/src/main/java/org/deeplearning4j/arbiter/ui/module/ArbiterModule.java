@@ -4,18 +4,23 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
+import org.deeplearning4j.arbiter.ui.UpdateStatus;
+import org.deeplearning4j.arbiter.ui.misc.JsonMapper;
 import org.deeplearning4j.arbiter.ui.views.html.ArbiterUI;
-import org.deeplearning4j.ui.api.FunctionType;
-import org.deeplearning4j.ui.api.HttpMethod;
-import org.deeplearning4j.ui.api.Route;
-import org.deeplearning4j.ui.api.UIModule;
+import org.deeplearning4j.ui.api.*;
+import org.deeplearning4j.ui.components.text.ComponentText;
+import org.deeplearning4j.ui.components.text.style.StyleText;
+import org.deeplearning4j.ui.play.staticroutes.Assets;
 import org.deeplearning4j.ui.stats.StatsListener;
 import play.libs.Json;
 import play.mvc.Result;
 
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.deeplearning4j.arbiter.ui.misc.JsonMapper.asJson;
 import static play.mvc.Results.ok;
 
 /**
@@ -25,6 +30,8 @@ import static play.mvc.Results.ok;
 public class ArbiterModule implements UIModule {
 
     public static final String ARBITER_UI_TYPE_ID = "ArbiterUI";
+
+    private static final String JSON = "application/json";
 
     private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
     private String currentSessionID;
@@ -45,7 +52,7 @@ public class ArbiterModule implements UIModule {
         Route r5 = new Route("/arbiter/update/:id", HttpMethod.GET, FunctionType.Function, this::getUpdate);
         Route r6 = new Route("/arbiter/config", HttpMethod.GET, FunctionType.Supplier, this::getOptimizationConfig);
         Route r7 = new Route("/arbiter/results", HttpMethod.GET, FunctionType.Supplier, this::getSummaryResults);
-        Route r8 = new Route("/arbiter/summaryStatus", HttpMethod.GET, FunctionType.Supplier, this::getSummaryStatus);
+        Route r8 = new Route("/arbiter/summary", HttpMethod.GET, FunctionType.Supplier, this::getSummaryStatus);
 
         return Arrays.asList(r1, r2, r3, r4, r5, r6, r7, r8);
     }
@@ -168,7 +175,11 @@ public class ArbiterModule implements UIModule {
             }
          */
 
-        return ok(String.valueOf(lastUpdateTime.get()));
+        //TODO
+        long t = System.currentTimeMillis();
+        UpdateStatus us = new UpdateStatus(t, t, t);
+
+        return ok(Json.toJson(us));
     }
 
     private Result getModelLastUpdateTimes(String modelIDs){
@@ -262,7 +273,10 @@ public class ArbiterModule implements UIModule {
         }
          */
 
-        return ok("Optimization config goes here");
+        ComponentText ct = new ComponentText("Optimization configuration!",
+                new StyleText.Builder().color(Color.BLACK).fontSize(20).width(100, LengthUnit.Percent).build());
+
+        return ok(asJson(ct)).as(JSON);
     }
 
     private Result getSummaryResults(){
@@ -277,7 +291,13 @@ public class ArbiterModule implements UIModule {
             }
          */
 
-        return ok("Summary results go here");
+        String[][] temp = new String[][]{
+                {"0", "1.0", "Status 0"},
+                {"1", "2.0", "Status 1"}
+
+        };
+
+        return ok(asJson(temp)).as(JSON);
     }
 
     private Result getSummaryStatus(){
@@ -300,7 +320,10 @@ public class ArbiterModule implements UIModule {
             }
          */
 
-        return ok("Summary results go here");
+        ComponentText ct = new ComponentText("Summary status!",
+                new StyleText.Builder().color(Color.BLACK).fontSize(20).width(100, LengthUnit.Percent).build());
+
+        return ok(asJson(ct)).as(JSON);
     }
 
 }
