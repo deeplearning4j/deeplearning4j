@@ -21,7 +21,7 @@ package org.deeplearning4j.scalnet.models
 import org.deeplearning4j.nn.weights.WeightInit
 import org.scalatest._
 import org.deeplearning4j.scalnet.layers.{Dense, Layer}
-import org.deeplearning4j.scalnet.layers.convolutional.Convolution2D
+import org.deeplearning4j.scalnet.layers.convolutional.Convolution2DTest
 import org.deeplearning4j.scalnet.layers.pooling.MaxPooling2D
 import org.deeplearning4j.scalnet.layers.reshaping.{Flatten3D, Unflatten3D}
 import org.deeplearning4j.scalnet.regularizers.L2
