@@ -1,0 +1,143 @@
+Java HotSpot(TM) 64-Bit Server VM warning: ignoring option MaxPermSize=12G; support was removed in 8.0
+[INFO] Scanning for projects...
+[INFO]                                                                         
+[INFO] ------------------------------------------------------------------------
+[INFO] Building nd4j-native 0.8.1-SNAPSHOT
+[INFO] ------------------------------------------------------------------------
+[INFO] 
+[INFO] --- maven-clean-plugin:2.5:clean (default-clean) @ nd4j-native ---
+[INFO] Deleting /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/target
+[INFO] 
+[INFO] --- maven-enforcer-plugin:1.4.1:enforce (enforce-maven) @ nd4j-native ---
+[INFO] 
+[INFO] --- maven-enforcer-plugin:1.4.1:enforce (libnd4j-checks) @ nd4j-native ---
+[INFO] 
+[INFO] --- lint-maven-plugin:0.0.11:check (pom-lint) @ nd4j-native ---
+[INFO] Writing summary report
+[INFO] [LINT] Completed with no violations
+[INFO] Writing xml report
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.5.1:compile (javacpp.parser) @ nd4j-native ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 1 source file to /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/target/classes
+[INFO] 
+[INFO] --- javacpp:1.3.3-SNAPSHOT:build (javacpp.parser) @ nd4j-native ---
+[INFO] Detected platform "macosx-x86_64"
+[INFO] Building for platform "macosx-x86_64"
+[INFO] Targeting /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/src/main/java/org/nd4j/nativeblas/Nd4jCpu.java
+[INFO] Parsing /Users/susaneraly/SKYMIND/libnd4j/blas/NativeOps.h
+[INFO] 
+[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ nd4j-native ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 2 resources
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.5.1:compile (default-compile) @ nd4j-native ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 25 source files to /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/target/classes
+[INFO] /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/src/main/java/org/nd4j/linalg/cpu/nativecpu/CpuNDArrayFactory.java: /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/src/main/java/org/nd4j/linalg/cpu/nativecpu/CpuNDArrayFactory.java uses or overrides a deprecated API.
+[INFO] /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/src/main/java/org/nd4j/linalg/cpu/nativecpu/CpuNDArrayFactory.java: Recompile with -Xlint:deprecation for details.
+[INFO] /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/src/main/java/org/nd4j/nativeblas/Nd4jCpu.java: Some input files use unchecked or unsafe operations.
+[INFO] /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/src/main/java/org/nd4j/nativeblas/Nd4jCpu.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- javacpp:1.3.3-SNAPSHOT:build (javacpp.compiler) @ nd4j-native ---
+[INFO] Detected platform "macosx-x86_64"
+[INFO] Building for platform "macosx-x86_64"
+[INFO] Generating /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/target/classes/org/nd4j/nativeblas/jnind4jcpu.cpp
+[INFO] Compiling /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/target/classes/org/nd4j/nativeblas/macosx-x86_64/libjnind4jcpu.dylib
+[INFO] /usr/local/bin/g++-5 -I/Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/../../../../libnd4j//blas -I/Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/../../../../libnd4j//include -I/Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/../../../../libnd4j//include/cnpy -I/Library/Java/JavaVirtualMachines/jdk1.8.0_101.jdk/Contents/Home/include -I/Library/Java/JavaVirtualMachines/jdk1.8.0_101.jdk/Contents/Home/include/darwin /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/target/classes/org/nd4j/nativeblas/jnind4jcpu.cpp -march=x86-64 -m64 -O3 -std=c++11 -static-libgcc -static-libstdc++ -Wl,-rpath,@loader_path/. -Wall -fPIC -dynamiclib -undefined dynamic_lookup -o libjnind4jcpu.dylib -L/Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/../../../../libnd4j//blasbuild/cpu/blas -Wl,-rpath,/Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/../../../../libnd4j//blasbuild/cpu/blas -lnd4jcpu -framework JavaVM 
+In file included from /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/../../../../libnd4j//blas/NativeOps.h:28:0,
+                 from /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/target/classes/org/nd4j/nativeblas/jnind4jcpu.cpp:107:
+/Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/../../../../libnd4j//include/types/float16.h: In function 'float cpu_half2float(half)':
+/Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/../../../../libnd4j//include/types/float16.h:75:36: warning: dereferencing type-punned pointer will break strict-aliasing rules [-Wstrict-aliasing]
+     return *((float*)((void*)&temp));
+                                    ^
+/Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/../../../../libnd4j//include/types/float16.h: In function 'half cpu_float2half_rn(float)':
+/Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/../../../../libnd4j//include/types/float16.h:92:37: warning: dereferencing type-punned pointer will break strict-aliasing rules [-Wstrict-aliasing]
+     unsigned x = *((int*)(void*)(&f));
+                                     ^
+/var/folders/ks/79cc7fl105q0232qd8flj5_00000gn/T//ccCaY93C.s:475:11: warning: section "__textcoal_nt" is deprecated
+        .section __TEXT,__textcoal_nt,coalesced,pure_instructions
+                 ^      ~~~~~~~~~~~~~
+/var/folders/ks/79cc7fl105q0232qd8flj5_00000gn/T//ccCaY93C.s:475:11: note: change section name to "__text"
+        .section __TEXT,__textcoal_nt,coalesced,pure_instructions
+                 ^      ~~~~~~~~~~~~~
+/var/folders/ks/79cc7fl105q0232qd8flj5_00000gn/T//ccCaY93C.s:492:11: warning: section "__textcoal_nt" is deprecated
+        .section __TEXT,__textcoal_nt,coalesced,pure_instructions
+                 ^      ~~~~~~~~~~~~~
+/var/folders/ks/79cc7fl105q0232qd8flj5_00000gn/T//ccCaY93C.s:492:11: note: change section name to "__text"
+        .section __TEXT,__textcoal_nt,coalesced,pure_instructions
+                 ^      ~~~~~~~~~~~~~
+/var/folders/ks/79cc7fl105q0232qd8flj5_00000gn/T//ccCaY93C.s:791:11: warning: section "__textcoal_nt" is deprecated
+        .section __TEXT,__textcoal_nt,coalesced,pure_instructions
+                 ^      ~~~~~~~~~~~~~
+/var/folders/ks/79cc7fl105q0232qd8flj5_00000gn/T//ccCaY93C.s:791:11: note: change section name to "__text"
+        .section __TEXT,__textcoal_nt,coalesced,pure_instructions
+                 ^      ~~~~~~~~~~~~~
+/var/folders/ks/79cc7fl105q0232qd8flj5_00000gn/T//ccCaY93C.s:830:11: warning: section "__textcoal_nt" is deprecated
+        .section __TEXT,__textcoal_nt,coalesced,pure_instructions
+                 ^      ~~~~~~~~~~~~~
+/var/folders/ks/79cc7fl105q0232qd8flj5_00000gn/T//ccCaY93C.s:830:11: note: change section name to "__text"
+        .section __TEXT,__textcoal_nt,coalesced,pure_instructions
+                 ^      ~~~~~~~~~~~~~
+/var/folders/ks/79cc7fl105q0232qd8flj5_00000gn/T//ccCaY93C.s:1277:11: warning: section "__textcoal_nt" is deprecated
+        .section __TEXT,__textcoal_nt,coalesced,pure_instructions
+                 ^      ~~~~~~~~~~~~~
+/var/folders/ks/79cc7fl105q0232qd8flj5_00000gn/T//ccCaY93C.s:1277:11: note: change section name to "__text"
+        .section __TEXT,__textcoal_nt,coalesced,pure_instructions
+                 ^      ~~~~~~~~~~~~~
+/var/folders/ks/79cc7fl105q0232qd8flj5_00000gn/T//ccCaY93C.s:1316:11: warning: section "__textcoal_nt" is deprecated
+        .section __TEXT,__textcoal_nt,coalesced,pure_instructions
+                 ^      ~~~~~~~~~~~~~
+/var/folders/ks/79cc7fl105q0232qd8flj5_00000gn/T//ccCaY93C.s:1316:11: note: change section name to "__text"
+        .section __TEXT,__textcoal_nt,coalesced,pure_instructions
+                 ^      ~~~~~~~~~~~~~
+[INFO] Deleting /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/target/classes/org/nd4j/nativeblas/jnind4jcpu.cpp
+[INFO] Copying /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/../../../../libnd4j/blasbuild/cpu/blas/libnd4jcpu.dylib
+[INFO] 
+[INFO] --- maven-resources-plugin:2.6:testResources (default-testResources) @ nd4j-native ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 8 resources
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.5.1:testCompile (default-testCompile) @ nd4j-native ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 139 source files to /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native/target/test-classes
+[INFO] /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-tests/src/test/java/org/nd4j/linalg/dataset/StandardScalerTest.java: Some input files use or override a deprecated API.
+[INFO] /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-tests/src/test/java/org/nd4j/linalg/dataset/StandardScalerTest.java: Recompile with -Xlint:deprecation for details.
+[INFO] /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-tests/src/test/java/org/nd4j/linalg/dataset/BalanceMinibatchesTest.java: /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-tests/src/test/java/org/nd4j/linalg/dataset/BalanceMinibatchesTest.java uses unchecked or unsafe operations.
+[INFO] /Users/susaneraly/SKYMIND/nd4j/nd4j-backends/nd4j-tests/src/test/java/org/nd4j/linalg/dataset/BalanceMinibatchesTest.java: Recompile with -Xlint:unchecked for details.
+[INFO] 
+[INFO] --- maven-surefire-plugin:2.19.1:test (default-test) @ nd4j-native ---
+
+-------------------------------------------------------
+ T E S T S
+-------------------------------------------------------
+Running org.nd4j.linalg.util.TestCollections
+o.n.l.BaseNd4jTest - Running org.nd4j.linalg.util.TestCollections on backend org.nd4j.linalg.cpu.nativecpu.CpuBackend
+o.n.l.f.Nd4jBackend - Loaded [CpuBackend] backend
+o.n.n.NativeOpsHolder - Number of threads used for NativeOps: 4
+o.n.n.Nd4jBlas - Number of threads used for BLAS: 4
+o.n.l.a.o.e.DefaultOpExecutioner - Backend used: [CPU]; OS: [Mac OS X]
+o.n.l.a.o.e.DefaultOpExecutioner - Cores: [4]; Memory: [3.6GB];
+o.n.l.a.o.e.DefaultOpExecutioner - Blas vendor: [OPENBLAS]
+o.n.n.Nd4jBlas - Number of threads used for BLAS: 4
+o.n.l.a.o.e.DefaultOpExecutioner - Backend used: [CPU]; OS: [Mac OS X]
+o.n.l.a.o.e.DefaultOpExecutioner - Cores: [4]; Memory: [3.6GB];
+o.n.l.a.o.e.DefaultOpExecutioner - Blas vendor: [OPENBLAS]
+o.n.l.BaseNd4jTest - Ending org.nd4j.linalg.util.TestCollections
+o.n.n.Nd4jBlas - Number of threads used for BLAS: 4
+o.n.l.a.o.e.DefaultOpExecutioner - Backend used: [CPU]; OS: [Mac OS X]
+o.n.l.a.o.e.DefaultOpExecutioner - Cores: [4]; Memory: [3.6GB];
+o.n.l.a.o.e.DefaultOpExecutioner - Blas vendor: [OPENBLAS]
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 17.378 sec - in org.nd4j.linalg.util.TestCollections
+
+Results :
+
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0
+
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 45.277 s
+[INFO] Finished at: 2017-07-18T16:02:39-07:00
+[INFO] Final Memory: 84M/11776M
+[INFO] ------------------------------------------------------------------------

@@ -48,7 +48,6 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
 import org.nd4j.linalg.indexing.conditions.Condition;
-import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -3047,7 +3046,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return other.muli(getDouble(0), result);
         }
 
-        LinAlgExceptions.assertSameLength(other, result);
+        LinAlgExceptions.assertSameShape(other, result);
 
         Nd4j.getExecutioner().exec(new MulOp(this, other, result, length()));
 
@@ -3084,7 +3083,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return other.subi(getDouble(0), result);
         }
 
-        LinAlgExceptions.assertSameLength(other, result);
+        LinAlgExceptions.assertSameShape(other, result);
 
 
         Nd4j.getExecutioner().exec(new SubOp(this, other, result, length()));
