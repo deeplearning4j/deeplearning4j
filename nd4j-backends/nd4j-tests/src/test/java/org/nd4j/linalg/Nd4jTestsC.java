@@ -101,7 +101,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Before
     public void before() throws Exception {
         super.before();
-        Nd4j.setDataType(DataBuffer.Type.FLOAT);
+        Nd4j.setDataType(DataBuffer.Type.DOUBLE);
         Nd4j.getRandom().setSeed(123);
 
     }
