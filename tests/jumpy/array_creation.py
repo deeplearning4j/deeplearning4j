@@ -6,6 +6,7 @@ import gc
 gc.disable()
 
 class TestArrayCreation(unittest.TestCase):
+    init()
 
     def test_arr_creation(self):
         a = np.linspace(1, 4, 4).reshape(2, 2)
@@ -25,8 +26,6 @@ class TestArrayCreation(unittest.TestCase):
         nd4j_arr = from_np(a)
         self.assertEqual(2, nd4j_arr.rank())
         self.assertEquals(list(a.shape), nd4j_arr.array.shape())
-
-
 
 
     def test_add(self):
