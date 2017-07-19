@@ -1,6 +1,7 @@
 import jnius_config
 import os
 import inspect
+from itertools import chain
 
 import numpy as np
 
@@ -11,6 +12,13 @@ try:
 except KeyError:
     raise 'Please specify a jar or directory for JUMPY_CLASS_PATH in the environment'
 
+def _expand_directory(path):
+    if not path.endswith('*'):
+        return [path,]
+    else:
+        # wild card expansions like /somedir/* (we do this because of jnius being unable to handle class path expansion
+        clean_path = path.rstrip('*')
+        return [os.path.join(clean_path, y) for y in os.listdir(clean_path)]
 
 def get_classpath(base_path):
     """
@@ -18,36 +26,9 @@ def get_classpath(base_path):
     :param base_path: the directory to get the classpath for
     :return:
     """
-    ':'.join(os.path.join(base_path, y) for y in os.listdir(base_path))
+    return ':'.join(chain.from_iterable(map(lambda x: _expand_directory(x), base_path.split(':'))))
 
-def _expand_directory(directory):
-    # Get only the directory name (no wild card)
-    return get_classpath(directory.rstrip('*'))
-
-
-
-new_class_path = ''
-class_path_list = jnius_classpath.split(':')
-
-if len(class_path_list) > 0 and len(class_path_list[0]) > 0:
-    for class_path_item in class_path_list:
-        if class_path_item.endswith('jar'):
-            new_class_path += class_path_item
-        # wild card expansions like /somedir/* (we do this because of jnius being unable to handle class path expansion
-        else:
-            new_class_path += _expand_directory(class_path_item)
-            # update class path
-
-else:
-    class_path_item = jnius_classpath
-    if class_path_item.endswith('jar'):
-        new_class_path += class_path_item
-        # wild card expansions like /somedir/* (we do this because of jnius being unable to handle class path expansion
-    else:
-        new_class_path += _expand_directory(class_path_item)
-
-jnius_classpath = new_class_path
-jnius_config.set_classpath(jnius_classpath)
+jnius_config.set_classpath(get_classpath(jnius_classpath))
 
 # after jnius is initialized with proper class path *then* we setup nd4j
 
