@@ -18,6 +18,8 @@
 
 package org.deeplearning4j.scalnet.layers
 
+import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
+import org.deeplearning4j.nn.conf.layers.{DenseLayer, OutputLayer => JOutputLayer}
 import org.scalatest.FunSpec
 
 /**
@@ -25,13 +27,26 @@ import org.scalatest.FunSpec
   */
 class DenseTest extends FunSpec {
 
-  describe("A Dense layer") {
+  describe("A dense layer of size 100") {
     val nOut = 100
     val dense = Dense(nOut)
-    describe("of size 100") {
-      it("should have inputShape List(100)") {
-        assert(dense.outputShape == List(nOut))
-      }
+    it("should have inputShape List(0)") {
+      assert(dense.inputShape == List(0))
+    }
+    it("should have an outputShape of List(100)") {
+      assert(dense.outputShape == List(nOut))
+    }
+    it("when calling toOutputLayer without proper loss, it does not become an output layer") {
+      val denseOut = dense.toOutputLayer(null)
+      assert(!denseOut.output.isOutput)
+      val compiledLayer = denseOut.compile
+      assert(compiledLayer.isInstanceOf[DenseLayer])
+    }
+    it("when calling toOutputLayer, it becomes an output layer") {
+      val denseOut = dense.toOutputLayer(LossFunction.NEGATIVELOGLIKELIHOOD)
+      assert(denseOut.output.isOutput)
+      val compiledLayer = denseOut.compile
+      assert(compiledLayer.isInstanceOf[JOutputLayer])
     }
   }
 }

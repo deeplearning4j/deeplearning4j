@@ -19,12 +19,13 @@
 package org.deeplearning4j.scalnet.models
 
 import org.deeplearning4j.nn.weights.WeightInit
+import org.deeplearning4j.scalnet.layers.convolutional.Convolution2D
 import org.scalatest._
-import org.deeplearning4j.scalnet.layers.{Dense, Layer}
-import org.deeplearning4j.scalnet.layers.convolutional.Convolution2DTest
+import org.deeplearning4j.scalnet.layers.{Dense, OutputLayer}
 import org.deeplearning4j.scalnet.layers.pooling.MaxPooling2D
 import org.deeplearning4j.scalnet.layers.reshaping.{Flatten3D, Unflatten3D}
 import org.deeplearning4j.scalnet.regularizers.L2
+import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
 
 /**
   * Created by maxpumperla on 29/06/17.
@@ -53,6 +54,17 @@ class SequentialTest extends FunSpec with BeforeAndAfter {
       assertThrows[scala.MatchError] {
         model.compile(null)
       }
+    }
+
+    it("without buildOutput called should not have an output layer") {
+      model.add(Dense(shape, shape))
+      assert(!model.getLayers.last.asInstanceOf[OutputLayer].output.isOutput)
+    }
+
+    it("with buildOutput called should have an output layer") {
+      model.add(Dense(shape, shape))
+      model.buildOutput(LossFunction.NEGATIVELOGLIKELIHOOD)
+      assert(model.getLayers.last.asInstanceOf[OutputLayer].output.isOutput)
     }
 
     it("should infer the correct shape of an incorrectly initialized layer") {

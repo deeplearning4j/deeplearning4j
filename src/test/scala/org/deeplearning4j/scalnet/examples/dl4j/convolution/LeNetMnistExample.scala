@@ -24,7 +24,7 @@ import org.deeplearning4j.nn.conf.inputs.InputType
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
 import org.deeplearning4j.scalnet.layers.Dense
-import org.deeplearning4j.scalnet.layers.convolutional.Convolution2DTest
+import org.deeplearning4j.scalnet.layers.convolutional.Convolution2D
 import org.deeplearning4j.scalnet.layers.pooling.MaxPooling2D
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.deeplearning4j.scalnet.optimizers.SGD
