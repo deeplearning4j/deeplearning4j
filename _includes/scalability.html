@@ -68,11 +68,11 @@ function refreshCalculations() {
     var b5 = getValue("workers");
 
     var g12 = 60000 / a2;
-    var g13 = 60000 / (a2 + b2 + (c2 * (a5 * b5)) + e2) * (a5 * b5);
+    var g13 = (60000 / ((a2 + b2 + (c2 * (a5 * b5)) + e2))) * (a5 * b5);
 
     var h13 = g13/g12;
 
-    var i13 = h13 * 100 / (a5 * b5);
+    var i13 = (h13 * 100) / (a5 * b5);
 
     document.getElementById("rscal").innerHTML = i13;
 }
