@@ -1,14 +1,6 @@
 package org.deeplearning4j.arbiter.ui.data;
 
-import lombok.AllArgsConstructor;
-import org.apache.commons.compress.utils.IOUtils;
-import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.arbiter.ui.module.ArbiterModule;
-import org.deeplearning4j.ui.stats.impl.java.JavaStatsInitializationReport;
-
-import java.io.*;
-import java.lang.reflect.Field;
-import java.nio.ByteBuffer;
 
 /**
  * Created by Alex on 19/07/2017.

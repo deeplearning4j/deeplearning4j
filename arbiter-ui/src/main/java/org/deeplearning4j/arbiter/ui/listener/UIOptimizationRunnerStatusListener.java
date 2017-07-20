@@ -17,11 +17,6 @@
  */
 package org.deeplearning4j.arbiter.ui.listener;
 
-import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
-
-import java.util.Calendar;
-import java.util.TimeZone;
-
 /**
  * A listener for the optimization runner that reports results to the UI
  *
