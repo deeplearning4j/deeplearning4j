@@ -68,8 +68,9 @@ function refreshCalculations() {
     var b5 = getValue("workers");
 
     var ab = (a5 * b5);
-    var g12 = 60000 / a2;
-    var g13 = (60000 / ((a2 + b2 + (c2 * ab) + e2))) * ab;
+    var g12 = 60000.00 / a2;
+    var gP = (a2 + b2 + (c2 * ab) + e2);
+    var g13 = (60000.00 / gP) * ab;
 
     console.log("a2: " + a2);
     console.log("b2: " + b2);
@@ -77,6 +78,7 @@ function refreshCalculations() {
     console.log("e2: " + e2);
     console.log("ab: " + ab);
     console.log("g12: " + g12);
+    console.log("gP: " + gP);
     console.log("g13: " + g13);
 
     var h13 = g13/g12;
