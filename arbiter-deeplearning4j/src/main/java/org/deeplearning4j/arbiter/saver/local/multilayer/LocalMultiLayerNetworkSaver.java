@@ -54,7 +54,8 @@ public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfigura
 
     @JsonCreator
     public LocalMultiLayerNetworkSaver(String path) {
-        if (path == null) throw new NullPointerException();
+        if (path == null)
+            throw new NullPointerException();
         this.path = path;
         this.fPath = new File(path);
 
@@ -67,7 +68,8 @@ public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfigura
     }
 
     @Override
-    public ResultReference<DL4JConfiguration, MultiLayerNetwork, A> saveModel(OptimizationResult<DL4JConfiguration, MultiLayerNetwork, A> result) throws IOException {
+    public ResultReference<DL4JConfiguration, MultiLayerNetwork, A> saveModel(
+                    OptimizationResult<DL4JConfiguration, MultiLayerNetwork, A> result) throws IOException {
         String dir = new File(path, result.getIndex() + "/").getAbsolutePath();
 
         File f = new File(dir);
@@ -111,16 +113,11 @@ public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfigura
             FileUtils.writeStringToFile(numEpochsFile, String.valueOf(nEpochs));
         }
 
-        log.debug("Deeplearning4j model result (id={}, score={}) saved to directory: {}", result.getIndex(), result.getScore(), dir);
+        log.debug("Deeplearning4j model result (id={}, score={}) saved to directory: {}", result.getIndex(),
+                        result.getScore(), dir);
 
-        return new LocalFileMultiLayerNetworkResultReference(result.getIndex(), dir,
-                jsonFile,
-                paramsFile,
-                scoreFile,
-                additionalResultsFile,
-                esConfigFile,
-                numEpochsFile,
-                result.getCandidate());
+        return new LocalFileMultiLayerNetworkResultReference(result.getIndex(), dir, jsonFile, paramsFile, scoreFile,
+                        additionalResultsFile, esConfigFile, numEpochsFile, result.getCandidate());
     }
 
     @Override

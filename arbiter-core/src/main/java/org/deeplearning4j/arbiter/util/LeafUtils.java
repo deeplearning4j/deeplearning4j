@@ -10,19 +10,19 @@ import java.util.List;
  */
 public class LeafUtils {
 
-    private LeafUtils(){ }
+    private LeafUtils() {}
 
-    public static List<ParameterSpace> getUniqueObjects(List<ParameterSpace> allLeaves){
+    public static List<ParameterSpace> getUniqueObjects(List<ParameterSpace> allLeaves) {
         List<ParameterSpace> unique = new ArrayList<>();
-        for(ParameterSpace p : allLeaves){
+        for (ParameterSpace p : allLeaves) {
             //This isn't especially efficient, but small number of parameters in general means it's fine
             boolean found = false;
-            for(ParameterSpace q : unique ){
-                if(p == q){
+            for (ParameterSpace q : unique) {
+                if (p == q) {
                     found = true;
                 }
             }
-            if(!found){
+            if (!found) {
                 unique.add(p);
             }
         }
@@ -30,7 +30,7 @@ public class LeafUtils {
         return unique;
     }
 
-    public static int countUnique(List<ParameterSpace> allLeaves){
+    public static int countUnique(List<ParameterSpace> allLeaves) {
         return getUniqueObjects(allLeaves).size();
     }
 

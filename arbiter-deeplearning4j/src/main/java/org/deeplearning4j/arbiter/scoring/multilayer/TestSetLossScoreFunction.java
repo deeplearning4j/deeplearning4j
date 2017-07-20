@@ -44,9 +44,10 @@ public class TestSetLossScoreFunction implements ScoreFunction<MultiLayerNetwork
     }
 
     @Override
-    public double score(MultiLayerNetwork model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
+    public double score(MultiLayerNetwork model, DataProvider<Object> dataProvider,
+                    Map<String, Object> dataParameters) {
         DataSetIterator testData = ScoreUtil.getIterator(dataProvider.testData(dataParameters));
-        return ScoreUtil.score(model,testData,average);
+        return ScoreUtil.score(model, testData, average);
     }
 
     @Override

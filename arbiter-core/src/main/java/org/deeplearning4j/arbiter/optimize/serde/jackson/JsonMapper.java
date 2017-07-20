@@ -13,8 +13,8 @@ import org.nd4j.shade.jackson.datatype.joda.JodaModule;
  */
 public class JsonMapper {
 
-    private static  ObjectMapper mapper;
-    private static  ObjectMapper yamlMapper;
+    private static ObjectMapper mapper;
+    private static ObjectMapper yamlMapper;
 
     static {
         mapper = new ObjectMapper();
@@ -34,7 +34,7 @@ public class JsonMapper {
 
     }
 
-    private JsonMapper(){}
+    private JsonMapper() {}
 
 
     /**

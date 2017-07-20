@@ -15,9 +15,10 @@ import java.util.Map;
 @AllArgsConstructor
 public class GraphRegressionDataSetEvaluator implements ModelEvaluator<ComputationGraph, Object, Double> {
     private RegressionValue regressionValue;
-    private Map<String,Object> evalParameters = null;
+    private Map<String, Object> evalParameters = null;
+
     @Override
     public Double evaluateModel(ComputationGraph model, DataProvider<Object> dataProvider) {
-        return ScoreUtil.score(model,ScoreUtil.getIterator(dataProvider.testData(evalParameters)),regressionValue);
+        return ScoreUtil.score(model, ScoreUtil.getIterator(dataProvider.testData(evalParameters)), regressionValue);
     }
 }

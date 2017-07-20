@@ -19,7 +19,6 @@ package org.deeplearning4j.arbiter.task;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.listener.BaseUIStatusReportingListener;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
@@ -28,14 +27,12 @@ import org.deeplearning4j.arbiter.optimize.api.TaskCreator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.evaluation.ModelEvaluator;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
-import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
 import org.deeplearning4j.earlystopping.trainer.EarlyStoppingTrainer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.ui.components.text.ComponentText;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 
 import java.util.List;
@@ -55,16 +52,16 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
 
     @Override
     public Callable<OptimizationResult<DL4JConfiguration, MultiLayerNetwork, A>> create(
-            Candidate<DL4JConfiguration> candidate, DataProvider<Object> dataProvider,
-            ScoreFunction<MultiLayerNetwork, Object> scoreFunction,
-            List<StatusListener> statusListeners) {
+                    Candidate<DL4JConfiguration> candidate, DataProvider<Object> dataProvider,
+                    ScoreFunction<MultiLayerNetwork, Object> scoreFunction, List<StatusListener> statusListeners) {
 
         return new DL4JLearningTask<>(candidate, dataProvider, scoreFunction, modelEvaluator, statusListeners);
 
     }
 
 
-    private static class DL4JLearningTask<A> implements Callable<OptimizationResult<DL4JConfiguration, MultiLayerNetwork, A>> {
+    private static class DL4JLearningTask<A>
+                    implements Callable<OptimizationResult<DL4JConfiguration, MultiLayerNetwork, A>> {
 
         private Candidate<DL4JConfiguration> candidate;
         private DataProvider<Object> dataProvider;
@@ -73,17 +70,16 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
 
         private BaseUIStatusReportingListener<MultiLayerNetwork> dl4jListener;
 
-        public DL4JLearningTask(Candidate<DL4JConfiguration> candidate,
-                                DataProvider<Object> dataProvider,
-                                ScoreFunction<MultiLayerNetwork, Object> scoreFunction,
-                                ModelEvaluator<MultiLayerNetwork, Object, A> modelEvaluator,
-                                List<StatusListener> statusListeners) {
+        public DL4JLearningTask(Candidate<DL4JConfiguration> candidate, DataProvider<Object> dataProvider,
+                        ScoreFunction<MultiLayerNetwork, Object> scoreFunction,
+                        ModelEvaluator<MultiLayerNetwork, Object, A> modelEvaluator,
+                        List<StatusListener> statusListeners) {
             this.candidate = candidate;
             this.dataProvider = dataProvider;
             this.scoreFunction = scoreFunction;
             this.modelEvaluator = modelEvaluator;
 
-            dl4jListener = null;    //(ArbiterUIServer.isRunning() ? new UIStatusReportingListener(listener) : null);
+            dl4jListener = null; //(ArbiterUIServer.isRunning() ? new UIStatusReportingListener(listener) : null);
         }
 
 
@@ -95,35 +91,37 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
             net.setListeners(dl4jListener);
 
             //Early stopping or fixed number of epochs:
-            DataSetIterator dataSetIterator = ScoreUtil.getIterator(dataProvider.trainData(candidate.getDataParameters()));
+            DataSetIterator dataSetIterator =
+                            ScoreUtil.getIterator(dataProvider.trainData(candidate.getDataParameters()));
 
 
-            EarlyStoppingConfiguration<MultiLayerNetwork> esConfig = candidate.getValue().getEarlyStoppingConfiguration();
+            EarlyStoppingConfiguration<MultiLayerNetwork> esConfig =
+                            candidate.getValue().getEarlyStoppingConfiguration();
             EarlyStoppingResult<MultiLayerNetwork> esResult = null;
             if (esConfig != null) {
                 EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConfig, net, dataSetIterator, dl4jListener);
                 try {
                     esResult = trainer.fit();
-                    net = esResult.getBestModel();  //Can return null if failed OR if
+                    net = esResult.getBestModel(); //Can return null if failed OR if
                 } catch (Exception e) {
-                    if(dl4jListener != null) {
-//                        dl4jListener.postReport(CandidateStatus.Failed, null,
-//                                new ComponentText("Unexpected exception during model training\n", null),
-//                                new ComponentText(ExceptionUtils.getStackTrace(e), null));
+                    if (dl4jListener != null) {
+                        //                        dl4jListener.postReport(CandidateStatus.Failed, null,
+                        //                                new ComponentText("Unexpected exception during model training\n", null),
+                        //                                new ComponentText(ExceptionUtils.getStackTrace(e), null));
                     }
                     throw e;
                 }
 
                 switch (esResult.getTerminationReason()) {
                     case Error:
-                        if(dl4jListener != null) {
-//                            dl4jListener.postReport(CandidateStatus.Failed, esResult);
+                        if (dl4jListener != null) {
+                            //                            dl4jListener.postReport(CandidateStatus.Failed, esResult);
                         }
                         break;
                     case IterationTerminationCondition:
                     case EpochTerminationCondition:
-                        if(dl4jListener != null) {
-//                            dl4jListener.postReport(CandidateStatus.Complete, esResult);
+                        if (dl4jListener != null) {
+                            //                            dl4jListener.postReport(CandidateStatus.Complete, esResult);
                         }
                         break;
                 }
@@ -136,38 +134,39 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
                     dataSetIterator.reset();
                 }
                 //Do a final status update
-                if(dl4jListener != null) {
-//                    dl4jListener.postReport(CandidateStatus.Complete, null);
+                if (dl4jListener != null) {
+                    //                    dl4jListener.postReport(CandidateStatus.Complete, null);
                 }
             }
 
             A additionalEvaluation = null;
             if (esConfig != null && esResult.getTerminationReason() != EarlyStoppingResult.TerminationReason.Error) {
                 try {
-                    additionalEvaluation = (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
+                    additionalEvaluation =
+                                    (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
                 } catch (Exception e) {
-                    if(dl4jListener != null) {
-//                        dl4jListener.postReport(CandidateStatus.Failed, esResult,
-//                                new ComponentText("Failed during additional evaluation stage\n", null),
-//                                new ComponentText(ExceptionUtils.getStackTrace(e), null));
+                    if (dl4jListener != null) {
+                        //                        dl4jListener.postReport(CandidateStatus.Failed, esResult,
+                        //                                new ComponentText("Failed during additional evaluation stage\n", null),
+                        //                                new ComponentText(ExceptionUtils.getStackTrace(e), null));
                     }
                 }
             }
 
             Double score = null;
             if (net == null) {
-                if(dl4jListener != null) {
-//                    dl4jListener.postReport(CandidateStatus.Complete, esResult,
-//                            new ComponentText("No best model available; cannot calculate model score", null));
+                if (dl4jListener != null) {
+                    //                    dl4jListener.postReport(CandidateStatus.Complete, esResult,
+                    //                            new ComponentText("No best model available; cannot calculate model score", null));
                 }
             } else {
                 try {
                     score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
                 } catch (Exception e) {
-                    if(dl4jListener != null) {
-//                        dl4jListener.postReport(CandidateStatus.Failed, esResult,
-//                                new ComponentText("Failed during score calculation stage\n", null),
-//                                new ComponentText(ExceptionUtils.getStackTrace(e), null));
+                    if (dl4jListener != null) {
+                        //                        dl4jListener.postReport(CandidateStatus.Failed, esResult,
+                        //                                new ComponentText("Failed during score calculation stage\n", null),
+                        //                                new ComponentText(ExceptionUtils.getStackTrace(e), null));
                     }
                 }
             }

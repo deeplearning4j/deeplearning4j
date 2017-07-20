@@ -29,7 +29,7 @@ public class GlobalPoolingLayerSpace extends LayerSpace<GlobalPoolingLayer> {
 
     private int numParameters;
 
-    private GlobalPoolingLayerSpace(Builder builder){
+    private GlobalPoolingLayerSpace(Builder builder) {
         super(builder);
         this.poolingDimensions = builder.poolingDimensions;
         this.collapseDimensions = builder.collapseDimensions;
@@ -43,10 +43,14 @@ public class GlobalPoolingLayerSpace extends LayerSpace<GlobalPoolingLayer> {
     public GlobalPoolingLayer getValue(double[] parameterValues) {
         GlobalPoolingLayer.Builder builder = new GlobalPoolingLayer.Builder();
         super.setLayerOptionsBuilder(builder, parameterValues);
-        if(poolingDimensions != null) builder.poolingDimensions(poolingDimensions.getValue(parameterValues));
-        if(collapseDimensions != null) builder.collapseDimensions(collapseDimensions.getValue(parameterValues));
-        if(poolingType != null) builder.poolingType(poolingType.getValue(parameterValues));
-        if(pNorm != null) builder.pnorm(pNorm.getValue(parameterValues));
+        if (poolingDimensions != null)
+            builder.poolingDimensions(poolingDimensions.getValue(parameterValues));
+        if (collapseDimensions != null)
+            builder.collapseDimensions(collapseDimensions.getValue(parameterValues));
+        if (poolingType != null)
+            builder.poolingType(poolingType.getValue(parameterValues));
+        if (pNorm != null)
+            builder.pnorm(pNorm.getValue(parameterValues));
         return builder.build();
     }
 
@@ -58,10 +62,14 @@ public class GlobalPoolingLayerSpace extends LayerSpace<GlobalPoolingLayer> {
     @Override
     public List<ParameterSpace> collectLeaves() {
         List<ParameterSpace> out = super.collectLeaves();
-        if(poolingDimensions != null) out.addAll(poolingDimensions.collectLeaves());
-        if(collapseDimensions != null) out.addAll(collapseDimensions.collectLeaves());
-        if(poolingType != null) out.addAll(poolingType.collectLeaves());
-        if(pNorm != null) out.addAll(pNorm.collectLeaves());
+        if (poolingDimensions != null)
+            out.addAll(poolingDimensions.collectLeaves());
+        if (collapseDimensions != null)
+            out.addAll(collapseDimensions.collectLeaves());
+        if (poolingType != null)
+            out.addAll(poolingType.collectLeaves());
+        if (pNorm != null)
+            out.addAll(pNorm.collectLeaves());
         return out;
     }
 
@@ -84,43 +92,43 @@ public class GlobalPoolingLayerSpace extends LayerSpace<GlobalPoolingLayer> {
         protected ParameterSpace<PoolingType> poolingType;
         protected ParameterSpace<Integer> pNorm;
 
-        public Builder poolingDimensions(int... poolingDimensions ){
+        public Builder poolingDimensions(int... poolingDimensions) {
             return poolingDimensions(new FixedValue<>(poolingDimensions));
         }
 
-        public Builder poolingDimensions(ParameterSpace<int[]> poolingDimensions){
+        public Builder poolingDimensions(ParameterSpace<int[]> poolingDimensions) {
             this.poolingDimensions = poolingDimensions;
             return this;
         }
 
-        public Builder collapseDimensions(boolean collapseDimensions){
+        public Builder collapseDimensions(boolean collapseDimensions) {
             return collapseDimensions(new FixedValue<>(collapseDimensions));
         }
 
-        public Builder collapseDimensions(ParameterSpace<Boolean> collapseDimensions){
+        public Builder collapseDimensions(ParameterSpace<Boolean> collapseDimensions) {
             this.collapseDimensions = collapseDimensions;
             return this;
         }
 
-        public Builder poolingType(PoolingType poolingType){
+        public Builder poolingType(PoolingType poolingType) {
             return poolingType(new FixedValue<>(poolingType));
         }
 
-        public Builder poolingType(ParameterSpace<PoolingType> poolingType){
+        public Builder poolingType(ParameterSpace<PoolingType> poolingType) {
             this.poolingType = poolingType;
             return this;
         }
 
-        public Builder pNorm(int pNorm){
+        public Builder pNorm(int pNorm) {
             return pNorm(new FixedValue<>(pNorm));
         }
 
-        public Builder pNorm(ParameterSpace<Integer> pNorm){
+        public Builder pNorm(ParameterSpace<Integer> pNorm) {
             this.pNorm = pNorm;
             return this;
         }
 
-        public GlobalPoolingLayerSpace build(){
+        public GlobalPoolingLayerSpace build() {
             return new GlobalPoolingLayerSpace(this);
         }
     }

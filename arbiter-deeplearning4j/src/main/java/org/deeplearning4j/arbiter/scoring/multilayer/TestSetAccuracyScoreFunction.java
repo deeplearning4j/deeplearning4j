@@ -17,7 +17,8 @@ import java.util.Map;
  */
 public class TestSetAccuracyScoreFunction implements ScoreFunction<MultiLayerNetwork, Object> {
     @Override
-    public double score(MultiLayerNetwork model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
+    public double score(MultiLayerNetwork model, DataProvider<Object> dataProvider,
+                    Map<String, Object> dataParameters) {
         DataSetIterator testData = ScoreUtil.getIterator(dataProvider.testData(dataParameters));
         Evaluation evaluation = model.evaluate(testData);
         return evaluation.accuracy();
@@ -25,7 +26,7 @@ public class TestSetAccuracyScoreFunction implements ScoreFunction<MultiLayerNet
 
     @Override
     public boolean minimize() {
-        return false;   //false -> maximize
+        return false; //false -> maximize
     }
 
     @Override

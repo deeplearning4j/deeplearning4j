@@ -32,13 +32,16 @@ import java.util.Map;
  *
  * @author Alex Black
  */
-public abstract class BaseGraphTestSetEvaluationScoreFunctionDataSet implements ScoreFunction<ComputationGraph, Object> {
+public abstract class BaseGraphTestSetEvaluationScoreFunctionDataSet
+                implements ScoreFunction<ComputationGraph, Object> {
 
-    protected Evaluation getEvaluation(ComputationGraph model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
+    protected Evaluation getEvaluation(ComputationGraph model, DataProvider<Object> dataProvider,
+                    Map<String, Object> dataParameters) {
 
         if (model.getNumOutputArrays() != 1)
-            throw new IllegalStateException("GraphSetSetAccuracyScoreFunctionDataSet cannot be " +
-                    "applied to ComputationGraphs with more than one output. NumOutputs = " + model.getNumOutputArrays());
+            throw new IllegalStateException("GraphSetSetAccuracyScoreFunctionDataSet cannot be "
+                            + "applied to ComputationGraphs with more than one output. NumOutputs = "
+                            + model.getNumOutputArrays());
 
 
         DataSetIterator testData = ScoreUtil.getIterator(dataProvider.testData(dataParameters));

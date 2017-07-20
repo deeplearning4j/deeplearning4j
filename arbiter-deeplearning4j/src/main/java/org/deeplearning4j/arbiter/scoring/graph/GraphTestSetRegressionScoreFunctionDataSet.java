@@ -31,12 +31,12 @@ public class GraphTestSetRegressionScoreFunctionDataSet implements ScoreFunction
     @Override
     public double score(ComputationGraph model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
         DataSetIterator testSet = ScoreUtil.getIterator(dataProvider.testData(dataParameters));
-        return ScoreUtil.score(model,testSet,regressionValue);
+        return ScoreUtil.score(model, testSet, regressionValue);
     }
 
     @Override
     public boolean minimize() {
-        return regressionValue != RegressionValue.CorrCoeff;    //Maximize correlation coefficient, minimize the remaining ones
+        return regressionValue != RegressionValue.CorrCoeff; //Maximize correlation coefficient, minimize the remaining ones
     }
 
     @Override

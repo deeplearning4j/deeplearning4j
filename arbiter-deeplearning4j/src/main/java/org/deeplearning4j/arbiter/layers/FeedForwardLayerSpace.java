@@ -40,17 +40,21 @@ public abstract class FeedForwardLayerSpace<L extends FeedForwardLayer> extends 
         nOut = builder.nOut;
     }
 
-    protected void setLayerOptionsBuilder(FeedForwardLayer.Builder builder, double[] values){
+    protected void setLayerOptionsBuilder(FeedForwardLayer.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
-        if(nIn != null) builder.nIn(nIn.getValue(values));
-        if(nOut != null) builder.nOut(nOut.getValue(values));
+        if (nIn != null)
+            builder.nIn(nIn.getValue(values));
+        if (nOut != null)
+            builder.nOut(nOut.getValue(values));
     }
 
     @Override
-    public List<ParameterSpace> collectLeaves(){
+    public List<ParameterSpace> collectLeaves() {
         List<ParameterSpace> list = super.collectLeaves();
-        if(nIn != null) list.addAll(nIn.collectLeaves());
-        if(nOut != null) list.addAll(nOut.collectLeaves());
+        if (nIn != null)
+            list.addAll(nIn.collectLeaves());
+        if (nOut != null)
+            list.addAll(nOut.collectLeaves());
         return list;
     }
 
@@ -60,35 +64,37 @@ public abstract class FeedForwardLayerSpace<L extends FeedForwardLayer> extends 
         protected ParameterSpace<Integer> nIn;
         protected ParameterSpace<Integer> nOut;
 
-        public T nIn(int nIn){
+        public T nIn(int nIn) {
             return nIn(new FixedValue<>(nIn));
         }
 
-        public T nIn(ParameterSpace<Integer> nIn){
+        public T nIn(ParameterSpace<Integer> nIn) {
             this.nIn = nIn;
-            return (T)this;
+            return (T) this;
         }
 
-        public T nOut(int nOut){
+        public T nOut(int nOut) {
             return nOut(new FixedValue<>(nOut));
         }
 
-        public T nOut(ParameterSpace<Integer> nOut){
+        public T nOut(ParameterSpace<Integer> nOut) {
             this.nOut = nOut;
-            return (T)this;
+            return (T) this;
         }
     }
 
     @Override
-    public String toString(){
+    public String toString() {
         return toString(", ");
     }
 
     @Override
-    protected String toString(String delim){
+    protected String toString(String delim) {
         StringBuilder sb = new StringBuilder();
-        if(nIn != null) sb.append("nIn: ").append(nIn).append(delim);
-        if(nOut != null) sb.append("nOut: ").append(nOut).append(delim);
+        if (nIn != null)
+            sb.append("nIn: ").append(nIn).append(delim);
+        if (nOut != null)
+            sb.append("nOut: ").append(nOut).append(delim);
         sb.append(super.toString(delim));
         return sb.toString();
     }

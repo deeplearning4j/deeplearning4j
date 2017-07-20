@@ -37,7 +37,8 @@ import java.io.*;
  * @param <A> Additional evaluation type
  */
 @AllArgsConstructor
-public class LocalFileMultiLayerNetworkResultReference<A> implements ResultReference<DL4JConfiguration, MultiLayerNetwork, A> {
+public class LocalFileMultiLayerNetworkResultReference<A>
+                implements ResultReference<DL4JConfiguration, MultiLayerNetwork, A> {
 
     private int index;
     private String dir;

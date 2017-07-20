@@ -35,7 +35,8 @@ import java.util.List;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 
-@Data @NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
+@Data
+@NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
 public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
     protected ParameterSpace<Double> dropOut;
     protected int numParameters;
@@ -48,7 +49,8 @@ public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
     @Override
     public List<ParameterSpace> collectLeaves() {
         List<ParameterSpace> list = new ArrayList<>();
-        if (dropOut != null) list.addAll(dropOut.collectLeaves());
+        if (dropOut != null)
+            list.addAll(dropOut.collectLeaves());
         return list;
     }
 
@@ -69,7 +71,8 @@ public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
 
 
     protected void setLayerOptionsBuilder(Layer.Builder builder, double[] values) {
-        if (dropOut != null) builder.dropOut(dropOut.getValue(values));
+        if (dropOut != null)
+            builder.dropOut(dropOut.getValue(values));
     }
 
 
@@ -80,14 +83,16 @@ public abstract class LayerSpace<L extends Layer> implements ParameterSpace<L> {
 
     protected String toString(String delim) {
         StringBuilder sb = new StringBuilder();
-        if (dropOut != null) sb.append("dropOut: ").append(dropOut).append(delim);
+        if (dropOut != null)
+            sb.append("dropOut: ").append(dropOut).append(delim);
         String s = sb.toString();
 
         if (s.endsWith(delim)) {
             //Remove final delimiter
             int last = s.lastIndexOf(delim);
             return s.substring(0, last);
-        } else return s;
+        } else
+            return s;
     }
 
     @SuppressWarnings("unchecked")

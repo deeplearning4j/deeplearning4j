@@ -39,7 +39,7 @@ public class LocalResponseNormalizationLayerSpace extends LayerSpace<LocalRespon
     private ParameterSpace<Double> beta;
 
 
-    private LocalResponseNormalizationLayerSpace(Builder builder){
+    private LocalResponseNormalizationLayerSpace(Builder builder) {
         super(builder);
         this.n = builder.n;
         this.k = builder.k;
@@ -48,30 +48,38 @@ public class LocalResponseNormalizationLayerSpace extends LayerSpace<LocalRespon
 
         this.numParameters = LeafUtils.countUnique(collectLeaves());
     }
-    
+
     @Override
-    public List<ParameterSpace> collectLeaves(){
+    public List<ParameterSpace> collectLeaves() {
         List<ParameterSpace> list = super.collectLeaves();
-        if(n != null) list.addAll(n.collectLeaves());
-        if(k != null) list.addAll(k.collectLeaves());
-        if(alpha != null) list.addAll(alpha.collectLeaves());
-        if(beta != null) list.addAll(beta.collectLeaves());
+        if (n != null)
+            list.addAll(n.collectLeaves());
+        if (k != null)
+            list.addAll(k.collectLeaves());
+        if (alpha != null)
+            list.addAll(alpha.collectLeaves());
+        if (beta != null)
+            list.addAll(beta.collectLeaves());
         return list;
     }
 
     @Override
     public LocalResponseNormalization getValue(double[] values) {
         LocalResponseNormalization.Builder b = new LocalResponseNormalization.Builder();
-        setLayerOptionsBuilder(b,values);
+        setLayerOptionsBuilder(b, values);
         return b.build();
     }
 
-    protected void setLayerOptionsBuilder(LocalResponseNormalization.Builder builder, double[] values){
-        super.setLayerOptionsBuilder(builder,values);
-        if(n != null) builder.n(n.getValue(values));
-        if(k != null) builder.k(k.getValue(values));
-        if(alpha != null) builder.alpha(alpha.getValue(values));
-        if(beta != null) builder.beta(beta.getValue(values));
+    protected void setLayerOptionsBuilder(LocalResponseNormalization.Builder builder, double[] values) {
+        super.setLayerOptionsBuilder(builder, values);
+        if (n != null)
+            builder.n(n.getValue(values));
+        if (k != null)
+            builder.k(k.getValue(values));
+        if (alpha != null)
+            builder.alpha(alpha.getValue(values));
+        if (beta != null)
+            builder.beta(beta.getValue(values));
     }
 
 
@@ -83,43 +91,43 @@ public class LocalResponseNormalizationLayerSpace extends LayerSpace<LocalRespon
         private ParameterSpace<Double> beta;
 
 
-        public Builder n(double n){
+        public Builder n(double n) {
             return n(new FixedValue<>(n));
         }
 
-        public Builder n(ParameterSpace<Double> n){
+        public Builder n(ParameterSpace<Double> n) {
             this.n = n;
             return this;
         }
 
-        public Builder k(double k){
+        public Builder k(double k) {
             return k(new FixedValue<>(k));
         }
 
-        public Builder k(ParameterSpace<Double> k){
+        public Builder k(ParameterSpace<Double> k) {
             this.k = k;
             return this;
         }
 
-        public Builder alpha(double alpha){
+        public Builder alpha(double alpha) {
             return alpha(new FixedValue<>(alpha));
         }
 
-        public Builder alpha(ParameterSpace<Double> alpha){
+        public Builder alpha(ParameterSpace<Double> alpha) {
             this.alpha = alpha;
             return this;
         }
 
-        public Builder beta(double beta){
+        public Builder beta(double beta) {
             return beta(new FixedValue<>(beta));
         }
 
-        public Builder beta(ParameterSpace<Double> beta){
+        public Builder beta(ParameterSpace<Double> beta) {
             this.beta = beta;
             return this;
         }
 
-        public LocalResponseNormalizationLayerSpace build(){
+        public LocalResponseNormalizationLayerSpace build() {
             return new LocalResponseNormalizationLayerSpace(this);
         }
 

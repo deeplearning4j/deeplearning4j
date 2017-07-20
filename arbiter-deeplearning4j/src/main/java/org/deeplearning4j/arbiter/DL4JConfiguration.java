@@ -62,7 +62,7 @@ public class DL4JConfiguration implements Serializable {
      * Json mapping
      * @return
      */
-    public  String toJson() {
+    public String toJson() {
         try {
             return JsonMapper.getMapper().writeValueAsString(this);
         } catch (JsonProcessingException e) {

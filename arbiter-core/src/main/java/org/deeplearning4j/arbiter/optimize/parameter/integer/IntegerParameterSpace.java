@@ -39,7 +39,7 @@ import java.util.List;
  *
  * @author Alex Black
  */
-@JsonIgnoreProperties({"index","min","max"})
+@JsonIgnoreProperties({"index", "min", "max"})
 @NoArgsConstructor
 public class IntegerParameterSpace implements ParameterSpace<Integer> {
 
@@ -78,7 +78,7 @@ public class IntegerParameterSpace implements ParameterSpace<Integer> {
 
     @Override
     public Integer getValue(double[] input) {
-        if (index == -1){
+        if (index == -1) {
             throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
         }
         return distribution.inverseCumulativeProbability(input[index]);
@@ -101,27 +101,34 @@ public class IntegerParameterSpace implements ParameterSpace<Integer> {
 
     @Override
     public void setIndices(int... indices) {
-        if (indices == null || indices.length != 1) throw new IllegalArgumentException("Invalid index");
+        if (indices == null || indices.length != 1)
+            throw new IllegalArgumentException("Invalid index");
         this.index = indices[0];
     }
 
     @Override
     public String toString() {
         if (distribution instanceof UniformIntegerDistribution) {
-            return "IntegerParameterSpace(min=" + distribution.getSupportLowerBound() + ",max=" + distribution.getSupportUpperBound() + ")";
+            return "IntegerParameterSpace(min=" + distribution.getSupportLowerBound() + ",max="
+                            + distribution.getSupportUpperBound() + ")";
         } else {
             return "IntegerParameterSpace(" + distribution + ")";
         }
     }
 
     public boolean equals(Object o) {
-        if (o == this) return true;
-        if (!(o instanceof IntegerParameterSpace)) return false;
-        final IntegerParameterSpace other = (IntegerParameterSpace) o;
-        if (!other.canEqual(this)) return false;
-        if (distribution == null ? other.distribution != null : !DistributionUtils.distributionEquals(distribution, other.distribution))
+        if (o == this)
+            return true;
+        if (!(o instanceof IntegerParameterSpace))
             return false;
-        if (this.index != other.index) return false;
+        final IntegerParameterSpace other = (IntegerParameterSpace) o;
+        if (!other.canEqual(this))
+            return false;
+        if (distribution == null ? other.distribution != null
+                        : !DistributionUtils.distributionEquals(distribution, other.distribution))
+            return false;
+        if (this.index != other.index)
+            return false;
         return true;
     }
 

@@ -34,8 +34,6 @@ import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterS
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
-//import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
-//import org.deeplearning4j.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
 import org.deeplearning4j.arbiter.saver.local.multilayer.LocalMultiLayerNetworkSaver;
 import org.deeplearning4j.arbiter.scoring.multilayer.TestSetLossScoreFunction;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
@@ -58,72 +56,74 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+// import org.deeplearning4j.arbiter.optimize.ui.ArbiterUIServer;
+// import org.deeplearning4j.arbiter.optimize.ui.listener.UIOptimizationRunnerStatusListener;
+
 /** Not strictly a unit test. Rather: part example, part debugging on MNIST */
 public class MNISTOptimizationTest {
 
     public static void main(String[] args) throws Exception {
-        EarlyStoppingConfiguration<MultiLayerNetwork> esConf = new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
-                .epochTerminationConditions(new MaxEpochsTerminationCondition(3))
-                .iterationTerminationConditions(
-                        new MaxTimeIterationTerminationCondition(5, TimeUnit.MINUTES),
-                        new MaxScoreIterationTerminationCondition(4.6) //Random score: -log_e(0.1) ~= 2.3
-                        )
-                .scoreCalculator(new DataSetLossCalculator(
-                        new MnistDataSetIterator(64, 2000, false, false, true, 123), true))
-                .modelSaver(new InMemoryModelSaver<MultiLayerNetwork>())
-                .build();
+        EarlyStoppingConfiguration<MultiLayerNetwork> esConf =
+                        new EarlyStoppingConfiguration.Builder<MultiLayerNetwork>()
+                                        .epochTerminationConditions(new MaxEpochsTerminationCondition(3))
+                                        .iterationTerminationConditions(
+                                                        new MaxTimeIterationTerminationCondition(5, TimeUnit.MINUTES),
+                                                        new MaxScoreIterationTerminationCondition(4.6) //Random score: -log_e(0.1) ~= 2.3
+                                        ).scoreCalculator(new DataSetLossCalculator(new MnistDataSetIterator(64, 2000, false, false, true, 123), true)).modelSaver(new InMemoryModelSaver<MultiLayerNetwork>()).build();
 
         //Define: network config (hyperparameter space)
         MultiLayerSpace mls = new MultiLayerSpace.Builder()
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .learningRate(new ContinuousParameterSpace(0.0001, 0.2))
-                .regularization(true)
-                .l2(new ContinuousParameterSpace(0.0001, 0.05))
-                .dropOut(new ContinuousParameterSpace(0.2, 0.7))
-                .iterations(1)
-                .addLayer(new ConvolutionLayerSpace.Builder()
-                        .nIn(1).nOut(new IntegerParameterSpace(5, 30))
-                        .kernelSize(new DiscreteParameterSpace<>(new int[]{3, 3}, new int[]{4, 4}, new int[]{5, 5}))
-                        .stride(new DiscreteParameterSpace<>(new int[]{1, 1}, new int[]{2, 2}))
-                        .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.SOFTPLUS, Activation.LEAKYRELU))
-                        .build(), new IntegerParameterSpace(1, 2), true) //1-2 identical layers
-                .addLayer(new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
-                        .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
-                        .build(), new IntegerParameterSpace(0, 1), true)   //0 to 1 layers
-                .addLayer(new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
-                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                .earlyStoppingConfiguration(esConf)
-                .pretrain(false).backprop(true).build();
-        Map<String,Object> commands = new HashMap<>();
-        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY,MnistDataSetIteratorFactory.class.getCanonicalName());
+                        .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                        .learningRate(new ContinuousParameterSpace(0.0001, 0.2)).regularization(true)
+                        .l2(new ContinuousParameterSpace(0.0001, 0.05))
+                        .dropOut(new ContinuousParameterSpace(0.2, 0.7)).iterations(1).addLayer(
+                                        new ConvolutionLayerSpace.Builder().nIn(1)
+                                                        .nOut(new IntegerParameterSpace(5, 30))
+                                                        .kernelSize(new DiscreteParameterSpace<>(new int[] {3, 3},
+                                                                        new int[] {4, 4}, new int[] {5, 5}))
+                                                        .stride(new DiscreteParameterSpace<>(new int[] {1, 1},
+                                                                        new int[] {2, 2}))
+                                                        .activation(new DiscreteParameterSpace<>(Activation.RELU,
+                                                                        Activation.SOFTPLUS, Activation.LEAKYRELU))
+                                                        .build(),
+                                        new IntegerParameterSpace(1, 2), true) //1-2 identical layers
+                        .addLayer(new DenseLayerSpace.Builder().nIn(4).nOut(new IntegerParameterSpace(2, 10))
+                                        .activation(new DiscreteParameterSpace<>(Activation.RELU, Activation.TANH))
+                                        .build(), new IntegerParameterSpace(0, 1), true) //0 to 1 layers
+                        .addLayer(new OutputLayerSpace.Builder().nOut(10).activation(Activation.SOFTMAX)
+                                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                        .earlyStoppingConfiguration(esConf).pretrain(false).backprop(true).build();
+        Map<String, Object> commands = new HashMap<>();
+        commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, MnistDataSetIteratorFactory.class.getCanonicalName());
 
         //Define configuration:
-        CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls,commands);
+        CandidateGenerator<DL4JConfiguration> candidateGenerator = new RandomSearchGenerator<>(mls, commands);
         DataProvider<Object> dataProvider = new MnistDataSetProvider();
 
 
-        String modelSavePath = new File(System.getProperty("java.io.tmpdir"),"ArbiterMNISTSmall\\").getAbsolutePath();
+        String modelSavePath = new File(System.getProperty("java.io.tmpdir"), "ArbiterMNISTSmall\\").getAbsolutePath();
 
         File f = new File(modelSavePath);
-        if(f.exists()) f.delete();
+        if (f.exists())
+            f.delete();
         f.mkdir();
-        if(!f.exists()) throw new RuntimeException();
+        if (!f.exists())
+            throw new RuntimeException();
 
-        OptimizationConfiguration<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation> configuration
-                = new OptimizationConfiguration.Builder<DL4JConfiguration,MultiLayerNetwork,Object,Evaluation>()
-                .candidateGenerator(candidateGenerator)
-                .dataProvider(dataProvider)
-                .modelSaver(new LocalMultiLayerNetworkSaver(modelSavePath))
-                .scoreFunction(new TestSetLossScoreFunction(true))
-                .terminationConditions(new MaxTimeCondition(120, TimeUnit.MINUTES),
-                        new MaxCandidatesCondition(100))
-                .build();
+        OptimizationConfiguration<DL4JConfiguration, MultiLayerNetwork, Object, Evaluation> configuration =
+                        new OptimizationConfiguration.Builder<DL4JConfiguration, MultiLayerNetwork, Object, Evaluation>()
+                                        .candidateGenerator(candidateGenerator).dataProvider(dataProvider)
+                                        .modelSaver(new LocalMultiLayerNetworkSaver(modelSavePath))
+                                        .scoreFunction(new TestSetLossScoreFunction(true))
+                                        .terminationConditions(new MaxTimeCondition(120, TimeUnit.MINUTES),
+                                                        new MaxCandidatesCondition(100))
+                                        .build();
 
-        IOptimizationRunner<DL4JConfiguration,MultiLayerNetwork,Evaluation> runner
-                = new LocalOptimizationRunner<>(configuration, new MultiLayerNetworkTaskCreator<Evaluation>());
+        IOptimizationRunner<DL4JConfiguration, MultiLayerNetwork, Evaluation> runner =
+                        new LocalOptimizationRunner<>(configuration, new MultiLayerNetworkTaskCreator<Evaluation>());
 
-//        ArbiterUIServer server = ArbiterUIServer.getInstance();
-//        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
+        //        ArbiterUIServer server = ArbiterUIServer.getInstance();
+        //        runner.addListeners(new UIOptimizationRunnerStatusListener(server));
 
         runner.execute();
 
@@ -136,16 +136,16 @@ public class MNISTOptimizationTest {
 
         @Override
         public DataSetIterator trainData(Map<String, Object> dataParameters) {
-            try{
-                if(dataParameters == null || dataParameters.isEmpty()) {
+            try {
+                if (dataParameters == null || dataParameters.isEmpty()) {
                     return new MnistDataSetIterator(64, 10000, false, true, true, 123);
                 }
-                if(dataParameters.containsKey("batchsize")) {
-                    int b = (Integer)dataParameters.get("batchsize");
+                if (dataParameters.containsKey("batchsize")) {
+                    int b = (Integer) dataParameters.get("batchsize");
                     return new MnistDataSetIterator(b, 10000, false, true, true, 123);
                 }
                 return new MnistDataSetIterator(64, 10000, false, true, true, 123);
-            } catch(Exception e){
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
@@ -156,7 +156,7 @@ public class MNISTOptimizationTest {
         }
 
         @Override
-        public String toString(){
+        public String toString() {
             return "MnistDataSetProvider()";
         }
     }

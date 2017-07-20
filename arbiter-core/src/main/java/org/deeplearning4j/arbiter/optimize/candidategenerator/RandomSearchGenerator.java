@@ -38,12 +38,13 @@ import java.util.Map;
  * @author Alex Black
  */
 @EqualsAndHashCode(callSuper = true)
-@JsonIgnoreProperties({"numValuesPerParam", "totalNumCandidates", "order", "candidateCounter", "rng","candidate"})
+@JsonIgnoreProperties({"numValuesPerParam", "totalNumCandidates", "order", "candidateCounter", "rng", "candidate"})
 public class RandomSearchGenerator<T> extends BaseCandidateGenerator<T> {
 
     @JsonCreator
-    public RandomSearchGenerator(@JsonProperty("parameterSpace") ParameterSpace<T> parameterSpace,@JsonProperty("dataParameters") Map<String,Object> dataParameters) {
-        super(parameterSpace,dataParameters);
+    public RandomSearchGenerator(@JsonProperty("parameterSpace") ParameterSpace<T> parameterSpace,
+                    @JsonProperty("dataParameters") Map<String, Object> dataParameters) {
+        super(parameterSpace, dataParameters);
         initialize();
     }
 
@@ -56,8 +57,10 @@ public class RandomSearchGenerator<T> extends BaseCandidateGenerator<T> {
     @Override
     public Candidate<T> getCandidate() {
         double[] randomValues = new double[parameterSpace.numParameters()];
-        for (int i = 0; i < randomValues.length; i++) randomValues[i] = rng.nextDouble();
-        return new Candidate<>(parameterSpace.getValue(randomValues), candidateCounter.getAndIncrement(), randomValues,dataParameters);
+        for (int i = 0; i < randomValues.length; i++)
+            randomValues[i] = rng.nextDouble();
+        return new Candidate<>(parameterSpace.getValue(randomValues), candidateCounter.getAndIncrement(), randomValues,
+                        dataParameters);
     }
 
     @Override

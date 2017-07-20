@@ -28,7 +28,6 @@ import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
-import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
@@ -95,31 +94,51 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
         this.gradientNormalizationThreshold = builder.gradientNormalizationThreshold;
     }
 
-//    public abstract L randomLayer();
+    //    public abstract L randomLayer();
 
     @Override
     public List<ParameterSpace> collectLeaves() {
         List<ParameterSpace> list = new ArrayList<>();
-        if (activationFunction != null) list.addAll(activationFunction.collectLeaves());
-        if (weightInit != null) list.addAll(weightInit.collectLeaves());
-        if (biasInit != null) list.addAll(biasInit.collectLeaves());
-        if (dist != null) list.addAll(dist.collectLeaves());
-        if (learningRate != null) list.addAll(learningRate.collectLeaves());
-        if (biasLearningRate != null) list.addAll(biasLearningRate.collectLeaves());
-        if (learningRateAfter != null) list.addAll(learningRateAfter.collectLeaves());
-        if (lrScoreBasedDecay != null) list.addAll(lrScoreBasedDecay.collectLeaves());
-        if (l1 != null) list.addAll(l1.collectLeaves());
-        if (l2 != null) list.addAll(l2.collectLeaves());
-        if (momentum != null) list.addAll(momentum.collectLeaves());
-        if (momentumAfter != null) list.addAll(momentumAfter.collectLeaves());
-        if (updater != null) list.addAll(updater.collectLeaves());
-        if (epsilon != null) list.addAll(epsilon.collectLeaves());
-        if (rho != null) list.addAll(rho.collectLeaves());
-        if (rmsDecay != null) list.addAll(rmsDecay.collectLeaves());
-        if (adamMeanDecay != null) list.addAll(adamMeanDecay.collectLeaves());
-        if (adamVarDecay != null) list.addAll(adamVarDecay.collectLeaves());
-        if (gradientNormalization != null) list.addAll(gradientNormalization.collectLeaves());
-        if (gradientNormalizationThreshold != null) list.addAll(gradientNormalizationThreshold.collectLeaves());
+        if (activationFunction != null)
+            list.addAll(activationFunction.collectLeaves());
+        if (weightInit != null)
+            list.addAll(weightInit.collectLeaves());
+        if (biasInit != null)
+            list.addAll(biasInit.collectLeaves());
+        if (dist != null)
+            list.addAll(dist.collectLeaves());
+        if (learningRate != null)
+            list.addAll(learningRate.collectLeaves());
+        if (biasLearningRate != null)
+            list.addAll(biasLearningRate.collectLeaves());
+        if (learningRateAfter != null)
+            list.addAll(learningRateAfter.collectLeaves());
+        if (lrScoreBasedDecay != null)
+            list.addAll(lrScoreBasedDecay.collectLeaves());
+        if (l1 != null)
+            list.addAll(l1.collectLeaves());
+        if (l2 != null)
+            list.addAll(l2.collectLeaves());
+        if (momentum != null)
+            list.addAll(momentum.collectLeaves());
+        if (momentumAfter != null)
+            list.addAll(momentumAfter.collectLeaves());
+        if (updater != null)
+            list.addAll(updater.collectLeaves());
+        if (epsilon != null)
+            list.addAll(epsilon.collectLeaves());
+        if (rho != null)
+            list.addAll(rho.collectLeaves());
+        if (rmsDecay != null)
+            list.addAll(rmsDecay.collectLeaves());
+        if (adamMeanDecay != null)
+            list.addAll(adamMeanDecay.collectLeaves());
+        if (adamVarDecay != null)
+            list.addAll(adamVarDecay.collectLeaves());
+        if (gradientNormalization != null)
+            list.addAll(gradientNormalization.collectLeaves());
+        if (gradientNormalizationThreshold != null)
+            list.addAll(gradientNormalizationThreshold.collectLeaves());
         return list;
     }
 
@@ -140,26 +159,46 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
 
 
     protected void setLayerOptionsBuilder(BaseLayer.Builder builder, double[] values) {
-        if (activationFunction != null) builder.activation(activationFunction.getValue(values));
-        if (weightInit != null) builder.weightInit(weightInit.getValue(values));
-        if (biasInit != null) builder.biasInit(biasInit.getValue(values));
-        if (dist != null) builder.dist(dist.getValue(values));
-        if (learningRate != null) builder.learningRate(learningRate.getValue(values));
-        if (biasLearningRate != null) builder.biasLearningRate(biasLearningRate.getValue(values));
-        if (learningRateAfter != null) builder.learningRateSchedule(learningRateAfter.getValue(values));
-        if (lrScoreBasedDecay != null) builder.learningRate(lrScoreBasedDecay.getValue(values));
-        if (l1 != null) builder.l1(l1.getValue(values));
-        if (l2 != null) builder.l2(l2.getValue(values));
-        if (dropOut != null) builder.dropOut(dropOut.getValue(values));
-        if (momentum != null) builder.momentum(momentum.getValue(values));
-        if (momentumAfter != null) builder.momentumAfter(momentumAfter.getValue(values));
-        if (updater != null) builder.updater(updater.getValue(values));
-        if (epsilon != null) builder.epsilon(epsilon.getValue(values));
-        if (rho != null) builder.rho(rho.getValue(values));
-        if (rmsDecay != null) builder.rmsDecay(rmsDecay.getValue(values));
-        if (adamMeanDecay != null) builder.adamMeanDecay(adamMeanDecay.getValue(values));
-        if (adamVarDecay != null) builder.adamVarDecay(adamVarDecay.getValue(values));
-        if (gradientNormalization != null) builder.gradientNormalization(gradientNormalization.getValue(values));
+        if (activationFunction != null)
+            builder.activation(activationFunction.getValue(values));
+        if (weightInit != null)
+            builder.weightInit(weightInit.getValue(values));
+        if (biasInit != null)
+            builder.biasInit(biasInit.getValue(values));
+        if (dist != null)
+            builder.dist(dist.getValue(values));
+        if (learningRate != null)
+            builder.learningRate(learningRate.getValue(values));
+        if (biasLearningRate != null)
+            builder.biasLearningRate(biasLearningRate.getValue(values));
+        if (learningRateAfter != null)
+            builder.learningRateSchedule(learningRateAfter.getValue(values));
+        if (lrScoreBasedDecay != null)
+            builder.learningRate(lrScoreBasedDecay.getValue(values));
+        if (l1 != null)
+            builder.l1(l1.getValue(values));
+        if (l2 != null)
+            builder.l2(l2.getValue(values));
+        if (dropOut != null)
+            builder.dropOut(dropOut.getValue(values));
+        if (momentum != null)
+            builder.momentum(momentum.getValue(values));
+        if (momentumAfter != null)
+            builder.momentumAfter(momentumAfter.getValue(values));
+        if (updater != null)
+            builder.updater(updater.getValue(values));
+        if (epsilon != null)
+            builder.epsilon(epsilon.getValue(values));
+        if (rho != null)
+            builder.rho(rho.getValue(values));
+        if (rmsDecay != null)
+            builder.rmsDecay(rmsDecay.getValue(values));
+        if (adamMeanDecay != null)
+            builder.adamMeanDecay(adamMeanDecay.getValue(values));
+        if (adamVarDecay != null)
+            builder.adamVarDecay(adamVarDecay.getValue(values));
+        if (gradientNormalization != null)
+            builder.gradientNormalization(gradientNormalization.getValue(values));
         if (gradientNormalizationThreshold != null)
             builder.gradientNormalizationThreshold(gradientNormalizationThreshold.getValue(values));
     }
@@ -172,24 +211,42 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
 
     protected String toString(String delim) {
         StringBuilder sb = new StringBuilder();
-        if (activationFunction != null) sb.append("activationFunction: ").append(activationFunction).append(delim);
-        if (weightInit != null) sb.append("weightInit: ").append(weightInit).append(delim);
-        if (biasInit != null) sb.append("biasInit: ").append(biasInit).append(delim);
-        if (dist != null) sb.append("dist: ").append(dist).append(delim);
-        if (learningRate != null) sb.append("learningRate: ").append(learningRate).append(delim);
-        if (biasLearningRate != null) sb.append("biasLearningRate: ").append(biasLearningRate).append(delim);
-        if (learningRateAfter != null) sb.append("learningRateAfter: ").append(learningRateAfter).append(delim);
-        if (lrScoreBasedDecay != null) sb.append("lrScoreBasedDecay: ").append(lrScoreBasedDecay).append(delim);
-        if (l1 != null) sb.append("l1: ").append(l1).append(delim);
-        if (l2 != null) sb.append("l2: ").append(l2).append(delim);
-        if (momentum != null) sb.append("momentum: ").append(momentum).append(delim);
-        if (momentumAfter != null) sb.append("momentumAfter: ").append(momentumAfter).append(delim);
-        if (updater != null) sb.append("updater: ").append(updater).append(delim);
-        if (epsilon != null) sb.append("epsilon: ").append(epsilon).append(delim);
-        if (rho != null) sb.append("rho: ").append(rho).append(delim);
-        if (rmsDecay != null) sb.append("rmsDecay: ").append(rmsDecay).append(delim);
-        if (adamMeanDecay != null) sb.append("adamMeanDecay: ").append(adamMeanDecay).append(delim);
-        if (adamVarDecay != null) sb.append("adamVarDecay: ").append(adamVarDecay).append(delim);
+        if (activationFunction != null)
+            sb.append("activationFunction: ").append(activationFunction).append(delim);
+        if (weightInit != null)
+            sb.append("weightInit: ").append(weightInit).append(delim);
+        if (biasInit != null)
+            sb.append("biasInit: ").append(biasInit).append(delim);
+        if (dist != null)
+            sb.append("dist: ").append(dist).append(delim);
+        if (learningRate != null)
+            sb.append("learningRate: ").append(learningRate).append(delim);
+        if (biasLearningRate != null)
+            sb.append("biasLearningRate: ").append(biasLearningRate).append(delim);
+        if (learningRateAfter != null)
+            sb.append("learningRateAfter: ").append(learningRateAfter).append(delim);
+        if (lrScoreBasedDecay != null)
+            sb.append("lrScoreBasedDecay: ").append(lrScoreBasedDecay).append(delim);
+        if (l1 != null)
+            sb.append("l1: ").append(l1).append(delim);
+        if (l2 != null)
+            sb.append("l2: ").append(l2).append(delim);
+        if (momentum != null)
+            sb.append("momentum: ").append(momentum).append(delim);
+        if (momentumAfter != null)
+            sb.append("momentumAfter: ").append(momentumAfter).append(delim);
+        if (updater != null)
+            sb.append("updater: ").append(updater).append(delim);
+        if (epsilon != null)
+            sb.append("epsilon: ").append(epsilon).append(delim);
+        if (rho != null)
+            sb.append("rho: ").append(rho).append(delim);
+        if (rmsDecay != null)
+            sb.append("rmsDecay: ").append(rmsDecay).append(delim);
+        if (adamMeanDecay != null)
+            sb.append("adamMeanDecay: ").append(adamMeanDecay).append(delim);
+        if (adamVarDecay != null)
+            sb.append("adamVarDecay: ").append(adamVarDecay).append(delim);
         if (gradientNormalization != null)
             sb.append("gradientNormalization: ").append(gradientNormalization).append(delim);
         if (gradientNormalizationThreshold != null)
@@ -200,7 +257,8 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
             //Remove final delimiter
             int last = s.lastIndexOf(delim);
             return s.substring(0, last);
-        } else return s;
+        } else
+            return s;
     }
 
     @SuppressWarnings("unchecked")
@@ -233,11 +291,11 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
             return activation(Activation.fromString(activationFunction));
         }
 
-        public T activation(Activation activation){
+        public T activation(Activation activation) {
             return activation(new FixedValue<>(activation));
         }
 
-        public T activation(IActivation iActivation){
+        public T activation(IActivation iActivation) {
             return activationFn(new FixedValue<>(iActivation));
         }
 
@@ -245,7 +303,7 @@ public abstract class BaseLayerSpace<L extends BaseLayer> extends LayerSpace<L> 
             return activationFn(new ActivationParameterSpaceAdapter(activationFunction));
         }
 
-        public T activationFn(ParameterSpace<IActivation> activationFunction){
+        public T activationFn(ParameterSpace<IActivation> activationFunction) {
             this.activationFunction = activationFunction;
             return (T) this;
         }

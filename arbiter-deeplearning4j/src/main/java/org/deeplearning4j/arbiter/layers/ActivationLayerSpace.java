@@ -30,10 +30,10 @@ public class ActivationLayerSpace extends LayerSpace<ActivationLayer> {
         return b.build();
     }
 
-    public static class Builder extends FeedForwardLayerSpace.Builder<Builder>{
+    public static class Builder extends FeedForwardLayerSpace.Builder<Builder> {
 
         @SuppressWarnings("unchecked")
-        public ActivationLayerSpace build(){
+        public ActivationLayerSpace build() {
             return new ActivationLayerSpace(this);
         }
     }

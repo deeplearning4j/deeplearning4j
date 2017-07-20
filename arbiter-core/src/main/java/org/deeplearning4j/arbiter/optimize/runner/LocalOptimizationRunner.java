@@ -42,7 +42,8 @@ public class LocalOptimizationRunner<C, M, D, A> extends BaseOptimizationRunner<
         this(DEFAULT_MAX_CONCURRENT_TASKS, config, taskCreator);
     }
 
-    public LocalOptimizationRunner(int maxConcurrentTasks, OptimizationConfiguration<C, M, D, A> config, TaskCreator<C, M, D, A> taskCreator) {
+    public LocalOptimizationRunner(int maxConcurrentTasks, OptimizationConfiguration<C, M, D, A> config,
+                    TaskCreator<C, M, D, A> taskCreator) {
         super(config);
         if (maxConcurrentTasks <= 0)
             throw new IllegalArgumentException("maxConcurrentTasks must be > 0 (got: " + maxConcurrentTasks + ")");
@@ -71,16 +72,18 @@ public class LocalOptimizationRunner<C, M, D, A> extends BaseOptimizationRunner<
     }
 
     @Override
-    protected ListenableFuture<OptimizationResult<C, M, A>> execute(Candidate<C> candidate, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction) {
+    protected ListenableFuture<OptimizationResult<C, M, A>> execute(Candidate<C> candidate,
+                    DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction) {
         return execute(Collections.singletonList(candidate), dataProvider, scoreFunction).get(0);
     }
 
     @Override
-    protected List<ListenableFuture<OptimizationResult<C, M, A>>> execute(List<Candidate<C>> candidates, DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction) {
+    protected List<ListenableFuture<OptimizationResult<C, M, A>>> execute(List<Candidate<C>> candidates,
+                    DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction) {
         List<ListenableFuture<OptimizationResult<C, M, A>>> list = new ArrayList<>(candidates.size());
         for (Candidate<C> candidate : candidates) {
-            Callable<OptimizationResult<C, M, A>> task = taskCreator.create(candidate, dataProvider, scoreFunction,
-                    statusListeners);
+            Callable<OptimizationResult<C, M, A>> task =
+                            taskCreator.create(candidate, dataProvider, scoreFunction, statusListeners);
             list.add(executor.submit(task));
         }
         return list;

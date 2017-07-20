@@ -32,10 +32,9 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonSubTypes(value={
-        @JsonSubTypes.Type(value = GridSearchCandidateGenerator.class, name = "GridSearchCandidateGenerator"),
-        @JsonSubTypes.Type(value = RandomSearchGenerator.class, name = "RandomSearchCandidateGenerator")
-})
+@JsonSubTypes(value = {
+                @JsonSubTypes.Type(value = GridSearchCandidateGenerator.class, name = "GridSearchCandidateGenerator"),
+                @JsonSubTypes.Type(value = RandomSearchGenerator.class, name = "RandomSearchCandidateGenerator")})
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface CandidateGenerator<C> {
 

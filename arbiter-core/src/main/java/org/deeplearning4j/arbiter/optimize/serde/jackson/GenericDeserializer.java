@@ -17,9 +17,9 @@ public class GenericDeserializer extends JsonDeserializer<Object> {
         JsonNode node = p.getCodec().readTree(p);
         String className = node.get("class").asText();
         Class<?> c;
-        try{
+        try {
             c = Class.forName(className);
-        } catch (Exception e ){
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 

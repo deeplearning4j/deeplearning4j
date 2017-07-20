@@ -15,10 +15,10 @@ import java.util.Map;
 @AllArgsConstructor
 public class RegressionDataSetEvaluator implements ModelEvaluator<MultiLayerNetwork, Object, Double> {
     private RegressionValue regressionValue;
-    private Map<String,Object> evalParameters = null;
+    private Map<String, Object> evalParameters = null;
 
     @Override
     public Double evaluateModel(MultiLayerNetwork model, DataProvider<Object> dataProvider) {
-        return ScoreUtil.score(model,ScoreUtil.getIterator(dataProvider.testData(evalParameters)),regressionValue);
+        return ScoreUtil.score(model, ScoreUtil.getIterator(dataProvider.testData(evalParameters)), regressionValue);
     }
 }

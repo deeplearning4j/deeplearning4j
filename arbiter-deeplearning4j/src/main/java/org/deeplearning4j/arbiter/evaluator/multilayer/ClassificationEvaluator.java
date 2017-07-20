@@ -38,12 +38,12 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ClassificationEvaluator implements ModelEvaluator<MultiLayerNetwork, Object, Evaluation> {
-    private Map<String,Object> params = null;
+    private Map<String, Object> params = null;
 
 
     @Override
     public Evaluation evaluateModel(MultiLayerNetwork model, DataProvider<Object> dataProvider) {
         DataSetIterator iterator = ScoreUtil.getIterator(dataProvider.testData(params));
-        return ScoreUtil.getEvaluation(model,iterator);
+        return ScoreUtil.getEvaluation(model, iterator);
     }
 }

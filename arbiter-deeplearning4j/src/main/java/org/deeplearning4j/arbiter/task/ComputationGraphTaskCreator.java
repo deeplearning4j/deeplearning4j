@@ -49,33 +49,32 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
 
     @Override
     public Callable<OptimizationResult<GraphConfiguration, ComputationGraph, A>> create(
-            Candidate<GraphConfiguration> candidate, DataProvider<Object> dataProvider,
-            ScoreFunction<ComputationGraph, Object> scoreFunction,
-            List<StatusListener> statusListener) {
+                    Candidate<GraphConfiguration> candidate, DataProvider<Object> dataProvider,
+                    ScoreFunction<ComputationGraph, Object> scoreFunction, List<StatusListener> statusListener) {
 
         return new GraphLearningTask<>(candidate, dataProvider, scoreFunction, modelEvaluator, statusListener);
     }
 
 
-    private static class GraphLearningTask<A> implements Callable<OptimizationResult<GraphConfiguration, ComputationGraph, A>> {
+    private static class GraphLearningTask<A>
+                    implements Callable<OptimizationResult<GraphConfiguration, ComputationGraph, A>> {
 
         private Candidate<GraphConfiguration> candidate;
         private DataProvider<Object> dataProvider;
         private ScoreFunction<ComputationGraph, Object> scoreFunction;
         private ModelEvaluator<ComputationGraph, Object, A> modelEvaluator;
 
-//        private UIGraphStatusReportingListener dl4jListener;
+        //        private UIGraphStatusReportingListener dl4jListener;
 
         public GraphLearningTask(Candidate<GraphConfiguration> candidate, DataProvider<Object> dataProvider,
-                                 ScoreFunction<ComputationGraph, Object> scoreFunction,
-                                 ModelEvaluator<ComputationGraph, Object, A> modelEvaluator,
-                                 List<StatusListener> listeners) {
+                        ScoreFunction<ComputationGraph, Object> scoreFunction,
+                        ModelEvaluator<ComputationGraph, Object, A> modelEvaluator, List<StatusListener> listeners) {
             this.candidate = candidate;
             this.dataProvider = dataProvider;
             this.scoreFunction = scoreFunction;
             this.modelEvaluator = modelEvaluator;
 
-//            dl4jListener = new UIGraphStatusReportingListener(listener);
+            //            dl4jListener = new UIGraphStatusReportingListener(listener);
         }
 
 
@@ -84,33 +83,35 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
             //Create network
             ComputationGraph net = new ComputationGraph(candidate.getValue().getConfiguration());
             net.init();
-//            net.setListeners(dl4jListener);
+            //            net.setListeners(dl4jListener);
 
             //Early stopping or fixed number of epochs:
-            DataSetIterator dataSetIterator = ScoreUtil.getIterator(dataProvider.trainData(candidate.getDataParameters()));
+            DataSetIterator dataSetIterator =
+                            ScoreUtil.getIterator(dataProvider.trainData(candidate.getDataParameters()));
 
 
-            EarlyStoppingConfiguration<ComputationGraph> esConfig = candidate.getValue().getEarlyStoppingConfiguration();
+            EarlyStoppingConfiguration<ComputationGraph> esConfig =
+                            candidate.getValue().getEarlyStoppingConfiguration();
             EarlyStoppingResult<ComputationGraph> esResult = null;
             if (esConfig != null) {
-                EarlyStoppingGraphTrainer trainer = new EarlyStoppingGraphTrainer(esConfig, net, dataSetIterator, null );   //dl4jListener);
+                EarlyStoppingGraphTrainer trainer = new EarlyStoppingGraphTrainer(esConfig, net, dataSetIterator, null); //dl4jListener);
                 try {
                     esResult = trainer.fit();
-                    net = esResult.getBestModel();  //Can return null if failed OR if
+                    net = esResult.getBestModel(); //Can return null if failed OR if
                 } catch (Exception e) {
-//                    dl4jListener.postReport(CandidateStatus.Failed, null,
-//                            new ComponentText("Unexpected exception during model training\n", null),
-//                            new ComponentText(ExceptionUtils.getStackTrace(e), null));
+                    //                    dl4jListener.postReport(CandidateStatus.Failed, null,
+                    //                            new ComponentText("Unexpected exception during model training\n", null),
+                    //                            new ComponentText(ExceptionUtils.getStackTrace(e), null));
                     throw e;
                 }
 
                 switch (esResult.getTerminationReason()) {
                     case Error:
-//                        dl4jListener.postReport(CandidateStatus.Failed, esResult);
+                        //                        dl4jListener.postReport(CandidateStatus.Failed, esResult);
                         break;
                     case IterationTerminationCondition:
                     case EpochTerminationCondition:
-//                        dl4jListener.postReport(CandidateStatus.Complete, esResult);
+                        //                        dl4jListener.postReport(CandidateStatus.Complete, esResult);
                         break;
                 }
 
@@ -122,31 +123,32 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
                     dataSetIterator.reset();
                 }
                 //Do a final status update
-//                dl4jListener.postReport(CandidateStatus.Complete, null);
+                //                dl4jListener.postReport(CandidateStatus.Complete, null);
             }
 
             A additionalEvaluation = null;
             if (esConfig != null && esResult.getTerminationReason() != EarlyStoppingResult.TerminationReason.Error) {
                 try {
-                    additionalEvaluation = (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
+                    additionalEvaluation =
+                                    (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
                 } catch (Exception e) {
-//                    dl4jListener.postReport(CandidateStatus.Failed, esResult,
-//                            new ComponentText("Failed during additional evaluation stage\n", null),
-//                            new ComponentText(ExceptionUtils.getStackTrace(e), null));
+                    //                    dl4jListener.postReport(CandidateStatus.Failed, esResult,
+                    //                            new ComponentText("Failed during additional evaluation stage\n", null),
+                    //                            new ComponentText(ExceptionUtils.getStackTrace(e), null));
                 }
             }
 
             Double score = null;
             if (net == null) {
-//                dl4jListener.postReport(CandidateStatus.Complete, esResult,
-//                        new ComponentText("No best model available; cannot calculate model score", null));
+                //                dl4jListener.postReport(CandidateStatus.Complete, esResult,
+                //                        new ComponentText("No best model available; cannot calculate model score", null));
             } else {
                 try {
                     score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
                 } catch (Exception e) {
-//                    dl4jListener.postReport(CandidateStatus.Failed, esResult,
-//                            new ComponentText("Failed during score calculation stage\n", null),
-//                            new ComponentText(ExceptionUtils.getStackTrace(e), null));
+                    //                    dl4jListener.postReport(CandidateStatus.Failed, esResult,
+                    //                            new ComponentText("Failed during score calculation stage\n", null),
+                    //                            new ComponentText(ExceptionUtils.getStackTrace(e), null));
                 }
             }
 

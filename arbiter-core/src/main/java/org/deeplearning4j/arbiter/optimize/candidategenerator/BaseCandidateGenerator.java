@@ -42,8 +42,9 @@ public abstract class BaseCandidateGenerator<T> implements CandidateGenerator<T>
     protected ParameterSpace<T> parameterSpace;
     protected AtomicInteger candidateCounter = new AtomicInteger(0);
     protected SynchronizedRandomGenerator rng = new SynchronizedRandomGenerator(new JDKRandomGenerator());
-    protected Map<String,Object> dataParameters;
-    public BaseCandidateGenerator(ParameterSpace<T> parameterSpace,Map<String,Object> dataParameters) {
+    protected Map<String, Object> dataParameters;
+
+    public BaseCandidateGenerator(ParameterSpace<T> parameterSpace, Map<String, Object> dataParameters) {
         this.parameterSpace = parameterSpace;
         this.dataParameters = dataParameters;
     }
@@ -60,7 +61,8 @@ public abstract class BaseCandidateGenerator<T> implements CandidateGenerator<T>
                 ps.setIndices(i++);
             } else {
                 int[] values = new int[np];
-                for (int j = 0; j < np; j++) values[i++] = j;
+                for (int j = 0; j < np; j++)
+                    values[i++] = j;
                 ps.setIndices(values);
             }
         }

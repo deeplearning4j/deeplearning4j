@@ -56,12 +56,13 @@ public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
         if (index == -1) {
             throw new IllegalStateException("Cannot get value: ParameterSpace index has not been set");
         }
-        if(values == null)
+        if (values == null)
             throw new IllegalStateException("Values are null.");
         //Map a value in range [0,1] to one of the list of values
         //First value: [0,width], second: (width,2*width], third: (3*width,4*width] etc
         int size = values.size();
-        if (size == 1) return values.get(0);
+        if (size == 1)
+            return values.get(0);
         double width = 1.0 / size;
         int val = (int) (input[index] / width);
         return values.get(Math.min(val, size - 1));

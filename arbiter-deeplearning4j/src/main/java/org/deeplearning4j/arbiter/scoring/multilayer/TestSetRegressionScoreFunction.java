@@ -25,14 +25,15 @@ public class TestSetRegressionScoreFunction implements ScoreFunction<MultiLayerN
     }
 
     @Override
-    public double score(MultiLayerNetwork model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
+    public double score(MultiLayerNetwork model, DataProvider<Object> dataProvider,
+                    Map<String, Object> dataParameters) {
         DataSetIterator testData = ScoreUtil.getIterator(dataProvider.testData(dataParameters));
-        return ScoreUtil.score(model,testData,regressionValue);
+        return ScoreUtil.score(model, testData, regressionValue);
     }
 
     @Override
     public boolean minimize() {
-        return regressionValue != RegressionValue.CorrCoeff;    //Maximize correlation coefficient, minimize the remaining ones
+        return regressionValue != RegressionValue.CorrCoeff; //Maximize correlation coefficient, minimize the remaining ones
     }
 
     @Override

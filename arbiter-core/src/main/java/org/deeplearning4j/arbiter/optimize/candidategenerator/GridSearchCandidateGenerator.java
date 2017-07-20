@@ -46,7 +46,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * @author Alex Black
  */
 @EqualsAndHashCode(exclude = {"order"}, callSuper = true)
-@JsonIgnoreProperties({"numValuesPerParam", "totalNumCandidates", "order", "candidateCounter", "rng","candidate"})
+@JsonIgnoreProperties({"numValuesPerParam", "totalNumCandidates", "order", "candidateCounter", "rng", "candidate"})
 public class GridSearchCandidateGenerator<T> extends BaseCandidateGenerator<T> {
 
     /**
@@ -76,10 +76,9 @@ public class GridSearchCandidateGenerator<T> extends BaseCandidateGenerator<T> {
      *                            in which candidates should be generated.
      */
     public GridSearchCandidateGenerator(@JsonProperty("parameterSpace") ParameterSpace<T> parameterSpace,
-                                        @JsonProperty("discretizationCount") int discretizationCount,
-                                        @JsonProperty("mode") Mode mode,
-                                        @JsonProperty("dataParameters") Map<String,Object> dataParameters) {
-        super(parameterSpace,dataParameters);
+                    @JsonProperty("discretizationCount") int discretizationCount, @JsonProperty("mode") Mode mode,
+                    @JsonProperty("dataParameters") Map<String, Object> dataParameters) {
+        super(parameterSpace, dataParameters);
         this.discretizationCount = discretizationCount;
         this.mode = mode;
         initialize();
@@ -116,8 +115,8 @@ public class GridSearchCandidateGenerator<T> extends BaseCandidateGenerator<T> {
         }
 
         if (searchSize >= Integer.MAX_VALUE)
-            throw new IllegalStateException("Invalid search: cannot process search with "
-                    + searchSize + " candidates > Integer.MAX_VALUE");  //TODO find a more reasonable upper bound?
+            throw new IllegalStateException("Invalid search: cannot process search with " + searchSize
+                            + " candidates > Integer.MAX_VALUE"); //TODO find a more reasonable upper bound?
 
         order = new ConcurrentLinkedQueue<>();
 
@@ -178,7 +177,8 @@ public class GridSearchCandidateGenerator<T> extends BaseCandidateGenerator<T> {
         //max value -> 1
         double[] out = new double[numValuesPerParam.length];
         for (int i = 0; i < out.length; i++) {
-            if (numValuesPerParam[i] <= 1) out[i] = 0.0;
+            if (numValuesPerParam[i] <= 1)
+                out[i] = 0.0;
             else {
                 out[i] = index[i] / ((double) (numValuesPerParam[i] - 1));
             }

@@ -55,7 +55,7 @@ public class FixedValue<T> implements ParameterSpace<T> {
 
     @Override
     public T getValue(double[] input) {
-        return (T)value;
+        return (T) value;
     }
 
     @Override
@@ -76,7 +76,7 @@ public class FixedValue<T> implements ParameterSpace<T> {
     @Override
     public void setIndices(int... indices) {
         if (indices != null && indices.length != 0)
-            throw new IllegalArgumentException("Invalid call: FixedValue ParameterSpace "
-                    + "should not be given an index (0 params)");
+            throw new IllegalArgumentException(
+                            "Invalid call: FixedValue ParameterSpace " + "should not be given an index (0 params)");
     }
 }

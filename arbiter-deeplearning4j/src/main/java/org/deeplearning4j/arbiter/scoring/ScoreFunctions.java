@@ -33,8 +33,7 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
  */
 public class ScoreFunctions {
 
-    private ScoreFunctions() {
-    }
+    private ScoreFunctions() {}
 
     /**
      * Calculate the loss (score/loss function value) on a test set, for a MultiLayerNetwork
@@ -123,7 +122,8 @@ public class ScoreFunctions {
     /**
      * Calculate a regression value (MSE, MAE etc) on a test set (DataSetIterator) for a MultiLayerNetwork
      */
-    public static ScoreFunction<ComputationGraph, Object> testSetRegressionGraphDataSet(RegressionValue regressionValue) {
+    public static ScoreFunction<ComputationGraph, Object> testSetRegressionGraphDataSet(
+                    RegressionValue regressionValue) {
         return new GraphTestSetRegressionScoreFunctionDataSet(regressionValue);
     }
 

@@ -47,12 +47,15 @@ public class DataSetIteratorFactoryProvider implements DataProvider<DataSetItera
         return create(dataParameters);
     }
 
-    private DataSetIteratorFactory create(Map<String,Object> dataParameters) {
-        if(!dataParameters.containsKey(FACTORY_KEY))
-            throw new IllegalArgumentException("No data set iterator factory class found. Please specify a class name with key " + FACTORY_KEY);
+    private DataSetIteratorFactory create(Map<String, Object> dataParameters) {
+        if (!dataParameters.containsKey(FACTORY_KEY))
+            throw new IllegalArgumentException(
+                            "No data set iterator factory class found. Please specify a class name with key "
+                                            + FACTORY_KEY);
         String value = dataParameters.get(FACTORY_KEY).toString();
         try {
-            Class<? extends  DataSetIteratorFactory> clazz = (Class<? extends DataSetIteratorFactory>) Class.forName(value);
+            Class<? extends DataSetIteratorFactory> clazz =
+                            (Class<? extends DataSetIteratorFactory>) Class.forName(value);
             return clazz.newInstance();
         } catch (Exception e) {
             throw new RuntimeException(e);

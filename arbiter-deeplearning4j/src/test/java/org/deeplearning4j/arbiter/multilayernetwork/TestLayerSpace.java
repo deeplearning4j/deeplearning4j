@@ -17,7 +17,6 @@
  */
 package org.deeplearning4j.arbiter.multilayernetwork;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.arbiter.layers.*;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
@@ -37,49 +36,45 @@ import static org.junit.Assert.assertTrue;
 public class TestLayerSpace {
 
     @Test
-    public void testBasic1(){
+    public void testBasic1() {
 
-        DenseLayer expected = new DenseLayer.Builder()
-                .nOut(13).activation(Activation.RELU).build();
+        DenseLayer expected = new DenseLayer.Builder().nOut(13).activation(Activation.RELU).build();
 
-        DenseLayerSpace space = new DenseLayerSpace.Builder()
-                .nOut(13).activation(Activation.RELU).build();
+        DenseLayerSpace space = new DenseLayerSpace.Builder().nOut(13).activation(Activation.RELU).build();
 
         int nParam = space.numParameters();
-        assertEquals(0,nParam);
+        assertEquals(0, nParam);
         DenseLayer actual = space.getValue(new double[nParam]);
 
-        assertEquals(expected,actual);
+        assertEquals(expected, actual);
     }
 
     @Test
-    public void testBasic2(){
+    public void testBasic2() {
 
-        Activation[] actFns = new Activation[]{Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
+        Activation[] actFns = new Activation[] {Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
         Random r = new Random(12345);
 
-        for( int i=0; i<20; i++ ) {
+        for (int i = 0; i < 20; i++) {
 
             new DenseLayer.Builder().build();
 
-            DenseLayerSpace ls = new DenseLayerSpace.Builder()
-                    .nOut(20)
-                    .learningRate(new ContinuousParameterSpace(0.3,0.4))
-                    .l2(new ContinuousParameterSpace(0.01,0.1))
-                    .activation(new DiscreteParameterSpace<>(actFns))
-                    .build();
+            DenseLayerSpace ls =
+                            new DenseLayerSpace.Builder().nOut(20).learningRate(new ContinuousParameterSpace(0.3, 0.4))
+                                            .l2(new ContinuousParameterSpace(0.01, 0.1))
+                                            .activation(new DiscreteParameterSpace<>(actFns)).build();
 
             //Set the parameter numbers...
             List<ParameterSpace> list = ls.collectLeaves();
-            for( int j=0; j<list.size(); j++ ){
+            for (int j = 0; j < list.size(); j++) {
                 list.get(j).setIndices(j);
             }
 
             int nParam = ls.numParameters();
-            assertEquals(3,nParam);
+            assertEquals(3, nParam);
 
             double[] d = new double[nParam];
-            for( int j=0; j<d.length; j++ ){
+            for (int j = 0; j < d.length; j++) {
                 d[j] = r.nextDouble();
             }
 
@@ -93,41 +88,37 @@ public class TestLayerSpace {
             System.out.println(lr + "\t" + l2 + "\t" + activation);
 
             assertTrue(lr >= 0.3 && lr <= 0.4);
-            assertTrue(l2 >= 0.01 && l2 <= 0.1 );
+            assertTrue(l2 >= 0.01 && l2 <= 0.1);
             assertTrue(containsActivationFunction(actFns, activation));
         }
     }
 
     @Test
-    public void testBatchNorm(){
-        BatchNormalizationSpace sp = new BatchNormalizationSpace.Builder()
-                .gamma(1.5)
-                .beta(new ContinuousParameterSpace(2,3))
-                .lockGammaBeta(true)
-                .build();
+    public void testBatchNorm() {
+        BatchNormalizationSpace sp = new BatchNormalizationSpace.Builder().gamma(1.5)
+                        .beta(new ContinuousParameterSpace(2, 3)).lockGammaBeta(true).build();
 
         //Set the parameter numbers...
         List<ParameterSpace> list = sp.collectLeaves();
-        for( int j=0; j<list.size(); j++ ){
+        for (int j = 0; j < list.size(); j++) {
             list.get(j).setIndices(j);
         }
 
-        BatchNormalization bn = sp.getValue(new double[]{0.6});
+        BatchNormalization bn = sp.getValue(new double[] {0.6});
         assertTrue(bn.isLockGammaBeta());
         assertEquals(1.5, bn.getGamma(), 0.0);
-        assertEquals(0.6*(3-2)+2, bn.getBeta(), 1e-4);
+        assertEquals(0.6 * (3 - 2) + 2, bn.getBeta(), 1e-4);
     }
 
     @Test
-    public void testActivationLayer(){
-        Activation[] actFns = new Activation[]{Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
+    public void testActivationLayer() {
+        Activation[] actFns = new Activation[] {Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
 
-        ActivationLayerSpace als = new ActivationLayerSpace.Builder()
-                .activation(new DiscreteParameterSpace<>(actFns))
-                .build();
+        ActivationLayerSpace als =
+                        new ActivationLayerSpace.Builder().activation(new DiscreteParameterSpace<>(actFns)).build();
         //Set the parameter numbers...
         List<ParameterSpace> list = als.collectLeaves();
-        for( int j=0; j<list.size(); j++ ){
+        for (int j = 0; j < list.size(); j++) {
             list.get(j).setIndices(j);
         }
 
@@ -136,10 +127,10 @@ public class TestLayerSpace {
 
         Random r = new Random(12345);
 
-        for( int i=0; i<20; i++ ) {
+        for (int i = 0; i < 20; i++) {
 
             double[] d = new double[nParam];
-            for( int j=0; j<d.length; j++ ){
+            for (int j = 0; j < d.length; j++) {
                 d[j] = r.nextDouble();
             }
 
@@ -153,17 +144,15 @@ public class TestLayerSpace {
     }
 
     @Test
-    public void testEmbeddingLayer(){
+    public void testEmbeddingLayer() {
 
-        Activation[] actFns = new Activation[]{Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
+        Activation[] actFns = new Activation[] {Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
 
-        EmbeddingLayerSpace els = new EmbeddingLayerSpace.Builder()
-                .activation(new DiscreteParameterSpace<>(actFns))
-                .nIn(10).nOut(new IntegerParameterSpace(10,20))
-                .build();
+        EmbeddingLayerSpace els = new EmbeddingLayerSpace.Builder().activation(new DiscreteParameterSpace<>(actFns))
+                        .nIn(10).nOut(new IntegerParameterSpace(10, 20)).build();
         //Set the parameter numbers...
         List<ParameterSpace> list = els.collectLeaves();
-        for( int j=0; j<list.size(); j++ ){
+        for (int j = 0; j < list.size(); j++) {
             list.get(j).setIndices(j);
         }
 
@@ -172,10 +161,10 @@ public class TestLayerSpace {
 
         Random r = new Random(12345);
 
-        for( int i=0; i<20; i++ ) {
+        for (int i = 0; i < 20; i++) {
 
             double[] d = new double[nParam];
-            for( int j=0; j<d.length; j++ ){
+            for (int j = 0; j < d.length; j++) {
                 d[j] = r.nextDouble();
             }
 
@@ -191,18 +180,17 @@ public class TestLayerSpace {
     }
 
     @Test
-    public void testGravesBidirectionalLayer(){
+    public void testGravesBidirectionalLayer() {
 
-        Activation[] actFns = new Activation[]{Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
+        Activation[] actFns = new Activation[] {Activation.SOFTSIGN, Activation.RELU, Activation.LEAKYRELU};
 
-        GravesBidirectionalLSTMLayerSpace ls = new GravesBidirectionalLSTMLayerSpace.Builder()
-                .activation(new DiscreteParameterSpace<>(actFns))
-                .forgetGateBiasInit(new ContinuousParameterSpace(0.5,0.8))
-                .nIn(10).nOut(new IntegerParameterSpace(10,20))
-                .build();
+        GravesBidirectionalLSTMLayerSpace ls =
+                        new GravesBidirectionalLSTMLayerSpace.Builder().activation(new DiscreteParameterSpace<>(actFns))
+                                        .forgetGateBiasInit(new ContinuousParameterSpace(0.5, 0.8)).nIn(10)
+                                        .nOut(new IntegerParameterSpace(10, 20)).build();
         //Set the parameter numbers...
         List<ParameterSpace> list = ls.collectLeaves();
-        for( int j=0; j<list.size(); j++ ){
+        for (int j = 0; j < list.size(); j++) {
             list.get(j).setIndices(j);
         }
 
@@ -211,10 +199,10 @@ public class TestLayerSpace {
 
         Random r = new Random(12345);
 
-        for( int i=0; i<20; i++ ) {
+        for (int i = 0; i < 20; i++) {
 
             double[] d = new double[nParam];
-            for( int j=0; j<d.length; j++ ){
+            for (int j = 0; j < d.length; j++) {
                 d[j] = r.nextDouble();
             }
 
@@ -231,9 +219,11 @@ public class TestLayerSpace {
         }
     }
 
-    private static boolean containsActivationFunction(Activation[] activationFunctions, IActivation activationFunction) {
+    private static boolean containsActivationFunction(Activation[] activationFunctions,
+                    IActivation activationFunction) {
         for (Activation af : activationFunctions) {
-            if (activationFunction.equals(af.getActivationFunction())) return true;
+            if (activationFunction.equals(af.getActivationFunction()))
+                return true;
         }
         return false;
     }

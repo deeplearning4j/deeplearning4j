@@ -36,7 +36,8 @@ import java.util.concurrent.TimeUnit;
 @Data
 public class MaxTimeCondition implements TerminationCondition {
 
-    private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss.SSS zzz").withZone(DateTimeZone.UTC);
+    private static final DateTimeFormatter formatter =
+                    DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss.SSS zzz").withZone(DateTimeZone.UTC);
     @JsonProperty
     private long duration;
     @JsonProperty
@@ -68,6 +69,7 @@ public class MaxTimeCondition implements TerminationCondition {
 
     @Override
     public String toString() {
-        return "MaxTimeCondition(" + duration + "," + timeUnit + ",start=\"" + formatter.print(startTime) + "\",end=\"" + formatter.print(endTime) + "\")";
+        return "MaxTimeCondition(" + duration + "," + timeUnit + ",start=\"" + formatter.print(startTime) + "\",end=\""
+                        + formatter.print(endTime) + "\")";
     }
 }

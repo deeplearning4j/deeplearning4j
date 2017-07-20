@@ -48,7 +48,8 @@ public class LocalComputationGraphSaver<A> implements ResultSaver<GraphConfigura
     private File fPath;
 
     public LocalComputationGraphSaver(String path) {
-        if (path == null) throw new NullPointerException();
+        if (path == null)
+            throw new NullPointerException();
         this.path = path;
         this.fPath = new File(path);
 
@@ -61,7 +62,8 @@ public class LocalComputationGraphSaver<A> implements ResultSaver<GraphConfigura
     }
 
     @Override
-    public ResultReference<GraphConfiguration, ComputationGraph, A> saveModel(OptimizationResult<GraphConfiguration, ComputationGraph, A> result) throws IOException {
+    public ResultReference<GraphConfiguration, ComputationGraph, A> saveModel(
+                    OptimizationResult<GraphConfiguration, ComputationGraph, A> result) throws IOException {
         String dir = new File(path, result.getIndex() + "/").getAbsolutePath();
 
         File f = new File(dir);
@@ -105,16 +107,11 @@ public class LocalComputationGraphSaver<A> implements ResultSaver<GraphConfigura
             FileUtils.writeStringToFile(numEpochsFile, String.valueOf(nEpochs));
         }
 
-        log.debug("Deeplearning4j model result (id={}, score={}) saved to directory: {}", result.getIndex(), result.getScore(), dir);
+        log.debug("Deeplearning4j model result (id={}, score={}) saved to directory: {}", result.getIndex(),
+                        result.getScore(), dir);
 
-        return new LocalFileGraphResultReference<>(result.getIndex(), dir,
-                jsonFile,
-                paramsFile,
-                scoreFile,
-                additionalResultsFile,
-                esConfigFile,
-                numEpochsFile,
-                result.getCandidate());
+        return new LocalFileGraphResultReference<>(result.getIndex(), dir, jsonFile, paramsFile, scoreFile,
+                        additionalResultsFile, esConfigFile, numEpochsFile, result.getCandidate());
     }
 
     @Override

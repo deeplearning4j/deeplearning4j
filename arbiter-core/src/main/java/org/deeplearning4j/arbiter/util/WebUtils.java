@@ -40,7 +40,8 @@ public class WebUtils {
         if (Desktop.isDesktopSupported()) {
             Desktop.getDesktop().browse(uri);
         } else {
-            throw new UnsupportedOperationException("Cannot open browser on this platform: Desktop.isDesktopSupported() == false");
+            throw new UnsupportedOperationException(
+                            "Cannot open browser on this platform: Desktop.isDesktopSupported() == false");
         }
     }
 

@@ -5,9 +5,6 @@ package org.deeplearning4j.arbiter.optimize.runner.listener;
  */
 public enum StatusChangeType {
 
-    CandidateCompleted,
-    CandidateFailed,
-    CandidateNewScheduled,
-    CandidateNewBestScore
+    CandidateCompleted, CandidateFailed, CandidateNewScheduled, CandidateNewBestScore
 
 }

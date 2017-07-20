@@ -37,12 +37,12 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class GraphClassificationDataSetEvaluator implements ModelEvaluator<ComputationGraph, Object, Evaluation> {
-    private Map<String,Object> evalParams = null;
+    private Map<String, Object> evalParams = null;
 
 
     @Override
     public Evaluation evaluateModel(ComputationGraph model, DataProvider<Object> dataProvider) {
         DataSetIterator iterator = ScoreUtil.getIterator(dataProvider.testData(evalParams));
-        return ScoreUtil.getEvaluation(model,iterator);
+        return ScoreUtil.getEvaluation(model, iterator);
     }
 }

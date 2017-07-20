@@ -51,7 +51,7 @@ import java.util.List;
  */
 @Data
 @NoArgsConstructor
-@EqualsAndHashCode(exclude = {"dataProvider","terminationConditions","candidateGenerator","resultSaver"})
+@EqualsAndHashCode(exclude = {"dataProvider", "terminationConditions", "candidateGenerator", "resultSaver"})
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public class OptimizationConfiguration<T, M, D, A> {
     @JsonSerialize
@@ -72,7 +72,7 @@ public class OptimizationConfiguration<T, M, D, A> {
     static {
         // List<Class<?>> classes = Arrays.asList(DataProvider.class,CandidateGenerator.class,ResultSaver.class,ScoreFunction.class,TerminationCondition.class);
         jsonMapper = JacksonReflectionLoader.findTypesFor(new ArrayList<Class<?>>());
-        yamlMapper = JacksonReflectionLoader.findTypesFor(new ArrayList<Class<?>>(),false);
+        yamlMapper = JacksonReflectionLoader.findTypesFor(new ArrayList<Class<?>>(), false);
 
     }
 
@@ -85,7 +85,8 @@ public class OptimizationConfiguration<T, M, D, A> {
         this.terminationConditions = builder.terminationConditions;
         this.rngSeed = builder.rngSeed;
 
-        if (rngSeed != null) candidateGenerator.setRngSeed(rngSeed);
+        if (rngSeed != null)
+            candidateGenerator.setRngSeed(rngSeed);
     }
 
     public static class Builder<T, M, D, A> {
@@ -154,12 +155,12 @@ public class OptimizationConfiguration<T, M, D, A> {
      *  @see OptimizationConfiguration
      * @return
      */
-    public static <T,M,D,A> OptimizationConfiguration<T,M,D,A> fromYaml(String json,Class<T> tCLazz,Class<M> mClazz,Class<D> dCLazz,Class<A> aClazz) {
+    public static <T, M, D, A> OptimizationConfiguration<T, M, D, A> fromYaml(String json, Class<T> tCLazz,
+                    Class<M> mClazz, Class<D> dCLazz, Class<A> aClazz) {
         try {
             return jsonMapper.readValue(json,
-                    jsonMapper.getTypeFactory()
-                            .constructParametrizedType(OptimizationConfiguration.class,
-                                    OptimizationConfiguration.class,tCLazz,mClazz,dCLazz,aClazz));
+                            jsonMapper.getTypeFactory().constructParametrizedType(OptimizationConfiguration.class,
+                                            OptimizationConfiguration.class, tCLazz, mClazz, dCLazz, aClazz));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -176,12 +177,12 @@ public class OptimizationConfiguration<T, M, D, A> {
      *  @see OptimizationConfiguration
      * @return
      */
-    public static <T,M,D,A> OptimizationConfiguration<T,M,D,A> fromJson(String json,Class<T> tCLazz,Class<M> mClazz,Class<D> dCLazz,Class<A> aClazz) {
+    public static <T, M, D, A> OptimizationConfiguration<T, M, D, A> fromJson(String json, Class<T> tCLazz,
+                    Class<M> mClazz, Class<D> dCLazz, Class<A> aClazz) {
         try {
             return jsonMapper.readValue(json,
-                    jsonMapper.getTypeFactory()
-                            .constructParametrizedType(OptimizationConfiguration.class,
-                                    OptimizationConfiguration.class,tCLazz,mClazz,dCLazz,aClazz));
+                            jsonMapper.getTypeFactory().constructParametrizedType(OptimizationConfiguration.class,
+                                            OptimizationConfiguration.class, tCLazz, mClazz, dCLazz, aClazz));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

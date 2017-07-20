@@ -57,13 +57,15 @@ public class GravesLSTMLayerSpace extends FeedForwardLayerSpace<GravesLSTM> {
 
     protected void setLayerOptionsBuilder(GravesLSTM.Builder builder, double[] values) {
         super.setLayerOptionsBuilder(builder, values);
-        if (forgetGateBiasInit != null) builder.forgetGateBiasInit(forgetGateBiasInit.getValue(values));
+        if (forgetGateBiasInit != null)
+            builder.forgetGateBiasInit(forgetGateBiasInit.getValue(values));
     }
 
     @Override
     public List<ParameterSpace> collectLeaves() {
         List<ParameterSpace> list = super.collectLeaves();
-        if (forgetGateBiasInit != null) list.addAll(forgetGateBiasInit.collectLeaves());
+        if (forgetGateBiasInit != null)
+            list.addAll(forgetGateBiasInit.collectLeaves());
         return list;
     }
 
@@ -75,7 +77,8 @@ public class GravesLSTMLayerSpace extends FeedForwardLayerSpace<GravesLSTM> {
     @Override
     public String toString(String delim) {
         StringBuilder sb = new StringBuilder("GravesLSTMLayerSpace(");
-        if (forgetGateBiasInit != null) sb.append("forgetGateBiasInit: ").append(forgetGateBiasInit).append(delim);
+        if (forgetGateBiasInit != null)
+            sb.append("forgetGateBiasInit: ").append(forgetGateBiasInit).append(delim);
         sb.append(super.toString(delim)).append(")");
         return sb.toString();
     }

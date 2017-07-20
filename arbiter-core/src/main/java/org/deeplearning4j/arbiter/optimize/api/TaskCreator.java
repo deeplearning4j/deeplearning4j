@@ -46,5 +46,5 @@ public interface TaskCreator<C, M, D, A> {
      * @return A callable that returns an OptimizationResult, once optimization is complete
      */
     Callable<OptimizationResult<C, M, A>> create(Candidate<C> candidate, DataProvider<D> dataProvider,
-                                                 ScoreFunction<M, D> scoreFunction, List<StatusListener> statusListeners);
+                    ScoreFunction<M, D> scoreFunction, List<StatusListener> statusListeners);
 }

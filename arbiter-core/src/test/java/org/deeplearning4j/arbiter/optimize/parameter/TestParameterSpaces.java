@@ -29,62 +29,62 @@ public class TestParameterSpaces {
 
 
     @Test
-    public void testContinuousParameterSpace(){
+    public void testContinuousParameterSpace() {
 
-        ContinuousParameterSpace cps = new ContinuousParameterSpace(0,1);
+        ContinuousParameterSpace cps = new ContinuousParameterSpace(0, 1);
         cps.setIndices(0);
 
-        for( int i=0; i<10; i++ ){
+        for (int i = 0; i < 10; i++) {
             double d = i / 10.0;
-            assertEquals(d,cps.getValue(new double[]{d}),0.0);
+            assertEquals(d, cps.getValue(new double[] {d}), 0.0);
         }
 
-        cps = new ContinuousParameterSpace(10,20);
+        cps = new ContinuousParameterSpace(10, 20);
         cps.setIndices(0);
 
-        for( int i=0; i<10; i++ ){
+        for (int i = 0; i < 10; i++) {
             double d = i / 10.0;
             double exp = d * 10 + 10;
-            assertEquals(exp,cps.getValue(new double[]{d}),0.0);
+            assertEquals(exp, cps.getValue(new double[] {d}), 0.0);
         }
 
 
-        cps = new ContinuousParameterSpace(new NormalDistribution(0,1));
-        NormalDistribution nd = new NormalDistribution(0,1);
+        cps = new ContinuousParameterSpace(new NormalDistribution(0, 1));
+        NormalDistribution nd = new NormalDistribution(0, 1);
         cps.setIndices(0);
-        for( int i=0; i<11; i++ ){
+        for (int i = 0; i < 11; i++) {
             double d = i / 10.0;
-            assertEquals(nd.inverseCumulativeProbability(d), cps.getValue(new double[]{d}), 1e-4);
+            assertEquals(nd.inverseCumulativeProbability(d), cps.getValue(new double[] {d}), 1e-4);
         }
     }
 
     @Test
-    public void testDiscreteParameterSpace(){
-        ParameterSpace<Integer> dps = new DiscreteParameterSpace<>(0,1,2,3,4);
+    public void testDiscreteParameterSpace() {
+        ParameterSpace<Integer> dps = new DiscreteParameterSpace<>(0, 1, 2, 3, 4);
         dps.setIndices(0);
 
-        for( int i=0; i<5; i++ ){
-            double d = i / 5.0 + 0.1;   //Center
-            double dEdgeLower = i/5.0 + 1e-8;  //Edge case: just above split threshold
-            double dEdgeUpper = (i+1) / 5.0 - 1e-8;     //Edge case: just below split threshold
-            assertEquals(i,(int)dps.getValue(new double[]{d}));
-            assertEquals(i, (int)dps.getValue(new double[]{dEdgeLower}));
-            assertEquals(i, (int)dps.getValue(new double[]{dEdgeUpper}));
+        for (int i = 0; i < 5; i++) {
+            double d = i / 5.0 + 0.1; //Center
+            double dEdgeLower = i / 5.0 + 1e-8; //Edge case: just above split threshold
+            double dEdgeUpper = (i + 1) / 5.0 - 1e-8; //Edge case: just below split threshold
+            assertEquals(i, (int) dps.getValue(new double[] {d}));
+            assertEquals(i, (int) dps.getValue(new double[] {dEdgeLower}));
+            assertEquals(i, (int) dps.getValue(new double[] {dEdgeUpper}));
         }
     }
 
     @Test
-    public void testIntegerParameterSpace(){
-        ParameterSpace<Integer> ips = new IntegerParameterSpace(0,4);
+    public void testIntegerParameterSpace() {
+        ParameterSpace<Integer> ips = new IntegerParameterSpace(0, 4);
         ips.setIndices(0);
 
-        for( int i=0; i<5; i++ ){
-            double d = i / 5.0 + 0.1;   //Center
-            double dEdgeLower = i/5.0 + 1e-8;  //Edge case: just above split threshold
-            double dEdgeUpper = (i+1) / 5.0 - 1e-8;     //Edge case: just below split threshold
-            assertEquals(i,(int)ips.getValue(new double[]{d}));
-            assertEquals(i, (int)ips.getValue(new double[]{dEdgeLower}));
-            assertEquals(i, (int) ips.getValue(new double[]{dEdgeUpper}));
+        for (int i = 0; i < 5; i++) {
+            double d = i / 5.0 + 0.1; //Center
+            double dEdgeLower = i / 5.0 + 1e-8; //Edge case: just above split threshold
+            double dEdgeUpper = (i + 1) / 5.0 - 1e-8; //Edge case: just below split threshold
+            assertEquals(i, (int) ips.getValue(new double[] {d}));
+            assertEquals(i, (int) ips.getValue(new double[] {dEdgeLower}));
+            assertEquals(i, (int) ips.getValue(new double[] {dEdgeUpper}));
         }
     }
 

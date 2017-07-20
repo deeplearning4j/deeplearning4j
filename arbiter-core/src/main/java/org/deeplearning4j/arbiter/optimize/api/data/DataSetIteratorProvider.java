@@ -35,18 +35,21 @@ public class DataSetIteratorProvider implements DataProvider<Object> {
 
     @Override
     public DataSetIterator trainData(Map<String, Object> dataParameters) {
-        if (resetBeforeReturn) trainData.reset();    //Same iterator might be used multiple times by different models
+        if (resetBeforeReturn)
+            trainData.reset(); //Same iterator might be used multiple times by different models
         return trainData;
     }
 
     @Override
     public DataSetIterator testData(Map<String, Object> dataParameters) {
-        if (resetBeforeReturn) testData.reset();
+        if (resetBeforeReturn)
+            testData.reset();
         return testData;
     }
 
     @Override
     public String toString() {
-        return "DataSetIteratorProvider(trainData=" + trainData.toString() + ", testData=" + testData.toString() + ", resetBeforeReturn=" + resetBeforeReturn + ")";
+        return "DataSetIteratorProvider(trainData=" + trainData.toString() + ", testData=" + testData.toString()
+                        + ", resetBeforeReturn=" + resetBeforeReturn + ")";
     }
 }

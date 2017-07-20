@@ -23,8 +23,9 @@ import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.util.List;
+
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
-public interface IOptimizationRunner<C,M,A> {
+public interface IOptimizationRunner<C, M, A> {
 
     void execute();
 
@@ -47,9 +48,9 @@ public interface IOptimizationRunner<C,M,A> {
     /** Index of the best scoring candidate, or -1 if no candidate has scored yet*/
     int bestScoreCandidateIndex();
 
-    List<ResultReference<C,M,A>> getResults();
+    List<ResultReference<C, M, A>> getResults();
 
-    OptimizationConfiguration<C,M,?,A> getConfiguration();
+    OptimizationConfiguration<C, M, ?, A> getConfiguration();
 
     void addListeners(StatusListener... listeners);
 

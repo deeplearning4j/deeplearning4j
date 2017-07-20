@@ -40,7 +40,7 @@ public class GraphTestSetLossScoreFunction implements ScoreFunction<ComputationG
     @Override
     public double score(ComputationGraph model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
         MultiDataSetIterator testData = ScoreUtil.getMultiIterator(dataProvider.testData(dataParameters));
-        return ScoreUtil.score(model,testData,average);
+        return ScoreUtil.score(model, testData, average);
     }
 
     @Override

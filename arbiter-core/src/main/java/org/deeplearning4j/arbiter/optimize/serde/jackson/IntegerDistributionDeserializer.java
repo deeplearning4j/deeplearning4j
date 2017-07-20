@@ -20,13 +20,14 @@ public class IntegerDistributionDeserializer extends JsonDeserializer<IntegerDis
         JsonNode node = p.getCodec().readTree(p);
         String simpleName = node.get("distribution").asText();
 
-        switch (simpleName){
+        switch (simpleName) {
             case "BinomialDistribution":
                 return new BinomialDistribution(node.get("trials").asInt(), node.get("p").asDouble());
             case "GeometricDistribution":
                 return new GeometricDistribution(node.get("p").asDouble());
             case "HypergeometricDistribution":
-                return new HypergeometricDistribution(node.get("populationSize").asInt(), node.get("numberOfSuccesses").asInt(), node.get("sampleSize").asInt());
+                return new HypergeometricDistribution(node.get("populationSize").asInt(),
+                                node.get("numberOfSuccesses").asInt(), node.get("sampleSize").asInt());
             case "PascalDistribution":
                 return new PascalDistribution(node.get("r").asInt(), node.get("p").asDouble());
             case "PoissonDistribution":

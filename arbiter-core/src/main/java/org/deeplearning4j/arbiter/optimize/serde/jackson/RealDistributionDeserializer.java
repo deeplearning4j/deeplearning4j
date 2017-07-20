@@ -15,11 +15,12 @@ import java.io.IOException;
 public class RealDistributionDeserializer extends JsonDeserializer<RealDistribution> {
 
     @Override
-    public RealDistribution deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+    public RealDistribution deserialize(JsonParser p, DeserializationContext ctxt)
+                    throws IOException, JsonProcessingException {
         JsonNode node = p.getCodec().readTree(p);
         String simpleName = node.get("distribution").asText();
 
-        switch (simpleName){
+        switch (simpleName) {
             case "BetaDistribution":
                 return new BetaDistribution(node.get("alpha").asDouble(), node.get("beta").asDouble());
             case "CauchyDistribution":
@@ -43,7 +44,8 @@ public class RealDistributionDeserializer extends JsonDeserializer<RealDistribut
             case "TDistribution":
                 return new TDistribution(node.get("dof").asDouble());
             case "TriangularDistribution":
-                return new TriangularDistribution(node.get("a").asDouble(), node.get("b").asDouble(), node.get("c").asDouble());
+                return new TriangularDistribution(node.get("a").asDouble(), node.get("b").asDouble(),
+                                node.get("c").asDouble());
             case "UniformRealDistribution":
                 return new UniformRealDistribution(node.get("lower").asDouble(), node.get("upper").asDouble());
             case "WeibullDistribution":

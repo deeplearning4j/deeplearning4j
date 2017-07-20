@@ -26,9 +26,9 @@ public class YamlMapper {
     }
 
 
-    private YamlMapper(){}
+    private YamlMapper() {}
 
-    public static ObjectMapper getMapper(){
+    public static ObjectMapper getMapper() {
         return mapper;
     }
 

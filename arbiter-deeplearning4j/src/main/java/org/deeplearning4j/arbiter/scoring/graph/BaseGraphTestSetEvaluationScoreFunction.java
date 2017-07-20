@@ -34,13 +34,15 @@ import java.util.Map;
  */
 public abstract class BaseGraphTestSetEvaluationScoreFunction implements ScoreFunction<ComputationGraph, Object> {
 
-    protected Evaluation getEvaluation(ComputationGraph model, DataProvider<Object> dataProvider, Map<String, Object> dataParameters) {
+    protected Evaluation getEvaluation(ComputationGraph model, DataProvider<Object> dataProvider,
+                    Map<String, Object> dataParameters) {
         if (model.getNumOutputArrays() != 1)
-            throw new IllegalStateException("GraphSetSetAccuracyScoreFunction cannot be " +
-                    "applied to ComputationGraphs with more than one output. NumOutputs = " + model.getNumOutputArrays());
+            throw new IllegalStateException("GraphSetSetAccuracyScoreFunction cannot be "
+                            + "applied to ComputationGraphs with more than one output. NumOutputs = "
+                            + model.getNumOutputArrays());
 
         MultiDataSetIterator testData = ScoreUtil.getMultiIterator(dataProvider.testData(dataParameters));
-        return ScoreUtil.getEvaluation(model,testData);
+        return ScoreUtil.getEvaluation(model, testData);
     }
 
     @Override
