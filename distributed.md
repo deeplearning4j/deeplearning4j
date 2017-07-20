@@ -81,7 +81,7 @@ Network IO has its own price, and this algorithm does some IO as well. Additiona
 The longer the original iteration time, the less your relative impact will come from sharing, and the better hypothetical scalability you will get.
 
 Here's simple form that'll help you with scalability expectations:
-
+{% include scalability.html %}
 
 # Performance Hints
 
