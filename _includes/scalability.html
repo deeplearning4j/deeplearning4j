@@ -1,61 +1,72 @@
-<form>
-    <table style="width: 100%; padding-bottom: 30px;"  align="left" style="text-align: left;">
-        <tr>
-            <td>
-                <table style="border-spacing: 5px; border-collapse: separate;">
-                    <tr>
-                        <td style="padding: 5px;"><small><strong>Iteration time</strong></small></td>
-                        <td style="padding: 5px;"><small><strong>Encode time</strong></small></td>
-                        <td style="padding: 5px;"><small><strong>Decode time</strong></small></td>
-                        <td style="padding: 5px;"><small><strong>Update time</strong></small></td>
-                        <td style="padding: 5px;"><small><strong>Service overhead</strong></small></td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 5px;"><input type="text" id="iter" value="550" style="width: 50px;" onchange="refreshCalculations()"/></td>
-                        <td style="padding: 5px;"><input type="text" id="enc" value="50" style="width: 50px;" onchange="refreshCalculations()"/></td>
-                        <td style="padding: 5px;"><input type="text" id="dec" value="5" style="width: 50px;" onchange="refreshCalculations()"/></td>
-                        <td style="padding: 5px;"><input type="text" id="upd" value="50" style="width: 50px;" onchange="refreshCalculations()"/></td>
-                        <td style="padding: 5px;"><input type="text" id="srv" value="20" style="width: 50px;" onchange="refreshCalculations()"/></td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-        <tr>
-            <td align="left" style="text-align: left;">
-                <table style="border-spacing: 5px; border-collapse: separate;">
-                    <tr>
-                        <td style="padding: 5px;"><small><strong>Number of nodes</strong></small></td>
-                        <td style="padding: 5px;"><small><strong>Workers per node</strong></small></td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 5px;"><input type="text" id="nodes" value="8" style="width: 50px;" onchange="refreshCalculations()"/></td>
-                        <td style="padding: 5px;"><input type="text" id="workers" value="4" style="width: 50px;" onchange="refreshCalculations()"/></td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-        <tr>
-            <td align="left" style="text-align: left;">
-                <table>
-                    <tr>
-                        <td>Scalability ratio: <p id="rscal">0%</p></td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-</form>
-<br />
-<br />
+<div class="row">
+  <div class="col-sm-12">
+    <form>
+      <div>
+        <table class="table">
+          <thead>
+          <th>
+            Iteration time
+          </th>
+          <th>
+            Encode time
+          </th>
+          <th>
+            Decode time
+          </th>
+          <th>
+            Update time
+          </th>
+          <th>
+            Service overhead
+          </th>
+          </thead>
+          <tr>
+            <td><input type="text" id="iter" value="550" style="width: 50px;"
+                       onkeyup="refreshCalculations()"/></td>
+            <td><input type="text" id="enc" value="50" style="width: 50px;"
+                       onkeyup="refreshCalculations()"/></td>
+            <td><input type="text" id="dec" value="5" style="width: 50px;"
+                       onkeyup="refreshCalculations()"/></td>
+            <td><input type="text" id="upd" value="50" style="width: 50px;"
+                       onkeyup="refreshCalculations()"/></td>
+            <td><input type="text" id="srv" value="20" style="width: 50px;"
+                       onkeyup="refreshCalculations()"/></td>
+          </tr>
+        </table>
+      </div>
+      <div>
+        <table class="table">
+          <thead>
+          <th>
+            Number of nodes
+          </th>
+          <th>
+            Workers per node
+          </th>
+          </thead>
+          <tr>
+            <td><input type="text" id="nodes" value="8" style="width: 50px;"
+                       onkeyup="refreshCalculations()"/></td>
+            <td><input type="text" id="workers" value="4" style="width: 50px;"
+                       onkeyup="refreshCalculations()"/></td>
+          </tr>
+        </table>
+      </div>
+      <div style="padding-bottom: 30px;">
+        <h4>Scalability ratio: <span id="rscal">0%</span></h4>
+      </div>
+    </form>
+  </div>
+</div>
 
 <script language="JavaScript">
-function getValue(id) {
+  function getValue(id) {
     return document.getElementById(id).value;
-}
+  }
 
-function refreshCalculations() {
- // to be implemented
- // 60000 / (A2 + B2 + (C2 * (A5 * B5)) + E2) * (A5 * B5)
+  function refreshCalculations() {
+    // to be implemented
+    // 60000 / (A2 + B2 + (C2 * (A5 * B5)) + E2) * (A5 * B5)
     var a2 = parseInt(getValue("iter"));
     var b2 = parseInt(getValue("enc"));
     var c2 = parseInt(getValue("dec"));
@@ -82,13 +93,13 @@ function refreshCalculations() {
     console.log("h13: " + h13);
     */
 
-    var h13 = g13/g12;
+    var h13 = g13 / g12;
 
     var i13 = parseFloat((h13 * 100) / (a5 * b5)).toFixed(2);
 
     document.getElementById("rscal").innerHTML = i13 + '%';
-}
+  }
 
-// fire this one, once document is loaded
-refreshCalculations();
+  // fire this one, once document is loaded
+  refreshCalculations();
 </script>
