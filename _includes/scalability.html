@@ -11,11 +11,11 @@
                         <td style="padding: 5px;"><small><strong>Service overhead</strong></small></td>
                     </tr>
                     <tr>
-                        <td style="padding: 5px;"><input type="text" id="iter" value="550" style="width: 50px; border: none;" onchange="refreshCalculations()"/></td>
-                        <td style="padding: 5px;"><input type="text" id="enc" value="50" style="width: 50px;  border: none;" onchange="refreshCalculations()"/></td>
-                        <td style="padding: 5px;"><input type="text" id="dec" value="5" style="width: 50px; border: none;" onchange="refreshCalculations()"/></td>
-                        <td style="padding: 5px;"><input type="text" id="upd" value="50" style="width: 50px; border: none;" onchange="refreshCalculations()"/></td>
-                        <td style="padding: 5px;"><input type="text" id="srv" value="20" style="width: 50px; border: none;" onchange="refreshCalculations()"/></td>
+                        <td style="padding: 5px;"><input type="text" id="iter" value="550" style="width: 50px;" onchange="refreshCalculations()"/></td>
+                        <td style="padding: 5px;"><input type="text" id="enc" value="50" style="width: 50px;" onchange="refreshCalculations()"/></td>
+                        <td style="padding: 5px;"><input type="text" id="dec" value="5" style="width: 50px;" onchange="refreshCalculations()"/></td>
+                        <td style="padding: 5px;"><input type="text" id="upd" value="50" style="width: 50px;" onchange="refreshCalculations()"/></td>
+                        <td style="padding: 5px;"><input type="text" id="srv" value="20" style="width: 50px;" onchange="refreshCalculations()"/></td>
                     </tr>
                 </table>
             </td>
@@ -70,6 +70,7 @@ function refreshCalculations() {
     var gP = (a2 + b2 + (c2 * ab) + e2);
     var g13 = (60000.00 / gP) * ab;
 
+    /*
     console.log("a2: " + a2);
     console.log("b2: " + b2);
     console.log("c2: " + c2);
@@ -78,14 +79,14 @@ function refreshCalculations() {
     console.log("g12: " + g12);
     console.log("gP: " + gP);
     console.log("g13: " + g13);
+    console.log("h13: " + h13);
+    */
 
     var h13 = g13/g12;
 
-    console.log("h13: " + h13);
-
     var i13 = parseFloat((h13 * 100) / (a5 * b5)).toFixed(2);
 
-    document.getElementById("rscal").innerHTML = i13;
+    document.getElementById("rscal").innerHTML = i13 + '%';
 }
 
 // fire this one, once document is loaded
