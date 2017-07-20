@@ -48,7 +48,7 @@ import java.util.Map;
  * @author Alex Black
  */
 @EqualsAndHashCode
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
 
     protected ParameterSpace<Boolean> useDropConnect;

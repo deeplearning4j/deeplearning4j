@@ -29,7 +29,7 @@ import org.deeplearning4j.arbiter.optimize.api.saving.ResultSaver;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
-import org.deeplearning4j.arbiter.optimize.runner.listener.runner.OptimizationRunnerStatusListener;
+import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -53,23 +54,23 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
     private static final int POLLING_FREQUENCY = 1;
     private static final TimeUnit POLLING_FREQUENCY_UNIT = TimeUnit.SECONDS;
 
-    private OptimizationConfiguration<C, M, D, A> config;
+    protected OptimizationConfiguration<C, M, D, A> config;
     //    private CandidateExecutor<C, M, D, A> executor;
-    private Queue<Future<OptimizationResult<C, M, A>>> queuedFutures = new ConcurrentLinkedQueue<>();
-    private BlockingQueue<Future<OptimizationResult<C, M, A>>> completedFutures = new LinkedBlockingQueue<>();
-    private int totalCandidateCount = 0;
-    private int numCandidatesCompleted = 0;
-    private int numCandidatesFailed = 0;
-    private Double bestScore = null;
-    private Long bestScoreTime = null;
-    private int bestScoreCandidateIndex = -1;
-    private List<ResultReference<C, M, A>> allResults = new ArrayList<>();
+    protected Queue<Future<OptimizationResult<C, M, A>>> queuedFutures = new ConcurrentLinkedQueue<>();
+    protected BlockingQueue<Future<OptimizationResult<C, M, A>>> completedFutures = new LinkedBlockingQueue<>();
+    protected AtomicInteger totalCandidateCount = new AtomicInteger();
+    protected AtomicInteger numCandidatesCompleted = new AtomicInteger();
+    protected AtomicInteger numCandidatesFailed = new AtomicInteger();
+    protected Double bestScore = null;
+    protected Long bestScoreTime = null;
+    protected AtomicInteger bestScoreCandidateIndex = new AtomicInteger(-1);
+    protected List<ResultReference<C, M, A>> allResults = new ArrayList<>();
 
-    private Map<Integer, CandidateStatus> currentStatus = new ConcurrentHashMap<>(); //TODO: better design possible?
+    protected Map<Integer, CandidateInfo> currentStatus = new ConcurrentHashMap<>(); //TODO: better design possible?
 
-    private ExecutorService futureListenerExecutor;
+    protected ExecutorService futureListenerExecutor;
 
-    private List<OptimizationRunnerStatusListener> statusListeners = new ArrayList<>();
+    protected List<StatusListener> statusListeners = new ArrayList<>();
 
 
     protected BaseOptimizationRunner(OptimizationConfiguration<C, M, D, A> config) {
@@ -103,7 +104,9 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
     @Override
     public void execute() {
         log.info("BaseOptimizationRunner: execution started");
-        for (OptimizationRunnerStatusListener listener : statusListeners) listener.onInitialization(this);
+        for (StatusListener listener : statusListeners){
+            listener.onInitialization(this);
+        }
 
         //Initialize termination conditions (start timers, etc)
         for (TerminationCondition c : config.getTerminationConditions()) {
@@ -115,7 +118,7 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
 
         List<Future<OptimizationResult<C, M, A>>> tempList = new ArrayList<>(100);
         while (true) {
-            boolean statusChange = false;
+//            boolean statusChange = false;
 
             //Otherwise: add tasks if required
             Future<OptimizationResult<C, M, A>> future = null;
@@ -131,7 +134,6 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
             for (Future<OptimizationResult<C, M, A>> f : tempList) {
                 queuedFutures.remove(f);
                 processReturnedTask(f);
-                statusChange = true;
             }
             tempList.clear();
 
@@ -148,22 +150,19 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
                 ListenableFuture<OptimizationResult<C, M, A>> f = execute(candidate, config.getDataProvider(), config.getScoreFunction());
                 f.addListener(new OnCompletionListener(f), futureListenerExecutor);
                 queuedFutures.add(f);
-                totalCandidateCount++;
-                statusChange = true;
+                totalCandidateCount.getAndIncrement();
 
-                CandidateStatus status = new CandidateStatus(
+                CandidateInfo status = new CandidateInfo(
                         candidate.getIndex(),
-                        Status.Created,
+                        CandidateStatus.Created,
                         null,
                         System.currentTimeMillis(),
                         null,
                         null);
                 currentStatus.put(candidate.getIndex(), status);
-            }
 
-            if (statusChange) {
-                for (OptimizationRunnerStatusListener listener : statusListeners) {
-                    listener.onStatusChange(this);
+                for (StatusListener listener : statusListeners) {
+                    listener.onCandidateStatusChange(status, this, null);
                 }
             }
         }
@@ -177,7 +176,9 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
         tempList.clear();
 
         log.info("Optimization runner: execution complete");
-        for (OptimizationRunnerStatusListener listener : statusListeners) listener.onShutdown(this);
+        for (StatusListener listener : statusListeners){
+            listener.onShutdown(this);
+        }
     }
 
     /**
@@ -194,17 +195,17 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
         } catch (ExecutionException e) {
             log.warn("Task failed", e);
 
-            numCandidatesFailed++;
+            numCandidatesFailed.getAndIncrement();
             return;
         } catch (TimeoutException e) {
             throw new RuntimeException(e);  //TODO
         }
 
         //Update internal status:
-        CandidateStatus status = currentStatus.get(result.getIndex());
-        CandidateStatus newStatus = new CandidateStatus(
+        CandidateInfo status = currentStatus.get(result.getIndex());
+        CandidateInfo newStatus = new CandidateInfo(
                 result.getIndex(),
-                Status.Complete,
+                CandidateStatus.Complete,
                 result.getScore(),
                 status.getCreatedTime(),
                 null,       //TODO: how to know when execution actually started?
@@ -212,7 +213,9 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
         currentStatus.put(result.getIndex(), newStatus);
 
         //Listeners:
-        for (OptimizationRunnerStatusListener listener : statusListeners) listener.onCompletion(result);
+        for (StatusListener listener : statusListeners){
+            listener.onCandidateStatusChange(newStatus, this, result);
+        }
 
         //Report completion to candidate generator
         config.getCandidateGenerator().reportResults(result);
@@ -230,9 +233,9 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
             }
             bestScore = score;
             bestScoreTime = System.currentTimeMillis();
-            bestScoreCandidateIndex = result.getIndex();
+            bestScoreCandidateIndex.set(result.getIndex());
         }
-        numCandidatesCompleted++;
+        numCandidatesCompleted.getAndIncrement();
 
         //TODO: In general, we don't want to save EVERY model, only the best ones
         ResultSaver<C, M, A> saver = config.getResultSaver();
@@ -251,17 +254,17 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
 
     @Override
     public int numCandidatesTotal() {
-        return totalCandidateCount;
+        return totalCandidateCount.get();
     }
 
     @Override
     public int numCandidatesCompleted() {
-        return numCandidatesCompleted;
+        return numCandidatesCompleted.get();
     }
 
     @Override
     public int numCandidatesFailed() {
-        return numCandidatesFailed;
+        return numCandidatesFailed.get();
     }
 
     @Override
@@ -281,7 +284,7 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
 
     @Override
     public int bestScoreCandidateIndex() {
-        return bestScoreCandidateIndex;
+        return bestScoreCandidateIndex.get();
     }
 
     @Override
@@ -296,16 +299,20 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
 
 
     @Override
-    public void addListeners(OptimizationRunnerStatusListener... listeners) {
-        for (OptimizationRunnerStatusListener l : listeners) {
-            if (!statusListeners.contains(l)) statusListeners.add(l);
+    public void addListeners(StatusListener... listeners) {
+        for (StatusListener l : listeners) {
+            if (!statusListeners.contains(l)){
+                statusListeners.add(l);
+            }
         }
     }
 
     @Override
-    public void removeListeners(OptimizationRunnerStatusListener... listeners) {
-        for (OptimizationRunnerStatusListener l : listeners) {
-            if (statusListeners.contains(l)) statusListeners.remove(l);
+    public void removeListeners(StatusListener... listeners) {
+        for (StatusListener l : listeners) {
+            if (statusListeners.contains(l)){
+                statusListeners.remove(l);
+            }
         }
     }
 
@@ -315,8 +322,8 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
     }
 
     @Override
-    public List<CandidateStatus> getCandidateStatus() {
-        List<CandidateStatus> list = new ArrayList<>();
+    public List<CandidateInfo> getCandidateStatus() {
+        List<CandidateInfo> list = new ArrayList<>();
         list.addAll(currentStatus.values());
         return list;
     }

@@ -237,7 +237,7 @@
 
                 //Get JSON; address set by SummaryResultsResource
                 $.get("/arbiter/results",function(data){
-                    //Expect an array of CandidateStatus type objects here
+                    //Expect an array of CandidateInfo type objects here
                     resultsTableContent = data;
                     drawResultTable();
                 });

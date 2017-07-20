@@ -48,7 +48,7 @@ import java.util.List;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)    //For Jackson JSON ser/de
 @Data
 @EqualsAndHashCode(callSuper = true)
-@JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.PROPERTY, property="type")
+@JsonTypeInfo(use=JsonTypeInfo.Id.NAME, include=JsonTypeInfo.As.PROPERTY, property="@class")
 @JsonTypeName("ComputationGraphSpace")
 public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> {
     @JsonProperty

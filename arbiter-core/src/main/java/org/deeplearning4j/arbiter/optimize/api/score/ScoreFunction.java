@@ -33,7 +33,7 @@ import java.util.Map;
  * @param <D> Type of data used
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface ScoreFunction<M, D> extends Serializable {
 
     /**

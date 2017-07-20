@@ -33,7 +33,7 @@ import java.io.Serializable;
  * @author Alex Black
  */
 @Data
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public class OptimizationResult<C, M, A> implements Serializable {
     @JsonProperty
     private Candidate<C> candidate;

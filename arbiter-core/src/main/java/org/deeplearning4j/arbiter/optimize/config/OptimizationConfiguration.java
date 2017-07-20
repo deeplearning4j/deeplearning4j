@@ -52,7 +52,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(exclude = {"dataProvider","terminationConditions","candidateGenerator","resultSaver"})
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public class OptimizationConfiguration<T, M, D, A> {
     @JsonSerialize
     private DataProvider<D> dataProvider;

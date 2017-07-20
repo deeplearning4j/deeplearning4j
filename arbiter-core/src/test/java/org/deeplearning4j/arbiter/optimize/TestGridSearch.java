@@ -24,8 +24,8 @@ import org.deeplearning4j.arbiter.optimize.api.data.DataSetIteratorFactoryProvid
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.candidategenerator.GridSearchCandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
-import org.deeplearning4j.arbiter.optimize.runner.Status;
-import org.deeplearning4j.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
+import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
+import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 import org.deeplearning4j.ui.components.text.ComponentText;
 import org.junit.Test;
 
@@ -191,31 +191,21 @@ public class TestGridSearch {
         @Override
         public Callable<OptimizationResult<BraninConfig, BraninConfig,Void>> create(final Candidate<BraninConfig> candidate,
                                                                                     DataProvider<Void> dataProvider, final ScoreFunction<BraninConfig,Void> scoreFunction,
-                                                                                    final UICandidateStatusListener statusListener) {
-
-            if(statusListener != null){
-                statusListener.reportStatus(Status.Created,new ComponentText("Config: " + candidate.toString(), null));
-            }
+                                                                                    final List<StatusListener> statusListeners) {
 
             return new Callable<OptimizationResult<BraninConfig, BraninConfig, Void>>() {
                 @Override
                 public OptimizationResult<BraninConfig, BraninConfig, Void> call() throws Exception {
 
-                    if(statusListener != null) {
-                        statusListener.reportStatus(Status.Running,
-                                new ComponentText("Config: " + candidate.toString(), null)
-                        );
-                    }
-
                     double score = scoreFunction.score(candidate.getValue(),null,null);
                     System.out.println(candidate.getValue().getX1() + "\t" + candidate.getValue().getX2() + "\t" + score);
 
                     Thread.sleep(500);
-                    if(statusListener != null) {
-                        statusListener.reportStatus(Status.Complete,
-                                new ComponentText("Config: " + candidate.toString(), null),
-                                new ComponentText("Score: " + score, null)
-                        );
+
+                    if(statusListeners != null){
+                        for(StatusListener sl : statusListeners){
+                            sl.onCandidateIteration(null, 0);
+                        }
                     }
 
                     return new OptimizationResult<>(candidate,candidate.getValue(), score, candidate.getIndex(), null);

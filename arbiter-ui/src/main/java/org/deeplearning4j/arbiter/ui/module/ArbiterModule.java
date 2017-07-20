@@ -281,7 +281,7 @@ public class ArbiterModule implements UIModule {
 
     private Result getSummaryResults(){
         /*
-            private List<CandidateStatus> statusList = new ArrayList<>();
+            private List<CandidateInfo> statusList = new ArrayList<>();
 
             @GET
             public Response getCandidateStatus(){

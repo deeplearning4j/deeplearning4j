@@ -18,35 +18,16 @@
 package org.deeplearning4j.arbiter.ui.listener;
 
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
-import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
-import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
-import org.deeplearning4j.arbiter.optimize.api.saving.ResultSaver;
-import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
-import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
-import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
-import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
-import org.deeplearning4j.arbiter.optimize.runner.Status;
-import org.deeplearning4j.arbiter.optimize.runner.listener.runner.OptimizationRunnerStatusListener;
-import org.deeplearning4j.ui.api.Component;
-import org.deeplearning4j.ui.api.LengthUnit;
-import org.deeplearning4j.ui.components.chart.ChartLine;
-import org.deeplearning4j.ui.components.chart.ChartScatter;
-import org.deeplearning4j.ui.components.chart.style.StyleChart;
-import org.deeplearning4j.ui.components.component.ComponentDiv;
-import org.deeplearning4j.ui.components.component.style.StyleDiv;
-import org.deeplearning4j.ui.components.table.ComponentTable;
-import org.deeplearning4j.ui.components.table.style.StyleTable;
 
-import java.awt.*;
-import java.util.*;
-import java.util.List;
+import java.util.Calendar;
+import java.util.TimeZone;
 
 /**
  * A listener for the optimization runner that reports results to the UI
  *
  * @author Alex Black
  */
-public class UIOptimizationRunnerStatusListener implements OptimizationRunnerStatusListener {
+public class UIOptimizationRunnerStatusListener { /*implements OptimizationRunnerStatusListener {
 
     private Object server;
     private long startTime;
@@ -188,14 +169,14 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
         }
 
         //Create a plot of all models vs. time
-        List<CandidateStatus> statusList = runner.getCandidateStatus();
-        List<CandidateStatus> completedStatuses = new ArrayList<>();
-        for(CandidateStatus s : statusList){
-            if(s.getStatus() == Status.Complete) completedStatuses.add(s);
+        List<CandidateInfo> statusList = runner.getCandidateStatus();
+        List<CandidateInfo> completedStatuses = new ArrayList<>();
+        for(CandidateInfo s : statusList){
+            if(s.getCandidateStatus() == CandidateStatus.Complete) completedStatuses.add(s);
         }
-        Collections.sort(completedStatuses, new Comparator<CandidateStatus>() {
+        Collections.sort(completedStatuses, new Comparator<CandidateInfo>() {
             @Override
-            public int compare(CandidateStatus o1, CandidateStatus o2) {
+            public int compare(CandidateInfo o1, CandidateInfo o2) {
                 return Long.compare(o1.getEndTime(),o2.getEndTime());
             }
         });
@@ -203,7 +184,7 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
         double[] time = new double[completedStatuses.size()];
         double[] score = new double[completedStatuses.size()];
         for( int i=0; i<completedStatuses.size(); i++ ){
-            CandidateStatus cs = completedStatuses.get(i);
+            CandidateInfo cs = completedStatuses.get(i);
             time[i] = (cs.getEndTime() - startTime) / 60000.0;  //minutes since start
             Double temp = cs.getScore();
             score[i] = (temp == null ? Double.NaN : temp);
@@ -219,7 +200,7 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
 //        server.updateResults(runner.getCandidateStatus());
     }
 
-    /** Convert timestamp to String */
+    //Convert timestamp to String
     private String formatTimeMS(Long time){
         if(time == null) return "null";
         Calendar c = Calendar.getInstance(TimeZone.getDefault());
@@ -228,7 +209,7 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
         return c.get(Calendar.HOUR_OF_DAY) + ":" + (min <= 9 ? "0" : "") + min;
     }
 
-    /** Convert duration (in ms) to format such as "1hr 24min" */
+    // Convert duration (in ms) to format such as "1hr 24min"
     private String formatDurationMS(long durationMS, boolean filterNegative){
         if(filterNegative && durationMS <= 0) return "0 min";
         long hours = (durationMS / 3600000);
@@ -242,4 +223,5 @@ public class UIOptimizationRunnerStatusListener implements OptimizationRunnerSta
     public void onCompletion(OptimizationResult<?, ?, ?> result) {
 
     }
+    */
 }

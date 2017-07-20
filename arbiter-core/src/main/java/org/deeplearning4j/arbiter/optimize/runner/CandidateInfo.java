@@ -15,15 +15,28 @@
  *  *    limitations under the License.
  *
  */
-package org.deeplearning4j.arbiter.optimize.runner.listener.candidate;
+package org.deeplearning4j.arbiter.optimize.runner;
 
-import org.deeplearning4j.arbiter.optimize.runner.Status;
-import org.deeplearning4j.ui.api.Component;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 
-/**Listener for reporting candidate status
+/**
+ * Simple helper class to store status of a candidate that is/has been/will be executed
  */
-public interface UICandidateStatusListener {
+@AllArgsConstructor
+@Data
+public class CandidateInfo {
 
-    void reportStatus(Status status, Component... uiComponents);
+    public CandidateInfo() {
+        //No arg constructor for Jackson
+    }
+
+    private int index;
+    private CandidateStatus candidateStatus;
+    private Double score;
+    private long createdTime;
+    private Long startTime;
+    private Long endTime;
+
 
 }

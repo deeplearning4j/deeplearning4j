@@ -26,7 +26,7 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
  * Global termination condition for conducting hyperparameter optimization.
  * Termination conditions are used to determine if/when the optimization should stop.
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public interface TerminationCondition {
 

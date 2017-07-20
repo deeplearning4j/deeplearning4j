@@ -17,8 +17,7 @@
  */
 package org.deeplearning4j.arbiter.listener;
 
-import org.deeplearning4j.arbiter.optimize.runner.Status;
-import org.deeplearning4j.arbiter.optimize.runner.listener.candidate.UICandidateStatusListener;
+import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;
@@ -48,6 +47,8 @@ import java.util.List;
  */
 public abstract class BaseUIStatusReportingListener<T extends Model> implements EarlyStoppingListener<T>, IterationListener {
 
+    /*
+
     private static final StyleChart styleChart = new StyleChart.Builder()
             .width(650, LengthUnit.Px)
             .height(350, LengthUnit.Px)
@@ -68,15 +69,15 @@ public abstract class BaseUIStatusReportingListener<T extends Model> implements 
      * How frequently (maximum delay between reporting, in MS) should results be reported? This is necessary to keep
      * network traffic to a reasonable level.
      * onStart, onEpoch and onCompletion calls are exempt from this
-     */
+
     public static final int MAX_REPORTING_FREQUENCY_MS = 5000; //Report at most every 5 seconds
 
-    /**
+
      * Score vs. iteration reporting: how many scores (maximum) should we report? This is necessary to keep
      * network traffic to a reasonable level.
      * When the number of reported scores exceeds this, the score history will be subsampled: i.e., report only
      * every 2nd score, then every 4th, then every 8th etc as required to keep total number of reported scores
-     */
+     *
     public static final int MAX_SCORE_COMPONENTS = 4000;
 
     protected UICandidateStatusListener uiListener;
@@ -100,7 +101,7 @@ public abstract class BaseUIStatusReportingListener<T extends Model> implements 
     @Override
     public void onStart(EarlyStoppingConfiguration<T> esConfig, T net) {
         if (config == null) createConfigComponent(net);
-        postReport(Status.Running, null);
+        postReport(CandidateStatus.Running, null);
     }
 
     @Override
@@ -108,7 +109,7 @@ public abstract class BaseUIStatusReportingListener<T extends Model> implements 
         if (config == null) createConfigComponent(net);
         scoreVsEpochEarlyStopping.add(new Pair<>(epochNum, score));
 
-        postReport(Status.Running, null, createEarlyStoppingScoreVsEpochChart());
+        postReport(CandidateStatus.Running, null, createEarlyStoppingScoreVsEpochChart());
     }
 
     @Override
@@ -180,13 +181,13 @@ public abstract class BaseUIStatusReportingListener<T extends Model> implements 
         long currTime = System.currentTimeMillis();
         if (currTime - lastReportTime > MAX_REPORTING_FREQUENCY_MS) {
             //Post report
-            postReport(Status.Running, null);
+            postReport(CandidateStatus.Running, null);
         }
     }
 
     protected abstract void createConfigComponent(T network);
 
-    public void postReport(Status status, EarlyStoppingResult<T> esResult, Component... additionalComponents) {
+    public void postReport(CandidateStatus candidateStatus, EarlyStoppingResult<T> esResult, Component... additionalComponents) {
 
         //Create score vs. iteration graph:
         double[] x = new double[scoreList.size()];
@@ -232,8 +233,10 @@ public abstract class BaseUIStatusReportingListener<T extends Model> implements 
             Collections.addAll(components, additionalComponents);
         }
 
-        uiListener.reportStatus(status, components.toArray(new Component[components.size()]));
+        uiListener.reportStatus(candidateStatus, components.toArray(new Component[components.size()]));
 
         lastReportTime = System.currentTimeMillis();
     }
+
+    */
 }

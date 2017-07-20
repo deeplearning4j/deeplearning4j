@@ -17,26 +17,9 @@
  */
 package org.deeplearning4j.arbiter.optimize.runner;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-
 /**
- * Simple helper class to store status of a candidate that is/has been/will be executed
+ * Status for candidates
  */
-@AllArgsConstructor
-@Data
-public class CandidateStatus {
-
-    public CandidateStatus() {
-        //No arg constructor for Jackson
-    }
-
-    private int index;
-    private Status status;
-    private Double score;
-    private long createdTime;
-    private Long startTime;
-    private Long endTime;
-
-
+public enum CandidateStatus {
+    Created, Running, Complete, Failed, Cancelled
 }

@@ -261,7 +261,7 @@ Seq[Any](format.raw/*1.1*/("""<html>
 
                 """),format.raw/*238.17*/("""//Get JSON; address set by SummaryResultsResource
                 $.get("/arbiter/results",function(data)"""),format.raw/*239.56*/("""{"""),format.raw/*239.57*/("""
-                    """),format.raw/*240.21*/("""//Expect an array of CandidateStatus type objects here
+                    """),format.raw/*240.21*/("""//Expect an array of CandidateInfo type objects here
                     resultsTableContent = data;
                     drawResultTable();
                 """),format.raw/*243.17*/("""}"""),format.raw/*243.18*/(""");

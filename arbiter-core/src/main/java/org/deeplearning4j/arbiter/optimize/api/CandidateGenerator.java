@@ -36,7 +36,7 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = GridSearchCandidateGenerator.class, name = "GridSearchCandidateGenerator"),
         @JsonSubTypes.Type(value = RandomSearchGenerator.class, name = "RandomSearchCandidateGenerator")
 })
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface CandidateGenerator<C> {
 
     /**
