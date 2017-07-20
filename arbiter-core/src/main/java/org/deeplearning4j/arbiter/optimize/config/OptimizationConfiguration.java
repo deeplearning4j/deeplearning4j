@@ -18,9 +18,7 @@
 
 package org.deeplearning4j.arbiter.optimize.config;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.deeplearning4j.arbiter.optimize.api.CandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.saving.ResultSaver;
@@ -68,6 +66,9 @@ public class OptimizationConfiguration<T, M, D, A> {
     private Long rngSeed;
     private static ObjectMapper jsonMapper;
     private static ObjectMapper yamlMapper;
+
+    @Getter @Setter
+    private long executionStartTime;
 
     static {
         // List<Class<?>> classes = Arrays.asList(DataProvider.class,CandidateGenerator.class,ResultSaver.class,ScoreFunction.class,TerminationCondition.class);

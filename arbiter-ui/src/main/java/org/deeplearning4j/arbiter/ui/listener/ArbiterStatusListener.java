@@ -10,6 +10,7 @@ import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusChangeType;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 import org.deeplearning4j.arbiter.ui.data.GlobalConfigPersistable;
+import org.deeplearning4j.arbiter.ui.data.ModelInfoPersistable;
 import org.deeplearning4j.arbiter.ui.misc.JsonMapper;
 
 import java.util.UUID;
@@ -57,6 +58,16 @@ public class ArbiterStatusListener implements StatusListener {
     @Override
     public void onCandidateStatusChange(CandidateInfo candidateInfo, IOptimizationRunner runner, OptimizationResult<?, ?, ?> result) {
 
+        ModelInfoPersistable p = new ModelInfoPersistable.Builder()
+                .timestamp(candidateInfo.getCreatedTime())
+                .sessionId(sessionId)
+                .workerId(String.valueOf(candidateInfo.getIndex()))
+                .modelIdx(candidateInfo.getIndex())
+                .score(candidateInfo.getScore())
+                .status(candidateInfo.getCandidateStatus())
+                .build();
+
+        statsStorage.putUpdate(p);
     }
 
     @Override
@@ -66,9 +77,9 @@ public class ArbiterStatusListener implements StatusListener {
 
 
     private GlobalConfigPersistable getNewStatusPersistable(IOptimizationRunner r){
-        if(ocJson == null){
+//        if(ocJson == null){
             ocJson = JsonMapper.asJson(r.getConfiguration());
-        }
+//        }
 
         GlobalConfigPersistable p = new GlobalConfigPersistable.Builder()
                 .sessionId(sessionId)

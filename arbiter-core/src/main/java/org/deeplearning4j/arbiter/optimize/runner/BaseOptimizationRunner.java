@@ -106,6 +106,7 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
         for (StatusListener listener : statusListeners) {
             listener.onInitialization(this);
         }
+        config.setExecutionStartTime(System.currentTimeMillis());
 
         //Initialize termination conditions (start timers, etc)
         for (TerminationCondition c : config.getTerminationConditions()) {

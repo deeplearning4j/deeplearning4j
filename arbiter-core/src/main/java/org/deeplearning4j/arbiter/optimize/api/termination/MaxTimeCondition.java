@@ -36,16 +36,20 @@ import java.util.concurrent.TimeUnit;
 @Data
 public class MaxTimeCondition implements TerminationCondition {
 
-    private static final DateTimeFormatter formatter =
-                    DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss.SSS zzz").withZone(DateTimeZone.UTC);
-    @JsonProperty
+    private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("dd-MMM HH:mm ZZ");
     private long duration;
-    @JsonProperty
     private TimeUnit timeUnit;
-    @JsonProperty
     private long startTime;
-    @JsonProperty
     private long endTime;
+
+
+    private MaxTimeCondition(@JsonProperty("duration") long duration, @JsonProperty("timeUnit") TimeUnit timeUnit,
+                             @JsonProperty("startTime") long startTime, @JsonProperty("endTime") long endTime){
+        this.duration = duration;
+        this.timeUnit = timeUnit;
+        this.startTime = startTime;
+        this.endTime = endTime;
+    }
 
     /**
      * @param duration Duration of time

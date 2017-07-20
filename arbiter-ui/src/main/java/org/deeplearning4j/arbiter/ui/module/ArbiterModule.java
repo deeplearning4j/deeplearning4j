@@ -10,11 +10,17 @@ import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
+import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
 import org.deeplearning4j.arbiter.ui.UpdateStatus;
 import org.deeplearning4j.arbiter.ui.data.GlobalConfigPersistable;
+import org.deeplearning4j.arbiter.ui.data.ModelInfoPersistable;
+import org.deeplearning4j.arbiter.ui.misc.UIUtils;
 import org.deeplearning4j.arbiter.ui.views.html.ArbiterUI;
 import org.deeplearning4j.ui.api.*;
 import org.deeplearning4j.ui.api.Component;
+import org.deeplearning4j.ui.components.chart.ChartLine;
+import org.deeplearning4j.ui.components.chart.ChartScatter;
+import org.deeplearning4j.ui.components.chart.style.StyleChart;
 import org.deeplearning4j.ui.components.component.ComponentDiv;
 import org.deeplearning4j.ui.components.component.style.StyleDiv;
 import org.deeplearning4j.ui.components.table.ComponentTable;
@@ -57,6 +63,15 @@ public class ArbiterModule implements UIModule {
 
     private static final StyleDiv STYLE_DIV_WIDTH_100_PC = new StyleDiv.Builder()
             .width(100, LengthUnit.Percent)
+            .build();
+
+    private static final ComponentDiv DIV_SPACER_20PX = new ComponentDiv(new StyleDiv.Builder()
+            .width(100,LengthUnit.Percent)
+            .height(20, LengthUnit.Px).build());
+
+    private static final StyleChart STYLE_CHART = new StyleChart.Builder()
+            .width(650, LengthUnit.Px)
+            .height(350, LengthUnit.Px)
             .build();
 
 
@@ -372,11 +387,7 @@ public class ArbiterModule implements UIModule {
             i++;
         }
 
-        ComponentDiv divSpacer = new ComponentDiv(new StyleDiv.Builder()
-                .width(100,LengthUnit.Percent)
-                .height(20, LengthUnit.Px)
-        .build());
-        components.add(divSpacer);
+        components.add(DIV_SPACER_20PX);
 
         String[] hSpaceTableHeader = new String[]{"Hyperparameter", "Hyperparameter Configuration"};
 
@@ -416,7 +427,7 @@ public class ArbiterModule implements UIModule {
 
             String title = "Layer Space: " + ls.getClass().getSimpleName() + ", Name: " + l.getLayerName();
 
-            components.add(divSpacer);
+            components.add(DIV_SPACER_20PX);
             components.add(new ComponentText.Builder(title, sText).build());
             components.add(ct3);
 
@@ -475,10 +486,6 @@ public class ArbiterModule implements UIModule {
         //Total runtime
         //Termination conditions
 
-        //Charts:
-        //Best model score vs. time
-        //All candidate sco
-
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
         if(ss == null){
             log.warn("getOptimizationConfig(): Session ID is unknown: {}", currentSessionID);
@@ -511,13 +518,139 @@ public class ArbiterModule implements UIModule {
 
         ComponentTable ct = new ComponentTable.Builder(STYLE_TABLE)
                 .content(table)
+                .header("Status", "")
                 .build();
 
+        components.add(ct);
 
-//        ComponentText ct = new ComponentText("Summary status!",
-//                new StyleText.Builder().color(Color.BLACK).fontSize(20).width(100, LengthUnit.Percent).build());
+        String[][] tcTable = new String[tcs.size()][2];
+        for( int i=0; i<tcs.size(); i++ ){
+            tcTable[i][0] = "Termination Condition " + i;
+            tcTable[i][1] = tcs.get(i).toString();
+        }
 
-        ComponentDiv cd = new ComponentDiv(STYLE_DIV_WIDTH_100_PC, ct);
+        components.add(DIV_SPACER_20PX);
+
+        ComponentTable ct2 = new ComponentTable.Builder(STYLE_TABLE)
+                .content(tcTable)
+                .header("Termination Condition", "")
+                .build();
+
+        components.add(ct2);
+
+
+        //Charts:
+        //Best model score vs. time
+        //All candidate scores (scatter plot vs. time)
+
+        //How to get this? query all model infos...
+
+        List<Persistable> allModelInfoTemp = new ArrayList<>(ss.getLatestUpdateAllWorkers(currentSessionID, ARBITER_UI_TYPE_ID));
+        List<ModelInfoPersistable> allModelInfo = new ArrayList<>();
+        for(Persistable per : allModelInfoTemp){
+            ModelInfoPersistable mip = (ModelInfoPersistable)per;
+            if(mip.getStatus() == CandidateStatus.Complete && mip.getScore() != null && Double.isFinite(mip.getScore())){
+                allModelInfo.add(mip);
+            }
+        }
+
+        allModelInfo.sort(Comparator.comparingLong(Persistable::getTimeStamp));
+
+        List<Double> bestX = new ArrayList<>();
+        List<Double> bestY = new ArrayList<>();
+
+        double[] allX = new double[allModelInfo.size()];
+        double[] allY = new double[allModelInfo.size()];
+
+        boolean minimize = oc.getScoreFunction().minimize();
+
+        double bestScore = (minimize ? Double.MAX_VALUE : -Double.MAX_VALUE);
+        double worstScore = (minimize ? -Double.MAX_VALUE : Double.MAX_VALUE);
+        int bestScoreIdx = -1;
+        long bestScoreTime = -1L;
+        long lastTime = -1L;
+        for(int i=0; i<allModelInfo.size(); i++ ){
+            ModelInfoPersistable mip = allModelInfo.get(i);
+            double currScore = mip.getScore();
+            long t = mip.getTimeStamp();
+            allX[i] = t;
+            allY[i] = currScore;
+
+            if(i == 0){
+                bestX.add((double)t);
+                bestY.add(currScore);
+                bestScore = currScore;
+                bestScoreIdx = mip.getModelIdx();
+                bestScoreTime = mip.getTimeStamp();
+            } else if((!minimize && currScore > bestScore) || (minimize && currScore < bestScore)){
+                bestX.add((double)t);
+                bestY.add(bestScore);
+                bestX.add((double)t);  //TODO non-real time rendering support...
+                bestY.add(currScore);
+
+                bestScore = currScore;
+                bestScoreIdx = mip.getModelIdx();
+                bestScoreTime = mip.getTimeStamp();
+            }
+
+            if((!minimize && currScore < worstScore) || (minimize && currScore > worstScore)){
+                worstScore = currScore;
+            }
+
+            if(mip.getTimeStamp() > lastTime){
+                lastTime = mip.getTimeStamp();
+            }
+        }
+
+        double[] scatterGraphMinMax = UIUtils.niceRange(Math.max(bestScore, worstScore), Math.min(bestScore, worstScore), 5);
+
+        double[] lineGraphMinMax = UIUtils.niceRange(
+                bestY.stream().mapToDouble(s -> s).max().orElse(0),bestY.stream().mapToDouble(s -> s).min().orElse(0), 5
+        );
+
+        System.out.println("Orig worst/best: " + worstScore + ", " + bestScore);
+        System.out.println("Nice graph range: " + Arrays.toString(scatterGraphMinMax));
+
+        if(bestX.size() > 0) {
+            bestX.add((double) lastTime);
+            bestY.add(bestY.get(bestY.size() - 1));
+        }
+
+
+        double[] bestXd = new double[bestX.size()];
+        double[] bestYd = new double[bestXd.length];
+        for( int i=0; i<bestX.size(); i++ ){
+            bestXd[i] = bestX.get(i);
+            bestYd[i] = bestY.get(i);
+        }
+
+        ChartLine cl = new ChartLine.Builder("Best Model Score vs. Time", STYLE_CHART)
+                .addSeries("Best Score vs. Time", bestXd, bestYd)
+                .setYMin(lineGraphMinMax[0])
+                .setYMax(lineGraphMinMax[1])
+                .build();
+        components.add(cl);
+
+        ChartScatter cs = new ChartScatter.Builder("All Candidate Scores", STYLE_CHART)
+                .addSeries("Candidates", allX, allY)
+                .setYMin(scatterGraphMinMax[0])
+                .setYMax(scatterGraphMinMax[1])
+                .build();
+
+        components.add(cs);
+
+        ComponentDiv cd = new ComponentDiv(STYLE_DIV_WIDTH_100_PC, components);
+
+
+
+
+//        System.out.println("Best score chart:");
+//        System.out.println(Arrays.toString(bestXd));
+//        System.out.println(Arrays.toString(bestYd));
+//
+//        System.out.println("All score chart:");
+//        System.out.println(Arrays.toString(allX));
+//        System.out.println(Arrays.toString(allY));
 
         return ok(asJson(cd)).as(JSON);
     }
