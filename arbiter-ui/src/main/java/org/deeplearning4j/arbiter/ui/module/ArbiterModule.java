@@ -4,19 +4,28 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.api.storage.StatsStorageEvent;
+import org.deeplearning4j.api.storage.StatsStorageListener;
+import org.deeplearning4j.arbiter.BaseNetworkSpace;
+import org.deeplearning4j.arbiter.layers.LayerSpace;
+import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.ui.UpdateStatus;
+import org.deeplearning4j.arbiter.ui.data.GlobalConfigPersistable;
 import org.deeplearning4j.arbiter.ui.views.html.ArbiterUI;
 import org.deeplearning4j.ui.api.*;
+import org.deeplearning4j.ui.api.Component;
+import org.deeplearning4j.ui.components.component.ComponentDiv;
+import org.deeplearning4j.ui.components.component.style.StyleDiv;
+import org.deeplearning4j.ui.components.table.ComponentTable;
+import org.deeplearning4j.ui.components.table.style.StyleTable;
 import org.deeplearning4j.ui.components.text.ComponentText;
 import org.deeplearning4j.ui.components.text.style.StyleText;
-import org.deeplearning4j.ui.stats.StatsListener;
 import play.libs.Json;
 import play.mvc.Result;
 
 import java.awt.*;
 import java.util.*;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.deeplearning4j.arbiter.ui.misc.JsonMapper.asJson;
 import static play.mvc.Results.ok;
@@ -34,11 +43,11 @@ public class ArbiterModule implements UIModule {
     private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
     private String currentSessionID;
 
-    private AtomicLong lastUpdateTime = new AtomicLong(-1);
+    private Map<String, Long> lastUpdateForSession = Collections.synchronizedMap(new HashMap<>());
 
     @Override
     public List<String> getCallbackTypeIDs() {
-        return Collections.emptyList();
+        return Collections.singletonList(ARBITER_UI_TYPE_ID);
     }
 
     @Override
@@ -57,14 +66,37 @@ public class ArbiterModule implements UIModule {
 
     @Override
     public void reportStorageEvents(Collection<StatsStorageEvent> events) {
+        log.info("Reported storage events: {}", events);
 
+        for (StatsStorageEvent sse : events) {
+            if (ARBITER_UI_TYPE_ID.equals(sse.getTypeID())) {
+                if (sse.getEventType() == StatsStorageListener.EventType.PostStaticInfo) {
+                    knownSessionIDs.put(sse.getSessionID(), sse.getStatsStorage());
+                }
+
+                Long lastUpdate = lastUpdateForSession.get(sse.getSessionID());
+                if (lastUpdate == null) {
+                    lastUpdateForSession.put(sse.getSessionID(), sse.getTimestamp());
+                } else if (sse.getTimestamp() > lastUpdate) {
+                    lastUpdateForSession.put(sse.getSessionID(), sse.getTimestamp()); //Should be thread safe - read only elsewhere
+                }
+            }
+        }
+
+        if (currentSessionID == null)
+            getDefaultSession();
+
+        if(currentSessionID == null){
+            getDefaultSession();
+        }
     }
 
     @Override
     public synchronized void onAttach(StatsStorage statsStorage) {
+        log.info("Attached: {}", statsStorage);
         for (String sessionID : statsStorage.listSessionIDs()) {
             for (String typeID : statsStorage.listTypeIDsForSession(sessionID)) {
-                if (!StatsListener.TYPE_ID.equals(typeID))
+                if (!ARBITER_UI_TYPE_ID.equals(typeID))
                     continue;
                 knownSessionIDs.put(sessionID, statsStorage);
             }
@@ -81,7 +113,7 @@ public class ArbiterModule implements UIModule {
         long mostRecentTime = Long.MIN_VALUE;
         String sessionID = null;
         for (Map.Entry<String, StatsStorage> entry : knownSessionIDs.entrySet()) {
-            List<Persistable> staticInfos = entry.getValue().getAllStaticInfos(entry.getKey(), StatsListener.TYPE_ID);
+            List<Persistable> staticInfos = entry.getValue().getAllStaticInfos(entry.getKey(), ARBITER_UI_TYPE_ID);
             if (staticInfos == null || staticInfos.size() == 0)
                 continue;
             Persistable p = staticInfos.get(0);
@@ -95,10 +127,13 @@ public class ArbiterModule implements UIModule {
         if (sessionID != null) {
             currentSessionID = sessionID;
         }
+
+        log.info("Default session is: {}", currentSessionID);
     }
 
     @Override
     public void onDetach(StatsStorage statsStorage) {
+        log.info("Detached: {}", statsStorage);
         for (String s : knownSessionIDs.keySet()) {
             if (knownSessionIDs.get(s) == statsStorage) {
                 knownSessionIDs.remove(s);
@@ -122,7 +157,7 @@ public class ArbiterModule implements UIModule {
 
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
         if(ss == null){
-            log.warn("Session ID is unknown: {}", currentSessionID);
+            log.warn("getMainArbiterPage(): Session ID is unknown: {}", currentSessionID);
             return ok();
         }
 
@@ -271,10 +306,122 @@ public class ArbiterModule implements UIModule {
         }
          */
 
-        ComponentText ct = new ComponentText("Optimization configuration!",
-                new StyleText.Builder().color(Color.BLACK).fontSize(20).width(100, LengthUnit.Percent).build());
 
-        return ok(asJson(ct)).as(JSON);
+        StatsStorage ss = knownSessionIDs.get(currentSessionID);
+        if(ss == null){
+            log.warn("getOptimizationConfig(): Session ID is unknown: {}", currentSessionID);
+            return ok();
+        }
+
+        Persistable p = ss.getStaticInfo(currentSessionID, ARBITER_UI_TYPE_ID, GlobalConfigPersistable.GLOBAL_WORKER_ID);
+
+        if(p == null){
+            log.info("No static info");
+            return ok();
+        }
+
+        List<Component> components = new ArrayList<>();
+
+        GlobalConfigPersistable gcp = (GlobalConfigPersistable)p;
+        OptimizationConfiguration oc = gcp.getOptimizationConfiguration();
+
+        //Here: report optimization settings/configuration.
+
+
+        String[] tableHeader = {"Configuration", "Value"};
+
+        String[][] table = new String[][]{
+                {"Candidate Generator", oc.getCandidateGenerator().getClass().getSimpleName()},
+                {"Data Provider", oc.getDataProvider().toString()},
+                {"Score Function", oc.getScoreFunction().toString()},
+                {"Result Saver", oc.getResultSaver().toString()},
+//                {"Model Hyperparameter Space", oc.getCandidateGenerator().getParameterSpace().toString()}
+
+        };
+
+        StyleTable st = new StyleTable.Builder()
+                .width(100, LengthUnit.Percent)
+                .backgroundColor(Color.WHITE)
+                .borderWidth(1)
+                .columnWidths(LengthUnit.Percent, 30, 70)
+                .build();
+
+        ComponentTable ct = new ComponentTable.Builder(st)
+                .content(table)
+                .header(tableHeader)
+                .build();
+        components.add(ct);
+
+
+        BaseNetworkSpace<?> ps = (BaseNetworkSpace)oc.getCandidateGenerator().getParameterSpace();
+        Map<String,ParameterSpace<?>> m = ps.getGlobalConfigAsMap();
+
+        String[][] hSpaceTable = new String[m.size()][2];
+        int i=0;
+        for(Map.Entry<String,ParameterSpace<?>> e : m.entrySet()){
+            hSpaceTable[i][0] = e.getKey();
+            hSpaceTable[i][1] = e.getValue().toString();
+            i++;
+        }
+
+        ComponentDiv divSpacer = new ComponentDiv(new StyleDiv.Builder()
+                .width(100,LengthUnit.Percent)
+                .height(20, LengthUnit.Px)
+        .build());
+        components.add(divSpacer);
+
+        String[] hSpaceTableHeader = new String[]{"Hyperparameter", "Hyperparameter Configuration"};
+
+        ComponentTable ct2 = new ComponentTable.Builder(st)
+                .content(hSpaceTable)
+                .header(hSpaceTableHeader)
+                .build();
+
+        StyleDiv sd = new StyleDiv.Builder()
+                .width(100, LengthUnit.Percent)
+                .build();
+
+        components.add(ct2);
+
+        //TODO add layer spaces
+
+        List<BaseNetworkSpace.LayerConf> layerConfs = ps.getLayerSpaces();
+
+        StyleText sText = new StyleText.Builder()
+                .fontSize(12)
+                .build();
+        components.add(new ComponentText.Builder("Layer Spaces",sText).build());
+
+        for(BaseNetworkSpace.LayerConf l : layerConfs){
+            LayerSpace<?> ls = l.getLayerSpace();
+            Map<String,ParameterSpace<?>> lpsm = ls.getConfigAsMap();
+
+            String[][] t = new String[lpsm.size()][2];
+            i=0;
+            for(Map.Entry<String,ParameterSpace<?>> e : lpsm.entrySet()){
+                hSpaceTable[i][0] = e.getKey();
+                hSpaceTable[i][1] = e.getValue().toString();
+                i++;
+            }
+
+            ComponentTable ct3 = new ComponentTable.Builder(st)
+                    .content(t)
+                    .header(hSpaceTableHeader)
+                    .build();
+
+            components.add(ct3);
+        }
+
+
+        ComponentDiv cd = new ComponentDiv(sd, components);
+
+//        ComponentText ct = new ComponentText("Optimization configuration!",
+//                new StyleText.Builder().color(Color.BLACK).fontSize(20).width(100, LengthUnit.Percent).build());
+
+//        System.out.println("Returning table:");
+//        System.out.println(asJson(ct));
+
+        return ok(asJson(cd)).as(JSON);
     }
 
     private Result getSummaryResults(){

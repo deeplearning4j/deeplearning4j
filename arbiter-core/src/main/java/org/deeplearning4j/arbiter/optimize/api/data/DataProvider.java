@@ -30,9 +30,7 @@ import java.util.Map;
  * @param <D> Type of the data to be used when learning
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = DataSetIteratorFactoryProvider.class,
-                name = "DataSetIteratorFactoryProvider")})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface DataProvider<D> extends Serializable {
 
     /**

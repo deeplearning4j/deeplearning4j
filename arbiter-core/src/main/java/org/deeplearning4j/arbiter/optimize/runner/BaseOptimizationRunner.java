@@ -102,7 +102,7 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
      */
     @Override
     public void execute() {
-        log.info("BaseOptimizationRunner: execution started");
+        log.info("{}: execution started", this.getClass().getSimpleName());
         for (StatusListener listener : statusListeners) {
             listener.onInitialization(this);
         }

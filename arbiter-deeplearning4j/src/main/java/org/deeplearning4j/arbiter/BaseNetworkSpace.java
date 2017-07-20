@@ -17,7 +17,9 @@
 package org.deeplearning4j.arbiter;
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
@@ -35,7 +37,9 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -49,6 +53,7 @@ import java.util.Map;
  */
 @EqualsAndHashCode
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
+@Data
 public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
 
     protected ParameterSpace<Boolean> useDropConnect;
@@ -244,91 +249,14 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
 
     @Override
     public List<ParameterSpace> collectLeaves() {
-        List<ParameterSpace> list = new ArrayList<>();
-        if (useDropConnect != null)
-            list.addAll(useDropConnect.collectLeaves());
-        if (iterations != null)
-            list.addAll(iterations.collectLeaves());
-        if (optimizationAlgo != null)
-            list.addAll(optimizationAlgo.collectLeaves());
-        if (regularization != null)
-            list.addAll(regularization.collectLeaves());
-        if (schedules != null)
-            list.addAll(schedules.collectLeaves());
-        if (activationFunction != null)
-            list.addAll(activationFunction.collectLeaves());
-        if (biasInit != null)
-            list.addAll(biasInit.collectLeaves());
-        if (weightInit != null)
-            list.addAll(weightInit.collectLeaves());
-        if (dist != null)
-            list.addAll(dist.collectLeaves());
-        if (learningRate != null)
-            list.addAll(learningRate.collectLeaves());
-        if (biasLearningRate != null)
-            list.addAll(biasLearningRate.collectLeaves());
-        if (learningRateAfter != null)
-            list.addAll(learningRateAfter.collectLeaves());
-        if (lrScoreBasedDecay != null)
-            list.addAll(lrScoreBasedDecay.collectLeaves());
-        if (learningRateDecayPolicy != null)
-            list.addAll(learningRateDecayPolicy.collectLeaves());
-        if (learningRateSchedule != null)
-            list.addAll(learningRateSchedule.collectLeaves());
-        if (lrPolicyDecayRate != null)
-            list.addAll(lrPolicyDecayRate.collectLeaves());
-        if (lrPolicyPower != null)
-            list.addAll(lrPolicyPower.collectLeaves());
-        if (lrPolicySteps != null)
-            list.addAll(lrPolicySteps.collectLeaves());
-        if (maxNumLineSearchIterations != null)
-            list.addAll(maxNumLineSearchIterations.collectLeaves());
-        if (miniBatch != null)
-            list.addAll(miniBatch.collectLeaves());
-        if (minimize != null)
-            list.addAll(minimize.collectLeaves());
-        if (stepFunction != null)
-            list.addAll(minimize.collectLeaves());
-        if (l1 != null)
-            list.addAll(l1.collectLeaves());
-        if (l2 != null)
-            list.addAll(l2.collectLeaves());
-        if (dropOut != null)
-            list.addAll(dropOut.collectLeaves());
-        if (momentum != null)
-            list.addAll(momentum.collectLeaves());
-        if (momentumAfter != null)
-            list.addAll(momentumAfter.collectLeaves());
-        if (updater != null)
-            list.addAll(updater.collectLeaves());
-        if (epsilon != null)
-            list.addAll(epsilon.collectLeaves());
-        if (rho != null)
-            list.addAll(rho.collectLeaves());
-        if (rmsDecay != null)
-            list.addAll(rmsDecay.collectLeaves());
-        if (gradientNormalization != null)
-            list.addAll(gradientNormalization.collectLeaves());
-        if (gradientNormalizationThreshold != null)
-            list.addAll(gradientNormalizationThreshold.collectLeaves());
-        if (adamMeanDecay != null)
-            list.addAll(adamMeanDecay.collectLeaves());
-        if (adamVarDecay != null)
-            list.addAll(adamVarDecay.collectLeaves());
-        if (convolutionMode != null)
-            list.add(convolutionMode);
+        Map<String, ParameterSpace<?>> global = getGlobalConfigAsMap();
 
-        if (backprop != null)
-            list.add(backprop);
-        if (pretrain != null)
-            list.add(pretrain);
-        if (backpropType != null)
-            list.add(backpropType);
-        if (tbpttBwdLength != null)
-            list.add(tbpttBwdLength);
-        if (tbpttFwdLength != null)
-            list.add(tbpttFwdLength);
+        List<ParameterSpace> list = new ArrayList<>();
+        list.addAll(global.values());
+
         return list;
+
+        //TODO layer param spaces...
     }
 
 
@@ -342,98 +270,62 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
         throw new UnsupportedOperationException("Cannot set indices for non leaf");
     }
 
+    public Map<String, ParameterSpace<?>> getGlobalConfigAsMap() {
+        Map<String, ParameterSpace<?>> m = new LinkedHashMap<>();
+
+        //Need to manually build and walk the class heirarchy...
+
+        Class<?> currClass = this.getClass();
+        List<Class<?>> classHeirarchy = new ArrayList<>();
+        while (currClass != Object.class) {
+            classHeirarchy.add(currClass);
+            currClass = currClass.getSuperclass();
+        }
+
+        for (int i = classHeirarchy.size() - 1; i >= 0; i--) {
+            //Use reflection here to avoid a mass of boilerplate code...
+            Field[] allFields = classHeirarchy.get(i).getDeclaredFields();
+
+            for (Field f : allFields) {
+
+                String name = f.getName();
+                Class<?> fieldClass = f.getType();
+                boolean isParamSpacefield = ParameterSpace.class.isAssignableFrom(fieldClass);
+
+                if (!isParamSpacefield) {
+                    continue;
+                }
+
+                ParameterSpace<?> p;
+                try {
+                    p = (ParameterSpace<?>) f.get(this);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+
+                if (p != null) {
+                    m.put(name, p);
+                }
+            }
+        }
+
+        return m;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        if (useDropConnect != null)
-            sb.append("useDropConnect: ").append(useDropConnect).append("\n");
-        if (iterations != null)
-            sb.append("iterations: ").append(iterations).append("\n");
-        if (seed != null)
-            sb.append("seed: ").append(seed).append("\n");
-        if (optimizationAlgo != null)
-            sb.append("optimizationAlgo: ").append(optimizationAlgo).append("\n");
-        if (regularization != null)
-            sb.append("regularization: ").append(regularization).append("\n");
-        if (schedules != null)
-            sb.append("schedules: ").append(schedules).append("\n");
-        if (activationFunction != null)
-            sb.append("activationFunction: ").append(activationFunction).append("\n");
-        if (weightInit != null)
-            sb.append("weightInit: ").append(weightInit).append("\n");
-        if (dist != null)
-            sb.append("dist: ").append(dist).append("\n");
-        if (learningRate != null)
-            sb.append("learningRate: ").append(learningRate).append("\n");
-        if (biasLearningRate != null)
-            sb.append("biasLearningRate: ").append(biasLearningRate).append("\n");
-        if (learningRateAfter != null)
-            sb.append("learningRateAfter: ").append(learningRateAfter).append("\n");
-        if (lrScoreBasedDecay != null)
-            sb.append("lrScoreBasedDecay: ").append(lrScoreBasedDecay).append("\n");
-        if (learningRateDecayPolicy != null)
-            sb.append("learningRateDecayPolicy: ").append(learningRateDecayPolicy).append("\n");
-        if (learningRateSchedule != null)
-            sb.append("learningRateSchedule: ").append(learningRateSchedule).append("\n");
-        if (lrPolicyDecayRate != null)
-            sb.append("lrPolicyDecayRate: ").append(lrPolicyDecayRate).append("\n");
-        if (lrPolicyPower != null)
-            sb.append("lrPolicyPower: ").append(lrPolicyPower).append("\n");
-        if (lrPolicySteps != null)
-            sb.append("lrPolicySteps: ").append(lrPolicySteps).append("\n");
-        if (maxNumLineSearchIterations != null)
-            sb.append("maxNumLineSearchIterations: ").append(maxNumLineSearchIterations).append("\n");
-        if (miniBatch != null)
-            sb.append("miniBatch: ").append(miniBatch).append("\n");
-        if (minimize != null)
-            sb.append("minimize: ").append(minimize).append("\n");
-        if (stepFunction != null)
-            sb.append("stepFunction: ").append(stepFunction).append("\n");
-        if (l1 != null)
-            sb.append("l1: ").append(l1).append("\n");
-        if (l2 != null)
-            sb.append("l2: ").append(l2).append("\n");
-        if (dropOut != null)
-            sb.append("dropOut: ").append(dropOut).append("\n");
-        if (momentum != null)
-            sb.append("momentum: ").append(momentum).append("\n");
-        if (momentumAfter != null)
-            sb.append("momentumAfter: ").append(momentumAfter).append("\n");
-        if (updater != null)
-            sb.append("updater: ").append(updater).append("\n");
-        if (epsilon != null)
-            sb.append("epsilon: ").append(epsilon).append("\n");
-        if (rho != null)
-            sb.append("rho: ").append(rho).append("\n");
-        if (rmsDecay != null)
-            sb.append("rmsDecay: ").append(rmsDecay).append("\n");
-        if (gradientNormalization != null)
-            sb.append("gradientNormalization: ").append(gradientNormalization).append("\n");
-        if (gradientNormalizationThreshold != null)
-            sb.append("gradientNormalizationThreshold: ").append(gradientNormalizationThreshold).append("\n");
-        if (backprop != null)
-            sb.append("backprop: ").append(backprop).append("\n");
-        if (pretrain != null)
-            sb.append("pretrain: ").append(pretrain).append("\n");
-        if (backpropType != null)
-            sb.append("backpropType: ").append(backpropType).append("\n");
-        if (tbpttFwdLength != null)
-            sb.append("tbpttFwdLength: ").append(tbpttFwdLength).append("\n");
-        if (tbpttBwdLength != null)
-            sb.append("tbpttBwdLength: ").append(tbpttBwdLength).append("\n");
-        if (adamMeanDecay != null)
-            sb.append("adamMeanDecay: ").append(adamMeanDecay).append("\n");
-        if (adamVarDecay != null)
-            sb.append("adamVarDecay: ").append(adamVarDecay).append("\n");
-        if (convolutionMode != null)
-            sb.append("convolutionMode: ").append(convolutionMode).append("\n");
+
+        for(Map.Entry<String,ParameterSpace<?>> e : getGlobalConfigAsMap().entrySet() ){
+            sb.append(e.getKey()).append(": ").append(e.getValue()).append("\n");
+        }
 
         int i = 0;
         for (LayerConf conf : layerSpaces) {
 
             sb.append("Layer config ").append(i++).append(": (Number layers:").append(conf.numLayers)
-                            .append(", duplicate: ").append(conf.duplicateConfig).append("), ")
-                            .append(conf.layerSpace.toString()).append("\n");
+                    .append(", duplicate: ").append(conf.duplicateConfig).append("), ")
+                    .append(conf.layerSpace.toString()).append("\n");
         }
 
 
@@ -441,10 +333,14 @@ public abstract class BaseNetworkSpace<T> implements ParameterSpace<T> {
     }
 
     @AllArgsConstructor
-    private static class LayerConf {
-        private final LayerSpace<?> layerSpace;
-        private final ParameterSpace<Integer> numLayers;
-        private final boolean duplicateConfig;
+    @Data
+    @NoArgsConstructor
+    public static class LayerConf {
+        protected LayerSpace<?> layerSpace;
+        protected String layerName;
+        protected String[] inputs;
+        protected ParameterSpace<Integer> numLayers;
+        protected boolean duplicateConfig;
 
     }
 

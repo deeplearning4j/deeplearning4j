@@ -19,6 +19,11 @@ public abstract class BaseJavaPersistable implements Persistable {
     private String sessionId;
     private long timestamp;
 
+    public BaseJavaPersistable(Builder builder){
+        this.sessionId = builder.sessionId;
+        this.timestamp = builder.timestamp;
+    }
+
     @Override
     public String getTypeID() {
         return ArbiterModule.ARBITER_UI_TYPE_ID;
@@ -94,5 +99,21 @@ public abstract class BaseJavaPersistable implements Persistable {
     @Override
     public void decode(InputStream inputStream) throws IOException {
         decode(IOUtils.toByteArray(inputStream));
+    }
+
+    public static abstract class Builder<T extends Builder<T>> {
+        protected String sessionId;
+        protected long timestamp;
+
+        public T sessionId(String sessionId){
+            this.sessionId = sessionId;
+            return (T) this;
+        }
+
+        public T timestamp(long timestamp){
+            this.timestamp = timestamp;
+            return (T) this;
+        }
+
     }
 }

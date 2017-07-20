@@ -28,8 +28,6 @@ import java.util.Map;
 @EqualsAndHashCode(callSuper = true)
 public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
     @JsonProperty
-    protected List<LayerConf> layerSpaces = new ArrayList<>();
-    @JsonProperty
     protected ParameterSpace<InputType> inputType;
     @JsonProperty
     protected ParameterSpace<Map<Integer, InputPreProcessor>> inputPreProcessors;
@@ -161,16 +159,6 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         return layerSpaces.get(layerNumber).getLayerSpace();
     }
 
-
-    @AllArgsConstructor
-    @NoArgsConstructor
-    @Data //No-arg for Jackson JSON serialization
-    protected static class LayerConf {
-        protected LayerSpace<?> layerSpace;
-        protected ParameterSpace<Integer> numLayers;
-        protected boolean duplicateConfig;
-    }
-
     public static class Builder extends BaseNetworkSpace.Builder<Builder> {
         protected List<LayerConf> layerSpaces = new ArrayList<>();
         protected ParameterSpace<InputType> inputType;
@@ -203,7 +191,8 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
          */
         public Builder addLayer(LayerSpace<? extends Layer> layerSpace, ParameterSpace<Integer> numLayersDistribution,
                         boolean duplicateConfig) {
-            layerSpaces.add(new LayerConf(layerSpace, numLayersDistribution, duplicateConfig));
+            String layerName = "layer_" + layerSpaces.size();
+            layerSpaces.add(new LayerConf(layerSpace, layerName, null, numLayersDistribution, duplicateConfig));
             return this;
         }
 

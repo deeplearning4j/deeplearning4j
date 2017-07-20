@@ -170,15 +170,6 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
     @AllArgsConstructor
     @Data
     @NoArgsConstructor //For Jackson JSON
-    private static class LayerConf {
-        private LayerSpace<?> layerSpace;
-        private String layerName;
-        private String[] inputs;
-    }
-
-    @AllArgsConstructor
-    @Data
-    @NoArgsConstructor //For Jackson JSON
     private static class VertexConf {
         private GraphVertex graphVertex;
         private String vertexName;
@@ -209,7 +200,7 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
         }
 
         public Builder addLayer(String layerName, LayerSpace<? extends Layer> layerSpace, String... layerInputs) {
-            layerList.add(new LayerConf(layerSpace, layerName, layerInputs));
+            layerList.add(new LayerConf(layerSpace, layerName, layerInputs, new FixedValue<>(1), false));
             return this;
         }
 
