@@ -20,11 +20,13 @@
 package org.nd4j.linalg.indexing;
 
 import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.util.LongUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -115,9 +117,9 @@ public class Indices {
      * @param indices the indices
      * @return the offsets for the given set of indices
      */
-    public static int[] offsets(int[] shape, INDArrayIndex... indices) {
+    public static long[] offsets(int[] shape, INDArrayIndex... indices) {
         //offset of zero for every new axes
-        int[] ret = new int[shape.length];
+        long[] ret = new long[shape.length];
 
         if (indices.length == shape.length) {
             for (int i = 0; i < indices.length; i++) {
@@ -130,14 +132,14 @@ public class Indices {
             }
 
             if (ret.length == 1) {
-                ret = new int[] {ret[0], 0};
+                ret = new long[] {ret[0], 0};
             }
         }
 
         else {
             int numPoints = NDArrayIndex.numPoints(indices);
             if (numPoints > 0) {
-                List<Integer> nonZeros = new ArrayList<>();
+                List<Long> nonZeros = new ArrayList<>();
                 for (int i = 0; i < indices.length; i++)
                     if (indices[i].offset() > 0)
                         nonZeros.add(indices[i].offset());
@@ -162,7 +164,7 @@ public class Indices {
 
 
             if (ret.length == 1) {
-                ret = new int[] {ret[0], 0};
+                ret = new long[] {ret[0], 0};
             }
         }
 
@@ -257,7 +259,8 @@ public class Indices {
     public static int[] shape(INDArrayIndex... indices) {
         int[] ret = new int[indices.length];
         for (int i = 0; i < ret.length; i++) {
-            ret[i] = indices[i].length();
+            // FIXME: LONG
+            ret[i] = (int) indices[i].length();
         }
 
         List<Integer> nonZeros = new ArrayList<>();
@@ -352,9 +355,13 @@ public class Indices {
      * @return the shape for the given indices
      */
     public static int[] shape(int[] shape, INDArrayIndex... indices) {
+        return LongUtils.toInts(shape(LongUtils.toLongs(shape), indices));
+    }
+
+    public static long[] shape(long[] shape, INDArrayIndex... indices) {
         int newAxesPrepend = 0;
         boolean encounteredAll = false;
-        List<Integer> accumShape = new ArrayList<>();
+        List<Long> accumShape = new ArrayList<>();
         //bump number to read from the shape
         int shapeIndex = 0;
         //list of indexes to prepend to for new axes
@@ -404,7 +411,7 @@ public class Indices {
 
 
         while (accumShape.size() < 2) {
-            accumShape.add(1);
+            accumShape.add(1L);
         }
 
         //only one index and matrix, remove the first index rather than the last
@@ -417,7 +424,7 @@ public class Indices {
         //doing the indexes to prepend to
         if (newAxesPrepend > 0) {
             for (int i = 0; i < newAxesPrepend; i++)
-                accumShape.add(0, 1);
+                accumShape.add(0, 1L);
         }
 
         /**
@@ -437,12 +444,12 @@ public class Indices {
          * i is already > 0
          */
         for (int i = 0; i < prependNewAxes.size(); i++) {
-            accumShape.add(prependNewAxes.get(i) - i, 1);
+            accumShape.add(prependNewAxes.get(i) - i, 1L);
         }
 
 
 
-        return Ints.toArray(accumShape);
+        return Longs.toArray(accumShape);
     }
 
 

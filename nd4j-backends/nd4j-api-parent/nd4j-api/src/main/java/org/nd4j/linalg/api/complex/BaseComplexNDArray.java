@@ -1566,7 +1566,7 @@ public abstract class BaseComplexNDArray extends BaseNDArray implements IComplex
 
 
     @Override
-    public IComplexNDArray subArray(int[] offsets, int[] shape, int[] stride) {
+    public IComplexNDArray subArray(long[] offsets, int[] shape, int[] stride) {
         return (IComplexNDArray) super.subArray(offsets, shape, stride);
     }
 

@@ -53,6 +53,7 @@ import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.LinAlgExceptions;
+import org.nd4j.linalg.util.LongUtils;
 import org.nd4j.linalg.util.NDArrayMath;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -2018,8 +2019,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             indices[0].reset();
             int cnt = 0;
             while (indices[0].hasNext()) {
-                int idx = indices[0].next();
-                putScalar(idx, element.getDouble(cnt));
+                long idx = indices[0].next();
+                // FIXME: LONG
+                putScalar((int) idx, element.getDouble(cnt));
                 cnt++;
             }
             return this;
@@ -2091,15 +2093,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray subArray(ShapeOffsetResolution resolution) {
         long[] offsets = resolution.getOffsets();
-        int[] shape = resolution.getShapes();
-        int[] stride = resolution.getStrides();
+        int[] shape = LongUtils.toInts(resolution.getShapes());
+        int[] stride = LongUtils.toInts(resolution.getStrides());
 
-        if (offset() + resolution.getOffset() >= Integer.MAX_VALUE)
-            throw new IllegalArgumentException("Offset of array can not be >= Integer.MAX_VALUE");
+//        if (offset() + resolution.getOffset() >= Integer.MAX_VALUE)
+//            throw new IllegalArgumentException("Offset of array can not be >= Integer.MAX_VALUE");
 
-        log.info("Long offset: {}",resolution.getOffset());
         long offset = (offset() + resolution.getOffset());
-        log.info("Int offset: {}", offset);
 
         int n = shape.length;
 
@@ -2125,7 +2125,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray subArray(int[] offsets, int[] shape, int[] stride) {
+    public INDArray subArray(long[] offsets, int[] shape, int[] stride) {
         int n = shape.length;
 
         // FIXME: shapeInfo should be used here
@@ -2144,12 +2144,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             }
         }
 
-        int[] dotProductOffsets = offsets;
+        long[] dotProductOffsets = offsets;
         int[] dotProductStride = stride;
 
         long offset = Shape.offset(javaShapeInformation) + NDArrayIndex.offset(dotProductStride, dotProductOffsets);
         if (offset >= data().length())
-            offset = ArrayUtil.sum(offsets);
+            offset = ArrayUtil.sumLong(offsets);
 
         return create(data, Arrays.copyOf(shape, shape.length), stride, offset, ordering());
     }
@@ -3996,7 +3996,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         NDArrayIndex index = new NDArrayIndex(this.shape());
 
         for (int i = 0; i < length(); i++) {
-            double val = getDouble(index.next());
+            // FIXME: LONG
+            double val = getDouble((int) index.next());
             ret.putScalar(new int[] {0, i}, val);
         }
 
@@ -4100,7 +4101,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (indexes.length < 1)
             throw new IllegalStateException("Invalid index found of zero length");
 
-        int[] shape = resolution.getShapes();
+        // FIXME: LONG
+        int[] shape = LongUtils.toInts(resolution.getShapes());
         int numSpecifiedIndex = 0;
         for (int i = 0; i < indexes.length; i++)
             if (indexes[i] instanceof SpecifiedIndex)
@@ -4108,13 +4110,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
 
         if (shape != null && numSpecifiedIndex > 0) {
-            Generator<List<List<Integer>>> gen = SpecifiedIndex.iterate(indexes);
+            Generator<List<List<Long>>> gen = SpecifiedIndex.iterate(indexes);
             INDArray ret = Nd4j.create(shape, 'c');
             int count = 0;
             while (true) {
                 try {
-                    List<List<Integer>> next = gen.next();
-                    List<Integer> coordsCombo = new ArrayList<>();
+                    List<List<Long>> next = gen.next();
+                    List<Long> coordsCombo = new ArrayList<>();
                     for (int i = 0; i < next.size(); i++) {
                         if (next.get(i).size() > 1)
                             throw new IllegalStateException("Illegal entry returned");
@@ -4134,8 +4136,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return ret;
 
         }
-
-
 
         INDArray ret = subArray(resolution);
         return ret;

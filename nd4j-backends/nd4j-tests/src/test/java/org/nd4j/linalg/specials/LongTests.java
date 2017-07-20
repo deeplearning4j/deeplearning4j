@@ -52,6 +52,32 @@ public class LongTests extends BaseNd4jTest {
         assertNotEquals(rowA, rowB);
     }
 
+    @Test
+    public void testSomething2() {
+        // we create 2D array, total nr. of elements is 2.4B elements, > MAX_INT
+        INDArray huge = Nd4j.create(100, 10);
+
+// we apply element-wise scalar ops, just to make sure stuff still works
+        huge.subi(0.5).divi(2);
+
+
+// now we're checking different rows, they should NOT equal
+        INDArray row0 = huge.getRow(73).assign(1.0);
+        INDArray row1 = huge.getRow(74).assign(2.0);
+        assertNotEquals(row0, row1);
+
+
+// same idea, but this code is broken: rowA and rowB will be pointing to the same offset
+        INDArray rowA = huge.getRow(huge.rows() - 3);
+        INDArray rowB = huge.getRow(huge.rows() - 10);
+
+// safety check, to see if we're really working on the same offset.
+        rowA.addi(1.0);
+
+// and this fails, so rowA and rowB are pointing to the same offset, despite different getRow() arguments were used
+        assertNotEquals(rowA, rowB);
+    }
+
     @Override
     public char ordering() {
         return 'c';

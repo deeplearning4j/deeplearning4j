@@ -831,7 +831,10 @@ public class Shape {
      */
     public static boolean isColumnVectorShape(int[] shape) {
         return (shape.length == 2 && shape[1] == 1);
+    }
 
+    public static boolean isColumnVectorShape(long[] shape) {
+        return (shape.length == 2 && shape[1] == 1);
     }
 
     /**

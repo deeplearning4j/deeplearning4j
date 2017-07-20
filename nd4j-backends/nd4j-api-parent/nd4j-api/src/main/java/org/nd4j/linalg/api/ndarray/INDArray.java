@@ -1796,7 +1796,7 @@ public interface INDArray extends Serializable {
      * @param stride
      * @return
      */
-    INDArray subArray(int[] offsets, int[] shape, int[] stride);
+    INDArray subArray(long[] offsets, int[] shape, int[] stride);
 
     /**
      * Returns the elements at the the specified indices
