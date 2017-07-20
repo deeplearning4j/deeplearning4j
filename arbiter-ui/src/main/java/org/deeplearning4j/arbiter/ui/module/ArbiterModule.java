@@ -27,6 +27,11 @@ import org.deeplearning4j.ui.components.table.ComponentTable;
 import org.deeplearning4j.ui.components.table.style.StyleTable;
 import org.deeplearning4j.ui.components.text.ComponentText;
 import org.deeplearning4j.ui.components.text.style.StyleText;
+import org.joda.time.DurationFieldType;
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import play.libs.Json;
 import play.mvc.Result;
 
@@ -43,6 +48,7 @@ import static play.mvc.Results.ok;
 @Slf4j
 public class ArbiterModule implements UIModule {
 
+    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm ZZ");
     public static final String ARBITER_UI_TYPE_ID = "ArbiterUI";
 
     private static final String JSON = "application/json";
@@ -503,8 +509,17 @@ public class ArbiterModule implements UIModule {
 
         GlobalConfigPersistable gcp = (GlobalConfigPersistable)p;
         OptimizationConfiguration oc = gcp.getOptimizationConfiguration();
+        long execStartTime = oc.getExecutionStartTime();
 
         List<TerminationCondition> tcs = oc.getTerminationConditions();
+
+        //TODO: I18N
+
+        //TODO don't use currentTimeMillis due to stored data
+        String runtime = UIUtils.formatDuration(System.currentTimeMillis() - execStartTime);
+        long bestTime = System.currentTimeMillis(); //TODO
+        String sinceBest = UIUtils.formatDuration(System.currentTimeMillis() - bestTime);
+
 
         String[][] table = new String[][]{
                 {"Models Completed", String.valueOf(gcp.getCandidatesCompleted())},
@@ -512,9 +527,12 @@ public class ArbiterModule implements UIModule {
                 {"Models Failed", String.valueOf(gcp.getCandidatesFailed())},
                 {"Models Total", String.valueOf(gcp.getCandidatesTotal())},
                 {"Best Score", ""},
-                {"Best Scoring Model", "Index x, Found at y (z min ago)"},
-                {"Total Runtime", ""}
+                {"Best Scoring Model", "Index x, Found at y (" + sinceBest + " ago)"},
+                {"Execution Start Time", TIME_FORMATTER.print(execStartTime)},
+                {"Total Runtime", runtime}
         };
+
+
 
         ComponentTable ct = new ComponentTable.Builder(STYLE_TABLE)
                 .content(table)
@@ -567,38 +585,39 @@ public class ArbiterModule implements UIModule {
         double bestScore = (minimize ? Double.MAX_VALUE : -Double.MAX_VALUE);
         double worstScore = (minimize ? -Double.MAX_VALUE : Double.MAX_VALUE);
         int bestScoreIdx = -1;
-        long bestScoreTime = -1L;
-        long lastTime = -1L;
+        double bestScoreTime = -1L;
+        double lastTime = -1L;
         for(int i=0; i<allModelInfo.size(); i++ ){
             ModelInfoPersistable mip = allModelInfo.get(i);
             double currScore = mip.getScore();
-            long t = mip.getTimeStamp();
+            double t = (execStartTime - mip.getTimeStamp()) / 60000.0;    //60000 ms per minute
+
             allX[i] = t;
             allY[i] = currScore;
 
             if(i == 0){
-                bestX.add((double)t);
+                bestX.add(t);
                 bestY.add(currScore);
                 bestScore = currScore;
                 bestScoreIdx = mip.getModelIdx();
-                bestScoreTime = mip.getTimeStamp();
+                bestScoreTime = t;
             } else if((!minimize && currScore > bestScore) || (minimize && currScore < bestScore)){
-                bestX.add((double)t);
+                bestX.add(t);
                 bestY.add(bestScore);
-                bestX.add((double)t);  //TODO non-real time rendering support...
+                bestX.add(t);  //TODO non-real time rendering support...
                 bestY.add(currScore);
 
                 bestScore = currScore;
                 bestScoreIdx = mip.getModelIdx();
-                bestScoreTime = mip.getTimeStamp();
+                bestScoreTime = t;
             }
 
             if((!minimize && currScore < worstScore) || (minimize && currScore > worstScore)){
                 worstScore = currScore;
             }
 
-            if(mip.getTimeStamp() > lastTime){
-                lastTime = mip.getTimeStamp();
+            if(t > lastTime){
+                lastTime = t;
             }
         }
 

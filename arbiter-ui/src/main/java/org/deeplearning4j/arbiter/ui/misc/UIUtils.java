@@ -1,5 +1,11 @@
 package org.deeplearning4j.arbiter.ui.misc;
 
+import org.joda.time.DurationFieldType;
+import org.joda.time.Period;
+import org.joda.time.PeriodType;
+import org.joda.time.format.PeriodFormatter;
+import org.joda.time.format.PeriodFormatterBuilder;
+
 /**
  * Created by Alex on 20/07/2017.
  */
@@ -51,6 +57,30 @@ public class UIUtils {
         }
 
         return nf * Math.pow(10, exp);
+    }
+
+    public static String formatDuration(long durationMs){
+        Period period = Period.seconds((int)(durationMs/1000L));
+        Period p2 = period.normalizedStandard(PeriodType.yearMonthDayTime());
+
+        PeriodFormatter formatter = new PeriodFormatterBuilder()
+                .appendYears()
+                .appendSuffix(" years, ")
+                .appendMonths()
+                .appendSuffix(" months, ")
+                .appendDays()
+                .appendSuffix(" days, ")
+                .appendHours()
+                .appendSuffix(" hours, ")
+                .appendMinutes()
+                .appendSuffix(" minutes, ")
+                .appendSeconds()
+                .appendSuffix(" seconds")
+                .toFormatter();
+
+        String formatted = formatter.print(p2);
+
+        return formatted;
     }
 
 }
