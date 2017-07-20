@@ -110,6 +110,11 @@ public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends Fe
         public void setIndices(int... indices) {
             lossFunctionParameterSpace.setIndices(indices);
         }
+
+        @Override
+        public String toString(){
+            return lossFunctionParameterSpace.toString();
+        }
     }
 
 }

@@ -8,6 +8,7 @@ import org.deeplearning4j.api.storage.StatsStorageListener;
 import org.deeplearning4j.arbiter.BaseNetworkSpace;
 import org.deeplearning4j.arbiter.layers.LayerSpace;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
 import org.deeplearning4j.arbiter.ui.UpdateStatus;
 import org.deeplearning4j.arbiter.ui.data.GlobalConfigPersistable;
@@ -44,6 +45,20 @@ public class ArbiterModule implements UIModule {
     private String currentSessionID;
 
     private Map<String, Long> lastUpdateForSession = Collections.synchronizedMap(new HashMap<>());
+
+
+    //Styles for UI:
+    private static final StyleTable STYLE_TABLE = new StyleTable.Builder()
+            .width(100, LengthUnit.Percent)
+            .backgroundColor(Color.WHITE)
+            .borderWidth(1)
+            .columnWidths(LengthUnit.Percent, 30, 70)
+            .build();
+
+    private static final StyleDiv STYLE_DIV_WIDTH_100_PC = new StyleDiv.Builder()
+            .width(100, LengthUnit.Percent)
+            .build();
+
 
     @Override
     public List<String> getCallbackTypeIDs() {
@@ -339,14 +354,7 @@ public class ArbiterModule implements UIModule {
 
         };
 
-        StyleTable st = new StyleTable.Builder()
-                .width(100, LengthUnit.Percent)
-                .backgroundColor(Color.WHITE)
-                .borderWidth(1)
-                .columnWidths(LengthUnit.Percent, 30, 70)
-                .build();
-
-        ComponentTable ct = new ComponentTable.Builder(st)
+        ComponentTable ct = new ComponentTable.Builder(STYLE_TABLE)
                 .content(table)
                 .header(tableHeader)
                 .build();
@@ -372,25 +380,22 @@ public class ArbiterModule implements UIModule {
 
         String[] hSpaceTableHeader = new String[]{"Hyperparameter", "Hyperparameter Configuration"};
 
-        ComponentTable ct2 = new ComponentTable.Builder(st)
+        ComponentTable ct2 = new ComponentTable.Builder(STYLE_TABLE)
                 .content(hSpaceTable)
                 .header(hSpaceTableHeader)
                 .build();
 
-        StyleDiv sd = new StyleDiv.Builder()
-                .width(100, LengthUnit.Percent)
-                .build();
+
 
         components.add(ct2);
 
-        //TODO add layer spaces
-
         List<BaseNetworkSpace.LayerConf> layerConfs = ps.getLayerSpaces();
+
 
         StyleText sText = new StyleText.Builder()
                 .fontSize(12)
                 .build();
-        components.add(new ComponentText.Builder("Layer Spaces",sText).build());
+//        components.add(new ComponentText.Builder(" -- Layer Spaces --",sText).build());
 
         for(BaseNetworkSpace.LayerConf l : layerConfs){
             LayerSpace<?> ls = l.getLayerSpace();
@@ -399,27 +404,27 @@ public class ArbiterModule implements UIModule {
             String[][] t = new String[lpsm.size()][2];
             i=0;
             for(Map.Entry<String,ParameterSpace<?>> e : lpsm.entrySet()){
-                hSpaceTable[i][0] = e.getKey();
-                hSpaceTable[i][1] = e.getValue().toString();
+                t[i][0] = e.getKey();
+                t[i][1] = e.getValue().toString();
                 i++;
             }
 
-            ComponentTable ct3 = new ComponentTable.Builder(st)
+            ComponentTable ct3 = new ComponentTable.Builder(STYLE_TABLE)
                     .content(t)
                     .header(hSpaceTableHeader)
                     .build();
 
+            String title = "Layer Space: " + ls.getClass().getSimpleName() + ", Name: " + l.getLayerName();
+
+            components.add(divSpacer);
+            components.add(new ComponentText.Builder(title, sText).build());
             components.add(ct3);
+
+
         }
 
 
-        ComponentDiv cd = new ComponentDiv(sd, components);
-
-//        ComponentText ct = new ComponentText("Optimization configuration!",
-//                new StyleText.Builder().color(Color.BLACK).fontSize(20).width(100, LengthUnit.Percent).build());
-
-//        System.out.println("Returning table:");
-//        System.out.println(asJson(ct));
+        ComponentDiv cd = new ComponentDiv(STYLE_DIV_WIDTH_100_PC, components);
 
         return ok(asJson(cd)).as(JSON);
     }
@@ -465,10 +470,56 @@ public class ArbiterModule implements UIModule {
             }
          */
 
-        ComponentText ct = new ComponentText("Summary status!",
-                new StyleText.Builder().color(Color.BLACK).fontSize(20).width(100, LengthUnit.Percent).build());
+        //First: table - number completed, queued, running, failed, total
+        //Best model index, score, and time
+        //Total runtime
+        //Termination conditions
 
-        return ok(asJson(ct)).as(JSON);
+        //Charts:
+        //Best model score vs. time
+        //All candidate sco
+
+        StatsStorage ss = knownSessionIDs.get(currentSessionID);
+        if(ss == null){
+            log.warn("getOptimizationConfig(): Session ID is unknown: {}", currentSessionID);
+            return ok();
+        }
+
+        Persistable p = ss.getStaticInfo(currentSessionID, ARBITER_UI_TYPE_ID, GlobalConfigPersistable.GLOBAL_WORKER_ID);
+
+        if(p == null){
+            log.info("No static info");
+            return ok();
+        }
+
+        List<Component> components = new ArrayList<>();
+
+        GlobalConfigPersistable gcp = (GlobalConfigPersistable)p;
+        OptimizationConfiguration oc = gcp.getOptimizationConfiguration();
+
+        List<TerminationCondition> tcs = oc.getTerminationConditions();
+
+        String[][] table = new String[][]{
+                {"Models Completed", String.valueOf(gcp.getCandidatesCompleted())},
+                {"Models Queued/Running", String.valueOf(gcp.getCandidatesQueued())},
+                {"Models Failed", String.valueOf(gcp.getCandidatesFailed())},
+                {"Models Total", String.valueOf(gcp.getCandidatesTotal())},
+                {"Best Score", ""},
+                {"Best Scoring Model", "Index x, Found at y (z min ago)"},
+                {"Total Runtime", ""}
+        };
+
+        ComponentTable ct = new ComponentTable.Builder(STYLE_TABLE)
+                .content(table)
+                .build();
+
+
+//        ComponentText ct = new ComponentText("Summary status!",
+//                new StyleText.Builder().color(Color.BLACK).fontSize(20).width(100, LengthUnit.Percent).build());
+
+        ComponentDiv cd = new ComponentDiv(STYLE_DIV_WIDTH_100_PC, ct);
+
+        return ok(asJson(cd)).as(JSON);
     }
 
 }

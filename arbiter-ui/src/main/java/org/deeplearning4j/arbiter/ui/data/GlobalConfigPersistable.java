@@ -13,6 +13,7 @@ public class GlobalConfigPersistable extends BaseJavaPersistable {
     public static final String GLOBAL_WORKER_ID = "global";
 
     private String optimizationConfigJson;
+    private int[] candidateCounts;  //queued, completed, failed, total
 
     public GlobalConfigPersistable(String sessionId, long  timestamp){
         super(sessionId, timestamp);
@@ -21,6 +22,10 @@ public class GlobalConfigPersistable extends BaseJavaPersistable {
     public GlobalConfigPersistable(Builder builder){
         super(builder);
         this.optimizationConfigJson = builder.optimizationConfigJson;
+        this.candidateCounts = builder.candidateCounts;
+        if(this.candidateCounts == null){
+            this.candidateCounts = new int[4];
+        }
     }
 
     @Override
@@ -36,6 +41,22 @@ public class GlobalConfigPersistable extends BaseJavaPersistable {
 
     public OptimizationConfiguration getOptimizationConfiguration(){
         return JsonMapper.fromJson(optimizationConfigJson, OptimizationConfiguration.class);
+    }
+
+    public int getCandidatesQueued(){
+        return candidateCounts[0];
+    }
+
+    public int getCandidatesCompleted(){
+        return candidateCounts[1];
+    }
+
+    public int getCandidatesFailed(){
+        return candidateCounts[2];
+    }
+
+    public int getCandidatesTotal(){
+        return candidateCounts[3];
     }
 
     public static class Builder extends BaseJavaPersistable.Builder<Builder>{

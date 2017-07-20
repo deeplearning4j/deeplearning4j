@@ -44,4 +44,9 @@ public class ActivationParameterSpaceAdapter implements ParameterSpace<IActivati
     public void setIndices(int... indices) {
         activation.setIndices(indices);
     }
+
+    @Override
+    public String toString(){
+        return activation.toString();
+    }
 }

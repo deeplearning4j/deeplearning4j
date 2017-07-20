@@ -36,10 +36,6 @@ import java.util.List;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = ContinuousParameterSpace.class, name = "ContinuousParameterSpace"),
-                @JsonSubTypes.Type(value = DiscreteParameterSpace.class, name = "DiscreteParameterSpace"),
-                @JsonSubTypes.Type(value = IntegerParameterSpace.class, name = "IntegerParameterSpace"),
-                @JsonSubTypes.Type(value = FixedValue.class, name = "FixedValue")})
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface ParameterSpace<P> {
 
