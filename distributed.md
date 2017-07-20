@@ -83,6 +83,8 @@ The longer the original iteration time, the less your relative impact will come 
 Here's simple form that'll help you with scalability expectations:
 {% include scalability.html %}
 
+
+
 # Performance Hints
 
 ### Executors, Cores, Parallelism
