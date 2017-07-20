@@ -70,7 +70,13 @@ function refreshCalculations() {
     var g12 = 60000 / a2;
     var g13 = (60000 / ((a2 + b2 + (c2 * (a5 * b5)) + e2))) * (a5 * b5);
 
+    console.log("a2: " + a2);
+    console.log("g12: " + g12);
+    console.log("g13: " + g13);
+
     var h13 = g13/g12;
+
+    console.log("h13: " + h13);
 
     var i13 = (h13 * 100) / (a5 * b5);
 
