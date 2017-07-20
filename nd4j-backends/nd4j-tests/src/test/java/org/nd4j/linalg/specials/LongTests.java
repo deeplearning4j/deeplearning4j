@@ -1,6 +1,7 @@
 package org.nd4j.linalg.specials;
 
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -27,6 +28,7 @@ public class LongTests extends BaseNd4jTest {
     }
 
     @Test
+    @Ignore
     public void testSomething1() {
         // we create 2D array, total nr. of elements is 2.4B elements, > MAX_INT
         INDArray huge = Nd4j.create(8000000, 300);
