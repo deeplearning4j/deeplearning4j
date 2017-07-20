@@ -1,34 +1,34 @@
 ---
-title: Deeplearning4j With RPMs
+title: Deeplearning4J与RPM
 layout: cn-default
 ---
 
-# Deeplearning4j With RPMs
+# Deeplearning4J与RPM
 
-Here are the steps to install Deeplearning4j with a Red Hat Package Manager (RPM):
+以下是用红帽软件包管理器（RPM）安装Deeplearning4J的步骤：
 
-* Set up [Spark Shell as an environment variable](http://apache-spark-user-list.1001560.n3.nabble.com/Adding-external-jar-to-spark-shell-classpath-using-ADD-JARS-td1207.html).
-* Include the .repo file in this directory
+* 将[Spark Shell设置为一项环境变量](http://apache-spark-user-list.1001560.n3.nabble.com/Adding-external-jar-to-spark-shell-classpath-using-ADD-JARS-td1207.html)。
+* 将.repo文件加入这个目录内
         {root}/etc/yum.repos.d
-* Here's what should go in the repo file:
+* 以下是repo文件中应当包含的内容：
         [dl4j.repo]
         
         name=dl4j-repo
         baseurl=http://repo.deeplearning4j.org/repo
         enabled=1
 
-* Then enter the distros for ND4J, Canova (a vectorization lib) and DL4J. For example, you might install ND4J-jblas:
+* 然后输入ND4J、Canova（向量化库）和DL4J的发布版本。例如您可以安装ND4J-jblas：
 
         sudo yum install nd4j-{backend}
         sudo yum install Canova-Distro
         sudo yum install Dl4j-Distro
         
-That puts the JAR files on your system under /usr/local/Skymind
+JAR文件会被保存在/usr/local/Skymind目录下
 
-* The libs will be located under the project name (dl4j or nd4j or canova) 
+* 所需的库分别位于用其项目名称（dl4j、nd4j或canova）命名的文件夹中 
 
         /usr/local/Skymind/dl4j/jcublas/lib
         /usr/local/Skymind/nd4j/jblas/lib
         
-* Add each lib folder's JAR files to the classpath for Spark shell (See above). You set it in the shell script. 
-* Pick a project to run. Here's an [example project](https://github.com/deeplearning4j/scala-spark-examples).
+* 将每个库的文件夹中的JAR文件添加至Spark shell的classpath（见上文）。您可以在shell脚本中进行设置。 
+* 选择一个项目，开始运行。示例项目参见[此处](https://github.com/deeplearning4j/scala-spark-examples)。
