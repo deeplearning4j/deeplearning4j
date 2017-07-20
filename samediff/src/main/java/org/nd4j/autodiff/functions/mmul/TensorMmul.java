@@ -24,7 +24,7 @@ import java.util.List;
 public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction<X> {
     private int argNum;
     private int[][] axes;
-    private DifferentialFunctionFactory<X> differentialFunctionFactory;
+    protected DifferentialFunctionFactory<X> differentialFunctionFactory;
     private boolean addedEdges = false;
 
     public TensorMmul(SDGraph graph,
@@ -179,7 +179,7 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
             DifferentialFunction<X> bt = differentialFunctionFactory.reshape(differentialFunctionFactory
                     .permute(b,newAxesB),newShapeB);
 
-            DifferentialFunction<X> ret =differentialFunctionFactory.mmul(argNum,at,bt);
+            DifferentialFunction<X> ret = differentialFunctionFactory.mmul(argNum,at,bt);
             int[] aPlusB = Ints.concat(oldShapeA, oldShapeB);
             return differentialFunctionFactory.reshape(ret,aPlusB);
 

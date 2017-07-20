@@ -1437,6 +1437,14 @@ public class SameDiff {
         throw new IllegalStateException("Illegal type specified " + opType);
     }
 
+    /**
+     *
+     * @return
+     */
+    public INDArray execAndEndResult(List<Op> ops) {
+        List<Op> exec = exec(ops);
+        return exec.get(exec.size() - 1).z();
+    }
 
     /**
      *
@@ -1447,11 +1455,16 @@ public class SameDiff {
         return exec.get(exec.size() - 1).z();
     }
 
+
     /**
-     *
-     * @return
+     * Executes the list of operations.
+     * This exec method is for
+     * only invoking operations
+     * rather than creating them
+     * @param ops the list of already created ops
+     * @return the passes in list
      */
-    public List<Op> exec() {
+    public List<Op> exec(List<Op> ops) {
         /**
          * Need to ensure op references
          * are consistent across a graph.
@@ -1464,22 +1477,35 @@ public class SameDiff {
          * in the graph very similar to nd4j.
          */
         allocate();
-        List<Op> ops = new ArrayList<>();
         if(graph().numVertices() == 0)
             throw new ND4JIllegalStateException("Unable to run exec pipeline. No vertices in graph");
 
 
+        for(int i = 0; i < ops.size(); i++) {
+            Op op = ops.get(i);
+            Nd4j.getExecutioner().exec(op);
+        }
+        return ops;
+    }
+
+
+    /**
+     * Creates ane executes a list of operations
+     * @return
+     */
+    public List<Op> exec() {
+        allocate();
+        List<Op> ops = new ArrayList<>();
         List<OpExecAction> opExecActions = graph().getOpOrder().getActions();
         for(int i = 0; i < opExecActions.size(); i++) {
             OpExecAction opExecAction = opExecActions.get(i);
             Op op = createOp(
                     opExecAction.getOpState().getOpType(),
                     opExecAction);
-            Nd4j.getExecutioner().exec(op);
             ops.add(op);
         }
 
-        return ops;
+        return exec(ops);
     }
 
 }

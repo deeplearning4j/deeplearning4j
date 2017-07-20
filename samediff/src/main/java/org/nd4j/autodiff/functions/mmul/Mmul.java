@@ -11,7 +11,10 @@ import org.nd4j.autodiff.samediff.SDGraph;
 import org.nd4j.linalg.api.shape.Shape;
 
 /**
- * Created by agibsonccc on 4/14/17.
+ *  Specialized matrix multiply operations.
+ *  Many people know this as "gemm"
+ *
+ *
  */
 
 public class Mmul<X extends Field<X>> extends TensorMmul<X> {
@@ -51,6 +54,17 @@ public class Mmul<X extends Field<X>> extends TensorMmul<X> {
             throw new UnsupportedOperationException("Only supporting array fields");
     }
 
+
+
+    /**
+     * Get the value of this function
+     *
+     * @return
+     */
+    @Override
+    protected X doGetValue() {
+        return differentialFunctionFactory.getMFactory().mmul(larg(),rarg());
+    }
 
 
     @Override

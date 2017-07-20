@@ -254,7 +254,7 @@ public class SameDiffTests {
 
         INDArray labels = Nd4j.create(new double[]{1,1,0,0}).reshape(4,1);
 
-        INDArray weights = Nd4j.zeros(3).transpose();
+        INDArray weights = Nd4j.rand(3,1,1);
 
         SDVariable x = sameDiff.var("x",inputs);
         SDVariable y = sameDiff.var("y",labels);
@@ -279,8 +279,12 @@ public class SameDiffTests {
         w = w.sub(update);
 
         System.out.println(sameDiff.graph().numVertices() + " and " + sameDiff.graph().getEdges().size());
-        sameDiff.graph().print(new File("/tmp/graph.png"));
         List<Op> ops = sameDiff.exec();
+        for(int i = 0; i < 5; i++) {
+            INDArray output =  sameDiff.execAndEndResult(ops);
+            System.out.println("Update " + output);
+        }
+
         System.out.println(ops);
     }
 
