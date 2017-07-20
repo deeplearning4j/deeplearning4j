@@ -78,7 +78,7 @@ public class SDVariable  implements Serializable {
             throw new IllegalStateException("Unable to infer shape. Function is null.");
         OpState opState =  differentialFunction.getOpState();
         if(opState == null) {
-            return differentialFunction.getValue().getInput().getShape();
+            return differentialFunction.getValue(true).getInput().getShape();
         }
 
         return opState.getResult().getShape();

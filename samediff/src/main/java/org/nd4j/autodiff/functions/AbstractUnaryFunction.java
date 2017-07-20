@@ -79,8 +79,8 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
                             DifferentialFunction<X> i_v1,
                             String opName,
                             int...shape) {
-        if(i_v1.getValue() instanceof ArrayField) {
-            ArrayField v1 = (ArrayField) i_v1.getValue();
+        if(i_v1.getValue(true) instanceof ArrayField) {
+            ArrayField v1 = (ArrayField) i_v1.getValue(true);
             NDArrayInformation information =    NDArrayInformation.builder()
                     .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
                     .shape(shape).build();
@@ -115,9 +115,9 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
     protected void addEdges(Graph<NDArrayInformation,OpState> graph,
                             DifferentialFunction<X> i_v1,
                             String opName) {
-        if(i_v1.getValue() instanceof ArrayField) {
+        if(i_v1.getValue(true) instanceof ArrayField) {
             this.opType = OpState.OpType.TRANSFORM;
-            ArrayField arrayField = (ArrayField) i_v1.getValue();
+            ArrayField arrayField = (ArrayField) i_v1.getValue(true);
             addEdges(graph,
                     i_v1,
                     opName,

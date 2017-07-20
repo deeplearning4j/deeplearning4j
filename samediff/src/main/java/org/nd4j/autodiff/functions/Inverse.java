@@ -15,7 +15,7 @@ public class Inverse<X extends Field<X>> extends AbstractUnaryFunction<X> {
 
     @Override
     public X doGetValue() {
-        return arg().getValue().inverse();
+        return arg().getValue(true).inverse();
     }
 
     @Override

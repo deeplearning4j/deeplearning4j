@@ -27,7 +27,7 @@ public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X>
 
     @Override
     public X doGetValue() {
-        return (arg().getValue().pow(m_exponent)).mul(m_scale);
+        return (arg().getValue(true).pow(m_exponent)).mul(m_scale);
     }
 
     @Override

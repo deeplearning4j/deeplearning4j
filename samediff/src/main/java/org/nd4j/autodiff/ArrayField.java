@@ -826,10 +826,10 @@ public class ArrayField implements Field<ArrayField> {
     }
 
     public ArrayField tensorMmul(DifferentialFunction<ArrayField> y, int[][] dimensions) {
-        return addPairReduceOp("tensorMmul",y.getValue(),
+        return addPairReduceOp("tensorMmul",y.getValue(true),
                 null,
                 ArrayUtil.getTensorMmulShape(getInput().getShape(),
-                        y.getValue().getInput().getShape(),
+                        y.getValue(true).getInput().getShape(),
                         dimensions),new Object[]{dimensions});
 
     }

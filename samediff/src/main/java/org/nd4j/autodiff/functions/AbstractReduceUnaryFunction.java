@@ -58,8 +58,8 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
      * @param opName
      */
     protected void addEdges(Graph<NDArrayInformation,OpState> graph, DifferentialFunction<X> i_v1,String opName) {
-        if(i_v1.getValue() instanceof ArrayField) {
-            ArrayField v1 = (ArrayField) i_v1.getValue();
+        if(i_v1.getValue(true) instanceof ArrayField) {
+            ArrayField v1 = (ArrayField) i_v1.getValue(true);
             //result
             NDArrayInformation information =  NDArrayInformation.builder()
                     .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")

@@ -1438,7 +1438,7 @@ public class SameDiff {
     }
 
     /**
-     *
+     *u
      * @return
      */
     public INDArray execAndEndResult(List<Op> ops) {

@@ -55,14 +55,6 @@ public abstract class DifferentialFunction<X extends Field<X>>
     protected abstract X doGetValue();
 
 
-    /**
-     * Equivalent to calling getValue(true)
-     * which will by default freeze the graph
-     * @return
-     */
-    public  X getValue() {
-        return getValue(false);
-    }
 
     /**
      * Get the value specifying
@@ -135,13 +127,13 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> add(DifferentialFunction<X> i_v) {
-        X ret = i_v.getValue().add(getValue());
+        X ret = i_v.getValue(true).add(getValue(true));
         return new Constant<>(graph, ret, i_v.getResultShape(), (AbstractIdentityFactory<X>) graph.getSameDiff().getArrayFactory());
     }
 
     @Override
     public DifferentialFunction<X> mul(DifferentialFunction<X> i_v) {
-        X ret = i_v.getValue().mul(getValue());
+        X ret = i_v.getValue(true).mul(getValue(true));
         return new Constant<>(graph, ret, i_v.getResultShape(), (AbstractIdentityFactory<X>) graph.getSameDiff().getArrayFactory());
     }
 
@@ -231,7 +223,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
                             String opName,
                             OpState.OpType opType,
                             int[] shape,Object[] extraArgs) {
-        if(i_v1.getValue() instanceof ArrayField) {
+        if(i_v1.getValue(true) instanceof ArrayField) {
             /**
              * getValue() generates invalid vertex ids
              * need to look at a way of getting the proper vertex
@@ -243,9 +235,9 @@ public abstract class DifferentialFunction<X extends Field<X>>
              *
              *
              */
-            ArrayField v1 = (ArrayField) i_v1.getValue();
+            ArrayField v1 = (ArrayField) i_v1.getValue(true);
             int v1VertexId = i_v1.resultVertexId();
-            ArrayField v2 = (ArrayField) i_v2.getValue();
+            ArrayField v2 = (ArrayField) i_v2.getValue(true);
             int v2VertexId = i_v2.resultVertexId();
 
             NDArrayInformation arrInfo = NDArrayInformation.builder()
@@ -327,8 +319,8 @@ public abstract class DifferentialFunction<X extends Field<X>>
                             DifferentialFunction<X> i_v1,
                             DifferentialFunction<X> i_v2,
                             String opName) {
-        if(i_v1.getValue() instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) i_v1.getValue();
+        if(i_v1.getValue(true) instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) i_v1.getValue(true);
             addEdges(graph,
                     i_v1,
                     i_v2,

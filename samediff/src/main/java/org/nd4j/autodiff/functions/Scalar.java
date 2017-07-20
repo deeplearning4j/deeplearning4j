@@ -29,8 +29,8 @@ public class Scalar<X extends Field<X>> extends Constant<X> {
     @Override
     public DifferentialFunction<X> mul(DifferentialFunction<X> i_v) {
         DifferentialFunction<X> dup = i_v.dup();
-        if(i_v.getValue() instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) i_v.getValue();
+        if(i_v.getValue(true) instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) i_v.getValue(true);
             addEdges(graph,
                     dup,
                     this,

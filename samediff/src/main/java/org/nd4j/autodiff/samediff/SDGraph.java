@@ -58,6 +58,10 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
         return super.hashCode();
     }
 
+    /**
+     * Get the output vertices
+     * @return
+     */
     public List<NDArrayInformation> getOutputs() {
         List<NDArrayInformation> ret = new ArrayList<>();
         for (int i : getVertices().keySet()) {
@@ -68,6 +72,10 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
         return ret;
     }
 
+    /**
+     * Get the input vertices
+     * @return
+     */
     public List<NDArrayInformation> getInputs() {
         List<NDArrayInformation> ret = new ArrayList<>();
         for (int i : getVertices().keySet()) {
@@ -139,9 +147,17 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
             }
         }
 
+
+
         return OpExecOrder.builder().actions(ret).build();
     }
 
+    /**
+     * {@link NDArrayInformation}
+     * accessor for a given vertex
+     * @param vertex the vertex id
+     * @return the information for the vertex
+     */
     public NDArrayInformation getInformationFor(int vertex) {
         Vertex<NDArrayInformation> ndArrayInformation = getVertex(vertex);
         if(ndArrayInformation == null)
@@ -150,6 +166,10 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
     }
 
 
+    /**
+     * Topological sort over vertex ids
+     * @return
+     */
     public int[] topologicalSort() {
         LinkedList<Integer> noIncoming = new LinkedList<>();
         Map<Integer, Set<Integer>> inputEdges = new HashMap<>(); //key: vertex. Values: vertices that the key vertex receives input from

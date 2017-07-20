@@ -61,7 +61,7 @@ public class ArrayTestAbstractFactory
         DifferentialFunction<ArrayField> h = x.mul(x).mul(arrayFieldDifferentialFunctionFactory.cos(x.mul(y)).add(y));
 
         DifferentialFunction<ArrayField> diff = h.diff(x);
-        ArrayField value = diff.getValue();
+        ArrayField value = diff.getValue(true);
         Graph<NDArrayInformation, OpState> ops = value.getOps();
         String s = ops.toString();
 
@@ -70,7 +70,7 @@ public class ArrayTestAbstractFactory
 
     @Test
     public void testVariables() {
-       SDGraph graph = new SDGraph();
+        SDGraph graph = new SDGraph();
         ArrayFactory arrayFactory = new ArrayFactory(graph);
         DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
         NDArrayInformation xInfo = NDArrayInformation.
@@ -88,7 +88,7 @@ public class ArrayTestAbstractFactory
 
     @Test
     public void testPairWiseOp() throws Exception {
-       SDGraph graph = new SDGraph();
+        SDGraph graph = new SDGraph();
         ArrayFactory arrayFactory = new ArrayFactory(graph);
 
         DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
@@ -127,7 +127,7 @@ public class ArrayTestAbstractFactory
         assertEquals(2/*why not one?*/,graph.getEdges().size());
         assertEquals(2/*why not one?*/,graph.getVertexInDegree(mul.getVertexId()));
 
-        Variable<ArrayField> variable = arrayFieldDifferentialFunctionFactory.var("x",constant.getValue());
+        Variable<ArrayField> variable = arrayFieldDifferentialFunctionFactory.var("x",constant.getValue(true));
         assertEquals(3,graph.numVertices());
         System.out.println(mul.diff(variable).getFormula(new ArrayList<>()));
 
@@ -153,7 +153,7 @@ public class ArrayTestAbstractFactory
 
     @Test
     public void testSingleTransformOp() throws Exception {
-       SDGraph graph = new SDGraph();
+        SDGraph graph = new SDGraph();
         ArrayFactory arrayFactory = new ArrayFactory(graph);
 
         DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
@@ -168,7 +168,7 @@ public class ArrayTestAbstractFactory
         //2 * x
         Variable<ArrayField> x = arrayFieldDifferentialFunctionFactory.var("x",new ArrayField(xVertex, graph));
 
-        Field<ArrayField> h = arrayFactory.abs(x.getValue());
+        Field<ArrayField> h = arrayFactory.abs(x.getValue(true));
 
         //x, x as the duplicate input and result are the vertices
         assertEquals(2,graph.numVertices());
@@ -183,7 +183,7 @@ public class ArrayTestAbstractFactory
 
     @Test
     public void testAutoDiffSimple() throws Exception {
-       SDGraph graph = new SDGraph();
+        SDGraph graph = new SDGraph();
         ArrayFactory arrayFactory = new ArrayFactory(graph);
 
         DifferentialFunctionFactory<ArrayField> arrayFieldDifferentialFunctionFactory = new DifferentialFunctionFactory<>(graph,arrayFactory);
@@ -211,7 +211,7 @@ public class ArrayTestAbstractFactory
         assertEquals(3,graph.getEdges().get(0).size());
         //This accumulates the edges from both x * x and 2 * (x,1) ^ 1 (the derivative)
         System.out.println(graph.toString());
-        dif.getValue();
+        dif.getValue(true);
         //getValue shouldn't change graph
         assertEquals(3,graph.getEdges().get(0).size());
         dif.getFormula(new ArrayList<>());

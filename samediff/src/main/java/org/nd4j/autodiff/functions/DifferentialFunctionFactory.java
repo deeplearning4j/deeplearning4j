@@ -92,7 +92,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.tile(arg().getValue(),repeat);
+                return mFactory.tile(arg().getValue(true),repeat);
             }
 
             @Override
@@ -120,7 +120,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.valueArrayOf(arg().getValue(),shape);
+                return mFactory.valueArrayOf(arg().getValue(true),shape);
             }
 
             @Override
@@ -407,7 +407,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.expandDims(arg().getValue(),axis);
+                return mFactory.expandDims(arg().getValue(true),axis);
             }
 
             @Override
@@ -436,7 +436,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.abs(arg().getValue());
+                return mFactory.abs(arg().getValue(true));
             }
 
             @Override
@@ -464,7 +464,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.neg(arg().getValue());
+                return mFactory.neg(arg().getValue(true));
             }
 
             @Override
@@ -491,7 +491,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.cos(arg().getValue());
+                return mFactory.cos(arg().getValue(true));
             }
 
             @Override
@@ -518,7 +518,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.sin(arg().getValue());
+                return mFactory.sin(arg().getValue(true));
             }
 
             @Override
@@ -545,7 +545,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.tan(arg().getValue());
+                return mFactory.tan(arg().getValue(true));
             }
 
             @Override
@@ -569,8 +569,8 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
     @Override
     public DifferentialFunction<X> permute(DifferentialFunction<X> iX, int... dimensions) {
-        if(iX.getValue() instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) iX.getValue();
+        if(iX.getValue(true) instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) iX.getValue(true);
             return new AbstractUnaryFunction<X>(mFactory.graph(),
                     iX,
                     ArrayUtil.reverseCopy(arrayField.getInput().getShape()),
@@ -579,7 +579,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
                 @Override
                 public X doGetValue() {
-                    return mFactory.permute(arg().getValue(),dimensions);
+                    return mFactory.permute(arg().getValue(true),dimensions);
                 }
 
                 @Override
@@ -607,15 +607,15 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
     @Override
     public DifferentialFunction<X> transpose(DifferentialFunction<X> iX) {
-        if(iX.getValue() instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) iX.getValue();
+        if(iX.getValue(true) instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) iX.getValue(true);
             return new AbstractUnaryFunction<X>(mFactory.graph(),
                     iX,ArrayUtil.reverseCopy(arrayField.getInput().getShape()),
                     OpState.OpType.SHAPE,null) {
 
                 @Override
                 public X doGetValue() {
-                    return mFactory.transpose(arg().getValue());
+                    return mFactory.transpose(arg().getValue(true));
                 }
 
                 @Override
@@ -646,7 +646,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.acos(arg().getValue());
+                return mFactory.acos(arg().getValue(true));
             }
 
             @Override
@@ -673,7 +673,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.asin(arg().getValue());
+                return mFactory.asin(arg().getValue(true));
             }
 
             @Override
@@ -701,7 +701,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.atan(arg().getValue());
+                return mFactory.atan(arg().getValue(true));
             }
 
             @Override
@@ -727,7 +727,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.cosh(arg().getValue());
+                return mFactory.cosh(arg().getValue(true));
             }
 
             @Override
@@ -753,7 +753,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.sinh(arg().getValue());
+                return mFactory.sinh(arg().getValue(true));
             }
 
             @Override
@@ -780,7 +780,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.tanh(arg().getValue());
+                return mFactory.tanh(arg().getValue(true));
             }
 
             @Override
@@ -806,7 +806,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.acosh(arg().getValue());
+                return mFactory.acosh(arg().getValue(true));
             }
 
             @Override
@@ -832,7 +832,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.asinh(arg().getValue());
+                return mFactory.asinh(arg().getValue(true));
             }
 
             @Override
@@ -859,7 +859,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.atanh(arg().getValue());
+                return mFactory.atanh(arg().getValue(true));
             }
 
             @Override
@@ -886,7 +886,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.exp(arg().getValue());
+                return mFactory.exp(arg().getValue(true));
             }
 
             @Override
@@ -913,7 +913,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.log(arg().getValue());
+                return mFactory.log(arg().getValue(true));
             }
 
             @Override
@@ -941,7 +941,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.or(larg().getValue(), rarg().getValue());
+                return mFactory.or(larg().getValue(true), rarg().getValue(true));
             }
 
             @Override
@@ -952,7 +952,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
                 Constant<X> ym1 = DifferentialFunctionFactory.this
-                        .val(rarg().getValue().sub(mFactory.one(getResultShape())));
+                        .val(rarg().getValue(true).sub(mFactory.one(getResultShape())));
                 return rarg().mul(DifferentialFunctionFactory.this.pow(larg(), ym1))
                         .mul(larg().diff(i_v));
             }
@@ -982,7 +982,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.eq(larg().getValue(), rarg().getValue());
+                return mFactory.eq(larg().getValue(true), rarg().getValue(true));
             }
 
             @Override
@@ -993,7 +993,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
                 Constant<X> ym1 = DifferentialFunctionFactory.this
-                        .val(rarg().getValue().sub(mFactory.one(getResultShape())));
+                        .val(rarg().getValue(true).sub(mFactory.one(getResultShape())));
                 return rarg().mul(DifferentialFunctionFactory.this.pow(larg(), ym1))
                         .mul(larg().diff(i_v));
             }
@@ -1022,7 +1022,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.neq(larg().getValue(), rarg().getValue());
+                return mFactory.neq(larg().getValue(true), rarg().getValue(true));
             }
 
             @Override
@@ -1033,7 +1033,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
                 Constant<X> ym1 = DifferentialFunctionFactory.this
-                        .val(rarg().getValue().sub(mFactory.one(getResultShape())));
+                        .val(rarg().getValue(true).sub(mFactory.one(getResultShape())));
                 return rarg().mul(DifferentialFunctionFactory.this.pow(larg(), ym1))
                         .mul(larg().diff(i_v));
             }
@@ -1062,7 +1062,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.pow(larg().getValue(), rarg().getValue());
+                return mFactory.pow(larg().getValue(true), rarg().getValue(true));
             }
 
             @Override
@@ -1073,7 +1073,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
                 Constant<X> ym1 = DifferentialFunctionFactory.this
-                        .val(rarg().getValue().sub(mFactory.one(getResultShape())));
+                        .val(rarg().getValue(true).sub(mFactory.one(getResultShape())));
                 return rarg().mul(DifferentialFunctionFactory.this.pow(larg(), ym1))
                         .mul(larg().diff(i_v));
             }
@@ -1102,7 +1102,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.sqrt(arg().getValue());
+                return mFactory.sqrt(arg().getValue(true));
             }
 
             @Override
@@ -1131,7 +1131,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.square(arg().getValue());
+                return mFactory.square(arg().getValue(true));
             }
 
             @Override
@@ -1159,7 +1159,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.floor(arg().getValue());
+                return mFactory.floor(arg().getValue(true));
             }
 
             @Override
@@ -1185,7 +1185,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.relu(arg().getValue());
+                return mFactory.relu(arg().getValue(true));
             }
 
             @Override
@@ -1195,7 +1195,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return val(mFactory.step(arg().getValue())).mul(arg().diff(i_v));
+                return val(mFactory.step(arg().getValue(true))).mul(arg().diff(i_v));
             }
 
             @Override
@@ -1213,7 +1213,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.softmax(arg().getValue());
+                return mFactory.softmax(arg().getValue(true));
             }
 
             @Override
@@ -1223,7 +1223,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                DifferentialFunction<X> val = val(getValue());
+                DifferentialFunction<X> val = val(getValue(true));
                 return val.mul(one(getResultShape()).sub(val)).mul(arg().diff(i_v));
             }
 
@@ -1240,7 +1240,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.hardTanh(arg().getValue());
+                return mFactory.hardTanh(arg().getValue(true));
             }
 
             @Override
@@ -1250,7 +1250,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return hardTanhDerivative(val(getValue())).mul(arg().diff(i_v));
+                return hardTanhDerivative(val(getValue(true))).mul(arg().diff(i_v));
             }
 
             @Override
@@ -1268,7 +1268,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.hardTanhDerivative(arg().getValue());
+                return mFactory.hardTanhDerivative(arg().getValue(true));
             }
 
             @Override
@@ -1298,7 +1298,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.sigmoid(arg().getValue());
+                return mFactory.sigmoid(arg().getValue(true));
             }
 
             @Override
@@ -1326,7 +1326,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.sigmoidDerivative(arg().getValue());
+                return mFactory.sigmoidDerivative(arg().getValue(true));
             }
 
             @Override
@@ -1354,7 +1354,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.sign(arg().getValue());
+                return mFactory.sign(arg().getValue(true));
             }
 
             @Override
@@ -1381,7 +1381,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.broadcast(arg().getValue(),shape);
+                return mFactory.broadcast(arg().getValue(true),shape);
             }
 
             @Override
@@ -1407,7 +1407,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.repeat(arg().getValue(),axis);
+                return mFactory.repeat(arg().getValue(true),axis);
             }
 
             @Override
@@ -1433,7 +1433,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.softsign(arg().getValue());
+                return mFactory.softsign(arg().getValue(true));
             }
 
             @Override
@@ -1459,7 +1459,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.softsignDeriviative(arg().getValue());
+                return mFactory.softsignDeriviative(arg().getValue(true));
             }
 
             @Override
@@ -1490,7 +1490,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.softplus(arg().getValue());
+                return mFactory.softplus(arg().getValue(true));
             }
 
             @Override
@@ -1517,7 +1517,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.elu(arg().getValue());
+                return mFactory.elu(arg().getValue(true));
             }
 
             @Override
@@ -1546,7 +1546,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.eluDerivative(arg().getValue());
+                return mFactory.eluDerivative(arg().getValue(true));
             }
 
             @Override
@@ -1575,7 +1575,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.leakyRelu(arg().getValue(),cutoff);
+                return mFactory.leakyRelu(arg().getValue(true),cutoff);
             }
 
             @Override
@@ -1604,7 +1604,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.leakyReluDerivative(arg().getValue(),cutoff);
+                return mFactory.leakyReluDerivative(arg().getValue(true),cutoff);
             }
 
             @Override
@@ -1631,7 +1631,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.reshape(arg().getValue(),shape);
+                return mFactory.reshape(arg().getValue(true),shape);
             }
 
             @Override
@@ -1657,7 +1657,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public X doGetValue() {
-                return mFactory.rollAxis(arg().getValue(),axis);
+                return mFactory.rollAxis(arg().getValue(true),axis);
             }
 
             @Override
@@ -2207,8 +2207,8 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
 
     private int getInputLength(Variable<X> func) {
-        if(func.getValue() instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) func.getValue();
+        if(func.getValue(true) instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) func.getValue(true);
             int[] inputShape = arrayField.getInput().getShape();
             return ArrayUtil.prod(inputShape);
         }
@@ -2217,7 +2217,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
     }
 
     private DifferentialFunction<X> doGradChoose(DifferentialFunction<X> func,Variable<X> input,int...axes) {
-        if(input.getValue() instanceof ArrayField) {
+        if(input.getValue(true) instanceof ArrayField) {
             DifferentialFunction<X> repeatedGrad = doRepeat(func,input,axes);
             DifferentialFunction<X> resultRepeated = doRepeat(func.args()[0],input,axes);
             DifferentialFunction<X> argMaxLocations = eq(input,resultRepeated);
@@ -2232,8 +2232,8 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
     private DifferentialFunction<X> doRepeat(DifferentialFunction<X> func,
                                              Variable<X> input,
                                              int...axes) {
-        if(input.getValue() instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) input.getValue();
+        if(input.getValue(true) instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) input.getValue(true);
             int[] inputShape = arrayField.getInput().getShape();
             if(Shape.isWholeArray(inputShape,axes)) {
                 return valueArrayOf(input,inputShape);

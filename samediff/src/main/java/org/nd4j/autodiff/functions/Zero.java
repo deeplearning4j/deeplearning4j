@@ -46,8 +46,8 @@ public class Zero<X extends Field<X>> extends Constant<X> {
 
 
     private void addEdge(String opName,DifferentialFunction<X> i_v) {
-        if(i_v.getValue() instanceof ArrayField) {
-            ArrayField x = (ArrayField) i_v.getValue();
+        if(i_v.getValue(true) instanceof ArrayField) {
+            ArrayField x = (ArrayField) i_v.getValue(true);
             addEdges(graph,
                     this,
                     i_v,

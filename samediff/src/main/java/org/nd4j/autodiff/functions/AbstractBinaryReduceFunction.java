@@ -35,8 +35,8 @@ public abstract class AbstractBinaryReduceFunction<X extends  Field<X>> extends 
                             DifferentialFunction<X> i_v1,
                             DifferentialFunction<X> i_v2,
                             String opName) {
-        if(i_v1.getValue() instanceof ArrayField) {
-            ArrayField arrayField = (ArrayField) i_v1.getValue();
+        if(i_v1.getValue(true) instanceof ArrayField) {
+            ArrayField arrayField = (ArrayField) i_v1.getValue(true);
             //skip empty dimensions
             if(dimensions == null)
                 return;

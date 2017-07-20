@@ -265,6 +265,8 @@ public class SameDiffTests {
         SDVariable preOutput = sameDiff.mmul(0,x,w);
 
         SDVariable outputs = sameDiff.sigmoid(preOutput);
+        assertEquals(6,sameDiff.graph().numVertices());
+        assertEquals(3,sameDiff.graph().getEdges().size());
         //    label_probabilities = preds * targets + (1 - preds) * (1 - targets)
         SDVariable outputTimesY = outputs.mul(y);
         SDVariable oneMinusOutput = outputs.rsub(sameDiff.scalar("one",1.0));

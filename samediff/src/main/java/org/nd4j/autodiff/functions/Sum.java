@@ -15,7 +15,7 @@ public class Sum<X extends Field<X>> extends AbstractBinaryFunction<X> {
 
     @Override
     public X doGetValue() {
-        return larg().getValue().add(rarg().getValue());
+        return larg().getValue(true).add(rarg().getValue(true));
     }
 
     @Override

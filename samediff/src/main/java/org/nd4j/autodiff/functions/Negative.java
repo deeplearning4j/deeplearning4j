@@ -15,7 +15,7 @@ public class Negative<X extends Field<X>> extends AbstractUnaryFunction<X> {
 
     @Override
     public X doGetValue() {
-        return arg().getValue().negate();
+        return arg().getValue(true).negate();
     }
 
     @Override

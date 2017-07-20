@@ -123,7 +123,7 @@ public class Variable<X extends Field<X>> extends DifferentialFunction<X> {
 
     @Override
     public String toString() {
-        return getName() + ":" + getValue();
+        return getName() + ":" + getValue(true);
     }
 
     @Override

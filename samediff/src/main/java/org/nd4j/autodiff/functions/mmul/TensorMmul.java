@@ -43,8 +43,8 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
         this.m_x2 = i_v2;
 
         if(!addedEdges) {
-            ArrayField a = (ArrayField) i_v1.getValue();
-            ArrayField b = (ArrayField) i_v2.getValue();
+            ArrayField a = (ArrayField) i_v1.getValue(true);
+            ArrayField b = (ArrayField) i_v2.getValue(true);
 
             addEdges(graph,
                     i_v1,
@@ -61,10 +61,10 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
                             DifferentialFunction<X> i_v1,
                             DifferentialFunction<X> i_v2,
                             String opName) {
-        if(i_v1.getValue() instanceof ArrayField && axes != null && !addedEdges) {
+        if(i_v1.getValue(true) instanceof ArrayField && axes != null && !addedEdges) {
             addedEdges = true;
-            ArrayField arrayField = (ArrayField) i_v1.getValue();
-            ArrayField secondVal = (ArrayField) i_v2.getValue();
+            ArrayField arrayField = (ArrayField) i_v1.getValue(true);
+            ArrayField secondVal = (ArrayField) i_v2.getValue(true);
 
             addEdges(graph,i_v1,i_v2,opName,
                     OpState.OpType.ACCUMULATION,
@@ -106,9 +106,9 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
     private DifferentialFunction<X> doTensorMmul(int argNum,
                                                  DifferentialFunction<X> a,
                                                  DifferentialFunction<X> b) {
-        if (a.getValue() instanceof ArrayField) {
-            ArrayField xField = (ArrayField) a.getValue();
-            ArrayField yField = (ArrayField) b.getValue();
+        if (a.getValue(true) instanceof ArrayField) {
+            ArrayField xField = (ArrayField) a.getValue(true);
+            ArrayField yField = (ArrayField) b.getValue(true);
             int validationLength = Math.min(axes[0].length, axes[1].length);
             for (int i = 0; i < validationLength; i++) {
                 if (xField.getInput().getShape()[axes[0][i]] != yField.getInput().getShape()[axes[1][i]])
