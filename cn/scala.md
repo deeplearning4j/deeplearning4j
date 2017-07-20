@@ -1,66 +1,66 @@
 ---
-title: Scala, Spark and Deeplearning4j
+title: Scala、Spark与Deeplearning4j
 layout: cn-default
 ---
 
-# Scala, Spark and Deeplearning4j
+# Scala、Spark与Deeplearning4j
 
-Scala programmers seeking to build deep learning solutions can use Deeplearning4j's Scala API [ScalNet](https://github.com/deeplearning4j/scalnet) or work with the Java framework using the `Builder` pattern. Skymind's numerical computing library, [ND4J](http://nd4j.org/) (n-dimensional arrays for the JVM), comes with a Scala API, [ND4S](https://github.com/deeplearning4j/nd4s).
+希望构建深度学习解决方案的Scala程序员可以使用Deeplearning4j的Scala API [ScalNet](https://github.com/deeplearning4j/scalnet)，或者借助`Builder`模式来使用该Java框架。Skymind的数值运算库[ND4J](http://nd4j.org/)（面向JVM的N维数组）自带名为[ND4S](https://github.com/deeplearning4j/nd4s)的Scala API。
 
 ## Scala
 
-Scala is one of the most exciting languages to be created in the 21st century. It is a multi-paradigm language that fully supports functional, object-oriented, imperative and concurrent programming. It also has a strong type system, and from our point of view, strong type is a convenient form of self-documenting code.
+Scala是21世纪发明的最令人激动的编程语言之一。它是一种完全支持函数式、对象导向式、命令式和并发式编程的多范式语言。Scala属于强类型语言，而在我们看来，强类型系统是一种便利的自文档化代码。
 
-Scala works on the JVM and has access to the riches of the Java ecosystem, but it is less verbose than Java. As we employ it for ND4J, its syntax is strikingly similar to Python, a language that many data scientists are comfortable with. Like Python, Scala makes programmers happy, but like Java, it is quite fast. 
+Scala与JVM兼容，可以利用Java生态系统中的丰富资源，同时也比Java更为精简。我们在ND4J中采用该语言，其语法与广受众多数据科学家青睐的Python语言惊人地相似。Scala可以像Python那样让程序员皆大欢喜，但同时它的速度也相当快，就和Java一样。 
 
-Finally, [Apache Spark](./spark.html) is written in Scala, and any library that purports to work on distributed run times should at the very least be able to interface with Spark. Deeplearning4j and ND4J go a step further, because they work in a Spark cluster, and boast Scala APIs called ScalNet and ND4S. 
+最后，[Apache Spark](./spark.html)是用Scala编写的，而任何宣称支持分布式运行时的库都至少应该能够与Spark对接。Deeplearning4j和ND4J则更上一层楼，因为它们在Spark集群中运行，并且分别拥有名为ScalNet和ND4S的Scala API。 
 
-We believe Scala's many strengths will lead it to dominate numerical computing, as well as deep learning. We think that will happen on Spark. And we have tried to build the tools to make it happen now. 
+我们相信Scala将凭借众多优势在数值运算以及深度学习领域占据主导地位。我们认为这将会在Spark上实现。我们也已在努力开发相关工具，促使这一天早日到来。 
 
-### See also
+### 另请参见
 
-* [Docs: Deeplearning4j on Spark](./spark.html)
-* [Course: Atomic Scala](http://www.atomicscala.com/) - a recommended beginner's course
-* [Martin Odersky's Coursera course on Scala](https://www.coursera.org/learn/progfun1)
-* [Book: Scala for Data Science](https://www.amazon.com/Scala-Data-Science-Pascal-Bugnion/dp/1785281372)
-* [Video Course: Problem-solving using Scala](https://www.youtube.com/user/DrMarkCLewis)
-* [Learn: The Scala Programming Language](http://www.scala-lang.org/documentation/)
-* [A Scala Tutorial for Java programmers](http://www.scala-lang.org/docu/files/ScalaTutorial.pdf) (PDF)
-* [Scala By Example, by Martin Odersky](http://www.scala-lang.org/docu/files/ScalaByExample.pdf) (PDF) 
-* [An Intro to Scala on ND4J](http://nd4j.org/scala.html)
-* [Our early-stage Scala API](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-scala-api/src/main/scala/org/nd4j/api/linalg): ([One example on Github](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-scala-api/src/test/scala/org/nd4j/api/linalg/TestNDArray.scala#L18))
-* SF Spark Talk: [Deeplearning4j on Spark, and Data Science on the JVM, with ND4J](https://www.youtube.com/watch?v=LCsc1hFuNac&feature=youtu.be)
-* [Q&A with Adam Gibson about Spark with Alexy Khrabrov](https://www.youtube.com/watch?v=LJPL8sL0Daw&feature=youtu.be)
-* [Our Spark integration](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark)
-* [ND4J: Scientific Computing for the JVM](http://nd4j.org)
-* [Scala Basics for Python Developers](https://bugra.github.io/work/notes/2014-10-18/scala-basics-for-python-developers/)
-* [Why We Love Scala at Coursera](https://tech.coursera.org/blog/2014/02/18/why-we-love-scala-at-coursera/)
+* [文档：基于Spark的Deeplearning4j](./spark.html)
+* [课程：Scala编程思想（Atomic Scala）](http://www.atomicscala.com/)－推荐的入门课程
+* [Martin Odersky在Coursera上的Scala课程](https://www.coursera.org/learn/progfun1)
+* [书籍：Scala的数据科学应用（Scala for Data Science）](https://www.amazon.com/Scala-Data-Science-Pascal-Bugnion/dp/1785281372)
+* [视频课程：用Scala解决问题](https://www.youtube.com/user/DrMarkCLewis)
+* [学习：Scala编程语言](http://www.scala-lang.org/documentation/)
+* [面向Java程序员的Scala教程](http://www.scala-lang.org/docu/files/ScalaTutorial.pdf)（PDF）
+* [Scala示例解析（Scala By Example），Martin Odersky著](http://www.scala-lang.org/docu/files/ScalaByExample.pdf)（PDF） 
+* [ND4J的Scala介绍](http://nd4j.org/cn/scala.html)
+* [我们的早期Scala API](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-scala-api/src/main/scala/org/nd4j/api/linalg)：（[Github上的一个示例](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-scala-api/src/test/scala/org/nd4j/api/linalg/TestNDArray.scala#L18)）
+* SF Spark讲座：[基于Spark的Deeplearning4j和基于JVM的数据科学（借助ND4J实现）](https://www.youtube.com/watch?v=LCsc1hFuNac&feature=youtu.be)
+* [Adam Gibson的Spark访谈，由Alexy Khrabrov主持](https://www.youtube.com/watch?v=LJPL8sL0Daw&feature=youtu.be)
+* [我们的Spark集成](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j-scaleout/spark)
+* [ND4J：面向JVM的科学计算](http://nd4j.org/cn)
+* [面向Python开发人员的Scala基础教程](https://bugra.github.io/work/notes/2014-10-18/scala-basics-for-python-developers/)
+* [Coursera为何中意Scala](https://tech.coursera.org/blog/2014/02/18/why-we-love-scala-at-coursera/)
 
-A non-exhaustive list of [organizations using Scala](http://alvinalexander.com/scala/whos-using-scala-akka-play-framework):
+部分[采用Scala的企业](http://alvinalexander.com/scala/whos-using-scala-akka-play-framework)：
 
 * AirBnB
-* Amazon
+* 亚马逊
 * Apple
 * Ask.com
-* AT&T
+* 美国电话电报公司
 * Autodesk
-* Bank of America
-* Bloomberg
-* Credit Suisse
+* 美国银行
+* 彭博
+* 瑞信
 * eBay
 * Foursquare
-* (The) Guardian
+* 卫报
 * IBM
 * Klout
-* LinkedIn
+* 领英
 * NASA
 * Netflix
 * precog
-* Siemens
-* Sony
+* 西门子
+* 索尼
 * Twitter
 * Tumblr
-* UBS
-* (The) Weather Channel
-* Xerox
+* 瑞银
+* The Weather Channel
+* 施乐
 * Yammer
