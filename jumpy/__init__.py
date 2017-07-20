@@ -1,16 +1,17 @@
 import jnius_config
 import os
 import inspect
+from itertools import chain
 
 import numpy as np
 
-jnius_config.add_options('-Dorg.bytedeco.javacpp.nopointergc=true')
-
-try:
-    jnius_classpath = os.environ['JUMPY_CLASS_PATH']
-except KeyError:
-    raise 'Please specify a jar or directory for JUMPY_CLASS_PATH in the environment'
-
+def _expand_directory(path):
+    if not path.endswith('*'):
+        return [path,]
+    else:
+        # wild card expansions like /somedir/* (we do this because of jnius being unable to handle class path expansion
+        clean_path = path.rstrip('*')
+        return [os.path.join(clean_path, y) for y in os.listdir(clean_path)]
 
 def get_classpath(base_path):
     """
@@ -18,71 +19,81 @@ def get_classpath(base_path):
     :param base_path: the directory to get the classpath for
     :return:
     """
-    ':'.join(os.path.join(base_path, y) for y in os.listdir(base_path))
+    return ':'.join(chain.from_iterable(map(lambda x: _expand_directory(x), base_path.split(':'))))
 
-def _expand_directory(directory):
-    # Get only the directory name (no wild card)
-    return get_classpath(directory.rstrip('*'))
+if __name__ == "__main__":
+    init()
 
+def init():
+    jnius_config.add_options('-Dorg.bytedeco.javacpp.nopointergc=true')
 
+    try:
+        jnius_classpath = os.environ['JUMPY_CLASS_PATH']
+    except KeyError:
+        raise Exception('Please specify a jar or directory for JUMPY_CLASS_PATH in the environment')
+    jnius_config.set_classpath(get_classpath(jnius_classpath))
 
-new_class_path = ''
-class_path_list = jnius_classpath.split(':')
+    # after jnius is initialized with proper class path *then* we setup nd4j
 
-if len(class_path_list) > 0 and len(class_path_list[0]) > 0:
-    for class_path_item in class_path_list:
-        if class_path_item.endswith('jar'):
-            new_class_path += class_path_item
-        # wild card expansions like /somedir/* (we do this because of jnius being unable to handle class path expansion
-        else:
-            new_class_path += _expand_directory(class_path_item)
-            # update class path
+    from jnius import autoclass
 
-else:
-    class_path_item = jnius_classpath
-    if class_path_item.endswith('jar'):
-        new_class_path += class_path_item
-        # wild card expansions like /somedir/* (we do this because of jnius being unable to handle class path expansion
-    else:
-        new_class_path += _expand_directory(class_path_item)
+    global nd4j
+    nd4j = autoclass('org.nd4j.linalg.factory.Nd4j')
+    global INDArray
+    INDArray = autoclass('org.nd4j.linalg.api.ndarray.INDArray')
+    global transforms
+    transforms = autoclass('org.nd4j.linalg.ops.transforms.Transforms')
+    global indexing
+    indexing = autoclass('org.nd4j.linalg.indexing.NDArrayIndex')
 
-jnius_classpath = new_class_path
-jnius_config.set_classpath(jnius_classpath)
+    global DataBuffer
+    DataBuffer = autoclass('org.nd4j.linalg.api.buffer.DataBuffer')
 
-# after jnius is initialized with proper class path *then* we setup nd4j
+    global system
+    system = autoclass('java.lang.System')
+    system.out.println(system.getProperty('org.bytedeco.javacpp.nopointergc'))
+    global Integer
+    Integer = autoclass('java.lang.Integer')
+    global Float
+    Float = autoclass('java.lang.Float')
+    global Double
+    Double = autoclass('java.lang.Double')
 
-from jnius import autoclass
+    global nd4j_index
+    nd4j_index = autoclass('org.nd4j.linalg.indexing.NDArrayIndex')
 
-nd4j = autoclass('org.nd4j.linalg.factory.Nd4j')
-INDArray = autoclass('org.nd4j.linalg.api.ndarray.INDArray')
-transforms = autoclass('org.nd4j.linalg.ops.transforms.Transforms')
-indexing = autoclass('org.nd4j.linalg.indexing.NDArrayIndex')
+    global shape
+    shape = autoclass('org.nd4j.linalg.api.shape.Shape')
 
-DataBuffer = autoclass('org.nd4j.linalg.api.buffer.DataBuffer')
+    global serde
+    serde = autoclass('org.nd4j.serde.binary.BinarySerde')
 
-system = autoclass('java.lang.System')
-system.out.println(system.getProperty('org.bytedeco.javacpp.nopointergc'))
-Integer = autoclass('java.lang.Integer')
-Float = autoclass('java.lang.Float')
-Double = autoclass('java.lang.Double')
+    global native_ops_holder
+    native_ops_holder = autoclass('org.nd4j.nativeblas.NativeOpsHolder')
+    global native_ops
+    native_ops = native_ops_holder.getInstance().getDeviceNativeOps()
 
-nd4j_index = autoclass('org.nd4j.linalg.indexing.NDArrayIndex')
+    global DoublePointer
+    DoublePointer = autoclass('org.bytedeco.javacpp.DoublePointer')
+    global FloatPointer
+    FloatPointer = autoclass('org.bytedeco.javacpp.FloatPointer')
+    global IntPointer
+    IntPointer = autoclass('org.bytedeco.javacpp.IntPointer')
 
-shape = autoclass('org.nd4j.linalg.api.shape.Shape')
+    global DataTypeUtil
+    DataTypeUtil = autoclass('org.nd4j.linalg.api.buffer.util.DataTypeUtil')
 
-serde = autoclass('org.nd4j.serde.binary.BinarySerde')
-
-native_ops_holder = autoclass('org.nd4j.nativeblas.NativeOpsHolder')
-native_ops = native_ops_holder.getInstance().getDeviceNativeOps()
-
-DoublePointer = autoclass('org.bytedeco.javacpp.DoublePointer')
-FloatPointer = autoclass('org.bytedeco.javacpp.FloatPointer')
-IntPointer = autoclass('org.bytedeco.javacpp.IntPointer')
-
-DataTypeUtil = autoclass('org.nd4j.linalg.api.buffer.util.DataTypeUtil')
-
-MemoryManager = autoclass('org.nd4j.linalg.memory.MemoryManager')
-memory_manager = nd4j.getMemoryManager()
+    global MemoryManager
+    MemoryManager = autoclass('org.nd4j.linalg.memory.MemoryManager')
+    global memory_manager
+    memory_manager = nd4j.getMemoryManager()
+    global methods
+    methods = inspect.getmembers(INDArray, predicate=inspect.ismethod)
+    for name, method in methods:
+        Nd4jArray.name = method
+    methods = inspect.getmembers(DataBuffer, predicate=inspect.ismethod)
+    for name, method in methods:
+        Nd4jBuffer.name = method
 
 
 def disable_gc():
@@ -280,11 +291,6 @@ class Nd4jArray(object):
         return self.array.data()
 
 
-methods = inspect.getmembers(INDArray, predicate=inspect.ismethod)
-for name, method in methods:
-    Nd4jArray.name = method
-
-
 class Nd4jBuffer(object):
     def __init__(self, data_buffer=None, numpy_pointer=None):
         self.data_buffer = data_buffer
@@ -308,12 +314,6 @@ class Nd4jBuffer(object):
 
     def element_size(self):
         return self.data_buffer.getElementSize()
-
-
-methods = inspect.getmembers(DataBuffer, predicate=inspect.ismethod)
-for name, method in methods:
-    Nd4jBuffer.name = method
-
 
 def _nd4j_datatype_from_np(np_datatype_name):
     """
@@ -407,5 +407,4 @@ def from_np(np_arr):
     # the reason we do this is because numpy's strides are based on bytes rather than words
     strides = map(lambda x: x / data_buffer.getElementSize(), np_arr.strides)
     arr_shape = np_arr.shape
-    return Nd4jArray(nd4j_array=nd4j.create(data_buffer, arr_shape, strides, 0),
-
+    return Nd4jArray(nd4j_array=nd4j.create(data_buffer, arr_shape, strides, 0))
