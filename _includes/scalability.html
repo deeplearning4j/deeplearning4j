@@ -1,27 +1,27 @@
 <form>
-    <table style="width: 100%; padding-bottom: 30px;">
+    <table style="width: 100%; padding-bottom: 30px;"  align="left" style="text-align: left;">
         <tr>
             <td>
-                <table style="padding: 10px; padding-right: 15px;">
+                <table style="border-spacing: 10px; border-collapse: separate;">
                     <tr>
-                        <td><small><strong>Iteration time</strong></small></td>
-                        <td><small><strong>Encode time</strong></small></td>
-                        <td><small><strong>Decode time</strong></small></td>
-                        <td><small><strong>Update time</strong></small></td>
-                        <td><small><strong>Service overhead</strong></small></td>
+                        <td style="padding: 20px;"><small><strong>Iteration time</strong></small></td>
+                        <td style="padding: 20px;"><small><strong>Encode time</strong></small></td>
+                        <td style="padding: 20px;"><small><strong>Decode time</strong></small></td>
+                        <td style="padding: 20px;"><small><strong>Update time</strong></small></td>
+                        <td style="padding: 20px;"><small><strong>Service overhead</strong></small></td>
                     </tr>
                     <tr>
-                        <td><input type="text" id="iter" value="550" style="width: 50px;"/></td>
-                        <td><input type="text" id="enc" value="50" style="width: 50px;"/></td>
-                        <td><input type="text" id="dec" value="5" style="width: 50px;"/></td>
-                        <td><input type="text" id="upd" value="50" style="width: 50px;"/></td>
-                        <td><input type="text" id="srv" value="20" style="width: 50px;"/></td>
+                        <td style="padding: 20px;"><input type="text" id="iter" value="550" style="width: 50px; border: none;" onchange="refreshCalculations()"/></td>
+                        <td style="padding: 20px;"><input type="text" id="enc" value="50" style="width: 50px;  border: none;" onchange="refreshCalculations()"/></td>
+                        <td style="padding: 20px;"><input type="text" id="dec" value="5" style="width: 50px; border: none;" onchange="refreshCalculations()"/></td>
+                        <td style="padding: 20px;"><input type="text" id="upd" value="50" style="width: 50px; border: none;" onchange="refreshCalculations()"/></td>
+                        <td style="padding: 20px;"><input type="text" id="srv" value="20" style="width: 50px; border: none;" onchange="refreshCalculations()"/></td>
                     </tr>
                 </table>
             </td>
         </tr>
         <tr>
-            <td>
+            <td align="left" style="text-align: left;">
                 <table style="padding: 10px; padding-right: 15px;">
                     <tr>
                         <td><small><strong>Number of nodes</strong></small></td>
@@ -29,8 +29,8 @@
                     </tr>
                     <tr>
                         <td>
-                        <td><input type="text" id="nodes" value="8" style="width: 50px;"/></td>
-                        <td><input type="text" id="workers" value="4" style="width: 50px;"/></td>
+                        <td><input type="text" id="nodes" value="8" style="width: 50px;" onchange="refreshCalculations()"/></td>
+                        <td><input type="text" id="workers" value="4" style="width: 50px;" onchange="refreshCalculations()"/></td>
                         </td>
                     </tr>
                 </table>
@@ -40,5 +40,7 @@
 </form>
 
 <script language="JavaScript">
-alert("test!");
+function refreshCalculations() {
+ // to be implemented
+}
 </script>
