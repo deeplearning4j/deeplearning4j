@@ -67,10 +67,15 @@ function refreshCalculations() {
     var a5 = getValue("nodes");
     var b5 = getValue("workers");
 
+    var ab = (a5 * b5);
     var g12 = 60000 / a2;
-    var g13 = (60000 / ((a2 + b2 + (c2 * (a5 * b5)) + e2))) * (a5 * b5);
+    var g13 = (60000 / ((a2 + b2 + (c2 * ab) + e2))) * ab;
 
     console.log("a2: " + a2);
+    console.log("b2: " + b2);
+    console.log("c2: " + c2);
+    console.log("e2: " + e2);
+    console.log("ab: " + ab);
     console.log("g12: " + g12);
     console.log("g13: " + g13);
 
