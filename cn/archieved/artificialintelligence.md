@@ -1,6 +1,6 @@
 ---
 title: Artificial Intelligence Resources
-layout: cn- default
+layout: cn-default
 ---
 
 ## Artificial Intelligence Resources
