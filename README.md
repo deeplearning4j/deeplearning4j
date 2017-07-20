@@ -4,7 +4,7 @@ ScalNet is a wrapper around Deeplearning4j emulating a [Keras](https://github.co
 
 ScalNet is STILL ALPHA and we are open sourcing this in an attempt to get feedback.
 
-You will have to build from source to use ScalNet (this includes the dl4j toolchain)
+You will have to build from source to use ScalNet (this includes the dl4j toolchain).
 
 Come in to [gitter](https://gitter.im/deeplearning4j/deeplearning4j) if you are interested in learning more.
 
@@ -26,3 +26,13 @@ Target for scala-2.10
 ```scala
 $ mvn clean -Pscala-2.10.x
 ```
+
+Having built deeplearning4j and nd4j users can also `sbt` instead of `mvn` to build and test the project, e.g. using 
+```$scala
+$ sbt compile
+```
+to build the project, see the [official sbt documentation](http://www.scala-sbt.org/documentation.html) for more on how to use sbt.
+
+# Getting started
+
+To see what ScalNet has to offer, run one of the [examples](https://github.com/deeplearning4j/ScalNet/tree/master/src/test/scala/org/deeplearning4j/scalnet/examples) it ships with.

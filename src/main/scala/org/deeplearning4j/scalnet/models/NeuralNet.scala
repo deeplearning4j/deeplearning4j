@@ -19,14 +19,15 @@
 package org.deeplearning4j.scalnet.models
 
 import org.deeplearning4j.nn.conf.inputs.InputType
-import org.deeplearning4j.nn.conf.{MultiLayerConfiguration, NeuralNetConfiguration, Updater}
+import org.deeplearning4j.nn.conf.{MultiLayerConfiguration, NeuralNetConfiguration}
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.optimize.api.IterationListener
-import org.deeplearning4j.scalnet.layers.{Layer, Node, Output}
-import org.deeplearning4j.scalnet.optimizers.{Optimizer, SGD}
+import org.deeplearning4j.scalnet.layers.{Layer, Node}
+import org.deeplearning4j.scalnet.optimizers.Optimizer
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.JavaConverters._
 
@@ -35,48 +36,30 @@ import scala.collection.JavaConverters._
   * node and one output node for each node in computational graph.
   *
   * Wraps DL4J MultiLayerNetwork. Enforces DL4J model construction
-  * pattern: adds preprocessing layers automatically but requires
+  * pattern: adds pre-processing layers automatically but requires
   * user to specify output layer explicitly.
   *
   * @author David Kale
   */
-class NeuralNet(val inputType: InputType = null, val rngSeed: Long = 0) extends Model {
-  private var layers: List[Node] = List()
-  private var model: MultiLayerNetwork = _
+
+
+class NeuralNet(val inputType: Option[InputType] = None, val rngSeed: Long = 0) extends Model {
+
+  private val log: Logger = LoggerFactory.getLogger(this.getClass)
 
   def add(layer: Node): Unit = {
     layers = layers :+ layer
   }
 
-  override def compile(lossFunction: LossFunction = null, optimizer: Optimizer = SGD(lr = 0.01)): Unit = {
-    var builder: NeuralNetConfiguration.Builder = new NeuralNetConfiguration.Builder()
-    if (rngSeed != 0)
-      builder = builder.seed(rngSeed)
-    optimizer match {
-      case o: SGD =>
-        builder = builder.optimizationAlgo(o.optimizationAlgorithm)
-          .learningRate(o.lr)
-        if (o.nesterov)
-          builder = builder.updater(Updater.NESTEROVS).momentum(o.momentum)
-      case _ =>
-        builder = builder.optimizationAlgo(optimizer.optimizationAlgorithm)
-          .learningRate(optimizer.asInstanceOf[SGD].lr)
-    }
-    var listBuilder: NeuralNetConfiguration.ListBuilder = builder.iterations(1).list()
-    if (inputType != null)
-      listBuilder.setInputType(inputType)
+  override def compile(lossFunction: LossFunction, optimizer: Optimizer = defaultOptimizer): Unit = {
+    val builder = buildModelConfig(optimizer, rngSeed)
+    buildOutput(lossFunction)
 
-    if (!layers.last.isInstanceOf[Output])
-      throw new IllegalArgumentException("Last layer must have Output trait")
-    else if (!layers.last.asInstanceOf[Output].isOutput) {
-      if (lossFunction != null)
-        layers.last.asInstanceOf[Output].makeOutput(lossFunction)
-      else
-        throw new IllegalArgumentException("Last layer must be an output layer with a valid loss function")
-    }
+    var listBuilder: NeuralNetConfiguration.ListBuilder = builder.iterations(1).list()
+    inputType foreach (i => listBuilder.setInputType(i))
 
     for ((layer, layerIndex) <- layers.zipWithIndex) {
-      println("Layer " + layerIndex + ": " + layer.getClass.getSimpleName)
+      log.info("Layer " + layerIndex + ": " + layer.getClass.getSimpleName)
       listBuilder.layer(layerIndex, layer.asInstanceOf[Layer].compile)
     }
 
@@ -86,18 +69,15 @@ class NeuralNet(val inputType: InputType = null, val rngSeed: Long = 0) extends 
     model.init()
   }
 
-  override def fit(iter: DataSetIterator, nbEpoch: Int = 10, listeners: List[IterationListener]): Unit = {
+  override def fit(iter: DataSetIterator, nbEpoch: Int = defaultEpochs, listeners: List[IterationListener]): Unit = {
     model.setListeners(listeners.asJavaCollection)
-    for (epoch <- 0 until nbEpoch)
-      println("Epoch " + epoch)
+    for (epoch <- 0 until nbEpoch) {
+      log.info("Epoch " + epoch)
       model.fit(iter)
+    }
   }
+}
 
-  override def predict(x: INDArray): INDArray = model.output(x, false)
-
-  override def toString: String = model.getLayerWiseConfigurations.toString
-  override def toJson: String = model.getLayerWiseConfigurations.toJson
-  override def toYaml: String = model.getLayerWiseConfigurations.toYaml
-
-  def getNetwork: MultiLayerNetwork = model
+object NeuralNet {
+  def apply(inputType: InputType = null, rngSeed: Long = 0): NeuralNet = new NeuralNet(Option(inputType), rngSeed)
 }

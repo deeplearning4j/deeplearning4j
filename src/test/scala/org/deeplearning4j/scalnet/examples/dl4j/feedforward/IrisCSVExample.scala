@@ -27,7 +27,7 @@ import org.deeplearning4j.datasets.datavec.RecordReaderDataSetIterator
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator
 import org.deeplearning4j.eval.Evaluation
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
-import org.deeplearning4j.scalnet.layers.{Dense, DenseOutput}
+import org.deeplearning4j.scalnet.layers.Dense
 import org.deeplearning4j.scalnet.regularizers.L2
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.deeplearning4j.scalnet.optimizers.SGD
@@ -40,24 +40,27 @@ import org.slf4j.{Logger, LoggerFactory}
 
 object IrisCSVExample extends App {
 
-  val log: Logger = LoggerFactory.getLogger(IrisCSVExample.getClass)
+  private val log: Logger = LoggerFactory.getLogger(IrisCSVExample.getClass)
 
-  // input parameters:
-  val numLinesToSkip = 0
-  val delimiter = ","
-  val labelIndex = 4
-  val numClasses = 3
-  val batchSize = 150
-  val learningRate = 0.0015
-  val outputNum = 3
-  val numEpochs = 300
+  private val numLinesToSkip = 0
+  private val delimiter = ","
+  private val labelIndex = 4
+  private val numClasses = 3
+  private val batchSize = 150
+  private val learningRate = 0.0015
+  private val decay = 0.005
+  private val numDenseOut = 128
+  private val numIn = 4
+  private val numOut = 3
+  private val numEpochs = 300
+  private val scoreFrequency = 5
 
-  // Reading in the Dataset
+  log.info("Reading data set....")
   val recordReader = new CSVRecordReader(numLinesToSkip, delimiter)
   recordReader.initialize(new FileSplit(new ClassPathResource("iris.txt").getFile))
   val iterator: DataSetIterator = new RecordReaderDataSetIterator(recordReader, batchSize, labelIndex, numClasses)
 
-  // Preparing the Dataset for Training
+  log.info("Prepare data set for training....")
   val next: DataSet = iterator.next()
   next.shuffle()
   val testAndTrain: SplitTestAndTrain = next.splitTestAndTrain(0.75)
@@ -66,16 +69,15 @@ object IrisCSVExample extends App {
   val training_data = new ListDataSetIterator(training_, training_.size)
 
   log.info("Build model....")
-  val model: NeuralNet = new NeuralNet
-  model.add(new Dense(128, nIn = 4, activation = "relu", regularizer = L2(learningRate * 0.005)))
-  model.add(new Dense(128, activation = "relu", regularizer = L2(learningRate * 0.005)))
-  model.add(new Dense(128, activation = "relu", regularizer = L2(learningRate * 0.005)))
-  model.add(new DenseOutput(outputNum, activation = "softmax", lossFunction = LossFunction.MCXENT,
-    regularizer = L2(learningRate * 0.005)))
-  model.compile(optimizer = SGD(learningRate))
+  val model: NeuralNet = NeuralNet()
+  model.add(Dense(numDenseOut, nIn = numIn, activation = "relu", regularizer = L2(learningRate * decay)))
+  model.add(Dense(numDenseOut, activation = "relu", regularizer = L2(learningRate * decay)))
+  model.add(Dense(numDenseOut, activation = "relu", regularizer = L2(learningRate * decay)))
+  model.add(Dense(numOut, activation = "softmax", regularizer = L2(learningRate * decay)))
+  model.compile(lossFunction = LossFunction.MCXENT, optimizer = SGD(learningRate))
 
   log.info("Train model....")
-  model.fit(iter = training_data, nbEpoch = numEpochs, listeners = List(new ScoreIterationListener(5)))
+  model.fit(iter = training_data, nbEpoch = numEpochs, listeners = List(new ScoreIterationListener(scoreFrequency)))
 
   log.info("Evaluate model....")
   val evaluator = new Evaluation(3)

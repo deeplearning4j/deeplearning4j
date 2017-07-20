@@ -37,13 +37,19 @@ class Convolution2D(
     nChannels: Int = 0,
     stride: List[Int] = List(1, 1),
     padding: List[Int] = List(0, 0),
+    nIn: Option[List[Int]] = None,
     val weightInit: WeightInit = WeightInit.XAVIER_UNIFORM,
     val activation: String = "identity",
     val regularizer: WeightRegularizer = NoRegularizer(),
     val dropOut: Double = 0.0,
-    override val name: String = null)
-  extends Convolution(kernelSize, stride, padding, nChannels, nFilter)
+    override val name: String = "")
+  extends Convolution(kernelSize, stride, padding, nChannels, nIn, nFilter)
     with Layer {
+
+  override def reshapeInput(nIn: List[Int]): Convolution2D = {
+    new Convolution2D(nFilter, kernelSize, nChannels, stride, padding, Some(nIn),
+      weightInit, activation, regularizer, dropOut, name)
+  }
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new ConvolutionLayer.Builder(kernelSize.head, kernelSize.last)
@@ -59,3 +65,21 @@ class Convolution2D(
       .name(name)
       .build()
 }
+
+object Convolution2D {
+  def apply(nFilter: Int,
+            kernelSize: List[Int],
+            nChannels: Int = 0,
+            stride: List[Int] = List(1, 1),
+            padding: List[Int] = List(0, 0),
+            nIn: Option[List[Int]] = None,
+            weightInit: WeightInit = WeightInit.XAVIER_UNIFORM,
+            activation: String = "identity",
+            regularizer: WeightRegularizer = NoRegularizer(),
+            dropOut: Double = 0.0): Convolution2D = {
+    new Convolution2D(nFilter, kernelSize, nChannels, stride, padding, nIn,
+      weightInit, activation, regularizer, dropOut)
+  }
+}
+
+

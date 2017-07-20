@@ -43,7 +43,4 @@ class KerasTests extends FlatSpec {
       case (l, n) => assert(n > 0.9905, s"$l is not large enough! found: $n")
     }
   }
-
-
-
 }

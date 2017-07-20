@@ -27,6 +27,6 @@ import org.deeplearning4j.nn.conf.InputPreProcessor
   *
   * @author David Kale
   */
-trait Preprocessor {
+trait Preprocessor extends Node {
   def compile: InputPreProcessor
 }

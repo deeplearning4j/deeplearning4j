@@ -22,7 +22,7 @@ import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator
 import org.deeplearning4j.eval.Evaluation
 import org.deeplearning4j.nn.weights.WeightInit
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener
-import org.deeplearning4j.scalnet.layers.{Dense, DenseOutput}
+import org.deeplearning4j.scalnet.layers.Dense
 import org.deeplearning4j.scalnet.regularizers.L2
 import org.deeplearning4j.scalnet.models.NeuralNet
 import org.deeplearning4j.scalnet.optimizers.SGD
@@ -48,31 +48,35 @@ object MLPMnistTwoLayerExample extends App {
   private val rngSeed: Int = 123
   private val numEpochs: Int = 15
   private val learningRate: Double = 0.0015
+  private val decay: Double = 0.005
   private val momentum: Double = 0.98
+  private val scoreFrequency = 5
 
   private val mnistTrain: DataSetIterator = new MnistDataSetIterator(batchSize, true, rngSeed)
   private val mnistTest: DataSetIterator = new MnistDataSetIterator(batchSize, false, rngSeed)
 
   log.info("Build model....")
-  private val model: NeuralNet = new NeuralNet(rngSeed = rngSeed)
-  model.add(new Dense(500, nIn = numRows*numColumns, weightInit = WeightInit.XAVIER, activation = "relu",
-                      regularizer = L2(learningRate * 0.005)))
-  model.add(new Dense(100, weightInit = WeightInit.XAVIER, activation = "relu", regularizer = L2(learningRate * 0.005)))
-  model.add(new DenseOutput(outputNum, weightInit = WeightInit.XAVIER, activation = "softmax",
-                            lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD, regularizer = L2(learningRate * 0.005)))
-  model.compile(optimizer = SGD(learningRate, momentum = momentum, nesterov = true))
+  private val model: NeuralNet = NeuralNet(rngSeed = rngSeed)
+  model.add(Dense(nOut = 500, nIn = numRows * numColumns, weightInit = WeightInit.XAVIER,
+    activation = "relu", regularizer = L2(learningRate * decay)))
+  model.add(Dense(nOut = 100, weightInit = WeightInit.XAVIER, activation = "relu",
+    regularizer = L2(learningRate * decay)))
+  model.add(Dense(outputNum, weightInit = WeightInit.XAVIER, activation = "softmax",
+    regularizer = L2(learningRate * decay)))
+
+  model.compile(lossFunction = LossFunction.NEGATIVELOGLIKELIHOOD,
+    optimizer = SGD(learningRate, momentum = momentum, nesterov = true))
 
   log.info("Train model....")
-  model.fit(mnistTrain, nbEpoch = numEpochs, List(new ScoreIterationListener(5)))
+  model.fit(mnistTrain, nbEpoch = numEpochs, List(new ScoreIterationListener(scoreFrequency)))
 
   log.info("Evaluate model....")
   val evaluator: Evaluation = new Evaluation(outputNum)
-  while(mnistTest.hasNext){
+  while (mnistTest.hasNext) {
     val next: DataSet = mnistTest.next()
     val output: INDArray = model.predict(next)
     evaluator.eval(next.getLabels, output)
   }
   log.info(evaluator.stats())
   log.info("****************Example finished********************")
-  println(evaluator.stats())
 }

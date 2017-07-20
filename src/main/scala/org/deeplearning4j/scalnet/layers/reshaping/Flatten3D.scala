@@ -20,7 +20,6 @@ package org.deeplearning4j.scalnet.layers.reshaping
 
 import org.deeplearning4j.nn.conf.InputPreProcessor
 import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor
-import org.deeplearning4j.scalnet.layers.Node
 import org.deeplearning4j.scalnet.layers.Preprocessor
 
 
@@ -31,15 +30,24 @@ import org.deeplearning4j.scalnet.layers.Preprocessor
   *
   * @author David Kale
   */
-class Flatten3D(nIn: Int = 0) extends Node with Preprocessor {
-  inputShape = List(nIn)
+class Flatten3D(nIn: List[Int] = List(0, 0, 0)) extends Preprocessor {
 
-  override def outputShape: List[Int] = List(inputShape.product)
+  override val inputShape: List[Int] = nIn
+  override val outputShape = List(inputShape.product)
+  override val name = "Flatten3D"
 
-  override def compile: InputPreProcessor = {
-    if (inputShape.length != 3)
+  override def reshapeInput(newIn: List[Int]): Flatten3D = {
+    new Flatten3D(newIn)
+  }
+
+    override def compile: InputPreProcessor = {
+    if (inputShape.length != 3) {
       throw new IllegalArgumentException("Input shape must be length 3.")
-
+    }
     new CnnToFeedForwardPreProcessor(inputShape.head, inputShape.tail.head, inputShape.last)
   }
+}
+
+object Flatten3D {
+  def apply(nIn: List[Int] = List(0, 0, 0)): Flatten3D = new Flatten3D(nIn)
 }

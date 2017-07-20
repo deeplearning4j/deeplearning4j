@@ -32,11 +32,17 @@ class MaxPooling2D(
     kernelSize: List[Int],
     stride: List[Int] = List(1, 1),
     padding: List[Int] = List(0, 0),
+    nIn: Option[List[Int]] = None,
     override val name: String = null)
-  extends Convolution(kernelSize, stride, padding)
+  extends Convolution(kernelSize, stride, padding, 0, nIn)
     with Layer {
-  if (kernelSize.length != 2 || stride.length != 2 || padding.length != 2)
+  if (kernelSize.length != 2 || stride.length != 2 || padding.length != 2) {
     throw new IllegalArgumentException("Kernel, stride, padding lists must all be length 2.")
+  }
+
+  override def reshapeInput(nIn: List[Int]): MaxPooling2D = {
+    new MaxPooling2D(kernelSize, stride, padding, Some(nIn), name)
+  }
 
   override def compile: org.deeplearning4j.nn.conf.layers.Layer =
     new SubsamplingLayer.Builder(SubsamplingLayer.PoolingType.MAX)
@@ -44,4 +50,14 @@ class MaxPooling2D(
       .stride(stride.head, stride.last)
       .name(name)
       .build()
+}
+
+object MaxPooling2D {
+  def apply(kernelSize: List[Int],
+            stride: List[Int] = List(1, 1),
+            padding: List[Int] = List(0, 0),
+            nIn: Option[List[Int]] = None,
+            name: String = null): MaxPooling2D = {
+    new MaxPooling2D(kernelSize, stride, padding, nIn, name)
   }
+}
