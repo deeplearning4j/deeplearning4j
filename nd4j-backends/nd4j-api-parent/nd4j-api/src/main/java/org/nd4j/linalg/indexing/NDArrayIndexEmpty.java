@@ -7,27 +7,27 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */ //static type checking used for checking if an index should be represented as all
 public class NDArrayIndexEmpty implements INDArrayIndex {
     @Override
-    public int end() {
+    public long end() {
         return 0;
     }
 
     @Override
-    public int offset() {
+    public long offset() {
         return 0;
     }
 
     @Override
-    public int length() {
+    public long length() {
         return 0;
     }
 
     @Override
-    public int stride() {
+    public long stride() {
         return 1;
     }
 
     @Override
-    public int current() {
+    public long current() {
         return 0;
     }
 
@@ -37,7 +37,7 @@ public class NDArrayIndexEmpty implements INDArrayIndex {
     }
 
     @Override
-    public int next() {
+    public long next() {
         return 0;
     }
 
@@ -58,7 +58,7 @@ public class NDArrayIndexEmpty implements INDArrayIndex {
     }
 
     @Override
-    public void init(INDArray arr, int begin, int dimension) {
+    public void init(INDArray arr, long begin, int dimension) {
 
     }
 
@@ -68,7 +68,7 @@ public class NDArrayIndexEmpty implements INDArrayIndex {
     }
 
     @Override
-    public void init(int begin, int end) {
+    public void init(long begin, long end) {
 
     }
 

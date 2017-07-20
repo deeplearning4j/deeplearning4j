@@ -164,7 +164,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param data
      * @param copy
      */
-    public BaseDataBuffer(float[] data, boolean copy, int offset) {
+    public BaseDataBuffer(float[] data, boolean copy, long offset) {
         this(data, copy);
         this.offset = offset;
         this.originalOffset = offset;
@@ -173,7 +173,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     }
 
-    public BaseDataBuffer(float[] data, boolean copy, int offset, MemoryWorkspace workspace) {
+    public BaseDataBuffer(float[] data, boolean copy, long offset, MemoryWorkspace workspace) {
         this(data, copy, workspace);
         this.offset = offset;
         this.originalOffset = offset;
@@ -254,7 +254,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param data
      * @param copy
      */
-    public BaseDataBuffer(double[] data, boolean copy, int offset) {
+    public BaseDataBuffer(double[] data, boolean copy, long offset) {
         this(data, copy);
         this.offset = offset;
         this.originalOffset = offset;
@@ -262,7 +262,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.length = underlyingLength - offset;
     }
 
-    public BaseDataBuffer(double[] data, boolean copy, int offset, MemoryWorkspace workspace) {
+    public BaseDataBuffer(double[] data, boolean copy, long offset, MemoryWorkspace workspace) {
         this(data, copy, workspace);
         this.offset = offset;
         this.originalOffset = offset;
@@ -293,7 +293,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param data
      * @param copy
      */
-    public BaseDataBuffer(int[] data, boolean copy, int offset) {
+    public BaseDataBuffer(int[] data, boolean copy, long offset) {
         this(data, copy);
         this.offset = offset;
         this.originalOffset = offset;
@@ -351,7 +351,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param length
      * @param elementSize
      */
-    public BaseDataBuffer(int length, int elementSize, int offset) {
+    public BaseDataBuffer(int length, int elementSize, long offset) {
         this(length, elementSize);
         this.offset = offset;
         this.originalOffset = offset;
@@ -392,7 +392,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @param buffer
      * @param length
      */
-    public BaseDataBuffer(ByteBuffer buffer, long length, int offset) {
+    public BaseDataBuffer(ByteBuffer buffer, long length, long offset) {
         this(buffer, length);
         this.offset = offset;
         this.originalOffset = offset;

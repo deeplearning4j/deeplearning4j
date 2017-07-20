@@ -14,25 +14,25 @@ public interface INDArrayIndex {
      * The ending for this index
      * @return
      */
-    int end();
+    long end();
 
     /**
      * The start of this index
      * @return
      */
-    int offset();
+    long offset();
 
     /**
      * The total length of this index (end - start)
      * @return
      */
-    int length();
+    long length();
 
     /**
      * The stride for the index (most of the time will be 1)
      * @return
      */
-    int stride();
+    long stride();
 
 
     /**
@@ -40,7 +40,7 @@ public interface INDArrayIndex {
      * without incrementing the counter
      * @return
      */
-    int current();
+    long current();
 
     /**
      * Returns true if there is another element
@@ -54,7 +54,7 @@ public interface INDArrayIndex {
      * Returns the next index
      * @return
      */
-    int next();
+    long next();
 
     /**
      * Reverse the indexes
@@ -81,7 +81,7 @@ public interface INDArrayIndex {
      * @param begin the beginning index
      * @param dimension the dimension to initialize on
      */
-    void init(INDArray arr, int begin, int dimension);
+    void init(INDArray arr, long begin, int dimension);
 
     /**
      * Init the index wrt
@@ -96,7 +96,7 @@ public interface INDArrayIndex {
      * @param begin
      * @param end
      */
-    void init(int begin, int end);
+    void init(long begin, long end);
 
     void reset();
 }

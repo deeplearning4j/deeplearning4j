@@ -831,7 +831,10 @@ public class Shape {
      */
     public static boolean isColumnVectorShape(int[] shape) {
         return (shape.length == 2 && shape[1] == 1);
+    }
 
+    public static boolean isColumnVectorShape(long[] shape) {
+        return (shape.length == 2 && shape[1] == 1);
     }
 
     /**
@@ -1920,7 +1923,7 @@ public class Shape {
      * @param order the order for the buffer
      * @return the shape information buffer given the parameters
      */
-    public static DataBuffer createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride,
+    public static DataBuffer createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride,
                     char order) {
         if (shape.length != stride.length)
             throw new IllegalStateException("Shape and stride must be the same length");
@@ -1935,7 +1938,7 @@ public class Shape {
         for (int e = 0; e < stride.length; e++)
             shapeBuffer[count++] = stride[e];
 
-        shapeBuffer[count++] = offset;
+        shapeBuffer[count++] = (int) offset;
         shapeBuffer[count++] = elementWiseStride;
         shapeBuffer[count] = (int) order;
 

@@ -40,7 +40,7 @@ public abstract class BaseShapeInfoProvider implements ShapeInfoProvider {
     }
 
     @Override
-    public Pair<DataBuffer, int[]> createShapeInformation(int[] shape, int[] stride, int offset, int elementWiseStride, char order) {
+    public Pair<DataBuffer, int[]> createShapeInformation(int[] shape, int[] stride, long offset, int elementWiseStride, char order) {
         DataBuffer buffer = Shape.createShapeInformation(shape, stride, offset, elementWiseStride, order);
         buffer.setConstant(true);
         return Pair.create(buffer, buffer.asInt());

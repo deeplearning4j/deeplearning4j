@@ -1,5 +1,6 @@
 package org.nd4j.linalg.indexing;
 
+import com.google.common.primitives.Longs;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -10,45 +11,46 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  */
 public class IntervalIndex implements INDArrayIndex {
 
-    protected int begin, end;
+    protected long begin, end;
     protected boolean inclusive;
-    protected int stride = 1;
-    protected int index = 0;
-    protected int length = 0;
+    protected long stride = 1;
+    protected long index = 0;
+    protected long length = 0;
 
     /**
      *
      * @param inclusive whether to include the last number
      * @param stride the stride for the interval
      */
-    public IntervalIndex(boolean inclusive, int stride) {
+    public IntervalIndex(boolean inclusive, long stride) {
         this.inclusive = inclusive;
         this.stride = stride;
-        this.length = Math.abs((end - begin)) / stride;
+
+        this.length = (int) Math.abs((end - begin)) / stride;
     }
 
     @Override
-    public int end() {
+    public long end() {
         return end;
     }
 
     @Override
-    public int offset() {
+    public long offset() {
         return begin;
     }
 
     @Override
-    public int length() {
+    public long length() {
         return length;
     }
 
     @Override
-    public int stride() {
+    public long stride() {
         return stride;
     }
 
     @Override
-    public int current() {
+    public long current() {
         return index;
     }
 
@@ -58,8 +60,8 @@ public class IntervalIndex implements INDArrayIndex {
     }
 
     @Override
-    public int next() {
-        int ret = index;
+    public long next() {
+        long ret = index;
         index += stride;
         return ret;
     }
@@ -67,8 +69,8 @@ public class IntervalIndex implements INDArrayIndex {
 
     @Override
     public void reverse() {
-        int oldEnd = end;
-        int oldBegin = begin;
+        long oldEnd = end;
+        long oldBegin = begin;
         this.end = oldBegin;
         this.begin = oldEnd;
     }
@@ -84,11 +86,11 @@ public class IntervalIndex implements INDArrayIndex {
     }
 
     @Override
-    public void init(INDArray arr, int begin, int dimension) {
+    public void init(INDArray arr, long begin, int dimension) {
         this.begin = begin;
         this.index = begin;
         this.end = inclusive ? arr.size(dimension) + 1 : arr.size(dimension);
-        for (int i = begin; i < end; i += stride) {
+        for (long i = begin; i < end; i += stride) {
             length++;
         }
     }
@@ -99,11 +101,11 @@ public class IntervalIndex implements INDArrayIndex {
     }
 
     @Override
-    public void init(int begin, int end) {
+    public void init(long begin, long end) {
         this.begin = begin;
         this.index = begin;
         this.end = inclusive ? end + 1 : end;
-        for (int i = begin; i < this.end; i += stride) {
+        for (long i = begin; i < this.end; i += stride) {
             length++;
         }
 
@@ -137,11 +139,11 @@ public class IntervalIndex implements INDArrayIndex {
 
     @Override
     public int hashCode() {
-        int result = begin;
-        result = 31 * result + end;
+        int result = Longs.hashCode(begin);
+        result = 31 * result + Longs.hashCode(end);
         result = 31 * result + (inclusive ? 1 : 0);
-        result = 31 * result + stride;
-        result = 31 * result + index;
+        result = 31 * result + Longs.hashCode(stride);
+        result = 31 * result + Longs.hashCode(index);
         return result;
     }
 }
