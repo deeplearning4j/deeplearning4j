@@ -51,21 +51,20 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Alex Black
  */
 @Slf4j
-public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizationRunner<C, M, A> {
+public abstract class BaseOptimizationRunner implements IOptimizationRunner {
     private static final int POLLING_FREQUENCY = 1;
     private static final TimeUnit POLLING_FREQUENCY_UNIT = TimeUnit.SECONDS;
 
-    protected OptimizationConfiguration<C, M, D, A> config;
-    //    private CandidateExecutor<C, M, D, A> executor;
-    protected Queue<Future<OptimizationResult<C, M, A>>> queuedFutures = new ConcurrentLinkedQueue<>();
-    protected BlockingQueue<Future<OptimizationResult<C, M, A>>> completedFutures = new LinkedBlockingQueue<>();
+    protected OptimizationConfiguration config;
+    protected Queue<Future<OptimizationResult>> queuedFutures = new ConcurrentLinkedQueue<>();
+    protected BlockingQueue<Future<OptimizationResult>> completedFutures = new LinkedBlockingQueue<>();
     protected AtomicInteger totalCandidateCount = new AtomicInteger();
     protected AtomicInteger numCandidatesCompleted = new AtomicInteger();
     protected AtomicInteger numCandidatesFailed = new AtomicInteger();
     protected Double bestScore = null;
     protected Long bestScoreTime = null;
     protected AtomicInteger bestScoreCandidateIndex = new AtomicInteger(-1);
-    protected List<ResultReference<C, M, A>> allResults = new ArrayList<>();
+    protected List<ResultReference> allResults = new ArrayList<>();
 
     protected Map<Integer, CandidateInfo> currentStatus = new ConcurrentHashMap<>(); //TODO: better design possible?
 
@@ -74,7 +73,7 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
     protected List<StatusListener> statusListeners = new ArrayList<>();
 
 
-    protected BaseOptimizationRunner(OptimizationConfiguration<C, M, D, A> config) {
+    protected BaseOptimizationRunner(OptimizationConfiguration config) {
         this.config = config;
 
         if (config.getTerminationConditions() == null || config.getTerminationConditions().size() == 0) {
@@ -117,13 +116,13 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
         //Queue initial tasks:
 
 
-        List<Future<OptimizationResult<C, M, A>>> tempList = new ArrayList<>(100);
+        List<Future<OptimizationResult>> tempList = new ArrayList<>(100);
         while (true) {
             //            boolean statusChange = false;
             StatusChangeType sct = null;
 
             //Otherwise: add tasks if required
-            Future<OptimizationResult<C, M, A>> future = null;
+            Future<OptimizationResult> future = null;
             try {
                 future = completedFutures.poll(POLLING_FREQUENCY, POLLING_FREQUENCY_UNIT);
             } catch (InterruptedException e) {
@@ -135,7 +134,7 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
             completedFutures.drainTo(tempList);
 
             //Process results (if any)
-            for (Future<OptimizationResult<C, M, A>> f : tempList) {
+            for (Future<OptimizationResult> f : tempList) {
                 queuedFutures.remove(f);
                 processReturnedTask(f);
             }
@@ -155,9 +154,8 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
 
             //Add additional tasks
             while (config.getCandidateGenerator().hasMoreCandidates() && queuedFutures.size() < maxConcurrentTasks()) {
-                Candidate<C> candidate = config.getCandidateGenerator().getCandidate();
-                ListenableFuture<OptimizationResult<C, M, A>> f =
-                                execute(candidate, config.getDataProvider(), config.getScoreFunction());
+                Candidate candidate = config.getCandidateGenerator().getCandidate();
+                ListenableFuture<OptimizationResult> f = execute(candidate, config.getDataProvider(), config.getScoreFunction());
                 f.addListener(new OnCompletionListener(f), futureListenerExecutor);
                 queuedFutures.add(f);
                 totalCandidateCount.getAndIncrement();
@@ -174,7 +172,7 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
 
         //Process any final (completed) tasks:
         completedFutures.drainTo(tempList);
-        for (Future<OptimizationResult<C, M, A>> f : tempList) {
+        for (Future<OptimizationResult> f : tempList) {
             queuedFutures.remove(f);
             processReturnedTask(f);
         }
@@ -189,10 +187,10 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
     /**
      * Process returned task (either completed or failed
      */
-    private void processReturnedTask(Future<OptimizationResult<C, M, A>> future) {
+    private void processReturnedTask(Future<OptimizationResult> future) {
         long currentTime = System.currentTimeMillis();
         //TODO: track and log execution time
-        OptimizationResult<C, M, A> result;
+        OptimizationResult result;
         try {
             result = future.get(100, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
@@ -242,8 +240,8 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
         numCandidatesCompleted.getAndIncrement();
 
         //TODO: In general, we don't want to save EVERY model, only the best ones
-        ResultSaver<C, M, A> saver = config.getResultSaver();
-        ResultReference<C, M, A> resultReference = null;
+        ResultSaver saver = config.getResultSaver();
+        ResultReference resultReference = null;
         if (saver != null) {
             try {
                 resultReference = saver.saveModel(result);
@@ -293,12 +291,12 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
     }
 
     @Override
-    public List<ResultReference<C, M, A>> getResults() {
+    public List<ResultReference> getResults() {
         return new ArrayList<>(allResults);
     }
 
     @Override
-    public OptimizationConfiguration<C, M, ?, A> getConfiguration() {
+    public OptimizationConfiguration getConfiguration() {
         return config;
     }
 
@@ -346,14 +344,14 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
     @AllArgsConstructor
     @Data
     private class FutureDetails {
-        private final Future<OptimizationResult<C, M, A>> future;
+        private final Future<OptimizationResult> future;
         private final long startTime;
         private final int index;
     }
 
     @AllArgsConstructor
     private class OnCompletionListener implements Runnable {
-        private Future<OptimizationResult<C, M, A>> future;
+        private Future<OptimizationResult> future;
 
         @Override
         public void run() {
@@ -364,11 +362,11 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
 
     protected abstract int maxConcurrentTasks();
 
-    protected abstract ListenableFuture<OptimizationResult<C, M, A>> execute(Candidate<C> candidate,
-                    DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction);
+    protected abstract ListenableFuture<OptimizationResult> execute(Candidate candidate,
+                    DataProvider dataProvider, ScoreFunction scoreFunction);
 
-    protected abstract List<ListenableFuture<OptimizationResult<C, M, A>>> execute(List<Candidate<C>> candidates,
-                    DataProvider<D> dataProvider, ScoreFunction<M, D> scoreFunction);
+    protected abstract List<ListenableFuture<OptimizationResult>> execute(List<Candidate> candidates,
+                    DataProvider dataProvider, ScoreFunction scoreFunction);
 
     protected abstract void shutdown();
 }

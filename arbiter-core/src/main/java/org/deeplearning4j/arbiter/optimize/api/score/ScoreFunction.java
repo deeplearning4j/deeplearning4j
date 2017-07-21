@@ -22,6 +22,7 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -29,12 +30,10 @@ import java.util.Map;
  * Specifically, it is used to calculate a score for a given model, relative to the data set provided
  * in the configuration.
  *
- * @param <M> Type of model
- * @param <D> Type of data used
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
-public interface ScoreFunction<M, D> extends Serializable {
+public interface ScoreFunction extends Serializable {
 
     /**
      * Calculate and return the score, for the given model and data provider
@@ -44,7 +43,7 @@ public interface ScoreFunction<M, D> extends Serializable {
      * @param dataParameters Parameters for data
      * @return Calculated score
      */
-    double score(M model, DataProvider<D> dataProvider, Map<String, Object> dataParameters);
+    double score(Object model, DataProvider dataProvider, Map<String, Object> dataParameters);
 
     /**
      * Should this score function be minimized or maximized?
@@ -52,4 +51,9 @@ public interface ScoreFunction<M, D> extends Serializable {
      * @return true if score should be minimized, false if score should be maximized
      */
     boolean minimize();
+
+
+    List<Class<?>> getSupportedModelTypes();
+
+    List<Class<?>> getSupportedDataTypes();
 }

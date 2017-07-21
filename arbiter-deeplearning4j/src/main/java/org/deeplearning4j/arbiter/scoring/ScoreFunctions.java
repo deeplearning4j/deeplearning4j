@@ -18,13 +18,10 @@ package org.deeplearning4j.arbiter.scoring;
 
 
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
-import org.deeplearning4j.arbiter.scoring.graph.*;
-import org.deeplearning4j.arbiter.scoring.multilayer.TestSetAccuracyScoreFunction;
-import org.deeplearning4j.arbiter.scoring.multilayer.TestSetF1ScoreFunction;
-import org.deeplearning4j.arbiter.scoring.multilayer.TestSetLossScoreFunction;
-import org.deeplearning4j.arbiter.scoring.multilayer.TestSetRegressionScoreFunction;
-import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.arbiter.scoring.impl.TestSetAccuracyScoreFunction;
+import org.deeplearning4j.arbiter.scoring.impl.TestSetF1ScoreFunction;
+import org.deeplearning4j.arbiter.scoring.impl.TestSetLossScoreFunction;
+import org.deeplearning4j.arbiter.scoring.impl.TestSetRegressionScoreFunction;
 
 /**
  * ScoreFunctions provides static methods for getting score functions for DL4J MultiLayerNetwork and ComputationGraph
@@ -40,91 +37,30 @@ public class ScoreFunctions {
      *
      * @param average Average (divide by number of examples)
      */
-    public static ScoreFunction<MultiLayerNetwork, Object> testSetLoss(boolean average) {
+    public static ScoreFunction testSetLoss(boolean average) {
         return new TestSetLossScoreFunction(average);
-    }
-
-    /**
-     * Calculate the loss (score/loss function value) on a MultiDataSetIterator (test set), for a (single output) ComputationGraph
-     *
-     * @param average Average (divide by number of examples)
-     */
-    public static ScoreFunction<ComputationGraph, Object> testSetLossGraph(boolean average) {
-        return new GraphTestSetLossScoreFunction(average);
-    }
-
-    /**
-     * Calculate the loss (score/loss function value) on a DataSetIterator (test set), for a (single output) ComputationGraph
-     *
-     * @param average Average (divide by number of examples)
-     */
-    public static ScoreFunction<ComputationGraph, Object> testSetLossGraphDataSet(boolean average) {
-        return new GraphTestSetLossScoreFunctionDataSet(average);
     }
 
     /**
      * Calculate the accuracy on a test set, for a MultiLayerNetwork
      */
-    public static ScoreFunction<MultiLayerNetwork, Object> testSetAccuracy() {
+    public static ScoreFunction testSetAccuracy() {
         return new TestSetAccuracyScoreFunction();
     }
 
-    /**
-     * Calculate the accuracy on a test set (MultiDataSetIterator) for a ComputationGraph
-     */
-    public static ScoreFunction<ComputationGraph, Object> testSetAccuracyGraph() {
-        return new GraphTestSetAccuracyScoreFunction();
-    }
 
     /**
-     * Calculate the accuracy on a test set (DataSetIterator) for a ComputationGraph
+     * Calculate the f1 score on a test set
      */
-    public static ScoreFunction<ComputationGraph, Object> testSetAccuracyGraphDataSet() {
-        return new GraphTestSetAccuracyScoreFunctionDataSet();
-    }
-
-
-    /**
-     * Calculate the f1 score on a test set, for a MultiLayerNetwork
-     */
-    public static ScoreFunction<MultiLayerNetwork, Object> testSetF1() {
+    public static ScoreFunction testSetF1() {
         return new TestSetF1ScoreFunction();
     }
 
     /**
-     * Calculate the f1 score on a test set (MultiDataSetIterator), for a ComputationGraph
+     * Calculate a regression value (MSE, MAE etc) on a test set
      */
-    public static ScoreFunction<ComputationGraph, Object> testSetF1Graph() {
-        return new GraphTestSetF1ScoreFunction();
-    }
-
-    /**
-     * Calculate the f1 score on a test set (DataSetIterator), for a ComputationGraph
-     */
-    public static ScoreFunction<ComputationGraph, Object> testSetF1GraphDataSet() {
-        return new GraphTestSetF1ScoreFunctionDataSet();
-    }
-
-    /**
-     * Calculate a regression value (MSE, MAE etc) on a test set (DataSetIterator) for a MultiLayerNetwork
-     */
-    public static ScoreFunction<MultiLayerNetwork, Object> testSetRegression(RegressionValue regressionValue) {
+    public static ScoreFunction testSetRegression(RegressionValue regressionValue) {
         return new TestSetRegressionScoreFunction(regressionValue);
-    }
-
-    /**
-     * Calculate a regression value (MSE, MAE etc) on a test set (MultiDataSetIterator) for a ComputationGraph
-     */
-    public static ScoreFunction<ComputationGraph, Object> testSetRegressionGraph(RegressionValue regressionValue) {
-        return new GraphTestSetRegressionScoreFunction(regressionValue);
-    }
-
-    /**
-     * Calculate a regression value (MSE, MAE etc) on a test set (DataSetIterator) for a MultiLayerNetwork
-     */
-    public static ScoreFunction<ComputationGraph, Object> testSetRegressionGraphDataSet(
-                    RegressionValue regressionValue) {
-        return new GraphTestSetRegressionScoreFunctionDataSet(regressionValue);
     }
 
 }

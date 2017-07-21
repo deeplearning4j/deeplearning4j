@@ -27,10 +27,7 @@ import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParame
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
 
 import static org.junit.Assert.*;
@@ -55,14 +52,14 @@ public class TestGridSearch {
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, new HashMap<>());
 
         //Define configuration:
-        CandidateGenerator<BraninConfig> candidateGenerator = new GridSearchCandidateGenerator<>(new BraninSpace(), 4,
+        CandidateGenerator candidateGenerator = new GridSearchCandidateGenerator(new BraninSpace(), 4,
                 GridSearchCandidateGenerator.Mode.Sequential, commands);
 
         //Check sequential:
         double[] expValuesFirst = {-5, 0, 5, 10}; //Range: -5 to +10, with 4 values
         double[] expValuesSecond = {0, 5, 10, 15}; //Range: 0 to +15, with 4 values
         for (int i = 0; i < 4 * 4; i++) {
-            BraninConfig conf = candidateGenerator.getCandidate().getValue();
+            BraninConfig conf = (BraninConfig)candidateGenerator.getCandidate().getValue();
             double expF = expValuesFirst[i % 4]; //Changes most rapidly
             double expS = expValuesSecond[i / 4];
 
@@ -83,13 +80,13 @@ public class TestGridSearch {
         }
 
 
-        candidateGenerator = new GridSearchCandidateGenerator<>(new BraninSpace(), 4,
+        candidateGenerator = new GridSearchCandidateGenerator(new BraninSpace(), 4,
                 GridSearchCandidateGenerator.Mode.RandomOrder, commands);
         boolean[] seen = new boolean[16];
         int seenCount = 0;
         for (int i = 0; i < 4 * 4; i++) {
             assertTrue(candidateGenerator.hasMoreCandidates());
-            BraninConfig config = candidateGenerator.getCandidate().getValue();
+            BraninConfig config = (BraninConfig)candidateGenerator.getCandidate().getValue();
             double x1 = config.getX1();
             double x2 = config.getX2();
             //Work out which of the values this is...
@@ -154,7 +151,7 @@ public class TestGridSearch {
         private double x2;
     }
 
-    public static class BraninScoreFunction implements ScoreFunction<BraninConfig, Void> {
+    public static class BraninScoreFunction implements ScoreFunction {
         private static final double a = 1.0;
         private static final double b = 5.1 / (4.0 * Math.PI * Math.PI);
         private static final double c = 5.0 / Math.PI;
@@ -163,7 +160,8 @@ public class TestGridSearch {
         private static final double t = 1.0 / (8.0 * Math.PI);
 
         @Override
-        public double score(BraninConfig model, DataProvider<Void> data, Map<String, Object> dataParameters) {
+        public double score(Object m, DataProvider data, Map<String, Object> dataParameters) {
+            BraninConfig model = (BraninConfig)m;
             double x1 = model.getX1();
             double x2 = model.getX2();
 
@@ -174,22 +172,34 @@ public class TestGridSearch {
         public boolean minimize() {
             return true;
         }
+
+        @Override
+        public List<Class<?>> getSupportedModelTypes() {
+            return Collections.<Class<?>>singletonList(BraninConfig.class);
+        }
+
+        @Override
+        public List<Class<?>> getSupportedDataTypes() {
+            return Collections.<Class<?>>singletonList(Object.class);
+        }
     }
 
-    public static class BraninTaskCreator implements TaskCreator<BraninConfig, BraninConfig, Void, Void> {
+    public static class BraninTaskCreator implements TaskCreator {
         @Override
-        public Callable<OptimizationResult<BraninConfig, BraninConfig, Void>> create(
-                final Candidate<BraninConfig> candidate, DataProvider<Void> dataProvider,
-                final ScoreFunction<BraninConfig, Void> scoreFunction,
+        public Callable<OptimizationResult> create(
+                final Candidate c, DataProvider dataProvider,
+                final ScoreFunction scoreFunction,
                 final List<StatusListener> statusListeners) {
 
-            return new Callable<OptimizationResult<BraninConfig, BraninConfig, Void>>() {
+            return new Callable<OptimizationResult>() {
                 @Override
-                public OptimizationResult<BraninConfig, BraninConfig, Void> call() throws Exception {
+                public OptimizationResult call() throws Exception {
 
-                    double score = scoreFunction.score(candidate.getValue(), null, null);
+                    BraninConfig candidate = (BraninConfig)c.getValue();
+
+                    double score = scoreFunction.score(candidate, null, null);
                     System.out.println(
-                            candidate.getValue().getX1() + "\t" + candidate.getValue().getX2() + "\t" + score);
+                            candidate.getX1() + "\t" + candidate.getX2() + "\t" + score);
 
                     Thread.sleep(500);
 
@@ -199,7 +209,7 @@ public class TestGridSearch {
                         }
                     }
 
-                    return new OptimizationResult<>(candidate, candidate.getValue(), score, candidate.getIndex(), null, null);
+                    return new OptimizationResult(c, candidate, score, c.getIndex(), null, null);
                 }
             };
         }

@@ -28,7 +28,6 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
  * This abstraction allows for different ways of generating the next configuration to test; for example,
  * random search, grid search, Bayesian optimization methods, etc.
  *
- * @param <C> Type of candidate to generate
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -36,7 +35,7 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
                 @JsonSubTypes.Type(value = GridSearchCandidateGenerator.class, name = "GridSearchCandidateGenerator"),
                 @JsonSubTypes.Type(value = RandomSearchGenerator.class, name = "RandomSearchCandidateGenerator")})
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
-public interface CandidateGenerator<C> {
+public interface CandidateGenerator {
 
     /**
      * Is this candidate generator able to generate more candidates? This will always return true in some
@@ -47,24 +46,27 @@ public interface CandidateGenerator<C> {
     /**
      * Generate a candidate hyperparameter configuration
      */
-    Candidate<C> getCandidate();
+    Candidate getCandidate();
 
     /**
      * Report results for the candidate generator.
      * @param result
      */
-    void reportResults(OptimizationResult<C, ?, ?> result);
+    void reportResults(OptimizationResult result);
 
     /**
      *
      * @return
      */
-    ParameterSpace<C> getParameterSpace();
+    ParameterSpace<?> getParameterSpace();
 
     /**
      *
      * @param rngSeed
      */
     void setRngSeed(long rngSeed);
+
+    Class<?> getCandidateType();
+
 
 }

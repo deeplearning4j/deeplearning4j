@@ -3,6 +3,7 @@ package org.deeplearning4j.arbiter.optimize.api.data;
 import lombok.Data;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIteratorFactory;
 
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -18,7 +19,7 @@ import java.util.Map;
  * @author Adam Gibson
  */
 @Data
-public class DataSetIteratorFactoryProvider implements DataProvider<Object> {
+public class DataSetIteratorFactoryProvider implements DataProvider {
 
     public final static String FACTORY_KEY = "org.deeplearning4j.arbiter.data.data.factory";
 
@@ -46,6 +47,11 @@ public class DataSetIteratorFactoryProvider implements DataProvider<Object> {
     @Override
     public DataSetIteratorFactory testData(Map<String, Object> dataParameters) {
         return create(dataParameters);
+    }
+
+    @Override
+    public Class<?> getDataType() {
+        return DataSetIteratorFactory.class;
     }
 
     private DataSetIteratorFactory create(Map<String, Object> dataParameters) {

@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 @Data
 @EqualsAndHashCode(exclude = {"rng"})
-public abstract class BaseCandidateGenerator<T> implements CandidateGenerator<T> {
+public abstract class BaseCandidateGenerator<T> implements CandidateGenerator {
     protected ParameterSpace<T> parameterSpace;
     protected AtomicInteger candidateCounter = new AtomicInteger(0);
     protected SynchronizedRandomGenerator rng = new SynchronizedRandomGenerator(new JDKRandomGenerator());
@@ -74,7 +74,7 @@ public abstract class BaseCandidateGenerator<T> implements CandidateGenerator<T>
     }
 
     @Override
-    public void reportResults(OptimizationResult<T, ?, ?> result) {
+    public void reportResults(OptimizationResult result) {
         //No op
     }
 

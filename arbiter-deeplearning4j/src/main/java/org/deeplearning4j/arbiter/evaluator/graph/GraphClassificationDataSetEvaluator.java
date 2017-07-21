@@ -36,7 +36,7 @@ import java.util.Map;
  */
 @AllArgsConstructor
 @NoArgsConstructor
-public class GraphClassificationDataSetEvaluator implements ModelEvaluator<ComputationGraph, Object, Evaluation> {
+public class GraphClassificationDataSetEvaluator implements ModelEvaluator {
     private Map<String, Object> evalParams = null;
 
 

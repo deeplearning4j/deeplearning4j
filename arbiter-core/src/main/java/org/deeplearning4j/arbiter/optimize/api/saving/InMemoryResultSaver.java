@@ -21,24 +21,36 @@ import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * A simple class to store optimization results in-memory.
  * Not recommended for large (or a large number of) models.
  */
 @NoArgsConstructor
-public class InMemoryResultSaver<T, M, A> implements ResultSaver<T, M, A> {
+public class InMemoryResultSaver implements ResultSaver {
     @Override
-    public ResultReference<T, M, A> saveModel(OptimizationResult<T, M, A> result) throws IOException {
-        return new InMemoryResult<>(result);
+    public ResultReference saveModel(OptimizationResult result) throws IOException {
+        return new InMemoryResult(result);
+    }
+
+    @Override
+    public List<Class<?>> getSupportedCandidateTypes() {
+        return Collections.<Class<?>>singletonList(Object.class);
+    }
+
+    @Override
+    public List<Class<?>> getSupportedModelTypes() {
+        return Collections.<Class<?>>singletonList(Object.class);
     }
 
     @AllArgsConstructor
-    private static class InMemoryResult<T, M, A> implements ResultReference<T, M, A> {
-        private OptimizationResult<T, M, A> result;
+    private static class InMemoryResult implements ResultReference {
+        private OptimizationResult result;
 
         @Override
-        public OptimizationResult<T, M, A> getResult() throws IOException {
+        public OptimizationResult getResult() throws IOException {
             return result;
         }
     }

@@ -17,7 +17,7 @@ import java.util.Map;
  * @author Alex Black
  */
 @Data
-public class DataSetIteratorProvider implements DataProvider<Object> {
+public class DataSetIteratorProvider implements DataProvider {
 
     private final DataSetIterator trainData;
     private final DataSetIterator testData;
@@ -45,6 +45,11 @@ public class DataSetIteratorProvider implements DataProvider<Object> {
         if (resetBeforeReturn)
             testData.reset();
         return testData;
+    }
+
+    @Override
+    public Class<?> getDataType() {
+        return DataSetIterator.class;
     }
 
     @Override

@@ -47,7 +47,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 @EqualsAndHashCode(exclude = {"order"}, callSuper = true)
 @JsonIgnoreProperties({"numValuesPerParam", "totalNumCandidates", "order", "candidateCounter", "rng", "candidate"})
-public class GridSearchCandidateGenerator<T> extends BaseCandidateGenerator<T> {
+public class GridSearchCandidateGenerator extends BaseCandidateGenerator {
 
     /**
      * In what order should candidates be generated?<br>
@@ -75,7 +75,7 @@ public class GridSearchCandidateGenerator<T> extends BaseCandidateGenerator<T> {
      * @param mode                {@link GridSearchCandidateGenerator.Mode} specifies the order
      *                            in which candidates should be generated.
      */
-    public GridSearchCandidateGenerator(@JsonProperty("parameterSpace") ParameterSpace<T> parameterSpace,
+    public GridSearchCandidateGenerator(@JsonProperty("parameterSpace") ParameterSpace<?> parameterSpace,
                     @JsonProperty("discretizationCount") int discretizationCount, @JsonProperty("mode") Mode mode,
                     @JsonProperty("dataParameters") Map<String, Object> dataParameters) {
         super(parameterSpace, dataParameters);
@@ -148,13 +148,18 @@ public class GridSearchCandidateGenerator<T> extends BaseCandidateGenerator<T> {
     }
 
     @Override
-    public Candidate<T> getCandidate() {
+    public Candidate getCandidate() {
         int next = order.remove();
 
         //Next: max integer (candidate number) to values
         double[] values = indexToValues(numValuesPerParam, next, totalNumCandidates);
 
-        return new Candidate<>(parameterSpace.getValue(values), candidateCounter.getAndIncrement(), values);
+        return new Candidate(parameterSpace.getValue(values), candidateCounter.getAndIncrement(), values);
+    }
+
+    @Override
+    public Class<?> getCandidateType() {
+        return null;
     }
 
     public static double[] indexToValues(int[] numValuesPerParam, int candidateIdx, int product) {

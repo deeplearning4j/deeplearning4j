@@ -81,19 +81,19 @@ public class TestJson {
         Map<String, Object> commands = new HashMap<>();
         commands.put(DataSetIteratorFactoryProvider.FACTORY_KEY, new HashMap<>());
 
-        List<CandidateGenerator<?>> l = new ArrayList<>();
-        l.add(new GridSearchCandidateGenerator<>(new DiscreteParameterSpace<>(0, 1, 2, 3, 4, 5), 10,
+        List<CandidateGenerator> l = new ArrayList<>();
+        l.add(new GridSearchCandidateGenerator(new DiscreteParameterSpace<>(0, 1, 2, 3, 4, 5), 10,
                         GridSearchCandidateGenerator.Mode.Sequential, commands));
-        l.add(new GridSearchCandidateGenerator<>(new DiscreteParameterSpace<>(0, 1, 2, 3, 4, 5), 10,
+        l.add(new GridSearchCandidateGenerator(new DiscreteParameterSpace<>(0, 1, 2, 3, 4, 5), 10,
                         GridSearchCandidateGenerator.Mode.RandomOrder, commands));
-        l.add(new RandomSearchGenerator<>(new DiscreteParameterSpace<>(0, 1, 2, 3, 4, 5), commands));
+        l.add(new RandomSearchGenerator(new DiscreteParameterSpace<>(0, 1, 2, 3, 4, 5), commands));
 
-        for (CandidateGenerator<?> cg : l) {
+        for (CandidateGenerator cg : l) {
             String strJson = jsonMapper.writeValueAsString(cg);
             String strYaml = yamlMapper.writeValueAsString(cg);
 
-            CandidateGenerator<?> fromJson = jsonMapper.readValue(strJson, CandidateGenerator.class);
-            CandidateGenerator<?> fromYaml = yamlMapper.readValue(strYaml, CandidateGenerator.class);
+            CandidateGenerator fromJson = jsonMapper.readValue(strJson, CandidateGenerator.class);
+            CandidateGenerator fromYaml = yamlMapper.readValue(strYaml, CandidateGenerator.class);
 
             assertEquals(cg, fromJson);
             assertEquals(cg, fromYaml);

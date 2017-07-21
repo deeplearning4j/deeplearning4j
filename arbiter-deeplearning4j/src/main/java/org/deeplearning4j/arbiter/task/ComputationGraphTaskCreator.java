@@ -43,36 +43,34 @@ import java.util.concurrent.Callable;
 /**
  * Task creator for ComputationGraph
  *
- * @param <A> Additional evaluation type
  * @author Alex Black
  */
 @AllArgsConstructor
 @NoArgsConstructor
-public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfiguration, ComputationGraph, Object, A> {
+public class ComputationGraphTaskCreator implements TaskCreator {
 
-    private ModelEvaluator<ComputationGraph, Object, A> modelEvaluator;
+    private ModelEvaluator modelEvaluator;
 
     @Override
-    public Callable<OptimizationResult<GraphConfiguration, ComputationGraph, A>> create(
-                    Candidate<GraphConfiguration> candidate, DataProvider<Object> dataProvider,
-                    ScoreFunction<ComputationGraph, Object> scoreFunction, List<StatusListener> statusListener) {
+    public Callable<OptimizationResult> create(
+                    Candidate candidate, DataProvider dataProvider,
+                    ScoreFunction scoreFunction, List<StatusListener> statusListener) {
 
-        return new GraphLearningTask<>(candidate, dataProvider, scoreFunction, modelEvaluator, statusListener);
+        return new GraphLearningTask(candidate, dataProvider, scoreFunction, modelEvaluator, statusListener);
     }
 
 
-    private static class GraphLearningTask<A>
-                    implements Callable<OptimizationResult<GraphConfiguration, ComputationGraph, A>> {
+    private static class GraphLearningTask implements Callable<OptimizationResult> {
 
-        private Candidate<GraphConfiguration> candidate;
-        private DataProvider<Object> dataProvider;
-        private ScoreFunction<ComputationGraph, Object> scoreFunction;
-        private ModelEvaluator<ComputationGraph, Object, A> modelEvaluator;
+        private Candidate candidate;
+        private DataProvider dataProvider;
+        private ScoreFunction scoreFunction;
+        private ModelEvaluator modelEvaluator;
         private List<StatusListener> listeners;
 
-        public GraphLearningTask(Candidate<GraphConfiguration> candidate, DataProvider<Object> dataProvider,
-                        ScoreFunction<ComputationGraph, Object> scoreFunction,
-                        ModelEvaluator<ComputationGraph, Object, A> modelEvaluator, List<StatusListener> listeners) {
+        public GraphLearningTask(Candidate candidate, DataProvider dataProvider,
+                        ScoreFunction scoreFunction,
+                        ModelEvaluator modelEvaluator, List<StatusListener> listeners) {
             this.candidate = candidate;
             this.dataProvider = dataProvider;
             this.scoreFunction = scoreFunction;
@@ -82,12 +80,12 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
 
 
         @Override
-        public OptimizationResult<GraphConfiguration, ComputationGraph, A> call() throws Exception {
+        public OptimizationResult call() throws Exception {
             CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Running, null,
                     System.currentTimeMillis(), null, null, candidate.getFlatParameters(), null);
 
             //Create network
-            ComputationGraph net = new ComputationGraph(candidate.getValue().getConfiguration());
+            ComputationGraph net = new ComputationGraph(((GraphConfiguration)candidate.getValue()).getConfiguration());
             net.init();
 
             if(listeners != null){
@@ -98,7 +96,7 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
             DataSetIterator dataSetIterator = ScoreUtil.getIterator(dataProvider.trainData(candidate.getDataParameters()));
 
 
-            EarlyStoppingConfiguration<ComputationGraph> esConfig = candidate.getValue().getEarlyStoppingConfiguration();
+            EarlyStoppingConfiguration<ComputationGraph> esConfig = ((GraphConfiguration)candidate.getValue()).getEarlyStoppingConfiguration();
             EarlyStoppingResult<ComputationGraph> esResult = null;
             if (esConfig != null) {
                 EarlyStoppingGraphTrainer trainer = new EarlyStoppingGraphTrainer(esConfig, net, dataSetIterator, null); //dl4jListener);
@@ -118,14 +116,14 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
 
             } else {
                 //Fixed number of epochs
-                int nEpochs = candidate.getValue().getNumEpochs();
+                int nEpochs = ((GraphConfiguration)candidate.getValue()).getNumEpochs();
                 for (int i = 0; i < nEpochs; i++) {
                     net.fit(dataSetIterator);
                 }
                 ci.setCandidateStatus(CandidateStatus.Complete);
             }
 
-            A additionalEvaluation = null;
+            Object additionalEvaluation = null;
             if (esConfig != null && esResult.getTerminationReason() != EarlyStoppingResult.TerminationReason.Error) {
                 additionalEvaluation = (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
             }
@@ -136,7 +134,7 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
                 ci.setScore(score);
             }
 
-            return new OptimizationResult<>(candidate, net, score, candidate.getIndex(), additionalEvaluation, ci);
+            return new OptimizationResult(candidate, net, score, candidate.getIndex(), additionalEvaluation, ci);
         }
     }
 }

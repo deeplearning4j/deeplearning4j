@@ -22,19 +22,17 @@ import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * The ResultSaver interface provides a means of saving models in such a way that they can be loaded back into memory later,
  * regardless of where/how they are saved.
  *
- * @param <C> The type of candidate/configuration
- * @param <M> The trained model type
- * @param <A> Additional evaluation
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
-public interface ResultSaver<C, M, A> {
+public interface ResultSaver {
 
     /**
      * Save the model (including configuration and any additional evaluation/results)
@@ -43,6 +41,11 @@ public interface ResultSaver<C, M, A> {
      * @return ResultReference, such that the result can be loadde back into memory
      * @throws IOException If IO error occurs during model saving
      */
-    ResultReference<C, M, A> saveModel(OptimizationResult<C, M, A> result) throws IOException;
+    ResultReference saveModel(OptimizationResult result) throws IOException;
+
+    List<Class<?>> getSupportedCandidateTypes();
+
+    List<Class<?>> getSupportedModelTypes();
+
 
 }

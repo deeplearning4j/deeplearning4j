@@ -39,10 +39,10 @@ import java.util.Map;
  */
 @EqualsAndHashCode(callSuper = true)
 @JsonIgnoreProperties({"numValuesPerParam", "totalNumCandidates", "order", "candidateCounter", "rng", "candidate"})
-public class RandomSearchGenerator<T> extends BaseCandidateGenerator<T> {
+public class RandomSearchGenerator extends BaseCandidateGenerator {
 
     @JsonCreator
-    public RandomSearchGenerator(@JsonProperty("parameterSpace") ParameterSpace<T> parameterSpace,
+    public RandomSearchGenerator(@JsonProperty("parameterSpace") ParameterSpace<?> parameterSpace,
                     @JsonProperty("dataParameters") Map<String, Object> dataParameters) {
         super(parameterSpace, dataParameters);
         initialize();
@@ -55,12 +55,17 @@ public class RandomSearchGenerator<T> extends BaseCandidateGenerator<T> {
     }
 
     @Override
-    public Candidate<T> getCandidate() {
+    public Candidate getCandidate() {
         double[] randomValues = new double[parameterSpace.numParameters()];
         for (int i = 0; i < randomValues.length; i++)
             randomValues[i] = rng.nextDouble();
-        return new Candidate<>(parameterSpace.getValue(randomValues), candidateCounter.getAndIncrement(), randomValues,
+        return new Candidate(parameterSpace.getValue(randomValues), candidateCounter.getAndIncrement(), randomValues,
                         dataParameters);
+    }
+
+    @Override
+    public Class<?> getCandidateType() {
+        return null;
     }
 
     @Override

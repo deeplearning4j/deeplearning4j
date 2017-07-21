@@ -29,8 +29,8 @@ import java.io.IOException;
  * and we can easily load it back into memory (if/when required) using the getResult() method
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
-public interface ResultReference<T, M, A> {
+public interface ResultReference {
 
-    OptimizationResult<T, M, A> getResult() throws IOException;
+    OptimizationResult getResult() throws IOException;
 
 }

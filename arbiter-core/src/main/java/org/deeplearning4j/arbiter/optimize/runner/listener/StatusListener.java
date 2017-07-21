@@ -19,8 +19,7 @@ public interface StatusListener {
      * number scheduled, number completed, number failed, best score, etc. */
     void onRunnerStatusChange(IOptimizationRunner runner);
 
-    void onCandidateStatusChange(CandidateInfo candidateInfo, IOptimizationRunner runner,
-                    OptimizationResult<?, ?, ?> result);
+    void onCandidateStatusChange(CandidateInfo candidateInfo, IOptimizationRunner runner, OptimizationResult result);
 
     /**
      *  this method may be called by tasks as they are executing. The intent of this method is to report partial results,

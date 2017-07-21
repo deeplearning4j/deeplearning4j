@@ -19,7 +19,6 @@ package org.deeplearning4j.arbiter.task;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.listener.DL4JArbiterStatusReportingListener;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
@@ -44,38 +43,36 @@ import java.util.concurrent.Callable;
 /**
  * Task creator for MultiLayerNetworks
  *
- * @param <A> Additional evaluation type
  * @author Alex Black
  */
 @AllArgsConstructor
 @NoArgsConstructor
-public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfiguration, MultiLayerNetwork, Object, A> {
+public class MultiLayerNetworkTaskCreator implements TaskCreator {
 
-    private ModelEvaluator<MultiLayerNetwork, Object, A> modelEvaluator;
+    private ModelEvaluator modelEvaluator;
 
     @Override
-    public Callable<OptimizationResult<DL4JConfiguration, MultiLayerNetwork, A>> create(
-                    Candidate<DL4JConfiguration> candidate, DataProvider<Object> dataProvider,
-                    ScoreFunction<MultiLayerNetwork, Object> scoreFunction, List<StatusListener> statusListeners) {
+    public Callable<OptimizationResult> create(
+                    Candidate candidate, DataProvider dataProvider,
+                    ScoreFunction scoreFunction, List<StatusListener> statusListeners) {
 
-        return new DL4JLearningTask<>(candidate, dataProvider, scoreFunction, modelEvaluator, statusListeners);
+        return new DL4JLearningTask(candidate, dataProvider, scoreFunction, modelEvaluator, statusListeners);
 
     }
 
 
-    private static class DL4JLearningTask<A>
-                    implements Callable<OptimizationResult<DL4JConfiguration, MultiLayerNetwork, A>> {
+    private static class DL4JLearningTask implements Callable<OptimizationResult> {
 
-        private Candidate<DL4JConfiguration> candidate;
-        private DataProvider<Object> dataProvider;
-        private ScoreFunction<MultiLayerNetwork, Object> scoreFunction;
-        private ModelEvaluator<MultiLayerNetwork, Object, A> modelEvaluator;
+        private Candidate candidate;
+        private DataProvider dataProvider;
+        private ScoreFunction scoreFunction;
+        private ModelEvaluator modelEvaluator;
         private List<StatusListener> listeners;
 
 
-        public DL4JLearningTask(Candidate<DL4JConfiguration> candidate, DataProvider<Object> dataProvider,
-                        ScoreFunction<MultiLayerNetwork, Object> scoreFunction,
-                        ModelEvaluator<MultiLayerNetwork, Object, A> modelEvaluator,
+        public DL4JLearningTask(Candidate candidate, DataProvider dataProvider,
+                        ScoreFunction scoreFunction,
+                        ModelEvaluator modelEvaluator,
                         List<StatusListener> listeners) {
             this.candidate = candidate;
             this.dataProvider = dataProvider;
@@ -86,7 +83,7 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
 
 
         @Override
-        public OptimizationResult<DL4JConfiguration, MultiLayerNetwork, A> call() throws Exception {
+        public OptimizationResult call() throws Exception {
 
             CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Running, null,
                     System.currentTimeMillis(), null, null, candidate.getFlatParameters(), null);
@@ -105,7 +102,7 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
 
 
             EarlyStoppingConfiguration<MultiLayerNetwork> esConfig =
-                            candidate.getValue().getEarlyStoppingConfiguration();
+                    ((DL4JConfiguration)candidate.getValue()).getEarlyStoppingConfiguration();
             EarlyStoppingResult<MultiLayerNetwork> esResult = null;
             if (esConfig != null) {
                 EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConfig, net, dataSetIterator, null);
@@ -125,14 +122,14 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
 
             } else {
                 //Fixed number of epochs
-                int nEpochs = candidate.getValue().getNumEpochs();
+                int nEpochs = ((DL4JConfiguration)candidate.getValue()).getNumEpochs();
                 for (int i = 0; i < nEpochs; i++) {
                     net.fit(dataSetIterator);
                 }
                 ci.setCandidateStatus(CandidateStatus.Complete);
             }
 
-            A additionalEvaluation = null;
+            Object additionalEvaluation = null;
             if (esConfig != null && esResult.getTerminationReason() != EarlyStoppingResult.TerminationReason.Error) {
                 additionalEvaluation = (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
             }
@@ -143,7 +140,7 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
                 ci.setScore(score);
             }
 
-            return new OptimizationResult<>(candidate, net, score, candidate.getIndex(), additionalEvaluation, ci);
+            return new OptimizationResult(candidate, net, score, candidate.getIndex(), additionalEvaluation, ci);
         }
     }
 }

@@ -29,8 +29,7 @@ public class LoggingStatusListener implements StatusListener {
     }
 
     @Override
-    public void onCandidateStatusChange(CandidateInfo candidateInfo, IOptimizationRunner runner,
-                    OptimizationResult<?, ?, ?> result) {
+    public void onCandidateStatusChange(CandidateInfo candidateInfo, IOptimizationRunner runner, OptimizationResult result) {
         log.info("Candidate status change: {}", candidateInfo);
     }
 

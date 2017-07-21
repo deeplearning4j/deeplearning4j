@@ -28,28 +28,25 @@ import java.io.Serializable;
  * An optimization result represents the results of an optimization run, including the canditate configuration, the
  * trained model, the score for that model, and index of the model
  *
- * @param <C> Type for the model configuration
- * @param <M> Type of the trained model
- * @param <A> Type for any additional evaluation
  * @author Alex Black
  */
 @Data
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
-public class OptimizationResult<C, M, A> implements Serializable {
+public class OptimizationResult implements Serializable {
     @JsonProperty
-    private Candidate<C> candidate;
+    private Candidate candidate;
     @JsonProperty
-    private M result;
+    private Object result;
     @JsonProperty
     private Double score;
     @JsonProperty
     private int index;
     @JsonProperty
-    private A modelSpecificResults;
+    private Object modelSpecificResults;
     @JsonProperty
     private CandidateInfo candidateInfo;
 
-    public OptimizationResult(Candidate<C> candidate, M result, Double score, int index, A modelSpecificResults,
+    public OptimizationResult(Candidate candidate, Object result, Double score, int index, Object modelSpecificResults,
                               CandidateInfo candidateInfo) {
         this.candidate = candidate;
         this.result = result;

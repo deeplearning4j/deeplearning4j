@@ -38,7 +38,7 @@ import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpa
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.LocalOptimizationRunner;
 import org.deeplearning4j.arbiter.saver.local.multilayer.LocalMultiLayerNetworkSaver;
-import org.deeplearning4j.arbiter.scoring.multilayer.TestSetAccuracyScoreFunction;
+import org.deeplearning4j.arbiter.scoring.impl.TestSetAccuracyScoreFunction;
 import org.deeplearning4j.arbiter.task.MultiLayerNetworkTaskCreator;
 import org.deeplearning4j.arbiter.util.LeafUtils;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
