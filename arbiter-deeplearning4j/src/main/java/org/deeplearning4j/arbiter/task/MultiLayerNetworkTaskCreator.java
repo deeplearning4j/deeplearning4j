@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.task;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.deeplearning4j.arbiter.DL4JConfiguration;
 import org.deeplearning4j.arbiter.listener.DL4JArbiterStatusReportingListener;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
@@ -87,7 +88,8 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
         @Override
         public OptimizationResult<DL4JConfiguration, MultiLayerNetwork, A> call() throws Exception {
 
-            CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Running, null, System.currentTimeMillis(), null, null, candidate.getFlatParameters());
+            CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Running, null,
+                    System.currentTimeMillis(), null, null, candidate.getFlatParameters(), null);
 
             //Create network
             MultiLayerNetwork net = new MultiLayerNetwork(candidate.getValue().getMultiLayerConfiguration());
@@ -107,29 +109,17 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
             EarlyStoppingResult<MultiLayerNetwork> esResult = null;
             if (esConfig != null) {
                 EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConfig, net, dataSetIterator, null);
-                try {
-                    esResult = trainer.fit();
-                    net = esResult.getBestModel(); //Can return null if failed OR if
-                } catch (Exception e) {
-//                    if (dl4jListener != null) {
-//                        //                        dl4jListener.postReport(CandidateStatus.Failed, null,
-//                        //                                new ComponentText("Unexpected exception during model training\n", null),
-//                        //                                new ComponentText(ExceptionUtils.getStackTrace(e), null));
-//                    }
-                    throw e;
-                }
+                esResult = trainer.fit();
+                net = esResult.getBestModel(); //Can return null if failed OR if
 
                 switch (esResult.getTerminationReason()) {
                     case Error:
-//                        if (dl4jListener != null) {
-//                            //                            dl4jListener.postReport(CandidateStatus.Failed, esResult);
-//                        }
+                        ci.setCandidateStatus(CandidateStatus.Failed);
+                        ci.setExceptionStackTrace(esResult.getTerminationDetails());
                         break;
                     case IterationTerminationCondition:
                     case EpochTerminationCondition:
-//                        if (dl4jListener != null) {
-//                            //                            dl4jListener.postReport(CandidateStatus.Complete, esResult);
-//                        }
+                        ci.setCandidateStatus(CandidateStatus.Complete);
                         break;
                 }
 
@@ -138,47 +128,22 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
                 int nEpochs = candidate.getValue().getNumEpochs();
                 for (int i = 0; i < nEpochs; i++) {
                     net.fit(dataSetIterator);
-                    dataSetIterator.reset();
                 }
-                //Do a final status update
-//                if (dl4jListener != null) {
-//                    //                    dl4jListener.postReport(CandidateStatus.Complete, null);
-//                }
+                ci.setCandidateStatus(CandidateStatus.Complete);
             }
 
             A additionalEvaluation = null;
             if (esConfig != null && esResult.getTerminationReason() != EarlyStoppingResult.TerminationReason.Error) {
-                try {
-                    additionalEvaluation =
-                                    (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
-                } catch (Exception e) {
-//                    if (dl4jListener != null) {
-//                        //                        dl4jListener.postReport(CandidateStatus.Failed, esResult,
-//                        //                                new ComponentText("Failed during additional evaluation stage\n", null),
-//                        //                                new ComponentText(ExceptionUtils.getStackTrace(e), null));
-//                    }
-                }
+                additionalEvaluation = (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
             }
 
             Double score = null;
-            if (net == null) {
-//                if (dl4jListener != null) {
-//                    //                    dl4jListener.postReport(CandidateStatus.Complete, esResult,
-//                    //                            new ComponentText("No best model available; cannot calculate model score", null));
-//                }
-            } else {
-                try {
-                    score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
-                } catch (Exception e) {
-//                    if (dl4jListener != null) {
-//                        //                        dl4jListener.postReport(CandidateStatus.Failed, esResult,
-//                        //                                new ComponentText("Failed during score calculation stage\n", null),
-//                        //                                new ComponentText(ExceptionUtils.getStackTrace(e), null));
-//                    }
-                }
+            if (net != null) {
+                score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
+                ci.setScore(score);
             }
 
-            return new OptimizationResult<>(candidate, net, score, candidate.getIndex(), additionalEvaluation);
+            return new OptimizationResult<>(candidate, net, score, candidate.getIndex(), additionalEvaluation, ci);
         }
     }
 }

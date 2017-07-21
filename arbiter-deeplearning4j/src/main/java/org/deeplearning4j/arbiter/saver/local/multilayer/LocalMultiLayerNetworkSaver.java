@@ -122,6 +122,6 @@ public class LocalMultiLayerNetworkSaver<A> implements ResultSaver<DL4JConfigura
 
     @Override
     public String toString() {
-        return "LocalMultiLayerNetworkScoreSaver(path=" + path + ")";
+        return "LocalMultiLayerNetworkSaver(path=" + path + ")";
     }
 }

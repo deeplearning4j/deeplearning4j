@@ -95,7 +95,7 @@ public class LocalFileMultiLayerNetworkResultReference<A>
             additionalResults = null;
         }
 
-        return new OptimizationResult<>(candidate, net, d, index, additionalResults);
+        return new OptimizationResult<>(candidate, net, d, index, additionalResults, null);
     }
 
     @Override

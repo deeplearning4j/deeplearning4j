@@ -11,7 +11,9 @@ import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 
 /**
- * Created by Alex on 19/07/2017.
+ * Common implementation
+ *
+ * @author Alex Black
  */
 @AllArgsConstructor
 public abstract class BaseJavaPersistable implements Persistable {

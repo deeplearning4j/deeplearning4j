@@ -38,5 +38,5 @@ public class CandidateInfo {
     private Long startTime;
     private Long endTime;
     private double[] flatParams;    //Same as parameters in Candidate class
-
+    private String exceptionStackTrace;
 }

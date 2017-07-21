@@ -18,6 +18,7 @@
 package org.deeplearning4j.arbiter.optimize.api;
 
 import lombok.Data;
+import org.deeplearning4j.arbiter.optimize.runner.CandidateInfo;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
@@ -45,14 +46,16 @@ public class OptimizationResult<C, M, A> implements Serializable {
     private int index;
     @JsonProperty
     private A modelSpecificResults;
+    @JsonProperty
+    private CandidateInfo candidateInfo;
 
-    public OptimizationResult(Candidate<C> candidate, M result, Double score, int index, A modelSpecificResults) {
+    public OptimizationResult(Candidate<C> candidate, M result, Double score, int index, A modelSpecificResults,
+                              CandidateInfo candidateInfo) {
         this.candidate = candidate;
         this.result = result;
         this.score = score;
         this.index = index;
         this.modelSpecificResults = modelSpecificResults;
+        this.candidateInfo = candidateInfo;
     }
-
-
 }

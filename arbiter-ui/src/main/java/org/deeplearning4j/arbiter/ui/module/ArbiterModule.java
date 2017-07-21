@@ -45,7 +45,9 @@ import static org.deeplearning4j.arbiter.ui.misc.JsonMapper.asJson;
 import static play.mvc.Results.ok;
 
 /**
- * Created by Alex on 18/07/2017.
+ * A Deeplearning4j {@link UIModule}, for integration with DL4J's user interface
+ *
+ * @author Alex Black
  */
 @Slf4j
 public class ArbiterModule implements UIModule {
@@ -132,8 +134,6 @@ public class ArbiterModule implements UIModule {
 
     @Override
     public void reportStorageEvents(Collection<StatsStorageEvent> events) {
-        log.info("Reported storage events: {}", events);
-
         for (StatsStorageEvent sse : events) {
             if (ARBITER_UI_TYPE_ID.equals(sse.getTypeID())) {
                 if (sse.getEventType() == StatsStorageListener.EventType.PostStaticInfo) {
@@ -149,9 +149,6 @@ public class ArbiterModule implements UIModule {
             }
         }
 
-        if (currentSessionID == null)
-            getDefaultSession();
-
         if(currentSessionID == null){
             getDefaultSession();
         }
@@ -165,7 +162,6 @@ public class ArbiterModule implements UIModule {
 
     @Override
     public synchronized void onAttach(StatsStorage statsStorage) {
-        log.info("Attached: {}", statsStorage);
         for (String sessionID : statsStorage.listSessionIDs()) {
             for (String typeID : statsStorage.listTypeIDsForSession(sessionID)) {
                 if (!ARBITER_UI_TYPE_ID.equals(typeID))
@@ -199,13 +195,10 @@ public class ArbiterModule implements UIModule {
         if (sessionID != null) {
             currentSessionID = sessionID;
         }
-
-        log.info("Default session is: {}", currentSessionID);
     }
 
     @Override
     public void onDetach(StatsStorage statsStorage) {
-        log.info("Detached: {}", statsStorage);
         for (String s : knownSessionIDs.keySet()) {
             if (knownSessionIDs.get(s) == statsStorage) {
                 knownSessionIDs.remove(s);
@@ -217,7 +210,7 @@ public class ArbiterModule implements UIModule {
      * @return Last update time for the page
      */
     private Result getLastUpdateTime(){
-        //TODO
+        //TODO - this forces updates on every request... which is fine, just inefficient
         long t = System.currentTimeMillis();
         UpdateStatus us = new UpdateStatus(t, t, t);
 
@@ -392,7 +385,7 @@ public class ArbiterModule implements UIModule {
                 maxScore = Math.max(maxScore, scoresD[i]);
             }
 
-            double[] chartMinMax = UIUtils.niceRange(maxScore, minScore, 5);
+            double[] chartMinMax = UIUtils.graphNiceRange(maxScore, minScore, 5);
 
             ChartLine cl = new ChartLine.Builder("Model Score vs. Iteration", STYLE_CHART_800_400)
                     .addSeries("Score", si, scoresD )
@@ -422,8 +415,6 @@ public class ArbiterModule implements UIModule {
 
     /**
      * Get the optimization configuration - second section in the page
-     *
-     * @return
      */
     private Result getOptimizationConfig(){
 
@@ -535,8 +526,6 @@ public class ArbiterModule implements UIModule {
 
     /**
      * Get summary status information: first section in the page
-     *
-     * @return
      */
     private Result getSummaryStatus(){
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
@@ -589,7 +578,7 @@ public class ArbiterModule implements UIModule {
 
         //TODO: I18N
 
-        //TODO don't use currentTimeMillis due to stored data
+        //TODO don't use currentTimeMillis due to stored data??
         long bestTime;
         Double bestScore = null;
         String bestModelString = null;
@@ -700,13 +689,10 @@ public class ArbiterModule implements UIModule {
         }
 
 
-        double[] scatterGraphMinMax = UIUtils.niceRange(Math.max(bestScore, worstScore), Math.min(bestScore, worstScore), 5);
-        double[] lineGraphMinMax = UIUtils.niceRange(
+        double[] scatterGraphMinMax = UIUtils.graphNiceRange(Math.max(bestScore, worstScore), Math.min(bestScore, worstScore), 5);
+        double[] lineGraphMinMax = UIUtils.graphNiceRange(
                 bestY.stream().mapToDouble(s -> s).max().orElse(0),bestY.stream().mapToDouble(s -> s).min().orElse(0), 5
         );
-
-//        System.out.println("Orig worst/best: " + worstScore + ", " + bestScore);
-//        System.out.println("Nice graph range: " + Arrays.toString(scatterGraphMinMax));
 
         if(bestX.size() > 0) {
             bestX.add(lastTime);

@@ -27,6 +27,11 @@ import org.nd4j.shade.jackson.databind.SerializationFeature;
 
 import java.io.IOException;
 
+/**
+ * Simple class for serializing to / deserializing from JSON, using default ObjectMapper configuration
+ *
+ * @author Alex Black
+ */
 public class JsonMapper {
 
     private static final ObjectMapper MAPPER = getMapper();

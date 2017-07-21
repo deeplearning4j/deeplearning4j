@@ -6,7 +6,9 @@ import org.deeplearning4j.arbiter.ui.misc.JsonMapper;
 import org.deeplearning4j.arbiter.ui.module.ArbiterModule;
 
 /**
- * Created by Alex on 19/07/2017.
+ *
+ * A {@link org.deeplearning4j.api.storage.Persistable} implemention for global settings
+ * @author Alex Black
  */
 @Getter
 public class GlobalConfigPersistable extends BaseJavaPersistable {

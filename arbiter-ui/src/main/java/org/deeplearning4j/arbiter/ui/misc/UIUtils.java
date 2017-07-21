@@ -1,6 +1,5 @@
 package org.deeplearning4j.arbiter.ui.misc;
 
-import org.joda.time.DurationFieldType;
 import org.joda.time.Period;
 import org.joda.time.PeriodType;
 import org.joda.time.format.PeriodFormatter;
@@ -12,19 +11,20 @@ import org.joda.time.format.PeriodFormatterBuilder;
 public class UIUtils {
 
     /**
+     * Convert the "messy" min/max values on a dataset to something clean. For example, 0.895732 becomes 1.0
      *
-     * @param max
-     * @param min
-     * @param nTick
-     * @return
+     * @param max   Maximum data point value
+     * @param min   Minimum data point value
+     * @param nTick Number of tick marks desired on chart (good setting: 5)
+     * @return double[] of length 2 - with new minimum and maximum
      */
-    public static double[] niceRange(double max, double min, int nTick){
+    public static double[] graphNiceRange(double max, double min, int nTick){
         if(max == min || !Double.isFinite(max)){
             if(max == 0.0 || !Double.isFinite(max)){
                 return new double[]{0.0, 1.0};
             }
 
-            return niceRange(1.5 * max, 0.5 * max, nTick);
+            return graphNiceRange(1.5 * max, 0.5 * max, nTick);
         }
 
         double range = niceNum(max-min, false);
@@ -37,7 +37,6 @@ public class UIUtils {
     }
 
     public static double niceNum(double x, boolean round){
-
         double exp = Math.floor(Math.log10(x));
         double f = x / Math.pow(10, exp);
 
@@ -63,10 +62,16 @@ public class UIUtils {
                 nf = 10;
             }
         }
-
         return nf * Math.pow(10, exp);
     }
 
+    /**
+     * Format the duration in milliseconds to a human readable String, with "yr", "days", "hr" etc prefixes
+     *
+     *
+     * @param durationMs Duration in milliseconds
+     * @return Human readable string
+     */
     public static String formatDuration(long durationMs){
         Period period = Period.seconds((int)(durationMs/1000L));
         Period p2 = period.normalizedStandard(PeriodType.yearMonthDayTime());
@@ -86,9 +91,6 @@ public class UIUtils {
                 .appendSuffix(" sec")
                 .toFormatter();
 
-        String formatted = formatter.print(p2);
-
-        return formatted;
+        return formatter.print(p2);
     }
-
 }

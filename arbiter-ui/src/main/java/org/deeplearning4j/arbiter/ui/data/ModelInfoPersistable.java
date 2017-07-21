@@ -4,7 +4,10 @@ import lombok.Data;
 import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
 
 /**
- * Created by Alex on 19/07/2017.
+ * A {@link org.deeplearning4j.api.storage.Persistable} implemention for model results - i.e., results for
+ * each model
+ *
+ * @author Alex BLack
  */
 @Data
 public class ModelInfoPersistable extends BaseJavaPersistable {
@@ -16,9 +19,12 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
     private long lastUpdateTime;
     private long numParameters;
     private int numLayers;
+    //From candidate generator - this + model hyperparam space means we can work out specific hyperparam
+    // settings for this model
     private double[] paramSpaceValues;
     private int totalNumUpdates;
 
+    //Values for score vs. iteration chart
     private int[] iter;
     private float[] scoreVsIter;
 

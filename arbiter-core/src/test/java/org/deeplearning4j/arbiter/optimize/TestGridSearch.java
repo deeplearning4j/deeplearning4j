@@ -41,7 +41,7 @@ public class TestGridSearch {
     public void testIndexing() {
         int[] nValues = {2, 3};
         int prod = 2 * 3;
-        double[][] expVals = new double[][] {{0.0, 0.0}, {1.0, 0.0}, {0.0, 0.5}, {1.0, 0.5}, {0.0, 1.0}, {1.0, 1.0}};
+        double[][] expVals = new double[][]{{0.0, 0.0}, {1.0, 0.0}, {0.0, 0.5}, {1.0, 0.5}, {0.0, 1.0}, {1.0, 1.0}};
         for (int i = 0; i < prod; i++) {
             double[] out = GridSearchCandidateGenerator.indexToValues(nValues, i, prod);
             double[] exp = expVals[i];
@@ -56,7 +56,7 @@ public class TestGridSearch {
 
         //Define configuration:
         CandidateGenerator<BraninConfig> candidateGenerator = new GridSearchCandidateGenerator<>(new BraninSpace(), 4,
-                        GridSearchCandidateGenerator.Mode.Sequential, commands);
+                GridSearchCandidateGenerator.Mode.Sequential, commands);
 
         //Check sequential:
         double[] expValuesFirst = {-5, 0, 5, 10}; //Range: -5 to +10, with 4 values
@@ -84,7 +84,7 @@ public class TestGridSearch {
 
 
         candidateGenerator = new GridSearchCandidateGenerator<>(new BraninSpace(), 4,
-                        GridSearchCandidateGenerator.Mode.RandomOrder, commands);
+                GridSearchCandidateGenerator.Mode.RandomOrder, commands);
         boolean[] seen = new boolean[16];
         int seenCount = 0;
         for (int i = 0; i < 4 * 4; i++) {
@@ -179,9 +179,9 @@ public class TestGridSearch {
     public static class BraninTaskCreator implements TaskCreator<BraninConfig, BraninConfig, Void, Void> {
         @Override
         public Callable<OptimizationResult<BraninConfig, BraninConfig, Void>> create(
-                        final Candidate<BraninConfig> candidate, DataProvider<Void> dataProvider,
-                        final ScoreFunction<BraninConfig, Void> scoreFunction,
-                        final List<StatusListener> statusListeners) {
+                final Candidate<BraninConfig> candidate, DataProvider<Void> dataProvider,
+                final ScoreFunction<BraninConfig, Void> scoreFunction,
+                final List<StatusListener> statusListeners) {
 
             return new Callable<OptimizationResult<BraninConfig, BraninConfig, Void>>() {
                 @Override
@@ -189,7 +189,7 @@ public class TestGridSearch {
 
                     double score = scoreFunction.score(candidate.getValue(), null, null);
                     System.out.println(
-                                    candidate.getValue().getX1() + "\t" + candidate.getValue().getX2() + "\t" + score);
+                            candidate.getValue().getX1() + "\t" + candidate.getValue().getX2() + "\t" + score);
 
                     Thread.sleep(500);
 
@@ -199,7 +199,7 @@ public class TestGridSearch {
                         }
                     }
 
-                    return new OptimizationResult<>(candidate, candidate.getValue(), score, candidate.getIndex(), null);
+                    return new OptimizationResult<>(candidate, candidate.getValue(), score, candidate.getIndex(), null, null);
                 }
             };
         }

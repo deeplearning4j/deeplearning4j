@@ -52,22 +52,22 @@ import java.util.List;
 @JsonTypeName("ComputationGraphSpace")
 public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> {
     @JsonProperty
-    private List<LayerConf> layerSpaces = new ArrayList<>();
+    protected List<LayerConf> layerSpaces = new ArrayList<>();
     @JsonProperty
-    private List<VertexConf> vertices = new ArrayList<>();
+    protected List<VertexConf> vertices = new ArrayList<>();
     @JsonProperty
-    private String[] networkInputs;
+    protected String[] networkInputs;
     @JsonProperty
-    private String[] networkOutputs;
+    protected String[] networkOutputs;
     @JsonProperty
-    private ParameterSpace<InputType[]> inputTypes;
+    protected ParameterSpace<InputType[]> inputTypes;
     @JsonProperty
-    private int numParameters;
+    protected int numParameters;
 
     //Early stopping configuration / (fixed) number of epochs:
-    private EarlyStoppingConfiguration<ComputationGraph> earlyStoppingConfiguration;
+    protected EarlyStoppingConfiguration<ComputationGraph> earlyStoppingConfiguration;
 
-    private ComputationGraphSpace(Builder builder) {
+    protected ComputationGraphSpace(Builder builder) {
         super(builder);
 
         this.earlyStoppingConfiguration = builder.earlyStoppingConfiguration;
@@ -170,10 +170,10 @@ public class ComputationGraphSpace extends BaseNetworkSpace<GraphConfiguration> 
     @AllArgsConstructor
     @Data
     @NoArgsConstructor //For Jackson JSON
-    private static class VertexConf {
-        private GraphVertex graphVertex;
-        private String vertexName;
-        private String[] inputs;
+    protected static class VertexConf {
+        protected GraphVertex graphVertex;
+        protected String vertexName;
+        protected String[] inputs;
     }
 
     public static class Builder extends BaseNetworkSpace.Builder<Builder> {

@@ -116,6 +116,6 @@ public class LocalComputationGraphSaver<A> implements ResultSaver<GraphConfigura
 
     @Override
     public String toString() {
-        return "LocalMultiLayerNetworkScoreSaver(path=" + fPath.getAbsolutePath() + ")";
+        return "LocalComputationGraphSaver(path=" + fPath.getAbsolutePath() + ")";
     }
 }
