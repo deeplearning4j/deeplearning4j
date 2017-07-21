@@ -1,5 +1,5 @@
 ---
-title: Distributed Training: Gradients Sharing
+title: Distributed Training - Gradients Sharing
 layout: default
 ---
 

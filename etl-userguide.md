@@ -20,20 +20,6 @@ Data may also need to be pre-processed in other ways: transformed, scaled, norma
 
 ## Record Readers
 
-<!-- put border on the table -->
-<style>
-table
-{border:1px solid black;
-}
-td
-{border:1px solid black;
-}
-th
-{border:1px solid black;
-}
-
-</style>
-
 Record Readers are part of the DataVec library, which the Skymind team created to manage ETL processes. Their class is `RecordReader`.
 
 ### Available RecordReaders
@@ -64,7 +50,7 @@ Record Readers are part of the DataVec library, which the Skymind team created t
 | TfidfRecordReader              | TFIDF record reader (wraps a tfidf vectorizer for delivering labels and conforming to the record reader interface)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | NLP processing, Term Frequency Inverse Document Frequency |
 | VideoRecordReader              | A video is just a moving window of pictures. It should be processed as such. This iterates over a root folder and returns a                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Video                                                     |
 | WavFileRecordReader            | Wav file loader                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Audio                                                     |
-
+{: .table}
 
 
 --------------------
@@ -133,7 +119,7 @@ Image training data can be augmented by rotating samples, or applying skew to th
 | ScaleImageTransform      | Scales images deterministically or randomly                                       |
 | ShowImageTransform       | Shows images on the screen, for visualization only, does not transform            |
 | WarpImageTransform.      | Warps the perspective of images deterministically or randomly                     |
-
+{: .table}
 
 
 ## Data Transforms
@@ -183,7 +169,7 @@ Here is what is currently possible with DataVec:
 | StringToTimeTransform                 | Generate numeric time from String                                                   |
 | SubtractMeanNormalizer                | Subtract mean                                                                       |
 | TimeMathOpTransform                   | Time conversions                                                                    |
-
+{: .table}
 
 ## Scaling and Normalizing 
 
@@ -205,7 +191,7 @@ From the `RecordReader` data typically travels to a dataset iterator that traver
 | ImagePreProcessingScaler   | Applies min max scaling Can take a range . Pixel values can be scaled from 0->255 to minRange->maxRange default minRange = 0 and maxRange = 1 |
 | NormalizerMinMaxScaler     | Applies min max scaling Can take a range X -> (X - min/(max-min)) * (given_max - given_min) + given_mi                                        |
 | NormalizerStandardize      | Standard scaler calculates a moving column wise variance and mean                                                                             |
-
+{: .table}
 
 	
 ## Image Transformations with JavaCV, OpenCV and ffmpeg Filters
