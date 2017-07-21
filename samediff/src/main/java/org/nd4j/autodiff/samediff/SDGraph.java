@@ -134,18 +134,18 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
 
             Preconditions.checkState(inputsCount == numInputs, "Not all inputs were filled.");
             //add edges
-            for (Edge<OpState> opStateEdge : inputOpStates) {
-                    for(int j = 0; j < inputs.length; j++)
-                        Preconditions.checkNotNull(inputs[j],"Input " + j + " of edge " + opStateEdge.getFrom() + " -> " + opStateEdge.getTo() + " was null.");
+            Edge<OpState> opStateEdge = inputOpStates.get(0);
+            for(int j = 0; j < inputs.length; j++)
+                Preconditions.checkNotNull(inputs[j],"Input " + j + " of edge " + opStateEdge.getFrom() + " -> " + opStateEdge.getTo() + " was null.");
 
-                ret.add(OpExecAction.builder()
-                        .output(opStateEdge.getValue().getResult())
-                        .opState(opStateEdge.getValue())
-                        .inputs(inputs)
-                        .inputsIds(inputIds)
-                        .outputId(order[i])
-                        .build());
-            }
+            ret.add(OpExecAction.builder()
+                    .output(opStateEdge.getValue().getResult())
+                    .opState(opStateEdge.getValue())
+                    .inputs(inputs)
+                    .inputsIds(inputIds)
+                    .outputId(order[i])
+                    .build());
+
         }
 
 
