@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.samediff;
 
+import com.google.common.base.Preconditions;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -125,18 +126,18 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
             List<Edge<OpState>> inputOpStates = getIncomingEdges().get(order[i]);
             //get the inputs for this this output array
             for (Edge<OpState> edge : inputOpStates) {
-                if (edge.getTo() == order[i]) {
-                    inputs[inputsCount] = getInformationFor(edge.getFrom());
-                    if(inputs[inputsCount] == null) {
-                        continue;
-                    }
-                    inputIds[inputsCount] = edge.getFrom();
-                    inputsCount++;
-                }
+                inputIds[inputsCount] = edge.getFrom();
+                Preconditions.checkNotNull(getInformationFor(edge.getFrom()));
+                inputs[inputsCount] = getInformationFor(edge.getFrom());
+                inputsCount++;
             }
 
+            Preconditions.checkState(inputsCount == numInputs, "Not all inputs were filled.");
             //add edges
             for (Edge<OpState> opStateEdge : inputOpStates) {
+                    for(int j = 0; j < inputs.length; j++)
+                        Preconditions.checkNotNull(inputs[j],"Input " + j + " of edge " + opStateEdge.getFrom() + " -> " + opStateEdge.getTo() + " was null.");
+
                 ret.add(OpExecAction.builder()
                         .output(opStateEdge.getValue().getResult())
                         .opState(opStateEdge.getValue())

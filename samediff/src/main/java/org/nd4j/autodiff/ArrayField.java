@@ -732,7 +732,7 @@ public class ArrayField implements Field<ArrayField> {
                 .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
                 .opType(OpState.OpType.TRANSFORM).build();
         xToZ.setResult(resultInfo);
-        this.ops.addEdge(vertex.getIdx(),
+        this.ops.addEdge(vertex.vertexID(),
                 newVertex.vertexID(),xToZ,true);
         //map y -> z
         OpState yToZ = OpState.builder()
@@ -742,7 +742,7 @@ public class ArrayField implements Field<ArrayField> {
                 .vertexIds(new String[]{String.valueOf(i_v.getVertex().vertexID()),String.valueOf(newVertex.vertexID())})
                 .opType(OpState.OpType.TRANSFORM).build();
         yToZ.setResult(resultInfo);
-        this.ops.addEdge(i_v.getVertex().getIdx(),
+        this.ops.addEdge(i_v.getVertex().vertexID(),
                 newVertex.vertexID(),yToZ,true);
         resultInfo.setOwner(yToZ);
         return new ArrayField(newVertex,ops);
@@ -797,7 +797,7 @@ public class ArrayField implements Field<ArrayField> {
         this.getOps().addVertex(newVertex);
 
         //map x -> z
-        this.ops.addEdge(vertex.getIdx(),
+        this.ops.addEdge(vertex.vertexID(),
                 newVertex.vertexID(),OpState.builder()
                         .n(ArrayUtil.prod(input.getShape()))
                         .opName(name).extraArgs(extraArgs).axes(axes).result(newVertex.getValue())

@@ -127,13 +127,13 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> add(DifferentialFunction<X> i_v) {
-        X ret = i_v.getValue(true).add(getValue(true));
+        X ret = i_v.getValue(false).add(getValue(false));
         return new Constant<>(graph, ret, i_v.getResultShape(), (AbstractIdentityFactory<X>) graph.getSameDiff().getArrayFactory());
     }
 
     @Override
     public DifferentialFunction<X> mul(DifferentialFunction<X> i_v) {
-        X ret = i_v.getValue(true).mul(getValue(true));
+        X ret = i_v.getValue(false).mul(getValue(false));
         return new Constant<>(graph, ret, i_v.getResultShape(), (AbstractIdentityFactory<X>) graph.getSameDiff().getArrayFactory());
     }
 
