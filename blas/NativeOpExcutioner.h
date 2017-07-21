@@ -777,6 +777,11 @@ public:
         sortCooIndicesGeneric<T>(indices, values, length, rank);
     }
 
+
+    static void encodeBitmap(T *dx, Nd4jIndex N, int *dz, float threshold) {
+        encodeBitmapGeneric<T>(dx, N, dz, threshold);
+    }
+
 };
 
 

@@ -519,4 +519,26 @@ void sortTadGeneric(T *x, int *xShapeInfo, int *dimension, int dimensionLength, 
     }
 }
 
+template<typename T>
+void encodeBitmapGeneric(T *dx, Nd4jIndex N, int *dest, float threshold) {
+
+    for(int e = 0; e < length; e++) {
+        T val = source[e];
+        T abs = nd4j::math::nd4j_abs<T>(val);
+        int byteId = e / 16;
+        int bitId = e % 16;
+        //printf("Element: [%i]; Byte: [%i]; Bit: [%i]\n", e, byteId, bitId);
+        if (abs >= threshold) {
+            target[byteId] |= 1 << (bitId + 1);
+
+            if (val < 0.0) {
+                target[byteId] |= 1 << (bitId + 16 + 1);
+                source[e] += threshold;
+            } else {
+                source[e] -= threshold;
+            }
+        }
+    }
+}
+
 #endif //LIBND4J_CONCAT_H

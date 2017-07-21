@@ -2881,6 +2881,7 @@ public:
     void tearHalf(Nd4jPointer *extraPointers, float16 *x, int *xShapeInfo, Nd4jPointer *targets, int *zShapeInfo, int *tadShapeInfo, int *tadOffsets);
 
 
+    void encodeBitmapFloat(Nd4jPointer *extraPointers, float *dx, Nd4jIndex N, int *dz, float threshold);
 
 
     void encodeThresholdP1Double(Nd4jPointer *extraPointers, double *dx, Nd4jIndex N, int *dz, float threshold);

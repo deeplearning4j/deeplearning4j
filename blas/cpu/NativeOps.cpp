@@ -3006,3 +3006,7 @@ void NativeOps::sortCooIndicesDouble(Nd4jPointer *extraPointers, int *indices, d
 void NativeOps::sortCooIndicesHalf(Nd4jPointer *extraPointers, int *indices, float16 *values, Nd4jIndex length, int rank) {
  //   NativeOpExcutioner<float>::execSortCooIndices(indices, values, length, rank);
 }
+
+void NativeOps::encodeBitmapFloat(Nd4jPointer *extraPointers, float *dx, Nd4jIndex N, int *dz, float threshold) {
+    NativeOpExcutioner<float>::encodeBitmap(dx, N, dz, threshold);
+}
