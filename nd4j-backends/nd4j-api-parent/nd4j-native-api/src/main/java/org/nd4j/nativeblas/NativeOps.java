@@ -1500,7 +1500,7 @@ public abstract class NativeOps extends Pointer {
     public abstract void tearHalf(PointerPointer extras, @Cast("float16*") ShortPointer tensor, IntPointer xShapeInfo, PointerPointer targets, IntPointer zShapeInfo, IntPointer tadShapeInfo, IntPointer tadOffsets);
 
 
-    public abstract void encodeBitmapFloat(PointerPointer extraPointers, FloatPointer dx, long N, IntPointer dz, float threshold);
+    public abstract long encodeBitmapFloat(PointerPointer extraPointers, FloatPointer dx, long N, IntPointer dz, float threshold);
 
     public abstract void decodeBitmapFloat(PointerPointer extraPointers, Pointer dx, long N, FloatPointer dz);
 

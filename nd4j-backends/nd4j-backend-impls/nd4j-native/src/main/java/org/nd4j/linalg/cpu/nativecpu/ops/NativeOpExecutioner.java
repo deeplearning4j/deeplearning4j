@@ -1395,7 +1395,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public INDArray bitmapDecode(INDArray encoded, INDArray target) {
 
 
-        if (encoded.data().dataType() == DataBuffer.Type.FLOAT) {
+        if (target.data().dataType() == DataBuffer.Type.FLOAT) {
             loop.decodeBitmapFloat(null, encoded.data().addressPointer(), target.length(), (FloatPointer) target.data().addressPointer());
         }
 

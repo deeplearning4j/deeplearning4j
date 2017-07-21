@@ -4913,9 +4913,9 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native void tearHalf(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("float16*") short[] x, int[] xShapeInfo, @Cast("Nd4jPointer*") PointerPointer targets, int[] zShapeInfo, int[] tadShapeInfo, int[] tadOffsets);
 
 
-    public native void encodeBitmapFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatPointer dx, @Cast("Nd4jIndex") long N, IntPointer dz, float threshold);
-    public native void encodeBitmapFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatBuffer dx, @Cast("Nd4jIndex") long N, IntBuffer dz, float threshold);
-    public native void encodeBitmapFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, float[] dx, @Cast("Nd4jIndex") long N, int[] dz, float threshold);
+    public native @Cast("Nd4jIndex") long encodeBitmapFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatPointer dx, @Cast("Nd4jIndex") long N, IntPointer dz, float threshold);
+    public native @Cast("Nd4jIndex") long encodeBitmapFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, FloatBuffer dx, @Cast("Nd4jIndex") long N, IntBuffer dz, float threshold);
+    public native @Cast("Nd4jIndex") long encodeBitmapFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, float[] dx, @Cast("Nd4jIndex") long N, int[] dz, float threshold);
 
     public native void decodeBitmapFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jIndex") long N, FloatPointer dz);
     public native void decodeBitmapFloat(@Cast("Nd4jPointer*") PointerPointer extraPointers, Pointer dx, @Cast("Nd4jIndex") long N, FloatBuffer dz);
