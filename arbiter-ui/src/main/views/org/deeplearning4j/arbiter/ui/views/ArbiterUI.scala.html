@@ -161,14 +161,15 @@
     <body class="bgcolor">
 
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+        <link rel="stylesheet" href="/assets/css/arbiter/bootstrap.min.css">
 
-        <script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
-        <link rel="stylesheet" href="//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
-        <script src="//code.jquery.com/jquery-1.10.2.js"></script>
-        <script src="//code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
-        <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+        @*<script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>*@
+        <script src="/assets/js/jquery-1.9.1.min.js"></script>
+        <link rel="stylesheet" href="/assets/css/arbiter/jquery-ui.css">
+        <script src="/assets/js/arbiter/jquery-1.10.2.js"></script>
+        <script src="/assets/js/arbiter/jquery-ui.js"></script>
+        <script src="/assets/js/arbiter/d3.min.js"></script>
+        <script src="/assets/js/arbiter/bootstrap.min.js"></script>
         <script src="/assets/dl4j-ui.js"></script>
 
         <script>
@@ -407,7 +408,7 @@
             var dashIdx = id.indexOf("-");
             var candidateID = Number(id.substring(dashIdx+1));
 
-            console.log("Clicked row: " + this.id + " with class: " + this.className + ", candidateId = " + candidateID);
+//            console.log("Clicked row: " + this.id + " with class: " + this.className + ", candidateId = " + candidateID);
 
             if(this.className == "resultTableRow"){
                 //Set selected model
