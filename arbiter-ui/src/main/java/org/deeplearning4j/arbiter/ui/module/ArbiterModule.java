@@ -436,13 +436,28 @@ public class ArbiterModule implements UIModule {
             }
          */
 
-        String[][] temp = new String[][]{
-                {"0", "1.0", "Status 0"},
-                {"1", "2.0", "Status 1"}
+        StatsStorage ss = knownSessionIDs.get(currentSessionID);
+        if(ss == null){
+            log.warn("getSummaryResults(): Session ID is unknown: {}", currentSessionID);
+            return ok();
+        }
 
-        };
+        List<Persistable> allModelInfoTemp = new ArrayList<>(ss.getLatestUpdateAllWorkers(currentSessionID, ARBITER_UI_TYPE_ID));
+        List<String[]> table = new ArrayList<>();
+        for(Persistable per : allModelInfoTemp){
+            ModelInfoPersistable mip = (ModelInfoPersistable)per;
+            String score = (mip.getScore() == null ? "" : mip.getScore().toString());
+            table.add(new String[]{mip.getModelIdx().toString(), score, mip.getStatus().toString()});
+        }
 
-        return ok(asJson(temp)).as(JSON);
+
+//        String[][] temp = new String[][]{
+//                {"0", "1.0", "Status 0"},
+//                {"1", "2.0", "Status 1"}
+//
+//        };
+
+        return ok(asJson(table)).as(JSON);
     }
 
     private Result getSummaryStatus(){
@@ -498,7 +513,7 @@ public class ArbiterModule implements UIModule {
         //TODO: I18N
 
         //TODO don't use currentTimeMillis due to stored data
-        long bestTime = execStartTime;
+        long bestTime;
         Double bestScore = null;
         String bestModelString = null;
         if(chartsAndBest.getSecond() != null){
@@ -612,11 +627,11 @@ public class ArbiterModule implements UIModule {
                 bestY.stream().mapToDouble(s -> s).max().orElse(0),bestY.stream().mapToDouble(s -> s).min().orElse(0), 5
         );
 
-        System.out.println("Orig worst/best: " + worstScore + ", " + bestScore);
-        System.out.println("Nice graph range: " + Arrays.toString(scatterGraphMinMax));
+//        System.out.println("Orig worst/best: " + worstScore + ", " + bestScore);
+//        System.out.println("Nice graph range: " + Arrays.toString(scatterGraphMinMax));
 
         if(bestX.size() > 0) {
-            bestX.add((double) lastTime);
+            bestX.add(lastTime);
             bestY.add(bestY.get(bestY.size() - 1));
         }
 

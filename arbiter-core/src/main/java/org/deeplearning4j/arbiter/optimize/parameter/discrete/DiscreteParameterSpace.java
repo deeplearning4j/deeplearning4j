@@ -34,6 +34,7 @@ import java.util.*;
 @JsonIgnoreProperties("index")
 @EqualsAndHashCode
 public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
+
     @JsonSerialize
     private List<P> values;
     private int index = -1;
@@ -97,9 +98,37 @@ public class DiscreteParameterSpace<P> implements ParameterSpace<P> {
         sb.append("DiscreteParameterSpace(");
         int n = values.size();
         for (int i = 0; i < n; i++) {
-            sb.append(values.get(i));
+            P value = values.get(i);
+            sb.append(valueToString(value));
             sb.append((i == n - 1 ? ")" : ","));
         }
         return sb.toString();
+    }
+
+    private String valueToString(P v){
+        if (v.getClass().isArray() ) {
+            if(v.getClass().getComponentType().isPrimitive()){
+                Class<?> c = v.getClass().getComponentType();
+                if (c == int.class) {
+                    return Arrays.toString((int[]) v);
+                } else if (c == double.class) {
+                    return Arrays.toString((double[]) v);
+                } else if (c == float.class) {
+                    return Arrays.toString((float[]) v);
+                } else if (c == long.class){
+                    return Arrays.toString((long[]) v);
+                } else if (c == byte.class) {
+                    return Arrays.toString((byte[]) v);
+                } else if (c == short.class){
+                    return Arrays.toString((short[]) v);
+                } else {
+                    return v.toString();
+                }
+            } else {
+                return Arrays.toString((Object[])v);
+            }
+        } else {
+            return v.toString();
+        }
     }
 }
