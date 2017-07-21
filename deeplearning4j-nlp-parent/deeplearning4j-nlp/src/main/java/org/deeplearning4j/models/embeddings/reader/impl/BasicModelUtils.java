@@ -199,7 +199,7 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
         List<String> realResults = new ArrayList<>();
 
         for (String word : tempRes) {
-            if (!positive.contains(word) && !negative.contains(negative) && realResults.size() < top)
+            if (!positive.contains(word) && !negative.contains(word) && realResults.size() < top)
                 realResults.add(word);
         }
 
