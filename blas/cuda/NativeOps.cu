@@ -6696,7 +6696,17 @@ void NativeOps::sortCooIndicesHalf(Nd4jPointer *extraPointers, int *indices, flo
 
 
 Nd4jIndex NativeOps::encodeBitmapFloat(Nd4jPointer *extraPointers, float *dx, Nd4jIndex N, int *dz, float threshold) {
-    return 0L;
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+
+    int *resultPointer = reinterpret_cast<int *>(extraPointers[2]);
+    int *reductionPointer = reinterpret_cast<int *>(extraPointers[3]);
+
+    cudaEncodeBitmapFloat<<<512, 512, 512 * 2 * sizeof(float), *stream>>>(dx, N, dz, resultPointer, reductionPointer, threshold);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+
+    return (Nd4jIndex) resultPointer[0];
 }
 
 void NativeOps::decodeBitmapFloat(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float *dz) {

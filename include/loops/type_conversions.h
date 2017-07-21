@@ -364,6 +364,68 @@ __device__ inline void decoderKernelGeneric(void *dx, Nd4jIndex N, void *dz) {
     }
 }
 
+template<typename T>
+__device__ inline void cudaDecodeBitmapGeneric(void *dx, Nd4jIndex N, T *dz) {
+
+}
+
+
+template<typename T>
+__device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    __shared__ T *shmem;
+    if (threadIdx.x == 0){
+        extern __shared__ char mem[];
+        shmem = (T*) mem;
+    }
+    __syncthreads();
+
+    for (int i = tid; i < N; i += blockDim.x * gridDim.x) {
+        // all threads in block reading stuff
+        shmem[threadIdx.x] = dx[i];
+        shmem[threadIdx.x + blockDim.x] = nd4j::math::nd4j_abs<T>(shmem[threadIdx.x]);
+        __syncthreads();
+
+        // but only 1 thread in sub-warp writes encoded values
+        if (threadIdx.x % 16 == 0) {
+            int byteId = i / 16 + 4;
+            int byte = 0;
+
+            for (int e = 0; e < 16; e++) {
+                int bitId = (i + e) % 16;
+                if (shmem[threadIdx.x + e + blockDim.x] >= threshold) {
+                    byte |= 1 << (bitId + 1);
+
+                    if (shmem[threadIdx.x + e] < (T) 0.0f) {
+                        byte |= 1 << (bitId + 16 + 1);
+                    }
+
+                    shmem[threadIdx.x + e + blockDim.x] = 0.0;
+                } else if (shmem[threadIdx.x + e + blockDim.x] >= threshold / 2 && shmem[threadIdx.x + e] < (T) 0.0f) {
+                    byte |= 1 << (bitId + 16 + 1);
+                }
+            }
+
+            dz[byteId] = byte;
+        }
+        __syncthreads();
+
+        if (shmem[threadIdx.x + blockDim.x] == (T) 0.0f && shmem[threadIdx.x] != (T) 0.0f) {
+            if (shmem[threadIdx.x] < 0.0) {
+                dx[i] = shmem[threadIdx.x] - threshold;
+            } else {
+                dx[i] = shmem[threadIdx.x] + threshold;
+            }
+        }
+
+    }
+}
+
+extern "C" __global__ void cudaEncodeBitmapFloat(float *dx, Nd4jIndex N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
+    cudaEncodeBitmapGeneric<float>(dx, N, dz, scalar, reductionBuffer, threshold);
+}
+
 
 extern "C" __global__ void encoderKernelP1Float(void *dx, Nd4jIndex N, void *dz, float threshold) {
     encoderKernelP1Generic<float>(dx, N, dz, threshold);

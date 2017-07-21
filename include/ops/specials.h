@@ -589,6 +589,7 @@ Nd4jIndex encodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, float threshold) {
                 }
             } else if (abs >= threshold / 2 && val < (T) 0.0f) {
                 dz[byteId] |= 1 << (bitId + 16 + 1);
+                dx[e] += threshold / 2;
             }
         }
     }
