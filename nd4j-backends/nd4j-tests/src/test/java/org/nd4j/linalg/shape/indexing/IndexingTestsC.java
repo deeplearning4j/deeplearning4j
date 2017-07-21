@@ -1,6 +1,9 @@
 package org.nd4j.linalg.shape.indexing;
 
+import lombok.extern.slf4j.Slf4j;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ErrorCollector;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -17,8 +20,11 @@ import static org.junit.Assert.*;
 /**
  * @author Adam Gibson
  */
+@Slf4j
 @RunWith(Parameterized.class)
 public class IndexingTestsC extends BaseNd4jTest {
+    @Rule
+    public ErrorCollector collector = new ErrorCollector();
 
     public IndexingTestsC(Nd4jBackend backend) {
         super(backend);
@@ -245,6 +251,34 @@ public class IndexingTestsC extends BaseNd4jTest {
         assertEquals("View with two get",expected,viewTwo);
         assertEquals("View with one get",expected,viewOne); //FAILS!
         assertEquals("Two views should be the same",viewOne,viewTwo); //obviously fails
+    }
+
+    @Test
+    public void testPointIndexing() {
+        int slices = 5;
+        int rows = 5;
+        int cols = 5;
+        int l = slices * rows * cols;
+        INDArray A = Nd4j.linspace(1, l, l).reshape(slices, rows, cols);
+
+        for (int s = 0; s < slices; s++) {
+            INDArrayIndex ndi_Slice = NDArrayIndex.point(s);
+            for (int i = 0; i < rows; i++) {
+                for (int j = 0; j < cols; j++) {
+                    log.info("Running for ( {}, {} - {} , {} - {} )", s, i, rows, j, cols);
+                    INDArrayIndex ndi_I = NDArrayIndex.interval(i, rows);
+                    INDArrayIndex ndi_J = NDArrayIndex.interval(j, cols);
+                    INDArray aView = A.get(ndi_Slice).get(ndi_I, ndi_J);
+                    INDArray sameView = A.get(ndi_Slice, ndi_I, ndi_J);
+                    String failureMessage = String.format("Fails for (%d , %d - %d, %d - %d)\n", s, i, rows, j, cols);
+                    try {
+                        assertEquals(failureMessage, aView, sameView);
+                    } catch (Throwable t) {
+                        collector.addError(t);
+                    }
+                }
+            }
+        }
     }
 
     @Override
