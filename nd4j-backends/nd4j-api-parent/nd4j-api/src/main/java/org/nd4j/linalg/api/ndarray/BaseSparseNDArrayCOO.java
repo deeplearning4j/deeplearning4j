@@ -165,8 +165,8 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     @Override
     public INDArray assign(final INDArray arr) {
         if(!isSorted){
-            // sort -> this should be done before every op or get
-            // isSorted = true;
+            Nd4j.sparseFactory().sortCooIndices(this);
+            isSorted = true;
         }
         // TODO - set via native op
         return this;
@@ -178,28 +178,33 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * @return the original indexes
      * */
     public int[] translateToPhysical(int[] virtualIndexes) {
+
         int[] physicalIndexes = new int[underlyingRank()];
-        int currentIdx = 0;
+        int idxPhy = 0;
         int hidden = 0;
-        int nonfixed = 0;
-        /*
-        If the dimension varies, we take the index from indexes,
-        but if the dimension is flags, then we take its fixes value from the offsets
-        */
-        for(int i =  0; i < underlyingRank() + getNumHiddenDimension(); i++){
-            if(hidden < getNumHiddenDimension() && hiddenDimensions()[hidden] == i){
-                //ignore the dimension
+
+        for(int idxVir = 0; idxVir < virtualIndexes.length; idxVir++){
+            if(hidden < getNumHiddenDimension() && hiddenDimensions()[hidden] == idxVir){
                 hidden++;
-            }else if(!isDimensionFixed(currentIdx)){
-                physicalIndexes[currentIdx] = virtualIndexes[nonfixed] + sparseOffsets()[i];
-                currentIdx++;
-                nonfixed++;
             } else {
-                physicalIndexes[currentIdx] = sparseOffsets()[currentIdx];
+                while (idxPhy < underlyingRank() && isDimensionFixed(idxPhy)) {
+                    physicalIndexes[idxPhy] = sparseOffsets()[idxPhy];
+                    idxPhy++;
+                }
+                if(idxPhy < underlyingRank() && !isDimensionFixed(idxPhy)){
+                    physicalIndexes[idxPhy] = sparseOffsets()[idxPhy] + virtualIndexes[idxVir];
+                    idxPhy++;
+                }
             }
+
+
+                /*if(idxPhy < underlyingRank() && !isDimensionFixed(idxPhy)){
+                    physicalIndexes[idxPhy] = sparseOffsets()[idxPhy] + virtualIndexes[idxVir];
+                    idxPhy++;
+                }*/
+
         }
         return physicalIndexes;
-
     }
     /**
      * Return if a given dimension is flags in the view.
@@ -281,7 +286,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
             return assign(toPut);
         }
         return put(new INDArrayIndex[] {NDArrayIndex.point(row), NDArrayIndex.all()}, toPut);
-
     }
 
     @Override
@@ -346,6 +350,11 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return putScalar(i, element.getDouble(0));
     }
 
+    /**
+     * Add a new element in the ndarray or update the value if there is already a non-null element at this position
+     * @param indexes the indexes of the element to be added
+     * @param value the value of the element to be added
+     * */
     public void addOrUpdate(int[] indexes, double value) {
         // TODO - can an original array have offsets ??
         int[] physicalIndexes = isView() ? translateToPhysical(indexes) : indexes;
@@ -383,8 +392,15 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
             indices.put(length * rank() + i, physicalIndexes[i]);
         }
         length++;
+        isSorted = false;
     }
 
+    /**
+     * Return if there is enough allocated memory space to add data of a given length in the databuffer
+     * @param buffer a databuffer in which we want to add data
+     * @param length the length of the data
+     * @return a boolean if the insertion is possible
+     * */
     public boolean canInsert(DataBuffer buffer, int length){
         return buffer.capacity() - buffer.length() >= length;
     }
@@ -396,6 +412,11 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return buffer;
     }
 
+    /**
+     * Remove an element of the ndarray
+     * @param idx the index of the element to be removed
+     * @return the ndarray
+     * */
     public INDArray removeEntry(int idx){
         values = shiftLeft(values, idx + 1, 1, length());
         indices = shiftLeft(indices, (int)(idx * shape.length() + shape.length()), (int) shape.length(), indices.length());
@@ -437,8 +458,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         for (int i = 0; i < indexes.length; i++)
             if (indexes[i] instanceof SpecifiedIndex)
                 numSpecifiedIndex++;
-
-        // TODO Is it possible to use specified indexes with newAxis ?!
 
         if (shape != null && numSpecifiedIndex > 0) {
             Generator<List<List<Integer>>> gen = SpecifiedIndex.iterateOverSparse(indexes);
