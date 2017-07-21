@@ -29,13 +29,13 @@ import org.deeplearning4j.ui.components.table.ComponentTable;
 import org.deeplearning4j.ui.components.table.style.StyleTable;
 import org.deeplearning4j.ui.components.text.ComponentText;
 import org.deeplearning4j.ui.components.text.style.StyleText;
-import org.deeplearning4j.ui.play.PlayUIServer;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import play.libs.Json;
 import play.mvc.Result;
 
 import java.awt.*;
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,6 +49,7 @@ import static play.mvc.Results.ok;
 @Slf4j
 public class ArbiterModule implements UIModule {
 
+    private static final DecimalFormat DECIMAL_FORMAT_2DP = new DecimalFormat("#.00");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm ZZ");
     public static final String ARBITER_UI_TYPE_ID = "ArbiterUI";
 
@@ -84,18 +85,28 @@ public class ArbiterModule implements UIModule {
             .width(100,LengthUnit.Percent)
             .height(20, LengthUnit.Px).build());
 
-    private static final StyleChart STYLE_CHART = new StyleChart.Builder()
+    private static final ComponentDiv DIV_SPACER_60PX = new ComponentDiv(new StyleDiv.Builder()
+            .width(100,LengthUnit.Percent)
+            .height(60, LengthUnit.Px).build());
+
+    private static final StyleChart STYLE_CHART_650_350 = new StyleChart.Builder()
             .width(650, LengthUnit.Px)
             .height(350, LengthUnit.Px)
             .build();
+
+    private static final StyleChart STYLE_CHART_800_400 = new StyleChart.Builder()
+            .width(800, LengthUnit.Px)
+            .height(400, LengthUnit.Px)
+            .build();
+
 
     private StyleText STYLE_TEXT_SZ12 = new StyleText.Builder()
             .fontSize(12)
             .build();
 
     //Set whitespacePre(true) to avoid losing new lines, tabs, multiple spaces etc
-    private StyleText STYLE_TEXT_SZ12_WHITESPACE_PRE = new StyleText.Builder()
-            .fontSize(12)
+    private StyleText STYLE_TEXT_SZ10_WHITESPACE_PRE = new StyleText.Builder()
+            .fontSize(10)
             .whitespacePre(true)
             .build();
 
@@ -331,7 +342,7 @@ public class ArbiterModule implements UIModule {
         //First: static info
         // Hyperparameter configuration/settings
         // Number of parameters
-        // Maybe memory info
+        // Maybe memory info in the future?
 
         //Second: dynamic info
         //Runtime
@@ -341,17 +352,24 @@ public class ArbiterModule implements UIModule {
         List<Component> components = new ArrayList<>();
 
         //First table: mix of static + dynamic
-        long runtimeDuration = mip.getLastUpdateTime() - mip.getTimeStamp();
-        String runtimeStr = UIUtils.formatDuration(runtimeDuration);
+        long runtimeDurationMs = mip.getLastUpdateTime() - mip.getTimeStamp();
+        double avgMinibatchesPerSec = mip.getTotalNumUpdates() / (runtimeDurationMs/1000.0);
+
+        String runtimeStr = UIUtils.formatDuration(runtimeDurationMs);
         String[][] table = new String[][]{
-                {"Runtime", runtimeStr},
+                {"Model Index", String.valueOf(mip.getModelIdx())},
+                {"Status", mip.getStatus().toString()},
                 {"Created", TIME_FORMATTER.print(mip.getTimeStamp())},
+                {"Runtime", runtimeStr},
+                {"Total Number of Model Updates", String.valueOf(mip.getTotalNumUpdates())},
+                {"Average # Updates / Sec", DECIMAL_FORMAT_2DP.format(avgMinibatchesPerSec)},
                 {"Number of Parameters", String.valueOf(mip.getNumParameters())},
                 {"Number of Layers", String.valueOf(mip.getNumLayers())}
         };
 
         ComponentTable cTable = new ComponentTable.Builder(STYLE_TABLE)
                 .content(table)
+                .header("Model Information", "")
                 .build();
         components.add(cTable);
 
@@ -419,10 +437,6 @@ public class ArbiterModule implements UIModule {
         }
 
 
-
-        String title = "Results for candidate " + candidateId + " goes here!";
-        ComponentText ct = new ComponentText.Builder(title,STYLE_TEXT_SZ12).build();
-
         int[] iters = mip.getIter();
         float[] scores = mip.getScoreVsIter();
 
@@ -441,19 +455,23 @@ public class ArbiterModule implements UIModule {
 
             double[] chartMinMax = UIUtils.niceRange(maxScore, minScore, 5);
 
-            ChartLine cl = new ChartLine.Builder("Score vs. Iteration", STYLE_CHART)
+            ChartLine cl = new ChartLine.Builder("Model Score vs. Iteration", STYLE_CHART_800_400)
                     .addSeries("Score", si, scoresD )
                     .setYMin(chartMinMax[0])
                     .setYMax(chartMinMax[1])
                     .build();
+
+            components.add(DIV_SPACER_60PX);
             components.add(cl);
         }
 
 
         //Finally: post full network configuration
+        components.add(DIV_SPACER_60PX);
+        components.add(new ComponentDiv(STYLE_DIV_WIDTH_100_PC, new ComponentText("Model Configuration", STYLE_TEXT_SZ12)));
         String modelJson = mip.getModelConfigJson();
         if(modelJson != null){
-            ComponentText jsonText = new ComponentText(modelJson, STYLE_TEXT_SZ12_WHITESPACE_PRE);
+            ComponentText jsonText = new ComponentText(modelJson, STYLE_TEXT_SZ10_WHITESPACE_PRE);
             ComponentDiv cd = new ComponentDiv(STYLE_DIV_WIDTH_100_PC, jsonText);
             components.add(cd);
         }
@@ -764,14 +782,14 @@ public class ArbiterModule implements UIModule {
 
         List<Component> components = new ArrayList<>(2);
 
-        ChartLine cl = new ChartLine.Builder("Best Model Score vs. Time (Minutes)", STYLE_CHART)
+        ChartLine cl = new ChartLine.Builder("Best Model Score vs. Time (Minutes)", STYLE_CHART_650_350)
                 .addSeries("Best Score vs. Time", bestXd, bestYd)
                 .setYMin(lineGraphMinMax[0])
                 .setYMax(lineGraphMinMax[1])
                 .build();
         components.add(cl);
 
-        ChartScatter cs = new ChartScatter.Builder("All Candidate Scores vs. Time (Minutes)", STYLE_CHART)
+        ChartScatter cs = new ChartScatter.Builder("All Candidate Scores vs. Time (Minutes)", STYLE_CHART_650_350)
                 .addSeries("Candidates", allX, allY)
                 .setYMin(scatterGraphMinMax[0])
                 .setYMax(scatterGraphMinMax[1])

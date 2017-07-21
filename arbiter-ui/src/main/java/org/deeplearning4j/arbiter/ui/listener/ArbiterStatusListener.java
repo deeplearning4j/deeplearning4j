@@ -100,22 +100,26 @@ public class ArbiterStatusListener implements StatusListener {
         long numParams;
         int numLayers;
         String modelConfigJson;
+        int totalNumUpdates;
         if(candidate instanceof MultiLayerNetwork){
             MultiLayerNetwork m = (MultiLayerNetwork)candidate;
             score = m.score();
             numParams = m.numParams();
             numLayers = m.getnLayers();
             modelConfigJson = m.getLayerWiseConfigurations().toJson();
+            totalNumUpdates = m.getLayerWiseConfigurations().getIterationCount();
         } else if(candidate instanceof ComputationGraph) {
             ComputationGraph cg = (ComputationGraph)candidate;
             score = cg.score();
             numParams = cg.numParams();
             numLayers = cg.getNumLayers();
             modelConfigJson = cg.getConfiguration().toJson();
+            totalNumUpdates = cg.getConfiguration().getIterationCount();
         } else {
             score = 0;
             numParams = 0;
             numLayers = 0;
+            totalNumUpdates = 0;
             modelConfigJson = "";
         }
 
@@ -150,6 +154,7 @@ public class ArbiterStatusListener implements StatusListener {
                 .lastUpdateTime(System.currentTimeMillis())
                 .numParameters(numParams)
                 .numLayers(numLayers)
+                .totalNumUpdates(totalNumUpdates)
                 .paramSpaceValues(candidateInfo.getFlatParams())
                 .modelConfigJson(modelConfigJson)
                 .build();

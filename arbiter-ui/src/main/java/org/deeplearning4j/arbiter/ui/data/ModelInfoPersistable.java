@@ -17,6 +17,7 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
     private long numParameters;
     private int numLayers;
     private double[] paramSpaceValues;
+    private int totalNumUpdates;
 
     private int[] iter;
     private float[] scoreVsIter;
@@ -42,6 +43,7 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
         this.numLayers = builder.numLayers;
         this.paramSpaceValues = builder.paramSpaceValues;
         this.modelConfigJson = builder.modelConfigJson;
+        this.totalNumUpdates = builder.totalNumUpdates;
     }
 
     @Override
@@ -59,6 +61,7 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
         private long lastUpdateTime;;
         private long numParameters;
         private int numLayers;
+        private int totalNumUpdates;
         private double[] paramSpaceValues;
         private int[] iter;
         private float[] scoreVsIter;
@@ -102,6 +105,11 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
 
         public Builder numLayers(int numLayers){
             this.numLayers = numLayers;
+            return this;
+        }
+
+        public Builder totalNumUpdates(int totalNumUpdates){
+            this.totalNumUpdates = totalNumUpdates;
             return this;
         }
 
