@@ -519,26 +519,81 @@ void sortTadGeneric(T *x, int *xShapeInfo, int *dimension, int dimensionLength, 
     }
 }
 
+//FIXME: get rid of this redefinition
+typedef union
+{
+    float f_;
+    int   i_;
+} FloatBits2;
+
+
 template<typename T>
-void encodeBitmapGeneric(T *dx, Nd4jIndex N, int *dest, float threshold) {
+void decodeBitmapGeneric(void *dx, Nd4jIndex N, T *dz) {
+    int *x = (int *) dx;
+    int lim = N / 16 + 5;
 
-    for(int e = 0; e < length; e++) {
-        T val = source[e];
-        T abs = nd4j::math::nd4j_abs<T>(val);
-        int byteId = e / 16;
-        int bitId = e % 16;
-        //printf("Element: [%i]; Byte: [%i]; Bit: [%i]\n", e, byteId, bitId);
-        if (abs >= threshold) {
-            target[byteId] |= 1 << (bitId + 1);
+    FloatBits2 fb;
+    fb.i_ = x[2];
+    float threshold = fb.f_;
 
-            if (val < 0.0) {
-                target[byteId] |= 1 << (bitId + 16 + 1);
-                source[e] += threshold;
-            } else {
-                source[e] -= threshold;
+
+#pragma omp parallel for schedule(guided) proc_bind(close)
+    for (int e = 4; e < lim; e++) {
+
+        for (int bitId = 0; bitId < 16; bitId++) {
+            bool hasBit = (x[e] & 1 << (bitId + 1) ) != 0;
+            bool hasSign = (x[e] & 1 << (bitId + 16 + 1) ) != 0;
+
+            if (hasBit) {
+                if (hasSign)
+                    dz[(e - 4) * 16 + bitId] -= threshold;
+                else
+                    dz[(e - 4) * 16 + bitId] += threshold;
+            } else if (hasSign) {
+                dz[(e - 4) * 16 + bitId] -= threshold / 2;
             }
         }
     }
+}
+
+template<typename T>
+Nd4jIndex encodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, float threshold) {
+    Nd4jIndex retVal = 0L;
+
+#pragma omp parallel for schedule(guided) proc_bind(close)
+    for (int x = 0; x < N; x += 16) {
+        for (int f = 0; f < 16; f++) {
+            int e = x + f;
+
+            if (e >= N)
+                continue;
+
+            T val = dx[e];
+            T abs = nd4j::math::nd4j_abs<T>(val);
+            int byteId = e / 16 + 4;
+            int bitId = e % 16;
+
+            if (abs >= threshold) {
+#pragma omp critical
+                {
+                    retVal++;
+                }
+
+                dz[byteId] |= 1 << (bitId + 1);
+
+                if (val < 0.0) {
+                    dz[byteId] |= 1 << (bitId + 16 + 1);
+                    dx[e] += threshold;
+                } else {
+                    dx[e] -= threshold;
+                }
+            } else if (abs >= threshold / 2 && val < (T) 0.0f) {
+                dz[byteId] |= 1 << (bitId + 16 + 1);
+            }
+        }
+    }
+
+    return retVal;
 }
 
 #endif //LIBND4J_CONCAT_H

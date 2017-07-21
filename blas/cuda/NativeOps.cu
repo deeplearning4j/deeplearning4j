@@ -6695,7 +6695,10 @@ void NativeOps::sortCooIndicesHalf(Nd4jPointer *extraPointers, int *indices, flo
 }
 
 
-void NativeOps::encodeBitmapFloat(Nd4jPointer *extraPointers, float *dx, Nd4jIndex N, int *dz, float threshold) {
-
+Nd4jIndex NativeOps::encodeBitmapFloat(Nd4jPointer *extraPointers, float *dx, Nd4jIndex N, int *dz, float threshold) {
+    return 0L;
 }
 
+void NativeOps::decodeBitmapFloat(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float *dz) {
+
+}

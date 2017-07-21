@@ -778,8 +778,12 @@ public:
     }
 
 
-    static void encodeBitmap(T *dx, Nd4jIndex N, int *dz, float threshold) {
-        encodeBitmapGeneric<T>(dx, N, dz, threshold);
+    static Nd4jIndex encodeBitmap(T *dx, Nd4jIndex N, int *dz, float threshold) {
+        return encodeBitmapGeneric<T>(dx, N, dz, threshold);
+    }
+
+    static void decodeBitmap(void *dx, Nd4jIndex N, T *dz) {
+        decodeBitmapGeneric<T>(dx, N, dz);
     }
 
 };

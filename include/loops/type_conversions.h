@@ -324,8 +324,8 @@ __device__ inline void encoderKernelP3Generic(void *dx, int *offsets, Nd4jIndex 
 		__syncthreads();
 
 		if(pred){
-		    int idx = t_u + warpTotals[w_i] + bo + 3;
-		    if (idx < limit + 3) {
+		    int idx = t_u + warpTotals[w_i] + bo + 4;
+		    if (idx < limit + 4) {
 			    z[idx]= value > (T) 0.0f ? tid+1 : -(tid + 1);
 			    x[tid] = value > (T) 0.0f ? x[tid] - threshold : x[tid] + threshold;
 			}
@@ -444,8 +444,8 @@ void convertToThreshold(void *dx, Nd4jIndex N, void *dz) {
     z[1] = (int) N;
 
     // we use 3 as offset, since first 12 bytes are occupied with header
-    int flimit = limit + 3;
-    volatile int cnt = 3;
+    int flimit = limit + 4;
+    volatile int cnt = 4;
     volatile bool flag = false;
 #pragma omp parallel for schedule(guided) default(shared)
     for (int e = 0; e < N;  e++) {
@@ -500,10 +500,10 @@ void convertFromThreshold(void *dx, Nd4jIndex N, void *dz) {
     //memset(z, 0, sizeof(T) * size);
 
     // we use 3 as offset, since first 12 bytes are occupied with header
-    int flimit = limit + 3;
+    int flimit = limit + 4;
 
 #pragma omp parallel for schedule(guided)
-    for (int e = 3; e < flimit; e++) {
+    for (int e = 4; e < flimit; e++) {
         int el = x[e];
         int ael = nd4j::math::nd4j_abs<int>(el) - 1;
         z[ael] += el > 0 ? threshold : -threshold;
