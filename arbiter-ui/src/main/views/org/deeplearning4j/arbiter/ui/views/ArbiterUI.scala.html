@@ -185,7 +185,10 @@
     var selectedCandidateIdx = null;
 
     //Set basic interval function to do updates
-    setInterval(function(){
+    setInterval(doUpdate,5000);    //Loop every 5 seconds
+
+
+    function doUpdate(){
         //Get the update status, and do something with it:
         $.get("/arbiter/lastUpdate",function(data){
             //Encoding: matches names in UpdateStatus class
@@ -254,7 +257,7 @@
                 });
             }
         })
-    },2000);    //Loop every 2 seconds
+    }
 
     function createTable(tableObj,tableId,appendTo){
         //Expect RenderableComponentTable
@@ -401,7 +404,7 @@
         });
     });
 
-    //Displaying model/candidate details: Intercept click events on table rows -> toggle visibility on content rows
+    //Displaying model/candidate details: Intercept click events on table rows -> toggle selected, fire off update
     $(function(){
         $("#resultsTableBody").delegate("tr", "click", function(e){
             var id = this.id;   //Expect: rTbl-X  where X is some index
@@ -414,7 +417,8 @@
                 //Set selected model
                 selectedCandidateIdx = candidateID;
 
-                //TODO fire off update
+                //Fire off update
+                doUpdate();
             }
         });
     });
