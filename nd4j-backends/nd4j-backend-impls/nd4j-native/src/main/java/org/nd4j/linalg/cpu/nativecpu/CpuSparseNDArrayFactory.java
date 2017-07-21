@@ -486,7 +486,7 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
         DataBuffer val = array.getValues();
         DataBuffer idx = array.getIndices();
         long length = val.length();
-        int rank = array.rank();
+        int rank = array.underlyingRank();
         switch(val.dataType()){
             case FLOAT:
                 NativeOpsHolder.getInstance().getDeviceNativeOps().sortCooIndicesFloat(null, (IntPointer) idx.addressPointer(), (FloatPointer) val.addressPointer(), length, rank);

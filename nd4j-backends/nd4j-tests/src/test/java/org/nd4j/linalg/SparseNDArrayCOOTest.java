@@ -405,22 +405,6 @@ public class SparseNDArrayCOOTest {
     }
 
     @Test
-    public void sparseView(){
-        int[] shape = new int[]{4, 2, 3};
-        double[] values = new double[]{1, 2, 3, 4, 5, 6, 7, 8, 9};
-        int[][] indices  = new int[][]{{0, 0, 2}, {0, 1, 1}, {1,0, 0}, {1, 0, 1}, {1, 1, 2},
-                {2, 0, 1}, {2, 1, 2}, {3, 0, 2}, {3, 1, 0}};
-        INDArray original = Nd4j.createSparseCOO(values, indices, shape);
-
-        BaseSparseNDArrayCOO view = (BaseSparseNDArrayCOO) original.get(NDArrayIndex.all(), NDArrayIndex.point(1));
-        assertArrayEquals(new int[]{0, 0}, view.translateToPhysical(new int[]{0, 0}));
-
-        int[] originalIdx = view.translateToPhysical(new int[]{0, 1, 2});
-        int[] exceptedIdx = new int[]{1 ,0, 2};
-        assertArrayEquals(exceptedIdx, originalIdx);
-    }
-
-    @Test
     public void testWithDense(){
         INDArray arr = Nd4j.rand(new int[]{4, 2, 3});
 

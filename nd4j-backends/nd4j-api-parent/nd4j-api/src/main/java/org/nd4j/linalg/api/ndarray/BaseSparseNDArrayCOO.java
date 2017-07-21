@@ -356,7 +356,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * @param value the value of the element to be added
      * */
     public void addOrUpdate(int[] indexes, double value) {
-        // TODO - can an original array have offsets ??
+
         int[] physicalIndexes = isView() ? translateToPhysical(indexes) : indexes;
 
         for(int i = 0; i < length; i++) {
@@ -373,6 +373,11 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
                 }
                 return;
             }
+        }
+
+        // If the value is 0 and there is no existing non-null value at the given index
+        if(value == 0){
+            return;
         }
 
         /* It's a new non-null element. We add the value and the indexes at the end of their respective databuffers.
