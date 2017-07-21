@@ -47,6 +47,7 @@ class ComponentText extends Component implements Renderable {
             if(this.style.getMarginBottom()) newSpan.style.marginBottom = this.style.getMarginBottom() + "px";
             if(this.style.getMarginLeft()) newSpan.style.marginLeft = this.style.getMarginLeft() + "px";
             if(this.style.getMarginRight()) newSpan.style.marginRight = this.style.getMarginRight() + "px";
+            if(this.style.getWhitespacePre()) newSpan.style.whiteSpace = 'pre';
 
             newSpan.appendChild(textNode);
             appendToObject.append(newSpan);
