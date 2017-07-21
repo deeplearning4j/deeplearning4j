@@ -374,15 +374,16 @@ __device__ inline void cudaDecodeBitmapGeneric(void *dx, Nd4jIndex N, T *dz) {
     if (threadIdx.x == 0){
         extern __shared__ char mem[];
         shmem = (T*) mem;
+        x = (int *)dx;
         fb.i_ = x[2];
         threshold = fb.f_;
-        x = (int *)dx;
     }
     __syncthreads();
 
     int lim = N / 16 + 5;
-    for (int i = tid; i < N; i+= blockDim.x * gridDim.x) {
-        int byteId = i / 16 + 5;
+    for (int i = tid; i < N; i += blockDim.x * gridDim.x) {
+        int byteId = i / 16 + 4;
+//        printf("I: [%i]; byteId: [%i]\n", i, byteId);
 
         shmem[threadIdx.x] = dz[i];
         __syncthreads();
@@ -435,7 +436,7 @@ __device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, int 
 
         // but only 1 thread in sub-warp writes encoded values
         if (threadIdx.x % 16 == 0) {
-            int byteId = i / 16 + 5;
+            int byteId = i / 16 + 4;
             int byte = 0;
 
             for (int e = 0; e < 16; e++) {
