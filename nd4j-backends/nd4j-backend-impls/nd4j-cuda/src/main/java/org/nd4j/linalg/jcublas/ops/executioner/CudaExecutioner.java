@@ -2266,16 +2266,84 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         //log.info("DEC Source: {}", Arrays.toString(buffer.asInt()));
 
         if (Nd4j.dataType() == DataBuffer.Type.FLOAT) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().decodeThresholdFloat(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (FloatPointer) AtomicAllocator.getInstance().getPointer(result));
+            nativeOps.decodeThresholdFloat(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (FloatPointer) AtomicAllocator.getInstance().getPointer(result));
         } else if (Nd4j.dataType() == DataBuffer.Type.DOUBLE) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().decodeThresholdDouble(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (DoublePointer) AtomicAllocator.getInstance().getPointer(result));
+            nativeOps.decodeThresholdDouble(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (DoublePointer) AtomicAllocator.getInstance().getPointer(result));
         } else if (Nd4j.dataType() == DataBuffer.Type.HALF) {
-            NativeOpsHolder.getInstance().getDeviceNativeOps().decodeThresholdHalf(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (ShortPointer) AtomicAllocator.getInstance().getPointer(result));
+            nativeOps.decodeThresholdHalf(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, (ShortPointer) AtomicAllocator.getInstance().getPointer(result));
         }
 
         AtomicAllocator.getInstance().getAllocationPoint(result).tickDeviceWrite();
 
+
         //DataBuffer result = Nd4j.getNDArrayFactory().convertDataEx(DataBuffer.TypeEx.THRESHOLD, buffer, getGlobalTypeEx());
+
+        return target;
+    }
+
+
+    @Override
+    public INDArray bitmapEncode(INDArray indArray, double threshold) {
+        long length = indArray.lengthLong();
+
+        DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(length / 16 + 5);
+        buffer.put(0, (int) length);
+        buffer.put(1, (int) length);
+        buffer.put(2, Float.floatToIntBits((float) threshold));
+
+        // format id
+        buffer.put(3, 1);
+
+        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(indArray);
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
+
+        PointerPointer extras = extraz.get().put(
+                AtomicAllocator.getInstance().getHostPointer(indArray),
+                context.getOldStream(),
+                context.getBufferScalar(),
+                context.getBufferReduction()
+        );
+
+        long val;
+        if (indArray.data().dataType() == DataBuffer.Type.FLOAT) {
+            val = nativeOps.encodeBitmapFloat(extras,
+                    (FloatPointer) AtomicAllocator.getInstance().getPointer(indArray, context),
+                    length,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(buffer, context),
+                    (float) threshold
+                    );
+        }
+
+        AtomicAllocator.getInstance().getFlowController().registerAction(context, indArray);
+
+        AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
+
+        return Nd4j.createArrayFromShapeBuffer(buffer, indArray.shapeInfoDataBuffer());
+    }
+
+    @Override
+    public INDArray bitmapDecode(INDArray encoded, INDArray target) {
+
+        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(target);
+
+        if (extraz.get() == null)
+            extraz.set(new PointerPointer(32));
+
+
+        PointerPointer extras = extraz.get().put(
+                AtomicAllocator.getInstance().getHostPointer(target),
+                context.getOldStream(),
+                context.getBufferScalar(),
+                context.getBufferReduction());
+
+        if (target.data().dataType() == DataBuffer.Type.FLOAT) {
+            nativeOps.decodeBitmapFloat(extras, AtomicAllocator.getInstance().getPointer(encoded.data(), context), target.lengthLong(), (FloatPointer) AtomicAllocator.getInstance().getPointer(target, context));
+        }
+
+        AtomicAllocator.getInstance().getFlowController().registerAction(context, target);
 
         return target;
     }

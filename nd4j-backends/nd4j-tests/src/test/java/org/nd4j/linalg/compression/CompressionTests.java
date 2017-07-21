@@ -534,6 +534,8 @@ public class CompressionTests extends BaseNd4jTest {
 
         INDArray enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-3);
 
+        log.info("Encoded: {}", Arrays.toString(enc.data().asInt()));
+
         assertEquals(exp_0, initial);
         assertEquals(5, enc.data().length());
 
@@ -568,6 +570,25 @@ public class CompressionTests extends BaseNd4jTest {
         enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-3);
 
         assertEquals(7, enc.data().length());
+    }
+
+    @Test
+    public void testBitmapEncoding2() throws Exception {
+        INDArray initial = Nd4j.create(40000000);
+        INDArray target = Nd4j.create(initial.length());
+
+        initial.addi(1e-3);
+
+        long time1 = System.currentTimeMillis();
+        INDArray enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-3);
+        long time2 = System.currentTimeMillis();
+
+
+        Nd4j.getExecutioner().bitmapDecode(enc, target);
+        long time3 = System.currentTimeMillis();
+
+        log.info("Encode time: {}", time2 - time1);
+        log.info("Decode time: {}", time3 - time2);
     }
 
 
