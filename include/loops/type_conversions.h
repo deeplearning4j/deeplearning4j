@@ -366,7 +366,53 @@ __device__ inline void decoderKernelGeneric(void *dx, Nd4jIndex N, void *dz) {
 
 template<typename T>
 __device__ inline void cudaDecodeBitmapGeneric(void *dx, Nd4jIndex N, T *dz) {
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    __shared__ T *shmem;
+    __shared__ FloatBits fb;
+    __shared__ float threshold;
+    __shared__ int *x;
+    if (threadIdx.x == 0){
+        extern __shared__ char mem[];
+        shmem = (T*) mem;
+        fb.i_ = x[2];
+        threshold = fb.f_;
+        x = (int *)dx;
+    }
+    __syncthreads();
 
+    int lim = N / 16 + 5;
+    for (int i = tid; i < N; i+= blockDim.x * gridDim.x) {
+        int byteId = i / 16 + 5;
+
+        shmem[threadIdx.x] = dz[i];
+        __syncthreads();
+
+        if (threadIdx.x % 16 == 0) {
+            int byte = x[byteId];
+
+            for (int e = 0; e < 16; e++) {
+                if (i + e >= N)
+                    continue;
+
+                int bitId = (i + e) % 16;
+
+                bool hasBit = (byte & 1 << (bitId + 1) ) != 0;
+                bool hasSign = (byte & 1 << (bitId + 16 + 1) ) != 0;
+
+                if (hasBit) {
+                    if (hasSign)
+                        shmem[threadIdx.x + bitId] -= threshold;
+                    else
+                        shmem[threadIdx.x + bitId] += threshold;
+                } else if (hasSign) {
+                    shmem[threadIdx.x + bitId] -= threshold / 2;
+                }
+            }
+        }
+        __syncthreads();
+
+        dz[i] = shmem[threadIdx.x];
+    }
 }
 
 
@@ -389,10 +435,13 @@ __device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, int 
 
         // but only 1 thread in sub-warp writes encoded values
         if (threadIdx.x % 16 == 0) {
-            int byteId = i / 16 + 4;
+            int byteId = i / 16 + 5;
             int byte = 0;
 
             for (int e = 0; e < 16; e++) {
+                if (i + e >= N)
+                    continue;
+
                 int bitId = (i + e) % 16;
                 if (shmem[threadIdx.x + e + blockDim.x] >= threshold) {
                     byte |= 1 << (bitId + 1);
@@ -401,7 +450,7 @@ __device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, int 
                         byte |= 1 << (bitId + 16 + 1);
                     }
 
-                    shmem[threadIdx.x + e + blockDim.x] = 0.0;
+                    shmem[threadIdx.x + e + blockDim.x] = (T) 0.0f;
                 } else if (shmem[threadIdx.x + e + blockDim.x] >= threshold / 2 && shmem[threadIdx.x + e] < (T) 0.0f) {
                     byte |= 1 << (bitId + 16 + 1);
                 }
@@ -413,9 +462,9 @@ __device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, int 
 
         if (shmem[threadIdx.x + blockDim.x] == (T) 0.0f && shmem[threadIdx.x] != (T) 0.0f) {
             if (shmem[threadIdx.x] < 0.0) {
-                dx[i] = shmem[threadIdx.x] - threshold;
-            } else {
                 dx[i] = shmem[threadIdx.x] + threshold;
+            } else {
+                dx[i] = shmem[threadIdx.x] - threshold;
             }
         }
 
@@ -424,6 +473,10 @@ __device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, int 
 
 extern "C" __global__ void cudaEncodeBitmapFloat(float *dx, Nd4jIndex N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
     cudaEncodeBitmapGeneric<float>(dx, N, dz, scalar, reductionBuffer, threshold);
+}
+
+extern "C" __global__ void cudaDecodeBitmapFloat(void *dx, Nd4jIndex N, float *dz) {
+    cudaDecodeBitmapGeneric<float>(dx, N, dz);
 }
 
 

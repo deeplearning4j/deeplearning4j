@@ -6710,5 +6710,10 @@ Nd4jIndex NativeOps::encodeBitmapFloat(Nd4jPointer *extraPointers, float *dx, Nd
 }
 
 void NativeOps::decodeBitmapFloat(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float *dz) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
+    cudaDecodeBitmapFloat<<<512, 512, 512 * sizeof(float), *stream>>>(dx, N, dz);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
 }

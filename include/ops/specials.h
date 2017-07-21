@@ -570,7 +570,7 @@ Nd4jIndex encodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, float threshold) {
 
             T val = dx[e];
             T abs = nd4j::math::nd4j_abs<T>(val);
-            int byteId = e / 16 + 4;
+            int byteId = e / 16 + 5;
             int bitId = e % 16;
 
             if (abs >= threshold) {
