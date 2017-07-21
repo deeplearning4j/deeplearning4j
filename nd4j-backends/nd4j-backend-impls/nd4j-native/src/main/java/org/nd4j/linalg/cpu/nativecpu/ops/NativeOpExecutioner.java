@@ -1320,7 +1320,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         DataBuffer buffer = input.data();
 
         long originalLength = buffer.length() * Nd4j.sizeOfDataType(buffer.dataType());
-        int compressedLength = cntAbs + 3;
+        int compressedLength = cntAbs + 4;
         // first 3 elements contain header
 
         DataBuffer encodedBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(3+cntAbs, false) : Nd4j.getDataBufferFactory().createInt(3+cntAbs, false, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -1328,6 +1328,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         encodedBuffer.put(0, cntAbs);
         encodedBuffer.put(1, (int) buffer.length());
         encodedBuffer.put(2, Float.floatToIntBits((float) threshold));
+
+        // format id
+        encodedBuffer.put(3, 0);
 
         CompressionDescriptor descriptor = new CompressionDescriptor();
         descriptor.setCompressedLength(compressedLength * 4); // sizeOf(INT)
@@ -1364,6 +1367,37 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         DataBuffer.TypeEx typeDst = AbstractCompressor.getBufferTypeEx(target.data());
 
         loop.convertTypes(null, DataBuffer.TypeEx.THRESHOLD.ordinal(), buffer.addressPointer(), target.length(), typeDst.ordinal(), target.data().addressPointer());
+
+        return target;
+    }
+
+
+    @Override
+    public INDArray bitmapEncode(INDArray indArray, double threshold) {
+        long length = indArray.lengthLong();
+
+        DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(length / 16 + 5);
+        buffer.put(0, (int) length);
+        buffer.put(1, (int) length);
+        buffer.put(2, Float.floatToIntBits((float) threshold));
+
+        // format id
+        buffer.put(3, 1);
+
+        if (indArray.data().dataType() == DataBuffer.Type.FLOAT) {
+            loop.encodeBitmapFloat(null, (FloatPointer) indArray.data().addressPointer(), length, (IntPointer) buffer.addressPointer(), (float) threshold);
+        }
+
+        return Nd4j.createArrayFromShapeBuffer(buffer, indArray.shapeInfoDataBuffer());
+    }
+
+    @Override
+    public INDArray bitmapDecode(INDArray encoded, INDArray target) {
+
+
+        if (encoded.data().dataType() == DataBuffer.Type.FLOAT) {
+            loop.decodeBitmapFloat(null, encoded.data().addressPointer(), target.length(), (FloatPointer) target.data().addressPointer());
+        }
 
         return target;
     }

@@ -573,4 +573,14 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public INDArray thresholdDecode(INDArray encoded, INDArray target) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
+
+    @Override
+    public INDArray bitmapEncode(INDArray indArray, double threshold) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public INDArray bitmapDecode(INDArray encoded, INDArray target) {
+        throw new UnsupportedOperationException("Not yet implemented");
+    }
 }

@@ -526,6 +526,52 @@ public class CompressionTests extends BaseNd4jTest {
         assertEquals(exp_1, decompressed_copy);
     }
 
+    @Test
+    public void testBitmapEncoding1() throws Exception {
+        INDArray initial = Nd4j.create(new double[]{0.0, 0.0, 1e-3, -1e-3, 0.0, 0.0});
+        INDArray exp_0 = Nd4j.create(6);
+        INDArray exp_1 = initial.dup();
+
+        INDArray enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-3);
+
+        assertEquals(exp_0, initial);
+        assertEquals(5, enc.data().length());
+
+        log.info("Encoded: {}", Arrays.toString(enc.data().asInt()));
+
+        INDArray target = Nd4j.create(6);
+        Nd4j.getExecutioner().bitmapDecode(enc, target);
+
+        log.info("Target: {}", Arrays.toString(target.data().asFloat()));
+        assertEquals(exp_1, target);
+    }
+
+    @Test
+    public void testBitmapEncoding1_1() throws Exception {
+        INDArray initial = Nd4j.create(15);
+        INDArray exp_0 = Nd4j.create(6);
+        INDArray exp_1 = initial.dup();
+
+        INDArray enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-3);
+
+        //assertEquals(exp_0, initial);
+        assertEquals(5, enc.data().length());
+
+        initial = Nd4j.create(31);
+
+        enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-3);
+
+        assertEquals(6, enc.data().length());
+
+        initial = Nd4j.create(32);
+
+        enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-3);
+
+        assertEquals(7, enc.data().length());
+    }
+
+
+
     @Override
     public char ordering() {
         return 'c';

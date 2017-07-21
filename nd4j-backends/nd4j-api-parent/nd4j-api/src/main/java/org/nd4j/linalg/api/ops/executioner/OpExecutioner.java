@@ -292,4 +292,8 @@ public interface OpExecutioner {
      * @return target is returned
      */
     INDArray thresholdDecode(INDArray encoded, INDArray target);
+
+    INDArray bitmapEncode(INDArray indArray, double threshold);
+
+    INDArray bitmapDecode(INDArray encoded, INDArray target);
 }
