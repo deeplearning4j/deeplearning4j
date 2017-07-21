@@ -33,6 +33,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import play.libs.Json;
 import play.mvc.Result;
+import play.mvc.Results;
 
 import java.awt.*;
 import java.text.DecimalFormat;
@@ -89,9 +90,9 @@ public class ArbiterModule implements UIModule {
             .width(100,LengthUnit.Percent)
             .height(60, LengthUnit.Px).build());
 
-    private static final StyleChart STYLE_CHART_650_350 = new StyleChart.Builder()
-            .width(650, LengthUnit.Px)
-            .height(350, LengthUnit.Px)
+    private static final StyleChart STYLE_CHART_560_320 = new StyleChart.Builder()
+            .width(560, LengthUnit.Px)
+            .height(320, LengthUnit.Px)
             .build();
 
     private static final StyleChart STYLE_CHART_800_400 = new StyleChart.Builder()
@@ -118,8 +119,7 @@ public class ArbiterModule implements UIModule {
 
     @Override
     public List<Route> getRoutes() {
-        Route r1 = new Route("/arbiter", HttpMethod.GET, FunctionType.Supplier, this::getMainArbiterPage);
-        Route r2 = new Route("/arbiter/modelResults/:id", HttpMethod.GET, FunctionType.Function, this::getModelResult);
+        Route r1 = new Route("/arbiter", HttpMethod.GET, FunctionType.Supplier, () -> Results.ok(ArbiterUI.apply()));
         Route r3 = new Route("/arbiter/lastUpdate", HttpMethod.GET, FunctionType.Supplier, this::getLastUpdateTime);
         Route r4 = new Route("/arbiter/lastUpdate/:ids", HttpMethod.GET, FunctionType.Function, this::getModelLastUpdateTimes);
         Route r5 = new Route("/arbiter/candidateInfo/:id", HttpMethod.GET, FunctionType.Function, this::getCandidateInfo);
@@ -127,7 +127,7 @@ public class ArbiterModule implements UIModule {
         Route r7 = new Route("/arbiter/results", HttpMethod.GET, FunctionType.Supplier, this::getSummaryResults);
         Route r8 = new Route("/arbiter/summary", HttpMethod.GET, FunctionType.Supplier, this::getSummaryStatus);
 
-        return Arrays.asList(r1, r2, r3, r4, r5, r6, r7, r8);
+        return Arrays.asList(r1, r3, r4, r5, r6, r7, r8);
     }
 
     @Override
@@ -213,73 +213,10 @@ public class ArbiterModule implements UIModule {
         }
     }
 
-
-    private Result getMainArbiterPage(){
-
-
-//        return Results.ok("Main Arbiter page here");
-        return ok(ArbiterUI.apply());
-    }
-
-    private Result getModelResult(String id){
-
-        if(currentSessionID == null){
-            return ok();
-        }
-
-        StatsStorage ss = knownSessionIDs.get(currentSessionID);
-        if(ss == null){
-            log.warn("getMainArbiterPage(): Session ID is unknown: {}", currentSessionID);
-            return ok();
-        }
-
-        return ok("Result for model " + id + " goes here");
-
-        /*
-        private Map<Integer,Component> map = new ConcurrentHashMap<>();
-        private static final Component NOT_FOUND = new ComponentText("(Candidate results: Not found)",null);
-        private final Map<Integer,Long> lastUpdateTimeMap = new ConcurrentHashMap<>();
-
-        @GET
-        @Path("/{id}")
-        public Response getModelStatus(@PathParam("id") int candidateId){
-            if(!map.containsKey(candidateId)) return Response.ok(NOT_FOUND).build();
-            String str = "";
-            try{
-                Component c = map.get(candidateId);
-                str = JsonMapper.getMapper().writeValueAsString(c);
-            } catch (Exception e){
-                if(warnCount.getAndIncrement() < maxWarnCount){
-                    log.warn("Error getting candidate info", e);
-                }
-            }
-            return Response.ok(str).build();
-        }
-         */
-    }
-
+    /**
+     * @return Last update time for the page
+     */
     private Result getLastUpdateTime(){
-
-        /*
-            private Map<Integer,Component> map = new ConcurrentHashMap<>();
-            private static final Component NOT_FOUND = new ComponentText("(Candidate results: Not found)",null);
-            private final Map<Integer,Long> lastUpdateTimeMap = new ConcurrentHashMap<>();
-
-            @GET
-            @Path("/lastUpdate")
-            @Consumes(MediaType.APPLICATION_JSON)
-            @Produces(MediaType.APPLICATION_JSON)
-            public Response getLastUpdateTimes(@QueryParam("id")List<String> modelIDs){
-                //Here: requests are of the form /modelResults/lastUpdate?id=0&id=1&id=2
-                Map<Integer,Long> outMap = new HashMap<>();
-                for( String id : modelIDs ){
-                    if(!lastUpdateTimeMap.containsKey(id)) outMap.put(Integer.valueOf(id),0L);
-                    else outMap.put(Integer.valueOf(id),lastUpdateTimeMap.get(id));
-                }
-                return Response.ok(outMap).build();
-            }
-         */
-
         //TODO
         long t = System.currentTimeMillis();
         UpdateStatus us = new UpdateStatus(t, t, t);
@@ -287,6 +224,10 @@ public class ArbiterModule implements UIModule {
         return ok(Json.toJson(us));
     }
 
+    /**
+     * Get the last update time for the specified model IDs
+     * @param modelIDs Model IDs to get the update time for
+     */
     private Result getModelLastUpdateTimes(String modelIDs){
 
         if(currentSessionID == null){
@@ -316,8 +257,8 @@ public class ArbiterModule implements UIModule {
     /**
      * Get the info for a specific candidate - last section in the UI
      *
-     * @param candidateId
-     * @return
+     * @param candidateId ID for the candidate
+     * @return Content/info for the candidate
      */
     private Result getCandidateInfo(String candidateId){
 
@@ -351,7 +292,7 @@ public class ArbiterModule implements UIModule {
 
         List<Component> components = new ArrayList<>();
 
-        //First table: mix of static + dynamic
+        //First table: mix of static + dynamic in a table
         long runtimeDurationMs = mip.getLastUpdateTime() - mip.getTimeStamp();
         double avgMinibatchesPerSec = mip.getTotalNumUpdates() / (runtimeDurationMs/1000.0);
 
@@ -359,6 +300,7 @@ public class ArbiterModule implements UIModule {
         String[][] table = new String[][]{
                 {"Model Index", String.valueOf(mip.getModelIdx())},
                 {"Status", mip.getStatus().toString()},
+                {"Model Score", mip.getScore() == null ? "" : String.valueOf(mip.getScore())},
                 {"Created", TIME_FORMATTER.print(mip.getTimeStamp())},
                 {"Runtime", runtimeStr},
                 {"Total Number of Model Updates", String.valueOf(mip.getTotalNumUpdates())},
@@ -374,8 +316,7 @@ public class ArbiterModule implements UIModule {
         components.add(cTable);
 
 
-
-
+        //Second: parameter space values, in multiple tables
         double[] paramSpaceValues = mip.getParamSpaceValues();
         if(paramSpaceValues != null){
             BaseNetworkSpace bns = (BaseNetworkSpace)oc.getCandidateGenerator().getParameterSpace();
@@ -430,13 +371,11 @@ public class ArbiterModule implements UIModule {
                 components.add(DIV_SPACER_20PX);
                 components.add(new ComponentText.Builder(title, STYLE_TEXT_SZ12).build());
                 components.add(ct3);
-
-
             }
-
         }
 
 
+        //Third: Score vs. time chart
         int[] iters = mip.getIter();
         float[] scores = mip.getScoreVsIter();
 
@@ -466,7 +405,7 @@ public class ArbiterModule implements UIModule {
         }
 
 
-        //Finally: post full network configuration
+        //Finally: post full network configuration JSON
         components.add(DIV_SPACER_60PX);
         components.add(new ComponentDiv(STYLE_DIV_WIDTH_100_PC, new ComponentText("Model Configuration", STYLE_TEXT_SZ12)));
         String modelJson = mip.getModelConfigJson();
@@ -481,6 +420,11 @@ public class ArbiterModule implements UIModule {
         return ok(asJson(cd)).as(JSON);
     }
 
+    /**
+     * Get the optimization configuration - second section in the page
+     *
+     * @return
+     */
     private Result getOptimizationConfig(){
 
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
@@ -501,11 +445,8 @@ public class ArbiterModule implements UIModule {
         GlobalConfigPersistable gcp = (GlobalConfigPersistable)p;
         OptimizationConfiguration oc = gcp.getOptimizationConfiguration();
 
-        //Here: report optimization settings/configuration.
-
-
+        //Report optimization settings/configuration.
         String[] tableHeader = {"Configuration", "Value"};
-
         String[][] table = new String[][]{
                 {"Candidate Generator", oc.getCandidateGenerator().getClass().getSimpleName()},
                 {"Data Provider", oc.getDataProvider().toString()},
@@ -513,9 +454,6 @@ public class ArbiterModule implements UIModule {
                 {"Result Saver", oc.getResultSaver().toString()},
         };
 
-        String title = "Global Network Configuration";
-        components.add(DIV_SPACER_20PX);
-        components.add(new ComponentText.Builder(title, STYLE_TEXT_SZ12).build());
         ComponentTable ct = new ComponentTable.Builder(STYLE_TABLE)
                 .content(table)
                 .header(tableHeader)
@@ -523,6 +461,9 @@ public class ArbiterModule implements UIModule {
         components.add(ct);
 
 
+        String title = "Global Network Configuration";
+        components.add(DIV_SPACER_20PX);
+        components.add(new ComponentText.Builder(title, STYLE_TEXT_SZ12).build());
         BaseNetworkSpace<?> ps = (BaseNetworkSpace)oc.getCandidateGenerator().getParameterSpace();
         Map<String,ParameterSpace<?>> m = ps.getGlobalConfigAsMap();
 
@@ -535,20 +476,16 @@ public class ArbiterModule implements UIModule {
         }
 
         components.add(DIV_SPACER_20PX);
-
         String[] hSpaceTableHeader = new String[]{"Hyperparameter", "Hyperparameter Configuration"};
 
         ComponentTable ct2 = new ComponentTable.Builder(STYLE_TABLE)
                 .content(hSpaceTable)
                 .header(hSpaceTableHeader)
                 .build();
-
-
-
         components.add(ct2);
 
+        //Configuration for each layer:
         List<BaseNetworkSpace.LayerConf> layerConfs = ps.getLayerSpaces();
-
         for(BaseNetworkSpace.LayerConf l : layerConfs){
             LayerSpace<?> ls = l.getLayerSpace();
             Map<String,ParameterSpace<?>> lpsm = ls.getConfigAsMap();
@@ -596,8 +533,12 @@ public class ArbiterModule implements UIModule {
         return ok(asJson(table)).as(JSON);
     }
 
+    /**
+     * Get summary status information: first section in the page
+     *
+     * @return
+     */
     private Result getSummaryStatus(){
-
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
         if(ss == null){
             log.warn("getOptimizationConfig(): Session ID is unknown: {}", currentSessionID);
@@ -782,14 +723,14 @@ public class ArbiterModule implements UIModule {
 
         List<Component> components = new ArrayList<>(2);
 
-        ChartLine cl = new ChartLine.Builder("Best Model Score vs. Time (Minutes)", STYLE_CHART_650_350)
+        ChartLine cl = new ChartLine.Builder("Best Model Score vs. Time (Minutes)", STYLE_CHART_560_320)
                 .addSeries("Best Score vs. Time", bestXd, bestYd)
                 .setYMin(lineGraphMinMax[0])
                 .setYMax(lineGraphMinMax[1])
                 .build();
         components.add(cl);
 
-        ChartScatter cs = new ChartScatter.Builder("All Candidate Scores vs. Time (Minutes)", STYLE_CHART_650_350)
+        ChartScatter cs = new ChartScatter.Builder("All Candidate Scores vs. Time (Minutes)", STYLE_CHART_560_320)
                 .addSeries("Candidates", allX, allY)
                 .setYMin(scatterGraphMinMax[0])
                 .setYMax(scatterGraphMinMax[1])
@@ -799,5 +740,4 @@ public class ArbiterModule implements UIModule {
 
         return new Pair<>(components, bestModel);
     }
-
 }

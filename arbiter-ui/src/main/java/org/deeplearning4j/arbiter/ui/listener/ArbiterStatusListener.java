@@ -22,10 +22,14 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Created by Alex on 20/07/2017.
+ * A {@link StatusListener} for reporting Arbiter/DL4J optimization results to a {@link StatsStorageRouter}
+ *
+ * @author Alex Black
  */
 @Slf4j
 public class ArbiterStatusListener implements StatusListener {
+
+    public static final int MAX_SCORE_VS_ITER_PTS = 1024;   //Above this: subsample... every 2nd, 4th, 8th etc
 
     private final String sessionId;
     private final StatsStorageRouter statsStorage;
@@ -33,7 +37,7 @@ public class ArbiterStatusListener implements StatusListener {
     private String ocJson;
     private long startTime = 0;
 
-    private Map<Integer,Object> candidateStaticInfo = new ConcurrentHashMap<>();
+    private Map<Integer,Integer> candidateScoreVsIterSubsampleFreq = new ConcurrentHashMap<>();
     private Map<Integer,Pair<IntArrayList,FloatArrayList>> candidateScoreVsIter = new ConcurrentHashMap<>();
 
     private Map<Integer,ModelInfoPersistable> lastModelInfoPersistable = new ConcurrentHashMap<>();
@@ -49,7 +53,6 @@ public class ArbiterStatusListener implements StatusListener {
 
     @Override
     public void onInitialization(IOptimizationRunner r) {
-        log.info("onInitialization() called");
         Persistable p = getNewStatusPersistable(r);
         statsStorage.putStaticInfo(p);
     }
@@ -62,7 +65,6 @@ public class ArbiterStatusListener implements StatusListener {
 
     @Override
     public void onRunnerStatusChange(IOptimizationRunner r) {
-        log.info("onRunnerStatusChange() called");
         Persistable p = getNewStatusPersistable(r);
         statsStorage.putStaticInfo(p);
     }
@@ -89,13 +91,11 @@ public class ArbiterStatusListener implements StatusListener {
 
         p.setStatus(candidateInfo.getCandidateStatus());
 
-
         statsStorage.putUpdate(p);
     }
 
     @Override
     public void onCandidateIteration(CandidateInfo candidateInfo, Object candidate, int iteration) {
-
         double score;
         long numParams;
         int numLayers;
@@ -130,11 +130,33 @@ public class ArbiterStatusListener implements StatusListener {
         IntArrayList iter = pair.getFirst();
         FloatArrayList scores = pair.getSecond();
 
-        iter.add(iteration);
-        scores.add((float)score);
+        //Do we need subsampling to avoid having too many data points?
+        int subsamplingFreq = candidateScoreVsIterSubsampleFreq.computeIfAbsent(idx, k -> 1);
+        if(iteration / subsamplingFreq > MAX_SCORE_VS_ITER_PTS){
+            //Double subsampling frequency and re-parse data
+            subsamplingFreq *= 2;
+            candidateScoreVsIterSubsampleFreq.put(idx, subsamplingFreq);
 
+            IntArrayList newIter = new IntArrayList();
+            FloatArrayList newScores = new FloatArrayList();
+            for( int i=0; i<iter.size(); i++ ){
+                int it = iter.get(i);
+                if(it % subsamplingFreq == 0){
+                    newIter.add(it);
+                    newScores.add(scores.get(i));
+                }
+            }
 
-        //TODO subsample if necessary, to max N points
+            iter = newIter;
+            scores = newScores;
+            candidateScoreVsIter.put(idx, new Pair<>(iter, scores));
+        }
+
+        if(iteration % subsamplingFreq == 0) {
+            iter.add(iteration);
+            scores.add((float) score);
+        }
+
 
         int[] iters = iter.toArray();
         float[] fScores = new float[iters.length];

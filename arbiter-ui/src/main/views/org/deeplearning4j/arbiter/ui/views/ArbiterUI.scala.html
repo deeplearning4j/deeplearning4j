@@ -6,13 +6,15 @@
 
             heading background:         headingbgcol        #063E53            //Old candidates: #3B5998
             heading text color:         headingtextcolor    white
-
         */
 
         .hd {
             background-color: #000000;
-            font-size: 18px;
+            height: 41px;
+            font-size: 20px;
             color: #FFFFFF;
+            font-family: "Open Sans", sans-serif;
+            font-weight: 200;
         }
 
         html, body {
@@ -26,7 +28,7 @@
         }
 
         h1 {
-            font-family: Georgia, Times, 'Times New Roman', serif;
+            font-family: "Open Sans", sans-serif;
             font-size: 28px;
             font-style: bold;
             font-variant: normal;
@@ -35,12 +37,17 @@
         }
 
         h3 {
-            font-family: Georgia, Times, 'Times New Roman', serif;
+            font-family: "Open Sans", sans-serif;
             font-size: 16px;
             font-style: normal;
             font-variant: normal;
             font-weight: 500;
             line-height: 26.4px;
+        }
+
+        table {
+            font-family: "Open Sans", sans-serif;
+            font-size: 14px;
         }
 
         table.resultsTable {
@@ -95,8 +102,8 @@
         .resultsHeadingDiv {
             background-color: /*headingbgcol*/#063E53;
             color: white;
-            font-family: Georgia, Times, 'Times New Roman', serif;
-            font-size: 20px;
+            font-family: "Open Sans", sans-serif;
+            font-size: 16px;
             font-style: bold;
             font-variant: normal;
             font-weight: 500;
@@ -122,8 +129,8 @@
         #accordion .ui-accordion-header, #accordion2 .ui-accordion-header, #accordion3 .ui-accordion-header {
             background-color: /*headingbgcolor*/#063E53;      /*Color when collapsed*/
             color: /*headingtextcolor*/white;
-            font-family: Georgia, Times, 'Times New Roman', serif;
-            font-size: 20px;
+            font-family: "Open Sans", sans-serif;
+            font-size: 16px;
             font-style: bold;
             font-variant: normal;
             margin: 0px;
@@ -156,14 +163,11 @@
         }
 
         </style>
-        <title>Arbiter UI</title>
+        <title>DL4J - Arbiter UI</title>
     </head>
     <body class="bgcolor">
-
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <link rel="stylesheet" href="/assets/css/arbiter/bootstrap.min.css">
-
-        @*<script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>*@
         <script src="/assets/js/jquery-1.9.1.min.js"></script>
         <link rel="stylesheet" href="/assets/css/arbiter/jquery-ui.css">
         <script src="/assets/js/arbiter/jquery-1.10.2.js"></script>
@@ -172,7 +176,7 @@
         <script src="/assets/js/arbiter/bootstrap.min.js"></script>
         <script src="/assets/dl4j-ui.js"></script>
 
-        <script>
+    <script>
     //Store last update times:
     var lastStatusUpdateTime = -1;
     var lastSettingsUpdateTime = -1;
@@ -301,7 +305,6 @@
     }
 
     function drawResultTable(){
-
         //Remove all elements from the table body
         var tableBody = $('#resultsTableBody');
         tableBody.empty();
@@ -328,7 +331,6 @@
 
         var len = (!resultsTableContent ? 0 : resultsTableContent.length);
         for(var i=0; i<len; i++){
-//            var row = $('<tr class="resultTableRow" id="rTbl-' + sorted[i][0] + '"/>');
             var row;
             if(selectedCandidateIdx == sorted[i][0]){
                 //Selected row
@@ -352,8 +354,18 @@
     function compareScores(a,b){
         //TODO Not always numbers...
         if(resultTableSortOrder == "ascending"){
+            if(a[1] == "NaN"){
+                return 1;
+            } else if(b[1] == "NaN"){
+                return -1;
+            }
             return a[1] - b[1];
         } else {
+            if(a[1] == "NaN"){
+                return -1;
+            } else if(b[1] == "NaN"){
+                return 1;
+            }
             return b[1] - a[1];
         }
     }
@@ -410,7 +422,6 @@
             var id = this.id;   //Expect: rTbl-X  where X is some index
             var dashIdx = id.indexOf("-");
             var candidateID = Number(id.substring(dashIdx+1));
-
 //            console.log("Clicked row: " + this.id + " with class: " + this.className + ", candidateId = " + candidateID);
 
             if(this.className == "resultTableRow"){
@@ -453,12 +464,12 @@
                         float: left"></div>
                         <div style="height: 40px;
                             float: left;
-                            margin-top: 12px">Arbiter UI</div></td>
+                            padding-top: 10px">Deeplearning4J - Arbiter UI</div></td>
                 </tr>
             </tbody>
         </table>
 
-        <div style="width: 1400px;
+        <div style="width: 1200px;
             margin-left: auto;
             margin-right: auto;">
             <div class="outerelements" id="status">
