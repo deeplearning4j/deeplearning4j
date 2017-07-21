@@ -21,6 +21,7 @@ import lombok.EqualsAndHashCode;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.GenericDeserializer;
 import org.deeplearning4j.arbiter.optimize.serde.jackson.GenericSerializer;
+import org.deeplearning4j.arbiter.util.ObjectUtils;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -50,7 +51,7 @@ public class FixedValue<T> implements ParameterSpace<T> {
 
     @Override
     public String toString() {
-        return "FixedValue(" + value + ")";
+        return "FixedValue(" + ObjectUtils.valueToString(value) + ")";
     }
 
     @Override
