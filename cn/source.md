@@ -1,21 +1,21 @@
 ---
 layout: cn-default
-title: Working With Source
+title: 用源代码工作
 ---
 
-# Working With Source
+# 用源代码工作
 
-If you are not planning to contribute to Deeplearning4j as a committer, or don't need the latest alpha version, we recommend downloading the most recent stable release of Deeplearning4j from [Maven Central](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j), 0.4-rc*. That's as simple as adding dependencies to your POM.xml file in IntelliJ.
+如果您不打算以提交者（committer）的身份为Deeplearning4j做贡献，或者您不需要最新的Alpha版本，那么我们建议您从[Maven中央仓库](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j)下载Deeplearning4j最新的稳定发布版本，0.4-rc*。具体操作与在IntelliJ中将依赖项添加至您的POM.xml一样简单。
 
-On the other hand, our [Github repo is here](https://github.com/deeplearning4j/deeplearning4j/). Install [Github](http://nd4j.org/getstarted.html) for [Mac](https://mac.github.com/) or [Windows](https://windows.github.com/). Then 'git clone' the repository, and run this command for Maven:
+与此同时，我们的[Github代码库见此处](https://github.com/deeplearning4j/deeplearning4j/)。请安装[Mac](https://mac.github.com/)或[Windows](https://windows.github.com/)平台的[Github](http://nd4j.org/getstarted.html)，然后将代码库“Git克隆”，让Maven运行如下命令：
 
       mvn clean install -DskipTests=true -Dmaven.javadoc.skip=true
 
-If you want to run Deeplearning4j examples after installing from trunk, you should *git clone* ND4J, Canova and Deeplearning4j, in that order, and then install all from source using Maven with the command above.
+如果您希望在主线安装完成后运行Deeplearning4j示例，您应当依次先后*Git克隆* ND4J、Canova和Deeplearning4j，然后用Maven运行上述命令，从源代码安装所有的库。
 
-Following these steps, you should be able to run the 0.4-rc* examples. 
+按上述步骤操作，您应当就能运行0.4-rc*的示例了。 
 
-If you have an existing project, you can build Deeplearning4j's source files yourself and then add dependencies as JAR files to your project. Each dependency used with Deeplearning4j and [ND4J](http://nd4j.org/dependencies.html) can be included in your project's POM.xml as a jar like this, specifying the most recent version of ND4J or Deeplearning4j between the `properties` tags. 
+对于已有项目而言，您可以自行构建Deeplearning4j的源文件，然后将依赖项以JAR文件的形式添加至您的项目。Deeplearning4j和[ND4J](http://nd4j.org/dependencies.html)使用的每一个依赖项都可以如此作为JAR文件添加至项目的POM.xml，您需要在`properties`标签对之间指定ND4J或Deeplearning4j的最新版本。 
 
         <dependency>
             <groupId>org.deeplearning4j</groupId>
@@ -28,12 +28,12 @@ If you have an existing project, you can build Deeplearning4j's source files you
             <version>${dl4j.version}</version>
         </dependency>
 
-To work with source, you need to install a [project Lombok plugin](https://projectlombok.org/download.html) for IntelliJ or Eclipse.
+在使用源代码工作时，您需要为IntelliJ或Eclipse安装一个[Lombok项目插件](https://projectlombok.org/download.html)。
 
-To learn more about contributing to Deeplearning4j, please read our [Dev Guide](./devguide.html).
+如需了解为Deeplearning4j做出贡献的方法，请阅读我们的[开发者指南](./devguide.html)。
 
-<!-- #### <a name="one">Magical One-Line Install</a>
+<!-- #### <a name="one">神奇的一行命令安装法</a>
 
-For users who have never `git cloned` Deeplearning4j before, you should be able to install the framework, along with ND4J and Canova, by entering one line in your command prompt:
+从未“Git克隆”过Deeplearning4j的用户可以用下面这一行命令来安装该学习框架及配套的ND4J和Canova：
 
       git clone https://github.com/deeplearning4j/deeplearning4j/; cd deeplearning4j;./setup.sh -->
