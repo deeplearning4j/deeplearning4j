@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 import org.deeplearning4j.arbiter.optimize.runner.CandidateInfo;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
-import org.deeplearning4j.arbiter.optimize.runner.listener.StatusChangeType;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 
 /**
@@ -25,8 +24,8 @@ public class LoggingStatusListener implements StatusListener {
     }
 
     @Override
-    public void onRunnerStatusChange(StatusChangeType statusChangeType, IOptimizationRunner runner) {
-        log.info("Optimization runner: status change - {}", statusChangeType);
+    public void onRunnerStatusChange(IOptimizationRunner runner) {
+        log.info("Optimization runner: status change");
     }
 
     @Override

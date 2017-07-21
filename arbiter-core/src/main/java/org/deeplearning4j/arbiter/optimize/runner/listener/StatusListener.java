@@ -17,7 +17,7 @@ public interface StatusListener {
 
     /** Called when any of the summary stats change, for the optimization runner:
      * number scheduled, number completed, number failed, best score, etc. */
-    void onRunnerStatusChange(StatusChangeType statusChangeType, IOptimizationRunner runner);
+    void onRunnerStatusChange(IOptimizationRunner runner);
 
     void onCandidateStatusChange(CandidateInfo candidateInfo, IOptimizationRunner runner,
                     OptimizationResult<?, ?, ?> result);

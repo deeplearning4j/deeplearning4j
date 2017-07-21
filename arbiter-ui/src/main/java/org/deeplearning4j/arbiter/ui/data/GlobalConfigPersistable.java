@@ -14,6 +14,7 @@ public class GlobalConfigPersistable extends BaseJavaPersistable {
 
     private String optimizationConfigJson;
     private int[] candidateCounts;  //queued, completed, failed, total
+    private String optimizationRunner;
 
     public GlobalConfigPersistable(String sessionId, long  timestamp){
         super(sessionId, timestamp);
@@ -26,6 +27,7 @@ public class GlobalConfigPersistable extends BaseJavaPersistable {
         if(this.candidateCounts == null){
             this.candidateCounts = new int[4];
         }
+        this.optimizationRunner = builder.optimizationRunner;
     }
 
     @Override
@@ -63,6 +65,7 @@ public class GlobalConfigPersistable extends BaseJavaPersistable {
 
         private String optimizationConfigJson;
         private int[] candidateCounts;  //queued, completed, failed, total
+        private String optimizationRunner;
 
         public Builder optimizationConfigJson(String optimizationConfigJson){
             this.optimizationConfigJson = optimizationConfigJson;
@@ -71,6 +74,11 @@ public class GlobalConfigPersistable extends BaseJavaPersistable {
 
         public Builder candidateCounts(int queued, int completed, int failed, int total){
             this.candidateCounts = new int[]{queued, completed, failed, total};
+            return this;
+        }
+
+        public Builder optimizationRunner(String optimizationRunner){
+            this.optimizationRunner = optimizationRunner;
             return this;
         }
 

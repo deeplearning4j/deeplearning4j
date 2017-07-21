@@ -65,17 +65,17 @@ public class UIUtils {
 
         PeriodFormatter formatter = new PeriodFormatterBuilder()
                 .appendYears()
-                .appendSuffix(" years, ")
+                .appendSuffix(" yr ")
                 .appendMonths()
-                .appendSuffix(" months, ")
+                .appendSuffix(" months ")
                 .appendDays()
-                .appendSuffix(" days, ")
+                .appendSuffix(" days ")
                 .appendHours()
-                .appendSuffix(" hours, ")
+                .appendSuffix(" hr ")
                 .appendMinutes()
-                .appendSuffix(" minutes, ")
+                .appendSuffix(" min ")
                 .appendSeconds()
-                .appendSuffix(" seconds")
+                .appendSuffix(" sec")
                 .toFormatter();
 
         String formatted = formatter.print(p2);

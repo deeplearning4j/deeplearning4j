@@ -16,6 +16,7 @@ import org.deeplearning4j.arbiter.ui.data.GlobalConfigPersistable;
 import org.deeplearning4j.arbiter.ui.data.ModelInfoPersistable;
 import org.deeplearning4j.arbiter.ui.misc.UIUtils;
 import org.deeplearning4j.arbiter.ui.views.html.ArbiterUI;
+import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.ui.api.*;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.components.chart.ChartLine;
@@ -319,29 +320,6 @@ public class ArbiterModule implements UIModule {
     }
 
     private Result getOptimizationConfig(){
-        /*
-        private Component component = null;
-
-        private static final int maxWarnCount = 5;
-        private AtomicInteger warnCount = new AtomicInteger(0);
-
-        @GET
-        public Response getConfig(){
-            log.trace("GET for config with current component: {}",component);
-
-            String str = "";
-            try{
-                str = JsonMapper.getMapper().writeValueAsString(component);
-            } catch (Exception e){
-                if(warnCount.getAndIncrement() < maxWarnCount){
-                    log.warn("Error getting configuration UI info", e);
-                }
-            }
-            Response r = Response.ok(str).build();
-            return r;
-        }
-         */
-
 
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
         if(ss == null){
@@ -468,29 +446,6 @@ public class ArbiterModule implements UIModule {
     }
 
     private Result getSummaryStatus(){
-        /*
-            private Component component = null;
-
-            @GET
-            public Response getStatus(){
-                log.trace("Get with elements: {}",component);
-                String str = "";
-                try{
-                    str = JsonMapper.getMapper().writeValueAsString(component);
-                } catch (Exception e){
-                    if(warnCount.getAndIncrement() < maxWarnCount){
-                        log.warn("Error getting summary status update", e);
-                    }
-                }
-                Response r = Response.ok(str).build();
-                return r;
-            }
-         */
-
-        //First: table - number completed, queued, running, failed, total
-        //Best model index, score, and time
-        //Total runtime
-        //Termination conditions
 
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
         if(ss == null){
@@ -505,20 +460,62 @@ public class ArbiterModule implements UIModule {
             return ok();
         }
 
-        List<Component> components = new ArrayList<>();
-
         GlobalConfigPersistable gcp = (GlobalConfigPersistable)p;
         OptimizationConfiguration oc = gcp.getOptimizationConfiguration();
         long execStartTime = oc.getExecutionStartTime();
+
+
+
+        //Charts:
+        //Best model score vs. time
+        //All candidate scores (scatter plot vs. time)
+
+        //How to get this? query all model infos...
+
+        List<Persistable> allModelInfoTemp = new ArrayList<>(ss.getLatestUpdateAllWorkers(currentSessionID, ARBITER_UI_TYPE_ID));
+        List<ModelInfoPersistable> allModelInfo = new ArrayList<>();
+        for(Persistable per : allModelInfoTemp){
+            ModelInfoPersistable mip = (ModelInfoPersistable)per;
+            if(mip.getStatus() == CandidateStatus.Complete && mip.getScore() != null && Double.isFinite(mip.getScore())){
+                allModelInfo.add(mip);
+            }
+        }
+
+        allModelInfo.sort(Comparator.comparingLong(Persistable::getTimeStamp));
+
+        Pair<List<Component>, ModelInfoPersistable> chartsAndBest = getSummaryChartsAndBest(allModelInfo, oc.getScoreFunction().minimize(), execStartTime );
+
+        //First: table - number completed, queued, running, failed, total
+        //Best model index, score, and time
+        //Total runtime
+        //Termination conditions
+        List<Component> components = new ArrayList<>();
+
+
 
         List<TerminationCondition> tcs = oc.getTerminationConditions();
 
         //TODO: I18N
 
         //TODO don't use currentTimeMillis due to stored data
-        String runtime = UIUtils.formatDuration(System.currentTimeMillis() - execStartTime);
-        long bestTime = System.currentTimeMillis(); //TODO
-        String sinceBest = UIUtils.formatDuration(System.currentTimeMillis() - bestTime);
+        long bestTime = execStartTime;
+        Double bestScore = null;
+        String bestModelString = null;
+        if(chartsAndBest.getSecond() != null){
+            bestTime = chartsAndBest.getSecond().getTimeStamp();
+            bestScore = chartsAndBest.getSecond().getScore();
+            String sinceBest = UIUtils.formatDuration(System.currentTimeMillis() - bestTime);
+
+            bestModelString = "Model " + chartsAndBest.getSecond().getModelIdx() + ", Found at " +
+            TIME_FORMATTER.print(bestTime) + " (" + sinceBest + " ago)";
+        }
+
+        String execStartTimeStr = "";
+        String execTotalRuntimeStr = "";
+        if(execStartTime > 0){
+            execStartTimeStr = TIME_FORMATTER.print(execStartTime);
+            execTotalRuntimeStr = UIUtils.formatDuration(System.currentTimeMillis() - execStartTime);
+        }
 
 
         String[][] table = new String[][]{
@@ -526,10 +523,11 @@ public class ArbiterModule implements UIModule {
                 {"Models Queued/Running", String.valueOf(gcp.getCandidatesQueued())},
                 {"Models Failed", String.valueOf(gcp.getCandidatesFailed())},
                 {"Models Total", String.valueOf(gcp.getCandidatesTotal())},
-                {"Best Score", ""},
-                {"Best Scoring Model", "Index x, Found at y (" + sinceBest + " ago)"},
-                {"Execution Start Time", TIME_FORMATTER.print(execStartTime)},
-                {"Total Runtime", runtime}
+                {"Best Score", (bestScore != null ? String.valueOf(bestScore) : "")},
+                {"Best Scoring Model", bestModelString != null ? bestModelString : ""},
+                {"Optimization Runner", gcp.getOptimizationRunner()},
+                {"Execution Start Time", execStartTimeStr},
+                {"Total Runtime", execTotalRuntimeStr}
         };
 
 
@@ -556,41 +554,31 @@ public class ArbiterModule implements UIModule {
 
         components.add(ct2);
 
+        components.addAll(chartsAndBest.getFirst());
 
-        //Charts:
-        //Best model score vs. time
-        //All candidate scores (scatter plot vs. time)
 
-        //How to get this? query all model infos...
+        ComponentDiv cd = new ComponentDiv(STYLE_DIV_WIDTH_100_PC, components);
 
-        List<Persistable> allModelInfoTemp = new ArrayList<>(ss.getLatestUpdateAllWorkers(currentSessionID, ARBITER_UI_TYPE_ID));
-        List<ModelInfoPersistable> allModelInfo = new ArrayList<>();
-        for(Persistable per : allModelInfoTemp){
-            ModelInfoPersistable mip = (ModelInfoPersistable)per;
-            if(mip.getStatus() == CandidateStatus.Complete && mip.getScore() != null && Double.isFinite(mip.getScore())){
-                allModelInfo.add(mip);
-            }
-        }
+        return ok(asJson(cd)).as(JSON);
+    }
 
-        allModelInfo.sort(Comparator.comparingLong(Persistable::getTimeStamp));
 
+    private Pair<List<Component>,ModelInfoPersistable> getSummaryChartsAndBest(List<ModelInfoPersistable> allModelInfo,
+                                                                               boolean minimize, long execStartTime){
         List<Double> bestX = new ArrayList<>();
         List<Double> bestY = new ArrayList<>();
 
         double[] allX = new double[allModelInfo.size()];
         double[] allY = new double[allModelInfo.size()];
 
-        boolean minimize = oc.getScoreFunction().minimize();
-
         double bestScore = (minimize ? Double.MAX_VALUE : -Double.MAX_VALUE);
         double worstScore = (minimize ? -Double.MAX_VALUE : Double.MAX_VALUE);
-        int bestScoreIdx = -1;
-        double bestScoreTime = -1L;
         double lastTime = -1L;
+        ModelInfoPersistable bestModel = null;
         for(int i=0; i<allModelInfo.size(); i++ ){
             ModelInfoPersistable mip = allModelInfo.get(i);
             double currScore = mip.getScore();
-            double t = (execStartTime - mip.getTimeStamp()) / 60000.0;    //60000 ms per minute
+            double t = (mip.getTimeStamp() - execStartTime) / 60000.0;    //60000 ms per minute
 
             allX[i] = t;
             allY[i] = currScore;
@@ -599,8 +587,7 @@ public class ArbiterModule implements UIModule {
                 bestX.add(t);
                 bestY.add(currScore);
                 bestScore = currScore;
-                bestScoreIdx = mip.getModelIdx();
-                bestScoreTime = t;
+                bestModel = mip;
             } else if((!minimize && currScore > bestScore) || (minimize && currScore < bestScore)){
                 bestX.add(t);
                 bestY.add(bestScore);
@@ -608,8 +595,7 @@ public class ArbiterModule implements UIModule {
                 bestY.add(currScore);
 
                 bestScore = currScore;
-                bestScoreIdx = mip.getModelIdx();
-                bestScoreTime = t;
+                bestModel = mip;
             }
 
             if((!minimize && currScore < worstScore) || (minimize && currScore > worstScore)){
@@ -622,7 +608,6 @@ public class ArbiterModule implements UIModule {
         }
 
         double[] scatterGraphMinMax = UIUtils.niceRange(Math.max(bestScore, worstScore), Math.min(bestScore, worstScore), 5);
-
         double[] lineGraphMinMax = UIUtils.niceRange(
                 bestY.stream().mapToDouble(s -> s).max().orElse(0),bestY.stream().mapToDouble(s -> s).min().orElse(0), 5
         );
@@ -643,14 +628,16 @@ public class ArbiterModule implements UIModule {
             bestYd[i] = bestY.get(i);
         }
 
-        ChartLine cl = new ChartLine.Builder("Best Model Score vs. Time", STYLE_CHART)
+        List<Component> components = new ArrayList<>(2);
+
+        ChartLine cl = new ChartLine.Builder("Best Model Score vs. Time (Minutes)", STYLE_CHART)
                 .addSeries("Best Score vs. Time", bestXd, bestYd)
                 .setYMin(lineGraphMinMax[0])
                 .setYMax(lineGraphMinMax[1])
                 .build();
         components.add(cl);
 
-        ChartScatter cs = new ChartScatter.Builder("All Candidate Scores", STYLE_CHART)
+        ChartScatter cs = new ChartScatter.Builder("All Candidate Scores vs. Time (Minutes)", STYLE_CHART)
                 .addSeries("Candidates", allX, allY)
                 .setYMin(scatterGraphMinMax[0])
                 .setYMax(scatterGraphMinMax[1])
@@ -658,20 +645,7 @@ public class ArbiterModule implements UIModule {
 
         components.add(cs);
 
-        ComponentDiv cd = new ComponentDiv(STYLE_DIV_WIDTH_100_PC, components);
-
-
-
-
-//        System.out.println("Best score chart:");
-//        System.out.println(Arrays.toString(bestXd));
-//        System.out.println(Arrays.toString(bestYd));
-//
-//        System.out.println("All score chart:");
-//        System.out.println(Arrays.toString(allX));
-//        System.out.println(Arrays.toString(allY));
-
-        return ok(asJson(cd)).as(JSON);
+        return new Pair<>(components, bestModel);
     }
 
 }

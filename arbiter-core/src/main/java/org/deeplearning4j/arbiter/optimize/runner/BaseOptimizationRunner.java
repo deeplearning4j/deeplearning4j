@@ -29,6 +29,7 @@ import org.deeplearning4j.arbiter.optimize.api.saving.ResultSaver;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
+import org.deeplearning4j.arbiter.optimize.runner.listener.StatusChangeType;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 
 import java.io.IOException;
@@ -103,10 +104,10 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
     @Override
     public void execute() {
         log.info("{}: execution started", this.getClass().getSimpleName());
+        config.setExecutionStartTime(System.currentTimeMillis());
         for (StatusListener listener : statusListeners) {
             listener.onInitialization(this);
         }
-        config.setExecutionStartTime(System.currentTimeMillis());
 
         //Initialize termination conditions (start timers, etc)
         for (TerminationCondition c : config.getTerminationConditions()) {
@@ -119,6 +120,7 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
         List<Future<OptimizationResult<C, M, A>>> tempList = new ArrayList<>(100);
         while (true) {
             //            boolean statusChange = false;
+            StatusChangeType sct = null;
 
             //Otherwise: add tasks if required
             Future<OptimizationResult<C, M, A>> future = null;
@@ -127,8 +129,9 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
             } catch (InterruptedException e) {
                 //No op?
             }
-            if (future != null)
+            if (future != null) {
                 tempList.add(future);
+            }
             completedFutures.drainTo(tempList);
 
             //Process results (if any)
@@ -136,8 +139,13 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
                 queuedFutures.remove(f);
                 processReturnedTask(f);
             }
-            tempList.clear();
 
+            if(tempList.size() > 0){
+                for(StatusListener sl : statusListeners){
+                    sl.onRunnerStatusChange(this);
+                }
+            }
+            tempList.clear();
 
             //Check termination conditions:
             if (terminate()) {
