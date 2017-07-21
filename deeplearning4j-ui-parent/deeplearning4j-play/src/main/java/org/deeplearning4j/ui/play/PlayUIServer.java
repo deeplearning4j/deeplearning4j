@@ -198,6 +198,17 @@ public class PlayUIServer extends UIServer {
         server = Server.forRouter(router, Mode.DEV, port);
         this.port = port;
 
+        log.info("DL4J UI Server started at {}", getAddress());
+
+        uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
+        uiEventRoutingThread.setDaemon(true);
+        uiEventRoutingThread.start();
+        if (enableRemote)
+            enableRemoteListener();
+    }
+
+    @Override
+    public String getAddress(){
         String addr = server.mainAddress().toString();
         if (addr.startsWith("/0:0:0:0:0:0:0:0")) {
             int last = addr.lastIndexOf(':');
@@ -205,13 +216,7 @@ public class PlayUIServer extends UIServer {
                 addr = "http://localhost:" + addr.substring(last + 1);
             }
         }
-        log.info("UI Server started at {}", addr);
-
-        uiEventRoutingThread = new Thread(new StatsEventRouterRunnable());
-        uiEventRoutingThread.setDaemon(true);
-        uiEventRoutingThread.start();
-        if (enableRemote)
-            enableRemoteListener();
+        return addr;
     }
 
     private List<UIModule> modulesViaServiceLoader(){
