@@ -88,8 +88,8 @@
         }
 
         /** CSS for result table CONTENT rows (i.e., only visible when expanded) */
-        .resultTableRowContent {
-            background-color: white;
+        .resultTableRowSelected {
+            background-color: rgba(0, 157, 255, 0.16);
         }
 
         .resultsHeadingDiv {
@@ -129,12 +129,6 @@
             margin: 0px;
             background-image: none;     /* Necessary, otherwise color changes don't make a difference */
         }
-
-        /*
-        #accordion .ui-accordion-header.ui-state-active {
-            background-color: pink;
-            background-image: none;
-        }*/
 
         #accordion .ui-accordion-content {
             width: 100%;
@@ -187,7 +181,7 @@
     var resultTableSortOrder = "ascending";
     var resultsTableContent;
 
-    var expandedRowsCandidateIDs = [];
+    var selectedCandidateIdx = null;
 
     //Set basic interval function to do updates
     setInterval(function(){
@@ -218,7 +212,7 @@
 
             //Second section: Optimization settings
             if(lastSettingsUpdateTime != settingsTime){
-                //Get JSON: address set by ConfigResource
+                //Get JSON for components
                 $.get("/arbiter/config",function(data){
                     var str = JSON.stringify(data);
 
@@ -243,6 +237,20 @@
                 });
 
                 lastResultsUpdateTime = resultsTime;
+            }
+
+            //Finally: Currently selected result
+            if(selectedCandidateIdx != null){
+                //Get JSON for components
+                $.get("/arbiter/candidateInfo/"+selectedCandidateIdx,function(data){
+                    var str = JSON.stringify(data);
+
+                    var resultsViewDiv = $('#resultsviewdiv');
+                    resultsViewDiv.html('');
+
+                    var component = Component.getComponent(str);
+                    component.render(resultsViewDiv);
+                });
             }
         })
     },2000);    //Loop every 2 seconds
@@ -316,33 +324,20 @@
 
         var len = (!resultsTableContent ? 0 : resultsTableContent.length);
         for(var i=0; i<len; i++){
-            var row = $('<tr class="resultTableRow" id="resultTableRow-' + sorted[i].index + '"/>');
+//            var row = $('<tr class="resultTableRow" id="rTbl-' + sorted[i][0] + '"/>');
+            var row;
+            if(selectedCandidateIdx == sorted[i][0]){
+                //Selected row
+                row = $('<tr class="resultTableRowSelected" id="rTbl-' + sorted[i][0] + '"/>');
+            } else {
+                //Normal row
+                row = $('<tr class="resultTableRow" id="rTbl-' + sorted[i][0] + '"/>');
+            }
             row.append($("<td>" + sorted[i][0] + "</td>"));
             var score = sorted[i][1];
             row.append($("<td>" + ((!score || score == "null") ? "-" : score) + "</td>"));
             row.append($("<td>" + sorted[i][2] + "</td>"));
             tableBody.append(row);
-
-            //Create hidden row for expanding:
-            var rowID = 'resultTableRow-' + sorted[i][0] + '-content';
-            var contentRow = $('<tr id="' + rowID + '" class="resultTableRowContent"/>');
-            var td3 = $("<td colspan=3 id=" + rowID + "-td></td>");
-            td3.append("(Result status - loading)");
-            contentRow.append(td3);
-
-            tableBody.append(contentRow);
-            if(expandedRowsCandidateIDs.indexOf(sorted[i][0]) == -1 ){
-                contentRow.hide();
-
-            } else {
-                //Load info. TODO: make this more efficient (stored info, check for updates, etc)
-                td3.empty();
-
-                var path = "/modelResults/" + sorted[i][0];
-                loadCandidateDetails(path, td3);
-
-                contentRow.show();
-            }
         }
     }
 
@@ -408,25 +403,17 @@
     //Displaying model/candidate details: Intercept click events on table rows -> toggle visibility on content rows
     $(function(){
         $("#resultsTableBody").delegate("tr", "click", function(e){
-//            console.log("Clicked row: " + this.id + " with class: " + this.className);
-            var id = this.id;   //Expect: resultTableRow-X  where X is some index
+            var id = this.id;   //Expect: rTbl-X  where X is some index
             var dashIdx = id.indexOf("-");
             var candidateID = Number(id.substring(dashIdx+1));
+
+            console.log("Clicked row: " + this.id + " with class: " + this.className + ", candidateId = " + candidateID);
+
             if(this.className == "resultTableRow"){
-                var contentRow = $('#' + this.id + '-content');
-                var expRowsArrayIdx = expandedRowsCandidateIDs.indexOf(candidateID);
-                if(expRowsArrayIdx == -1 ){
-                    //Currently hidden
-                    expandedRowsCandidateIDs.push(candidateID); //Mark as expanded
-                    var innerTD = $('#' + this.id + '-content-td');
-                    innerTD.empty();
-                    var path = "/modelResults/" + candidateID;
-                    loadCandidateDetails(path,innerTD);
-                } else {
-                    //Currently expanded
-                    expandedRowsCandidateIDs.splice(expRowsArrayIdx,1);
-                }
-                contentRow.toggle();
+                //Set selected model
+                selectedCandidateIdx = candidateID;
+
+                //TODO fire off update
             }
         });
     });

@@ -2,9 +2,17 @@
 package org.deeplearning4j.arbiter.ui.views.html
 
 import play.twirl.api._
+import play.twirl.api.TemplateMagic._
 
 
      object ArbiterUI_Scope0 {
+import models._
+import controllers._
+import play.api.i18n._
+import views.html._
+import play.api.templates.PlayMagic._
+import play.api.mvc._
+import play.api.data._
 
 class ArbiterUI extends BaseScalaTemplate[play.twirl.api.HtmlFormat.Appendable,Format[play.twirl.api.HtmlFormat.Appendable]](play.twirl.api.HtmlFormat) with play.twirl.api.Template0[play.twirl.api.HtmlFormat.Appendable] {
 
@@ -104,8 +112,8 @@ Seq[Any](format.raw/*1.1*/("""<html>
         """),format.raw/*88.9*/("""}"""),format.raw/*88.10*/("""
 
         """),format.raw/*90.9*/("""/** CSS for result table CONTENT rows (i.e., only visible when expanded) */
-        .resultTableRowContent """),format.raw/*91.32*/("""{"""),format.raw/*91.33*/("""
-            """),format.raw/*92.13*/("""background-color: white;
+        .resultTableRowSelected """),format.raw/*91.33*/("""{"""),format.raw/*91.34*/("""
+            """),format.raw/*92.13*/("""background-color: rgba(0, 157, 255, 0.16);
         """),format.raw/*93.9*/("""}"""),format.raw/*93.10*/("""
 
         """),format.raw/*95.9*/(""".resultsHeadingDiv """),format.raw/*95.28*/("""{"""),format.raw/*95.29*/("""
@@ -146,38 +154,32 @@ Seq[Any](format.raw/*1.1*/("""<html>
             background-image: none;     /* Necessary, otherwise color changes don't make a difference */
         """),format.raw/*131.9*/("""}"""),format.raw/*131.10*/("""
 
-        """),format.raw/*133.9*/("""/*
-        #accordion .ui-accordion-header.ui-state-active """),format.raw/*134.57*/("""{"""),format.raw/*134.58*/("""
-            """),format.raw/*135.13*/("""background-color: pink;
-            background-image: none;
-        """),format.raw/*137.9*/("""}"""),format.raw/*137.10*/("""*/
-
-        #accordion .ui-accordion-content """),format.raw/*139.42*/("""{"""),format.raw/*139.43*/("""
-            """),format.raw/*140.13*/("""width: 100%;
+        """),format.raw/*133.9*/("""#accordion .ui-accordion-content """),format.raw/*133.42*/("""{"""),format.raw/*133.43*/("""
+            """),format.raw/*134.13*/("""width: 100%;
             background-color: white;    /*background color of accordian content (elements in front may have different color */
             color: black;  /* text etc color */
             font-size: 10pt;
             line-height: 16pt;
             overflow:visible !important;
-        """),format.raw/*146.9*/("""}"""),format.raw/*146.10*/("""
+        """),format.raw/*140.9*/("""}"""),format.raw/*140.10*/("""
 
-        """),format.raw/*148.9*/("""/** Line charts */
-        path """),format.raw/*149.14*/("""{"""),format.raw/*149.15*/("""
-            """),format.raw/*150.13*/("""stroke: steelblue;
+        """),format.raw/*142.9*/("""/** Line charts */
+        path """),format.raw/*143.14*/("""{"""),format.raw/*143.15*/("""
+            """),format.raw/*144.13*/("""stroke: steelblue;
             stroke-width: 2;
             fill: none;
-        """),format.raw/*153.9*/("""}"""),format.raw/*153.10*/("""
-        """),format.raw/*154.9*/(""".axis path, .axis line """),format.raw/*154.32*/("""{"""),format.raw/*154.33*/("""
-            """),format.raw/*155.13*/("""fill: none;
+        """),format.raw/*147.9*/("""}"""),format.raw/*147.10*/("""
+        """),format.raw/*148.9*/(""".axis path, .axis line """),format.raw/*148.32*/("""{"""),format.raw/*148.33*/("""
+            """),format.raw/*149.13*/("""fill: none;
             stroke: #000;
             shape-rendering: crispEdges;
-        """),format.raw/*158.9*/("""}"""),format.raw/*158.10*/("""
-        """),format.raw/*159.9*/(""".tick line """),format.raw/*159.20*/("""{"""),format.raw/*159.21*/("""
-            """),format.raw/*160.13*/("""opacity: 0.2;
+        """),format.raw/*152.9*/("""}"""),format.raw/*152.10*/("""
+        """),format.raw/*153.9*/(""".tick line """),format.raw/*153.20*/("""{"""),format.raw/*153.21*/("""
+            """),format.raw/*154.13*/("""opacity: 0.2;
             shape-rendering: crispEdges;
-        """),format.raw/*162.9*/("""}"""),format.raw/*162.10*/("""
+        """),format.raw/*156.9*/("""}"""),format.raw/*156.10*/("""
 
-        """),format.raw/*164.9*/("""</style>
+        """),format.raw/*158.9*/("""</style>
         <title>Arbiter UI</title>
     </head>
     <body class="bgcolor">
@@ -203,13 +205,13 @@ Seq[Any](format.raw/*1.1*/("""<html>
     var resultTableSortOrder = "ascending";
     var resultsTableContent;
 
-    var expandedRowsCandidateIDs = [];
+    var selectedCandidateIdx = null;
 
     //Set basic interval function to do updates
-    setInterval(function()"""),format.raw/*193.27*/("""{"""),format.raw/*193.28*/("""
-        """),format.raw/*194.9*/("""//Get the update status, and do something with it:
-        $.get("/arbiter/lastUpdate",function(data)"""),format.raw/*195.51*/("""{"""),format.raw/*195.52*/("""
-            """),format.raw/*196.13*/("""//Encoding: matches names in UpdateStatus class
+    setInterval(function()"""),format.raw/*187.27*/("""{"""),format.raw/*187.28*/("""
+        """),format.raw/*188.9*/("""//Get the update status, and do something with it:
+        $.get("/arbiter/lastUpdate",function(data)"""),format.raw/*189.51*/("""{"""),format.raw/*189.52*/("""
+            """),format.raw/*190.13*/("""//Encoding: matches names in UpdateStatus class
             var jsonObj = JSON.parse(JSON.stringify(data));
             var statusTime = jsonObj['statusUpdateTime'];
             var settingsTime = jsonObj['settingsUpdateTime'];
@@ -218,95 +220,109 @@ Seq[Any](format.raw/*1.1*/("""<html>
 
             //Check last update times for each part of document, and update as necessary
             //First section: summary status
-            if(lastStatusUpdateTime != statusTime)"""),format.raw/*205.51*/("""{"""),format.raw/*205.52*/("""
-                """),format.raw/*206.17*/("""//Get JSON: address set by SummaryStatusResource
-                $.get("/arbiter/summary",function(data)"""),format.raw/*207.56*/("""{"""),format.raw/*207.57*/("""
-                    """),format.raw/*208.21*/("""var summaryStatusDiv = $('#statusdiv');
+            if(lastStatusUpdateTime != statusTime)"""),format.raw/*199.51*/("""{"""),format.raw/*199.52*/("""
+                """),format.raw/*200.17*/("""//Get JSON: address set by SummaryStatusResource
+                $.get("/arbiter/summary",function(data)"""),format.raw/*201.56*/("""{"""),format.raw/*201.57*/("""
+                    """),format.raw/*202.21*/("""var summaryStatusDiv = $('#statusdiv');
                     summaryStatusDiv.html('');
 
                     var str = JSON.stringify(data);
                     var component = Component.getComponent(str);
                     component.render(summaryStatusDiv);
-                """),format.raw/*214.17*/("""}"""),format.raw/*214.18*/(""");
+                """),format.raw/*208.17*/("""}"""),format.raw/*208.18*/(""");
 
                 lastStatusUpdateTime = statusTime;
-            """),format.raw/*217.13*/("""}"""),format.raw/*217.14*/("""
+            """),format.raw/*211.13*/("""}"""),format.raw/*211.14*/("""
 
-            """),format.raw/*219.13*/("""//Second section: Optimization settings
-            if(lastSettingsUpdateTime != settingsTime)"""),format.raw/*220.55*/("""{"""),format.raw/*220.56*/("""
-                """),format.raw/*221.17*/("""//Get JSON: address set by ConfigResource
-                $.get("/arbiter/config",function(data)"""),format.raw/*222.55*/("""{"""),format.raw/*222.56*/("""
-                    """),format.raw/*223.21*/("""var str = JSON.stringify(data);
+            """),format.raw/*213.13*/("""//Second section: Optimization settings
+            if(lastSettingsUpdateTime != settingsTime)"""),format.raw/*214.55*/("""{"""),format.raw/*214.56*/("""
+                """),format.raw/*215.17*/("""//Get JSON for components
+                $.get("/arbiter/config",function(data)"""),format.raw/*216.55*/("""{"""),format.raw/*216.56*/("""
+                    """),format.raw/*217.21*/("""var str = JSON.stringify(data);
 
                     var configDiv = $('#settingsdiv');
                     configDiv.html('');
 
                     var component = Component.getComponent(str);
                     component.render(configDiv);
-                """),format.raw/*230.17*/("""}"""),format.raw/*230.18*/(""");
+                """),format.raw/*224.17*/("""}"""),format.raw/*224.18*/(""");
 
                 lastSettingsUpdateTime = settingsTime;
-            """),format.raw/*233.13*/("""}"""),format.raw/*233.14*/("""
+            """),format.raw/*227.13*/("""}"""),format.raw/*227.14*/("""
 
-            """),format.raw/*235.13*/("""//Third section: Summary results table (summary info for each candidate)
-            if(lastResultsUpdateTime != resultsTime)"""),format.raw/*236.53*/("""{"""),format.raw/*236.54*/("""
+            """),format.raw/*229.13*/("""//Third section: Summary results table (summary info for each candidate)
+            if(lastResultsUpdateTime != resultsTime)"""),format.raw/*230.53*/("""{"""),format.raw/*230.54*/("""
 
-                """),format.raw/*238.17*/("""//Get JSON; address set by SummaryResultsResource
-                $.get("/arbiter/results",function(data)"""),format.raw/*239.56*/("""{"""),format.raw/*239.57*/("""
-                    """),format.raw/*240.21*/("""//Expect an array of CandidateInfo type objects here
+                """),format.raw/*232.17*/("""//Get JSON; address set by SummaryResultsResource
+                $.get("/arbiter/results",function(data)"""),format.raw/*233.56*/("""{"""),format.raw/*233.57*/("""
+                    """),format.raw/*234.21*/("""//Expect an array of CandidateInfo type objects here
                     resultsTableContent = data;
                     drawResultTable();
-                """),format.raw/*243.17*/("""}"""),format.raw/*243.18*/(""");
+                """),format.raw/*237.17*/("""}"""),format.raw/*237.18*/(""");
 
                 lastResultsUpdateTime = resultsTime;
-            """),format.raw/*246.13*/("""}"""),format.raw/*246.14*/("""
-        """),format.raw/*247.9*/("""}"""),format.raw/*247.10*/(""")
-    """),format.raw/*248.5*/("""}"""),format.raw/*248.6*/(""",2000);    //Loop every 2 seconds
+            """),format.raw/*240.13*/("""}"""),format.raw/*240.14*/("""
 
-    function createTable(tableObj,tableId,appendTo)"""),format.raw/*250.52*/("""{"""),format.raw/*250.53*/("""
-        """),format.raw/*251.9*/("""//Expect RenderableComponentTable
+            """),format.raw/*242.13*/("""//Finally: Currently selected result
+            if(selectedCandidateIdx != null)"""),format.raw/*243.45*/("""{"""),format.raw/*243.46*/("""
+                """),format.raw/*244.17*/("""//Get JSON for components
+                $.get("/arbiter/candidateInfo/"+selectedCandidateIdx,function(data)"""),format.raw/*245.84*/("""{"""),format.raw/*245.85*/("""
+                    """),format.raw/*246.21*/("""var str = JSON.stringify(data);
+
+                    var resultsViewDiv = $('#resultsviewdiv');
+                    resultsViewDiv.html('');
+
+                    var component = Component.getComponent(str);
+                    component.render(resultsViewDiv);
+                """),format.raw/*253.17*/("""}"""),format.raw/*253.18*/(""");
+            """),format.raw/*254.13*/("""}"""),format.raw/*254.14*/("""
+        """),format.raw/*255.9*/("""}"""),format.raw/*255.10*/(""")
+    """),format.raw/*256.5*/("""}"""),format.raw/*256.6*/(""",2000);    //Loop every 2 seconds
+
+    function createTable(tableObj,tableId,appendTo)"""),format.raw/*258.52*/("""{"""),format.raw/*258.53*/("""
+        """),format.raw/*259.9*/("""//Expect RenderableComponentTable
         var header = tableObj['header'];
         var values = tableObj['table'];
         var title = tableObj['title'];
         var nRows = (values ? values.length : 0);
 
-        if(title)"""),format.raw/*257.18*/("""{"""),format.raw/*257.19*/("""
-            """),format.raw/*258.13*/("""appendTo.append("<h5>"+title+"</h5>");
-        """),format.raw/*259.9*/("""}"""),format.raw/*259.10*/("""
+        if(title)"""),format.raw/*265.18*/("""{"""),format.raw/*265.19*/("""
+            """),format.raw/*266.13*/("""appendTo.append("<h5>"+title+"</h5>");
+        """),format.raw/*267.9*/("""}"""),format.raw/*267.10*/("""
 
-        """),format.raw/*261.9*/("""var table;
+        """),format.raw/*269.9*/("""var table;
         if(tableId) table = $("<table id=\"" + tableId + "\" class=\"renderableComponentTable\">");
         else table = $("<table class=\"renderableComponentTable\">");
-        if(header)"""),format.raw/*264.19*/("""{"""),format.raw/*264.20*/("""
-            """),format.raw/*265.13*/("""var headerRow = $("<tr>");
+        if(header)"""),format.raw/*272.19*/("""{"""),format.raw/*272.20*/("""
+            """),format.raw/*273.13*/("""var headerRow = $("<tr>");
             var len = header.length;
-            for( var i=0; i<len; i++ )"""),format.raw/*267.39*/("""{"""),format.raw/*267.40*/("""
-                """),format.raw/*268.17*/("""headerRow.append($("<th>" + header[i] + "</th>"));
-            """),format.raw/*269.13*/("""}"""),format.raw/*269.14*/("""
-            """),format.raw/*270.13*/("""headerRow.append($("</tr>"));
+            for( var i=0; i<len; i++ )"""),format.raw/*275.39*/("""{"""),format.raw/*275.40*/("""
+                """),format.raw/*276.17*/("""headerRow.append($("<th>" + header[i] + "</th>"));
+            """),format.raw/*277.13*/("""}"""),format.raw/*277.14*/("""
+            """),format.raw/*278.13*/("""headerRow.append($("</tr>"));
             table.append(headerRow);
-        """),format.raw/*272.9*/("""}"""),format.raw/*272.10*/("""
+        """),format.raw/*280.9*/("""}"""),format.raw/*280.10*/("""
 
-        """),format.raw/*274.9*/("""if(values)"""),format.raw/*274.19*/("""{"""),format.raw/*274.20*/("""
-            """),format.raw/*275.13*/("""for( var i=0; i<nRows; i++ )"""),format.raw/*275.41*/("""{"""),format.raw/*275.42*/("""
-                """),format.raw/*276.17*/("""var row = $("<tr>");
+        """),format.raw/*282.9*/("""if(values)"""),format.raw/*282.19*/("""{"""),format.raw/*282.20*/("""
+            """),format.raw/*283.13*/("""for( var i=0; i<nRows; i++ )"""),format.raw/*283.41*/("""{"""),format.raw/*283.42*/("""
+                """),format.raw/*284.17*/("""var row = $("<tr>");
                 var rowValues = values[i];
                 var len = rowValues.length;
-                for( var j=0; j<len; j++ )"""),format.raw/*279.43*/("""{"""),format.raw/*279.44*/("""
-                    """),format.raw/*280.21*/("""row.append($('<td>'+rowValues[j]+'</td>'));
-                """),format.raw/*281.17*/("""}"""),format.raw/*281.18*/("""
-                """),format.raw/*282.17*/("""row.append($("</tr>"));
+                for( var j=0; j<len; j++ )"""),format.raw/*287.43*/("""{"""),format.raw/*287.44*/("""
+                    """),format.raw/*288.21*/("""row.append($('<td>'+rowValues[j]+'</td>'));
+                """),format.raw/*289.17*/("""}"""),format.raw/*289.18*/("""
+                """),format.raw/*290.17*/("""row.append($("</tr>"));
                 table.append(row);
-            """),format.raw/*284.13*/("""}"""),format.raw/*284.14*/("""
-        """),format.raw/*285.9*/("""}"""),format.raw/*285.10*/("""
+            """),format.raw/*292.13*/("""}"""),format.raw/*292.14*/("""
+        """),format.raw/*293.9*/("""}"""),format.raw/*293.10*/("""
 
-        """),format.raw/*287.9*/("""table.append($("</table>"));
+        """),format.raw/*295.9*/("""table.append($("</table>"));
         appendTo.append(table);
-    """),format.raw/*289.5*/("""}"""),format.raw/*289.6*/("""
+    """),format.raw/*297.5*/("""}"""),format.raw/*297.6*/("""
 
-    """),format.raw/*291.5*/("""function drawResultTable()"""),format.raw/*291.31*/("""{"""),format.raw/*291.32*/("""
+    """),format.raw/*299.5*/("""function drawResultTable()"""),format.raw/*299.31*/("""{"""),format.raw/*299.32*/("""
 
-        """),format.raw/*293.9*/("""//Remove all elements from the table body
+        """),format.raw/*301.9*/("""//Remove all elements from the table body
         var tableBody = $('#resultsTableBody');
         tableBody.empty();
 
@@ -331,142 +347,121 @@ Seq[Any](format.raw/*1.1*/("""<html>
         else sorted = resultsTableContent.sort(compareStatus);
 
         var len = (!resultsTableContent ? 0 : resultsTableContent.length);
-        for(var i=0; i<len; i++)"""),format.raw/*318.33*/("""{"""),format.raw/*318.34*/("""
-            """),format.raw/*319.13*/("""var row = $('<tr class="resultTableRow" id="resultTableRow-' + sorted[i].index + '"/>');
-            row.append($("<td>" + sorted[i][0] + "</td>"));
+        for(var i=0; i<len; i++)"""),format.raw/*326.33*/("""{"""),format.raw/*326.34*/("""
+"""),format.raw/*327.1*/("""//            var row = $('<tr class="resultTableRow" id="rTbl-' + sorted[i][0] + '"/>');
+            var row;
+            if(selectedCandidateIdx == sorted[i][0])"""),format.raw/*329.53*/("""{"""),format.raw/*329.54*/("""
+                """),format.raw/*330.17*/("""//Selected row
+                row = $('<tr class="resultTableRowSelected" id="rTbl-' + sorted[i][0] + '"/>');
+            """),format.raw/*332.13*/("""}"""),format.raw/*332.14*/(""" """),format.raw/*332.15*/("""else """),format.raw/*332.20*/("""{"""),format.raw/*332.21*/("""
+                """),format.raw/*333.17*/("""//Normal row
+                row = $('<tr class="resultTableRow" id="rTbl-' + sorted[i][0] + '"/>');
+            """),format.raw/*335.13*/("""}"""),format.raw/*335.14*/("""
+            """),format.raw/*336.13*/("""row.append($("<td>" + sorted[i][0] + "</td>"));
             var score = sorted[i][1];
             row.append($("<td>" + ((!score || score == "null") ? "-" : score) + "</td>"));
             row.append($("<td>" + sorted[i][2] + "</td>"));
             tableBody.append(row);
+        """),format.raw/*341.9*/("""}"""),format.raw/*341.10*/("""
+    """),format.raw/*342.5*/("""}"""),format.raw/*342.6*/("""
 
-            //Create hidden row for expanding:
-            var rowID = 'resultTableRow-' + sorted[i][0] + '-content';
-            var contentRow = $('<tr id="' + rowID + '" class="resultTableRowContent"/>');
-            var td3 = $("<td colspan=3 id=" + rowID + "-td></td>");
-            td3.append("(Result status - loading)");
-            contentRow.append(td3);
-
-            tableBody.append(contentRow);
-            if(expandedRowsCandidateIDs.indexOf(sorted[i][0]) == -1 )"""),format.raw/*334.70*/("""{"""),format.raw/*334.71*/("""
-                """),format.raw/*335.17*/("""contentRow.hide();
-
-            """),format.raw/*337.13*/("""}"""),format.raw/*337.14*/(""" """),format.raw/*337.15*/("""else """),format.raw/*337.20*/("""{"""),format.raw/*337.21*/("""
-                """),format.raw/*338.17*/("""//Load info. TODO: make this more efficient (stored info, check for updates, etc)
-                td3.empty();
-
-                var path = "/modelResults/" + sorted[i][0];
-                loadCandidateDetails(path, td3);
-
-                contentRow.show();
-            """),format.raw/*345.13*/("""}"""),format.raw/*345.14*/("""
-        """),format.raw/*346.9*/("""}"""),format.raw/*346.10*/("""
+    """),format.raw/*344.5*/("""//Compare function for results, based on sort order
+    function compareResultsIndex(a, b)"""),format.raw/*345.39*/("""{"""),format.raw/*345.40*/("""
+        """),format.raw/*346.9*/("""return (resultTableSortOrder == "ascending" ? a[0] - b[0] : b[0] - a[0]);
     """),format.raw/*347.5*/("""}"""),format.raw/*347.6*/("""
+    """),format.raw/*348.5*/("""function compareScores(a,b)"""),format.raw/*348.32*/("""{"""),format.raw/*348.33*/("""
+        """),format.raw/*349.9*/("""//TODO Not always numbers...
+        if(resultTableSortOrder == "ascending")"""),format.raw/*350.48*/("""{"""),format.raw/*350.49*/("""
+            """),format.raw/*351.13*/("""return a[1] - b[1];
+        """),format.raw/*352.9*/("""}"""),format.raw/*352.10*/(""" """),format.raw/*352.11*/("""else """),format.raw/*352.16*/("""{"""),format.raw/*352.17*/("""
+            """),format.raw/*353.13*/("""return b[1] - a[1];
+        """),format.raw/*354.9*/("""}"""),format.raw/*354.10*/("""
+    """),format.raw/*355.5*/("""}"""),format.raw/*355.6*/("""
+    """),format.raw/*356.5*/("""function compareStatus(a,b)"""),format.raw/*356.32*/("""{"""),format.raw/*356.33*/("""
+        """),format.raw/*357.9*/("""//TODO: secondary sort on... score? index?
+        if(resultTableSortOrder == "ascending")"""),format.raw/*358.48*/("""{"""),format.raw/*358.49*/("""
+            """),format.raw/*359.13*/("""return (a[2] < b[2] ? -1 : (a[2] > b[2] ? 1 : 0));
+        """),format.raw/*360.9*/("""}"""),format.raw/*360.10*/(""" """),format.raw/*360.11*/("""else """),format.raw/*360.16*/("""{"""),format.raw/*360.17*/("""
+            """),format.raw/*361.13*/("""return (a[2] < b[2] ? 1 : (a[2] > b[2] ? -1 : 0));
+        """),format.raw/*362.9*/("""}"""),format.raw/*362.10*/("""
+    """),format.raw/*363.5*/("""}"""),format.raw/*363.6*/("""
 
-    """),format.raw/*349.5*/("""//Compare function for results, based on sort order
-    function compareResultsIndex(a, b)"""),format.raw/*350.39*/("""{"""),format.raw/*350.40*/("""
-        """),format.raw/*351.9*/("""return (resultTableSortOrder == "ascending" ? a[0] - b[0] : b[0] - a[0]);
-    """),format.raw/*352.5*/("""}"""),format.raw/*352.6*/("""
-    """),format.raw/*353.5*/("""function compareScores(a,b)"""),format.raw/*353.32*/("""{"""),format.raw/*353.33*/("""
-        """),format.raw/*354.9*/("""//TODO Not always numbers...
-        if(resultTableSortOrder == "ascending")"""),format.raw/*355.48*/("""{"""),format.raw/*355.49*/("""
-            """),format.raw/*356.13*/("""return a[1] - b[1];
-        """),format.raw/*357.9*/("""}"""),format.raw/*357.10*/(""" """),format.raw/*357.11*/("""else """),format.raw/*357.16*/("""{"""),format.raw/*357.17*/("""
-            """),format.raw/*358.13*/("""return b[1] - a[1];
-        """),format.raw/*359.9*/("""}"""),format.raw/*359.10*/("""
-    """),format.raw/*360.5*/("""}"""),format.raw/*360.6*/("""
-    """),format.raw/*361.5*/("""function compareStatus(a,b)"""),format.raw/*361.32*/("""{"""),format.raw/*361.33*/("""
-        """),format.raw/*362.9*/("""//TODO: secondary sort on... score? index?
-        if(resultTableSortOrder == "ascending")"""),format.raw/*363.48*/("""{"""),format.raw/*363.49*/("""
-            """),format.raw/*364.13*/("""return (a[2] < b[2] ? -1 : (a[2] > b[2] ? 1 : 0));
-        """),format.raw/*365.9*/("""}"""),format.raw/*365.10*/(""" """),format.raw/*365.11*/("""else """),format.raw/*365.16*/("""{"""),format.raw/*365.17*/("""
-            """),format.raw/*366.13*/("""return (a[2] < b[2] ? 1 : (a[2] > b[2] ? -1 : 0));
-        """),format.raw/*367.9*/("""}"""),format.raw/*367.10*/("""
-    """),format.raw/*368.5*/("""}"""),format.raw/*368.6*/("""
-
-    """),format.raw/*370.5*/("""//Do a HTTP request on the specified path, parse and insert into the provided element
-    function loadCandidateDetails(path, elementToAppendTo)"""),format.raw/*371.59*/("""{"""),format.raw/*371.60*/("""
-        """),format.raw/*372.9*/("""$.get(path, function (data) """),format.raw/*372.37*/("""{"""),format.raw/*372.38*/("""
-            """),format.raw/*373.13*/("""var str = JSON.stringify(data);
+    """),format.raw/*365.5*/("""//Do a HTTP request on the specified path, parse and insert into the provided element
+    function loadCandidateDetails(path, elementToAppendTo)"""),format.raw/*366.59*/("""{"""),format.raw/*366.60*/("""
+        """),format.raw/*367.9*/("""$.get(path, function (data) """),format.raw/*367.37*/("""{"""),format.raw/*367.38*/("""
+            """),format.raw/*368.13*/("""var str = JSON.stringify(data);
             var component = Component.getComponent(str);
             component.render(elementToAppendTo);
-        """),format.raw/*376.9*/("""}"""),format.raw/*376.10*/(""");
-    """),format.raw/*377.5*/("""}"""),format.raw/*377.6*/("""
+        """),format.raw/*371.9*/("""}"""),format.raw/*371.10*/(""");
+    """),format.raw/*372.5*/("""}"""),format.raw/*372.6*/("""
 
 
 
-    """),format.raw/*381.5*/("""//Sorting by column: Intercept click events on table header
-    $(function()"""),format.raw/*382.17*/("""{"""),format.raw/*382.18*/("""
-        """),format.raw/*383.9*/("""$("#resultsTableHeader").delegate("th", "click", function(e) """),format.raw/*383.70*/("""{"""),format.raw/*383.71*/("""
-            """),format.raw/*384.13*/("""//console.log("Header clicked on at: " + $(e.currentTarget).index() + " - " + $(e.currentTarget).html());
+    """),format.raw/*376.5*/("""//Sorting by column: Intercept click events on table header
+    $(function()"""),format.raw/*377.17*/("""{"""),format.raw/*377.18*/("""
+        """),format.raw/*378.9*/("""$("#resultsTableHeader").delegate("th", "click", function(e) """),format.raw/*378.70*/("""{"""),format.raw/*378.71*/("""
+            """),format.raw/*379.13*/("""//console.log("Header clicked on at: " + $(e.currentTarget).index() + " - " + $(e.currentTarget).html());
             //Update the sort order for the table:
             var clickIndex = $(e.currentTarget).index();
-            if(clickIndex == resultTableSortIndex)"""),format.raw/*387.51*/("""{"""),format.raw/*387.52*/("""
-                """),format.raw/*388.17*/("""//Switch sort order: ascending -> descending or descending -> ascending
-                if(resultTableSortOrder == "ascending")"""),format.raw/*389.56*/("""{"""),format.raw/*389.57*/("""
-                    """),format.raw/*390.21*/("""resultTableSortOrder = "descending";
-                """),format.raw/*391.17*/("""}"""),format.raw/*391.18*/(""" """),format.raw/*391.19*/("""else """),format.raw/*391.24*/("""{"""),format.raw/*391.25*/("""
-                    """),format.raw/*392.21*/("""resultTableSortOrder = "ascending";
-                """),format.raw/*393.17*/("""}"""),format.raw/*393.18*/("""
-            """),format.raw/*394.13*/("""}"""),format.raw/*394.14*/(""" """),format.raw/*394.15*/("""else """),format.raw/*394.20*/("""{"""),format.raw/*394.21*/("""
-                """),format.raw/*395.17*/("""//Sort on column, ascending:
+            if(clickIndex == resultTableSortIndex)"""),format.raw/*382.51*/("""{"""),format.raw/*382.52*/("""
+                """),format.raw/*383.17*/("""//Switch sort order: ascending -> descending or descending -> ascending
+                if(resultTableSortOrder == "ascending")"""),format.raw/*384.56*/("""{"""),format.raw/*384.57*/("""
+                    """),format.raw/*385.21*/("""resultTableSortOrder = "descending";
+                """),format.raw/*386.17*/("""}"""),format.raw/*386.18*/(""" """),format.raw/*386.19*/("""else """),format.raw/*386.24*/("""{"""),format.raw/*386.25*/("""
+                    """),format.raw/*387.21*/("""resultTableSortOrder = "ascending";
+                """),format.raw/*388.17*/("""}"""),format.raw/*388.18*/("""
+            """),format.raw/*389.13*/("""}"""),format.raw/*389.14*/(""" """),format.raw/*389.15*/("""else """),format.raw/*389.20*/("""{"""),format.raw/*389.21*/("""
+                """),format.raw/*390.17*/("""//Sort on column, ascending:
                 resultTableSortIndex = clickIndex;
                 resultTableSortOrder = "ascending";
-            """),format.raw/*398.13*/("""}"""),format.raw/*398.14*/("""
+            """),format.raw/*393.13*/("""}"""),format.raw/*393.14*/("""
 
-            """),format.raw/*400.13*/("""//Clear record of expanded rows
+            """),format.raw/*395.13*/("""//Clear record of expanded rows
             expandedRowsCandidateIDs = [];
 
             //Redraw table
             drawResultTable();
-        """),format.raw/*405.9*/("""}"""),format.raw/*405.10*/(""");
-    """),format.raw/*406.5*/("""}"""),format.raw/*406.6*/(""");
+        """),format.raw/*400.9*/("""}"""),format.raw/*400.10*/(""");
+    """),format.raw/*401.5*/("""}"""),format.raw/*401.6*/(""");
 
     //Displaying model/candidate details: Intercept click events on table rows -> toggle visibility on content rows
-    $(function()"""),format.raw/*409.17*/("""{"""),format.raw/*409.18*/("""
-        """),format.raw/*410.9*/("""$("#resultsTableBody").delegate("tr", "click", function(e)"""),format.raw/*410.67*/("""{"""),format.raw/*410.68*/("""
-"""),format.raw/*411.1*/("""//            console.log("Clicked row: " + this.id + " with class: " + this.className);
-            var id = this.id;   //Expect: resultTableRow-X  where X is some index
+    $(function()"""),format.raw/*404.17*/("""{"""),format.raw/*404.18*/("""
+        """),format.raw/*405.9*/("""$("#resultsTableBody").delegate("tr", "click", function(e)"""),format.raw/*405.67*/("""{"""),format.raw/*405.68*/("""
+            """),format.raw/*406.13*/("""var id = this.id;   //Expect: rTbl-X  where X is some index
             var dashIdx = id.indexOf("-");
             var candidateID = Number(id.substring(dashIdx+1));
-            if(this.className == "resultTableRow")"""),format.raw/*415.51*/("""{"""),format.raw/*415.52*/("""
-                """),format.raw/*416.17*/("""var contentRow = $('#' + this.id + '-content');
-                var expRowsArrayIdx = expandedRowsCandidateIDs.indexOf(candidateID);
-                if(expRowsArrayIdx == -1 )"""),format.raw/*418.43*/("""{"""),format.raw/*418.44*/("""
-                    """),format.raw/*419.21*/("""//Currently hidden
-                    expandedRowsCandidateIDs.push(candidateID); //Mark as expanded
-                    var innerTD = $('#' + this.id + '-content-td');
-                    innerTD.empty();
-                    var path = "/modelResults/" + candidateID;
-                    loadCandidateDetails(path,innerTD);
-                """),format.raw/*425.17*/("""}"""),format.raw/*425.18*/(""" """),format.raw/*425.19*/("""else """),format.raw/*425.24*/("""{"""),format.raw/*425.25*/("""
-                    """),format.raw/*426.21*/("""//Currently expanded
-                    expandedRowsCandidateIDs.splice(expRowsArrayIdx,1);
-                """),format.raw/*428.17*/("""}"""),format.raw/*428.18*/("""
-                """),format.raw/*429.17*/("""contentRow.toggle();
-            """),format.raw/*430.13*/("""}"""),format.raw/*430.14*/("""
-        """),format.raw/*431.9*/("""}"""),format.raw/*431.10*/(""");
-    """),format.raw/*432.5*/("""}"""),format.raw/*432.6*/(""");
+
+            console.log("Clicked row: " + this.id + " with class: " + this.className + ", candidateId = " + candidateID);
+
+            if(this.className == "resultTableRow")"""),format.raw/*412.51*/("""{"""),format.raw/*412.52*/("""
+                """),format.raw/*413.17*/("""//Set selected model
+                selectedCandidateIdx = candidateID;
+
+                //TODO fire off update
+            """),format.raw/*417.13*/("""}"""),format.raw/*417.14*/("""
+        """),format.raw/*418.9*/("""}"""),format.raw/*418.10*/(""");
+    """),format.raw/*419.5*/("""}"""),format.raw/*419.6*/(""");
 
 </script>
 <script>
-    $(function () """),format.raw/*436.19*/("""{"""),format.raw/*436.20*/("""
-        """),format.raw/*437.9*/("""$("#accordion").accordion("""),format.raw/*437.35*/("""{"""),format.raw/*437.36*/("""
-            """),format.raw/*438.13*/("""collapsible: true,
+    $(function () """),format.raw/*423.19*/("""{"""),format.raw/*423.20*/("""
+        """),format.raw/*424.9*/("""$("#accordion").accordion("""),format.raw/*424.35*/("""{"""),format.raw/*424.36*/("""
+            """),format.raw/*425.13*/("""collapsible: true,
             heightStyle: "content"
-        """),format.raw/*440.9*/("""}"""),format.raw/*440.10*/(""");
-    """),format.raw/*441.5*/("""}"""),format.raw/*441.6*/(""");
-    $(function () """),format.raw/*442.19*/("""{"""),format.raw/*442.20*/("""
-        """),format.raw/*443.9*/("""$("#accordion2").accordion("""),format.raw/*443.36*/("""{"""),format.raw/*443.37*/("""
-            """),format.raw/*444.13*/("""collapsible: true,
+        """),format.raw/*427.9*/("""}"""),format.raw/*427.10*/(""");
+    """),format.raw/*428.5*/("""}"""),format.raw/*428.6*/(""");
+    $(function () """),format.raw/*429.19*/("""{"""),format.raw/*429.20*/("""
+        """),format.raw/*430.9*/("""$("#accordion2").accordion("""),format.raw/*430.36*/("""{"""),format.raw/*430.37*/("""
+            """),format.raw/*431.13*/("""collapsible: true,
             heightStyle: "content"
-        """),format.raw/*446.9*/("""}"""),format.raw/*446.10*/(""");
-    """),format.raw/*447.5*/("""}"""),format.raw/*447.6*/(""");
-    $(function () """),format.raw/*448.19*/("""{"""),format.raw/*448.20*/("""
-        """),format.raw/*449.9*/("""$("#accordion3").accordion("""),format.raw/*449.36*/("""{"""),format.raw/*449.37*/("""
-            """),format.raw/*450.13*/("""collapsible: true,
+        """),format.raw/*433.9*/("""}"""),format.raw/*433.10*/(""");
+    """),format.raw/*434.5*/("""}"""),format.raw/*434.6*/(""");
+    $(function () """),format.raw/*435.19*/("""{"""),format.raw/*435.20*/("""
+        """),format.raw/*436.9*/("""$("#accordion3").accordion("""),format.raw/*436.36*/("""{"""),format.raw/*436.37*/("""
+            """),format.raw/*437.13*/("""collapsible: true,
             heightStyle: "content"
-        """),format.raw/*452.9*/("""}"""),format.raw/*452.10*/(""");
-    """),format.raw/*453.5*/("""}"""),format.raw/*453.6*/(""");
+        """),format.raw/*439.9*/("""}"""),format.raw/*439.10*/(""");
+    """),format.raw/*440.5*/("""}"""),format.raw/*440.6*/(""");
 </script>
         <table style="width: 100%;
             padding: 5px;" class="hd">
@@ -542,11 +537,11 @@ Seq[Any](format.raw/*1.1*/("""<html>
 object ArbiterUI extends ArbiterUI_Scope0.ArbiterUI
               /*
                   -- GENERATED --
-                  DATE: Wed Jul 19 21:58:09 AEST 2017
+                  DATE: Fri Jul 21 13:28:10 AEST 2017
                   SOURCE: C:/DL4J/Git/Arbiter/arbiter-ui/src/main/views/org/deeplearning4j/arbiter/ui/views/ArbiterUI.scala.html
-                  HASH: f08a1b788972cb29d2adfbc031555b267202aefa
-                  MATRIX: 647->0|1031->356|1060->357|1102->371|1224->466|1253->467|1292->479|1331->490|1360->491|1402->505|1503->579|1532->580|1571->592|1608->601|1637->602|1679->616|1742->652|1771->653|1810->665|1841->668|1870->669|1912->683|2164->908|2193->909|2232->921|2263->924|2292->925|2334->939|2588->1166|2617->1167|2656->1179|2703->1198|2732->1199|2774->1213|2946->1358|2975->1359|3014->1371|3110->1439|3139->1440|3181->1454|3323->1569|3352->1570|3391->1582|3441->1604|3470->1605|3512->1619|3683->1763|3712->1764|3751->1776|3801->1798|3830->1799|3872->1813|4002->1916|4031->1917|4070->1929|4230->2061|4259->2062|4301->2076|4454->2202|4483->2203|4520->2213|4577->2242|4606->2243|4648->2257|4904->2486|4933->2487|4972->2499|5058->2557|5087->2558|5129->2572|5222->2638|5251->2639|5290->2651|5426->2759|5455->2760|5497->2774|5558->2808|5587->2809|5626->2821|5673->2840|5702->2841|5744->2855|6344->3427|6374->3428|6414->3440|6461->3458|6491->3459|6534->3473|6593->3504|6623->3505|6663->3517|6716->3541|6746->3542|6789->3556|6848->3587|6878->3588|6918->3600|7048->3700|7079->3701|7122->3715|7577->4142|7607->4143|7647->4155|7736->4215|7766->4216|7809->4230|7907->4300|7937->4301|8013->4348|8043->4349|8086->4363|8417->4666|8447->4667|8487->4679|8549->4712|8579->4713|8622->4727|8733->4810|8763->4811|8801->4821|8853->4844|8883->4845|8926->4859|9044->4949|9074->4950|9112->4960|9152->4971|9182->4972|9225->4986|9318->5051|9348->5052|9388->5064|10661->6308|10691->6309|10729->6319|10860->6421|10890->6422|10933->6436|11549->7023|11579->7024|11626->7042|11760->7147|11790->7148|11841->7170|12153->7453|12183->7454|12282->7524|12312->7525|12357->7541|12481->7636|12511->7637|12558->7655|12684->7752|12714->7753|12765->7775|13060->8041|13090->8042|13193->8116|13223->8117|13268->8133|13423->8259|13453->8260|13502->8280|13637->8386|13667->8387|13718->8409|13908->8570|13938->8571|14039->8643|14069->8644|14107->8654|14137->8655|14172->8662|14201->8663|14318->8751|14348->8752|14386->8762|14643->8990|14673->8991|14716->9005|14792->9053|14822->9054|14862->9066|15093->9268|15123->9269|15166->9283|15299->9387|15329->9388|15376->9406|15469->9470|15499->9471|15542->9485|15647->9562|15677->9563|15717->9575|15756->9585|15786->9586|15829->9600|15886->9628|15916->9629|15963->9647|16145->9800|16175->9801|16226->9823|16316->9884|16346->9885|16393->9903|16495->9976|16525->9977|16563->9987|16593->9988|16633->10000|16728->10067|16757->10068|16793->10076|16848->10102|16878->10103|16918->10115|18275->11443|18305->11444|18348->11458|19243->12324|19273->12325|19320->12343|19383->12377|19413->12378|19443->12379|19477->12384|19507->12385|19554->12403|19859->12679|19889->12680|19927->12690|19957->12691|19991->12697|20020->12698|20056->12706|20176->12797|20206->12798|20244->12808|20351->12887|20380->12888|20414->12894|20470->12921|20500->12922|20538->12932|20644->13009|20674->13010|20717->13024|20774->13053|20804->13054|20834->13055|20868->13060|20898->13061|20941->13075|20998->13104|21028->13105|21062->13111|21091->13112|21125->13118|21181->13145|21211->13146|21249->13156|21369->13247|21399->13248|21442->13262|21530->13322|21560->13323|21590->13324|21624->13329|21654->13330|21697->13344|21785->13404|21815->13405|21849->13411|21878->13412|21914->13420|22088->13565|22118->13566|22156->13576|22213->13604|22243->13605|22286->13619|22463->13768|22493->13769|22529->13777|22558->13778|22598->13790|22704->13867|22734->13868|22772->13878|22862->13939|22892->13940|22935->13954|23231->14221|23261->14222|23308->14240|23465->14368|23495->14369|23546->14391|23629->14445|23659->14446|23689->14447|23723->14452|23753->14453|23804->14475|23886->14528|23916->14529|23959->14543|23989->14544|24019->14545|24053->14550|24083->14551|24130->14569|24306->14716|24336->14717|24381->14733|24556->14880|24586->14881|24622->14889|24651->14890|24819->15029|24849->15030|24887->15040|24974->15098|25004->15099|25034->15101|25394->15432|25424->15433|25471->15451|25677->15628|25707->15629|25758->15651|26135->15999|26165->16000|26195->16001|26229->16006|26259->16007|26310->16029|26450->16140|26480->16141|26527->16159|26590->16193|26620->16194|26658->16204|26688->16205|26724->16213|26753->16214|26827->16259|26857->16260|26895->16270|26950->16296|26980->16297|27023->16311|27115->16375|27145->16376|27181->16384|27210->16385|27261->16407|27291->16408|27329->16418|27385->16445|27415->16446|27458->16460|27550->16524|27580->16525|27616->16533|27645->16534|27696->16556|27726->16557|27764->16567|27820->16594|27850->16595|27893->16609|27985->16673|28015->16674|28051->16682|28080->16683
-                  LINES: 25->1|36->12|36->12|37->13|40->16|40->16|42->18|42->18|42->18|43->19|46->22|46->22|48->24|48->24|48->24|49->25|50->26|50->26|52->28|52->28|52->28|53->29|59->35|59->35|61->37|61->37|61->37|62->38|68->44|68->44|70->46|70->46|70->46|71->47|75->51|75->51|77->53|77->53|77->53|78->54|80->56|80->56|82->58|82->58|82->58|83->59|87->63|87->63|89->65|89->65|89->65|90->66|93->69|93->69|95->71|96->72|96->72|97->73|99->75|99->75|100->76|100->76|100->76|101->77|106->82|106->82|108->84|109->85|109->85|110->86|112->88|112->88|114->90|115->91|115->91|116->92|117->93|117->93|119->95|119->95|119->95|120->96|136->112|136->112|138->114|138->114|138->114|139->115|140->116|140->116|142->118|142->118|142->118|143->119|144->120|144->120|146->122|146->122|146->122|147->123|155->131|155->131|157->133|158->134|158->134|159->135|161->137|161->137|163->139|163->139|164->140|170->146|170->146|172->148|173->149|173->149|174->150|177->153|177->153|178->154|178->154|178->154|179->155|182->158|182->158|183->159|183->159|183->159|184->160|186->162|186->162|188->164|217->193|217->193|218->194|219->195|219->195|220->196|229->205|229->205|230->206|231->207|231->207|232->208|238->214|238->214|241->217|241->217|243->219|244->220|244->220|245->221|246->222|246->222|247->223|254->230|254->230|257->233|257->233|259->235|260->236|260->236|262->238|263->239|263->239|264->240|267->243|267->243|270->246|270->246|271->247|271->247|272->248|272->248|274->250|274->250|275->251|281->257|281->257|282->258|283->259|283->259|285->261|288->264|288->264|289->265|291->267|291->267|292->268|293->269|293->269|294->270|296->272|296->272|298->274|298->274|298->274|299->275|299->275|299->275|300->276|303->279|303->279|304->280|305->281|305->281|306->282|308->284|308->284|309->285|309->285|311->287|313->289|313->289|315->291|315->291|315->291|317->293|342->318|342->318|343->319|358->334|358->334|359->335|361->337|361->337|361->337|361->337|361->337|362->338|369->345|369->345|370->346|370->346|371->347|371->347|373->349|374->350|374->350|375->351|376->352|376->352|377->353|377->353|377->353|378->354|379->355|379->355|380->356|381->357|381->357|381->357|381->357|381->357|382->358|383->359|383->359|384->360|384->360|385->361|385->361|385->361|386->362|387->363|387->363|388->364|389->365|389->365|389->365|389->365|389->365|390->366|391->367|391->367|392->368|392->368|394->370|395->371|395->371|396->372|396->372|396->372|397->373|400->376|400->376|401->377|401->377|405->381|406->382|406->382|407->383|407->383|407->383|408->384|411->387|411->387|412->388|413->389|413->389|414->390|415->391|415->391|415->391|415->391|415->391|416->392|417->393|417->393|418->394|418->394|418->394|418->394|418->394|419->395|422->398|422->398|424->400|429->405|429->405|430->406|430->406|433->409|433->409|434->410|434->410|434->410|435->411|439->415|439->415|440->416|442->418|442->418|443->419|449->425|449->425|449->425|449->425|449->425|450->426|452->428|452->428|453->429|454->430|454->430|455->431|455->431|456->432|456->432|460->436|460->436|461->437|461->437|461->437|462->438|464->440|464->440|465->441|465->441|466->442|466->442|467->443|467->443|467->443|468->444|470->446|470->446|471->447|471->447|472->448|472->448|473->449|473->449|473->449|474->450|476->452|476->452|477->453|477->453
+                  HASH: f0d8d3ffdaa63de81b259cd23326f41365a4aeb9
+                  MATRIX: 647->0|1031->356|1060->357|1102->371|1224->466|1253->467|1292->479|1331->490|1360->491|1402->505|1503->579|1532->580|1571->592|1608->601|1637->602|1679->616|1742->652|1771->653|1810->665|1841->668|1870->669|1912->683|2164->908|2193->909|2232->921|2263->924|2292->925|2334->939|2588->1166|2617->1167|2656->1179|2703->1198|2732->1199|2774->1213|2946->1358|2975->1359|3014->1371|3110->1439|3139->1440|3181->1454|3323->1569|3352->1570|3391->1582|3441->1604|3470->1605|3512->1619|3683->1763|3712->1764|3751->1776|3801->1798|3830->1799|3872->1813|4002->1916|4031->1917|4070->1929|4230->2061|4259->2062|4301->2076|4454->2202|4483->2203|4520->2213|4577->2242|4606->2243|4648->2257|4904->2486|4933->2487|4972->2499|5058->2557|5087->2558|5129->2572|5222->2638|5251->2639|5290->2651|5427->2760|5456->2761|5498->2775|5577->2827|5606->2828|5645->2840|5692->2859|5721->2860|5763->2874|6363->3446|6393->3447|6433->3459|6480->3477|6510->3478|6553->3492|6612->3523|6642->3524|6682->3536|6735->3560|6765->3561|6808->3575|6867->3606|6897->3607|6937->3619|7067->3719|7098->3720|7141->3734|7596->4161|7626->4162|7666->4174|7728->4207|7758->4208|7801->4222|8132->4525|8162->4526|8202->4538|8264->4571|8294->4572|8337->4586|8448->4669|8478->4670|8516->4680|8568->4703|8598->4704|8641->4718|8759->4808|8789->4809|8827->4819|8867->4830|8897->4831|8940->4845|9033->4910|9063->4911|9103->4923|10374->6165|10404->6166|10442->6176|10573->6278|10603->6279|10646->6293|11262->6880|11292->6881|11339->6899|11473->7004|11503->7005|11554->7027|11866->7310|11896->7311|11995->7381|12025->7382|12070->7398|12194->7493|12224->7494|12271->7512|12381->7593|12411->7594|12462->7616|12757->7882|12787->7883|12890->7957|12920->7958|12965->7974|13120->8100|13150->8101|13199->8121|13334->8227|13364->8228|13415->8250|13603->8409|13633->8410|13734->8482|13764->8483|13809->8499|13920->8581|13950->8582|13997->8600|14136->8710|14166->8711|14217->8733|14530->9017|14560->9018|14605->9034|14635->9035|14673->9045|14703->9046|14738->9053|14767->9054|14884->9142|14914->9143|14952->9153|15209->9381|15239->9382|15282->9396|15358->9444|15388->9445|15428->9457|15659->9659|15689->9660|15732->9674|15865->9778|15895->9779|15942->9797|16035->9861|16065->9862|16108->9876|16213->9953|16243->9954|16283->9966|16322->9976|16352->9977|16395->9991|16452->10019|16482->10020|16529->10038|16711->10191|16741->10192|16792->10214|16882->10275|16912->10276|16959->10294|17061->10367|17091->10368|17129->10378|17159->10379|17199->10391|17294->10458|17323->10459|17359->10467|17414->10493|17444->10494|17484->10506|18841->11834|18871->11835|18901->11837|19095->12002|19125->12003|19172->12021|19326->12146|19356->12147|19386->12148|19420->12153|19450->12154|19497->12172|19641->12287|19671->12288|19714->12302|20027->12587|20057->12588|20091->12594|20120->12595|20156->12603|20276->12694|20306->12695|20344->12705|20451->12784|20480->12785|20514->12791|20570->12818|20600->12819|20638->12829|20744->12906|20774->12907|20817->12921|20874->12950|20904->12951|20934->12952|20968->12957|20998->12958|21041->12972|21098->13001|21128->13002|21162->13008|21191->13009|21225->13015|21281->13042|21311->13043|21349->13053|21469->13144|21499->13145|21542->13159|21630->13219|21660->13220|21690->13221|21724->13226|21754->13227|21797->13241|21885->13301|21915->13302|21949->13308|21978->13309|22014->13317|22188->13462|22218->13463|22256->13473|22313->13501|22343->13502|22386->13516|22563->13665|22593->13666|22629->13674|22658->13675|22698->13687|22804->13764|22834->13765|22872->13775|22962->13836|22992->13837|23035->13851|23331->14118|23361->14119|23408->14137|23565->14265|23595->14266|23646->14288|23729->14342|23759->14343|23789->14344|23823->14349|23853->14350|23904->14372|23986->14425|24016->14426|24059->14440|24089->14441|24119->14442|24153->14447|24183->14448|24230->14466|24406->14613|24436->14614|24481->14630|24656->14777|24686->14778|24722->14786|24751->14787|24919->14926|24949->14927|24987->14937|25074->14995|25104->14996|25147->15010|25522->15356|25552->15357|25599->15375|25757->15504|25787->15505|25825->15515|25855->15516|25891->15524|25920->15525|25994->15570|26024->15571|26062->15581|26117->15607|26147->15608|26190->15622|26282->15686|26312->15687|26348->15695|26377->15696|26428->15718|26458->15719|26496->15729|26552->15756|26582->15757|26625->15771|26717->15835|26747->15836|26783->15844|26812->15845|26863->15867|26893->15868|26931->15878|26987->15905|27017->15906|27060->15920|27152->15984|27182->15985|27218->15993|27247->15994
+                  LINES: 25->1|36->12|36->12|37->13|40->16|40->16|42->18|42->18|42->18|43->19|46->22|46->22|48->24|48->24|48->24|49->25|50->26|50->26|52->28|52->28|52->28|53->29|59->35|59->35|61->37|61->37|61->37|62->38|68->44|68->44|70->46|70->46|70->46|71->47|75->51|75->51|77->53|77->53|77->53|78->54|80->56|80->56|82->58|82->58|82->58|83->59|87->63|87->63|89->65|89->65|89->65|90->66|93->69|93->69|95->71|96->72|96->72|97->73|99->75|99->75|100->76|100->76|100->76|101->77|106->82|106->82|108->84|109->85|109->85|110->86|112->88|112->88|114->90|115->91|115->91|116->92|117->93|117->93|119->95|119->95|119->95|120->96|136->112|136->112|138->114|138->114|138->114|139->115|140->116|140->116|142->118|142->118|142->118|143->119|144->120|144->120|146->122|146->122|146->122|147->123|155->131|155->131|157->133|157->133|157->133|158->134|164->140|164->140|166->142|167->143|167->143|168->144|171->147|171->147|172->148|172->148|172->148|173->149|176->152|176->152|177->153|177->153|177->153|178->154|180->156|180->156|182->158|211->187|211->187|212->188|213->189|213->189|214->190|223->199|223->199|224->200|225->201|225->201|226->202|232->208|232->208|235->211|235->211|237->213|238->214|238->214|239->215|240->216|240->216|241->217|248->224|248->224|251->227|251->227|253->229|254->230|254->230|256->232|257->233|257->233|258->234|261->237|261->237|264->240|264->240|266->242|267->243|267->243|268->244|269->245|269->245|270->246|277->253|277->253|278->254|278->254|279->255|279->255|280->256|280->256|282->258|282->258|283->259|289->265|289->265|290->266|291->267|291->267|293->269|296->272|296->272|297->273|299->275|299->275|300->276|301->277|301->277|302->278|304->280|304->280|306->282|306->282|306->282|307->283|307->283|307->283|308->284|311->287|311->287|312->288|313->289|313->289|314->290|316->292|316->292|317->293|317->293|319->295|321->297|321->297|323->299|323->299|323->299|325->301|350->326|350->326|351->327|353->329|353->329|354->330|356->332|356->332|356->332|356->332|356->332|357->333|359->335|359->335|360->336|365->341|365->341|366->342|366->342|368->344|369->345|369->345|370->346|371->347|371->347|372->348|372->348|372->348|373->349|374->350|374->350|375->351|376->352|376->352|376->352|376->352|376->352|377->353|378->354|378->354|379->355|379->355|380->356|380->356|380->356|381->357|382->358|382->358|383->359|384->360|384->360|384->360|384->360|384->360|385->361|386->362|386->362|387->363|387->363|389->365|390->366|390->366|391->367|391->367|391->367|392->368|395->371|395->371|396->372|396->372|400->376|401->377|401->377|402->378|402->378|402->378|403->379|406->382|406->382|407->383|408->384|408->384|409->385|410->386|410->386|410->386|410->386|410->386|411->387|412->388|412->388|413->389|413->389|413->389|413->389|413->389|414->390|417->393|417->393|419->395|424->400|424->400|425->401|425->401|428->404|428->404|429->405|429->405|429->405|430->406|436->412|436->412|437->413|441->417|441->417|442->418|442->418|443->419|443->419|447->423|447->423|448->424|448->424|448->424|449->425|451->427|451->427|452->428|452->428|453->429|453->429|454->430|454->430|454->430|455->431|457->433|457->433|458->434|458->434|459->435|459->435|460->436|460->436|460->436|461->437|463->439|463->439|464->440|464->440
                   -- GENERATED --
               */
           

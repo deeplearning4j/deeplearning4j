@@ -28,9 +28,6 @@ import org.deeplearning4j.ui.components.table.ComponentTable;
 import org.deeplearning4j.ui.components.table.style.StyleTable;
 import org.deeplearning4j.ui.components.text.ComponentText;
 import org.deeplearning4j.ui.components.text.style.StyleText;
-import org.joda.time.DurationFieldType;
-import org.joda.time.Period;
-import org.joda.time.PeriodType;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import play.libs.Json;
@@ -81,6 +78,10 @@ public class ArbiterModule implements UIModule {
             .height(350, LengthUnit.Px)
             .build();
 
+    private StyleText STYLE_TEXT_SZ12 = new StyleText.Builder()
+            .fontSize(12)
+            .build();
+
 
     @Override
     public List<String> getCallbackTypeIDs() {
@@ -93,7 +94,7 @@ public class ArbiterModule implements UIModule {
         Route r2 = new Route("/arbiter/modelResults/:id", HttpMethod.GET, FunctionType.Function, this::getModelResult);
         Route r3 = new Route("/arbiter/lastUpdate", HttpMethod.GET, FunctionType.Supplier, this::getLastUpdateTime);
         Route r4 = new Route("/arbiter/lastUpdate/:ids", HttpMethod.GET, FunctionType.Function, this::getModelLastUpdateTimes);
-        Route r5 = new Route("/arbiter/update/:id", HttpMethod.GET, FunctionType.Function, this::getUpdate);
+        Route r5 = new Route("/arbiter/candidateInfo/:id", HttpMethod.GET, FunctionType.Function, this::getCandidateInfo);
         Route r6 = new Route("/arbiter/config", HttpMethod.GET, FunctionType.Supplier, this::getOptimizationConfig);
         Route r7 = new Route("/arbiter/results", HttpMethod.GET, FunctionType.Supplier, this::getSummaryResults);
         Route r8 = new Route("/arbiter/summary", HttpMethod.GET, FunctionType.Supplier, this::getSummaryStatus);
@@ -278,7 +279,7 @@ public class ArbiterModule implements UIModule {
         return ok(Json.toJson(lastUpdateTimes));
     }
 
-    private Result getUpdate(String candidateId){
+    private Result getCandidateInfo(String candidateId){
 
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
         if(ss == null){
@@ -316,7 +317,11 @@ public class ArbiterModule implements UIModule {
             }
          */
 
-        return ok("Candidate results goes here");
+        String title = "Results for candidate " + candidateId + " goes here!";
+        ComponentText ct = new ComponentText.Builder(title,STYLE_TEXT_SZ12).build();
+
+
+        return ok(asJson(ct)).as(JSON);
     }
 
     private Result getOptimizationConfig(){
@@ -386,12 +391,6 @@ public class ArbiterModule implements UIModule {
 
         List<BaseNetworkSpace.LayerConf> layerConfs = ps.getLayerSpaces();
 
-
-        StyleText sText = new StyleText.Builder()
-                .fontSize(12)
-                .build();
-//        components.add(new ComponentText.Builder(" -- Layer Spaces --",sText).build());
-
         for(BaseNetworkSpace.LayerConf l : layerConfs){
             LayerSpace<?> ls = l.getLayerSpace();
             Map<String,ParameterSpace<?>> lpsm = ls.getConfigAsMap();
@@ -412,7 +411,7 @@ public class ArbiterModule implements UIModule {
             String title = "Layer Space: " + ls.getClass().getSimpleName() + ", Name: " + l.getLayerName();
 
             components.add(DIV_SPACER_20PX);
-            components.add(new ComponentText.Builder(title, sText).build());
+            components.add(new ComponentText.Builder(title, STYLE_TEXT_SZ12).build());
             components.add(ct3);
 
 
