@@ -20,13 +20,15 @@ package org.deeplearning4j.arbiter.task;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import org.deeplearning4j.arbiter.DL4JConfiguration;
-import org.deeplearning4j.arbiter.listener.BaseUIStatusReportingListener;
+import org.deeplearning4j.arbiter.listener.DL4JArbiterStatusReportingListener;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 import org.deeplearning4j.arbiter.optimize.api.TaskCreator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.evaluation.ModelEvaluator;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
+import org.deeplearning4j.arbiter.optimize.runner.CandidateInfo;
+import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
@@ -67,28 +69,33 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
         private DataProvider<Object> dataProvider;
         private ScoreFunction<MultiLayerNetwork, Object> scoreFunction;
         private ModelEvaluator<MultiLayerNetwork, Object, A> modelEvaluator;
+        private List<StatusListener> listeners;
 
-        private BaseUIStatusReportingListener<MultiLayerNetwork> dl4jListener;
 
         public DL4JLearningTask(Candidate<DL4JConfiguration> candidate, DataProvider<Object> dataProvider,
                         ScoreFunction<MultiLayerNetwork, Object> scoreFunction,
                         ModelEvaluator<MultiLayerNetwork, Object, A> modelEvaluator,
-                        List<StatusListener> statusListeners) {
+                        List<StatusListener> listeners) {
             this.candidate = candidate;
             this.dataProvider = dataProvider;
             this.scoreFunction = scoreFunction;
             this.modelEvaluator = modelEvaluator;
-
-            dl4jListener = null; //(ArbiterUIServer.isRunning() ? new UIStatusReportingListener(listener) : null);
+            this.listeners = listeners;
         }
 
 
         @Override
         public OptimizationResult<DL4JConfiguration, MultiLayerNetwork, A> call() throws Exception {
+
+            CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Running, null, System.currentTimeMillis(), null, null, candidate.getFlatParameters());
+
             //Create network
             MultiLayerNetwork net = new MultiLayerNetwork(candidate.getValue().getMultiLayerConfiguration());
             net.init();
-            net.setListeners(dl4jListener);
+
+            if(listeners != null){
+                net.setListeners(new DL4JArbiterStatusReportingListener(listeners, ci));
+            }
 
             //Early stopping or fixed number of epochs:
             DataSetIterator dataSetIterator =
@@ -99,30 +106,30 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
                             candidate.getValue().getEarlyStoppingConfiguration();
             EarlyStoppingResult<MultiLayerNetwork> esResult = null;
             if (esConfig != null) {
-                EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConfig, net, dataSetIterator, dl4jListener);
+                EarlyStoppingTrainer trainer = new EarlyStoppingTrainer(esConfig, net, dataSetIterator, null);
                 try {
                     esResult = trainer.fit();
                     net = esResult.getBestModel(); //Can return null if failed OR if
                 } catch (Exception e) {
-                    if (dl4jListener != null) {
-                        //                        dl4jListener.postReport(CandidateStatus.Failed, null,
-                        //                                new ComponentText("Unexpected exception during model training\n", null),
-                        //                                new ComponentText(ExceptionUtils.getStackTrace(e), null));
-                    }
+//                    if (dl4jListener != null) {
+//                        //                        dl4jListener.postReport(CandidateStatus.Failed, null,
+//                        //                                new ComponentText("Unexpected exception during model training\n", null),
+//                        //                                new ComponentText(ExceptionUtils.getStackTrace(e), null));
+//                    }
                     throw e;
                 }
 
                 switch (esResult.getTerminationReason()) {
                     case Error:
-                        if (dl4jListener != null) {
-                            //                            dl4jListener.postReport(CandidateStatus.Failed, esResult);
-                        }
+//                        if (dl4jListener != null) {
+//                            //                            dl4jListener.postReport(CandidateStatus.Failed, esResult);
+//                        }
                         break;
                     case IterationTerminationCondition:
                     case EpochTerminationCondition:
-                        if (dl4jListener != null) {
-                            //                            dl4jListener.postReport(CandidateStatus.Complete, esResult);
-                        }
+//                        if (dl4jListener != null) {
+//                            //                            dl4jListener.postReport(CandidateStatus.Complete, esResult);
+//                        }
                         break;
                 }
 
@@ -134,9 +141,9 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
                     dataSetIterator.reset();
                 }
                 //Do a final status update
-                if (dl4jListener != null) {
-                    //                    dl4jListener.postReport(CandidateStatus.Complete, null);
-                }
+//                if (dl4jListener != null) {
+//                    //                    dl4jListener.postReport(CandidateStatus.Complete, null);
+//                }
             }
 
             A additionalEvaluation = null;
@@ -145,29 +152,29 @@ public class MultiLayerNetworkTaskCreator<A> implements TaskCreator<DL4JConfigur
                     additionalEvaluation =
                                     (modelEvaluator != null ? modelEvaluator.evaluateModel(net, dataProvider) : null);
                 } catch (Exception e) {
-                    if (dl4jListener != null) {
-                        //                        dl4jListener.postReport(CandidateStatus.Failed, esResult,
-                        //                                new ComponentText("Failed during additional evaluation stage\n", null),
-                        //                                new ComponentText(ExceptionUtils.getStackTrace(e), null));
-                    }
+//                    if (dl4jListener != null) {
+//                        //                        dl4jListener.postReport(CandidateStatus.Failed, esResult,
+//                        //                                new ComponentText("Failed during additional evaluation stage\n", null),
+//                        //                                new ComponentText(ExceptionUtils.getStackTrace(e), null));
+//                    }
                 }
             }
 
             Double score = null;
             if (net == null) {
-                if (dl4jListener != null) {
-                    //                    dl4jListener.postReport(CandidateStatus.Complete, esResult,
-                    //                            new ComponentText("No best model available; cannot calculate model score", null));
-                }
+//                if (dl4jListener != null) {
+//                    //                    dl4jListener.postReport(CandidateStatus.Complete, esResult,
+//                    //                            new ComponentText("No best model available; cannot calculate model score", null));
+//                }
             } else {
                 try {
                     score = scoreFunction.score(net, dataProvider, candidate.getDataParameters());
                 } catch (Exception e) {
-                    if (dl4jListener != null) {
-                        //                        dl4jListener.postReport(CandidateStatus.Failed, esResult,
-                        //                                new ComponentText("Failed during score calculation stage\n", null),
-                        //                                new ComponentText(ExceptionUtils.getStackTrace(e), null));
-                    }
+//                    if (dl4jListener != null) {
+//                        //                        dl4jListener.postReport(CandidateStatus.Failed, esResult,
+//                        //                                new ComponentText("Failed during score calculation stage\n", null),
+//                        //                                new ComponentText(ExceptionUtils.getStackTrace(e), null));
+//                    }
                 }
             }
 

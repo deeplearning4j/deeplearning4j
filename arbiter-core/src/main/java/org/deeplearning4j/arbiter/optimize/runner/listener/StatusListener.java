@@ -26,9 +26,10 @@ public interface StatusListener {
      *  this method may be called by tasks as they are executing. The intent of this method is to report partial results,
      *  such as different stages of learning, or scores/evaluations so far
      *
+     * @param candidateInfo
      * @param candidate
      * @param iteration
      */
-    void onCandidateIteration(Object candidate, int iteration);
+    void onCandidateIteration(CandidateInfo candidateInfo, Object candidate, int iteration);
 
 }

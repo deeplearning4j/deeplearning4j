@@ -35,7 +35,7 @@ public class LoggingStatusListener implements StatusListener {
     }
 
     @Override
-    public void onCandidateIteration(Object candidate, int iteration) {
+    public void onCandidateIteration(CandidateInfo candidateInfo, Object candidate, int iteration) {
         log.info("Candidate iteration #{} - {}", iteration, candidate);
     }
 }

@@ -11,8 +11,19 @@ import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 import org.deeplearning4j.arbiter.ui.data.GlobalConfigPersistable;
 import org.deeplearning4j.arbiter.ui.data.ModelInfoPersistable;
 import org.deeplearning4j.arbiter.ui.misc.JsonMapper;
+import org.deeplearning4j.berkeley.Pair;
+import org.deeplearning4j.nn.api.Layer;
+import org.deeplearning4j.nn.graph.ComputationGraph;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.eclipse.collections.impl.list.mutable.primitive.DoubleArrayList;
+import org.eclipse.collections.impl.list.mutable.primitive.FloatArrayList;
+import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by Alex on 20/07/2017.
@@ -24,6 +35,11 @@ public class ArbiterStatusListener implements StatusListener {
     private final StatsStorageRouter statsStorage;
 
     private String ocJson;
+    private long startTime = 0;
+
+    private Map<Integer,Object> candidateStaticInfo = new ConcurrentHashMap<>();
+    private Map<Integer,Pair<IntArrayList,FloatArrayList>> candidateScoreVsIter = new ConcurrentHashMap<>();
+
 
     public ArbiterStatusListener(@NonNull StatsStorageRouter statsStorage) {
         this(UUID.randomUUID().toString(), statsStorage);
@@ -70,15 +86,71 @@ public class ArbiterStatusListener implements StatusListener {
     }
 
     @Override
-    public void onCandidateIteration(Object candidate, int iteration) {
+    public void onCandidateIteration(CandidateInfo candidateInfo, Object candidate, int iteration) {
 
+        double score;
+        long numParams;
+        int numLayers;
+        if(candidate instanceof MultiLayerNetwork){
+            MultiLayerNetwork m = (MultiLayerNetwork)candidate;
+            score = m.score();
+            numParams = m.numParams();
+            numLayers = m.getnLayers();
+        } else if(candidate instanceof ComputationGraph) {
+            ComputationGraph cg = (ComputationGraph)candidate;
+            score = cg.score();
+            numParams = cg.numParams();
+            numLayers = cg.getNumLayers();
+        } else {
+            score = 0;
+            numParams = 0;
+            numLayers = 0;
+        }
+
+        int idx = candidateInfo.getIndex();
+
+        Pair<IntArrayList, FloatArrayList> pair = candidateScoreVsIter.computeIfAbsent(idx, k -> new Pair<>(new IntArrayList(), new FloatArrayList()));
+
+        IntArrayList iter = pair.getFirst();
+        FloatArrayList scores = pair.getSecond();
+
+        iter.add(iteration);
+        scores.add((float)score);
+
+
+        //TODO subsample if necessary, to max N points
+
+        int[] iters = iter.toArray();
+        float[] fScores = new float[iters.length];
+        for( int i=0; i<iters.length; i++ ){
+            fScores[i] = scores.get(i);
+        }
+
+
+        ModelInfoPersistable p = new ModelInfoPersistable.Builder()
+                .timestamp(candidateInfo.getCreatedTime())
+                .sessionId(sessionId)
+                .workerId(String.valueOf(candidateInfo.getIndex()))
+                .modelIdx(candidateInfo.getIndex())
+                .score(candidateInfo.getScore())
+                .status(candidateInfo.getCandidateStatus())
+                .scoreVsIter(iters, fScores)
+                .lastUpdateTime(System.currentTimeMillis())
+                .numParameters(numParams)
+                .numLayers(numLayers)
+                .paramSpaceValues(candidateInfo.getFlatParams())
+                .build();
+
+        statsStorage.putUpdate(p);
     }
 
 
     private GlobalConfigPersistable getNewStatusPersistable(IOptimizationRunner r){
-//        if(ocJson == null){
+        if(ocJson == null || this.startTime == 0L){
+            //Want to update config once start time has been set
             ocJson = JsonMapper.asJson(r.getConfiguration());
-//        }
+            this.startTime = r.getConfiguration().getExecutionStartTime();
+        }
 
         GlobalConfigPersistable p = new GlobalConfigPersistable.Builder()
                 .sessionId(sessionId)

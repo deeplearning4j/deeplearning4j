@@ -37,6 +37,6 @@ public class CandidateInfo {
     private long createdTime;
     private Long startTime;
     private Long endTime;
-
+    private double[] flatParams;    //Same as parameters in Candidate class
 
 }

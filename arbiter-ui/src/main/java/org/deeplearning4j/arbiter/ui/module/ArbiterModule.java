@@ -16,6 +16,7 @@ import org.deeplearning4j.arbiter.ui.data.GlobalConfigPersistable;
 import org.deeplearning4j.arbiter.ui.data.ModelInfoPersistable;
 import org.deeplearning4j.arbiter.ui.misc.UIUtils;
 import org.deeplearning4j.arbiter.ui.views.html.ArbiterUI;
+import org.deeplearning4j.arbiter.util.ObjectUtils;
 import org.deeplearning4j.berkeley.Pair;
 import org.deeplearning4j.ui.api.*;
 import org.deeplearning4j.ui.api.Component;
@@ -63,6 +64,13 @@ public class ArbiterModule implements UIModule {
             .backgroundColor(Color.WHITE)
             .borderWidth(1)
             .columnWidths(LengthUnit.Percent, 30, 70)
+            .build();
+
+    private static final StyleTable STYLE_TABLE3_25_25_50 = new StyleTable.Builder()
+            .width(100, LengthUnit.Percent)
+            .backgroundColor(Color.WHITE)
+            .borderWidth(1)
+            .columnWidths(LengthUnit.Percent, 25, 25, 50)
             .build();
 
     private static final StyleDiv STYLE_DIV_WIDTH_100_PC = new StyleDiv.Builder()
@@ -279,6 +287,12 @@ public class ArbiterModule implements UIModule {
         return ok(Json.toJson(lastUpdateTimes));
     }
 
+    /**
+     * Get the info for a specific candidate - last section in the UI
+     *
+     * @param candidateId
+     * @return
+     */
     private Result getCandidateInfo(String candidateId){
 
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
@@ -287,41 +301,142 @@ public class ArbiterModule implements UIModule {
             return ok();
         }
 
+        GlobalConfigPersistable gcp = (GlobalConfigPersistable)ss.getStaticInfo(currentSessionID, ARBITER_UI_TYPE_ID, GlobalConfigPersistable.GLOBAL_WORKER_ID);;
+        OptimizationConfiguration oc = gcp.getOptimizationConfiguration();
+
+        Persistable p = ss.getLatestUpdate(currentSessionID, ARBITER_UI_TYPE_ID, candidateId);
+        if(p == null){
+            String title = "No results found for model " + candidateId + ".";
+            ComponentText ct = new ComponentText.Builder(title,STYLE_TEXT_SZ12).build();
+            return ok(asJson(ct)).as(JSON);
+        }
+
+        ModelInfoPersistable mip = (ModelInfoPersistable)p;
+
+        //First: static info
+        // Hyperparameter configuration/settings
+        // Number of parameters
+        // Maybe memory info
+
+        //Second: dynamic info
+        //Runtime
+        // Performance stats (total minibatches, total time,
+        // Score vs. time
+
+        List<Component> components = new ArrayList<>();
+
+        //First table: mix of static + dynamic
+        long runtimeDuration = mip.getLastUpdateTime() - mip.getTimeStamp();
+        String runtimeStr = UIUtils.formatDuration(runtimeDuration);
+        String[][] table = new String[][]{
+                {"Runtime", runtimeStr},
+                {"Created", TIME_FORMATTER.print(mip.getTimeStamp())},
+                {"Number of Parameters", String.valueOf(mip.getNumParameters())},
+                {"Number of Layers", String.valueOf(mip.getNumLayers())}
+        };
+
+        ComponentTable cTable = new ComponentTable.Builder(STYLE_TABLE)
+                .content(table)
+                .build();
+        components.add(cTable);
 
 
-        /*
-            private Map<Integer,Component> map = new ConcurrentHashMap<>();
-            private static final Component NOT_FOUND = new ComponentText("(Candidate results: Not found)",null);
-            private final Map<Integer,Long> lastUpdateTimeMap = new ConcurrentHashMap<>();
 
-            @POST
-            @Path("/update/{id}")
-            @Consumes(MediaType.TEXT_PLAIN)
-            @Produces(MediaType.APPLICATION_JSON)
-            public Response update(@PathParam("id")int candidateID, String componentStr){
 
-                if(componentStr == null || componentStr.isEmpty()){
-                    return Response.ok(Collections.singletonMap("status", "ok")).build();
-                }
+        double[] paramSpaceValues = mip.getParamSpaceValues();
+        if(paramSpaceValues != null){
+            BaseNetworkSpace bns = (BaseNetworkSpace)oc.getCandidateGenerator().getParameterSpace();
+            Map<String,ParameterSpace<?>> m = bns.getGlobalConfigAsMap();
 
-                try{
-                    Component component = JsonMapper.getMapper().readValue(componentStr, Component.class);
-                    map.put(candidateID,component);
-                } catch (Exception e) {
-                    if(warnCount.getAndIncrement() < maxWarnCount){
-                        log.warn("Error posting summary status update", e);
-                    }
-                }
-
-                return Response.ok(Collections.singletonMap("status", "ok")).build();
+            String[][] hSpaceTable = new String[m.size()][3];
+            int i=0;
+            for(Map.Entry<String,ParameterSpace<?>> e : m.entrySet()){
+                hSpaceTable[i][0] = e.getKey();
+                Object currCandidateValue = e.getValue().getValue(paramSpaceValues);
+                hSpaceTable[i][1] = ObjectUtils.valueToString(currCandidateValue);
+                hSpaceTable[i][2] = e.getValue().toString();
+                i++;
             }
-         */
+
+            String[] hSpaceTableHeader = new String[]{"Hyperparameter", "Model Value", "Hyperparameter Space"};
+
+            ComponentTable ct2 = new ComponentTable.Builder(STYLE_TABLE3_25_25_50)
+                    .content(hSpaceTable)
+                    .header(hSpaceTableHeader)
+                    .build();
+
+
+            String title = "Global Network Configuration";
+            components.add(DIV_SPACER_20PX);
+            components.add(new ComponentText.Builder(title, STYLE_TEXT_SZ12).build());
+            components.add(ct2);
+
+            List<BaseNetworkSpace.LayerConf> layerConfs = bns.getLayerSpaces();
+
+            for(BaseNetworkSpace.LayerConf l : layerConfs){
+                LayerSpace<?> ls = l.getLayerSpace();
+                Map<String,ParameterSpace<?>> lpsm = ls.getConfigAsMap();
+
+                String[][] t = new String[lpsm.size()][3];
+                i=0;
+                for(Map.Entry<String,ParameterSpace<?>> e : lpsm.entrySet()){
+                    t[i][0] = e.getKey();
+                    Object currCandidateValue = e.getValue().getValue(paramSpaceValues);
+                    t[i][1] = ObjectUtils.valueToString(currCandidateValue);
+                    t[i][2] = e.getValue().toString();
+                    i++;
+                }
+
+                ComponentTable ct3 = new ComponentTable.Builder(STYLE_TABLE3_25_25_50)
+                        .content(t)
+                        .header(hSpaceTableHeader)
+                        .build();
+
+                title = "Layer Space: " + ls.getClass().getSimpleName() + ", Name: " + l.getLayerName();
+
+                components.add(DIV_SPACER_20PX);
+                components.add(new ComponentText.Builder(title, STYLE_TEXT_SZ12).build());
+                components.add(ct3);
+
+
+            }
+
+        }
+
+
 
         String title = "Results for candidate " + candidateId + " goes here!";
         ComponentText ct = new ComponentText.Builder(title,STYLE_TEXT_SZ12).build();
 
+        int[] iters = mip.getIter();
+        float[] scores = mip.getScoreVsIter();
 
-        return ok(asJson(ct)).as(JSON);
+        if(iters != null) {
+            double[] si = new double[iters.length];
+            double[] scoresD = new double[iters.length];
+
+            double minScore = Double.MAX_VALUE;
+            double maxScore = -Double.MAX_VALUE;
+            for( int i=0; i<iters.length; i++ ){
+                si[i] = iters[i];
+                scoresD[i] = scores[i];
+                minScore = Math.min(minScore, scoresD[i]);
+                maxScore = Math.max(maxScore, scoresD[i]);
+            }
+
+            double[] chartMinMax = UIUtils.niceRange(maxScore, minScore, 5);
+
+            ChartLine cl = new ChartLine.Builder("Score vs. Iteration", STYLE_CHART)
+                    .addSeries("Score", si, scoresD )
+                    .setYMin(chartMinMax[0])
+                    .setYMax(chartMinMax[1])
+                    .build();
+            components.add(cl);
+        }
+
+        ComponentDiv cd = new ComponentDiv(STYLE_DIV_WIDTH_100_PC, components);
+
+        return ok(asJson(cd)).as(JSON);
     }
 
     private Result getOptimizationConfig(){
@@ -354,10 +469,11 @@ public class ArbiterModule implements UIModule {
                 {"Data Provider", oc.getDataProvider().toString()},
                 {"Score Function", oc.getScoreFunction().toString()},
                 {"Result Saver", oc.getResultSaver().toString()},
-//                {"Model Hyperparameter Space", oc.getCandidateGenerator().getParameterSpace().toString()}
-
         };
 
+        String title = "Global Network Configuration";
+        components.add(DIV_SPACER_20PX);
+        components.add(new ComponentText.Builder(title, STYLE_TEXT_SZ12).build());
         ComponentTable ct = new ComponentTable.Builder(STYLE_TABLE)
                 .content(table)
                 .header(tableHeader)
@@ -408,7 +524,7 @@ public class ArbiterModule implements UIModule {
                     .header(hSpaceTableHeader)
                     .build();
 
-            String title = "Layer Space: " + ls.getClass().getSimpleName() + ", Name: " + l.getLayerName();
+            title = "Layer Space: " + ls.getClass().getSimpleName() + ", Name: " + l.getLayerName();
 
             components.add(DIV_SPACER_20PX);
             components.add(new ComponentText.Builder(title, STYLE_TEXT_SZ12).build());
@@ -424,17 +540,6 @@ public class ArbiterModule implements UIModule {
     }
 
     private Result getSummaryResults(){
-        /*
-            private List<CandidateInfo> statusList = new ArrayList<>();
-
-            @GET
-            public Response getCandidateStatus(){
-                log.trace("GET for candidate status with current status: {}",statusList);
-
-                return Response.ok(statusList).build();
-            }
-         */
-
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
         if(ss == null){
             log.warn("getSummaryResults(): Session ID is unknown: {}", currentSessionID);
@@ -448,13 +553,6 @@ public class ArbiterModule implements UIModule {
             String score = (mip.getScore() == null ? "" : mip.getScore().toString());
             table.add(new String[]{mip.getModelIdx().toString(), score, mip.getStatus().toString()});
         }
-
-
-//        String[][] temp = new String[][]{
-//                {"0", "1.0", "Status 0"},
-//                {"1", "2.0", "Status 1"}
-//
-//        };
 
         return ok(asJson(table)).as(JSON);
     }
@@ -620,6 +718,7 @@ public class ArbiterModule implements UIModule {
                 lastTime = t;
             }
         }
+
 
         double[] scatterGraphMinMax = UIUtils.niceRange(Math.max(bestScore, worstScore), Math.min(bestScore, worstScore), 5);
         double[] lineGraphMinMax = UIUtils.niceRange(

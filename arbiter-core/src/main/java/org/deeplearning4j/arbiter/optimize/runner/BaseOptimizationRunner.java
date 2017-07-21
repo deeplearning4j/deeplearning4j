@@ -163,7 +163,7 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
                 totalCandidateCount.getAndIncrement();
 
                 CandidateInfo status = new CandidateInfo(candidate.getIndex(), CandidateStatus.Created, null,
-                                System.currentTimeMillis(), null, null);
+                                System.currentTimeMillis(), null, null, candidate.getFlatParameters());
                 currentStatus.put(candidate.getIndex(), status);
 
                 for (StatusListener listener : statusListeners) {
@@ -210,7 +210,7 @@ public abstract class BaseOptimizationRunner<C, M, D, A> implements IOptimizatio
         CandidateInfo status = currentStatus.get(result.getIndex());
         CandidateInfo newStatus = new CandidateInfo(result.getIndex(), CandidateStatus.Complete, result.getScore(),
                         status.getCreatedTime(), null, //TODO: how to know when execution actually started?
-                        currentTime);
+                        currentTime, status.getFlatParams());
         currentStatus.put(result.getIndex(), newStatus);
 
         //Listeners:

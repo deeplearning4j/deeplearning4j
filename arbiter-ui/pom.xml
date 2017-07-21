@@ -15,6 +15,7 @@
 
     <properties>
         <java.compile.version>1.8</java.compile.version>
+        <eclipse.collections.version>8.2.0</eclipse.collections.version>
     </properties>
 
 
@@ -114,6 +115,13 @@
             <version>${nd4j.version}</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.collections</groupId>
+            <artifactId>eclipse-collections</artifactId>
+            <version>${eclipse.collections.version}</version>
+        </dependency>
+
     </dependencies>
 
 

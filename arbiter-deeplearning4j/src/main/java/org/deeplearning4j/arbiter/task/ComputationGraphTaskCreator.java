@@ -19,12 +19,15 @@ package org.deeplearning4j.arbiter.task;
 
 import lombok.AllArgsConstructor;
 import org.deeplearning4j.arbiter.GraphConfiguration;
+import org.deeplearning4j.arbiter.listener.DL4JArbiterStatusReportingListener;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 import org.deeplearning4j.arbiter.optimize.api.TaskCreator;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;
 import org.deeplearning4j.arbiter.optimize.api.evaluation.ModelEvaluator;
 import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
+import org.deeplearning4j.arbiter.optimize.runner.CandidateInfo;
+import org.deeplearning4j.arbiter.optimize.runner.CandidateStatus;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
 import org.deeplearning4j.arbiter.scoring.util.ScoreUtil;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
@@ -63,8 +66,7 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
         private DataProvider<Object> dataProvider;
         private ScoreFunction<ComputationGraph, Object> scoreFunction;
         private ModelEvaluator<ComputationGraph, Object, A> modelEvaluator;
-
-        //        private UIGraphStatusReportingListener dl4jListener;
+        private List<StatusListener> listeners;
 
         public GraphLearningTask(Candidate<GraphConfiguration> candidate, DataProvider<Object> dataProvider,
                         ScoreFunction<ComputationGraph, Object> scoreFunction,
@@ -73,25 +75,27 @@ public class ComputationGraphTaskCreator<A> implements TaskCreator<GraphConfigur
             this.dataProvider = dataProvider;
             this.scoreFunction = scoreFunction;
             this.modelEvaluator = modelEvaluator;
-
-            //            dl4jListener = new UIGraphStatusReportingListener(listener);
+            this.listeners = listeners;
         }
 
 
         @Override
         public OptimizationResult<GraphConfiguration, ComputationGraph, A> call() throws Exception {
+            CandidateInfo ci = new CandidateInfo(candidate.getIndex(), CandidateStatus.Running, null, System.currentTimeMillis(), null, null, candidate.getFlatParameters());
+
             //Create network
             ComputationGraph net = new ComputationGraph(candidate.getValue().getConfiguration());
             net.init();
-            //            net.setListeners(dl4jListener);
+
+            if(listeners != null){
+                net.setListeners(new DL4JArbiterStatusReportingListener(listeners, ci));
+            }
 
             //Early stopping or fixed number of epochs:
-            DataSetIterator dataSetIterator =
-                            ScoreUtil.getIterator(dataProvider.trainData(candidate.getDataParameters()));
+            DataSetIterator dataSetIterator = ScoreUtil.getIterator(dataProvider.trainData(candidate.getDataParameters()));
 
 
-            EarlyStoppingConfiguration<ComputationGraph> esConfig =
-                            candidate.getValue().getEarlyStoppingConfiguration();
+            EarlyStoppingConfiguration<ComputationGraph> esConfig = candidate.getValue().getEarlyStoppingConfiguration();
             EarlyStoppingResult<ComputationGraph> esResult = null;
             if (esConfig != null) {
                 EarlyStoppingGraphTrainer trainer = new EarlyStoppingGraphTrainer(esConfig, net, dataSetIterator, null); //dl4jListener);

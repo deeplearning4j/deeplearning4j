@@ -19,6 +19,14 @@ public class UIUtils {
      * @return
      */
     public static double[] niceRange(double max, double min, int nTick){
+        if(max == min || !Double.isFinite(max)){
+            if(max == 0.0 || !Double.isFinite(max)){
+                return new double[]{0.0, 1.0};
+            }
+
+            return niceRange(1.5 * max, 0.5 * max, nTick);
+        }
+
         double range = niceNum(max-min, false);
         double d = niceNum(range / (nTick-1), true );
         double graphMin = Math.floor(min/d)*d;

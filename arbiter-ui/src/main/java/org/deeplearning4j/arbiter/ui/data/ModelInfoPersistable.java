@@ -13,6 +13,14 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
     private Integer modelIdx;
     private Double score;
     private CandidateStatus status;
+    private long lastUpdateTime;
+    private long numParameters;
+    private int numLayers;
+    private double[] paramSpaceValues;
+
+    private int[] iter;
+    private float[] scoreVsIter;
+
 
 
     public ModelInfoPersistable(String sessionId, String workerId, long timeStamp){
@@ -27,6 +35,12 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
         this.modelIdx = builder.modelIdx;
         this.score = builder.score;
         this.status = builder.status;
+        this.iter = builder.iter;
+        this.scoreVsIter = builder.scoreVsIter;
+        this.lastUpdateTime = builder.lastUpdateTime;
+        this.numParameters = builder.numParameters;
+        this.numLayers = builder.numLayers;
+        this.paramSpaceValues = builder.paramSpaceValues;
     }
 
     @Override
@@ -37,10 +51,18 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
 
     public static class Builder extends BaseJavaPersistable.Builder<Builder> {
 
-        protected String workerId;
-        protected Integer modelIdx;
-        protected Double score;
-        protected CandidateStatus status;
+        private String workerId;
+        private Integer modelIdx;
+        private Double score;
+        private CandidateStatus status;
+        private long lastUpdateTime;;
+        private long numParameters;
+        private int numLayers;
+        private double[] paramSpaceValues;
+
+
+        private int[] iter;
+        private float[] scoreVsIter;
 
         public Builder workerId(String workerId){
             this.workerId = workerId;
@@ -59,6 +81,32 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
 
         public Builder status(CandidateStatus status){
             this.status = status;
+            return this;
+        }
+
+        public Builder scoreVsIter(int[] iter, float[] scoreVsIter){
+            this.iter = iter;
+            this.scoreVsIter = scoreVsIter;
+            return this;
+        }
+
+        public Builder lastUpdateTime(long lastUpdateTime){
+            this.lastUpdateTime = lastUpdateTime;
+            return this;
+        }
+
+        public Builder numParameters(long numParameters){
+            this.numParameters = numParameters;
+            return this;
+        }
+
+        public Builder numLayers(int numLayers){
+            this.numLayers = numLayers;
+            return this;
+        }
+
+        public Builder paramSpaceValues(double[] paramSpaceValues){
+            this.paramSpaceValues = paramSpaceValues;
             return this;
         }
 

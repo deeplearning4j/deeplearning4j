@@ -195,7 +195,7 @@ public class TestGridSearch {
 
                     if (statusListeners != null) {
                         for (StatusListener sl : statusListeners) {
-                            sl.onCandidateIteration(null, 0);
+                            sl.onCandidateIteration(null, null, 0);
                         }
                     }
 
