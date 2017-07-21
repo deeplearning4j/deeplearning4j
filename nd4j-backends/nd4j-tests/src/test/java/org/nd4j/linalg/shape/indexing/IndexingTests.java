@@ -119,6 +119,10 @@ public class IndexingTests extends BaseNd4jTest {
         assertEquals("Two views should be the same",viewOne,viewTwo); //Obviously fails
     }
 
+    /*
+    This is the same as the above test - just tests every possible window with a slice from the 0th dim
+    They all fail - so it's possibly unrelated to the value of the index
+    */
     @Test
     public void testPointIndexing() {
         int slices = 5;
