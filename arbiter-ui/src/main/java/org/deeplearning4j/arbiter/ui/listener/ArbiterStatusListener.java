@@ -12,15 +12,11 @@ import org.deeplearning4j.arbiter.ui.data.GlobalConfigPersistable;
 import org.deeplearning4j.arbiter.ui.data.ModelInfoPersistable;
 import org.deeplearning4j.arbiter.ui.misc.JsonMapper;
 import org.deeplearning4j.berkeley.Pair;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.eclipse.collections.impl.list.mutable.primitive.DoubleArrayList;
 import org.eclipse.collections.impl.list.mutable.primitive.FloatArrayList;
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,6 +36,7 @@ public class ArbiterStatusListener implements StatusListener {
     private Map<Integer,Object> candidateStaticInfo = new ConcurrentHashMap<>();
     private Map<Integer,Pair<IntArrayList,FloatArrayList>> candidateScoreVsIter = new ConcurrentHashMap<>();
 
+    private Map<Integer,ModelInfoPersistable> lastModelInfoPersistable = new ConcurrentHashMap<>();
 
     public ArbiterStatusListener(@NonNull StatsStorageRouter statsStorage) {
         this(UUID.randomUUID().toString(), statsStorage);
@@ -72,15 +69,26 @@ public class ArbiterStatusListener implements StatusListener {
 
     @Override
     public void onCandidateStatusChange(CandidateInfo candidateInfo, IOptimizationRunner runner, OptimizationResult<?, ?, ?> result) {
+        ModelInfoPersistable p = lastModelInfoPersistable.get(candidateInfo.getIndex());
+        if(p == null){
+            p = new ModelInfoPersistable.Builder()
+                    .timestamp(candidateInfo.getCreatedTime())
+                    .sessionId(sessionId)
+                    .workerId(String.valueOf(candidateInfo.getIndex()))
+                    .modelIdx(candidateInfo.getIndex())
+                    .score(candidateInfo.getScore())
+                    .status(candidateInfo.getCandidateStatus())
+                    .build();
 
-        ModelInfoPersistable p = new ModelInfoPersistable.Builder()
-                .timestamp(candidateInfo.getCreatedTime())
-                .sessionId(sessionId)
-                .workerId(String.valueOf(candidateInfo.getIndex()))
-                .modelIdx(candidateInfo.getIndex())
-                .score(candidateInfo.getScore())
-                .status(candidateInfo.getCandidateStatus())
-                .build();
+            lastModelInfoPersistable.put(candidateInfo.getIndex(), p);
+        }
+
+        if(p.getScore() == null){
+            p.setScore(candidateInfo.getScore());
+        }
+
+        p.setStatus(candidateInfo.getCandidateStatus());
+
 
         statsStorage.putUpdate(p);
     }
@@ -91,20 +99,24 @@ public class ArbiterStatusListener implements StatusListener {
         double score;
         long numParams;
         int numLayers;
+        String modelConfigJson;
         if(candidate instanceof MultiLayerNetwork){
             MultiLayerNetwork m = (MultiLayerNetwork)candidate;
             score = m.score();
             numParams = m.numParams();
             numLayers = m.getnLayers();
+            modelConfigJson = m.getLayerWiseConfigurations().toJson();
         } else if(candidate instanceof ComputationGraph) {
             ComputationGraph cg = (ComputationGraph)candidate;
             score = cg.score();
             numParams = cg.numParams();
             numLayers = cg.getNumLayers();
+            modelConfigJson = cg.getConfiguration().toJson();
         } else {
             score = 0;
             numParams = 0;
             numLayers = 0;
+            modelConfigJson = "";
         }
 
         int idx = candidateInfo.getIndex();
@@ -139,8 +151,11 @@ public class ArbiterStatusListener implements StatusListener {
                 .numParameters(numParams)
                 .numLayers(numLayers)
                 .paramSpaceValues(candidateInfo.getFlatParams())
+                .modelConfigJson(modelConfigJson)
                 .build();
 
+
+        lastModelInfoPersistable.put(candidateInfo.getIndex(), p);
         statsStorage.putUpdate(p);
     }
 

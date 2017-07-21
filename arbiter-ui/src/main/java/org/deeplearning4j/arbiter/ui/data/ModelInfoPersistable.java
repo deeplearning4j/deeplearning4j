@@ -21,7 +21,7 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
     private int[] iter;
     private float[] scoreVsIter;
 
-
+    private String modelConfigJson;
 
     public ModelInfoPersistable(String sessionId, String workerId, long timeStamp){
         super(sessionId, timeStamp);
@@ -41,6 +41,7 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
         this.numParameters = builder.numParameters;
         this.numLayers = builder.numLayers;
         this.paramSpaceValues = builder.paramSpaceValues;
+        this.modelConfigJson = builder.modelConfigJson;
     }
 
     @Override
@@ -59,10 +60,9 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
         private long numParameters;
         private int numLayers;
         private double[] paramSpaceValues;
-
-
         private int[] iter;
         private float[] scoreVsIter;
+        private String modelConfigJson;
 
         public Builder workerId(String workerId){
             this.workerId = workerId;
@@ -107,6 +107,11 @@ public class ModelInfoPersistable extends BaseJavaPersistable {
 
         public Builder paramSpaceValues(double[] paramSpaceValues){
             this.paramSpaceValues = paramSpaceValues;
+            return this;
+        }
+
+        public Builder modelConfigJson(String modelConfigJson){
+            this.modelConfigJson = modelConfigJson;
             return this;
         }
 

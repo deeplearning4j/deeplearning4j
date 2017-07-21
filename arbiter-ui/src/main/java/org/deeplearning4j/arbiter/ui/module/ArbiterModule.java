@@ -29,6 +29,7 @@ import org.deeplearning4j.ui.components.table.ComponentTable;
 import org.deeplearning4j.ui.components.table.style.StyleTable;
 import org.deeplearning4j.ui.components.text.ComponentText;
 import org.deeplearning4j.ui.components.text.style.StyleText;
+import org.deeplearning4j.ui.play.PlayUIServer;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import play.libs.Json;
@@ -37,6 +38,7 @@ import play.mvc.Result;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.deeplearning4j.arbiter.ui.misc.JsonMapper.asJson;
 import static play.mvc.Results.ok;
@@ -52,6 +54,7 @@ public class ArbiterModule implements UIModule {
 
     private static final String JSON = "application/json";
 
+    private AtomicBoolean loggedArbiterAddress = new AtomicBoolean(false);
     private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
     private String currentSessionID;
 
@@ -88,6 +91,12 @@ public class ArbiterModule implements UIModule {
 
     private StyleText STYLE_TEXT_SZ12 = new StyleText.Builder()
             .fontSize(12)
+            .build();
+
+    //Set whitespacePre(true) to avoid losing new lines, tabs, multiple spaces etc
+    private StyleText STYLE_TEXT_SZ12_WHITESPACE_PRE = new StyleText.Builder()
+            .fontSize(12)
+            .whitespacePre(true)
             .build();
 
 
@@ -134,6 +143,12 @@ public class ArbiterModule implements UIModule {
 
         if(currentSessionID == null){
             getDefaultSession();
+        }
+
+        if(!loggedArbiterAddress.getAndSet(true)){
+            String address = UIServer.getInstance().getAddress();
+            address += "/arbiter";
+            log.info("DL4J Arbiter Hyperparameter Optimization UI: {}", address);
         }
     }
 
@@ -434,6 +449,15 @@ public class ArbiterModule implements UIModule {
             components.add(cl);
         }
 
+
+        //Finally: post full network configuration
+        String modelJson = mip.getModelConfigJson();
+        if(modelJson != null){
+            ComponentText jsonText = new ComponentText(modelJson, STYLE_TEXT_SZ12_WHITESPACE_PRE);
+            ComponentDiv cd = new ComponentDiv(STYLE_DIV_WIDTH_100_PC, jsonText);
+            components.add(cd);
+        }
+
         ComponentDiv cd = new ComponentDiv(STYLE_DIV_WIDTH_100_PC, components);
 
         return ok(asJson(cd)).as(JSON);
@@ -529,10 +553,7 @@ public class ArbiterModule implements UIModule {
             components.add(DIV_SPACER_20PX);
             components.add(new ComponentText.Builder(title, STYLE_TEXT_SZ12).build());
             components.add(ct3);
-
-
         }
-
 
         ComponentDiv cd = new ComponentDiv(STYLE_DIV_WIDTH_100_PC, components);
 
