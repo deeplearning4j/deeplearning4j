@@ -265,6 +265,10 @@ public class SameDiffTests {
         SDVariable preOutput = sameDiff.mmul(0,x,w);
 
         SDVariable outputs = sameDiff.sigmoid(preOutput);
+        List<Op> ops = sameDiff.exec();
+        assertEquals(2,ops.size());
+        assertEquals("mmul",ops.get(0).name());
+        assertEquals("sigmoid",ops.get(1).name());
         assertEquals(6,sameDiff.graph().numVertices());
         assertEquals(3,sameDiff.graph().getEdges().size());
         //    label_probabilities = preds * targets + (1 - preds) * (1 - targets)
@@ -281,7 +285,7 @@ public class SameDiffTests {
         w.subi(update);
 
         System.out.println(sameDiff.graph().numVertices() + " and " + sameDiff.graph().getEdges().size());
-        List<Op> ops = sameDiff.exec();
+        ops = sameDiff.exec();
         for(int i = 0; i < 5; i++) {
             INDArray output =  sameDiff.execAndEndResult(ops);
             System.out.println("Update " + output);

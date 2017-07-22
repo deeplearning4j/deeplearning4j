@@ -370,6 +370,9 @@ public class Graph<V, E> extends BaseGraph<V, E> {
     }
 
     public int nextVertexId() {
+        if(frozen) {
+            return nextVertexId;
+        }
         return ++nextVertexId; // Make vertexIds start at 1 to uncover array indexing issues.
     }
 }

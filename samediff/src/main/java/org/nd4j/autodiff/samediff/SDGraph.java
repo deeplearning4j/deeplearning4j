@@ -176,14 +176,15 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
         Map<Integer, Set<Integer>> inputEdges = new HashMap<>(); //key: vertex. Values: vertices that the key vertex receives input from
         Map<Integer, Set<Integer>> outputEdges = new HashMap<>(); //key: vertex. Values: vertices that the key vertex outputs to
         int[] ret = new int[numVertices()];
-        for (int i : getVertices().keySet()) {
+        Collection<Integer> vertices = getVertices().keySet();
+        for (int i : vertices) {
             if (getVertexInDegree(i) < 1) {
                 noIncoming.add(i);
-            } else
-                continue;
+            }
 
             List<Edge<OpState>> edges = getEdgesOut(i);
             Set<Integer> outVertices = new HashSet<>();
+            Set<Integer> currInputs = new TreeSet<>();
             for (Edge<OpState> edge : edges) {
                 outVertices.add(edge.getTo());
                 Set<Integer> outputSetForInputIdx = outputEdges.get(i);
@@ -195,7 +196,17 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
                 outputSetForInputIdx.add(edge.getTo()); //input vertex outputs to the current vertex
             }
 
-            inputEdges.put(i, outVertices);
+            if( getIncomingEdges().get(i) != null) {
+                for (Edge<OpState> edge : getIncomingEdges().get(i)) {
+                    currInputs.add(edge.getFrom());
+
+                }
+
+                inputEdges.put(i, currInputs);
+            }
+            else
+                inputEdges.put(i, currInputs);
+
         }
 
         int outCounter = 0;
@@ -214,6 +225,15 @@ public class SDGraph extends Graph<NDArrayInformation,OpState> {
                     }
                 }
             }
+        }
+
+        //If any edges remain in the graph: graph has cycles:
+        for (Map.Entry<Integer, Set<Integer>> entry : inputEdges.entrySet()) {
+            Set<Integer> set = entry.getValue();
+            if (set == null)
+                continue;
+            if (!set.isEmpty())
+                throw new IllegalStateException("Graph has cycles");
         }
 
         return ret;
