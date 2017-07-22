@@ -2156,12 +2156,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         log.info("Number of blocks for compression: {}", numBlocks);
         log.info("BlocksCounts: {}", Arrays.toString(blocksBuffer.asInt()));
 */
-        DataBuffer encodedBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(3+numMatches, false) : Nd4j.getDataBufferFactory().createInt(3+numMatches, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+        DataBuffer encodedBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(4+numMatches, false) : Nd4j.getDataBufferFactory().createInt(4+numMatches, false, Nd4j.getMemoryManager().getCurrentWorkspace());
         AtomicAllocator.getInstance().getAllocationPoint(encodedBuffer).tickHostWrite();
         encodedBuffer.put(0, numMatches);
         encodedBuffer.put(1, (int) buffer.length());
         encodedBuffer.put(2, Float.floatToIntBits((float) threshold));
         AtomicAllocator.getInstance().getAllocationPoint(encodedBuffer).tickHostWrite();
+
+        encodedBuffer.put(3, 0);
 
 
         int prefixThreads = 512;

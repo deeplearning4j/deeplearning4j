@@ -56,12 +56,13 @@ public class CpuFlexibleThreshold extends CpuThreshold {
         int cntAbs = temp.scan(Conditions.absGreaterThanOrEqual(max - (max * threshold))).intValue();
 
         long originalLength = buffer.length() * Nd4j.sizeOfDataType(buffer.dataType());
-        int compressedLength = cntAbs + 3;
+        int compressedLength = cntAbs + 4;
         // first 3 elements contain header
         IntPointer pointer = new IntPointer(compressedLength);
         pointer.put(0, cntAbs);
         pointer.put(1, (int) buffer.length());
         pointer.put(2, Float.floatToIntBits(threshold)); // please note, this value will be ovewritten anyway
+        pointer.put(3, 0);
 
         CompressionDescriptor descriptor = new CompressionDescriptor();
         descriptor.setCompressedLength(compressedLength * 4); // sizeOf(INT)

@@ -1323,7 +1323,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         int compressedLength = cntAbs + 4;
         // first 3 elements contain header
 
-        DataBuffer encodedBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(3+cntAbs, false) : Nd4j.getDataBufferFactory().createInt(3+cntAbs, false, Nd4j.getMemoryManager().getCurrentWorkspace());
+        DataBuffer encodedBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(4+cntAbs, false) : Nd4j.getDataBufferFactory().createInt(4+cntAbs, false, Nd4j.getMemoryManager().getCurrentWorkspace());
 
         encodedBuffer.put(0, cntAbs);
         encodedBuffer.put(1, (int) buffer.length());

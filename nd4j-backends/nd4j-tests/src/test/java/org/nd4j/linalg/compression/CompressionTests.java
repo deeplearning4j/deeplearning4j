@@ -468,7 +468,7 @@ public class CompressionTests extends BaseNd4jTest {
         //Nd4j.getCompressor().getCompressor("THRESHOLD").configure(1e-3);
         INDArray compressed = Nd4j.getExecutioner().thresholdEncode(initial, 1.0f, 100);
 
-        assertEquals(103, compressed.data().length());
+        assertEquals(104, compressed.data().length());
 
         assertNotEquals(exp_0, initial);
 
@@ -591,6 +591,35 @@ public class CompressionTests extends BaseNd4jTest {
         log.info("Decode time: {}", time3 - time2);
     }
 
+
+    @Test
+    public void testBitmapEncoding3() throws Exception {
+        INDArray initial = Nd4j.create(new double[]{0.0, -6e-4, 1e-3, -1e-3, 0.0, 0.0});
+        INDArray exp_0 = Nd4j.create(new double[]{0.0, -1e-4, 0.0, 0.0, 0.0, 0.0});
+        INDArray exp_1 = Nd4j.create(new double[]{0.0, -5e-4, 1e-3, -1e-3, 0.0, 0.0});
+
+        DataBuffer ib = Nd4j.getDataBufferFactory().createInt(5);
+        INDArray enc = Nd4j.createArrayFromShapeBuffer(ib, initial.shapeInfoDataBuffer());
+
+        long elements = Nd4j.getExecutioner().bitmapEncode(initial, enc, 1e-3);
+        log.info("Encoded: {}", Arrays.toString(enc.data().asInt()));
+        assertArrayEquals(new int[] {6, 6, 981668463, 1, 1310744}, enc.data().asInt());
+
+        assertEquals(3, elements);
+
+        assertEquals(exp_0, initial);
+
+        INDArray target = Nd4j.create(6);
+
+        Nd4j.getExecutioner().bitmapDecode(enc, target);
+        log.info("Target: {}", Arrays.toString(target.data().asFloat()));
+        assertEquals(exp_1, target);
+    }
+
+    @Test
+    public void testMap1() {
+
+    }
 
 
     @Override
