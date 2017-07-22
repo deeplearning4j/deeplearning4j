@@ -4,6 +4,8 @@ import org.junit.Test;
 import org.nd4j.autodiff.opstate.OpExecAction;
 import org.nd4j.autodiff.opstate.OpState;
 import org.nd4j.autodiff.samediff.impl.SDVariable;
+import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.transforms.Sigmoid;
@@ -23,6 +25,10 @@ import static org.junit.Assert.assertTrue;
  * Created by agibsonccc on 4/11/17.
  */
 public class SameDiffTests {
+    static {
+        Nd4j.create(1);
+        DataTypeUtil.setDTypeForContext(DataBuffer.Type.DOUBLE);
+    }
     @Test
     public void testSigmoid() {
         SameDiff sameDiff = SameDiff.create();
@@ -284,12 +290,13 @@ public class SameDiffTests {
         assertArrayEquals(new int[]{3,1},outputGrad.getShape());
         SDVariable preUpdate = w.mul(outputGrad);
         SDVariable update = preUpdate.mul(learningRate);
-        w.subi(update);
+        SDVariable inPlaceUpdate = w.subi(update);
 
         System.out.println(sameDiff.graph().numVertices() + " and " + sameDiff.graph().getEdges().size());
         ops = sameDiff.exec();
-        for(int i = 0; i < 5; i++) {
-            INDArray output =  sameDiff.execAndEndResult(ops);
+        for(int i = 0; i < 10; i++) {
+            INDArray output =  weights;
+            sameDiff.exec(ops);
             System.out.println("Update " + output);
         }
 

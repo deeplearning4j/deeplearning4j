@@ -235,7 +235,7 @@ public class SameDiff {
                 .arr(null).shape(wrt.getShape())
                 .differentialFunction(arrField)
                 .varName("grad(" + iX.getVarName() + ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -251,7 +251,7 @@ public class SameDiff {
                 .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.neq(getFunctionInput(iX),iy.getArrayField()))
                 .varName("neq(" + iX.getVarName() + "," + iy.getVarName() + ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -267,7 +267,7 @@ public class SameDiff {
                 .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.eq(getFunctionInput(iX),iy.getArrayField()))
                 .varName("eq(" + iX.getVarName() + "," + iy.getVarName() + ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -283,7 +283,7 @@ public class SameDiff {
                 .arr(null).shape(iX.getShape())
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.or(getFunctionInput(iX),iy.getArrayField()))
                 .varName("or(" + iX.getVarName() + "," + iy.getVarName() + ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -825,7 +825,7 @@ public class SameDiff {
                 .arr(null)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.leakyReluDerivative(getFunctionInput(iX),cutoff))
                 .varName("leakyReluDerivative(" + iX.getVarName() + ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -843,7 +843,7 @@ public class SameDiff {
                 .arr(null)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.mean(getFunctionInput(iX)))
                 .varName("mean(" + iX.getVarName() + ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -864,11 +864,11 @@ public class SameDiff {
         SDVariable ret = SDVariable.builder()
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.std(
-                       getFunctionInput(iX),
+                        getFunctionInput(iX),
                         biasCorrected ,
                         dimensions))
                 .varName("variance(" + iX.getVarName() + ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -892,7 +892,7 @@ public class SameDiff {
                         biasCorrected ,
                         dimensions))
                 .varName("variance(" + iX.getVarName() + ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -912,7 +912,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.sum(getFunctionInput(iX),dimensions))
                 .varName("sum(" + iX.getVarName() + ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -932,7 +932,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.prod(getFunctionInput(iX),dimensions))
                 .varName("prod(" + iX.getVarName() + ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -952,7 +952,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.max(getFunctionInput(iX),dimensions))
                 .varName("max(" + iX.getVarName() + ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -973,7 +973,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.min(getFunctionInput(iX),dimensions))
                 .varName("min(" + iX.getVarName() + ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -996,7 +996,7 @@ public class SameDiff {
                         .reshape(getFunctionInput(iX),shape))
                 .varName("reshape(" + iX.getVarName() + ")").sameDiff(this)
                 .shape(shape)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1012,7 +1012,7 @@ public class SameDiff {
                 .arr(null)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.transpose(getFunctionInput(iX)))
                 .varName("transpose(" + iX.getVarName() + ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1030,7 +1030,7 @@ public class SameDiff {
                 .arr(null)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.rollAxis(x.getArrayField(),axis))
                 .varName("rollAxis(" + x.getVarName() + ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1075,7 +1075,7 @@ public class SameDiff {
                 .varName("tensorMmul(" + x.getVarName() + "," + y.getVarName() +  ")")
                 .sameDiff(this)
                 .shape(shape)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1091,7 +1091,7 @@ public class SameDiff {
      */
     public SDVariable cosineSimilarity(SDVariable iX, SDVariable i_y, int...dimensions) {
         DifferentialFunction<ArrayField> cosim = arrayFieldDifferentialFunctionFactory.cosineSimilarity(
-               getFunctionInput(iX),
+                getFunctionInput(iX),
                 i_y.getArrayField(),
                 dimensions);
 
@@ -1101,7 +1101,7 @@ public class SameDiff {
                 .differentialFunction(cosim)
                 .varName("cosineSimilarity(" + iX.getVarName() + "," + i_y.getVarName() +  ")")
                 .sameDiff(this).shape(arrayReduceShape)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1121,7 +1121,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.euclideanDistance(getFunctionInput(iX),i_y.getArrayField(),dimensions))
                 .varName("euclideanDistance(" + iX.getVarName() + "," + i_y.getVarName() +  ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1141,7 +1141,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.manhattanDistance(getFunctionInput(iX),i_y.getArrayField(),dimensions))
                 .varName("manhattanDistance(" + iX.getVarName() + "," + i_y.getVarName() +  ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1161,7 +1161,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossBinaryXENT(getFunctionInput(iX),i_y.getArrayField(),dimensions))
                 .varName("lossBinaryXENT(" + iX.getVarName() + "," + i_y.getVarName() +  ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1181,7 +1181,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossCosineSimilarity(getFunctionInput(iX),i_y.getArrayField(),dimensions))
                 .varName("lossCosineSimilarity(" + iX.getVarName() + "," + i_y.getVarName() +  ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1201,7 +1201,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossHinge(getFunctionInput(iX),i_y.getArrayField(),dimensions))
                 .varName("lossHinge(" + iX.getVarName() + "," + i_y.getVarName() +  ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1221,7 +1221,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossKLD(getFunctionInput(iX),i_y.getArrayField(),dimensions))
                 .varName("lossKLD(" + iX.getVarName() + "," + i_y.getVarName() +  ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1241,7 +1241,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossL1(getFunctionInput(iX),i_y.getArrayField(),dimensions))
                 .varName("lossL1(" + iX.getVarName() + "," + i_y.getVarName() +  ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1261,7 +1261,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossL2(getFunctionInput(iX),i_y.getArrayField(),dimensions))
                 .varName("lossL2(" + iX.getVarName() + "," + i_y.getVarName() +  ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1281,27 +1281,27 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossMAE(getFunctionInput(iX),i_y.getArrayField(),dimensions))
                 .varName("lossMAE(" + iX.getVarName() + "," + i_y.getVarName() +  ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
     }
 
     /**
-    public SDVariable lossMAPE(SDVariable iX,SDVariable i_y,int...dimensions) {
-        int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
+     public SDVariable lossMAPE(SDVariable iX,SDVariable i_y,int...dimensions) {
+     int[] arrayReduceShape = Shape.getReducedShape(iX.getShape(),dimensions);
 
-        SDVariable ret = SDVariable.builder()
-                .arr(null).shape(arrayReduceShape)
-                .differentialFunction(arrayFieldDifferentialFunctionFactory.lossMAPE(getFunctionInput(iX),i_y.getArrayField(),dimensions))
-                .varName("lossMAPE(" + iX.getVarName() + "," + i_y.getVarName() +  ")").sameDiff(this)
-                       .build();
-        Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
-        addVariable(ret);
-        return ret;
-    }
+     SDVariable ret = SDVariable.builder()
+     .arr(null).shape(arrayReduceShape)
+     .differentialFunction(arrayFieldDifferentialFunctionFactory.lossMAPE(getFunctionInput(iX),i_y.getArrayField(),dimensions))
+     .varName("lossMAPE(" + iX.getVarName() + "," + i_y.getVarName() +  ")").sameDiff(this)
+     .build();
+     Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
+     addVariable(ret);
+     return ret;
+     }
 
-    /**
+     /**
      *
      * @param iX
      * @param i_y
@@ -1315,7 +1315,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossMSE(getFunctionInput(iX),i_y.getArrayField(),dimensions))
                 .varName("lossMSE(" + iX.getVarName() + "," + i_y.getVarName() +  ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1335,7 +1335,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossMCXENT(getFunctionInput(iX),i_y.getArrayField(),dimensions))
                 .varName("lossMCXENT(" + iX.getVarName() + "," + i_y.getVarName() +  ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1355,7 +1355,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossMSLE(getFunctionInput(iX),i_y.getArrayField(),dimensions))
                 .varName("lossMSLE(" + iX.getVarName() + "," + i_y.getVarName() +  ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1375,7 +1375,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.transpose(getFunctionInput(iX)))
                 .varName("lossNegativeLogLikelihood(" + iX.getVarName() + "," + i_y.getVarName() +  ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1395,7 +1395,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossPoisson(getFunctionInput(iX),i_y.getArrayField(),dimensions))
                 .varName("lossPoisson(" + iX.getVarName() + "," + i_y.getVarName() +  ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1416,7 +1416,7 @@ public class SameDiff {
                 .arr(null).shape(arrayReduceShape)
                 .differentialFunction(arrayFieldDifferentialFunctionFactory.lossSquaredHinge(getFunctionInput(iX),i_y.getArrayField(),dimensions))
                 .varName("lossSquaredHinge(" + iX.getVarName() + "," + i_y.getVarName() +  ")").sameDiff(this)
-                       .build();
+                .build();
         Preconditions.checkState(Arrays.equals(ret.getShape(),ret.getDifferentialFunction().getResultShape()));
         addVariable(ret);
         return ret;
@@ -1425,6 +1425,18 @@ public class SameDiff {
     private void addVariable(SDVariable variable) {
         sameDiffVariables.add(variable);
         variableMap.put(variable.getVarName(),variable);
+    }
+
+    private boolean isInPlace(Object[] extraArgs) {
+        if(extraArgs == null)
+            return false;
+        for(int i = 0; i < extraArgs.length; i++) {
+            if(extraArgs[i] instanceof Boolean) {
+                return (Boolean) extraArgs[i];
+            }
+        }
+
+        return false;
     }
 
 
