@@ -6,11 +6,19 @@ import org.nd4j.autodiff.Field;
 import org.nd4j.autodiff.samediff.SDGraph;
 
 
+/**
+ * Negative operation
+ * @param <X>
+ */
 public class Negative<X extends Field<X>> extends AbstractUnaryFunction<X> {
+
+    public Negative(SDGraph graph, DifferentialFunction<X> i_v,boolean inPlace) {
+        super(graph,i_v,new Object[]{inPlace});
+    }
 
 
     public Negative(SDGraph graph, DifferentialFunction<X> i_v) {
-        super(graph,i_v,null);
+        this(graph,i_v,false);
     }
 
     @Override

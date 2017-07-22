@@ -19,11 +19,16 @@ public class Scalar<X extends Field<X>> extends Constant<X> {
     public Scalar(SDGraph graph,
                   double value,
                   AbstractIdentityFactory<X> i_factory) {
-        super(graph,i_factory.scalar(value),new int[]{1,1} ,i_factory);
-        this.value = value;
+        this(graph, value, i_factory, false);
+
     }
 
-
+    public Scalar(SDGraph graph,
+                  double value,
+                  AbstractIdentityFactory<X> i_factory,boolean inPlace) {
+        super(graph,i_factory.scalar(value),new int[]{1,1} ,i_factory,inPlace);
+        this.value = value;
+    }
 
 
     @Override

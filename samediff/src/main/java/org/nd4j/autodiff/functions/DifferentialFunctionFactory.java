@@ -232,7 +232,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             public DifferentialFunction<X> diff(Variable<X> i_v1) {
                 int inputs = getInputLength(i_v1);
                 DifferentialFunction<X> g =  doRepeat(this,i_v1,dimensions);
-                return g.mul(arg().sub(mean(arg(),dimensions))).div(one(g.getResultShape()).mul(inputs));
+                return g.mul(arg().sub(DifferentialFunctionFactory.this.mean(arg(),dimensions))).div(one(g.getResultShape()).mul(inputs));
             }
         };
     }
@@ -259,7 +259,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
             public DifferentialFunction<X> diff(Variable<X> i_v1) {
                 int inputs = getInputLength(i_v1);
                 DifferentialFunction<X> g =  doRepeat(this,i_v1,dimensions);
-                return one(getResultShape()).mul(2).mul(g).mul(arg().sub(mean(arg(),dimensions))).div(one(getResultShape()).mul(inputs));
+                return one(getResultShape()).mul(2).mul(g).mul(arg().sub(DifferentialFunctionFactory.this.mean(arg(),dimensions))).div(one(getResultShape()).mul(inputs));
             }
         };
     }
@@ -417,7 +417,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return arg().div(abs(arg()));
+                return arg().div(DifferentialFunctionFactory.this.abs(arg()));
             }
 
 
@@ -446,7 +446,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return arg().div(abs(arg()));
+                return arg().div(DifferentialFunctionFactory.this.abs(arg()));
             }
 
 
@@ -501,7 +501,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return (sin(arg()).mul(arg().diff(i_v))).negate();
+                return (DifferentialFunctionFactory.this.sin(arg()).mul(arg().diff(i_v))).negate();
             }
 
 
@@ -528,7 +528,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return cos(arg()).mul(arg().diff(i_v));
+                return DifferentialFunctionFactory.this.cos(arg()).mul(arg().diff(i_v));
             }
 
 
@@ -555,7 +555,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return (new PolynomialTerm<>(mFactory.graph(),1, cos(arg()), -2)).mul(arg().diff(i_v));
+                return (new PolynomialTerm<>(mFactory.graph(),1, DifferentialFunctionFactory.this.cos(arg()), -2)).mul(arg().diff(i_v));
             }
 
 
@@ -656,7 +656,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return one(getResultShape()).div(sqrt(one(getResultShape()).sub(arg().pow(2)))).negate();
+                return one(getResultShape()).div(DifferentialFunctionFactory.this.sqrt(one(getResultShape()).sub(arg().pow(2)))).negate();
             }
 
 
@@ -683,7 +683,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return one(getResultShape()).div(sqrt(one(getResultShape()).sub(arg().pow(2))));
+                return one(getResultShape()).div(DifferentialFunctionFactory.this.sqrt(one(getResultShape()).sub(arg().pow(2))));
             }
 
 
@@ -737,7 +737,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return sinh(arg());
+                return DifferentialFunctionFactory.this.sinh(arg());
             }
 
             @Override
@@ -763,7 +763,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return cosh(arg());
+                return DifferentialFunctionFactory.this.cosh(arg());
             }
 
 
@@ -790,7 +790,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return one(getResultShape()).div(cosh(arg())).pow(2);
+                return DifferentialFunctionFactory.this.one(getResultShape()).div(DifferentialFunctionFactory.this.cosh(arg())).pow(2);
             }
 
             @Override
@@ -816,7 +816,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return one(getResultShape()).div(sqrt(arg().sub(one(getResultShape()))).mul(sqrt(arg().add(one(getResultShape())))));
+                return DifferentialFunctionFactory.this.one(getResultShape()).div(DifferentialFunctionFactory.this.sqrt(arg().sub(one(getResultShape()))).mul(DifferentialFunctionFactory.this.sqrt(arg().add(one(getResultShape())))));
             }
 
             @Override
@@ -842,7 +842,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return one(getResultShape()).div(sqrt(arg().pow(2).add(one(getResultShape()))));
+                return DifferentialFunctionFactory.this.one(getResultShape()).div(DifferentialFunctionFactory.this.sqrt(arg().pow(2).add(one(getResultShape()))));
             }
 
 
@@ -896,7 +896,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return exp(arg()).mul(arg().diff(i_v));
+                return DifferentialFunctionFactory.this.exp(arg()).mul(arg().diff(i_v));
             }
 
 
@@ -1112,7 +1112,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return ((sqrt(arg()).inverse())
+                return ((DifferentialFunctionFactory.this.sqrt(arg()).inverse())
                         .div(val(mFactory.one(getResultShape()).mul(2L))))
                         .mul(arg().diff(i_v));
             }
@@ -1250,7 +1250,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return hardTanhDerivative(val(getValue(true))).mul(arg().diff(i_v));
+                return DifferentialFunctionFactory.this.hardTanhDerivative(val(getValue(true))).mul(arg().diff(i_v));
             }
 
             @Override
@@ -1308,7 +1308,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return sigmoidDerivative(arg()).mul(arg().diff(i_v));
+                return DifferentialFunctionFactory.this.sigmoidDerivative(arg()).mul(arg().diff(i_v));
             }
 
             @Override
@@ -1443,7 +1443,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return softsignDerivative(arg()).mul(arg().diff(i_v));
+                return softsignDerivative().mul(arg().diff(i_v));
             }
 
             @Override
@@ -1500,7 +1500,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return sigmoid(arg()).mul(arg().diff(i_v));
+                return DifferentialFunctionFactory.this.sigmoid(arg()).mul(arg().diff(i_v));
             }
 
             @Override
@@ -1527,7 +1527,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return eluDerivative(arg()).mul(arg().diff(i_v));
+                return DifferentialFunctionFactory.this.eluDerivative(arg()).mul(arg().diff(i_v));
             }
 
 
@@ -1585,7 +1585,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             @Override
             public DifferentialFunction<X> diff(Variable<X> i_v) {
-                return leakyReluDerivative(arg(),cutoff).mul(arg().diff(i_v));
+                return DifferentialFunctionFactory.this.leakyReluDerivative(arg(),cutoff).mul(arg().diff(i_v));
             }
 
 
@@ -1687,7 +1687,7 @@ public class DifferentialFunctionFactory<X extends Field<X>> implements Function
 
             private DifferentialFunction<X> formula() {
                 DifferentialFunction<X> numerator = larg().mul(rarg());
-                DifferentialFunction<X> denom = sqrt(larg().pow(2).mul(rarg().pow(2)));
+                DifferentialFunction<X> denom = DifferentialFunctionFactory.this.sqrt(larg().pow(2).mul(rarg().pow(2)));
 
                 return numerator.div(denom);
             }

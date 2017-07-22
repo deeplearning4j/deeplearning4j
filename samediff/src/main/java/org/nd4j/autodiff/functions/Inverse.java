@@ -8,9 +8,12 @@ import org.nd4j.autodiff.samediff.SDGraph;
 
 public class Inverse<X extends Field<X>> extends AbstractUnaryFunction<X> {
 
+    public Inverse(SDGraph graph, DifferentialFunction<X> i_v,boolean inPlace) {
+        super(graph,i_v,new Object[]{inPlace});
+    }
 
     public Inverse(SDGraph graph, DifferentialFunction<X> i_v) {
-        super(graph,i_v,new Object[]{});
+        this(graph,i_v,false);
     }
 
     @Override

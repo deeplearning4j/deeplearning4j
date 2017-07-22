@@ -195,6 +195,83 @@ public class SDVariable  implements Serializable {
                 .build();
     }
 
+
+
+
+
+    public SDVariable rsubi(SDVariable sameDiffVariable) {
+        assertShapeEquals(sameDiffVariable);
+
+        return SDVariable.builder()
+                .varName(varName + " + " + sameDiffVariable.getVarName())
+                .arr(null).sameDiff(sameDiffVariable.getSameDiff()).shape(getTransformOutputShape(sameDiffVariable))
+                .differentialFunction(getFunction(sameDiffVariable).rsubi(getFunction(this)))
+                .build();
+    }
+
+    public SDVariable rdivi(SDVariable sameDiffVariable) {
+        assertShapeEquals(sameDiffVariable);
+
+        return SDVariable.builder()
+                .varName(varName + " + " + sameDiffVariable.getVarName())
+                .arr(null).sameDiff(sameDiffVariable.getSameDiff()).shape(getTransformOutputShape(sameDiffVariable))
+                .differentialFunction(getFunction(sameDiffVariable).rdivi(getFunction(this)))
+                .build();
+    }
+
+    public SDVariable addi(SDVariable sameDiffVariable) {
+        assertShapeEquals(sameDiffVariable);
+
+        return SDVariable.builder()
+                .varName(varName + " + " + sameDiffVariable.getVarName())
+                .arr(null).sameDiff(sameDiffVariable.getSameDiff()).shape(getTransformOutputShape(sameDiffVariable))
+                .differentialFunction(getFunction(sameDiffVariable).addi(getFunction(this)))
+                .build();
+    }
+
+    public SDVariable subi(SDVariable sameDiffVariable) {
+        assertShapeEquals(sameDiffVariable);
+
+        DifferentialFunction<ArrayField> left = getFunction(sameDiffVariable);
+        DifferentialFunction<ArrayField> right = getFunction(this);
+        DifferentialFunction<ArrayField> result = left.subi(right);
+        return SDVariable.builder()
+                .varName(varName + " - " + sameDiffVariable.getVarName())
+                .arr(null).sameDiff(sameDiffVariable.getSameDiff()).shape(getTransformOutputShape(sameDiffVariable))
+                .differentialFunction(result)
+                .build();
+    }
+
+    public SDVariable divi(SDVariable sameDiffVariable) {
+        assertShapeEquals(sameDiffVariable);
+
+        return SDVariable.builder()
+                .varName(varName + " / " + sameDiffVariable.getVarName())
+                .arr(null).sameDiff(sameDiffVariable.getSameDiff()).shape(getTransformOutputShape(sameDiffVariable))
+                .differentialFunction(getFunction(sameDiffVariable).divi(getFunction(this)))
+                .build();
+    }
+
+    public SDVariable muli(SDVariable sameDiffVariable) {
+        assertShapeEquals(sameDiffVariable);
+
+        DifferentialFunction<ArrayField> left = getFunction(sameDiffVariable);
+        DifferentialFunction<ArrayField> right = getFunction(this);
+        DifferentialFunction<ArrayField> result = left.muli(right);
+        return SDVariable.builder()
+                .varName(varName + " * " + sameDiffVariable.getVarName())
+                .arr(null).sameDiff(sameDiffVariable.getSameDiff())
+                .shape(getTransformOutputShape(sameDiffVariable))
+                .differentialFunction(result)
+                .build();
+    }
+
+
+
+
+
+
+
     private void assertShapeEquals(SDVariable variable) {
         if(!Arrays.equals(shape,variable.getShape()) && ArrayUtil.prod(variable.getShape()) != 1) {
             throw new IllegalArgumentException("Input shape must be the same as this shape " + Arrays.toString(shape) + " and shape was " + Arrays.toString(variable.getShape()));

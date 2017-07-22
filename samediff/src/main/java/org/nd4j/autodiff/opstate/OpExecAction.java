@@ -19,4 +19,9 @@ public class OpExecAction implements Serializable {
     private int[] inputsIds;
     private int outputId;
 
+
+    public boolean isInPlace() {
+        return opState.isInPlace();
+    }
+
 }

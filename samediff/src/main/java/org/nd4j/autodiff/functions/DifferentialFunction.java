@@ -56,6 +56,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
 
 
+
     /**
      * Get the value specifying
      * whether to freeze the graph or not
@@ -112,6 +113,98 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public abstract DifferentialFunction<X> diff(Variable<X> i_v1);
+
+
+
+    @Override
+    public DifferentialFunction<X> rdivi(DifferentialFunction<X> i_v) {
+        DifferentialFunction<X> ret = this.div(i_v);
+        return ret;
+    }
+
+    @Override
+    public DifferentialFunction<X> rsubi(DifferentialFunction<X> i_v) {
+        DifferentialFunction<X> ret = this.subi(i_v);
+        return ret;
+    }
+
+    @Override
+    public DifferentialFunction<X> addi(DifferentialFunction<X> i_v) {
+        X ret = i_v.getValue(false).addi(getValue(false));
+        return new Constant<>(graph, ret, i_v.getResultShape(), (AbstractIdentityFactory<X>) graph.getSameDiff().getArrayFactory());
+    }
+
+    @Override
+    public DifferentialFunction<X> muli(DifferentialFunction<X> i_v) {
+        X ret = i_v.getValue(false).muli(getValue(false));
+        return new Constant<>(graph, ret, i_v.getResultShape(), (AbstractIdentityFactory<X>) graph.getSameDiff().getArrayFactory());
+    }
+
+    @Override
+    public DifferentialFunction<X> subi(DifferentialFunction<X> i_v) {
+        DifferentialFunction<X> ret = addi(i_v.negate());
+        return ret;
+    }
+
+
+
+
+    @Override
+    public DifferentialFunction<X> divi(DifferentialFunction<X> i_v) {
+        DifferentialFunction<X> ret = muli(i_v.inverse());
+        return ret;
+    }
+
+    @Override
+    public DifferentialFunction<X> inversei() {
+        DifferentialFunction<X> ret = new Inverse<>(graph,this,true);
+        return ret;
+    }
+
+    @Override
+    public DifferentialFunction<X> negatei() {
+        DifferentialFunction<X> ret = new Negative<>(graph,this,true);
+        return ret;
+    }
+
+    @Override
+    public DifferentialFunction<X> muli(double i_n) {
+        PolynomialTerm<X> ret =  new PolynomialTerm<>(graph,i_n, this, 1,true);
+        return ret;
+    }
+
+    @Override
+    public DifferentialFunction<X> powi(int i_n) {
+        PolynomialTerm<X> ret = new PolynomialTerm<>(graph,1L, this, i_n,true);
+        return ret;
+    }
+
+    @Override
+    public DifferentialFunction<X> addi(double i_v) {
+        Scalar<X> constant = new Scalar<>(graph, i_v, null,true);
+        return constant.add(this);
+    }
+
+    @Override
+    public DifferentialFunction<X> subi(double i_v) {
+        Scalar<X> constant = new Scalar<>(graph, i_v, null,true);
+        return constant.sub(this);
+    }
+
+    @Override
+    public DifferentialFunction<X> rsubi(double v) {
+        Scalar<X> constant = new Scalar<>(graph, v, null,true);
+        return this.rsub(constant);
+    }
+
+    @Override
+    public DifferentialFunction<X> rdivi(double v) {
+        Scalar<X> constant = new Scalar<>(graph, v, null,true);
+        return this.rdiv(constant);
+    }
+
+
+
 
     @Override
     public DifferentialFunction<X> rdiv(DifferentialFunction<X> i_v) {
@@ -216,13 +309,447 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     }
 
+    @Override
+    public DifferentialFunction<X>[] args() {
+        return new DifferentialFunction[0];
+    }
+
+    @Override
+    public DifferentialFunction<X> pow(DifferentialFunction<X> a) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> floor() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> ceil() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> round() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> abs() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> sqrt() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> minus(double v) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> prod(double v) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> div(double v) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> pow(double v) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> cos() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> acos() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> cosh() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> acosh() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> sin() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> asin() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> sinh() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> asinh() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> tan() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> atan() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> tanh() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> atanh() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> exp() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> log() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> log10() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> sgn() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> pwr(DifferentialFunction<X> y) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> pwrs(DifferentialFunction<X> y) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> square() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> relu() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> hardTanh() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> hardTanhDerivative() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> leakyRelu() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> elu() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> eluDerivative() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> leakyRelu(double cutoff) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> leakyReluDerivative() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> leakyReluDerivative(double cutoff) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> sigmoid() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> sigmoidDerivative() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> step() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> softsign() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> softsignDerivative() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> softmax() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> softplus() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> reshape(int[] shape) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> transpose() {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> permute(int[] dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> expandDims(int dim) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> sum(int[] dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> prod(int[] dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> mean(int[] dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> std(int[] dimensions, boolean biasCorrected) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> variance(int[] dimensions, boolean biasCorrected) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> std(int[] dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> variance(int[] dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> max(int[] dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> min(int[] dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> norm1(int[] dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> norm2(int[] dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> normmax(int[] dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> valueArrayOf(int[] shape) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> tile(int[] repeat) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> repeat(int axis) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> broadcast(int[] shape) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> eq(DifferentialFunction<X> i_y) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> neq(DifferentialFunction<X> i_y) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> or(DifferentialFunction<X> i_y) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> rollAxis(int axis) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> cosineSimilarity(DifferentialFunction<X> i_y, int... dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> euclideanDistance(DifferentialFunction<X> i_y, int... dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> manhattanDistance(DifferentialFunction<X> i_y, int... dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> lossBinaryXENT(DifferentialFunction<X> i_y, int... dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> lossCosineSimilarity(DifferentialFunction<X> i_y, int... dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> lossHinge(DifferentialFunction<X> i_y, int... dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> lossKLD(DifferentialFunction<X> i_y, int... dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> lossL1(DifferentialFunction<X> i_y, int... dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> lossL2(DifferentialFunction<X> i_y, int... dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> lossMAE(DifferentialFunction<X> i_y, int... dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> lossMAPE(DifferentialFunction<X> i_y, int... dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> lossMSE(DifferentialFunction<X> i_y, int... dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> lossMCXENT(DifferentialFunction<X> i_y, int... dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> lossMSLE(DifferentialFunction<X> i_y, int... dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> lossNegativeLogLikelihood(DifferentialFunction<X> i_y, int... dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> lossPoisson(DifferentialFunction<X> i_y, int... dimensions) {
+        return null;
+    }
+
+    @Override
+    public DifferentialFunction<X> lossSquaredHinge(DifferentialFunction<X> i_y, int... dimensions) {
+        return null;
+    }
 
     protected void addEdges(Graph<NDArrayInformation,OpState> graph,
                             DifferentialFunction<X> i_v1,
                             DifferentialFunction<X> i_v2,
                             String opName,
                             OpState.OpType opType,
-                            int[] shape,Object[] extraArgs) {
+                            int[] shape, Object[] extraArgs) {
         if(i_v1.getValue(true) instanceof ArrayField) {
             /**
              * getValue() generates invalid vertex ids
@@ -246,7 +773,8 @@ public abstract class DifferentialFunction<X extends Field<X>>
             //result
             NDArrayVertex newVertex = new NDArrayVertex(graph.nextVertexId(), arrInfo);
             if(newVertex.vertexID() == v2VertexId || newVertex.vertexID() == v1VertexId)
-                throw new ND4JIllegalStateException("Illegal vertex id specified in new vertex. Perhaps a mismatched graph call? Another likely cause is applyGraph");
+                throw new ND4JIllegalStateException("Illegal vertex id specified in new vertex." +
+                        " Perhaps a mismatched graph call? Another likely cause is applyGraph");
             this.vertexId = newVertex.vertexID();
             //add the result vertex
             graph.addVertex(newVertex);
@@ -333,6 +861,21 @@ public abstract class DifferentialFunction<X extends Field<X>>
         else
             throw new UnsupportedOperationException("Only supporting array fields");
     }
+
+    protected boolean getInPlace(Object[] extraArgs) {
+        if(extraArgs == null) {
+            return false;
+        }
+        else {
+            for(int i = 0; i < extraArgs.length; i++) {
+                if(extraArgs[i] instanceof Boolean)
+                    return (Boolean) extraArgs[i];
+            }
+        }
+
+        return false;
+    }
+
 
     public abstract DifferentialFunction<X> dup();
 

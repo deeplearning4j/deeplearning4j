@@ -18,8 +18,9 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
     protected Constant(SDGraph graph,
                        X i_v,
                        int[] shape,
-                       AbstractIdentityFactory<X> i_factory) {
-        super(graph,new Object[]{i_v});
+                       AbstractIdentityFactory<X> i_factory,
+                       boolean inPlace) {
+        super(graph,new Object[]{i_v,inPlace});
         this.shape = shape;
         if(i_factory == null) {
             i_factory = (AbstractIdentityFactory<X>) graph.getSameDiff().getArrayFactory();
@@ -36,6 +37,13 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
             ArrayField arrayField = (ArrayField) i_v;
             this.vertexId = arrayField.getVertex().vertexID();
         }
+    }
+
+    protected Constant(SDGraph graph,
+                       X i_v,
+                       int[] shape,
+                       AbstractIdentityFactory<X> i_factory) {
+        this(graph,i_v,shape,i_factory,false);
     }
 
     /**
@@ -66,6 +74,11 @@ public class Constant<X extends Field<X>> extends DifferentialFunction<X> {
     @Override
     public DifferentialFunction<X>[] args() {
         return new DifferentialFunction[] {this};
+    }
+
+    @Override
+    public DifferentialFunction<X> arg() {
+        return this;
     }
 
     @Override

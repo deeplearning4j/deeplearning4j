@@ -19,4 +19,20 @@ public interface Group<X> {
     X mul(double i_n);
 
     X sub(double i_v);
+
+    X negatei();
+
+
+    X addi(X i_v);
+
+    X addi(double i_v);
+
+    X subi(X i_v);
+
+
+    X rsubi(X i_v);
+
+    X muli(double i_n);
+
+    X subi(double i_v);
 }

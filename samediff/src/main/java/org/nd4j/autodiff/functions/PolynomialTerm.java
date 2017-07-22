@@ -17,12 +17,20 @@ public class PolynomialTerm<X extends Field<X>> extends AbstractUnaryFunction<X>
     public PolynomialTerm(SDGraph graph,
                           double i_scale,
                           DifferentialFunction<X> i_v,
-                          int i_exponent) {
+                          int i_exponent,
+                          boolean inPlace) {
         // scale v^{exponent}
         //note that super handles addEdges
-        super(graph,i_v,new Object[]{i_scale,i_exponent});
+        super(graph,i_v,new Object[]{i_scale,i_exponent,inPlace});
         m_scale = i_scale;
         m_exponent = i_exponent;
+    }
+
+    public PolynomialTerm(SDGraph graph,
+                          double i_scale,
+                          DifferentialFunction<X> i_v,
+                          int i_exponent) {
+        this(graph,i_scale,i_v,i_exponent,false);
     }
 
     @Override

@@ -6,10 +6,18 @@ import org.nd4j.autodiff.samediff.SDGraph;
 
 import java.util.List;
 
+/**
+ *
+ * @param <X>
+ */
 public interface AbstractFactory<X extends Field<X>>
         extends AbstractIdentityFactory<X> {
 
 
+    /**
+     *
+     * @return
+     */
     SDGraph graph();
 
     List<String> methodNames();
@@ -200,5 +208,8 @@ public interface AbstractFactory<X extends Field<X>>
 
     X tensorMmul(DifferentialFunction<X> arrayField, DifferentialFunction<X> y, int[][] dimensions);
 
+    /*
+
+     */
     X permute(X value, int[] dimensions);
 }

@@ -18,7 +18,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by agibsonccc on 4/14/17.
+ * Tensor matrix multiply operation
+ *
+ * @author Adam Gibson
  */
 @NoArgsConstructor
 public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction<X> {
@@ -31,7 +33,8 @@ public class TensorMmul<X extends Field<X>> extends AbstractBinaryReduceFunction
                       DifferentialFunction<X> i_v1,
                       DifferentialFunction<X> i_v2,
                       DifferentialFunctionFactory<X> differentialFunctionFactory,
-                      int[][] dimensions,int argNum) {
+                      int[][] dimensions,
+                      int argNum) {
         super(graph);
         this.graph = graph;
         this.differentialFunctionFactory = differentialFunctionFactory;

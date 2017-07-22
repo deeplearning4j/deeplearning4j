@@ -131,6 +131,7 @@ public abstract class AbstractUnaryFunction<X extends Field<X>> extends Differen
         return new DifferentialFunction[] {arg()};
     }
 
+    @Override
     public DifferentialFunction<X> arg() {
         return m_x;
     }

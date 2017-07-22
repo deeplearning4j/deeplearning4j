@@ -1374,6 +1374,8 @@ public class SameDiff {
     }
 
     private INDArray getZ(OpExecAction opExecAction) {
+        if(opExecAction.isInPlace())
+            return getX(opExecAction);
         return variableMap.get(opExecAction.getOutput().getId()).getArr();
     }
 

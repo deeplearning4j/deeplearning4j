@@ -278,7 +278,7 @@ public class SameDiffTests {
         assertArrayEquals(new int[]{3,1},outputGrad.getShape());
         SDVariable preUpdate = w.mul(outputGrad);
         SDVariable update = preUpdate.mul(learningRate);
-        w = w.sub(update);
+        w.subi(update);
 
         System.out.println(sameDiff.graph().numVertices() + " and " + sameDiff.graph().getEdges().size());
         List<Op> ops = sameDiff.exec();
