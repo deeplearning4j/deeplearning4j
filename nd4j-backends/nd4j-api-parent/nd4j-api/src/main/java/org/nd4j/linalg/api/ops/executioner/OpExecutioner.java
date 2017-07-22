@@ -293,6 +293,15 @@ public interface OpExecutioner {
      */
     INDArray thresholdDecode(INDArray encoded, INDArray target);
 
+    /**
+     * This method returns number of elements affected by encoder
+     * @param indArray
+     * @param target
+     * @param threshold
+     * @return
+     */
+    long bitmapEncode(INDArray indArray, INDArray target, double threshold);
+
     INDArray bitmapEncode(INDArray indArray, double threshold);
 
     INDArray bitmapDecode(INDArray encoded, INDArray target);

@@ -2283,10 +2283,17 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 
     @Override
-    public INDArray bitmapEncode(INDArray indArray, double threshold) {
+    public long bitmapEncode(INDArray indArray, INDArray target, double threshold) {
         long length = indArray.lengthLong();
+        long tLen = target.data().length();
 
-        DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(length / 16 + 5);
+        if (tLen != (length / 16 + 5))
+            throw new ND4JIllegalStateException("Length of target array should be " + (length / 16 + 5));
+
+        if (target.data().dataType() != DataBuffer.Type.INT)
+            throw new ND4JIllegalStateException("Target array should have INT dataType");
+
+        DataBuffer buffer = target.data();
         buffer.put(0, (int) length);
         buffer.put(1, (int) length);
         buffer.put(2, Float.floatToIntBits((float) threshold));
@@ -2307,7 +2314,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferReduction()
         );
 
-        long val;
+        long val = 0;
         if (indArray.data().dataType() == DataBuffer.Type.FLOAT) {
             val = nativeOps.encodeBitmapFloat(extras,
                     (FloatPointer) AtomicAllocator.getInstance().getPointer(indArray, context),
@@ -2315,13 +2322,29 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     (IntPointer) AtomicAllocator.getInstance().getPointer(buffer, context),
                     (float) threshold
                     );
-        }
+        } else if (indArray.data().dataType() == DataBuffer.Type.DOUBLE) {
+            val = nativeOps.encodeBitmapDouble(extras,
+                    (DoublePointer) AtomicAllocator.getInstance().getPointer(indArray, context),
+                    length,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(buffer, context),
+                    (float) threshold
+            );
+        } else if (indArray.data().dataType() == DataBuffer.Type.HALF) {
+            val = nativeOps.encodeBitmapHalf(extras,
+                    (ShortPointer) AtomicAllocator.getInstance().getPointer(indArray, context),
+                    length,
+                    (IntPointer) AtomicAllocator.getInstance().getPointer(buffer, context),
+                    (float) threshold
+            );
+        } else
+            throw new ND4JIllegalStateException("Unknown dataType " + indArray.data().dataType());
+
 
         AtomicAllocator.getInstance().getFlowController().registerAction(context, indArray);
 
         AtomicAllocator.getInstance().getAllocationPoint(buffer).tickDeviceWrite();
 
-        return Nd4j.createArrayFromShapeBuffer(buffer, indArray.shapeInfoDataBuffer());
+        return val;
     }
 
     @Override
@@ -2341,7 +2364,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (target.data().dataType() == DataBuffer.Type.FLOAT) {
             nativeOps.decodeBitmapFloat(extras, AtomicAllocator.getInstance().getPointer(encoded.data(), context), target.lengthLong(), (FloatPointer) AtomicAllocator.getInstance().getPointer(target, context));
-        }
+        } else if (target.data().dataType() == DataBuffer.Type.DOUBLE) {
+            nativeOps.decodeBitmapDouble(extras, AtomicAllocator.getInstance().getPointer(encoded.data(), context), target.lengthLong(), (DoublePointer) AtomicAllocator.getInstance().getPointer(target, context));
+        } else if (target.data().dataType() == DataBuffer.Type.HALF) {
+            nativeOps.decodeBitmapHalf(extras, AtomicAllocator.getInstance().getPointer(encoded.data(), context), target.lengthLong(), (ShortPointer) AtomicAllocator.getInstance().getPointer(target, context));
+        } else
+            throw new ND4JIllegalStateException("Unknown dataType " + target.data().dataType());
+
 
         AtomicAllocator.getInstance().getFlowController().registerAction(context, target);
 

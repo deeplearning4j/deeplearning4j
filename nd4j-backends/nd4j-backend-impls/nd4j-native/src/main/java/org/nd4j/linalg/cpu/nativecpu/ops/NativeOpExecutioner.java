@@ -1373,10 +1373,18 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
     @Override
-    public INDArray bitmapEncode(INDArray indArray, double threshold) {
+    public long bitmapEncode(INDArray indArray, INDArray target, double threshold) {
         long length = indArray.lengthLong();
+        long tLen = target.data().length();
 
-        DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(length / 16 + 5);
+        if (tLen != (length / 16 + 5))
+            throw new ND4JIllegalStateException("Length of target array should be " + (length / 16 + 5));
+
+        if (target.data().dataType() != DataBuffer.Type.INT)
+            throw new ND4JIllegalStateException("Target array should have INT dataType");
+
+        DataBuffer buffer = target.data();
+
         buffer.put(0, (int) length);
         buffer.put(1, (int) length);
         buffer.put(2, Float.floatToIntBits((float) threshold));
@@ -1384,11 +1392,16 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         // format id
         buffer.put(3, 1);
 
-        if (indArray.data().dataType() == DataBuffer.Type.FLOAT) {
-            loop.encodeBitmapFloat(null, (FloatPointer) indArray.data().addressPointer(), length, (IntPointer) buffer.addressPointer(), (float) threshold);
-        }
+        long affected = 0;
 
-        return Nd4j.createArrayFromShapeBuffer(buffer, indArray.shapeInfoDataBuffer());
+        if (indArray.data().dataType() == DataBuffer.Type.FLOAT) {
+            affected = loop.encodeBitmapFloat(null, (FloatPointer) indArray.data().addressPointer(), length, (IntPointer) buffer.addressPointer(), (float) threshold);
+        } else if (indArray.data().dataType() == DataBuffer.Type.DOUBLE) {
+            affected = loop.encodeBitmapDouble(null, (DoublePointer) indArray.data().addressPointer(), length, (IntPointer) buffer.addressPointer(), (float) threshold);
+        } else
+            throw new UnsupportedOperationException("HALF precision isn't supported on CPU yet");
+
+        return affected;
     }
 
     @Override
