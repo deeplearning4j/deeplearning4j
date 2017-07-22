@@ -224,7 +224,12 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             while (!messages.get(index.get()).isEmpty()) {
                 INDArray compressed = messages.get(index.get()).poll();
 
-                INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+                int encoding = compressed.data().getInt(3);
+                if (encoding == 0)
+                    Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+                else
+                    Nd4j.getExecutioner().bitmapDecode(compressed, updates);
+
                 cnt++;
             }
 
@@ -235,9 +240,6 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
                 int ent = 0;
                 while (!externalSource.isEmpty()) {
                     INDArray compressed = externalSource.poll();
-
-
-
 
                     // if we have multiple devices without p2p support - just duplicate messages right from host side
                     if (relocatable) {
@@ -299,7 +301,11 @@ public class CudaGradientsAccumulator implements GradientsAccumulator, Registera
             while (!messages.get(index.get()).isEmpty()) {
                 INDArray compressed = messages.get(index.get()).poll();
 
-                INDArray decoded = Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+                int encoding = compressed.data().getInt(3);
+                if (encoding == 0)
+                    Nd4j.getExecutioner().thresholdDecode(compressed, updates);
+                else
+                    Nd4j.getExecutioner().bitmapDecode(compressed, updates);
                 cnt++;
             }
 
