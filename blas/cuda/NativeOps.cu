@@ -6706,7 +6706,10 @@ Nd4jIndex NativeOps::encodeBitmapFloat(Nd4jPointer *extraPointers, float *dx, Nd
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 
-    return (Nd4jIndex) resultPointer[0];
+    Nd4jIndex result = (Nd4jIndex) resultPointer[0];
+    resultPointer[0] = 0;
+
+    return result;
 }
 
 Nd4jIndex NativeOps::encodeBitmapDouble(Nd4jPointer *extraPointers, double *dx, Nd4jIndex N, int *dz, float threshold) {
@@ -6720,7 +6723,10 @@ Nd4jIndex NativeOps::encodeBitmapDouble(Nd4jPointer *extraPointers, double *dx, 
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 
-    return (Nd4jIndex) resultPointer[0];
+    Nd4jIndex result = (Nd4jIndex) resultPointer[0];
+    resultPointer[0] = 0;
+
+    return result;
 }
 
 Nd4jIndex NativeOps::encodeBitmapHalf(Nd4jPointer *extraPointers, float16 *dx, Nd4jIndex N, int *dz, float threshold) {
@@ -6730,11 +6736,14 @@ Nd4jIndex NativeOps::encodeBitmapHalf(Nd4jPointer *extraPointers, float16 *dx, N
     int *resultPointer = reinterpret_cast<int *>(extraPointers[2]);
     int *reductionPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-    cudaEncodeBitmapHalf<<<512, 512, 512 * 2 * sizeof(float16) + 384, *stream>>>(dx, N, dz, resultPointer, reductionPointer, threshold);
+    cudaEncodeBitmapHalf<<<512, 512, (512 * sizeof(float16)) + (512 * sizeof(int)) + 384, *stream>>>(dx, N, dz, resultPointer, reductionPointer, threshold);
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 
-    return (Nd4jIndex) resultPointer[0];
+    Nd4jIndex result = (Nd4jIndex) resultPointer[0];
+    resultPointer[0] = 0;
+
+    return result;
 }
 
 void NativeOps::decodeBitmapFloat(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float *dz) {

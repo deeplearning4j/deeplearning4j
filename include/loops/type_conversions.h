@@ -356,7 +356,7 @@ __device__ inline void decoderKernelGeneric(void *dx, Nd4jIndex N, void *dz) {
     __syncthreads();
 
     for (int e = tid; e < limit; e += blockDim.x * gridDim.x) {
-        int el = x[e+3];
+        int el = x[e+4];
         int ael = nd4j::math::nd4j_abs<int>(el) - 1;
 
         // TODO: investigate, if += would work better here, as in "decoded accumulation"
@@ -421,19 +421,60 @@ template<typename T>
 __device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    __shared__ T *shmem;
+    __shared__ int counter;
+    __shared__ int *shmem;
+    __shared__ T *vals;
     if (threadIdx.x == 0){
         extern __shared__ char mem[];
-        shmem = (T*) mem;
+        shmem = (int*) mem;
+        vals = (T *) (shmem + blockDim.x);
+        counter = 0;
     }
     __syncthreads();
 
     for (int i = tid; i < N; i += blockDim.x * gridDim.x) {
         // all threads in block reading stuff
-        shmem[threadIdx.x] = dx[i];
-        shmem[threadIdx.x + blockDim.x] = nd4j::math::nd4j_abs<T>(shmem[threadIdx.x]);
+        T val = dx[i];
+        T abs = nd4j::math::nd4j_abs<T>(val);
+
+        int byteId = i / 16 + 4;
+        int bitId = i % 16;
+
+        shmem[threadIdx.x] = 0;
+        vals[threadIdx.x] = val;
+
+        if (abs >= (T) threshold) {
+            shmem[threadIdx.x] = 1 << (bitId + 1);
+            atomicAdd(&counter, 1);
+            if (val < (T) 0.0f) {
+                shmem[threadIdx.x] |= 1 << (bitId + 16 + 1);
+                vals[threadIdx.x] += (T) threshold;
+            } else {
+                vals[threadIdx.x] -= (T) threshold;
+            }
+        } else if (abs >= (T) threshold / (T) 2.0f && val < (T) 0.0f) {
+            atomicAdd(&counter, 1);
+            shmem[threadIdx.x] = 1 << (bitId + 16 + 1);
+
+            vals[threadIdx.x] += (T) threshold / (T) 2.0f;
+        }
         __syncthreads();
 
+        if (threadIdx.x % 16 == 0) {
+            int byte = 0;
+            for (int e = 0; e < 16; e++) {
+                if (i + e >= N)
+                    continue;
+
+                byte |= shmem[threadIdx.x + e];
+            }
+            dz[byteId] = byte;
+        }
+        __syncthreads();
+
+        dx[i] = vals[threadIdx.x];
+
+        /*
         // but only 1 thread in sub-warp writes encoded values
         if (threadIdx.x % 16 == 0) {
             int byteId = i / 16 + 4;
@@ -446,6 +487,7 @@ __device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, int 
                 int bitId = (i + e) % 16;
                 if (shmem[threadIdx.x + e + blockDim.x] >= (T) threshold) {
                     byte |= 1 << (bitId + 1);
+                    atomicAdd(&counter, 1);
 
                     if (shmem[threadIdx.x + e] < (T) 0.0f) {
                         byte |= 1 << (bitId + 16 + 1);
@@ -454,12 +496,15 @@ __device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, int 
                     shmem[threadIdx.x + e + blockDim.x] = (T) 0.0f;
                 } else if (shmem[threadIdx.x + e + blockDim.x] >= (T) threshold / (T) 2.0f && shmem[threadIdx.x + e] < (T) 0.0f) {
                     byte |= 1 << (bitId + 16 + 1);
+                    atomicAdd(&counter, 1);
                 }
             }
 
             dz[byteId] = byte;
         }
         __syncthreads();
+
+
 
         if (shmem[threadIdx.x + blockDim.x] == (T) 0.0f && shmem[threadIdx.x] != (T) 0.0f) {
             if (shmem[threadIdx.x] < (T) 0.0f) {
@@ -468,7 +513,13 @@ __device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, int 
                 dx[i] = shmem[threadIdx.x] - threshold;
             }
         }
+        */
 
+    }
+    __syncthreads();
+
+    if (threadIdx.x == 0) {
+        atomicAdd(scalar, counter);
     }
 }
 
