@@ -2,6 +2,7 @@ package org.deeplearning4j.optimize.solvers.accumulation;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.accum.MatchCondition;
 import org.nd4j.linalg.compression.NDArrayCompressor;
@@ -11,6 +12,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -29,6 +31,8 @@ public class EncodingHandler implements MessageHandler {
     protected Double boundary = null;
     protected NDArrayCompressor compressor;
     protected AtomicInteger atomicBoundary = new AtomicInteger(-1);
+
+    protected ThreadLocal<AtomicBoolean> bitmapMode = new ThreadLocal<>();
 
     public EncodingHandler() {
         this(1e-3);
@@ -56,14 +60,27 @@ public class EncodingHandler implements MessageHandler {
 
     public INDArray encodeUpdates(INDArray updates) {
         // special op should be called here for encoding
-
+        if (bitmapMode.get() == null)
+            bitmapMode.set(new AtomicBoolean(true));
 
         if (boundary != null && atomicBoundary.get() < 0)
             atomicBoundary.compareAndSet(-1, (int) (updates.lengthLong() * boundary));
 
-        //return compressor.compress(updates);
-        INDArray encoded = Nd4j.getExecutioner().thresholdEncode(updates, threshold,
-                        boundary == null ? null : atomicBoundary.get());
+        INDArray encoded =  null;
+
+        if (!bitmapMode.get().get())
+            encoded = Nd4j.getExecutioner().thresholdEncode(updates, threshold, boundary == null ? null : atomicBoundary.get());
+        else {
+            DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(updates.lengthLong() / 16 + 5);
+            encoded = Nd4j.createArrayFromShapeBuffer(buffer, updates.shapeInfoDataBuffer());
+
+            long values = Nd4j.getExecutioner().bitmapEncode(updates, encoded, threshold);
+
+            if (values < (updates.lengthLong() / 16 + 5) / 2) {
+                bitmapMode.get().set(false);
+                log.info("Switched to threshold encoding");
+            }
+        }
 
         //if (encoded != null)
         //log.info("Encoded length: {}, Original/encoded ratio: {}", encoded.data().length(), String.format("%.3f", encoded.data().length() * 100.0 / updates.lengthLong()));

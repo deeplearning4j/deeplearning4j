@@ -43,6 +43,9 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
 
     protected transient AtomicBoolean bypassMode = new AtomicBoolean(false);
 
+    protected transient AtomicLong denseCounter = new AtomicLong(0);
+    protected transient AtomicLong sparseCounter = new AtomicLong(0);
+
     /*
         We use this buffer to provide double buffering for incoming messages.
         So we store incoming messages right here, and apply them as time comes
@@ -139,7 +142,19 @@ public class SilentTrainingDriver implements TrainingDriver<SilentUpdatesMessage
             // master invokes everything, since that's Silent Worker approach: we want master to be always up-to-date
             synchronized (this) {
                 // threshold decoder is inplace & fast
-                Nd4j.getExecutioner().thresholdDecode(message.getUpdates(), updates);
+                int encoding = message.getUpdates().data().getInt(3);
+                if (encoding == 0) {
+                    Nd4j.getExecutioner().thresholdDecode(message.getUpdates(), updates);
+                    sparseCounter.incrementAndGet();
+                } else if (encoding == 1) {
+                    Nd4j.getExecutioner().bitmapDecode(message.getUpdates(), updates);
+                    denseCounter.incrementAndGet();
+                }
+
+                if ((sparseCounter.get() + denseCounter.get()) % 100 == 0) {
+                    log.info("Sparse/Dense ratio: {}", String.format("%.2f", (sparseCounter.get() +1) / (double) (denseCounter.get() + 1)));
+                }
+
 
                 // this simple flag shows that we have something not applied, will be used at finishTraining() method
                 hasSomething.set(true);
