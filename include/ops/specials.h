@@ -559,14 +559,8 @@ void decodeBitmapGeneric(void *dx, Nd4jIndex N, T *dz) {
 template<typename T>
 Nd4jIndex encodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, float threshold) {
     Nd4jIndex retVal = 0L;
-    /*
-     #pragma omp critical
-                {
-                    retVal++;
-                }
-     */
 
-#pragma omp parallel for schedule(guided) proc_bind(close)
+#pragma omp parallel for schedule(guided) proc_bind(close) reduction(+:retVal)
     for (int x = 0; x < N; x += 16) {
 
         int byte = 0;
@@ -586,6 +580,9 @@ Nd4jIndex encodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, float threshold) {
             if (abs >= threshold) {
                 byte |= 1 << (bitId + 1);
 
+                retVal++;
+
+
                 if (val < 0.0) {
                     byte |= 1 << (bitId + 16 + 1);
                     dx[e] += threshold;
@@ -595,6 +592,8 @@ Nd4jIndex encodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, float threshold) {
             } else if (abs >= threshold / 2 && val < (T) 0.0f) {
                 byte |= 1 << (bitId + 16 + 1);
                 dx[e] += threshold / 2;
+
+                retVal++;
             }
         }
 

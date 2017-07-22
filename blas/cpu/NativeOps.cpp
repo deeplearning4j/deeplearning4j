@@ -3011,6 +3011,22 @@ Nd4jIndex NativeOps::encodeBitmapFloat(Nd4jPointer *extraPointers, float *dx, Nd
     return NativeOpExcutioner<float>::encodeBitmap(dx, N, dz, threshold);
 }
 
+Nd4jIndex NativeOps::encodeBitmapDouble(Nd4jPointer *extraPointers, double *dx, Nd4jIndex N, int *dz, float threshold) {
+    return NativeOpExcutioner<double>::encodeBitmap(dx, N, dz, threshold);
+}
+
+Nd4jIndex NativeOps::encodeBitmapHalf(Nd4jPointer *extraPointers, float16 *dx, Nd4jIndex N, int *dz, float threshold) {
+    //return NativeOpExcutioner<float16>::encodeBitmap(dx, N, dz, threshold);
+}
+
 void NativeOps::decodeBitmapFloat(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float *dz) {
     NativeOpExcutioner<float>::decodeBitmap(dx, N, dz);
+}
+
+void NativeOps::decodeBitmapDouble(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, double *dz) {
+    NativeOpExcutioner<double>::decodeBitmap(dx, N, dz);
+}
+
+void NativeOps::decodeBitmapHalf(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float16 *dz) {
+    //NativeOpExcutioner<float16>::decodeBitmap(dx, N, dz);
 }

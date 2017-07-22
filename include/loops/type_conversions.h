@@ -444,7 +444,7 @@ __device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, int 
                     continue;
 
                 int bitId = (i + e) % 16;
-                if (shmem[threadIdx.x + e + blockDim.x] >= threshold) {
+                if (shmem[threadIdx.x + e + blockDim.x] >= (T) threshold) {
                     byte |= 1 << (bitId + 1);
 
                     if (shmem[threadIdx.x + e] < (T) 0.0f) {
@@ -452,7 +452,7 @@ __device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, int 
                     }
 
                     shmem[threadIdx.x + e + blockDim.x] = (T) 0.0f;
-                } else if (shmem[threadIdx.x + e + blockDim.x] >= threshold / 2 && shmem[threadIdx.x + e] < (T) 0.0f) {
+                } else if (shmem[threadIdx.x + e + blockDim.x] >= (T) threshold / (T) 2.0f && shmem[threadIdx.x + e] < (T) 0.0f) {
                     byte |= 1 << (bitId + 16 + 1);
                 }
             }
@@ -462,7 +462,7 @@ __device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, int 
         __syncthreads();
 
         if (shmem[threadIdx.x + blockDim.x] == (T) 0.0f && shmem[threadIdx.x] != (T) 0.0f) {
-            if (shmem[threadIdx.x] < 0.0) {
+            if (shmem[threadIdx.x] < (T) 0.0f) {
                 dx[i] = shmem[threadIdx.x] + threshold;
             } else {
                 dx[i] = shmem[threadIdx.x] - threshold;
@@ -476,8 +476,24 @@ extern "C" __global__ void cudaEncodeBitmapFloat(float *dx, Nd4jIndex N, int *dz
     cudaEncodeBitmapGeneric<float>(dx, N, dz, scalar, reductionBuffer, threshold);
 }
 
+extern "C" __global__ void cudaEncodeBitmapDouble(double *dx, Nd4jIndex N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
+    cudaEncodeBitmapGeneric<double>(dx, N, dz, scalar, reductionBuffer, threshold);
+}
+
+extern "C" __global__ void cudaEncodeBitmapHalf(float16 *dx, Nd4jIndex N, int *dz, int *scalar, int *reductionBuffer, float threshold) {
+    cudaEncodeBitmapGeneric<float16>(dx, N, dz, scalar, reductionBuffer, threshold);
+}
+
 extern "C" __global__ void cudaDecodeBitmapFloat(void *dx, Nd4jIndex N, float *dz) {
     cudaDecodeBitmapGeneric<float>(dx, N, dz);
+}
+
+extern "C" __global__ void cudaDecodeBitmapDouble(void *dx, Nd4jIndex N, double *dz) {
+    cudaDecodeBitmapGeneric<double>(dx, N, dz);
+}
+
+extern "C" __global__ void cudaDecodeBitmapHalf(void *dx, Nd4jIndex N, float16 *dz) {
+    cudaDecodeBitmapGeneric<float16>(dx, N, dz);
 }
 
 

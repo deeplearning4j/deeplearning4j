@@ -6709,11 +6709,59 @@ Nd4jIndex NativeOps::encodeBitmapFloat(Nd4jPointer *extraPointers, float *dx, Nd
     return (Nd4jIndex) resultPointer[0];
 }
 
+Nd4jIndex NativeOps::encodeBitmapDouble(Nd4jPointer *extraPointers, double *dx, Nd4jIndex N, int *dz, float threshold) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+
+    int *resultPointer = reinterpret_cast<int *>(extraPointers[2]);
+    int *reductionPointer = reinterpret_cast<int *>(extraPointers[3]);
+
+    cudaEncodeBitmapDouble<<<512, 512, 512 * 2 * sizeof(double) + 384, *stream>>>(dx, N, dz, resultPointer, reductionPointer, threshold);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+
+    return (Nd4jIndex) resultPointer[0];
+}
+
+Nd4jIndex NativeOps::encodeBitmapHalf(Nd4jPointer *extraPointers, float16 *dx, Nd4jIndex N, int *dz, float threshold) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+
+    int *resultPointer = reinterpret_cast<int *>(extraPointers[2]);
+    int *reductionPointer = reinterpret_cast<int *>(extraPointers[3]);
+
+    cudaEncodeBitmapHalf<<<512, 512, 512 * 2 * sizeof(float16) + 384, *stream>>>(dx, N, dz, resultPointer, reductionPointer, threshold);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+
+    return (Nd4jIndex) resultPointer[0];
+}
+
 void NativeOps::decodeBitmapFloat(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float *dz) {
     cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
     int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
 
     cudaDecodeBitmapFloat<<<512, 512, 512 * sizeof(float) + 384, *stream>>>(dx, N, dz);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+
+void NativeOps::decodeBitmapDouble(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, double *dz) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+
+    cudaDecodeBitmapDouble<<<512, 512, 512 * sizeof(double) + 384, *stream>>>(dx, N, dz);
+
+    checkCudaErrors(cudaStreamSynchronize(*stream));
+}
+
+
+void NativeOps::decodeBitmapHalf(Nd4jPointer *extraPointers, void *dx, Nd4jIndex N, float16 *dz) {
+    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(&extraPointers[1]);
+    int *hostXShapeInfo = reinterpret_cast<int *>(extraPointers[0]);
+
+    cudaDecodeBitmapHalf<<<512, 512, 512 * sizeof(float16) + 384, *stream>>>(dx, N, dz);
 
     checkCudaErrors(cudaStreamSynchronize(*stream));
 }
