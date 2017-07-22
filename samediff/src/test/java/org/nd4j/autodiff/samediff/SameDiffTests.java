@@ -296,8 +296,8 @@ public class SameDiffTests {
         ops = sameDiff.exec();
         for(int i = 0; i < 10; i++) {
             INDArray output =  weights;
-            sameDiff.exec(ops);
-            System.out.println("Update " + output);
+            INDArray score = sameDiff.execAndEndResult(ops);
+            System.out.println("Update " + output + " with score " + score);
         }
 
         System.out.println(ops);
