@@ -20,7 +20,6 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
 
     protected DifferentialFunction<X> m_x;
     protected int[] dimensions;
-    protected OpState opState;
 
     public AbstractReduceUnaryFunction(SDGraph graph,
                                        DifferentialFunction<X> i_v,
@@ -60,10 +59,11 @@ public abstract class AbstractReduceUnaryFunction<X extends Field<X>> extends Di
     protected void addEdges(Graph<NDArrayInformation,OpState> graph, DifferentialFunction<X> i_v1,String opName) {
         if(i_v1.getValue(true) instanceof ArrayField) {
             ArrayField v1 = (ArrayField) i_v1.getValue(true);
+            int[] resultShape = Shape.getReducedShape(v1.getInput().getShape(),dimensions);
             //result
             NDArrayInformation information =  NDArrayInformation.builder()
                     .id(opName + "(" + v1.getInput().getId() + " -> " + v1.getInput().getId() + ")")
-                    .shape(v1.getInput().getShape()).build();
+                    .shape(resultShape).build();
             NDArrayVertex newVertex = new NDArrayVertex(graph.nextVertexId(), information);
             this.vertexId = newVertex.vertexID();
             graph.addVertex(newVertex);

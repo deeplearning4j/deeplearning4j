@@ -277,6 +277,8 @@ public class SameDiffTests {
         SDVariable probs = outputTimesY.add(oneMinusOutput.mul(y.rsub(sameDiff.scalar("onetwo",1.0))));
         SDVariable logProbs = sameDiff.log(probs);
         SDVariable sum = sameDiff.sum(logProbs,Integer.MAX_VALUE);
+        //ensure the output is scalar shape
+        assertEquals(1,ArrayUtil.prod(sum.getShape()));
         SDVariable negSum = sameDiff.neg(sum);
         SDVariable outputGrad = sameDiff.grad(negSum,w);
         assertArrayEquals(new int[]{3,1},outputGrad.getShape());

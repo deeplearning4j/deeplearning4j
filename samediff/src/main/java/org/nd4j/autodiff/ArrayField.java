@@ -147,7 +147,7 @@ public class ArrayField implements Field<ArrayField> {
 
     @Override
     public ArrayField rsubi(ArrayField i_v) {
-       return i_v.subi(this);
+        return i_v.subi(this);
     }
 
     @Override
@@ -774,30 +774,62 @@ public class ArrayField implements Field<ArrayField> {
     }
 
 
-    private ArrayField addScalarTransformOp(String name,
-                                            Number scalarValue,
-                                            boolean inPlace) {
+    private ArrayField addFirstScalarTransformOp(String name,
+                                                 ArrayField i_v,
+                                                 Object[] extraArgs) {
+        NDArrayInformation ndArrayInformation =  NDArrayInformation.builder()
+                .id(name + "(" + input.getId() + ")").scalarValue(this.getInput().getScalarValue())
+                .shape(getInput().getShape()).build();
         //result
-        NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId(),
-                NDArrayInformation.builder()
-                        .id(name + "(" + input.getId() + ")")
-                        .shape(input.getShape()).build());
+        NDArrayVertex newVertex = new NDArrayVertex(
+                this.ops.nextVertexId(),
+                ndArrayInformation);
 
         //add the result vertex to the graph
         this.getOps().addVertex(newVertex);
 
+        OpState owner =    OpState.builder()
+                .n(ArrayUtil.prod(getInput().getShape()))
+                .opName(name).extraArgs(extraArgs)
+                .scalarValue(getInput().scalar())
+                .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
+                .opType(OpState.OpType.SCALAR_TRANSFORM).result(newVertex.getValue())
+                .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
+                .build();
+
         //map x -> z
         this.ops.addEdge(vertex.vertexID(),
-                newVertex.vertexID(),
-                OpState.builder()
-                        .n(ArrayUtil.prod(input.getShape()))
-                        .opName(name).extraArgs(new Object[]{scalarValue,inPlace})
-                        .scalarValue(scalarValue)
-                        .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
-                        .opType(OpState.OpType.SCALAR_TRANSFORM).result(newVertex.getValue())
-                        .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
-                        .build(),true);
+                newVertex.vertexID(),owner
+                ,true);
 
+        ndArrayInformation.setOwner(owner);
+        return new ArrayField(newVertex,ops);
+    }
+
+    private ArrayField addScalarTransformOp(String name,
+                                            Number scalarValue,
+                                            boolean inPlace) {
+        NDArrayInformation result =  NDArrayInformation.builder().scalarValue(scalarValue)
+                .id(name + "(" + input.getId() + ")")
+                .shape(input.getShape()).build();
+        //result
+        NDArrayVertex newVertex = new NDArrayVertex(this.ops.nextVertexId(),result);
+
+        //add the result vertex to the graph
+        this.getOps().addVertex(newVertex);
+
+        OpState owner =  OpState.builder()
+                .n(ArrayUtil.prod(input.getShape()))
+                .opName(name).extraArgs(new Object[]{scalarValue,inPlace})
+                .scalarValue(scalarValue)
+                .id(vertex.getValue().getId() + "-> " + name + " " + newVertex.getValue().getId())
+                .opType(OpState.OpType.SCALAR_TRANSFORM).result(newVertex.getValue())
+                .vertexIds(new String[]{String.valueOf(vertex.vertexID()),String.valueOf(newVertex.vertexID())})
+                .build();
+        //map x -> z
+        this.ops.addEdge(vertex.vertexID(),
+                newVertex.vertexID(), owner,true);
+        result.setOwner(owner);
         return new ArrayField(newVertex,ops);
     }
 
@@ -893,6 +925,10 @@ public class ArrayField implements Field<ArrayField> {
 
 
     private ArrayField addPairTransformOp(String name,ArrayField i_v,Object[] extraArgs) {
+        if(ArrayUtil.prod(getInput().getShape()) == 1) {
+            return addFirstScalarTransformOp(name + "_scalar",
+                    i_v,extraArgs);
+        }
         //result
         NDArrayInformation resultInfo =  NDArrayInformation.builder()
                 .id(name + "("+ getVertex().getValue().getId() + "," + i_v.getVertex().getValue().getId() + ")")

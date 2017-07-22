@@ -214,25 +214,25 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> rsub(DifferentialFunction<X> i_v) {
-        DifferentialFunction<X> ret = this.sub(i_v);
+        DifferentialFunction<X> ret = i_v.sub(this);
         return ret;
     }
 
     @Override
     public DifferentialFunction<X> add(DifferentialFunction<X> i_v) {
-        X ret = i_v.getValue(false).add(getValue(false));
+        X ret = i_v.getValue(true).add(getValue(true));
         return new Constant<>(graph, ret, i_v.getResultShape(), (AbstractIdentityFactory<X>) graph.getSameDiff().getArrayFactory());
     }
 
     @Override
     public DifferentialFunction<X> mul(DifferentialFunction<X> i_v) {
-        X ret = i_v.getValue(false).mul(getValue(false));
+        X ret = i_v.getValue(true).mul(getValue(true));
         return new Constant<>(graph, ret, i_v.getResultShape(), (AbstractIdentityFactory<X>) graph.getSameDiff().getArrayFactory());
     }
 
     @Override
     public DifferentialFunction<X> sub(DifferentialFunction<X> i_v) {
-        X ret = i_v.getValue(false).sub(getValue(false));
+        X ret = i_v.getValue(true).sub(getValue(true));
         return new Constant<>(graph, ret, i_v.getResultShape(), (AbstractIdentityFactory<X>) graph.getSameDiff().getArrayFactory());
     }
 
@@ -241,7 +241,7 @@ public abstract class DifferentialFunction<X extends Field<X>>
 
     @Override
     public DifferentialFunction<X> div(DifferentialFunction<X> i_v) {
-        X ret = i_v.getValue(false).div(getValue(false));
+        X ret = i_v.getValue(true).div(getValue(true));
         return new Constant<>(graph, ret, i_v.getResultShape(), (AbstractIdentityFactory<X>) graph.getSameDiff().getArrayFactory());
     }
 
