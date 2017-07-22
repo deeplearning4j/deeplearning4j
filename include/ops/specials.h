@@ -541,8 +541,8 @@ void decodeBitmapGeneric(void *dx, Nd4jIndex N, T *dz) {
     for (int e = 4; e < lim; e++) {
 
         for (int bitId = 0; bitId < 16; bitId++) {
-            bool hasBit = (x[e] & 1 << (bitId + 1) ) != 0;
-            bool hasSign = (x[e] & 1 << (bitId + 16 + 1) ) != 0;
+            bool hasBit = (x[e] & 1 << (bitId) ) != 0;
+            bool hasSign = (x[e] & 1 << (bitId + 16) ) != 0;
 
             if (hasBit) {
                 if (hasSign)
@@ -578,19 +578,19 @@ Nd4jIndex encodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, float threshold) {
             int bitId = e % 16;
 
             if (abs >= threshold) {
-                byte |= 1 << (bitId + 1);
+                byte |= 1 << (bitId);
 
                 retVal++;
 
 
                 if (val < 0.0) {
-                    byte |= 1 << (bitId + 16 + 1);
+                    byte |= 1 << (bitId + 16);
                     dx[e] += threshold;
                 } else {
                     dx[e] -= threshold;
                 }
             } else if (abs >= threshold / 2 && val < (T) 0.0f) {
-                byte |= 1 << (bitId + 16 + 1);
+                byte |= 1 << (bitId + 16);
                 dx[e] += threshold / 2;
 
                 retVal++;

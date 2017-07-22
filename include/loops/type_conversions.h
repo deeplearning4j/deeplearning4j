@@ -397,8 +397,8 @@ __device__ inline void cudaDecodeBitmapGeneric(void *dx, Nd4jIndex N, T *dz) {
 
                 int bitId = (i + e) % 16;
 
-                bool hasBit = (byte & 1 << (bitId + 1) ) != 0;
-                bool hasSign = (byte & 1 << (bitId + 16 + 1) ) != 0;
+                bool hasBit = (byte & 1 << (bitId) ) != 0;
+                bool hasSign = (byte & 1 << (bitId + 16) ) != 0;
 
                 if (hasBit) {
                     if (hasSign)
@@ -444,17 +444,17 @@ __device__ inline void cudaEncodeBitmapGeneric(T *dx, Nd4jIndex N, int *dz, int 
         vals[threadIdx.x] = val;
 
         if (abs >= (T) threshold) {
-            shmem[threadIdx.x] = 1 << (bitId + 1);
+            shmem[threadIdx.x] = 1 << (bitId);
             atomicAdd(&counter, 1);
             if (val < (T) 0.0f) {
-                shmem[threadIdx.x] |= 1 << (bitId + 16 + 1);
+                shmem[threadIdx.x] |= 1 << (bitId + 16);
                 vals[threadIdx.x] += (T) threshold;
             } else {
                 vals[threadIdx.x] -= (T) threshold;
             }
         } else if (abs >= (T) threshold / (T) 2.0f && val < (T) 0.0f) {
             atomicAdd(&counter, 1);
-            shmem[threadIdx.x] = 1 << (bitId + 16 + 1);
+            shmem[threadIdx.x] = 1 << (bitId + 16);
 
             vals[threadIdx.x] += (T) threshold / (T) 2.0f;
         }
